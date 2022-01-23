@@ -1,6 +1,6 @@
 import { sum } from '../foo';
 
-test('basic', () => {
+ test('basic', () => {
   expect(sum()).toBe(0);
 });
 

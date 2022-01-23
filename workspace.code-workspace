@@ -6,5 +6,7 @@
 	],
 	"settings": {
 		"files.eol": "\n",
+		"eslint.codeActionsOnSave.mode": "all",
+		"editor.codeActionsOnSave": {"source.fixAll": true}
 	}
 }
