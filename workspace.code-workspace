@@ -1,12 +1,12 @@
 {
 	"folders": [
 		{
-			"path": "."
+			"path": "./"
 		}
 	],
 	"settings": {
 		"files.eol": "\n",
+		"prettier.endOfLine": "lf",
 		"eslint.codeActionsOnSave.mode": "all",
-		"editor.codeActionsOnSave": {"source.fixAll": true}
 	}
 }
