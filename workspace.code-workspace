@@ -7,6 +7,12 @@
 	"settings": {
 		"files.eol": "\n",
 		"prettier.endOfLine": "lf",
-		"eslint.codeActionsOnSave.mode": "all",
+		"editor.formatOnSave": true,
+		"editor.tabSize": 4,
+		"editor.codeActionsOnSave": { "source.fixAll.eslint": true },
+		"[json]": {
+			"editor.defaultFormatter": "HookyQR.beautify",
+			"editor.formatOnSave": true
+		}
 	}
 }
