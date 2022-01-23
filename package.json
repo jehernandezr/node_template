@@ -1,0 +1,35 @@
+{
+  "name": "node_template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/app.js",
+  "scripts": {
+    "start": "npm run build && node build/app.js",
+    "build": "rimraf ./build && tsc --build",
+    "clean": "tsc --build --clean",
+    "lint": "tsc --noEmit && eslint \"**/*.{ts,tsx}\" --quiet --fix",
+    "dev": "nodemon --config nodemon.json src/app.ts",
+    "dev:debug": "nodemon --config nodemon.json --inspect-brk src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.16.4",
+    "@types/node": "^17.0.10",
+    "@typescript-eslint/eslint-plugin": "^5.10.0",
+    "@typescript-eslint/parser": "^5.10.0",
+    "eslint": "^8.7.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "nodemon": "^2.0.15",
+    "prettier": "^2.5.1",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.4.0",
+    "tslint": "^5.12.1",
+    "typescript": "^4.3.3"
+  },
+  "dependencies": {
+    "express": "^4.16.4"
+  }
+}

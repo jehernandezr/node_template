@@ -1,0 +1,15 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+      "prettier",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:prettier/recommended" // agregar el plugin que integra eslint con prettier
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2018,
+      "sourceType": "module"
+    },
+    "rules": {
+      "linebreak-style": "off"
+    }
+}

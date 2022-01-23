@@ -1,0 +1,10 @@
+{
+    "semi": true,
+    "tabWidth": 2, 
+    "printWidth": 100, 
+    "singleQuote": true, 
+    "trailingComma": "none",
+    "endOfLine": "crlf" ,
+    "prettier/prettier": ["error", {"singleQuote": true, "parser": "flow"}]
+   }
+    
