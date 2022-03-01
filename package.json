@@ -2,13 +2,13 @@
   "name": "node_template",
   "version": "1.0.0",
   "description": "",
-  "main": "build/app.js",
+  "main": "build/server.js",
   "scripts": {
-    "start": "npm run build && node build/app.js",
+    "start": "npm run build && node build/server.js",
     "build": "rimraf ./build && tsc --build",
     "clean": "tsc --build --clean",
     "lint": "tsc --noEmit && eslint \"**/*.{ts,tsx}\" --quiet --fix",
-    "dev": "nodemon --config nodemon.json src/app.ts",
+    "dev": "nodemon --config nodemon.json src/server.ts",
     "dev:debug": "nodemon --config nodemon.json --inspect-brk src/index.ts",
     "test": "jest"
   },
@@ -16,9 +16,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/express": "^4.16.4",
+    "@types/bcrypt": "^5.0.0",
+    "@types/cookie-parser": "^1.4.2",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/hpp": "^0.2.2",
     "@types/jest": "^27.4.0",
+    "@types/jsonwebtoken": "^8.5.8",
     "@types/node": "^17.0.10",
+    "@types/validator": "^13.7.1",
     "@typescript-eslint/eslint-plugin": "^5.10.0",
     "@typescript-eslint/parser": "^5.10.0",
     "eslint": "^8.7.0",
@@ -34,9 +40,19 @@
     "typescript": "^4.3.3"
   },
   "dependencies": {
+    "bcrypt": "^5.0.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
     "express": "^4.16.4",
+    "helmet": "^5.0.2",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^8.5.1",
+    "pg": "^8.7.3",
+    "pg-hstore": "^2.3.4",
     "reflect-metadata": "^0.1.13",
     "sequelize": "^6.14.0",
-    "sequelize-typescript": "^2.1.2"
+    "sequelize-typescript": "^2.1.2",
+    "xss-clean": "^0.1.1"
   }
 }
