@@ -23,6 +23,8 @@
     ]
   },
   "dependencies": {
+    "@platform/kernel": "workspace:*",
+    "@platform/primitives": "workspace:*",
     "cockatiel": "^4.0.0",
     "tslib": "^2.3.0"
   }

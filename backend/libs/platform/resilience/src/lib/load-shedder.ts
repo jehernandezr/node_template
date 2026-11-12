@@ -1,4 +1,4 @@
-import { ResilienceError, ResilienceErrorCode } from './errors.js';
+import { OverloadedError } from './errors.js';
 
 /** Options for {@link LoadShedder}. */
 export interface LoadShedderOptions {
@@ -23,17 +23,11 @@ export class LoadShedder {
   /**
    * Reserves a slot.
    * @returns Release function; calling it more than once has no extra effect.
-   * @throws ResilienceError with code Overloaded and `retryAfterMs` when the limit is reached.
+   * @throws OverloadedError (a `ResilienceError` with code Overloaded) and `retryAfterMs` when the limit is reached.
    */
   tryAcquire(): () => void {
     if (this.current >= this.options.maxInFlight) {
-      throw new ResilienceError(
-        ResilienceErrorCode.Overloaded,
-        'Service overloaded, shedding load',
-        {
-          retryAfterMs: this.options.retryAfterMs,
-        },
-      );
+      throw new OverloadedError(this.options.retryAfterMs);
     }
     this.current += 1;
     let released = false;

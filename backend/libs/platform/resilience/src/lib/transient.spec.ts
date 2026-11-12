@@ -1,4 +1,9 @@
-import { isTransientError, retryAfterMs } from './transient.js';
+import { isTransientError as primitivesIsTransientError } from '@platform/primitives';
+import {
+  isTransientError,
+  retryAfterHintMs,
+  retryAfterMs,
+} from './transient.js';
 
 describe('isTransientError', () => {
   it.each([
@@ -107,5 +112,70 @@ describe('retryAfterMs', () => {
     expect(
       retryAfterMs({ headers: { 'retry-after': 'soon' } }),
     ).toBeUndefined();
+  });
+});
+
+describe('deprecated aliases', () => {
+  it('isTransientError is the primitives rule', () => {
+    expect(isTransientError).toBe(primitivesIsTransientError);
+  });
+
+  it('treats an outer retryable false as final even with a transient cause', () => {
+    expect(
+      isTransientError(
+        Object.assign(new Error('final'), {
+          retryable: false,
+          cause: { code: 'ECONNRESET' },
+        }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('retryAfterHintMs', () => {
+  it('bounds a numeric hint and a header to maxMs', () => {
+    expect(retryAfterHintMs({ retryAfterMs: 10_000 }, { maxMs: 500 })).toBe(
+      500,
+    );
+    expect(
+      retryAfterHintMs(
+        { headers: { 'retry-after': '3600' } },
+        { maxMs: 1_000 },
+      ),
+    ).toBe(1_000);
+  });
+
+  it('caps unbounded hints at the primitives default of 60 s', () => {
+    expect(retryAfterHintMs({ headers: { 'retry-after': '86400' } })).toBe(
+      60_000,
+    );
+    expect(retryAfterMs({ retryAfterMs: 10_000_000 })).toBe(60_000);
+  });
+
+  it('resolves HTTP dates against the given now', () => {
+    const nowMs = Date.parse('2026-01-01T00:00:00.000Z');
+    expect(
+      retryAfterHintMs(
+        { headers: { 'retry-after': 'Thu, 01 Jan 2026 00:00:05 GMT' } },
+        { nowMs },
+      ),
+    ).toBe(5_000);
+  });
+
+  it('ignores oversized and fractional headers', () => {
+    expect(
+      retryAfterHintMs({ headers: { 'retry-after': '1'.repeat(100) } }),
+    ).toBeUndefined();
+    expect(
+      retryAfterHintMs({ headers: { 'retry-after': '1.5' } }),
+    ).toBeUndefined();
+  });
+
+  it('reads a hint in the cause chain', () => {
+    expect(
+      retryAfterHintMs(
+        Object.assign(new Error('wrap'), { cause: { retryAfterMs: 42 } }),
+      ),
+    ).toBe(42);
   });
 });
