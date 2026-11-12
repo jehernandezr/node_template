@@ -5,9 +5,13 @@ import {
 } from './errors.js';
 import type { DirectoryStore, RoutingCache } from './ports.js';
 import {
-  decodeSharedEntry,
+  decodeSharedRecord,
   encodeSharedEntry,
+  encodeTombstone,
+  placementCacheVersion,
+  UNVERSIONED_TOMBSTONE_VERSION,
   type SharedPlacementEntry,
+  type SharedRecord,
 } from './placement-codec.js';
 import {
   ConsistentHashStrategy,
@@ -30,6 +34,11 @@ export interface ShardRouterOptions {
   readonly localTtlMs?: number;
   /** TTL of placements written to the shared cache. Default 300 s. */
   readonly sharedTtlMs?: number;
+  /**
+   * TTL of the tombstone `invalidate` leaves in the shared cache. Default 30 s. A placement load that takes
+   * this long or longer is not written to the shared cache, so no invalidation it overlapped can be undone.
+   */
+  readonly tombstoneTtlMs?: number;
   /** Time source in milliseconds. Default `Date.now`. */
   readonly clock?: () => number;
   /** Picks the shard inside a group with more than one shard. Default: consistent hashing. */
@@ -47,6 +56,16 @@ export interface ResolveRequest {
   /** Required unless `keyKind` is `ShardKey.Tenant`. */
   readonly keyValue?: string;
   readonly access: ShardAccess;
+}
+
+/** Options of {@link ShardRouter.invalidate}. */
+export interface InvalidateOptions {
+  /**
+   * Placement version just committed to the directory. With it the tombstone refuses every older version
+   * and still lets this one be cached. Without it the tombstone is placed above the highest version this
+   * router can see, or refuses every write until it expires when no version is known.
+   */
+  readonly version?: number;
 }
 
 interface CacheEntry<T> {
@@ -81,6 +100,33 @@ function readEntry<T>(
   return entry.value;
 }
 
+/**
+ * Cache version of the tombstone that replaces a placement: above every version this router can see, and
+ * at least `2N − 1` when the caller gives the committed version N (refuses below N, accepts N).
+ */
+function tombstoneVersion(
+  local: TenantPlacement | undefined,
+  shared: SharedRecord | undefined,
+  committedVersion: number | undefined,
+): number {
+  const candidates: number[] = [];
+  if (local !== undefined) {
+    candidates.push(placementCacheVersion(local.version) + 1);
+  }
+  if (shared?.kind === 'placement') {
+    candidates.push(placementCacheVersion(shared.entry.placement.version) + 1);
+  } else if (shared?.kind === 'tombstone') {
+    candidates.push(shared.tombstone.cacheVersion + 1);
+  }
+  if (committedVersion !== undefined) {
+    candidates.push(placementCacheVersion(committedVersion) - 1);
+  }
+  if (candidates.length === 0) {
+    return UNVERSIONED_TOMBSTONE_VERSION;
+  }
+  return Math.min(Math.max(...candidates), Number.MAX_SAFE_INTEGER);
+}
+
 function checkWritable(tenantId: string, status: TenantStatus): void {
   if (status === TenantStatus.Active) {
     return;
@@ -104,7 +150,9 @@ function checkWritable(tenantId: string, status: TenantStatus): void {
  *
  * Placement lookups go through the in-process map, then the shared cache, then the directory.
  * Concurrent misses for one tenant share one load. Every `invalidate` bumps a per-tenant generation:
- * a load that started before it is returned to its caller but never written to a cache.
+ * a load that started before it in this process is returned to its caller but never cached here.
+ * Across processes, `invalidate` leaves a versioned tombstone in the shared cache instead of deleting the
+ * key; `setIfNewer` refuses the old placement that a load in flight elsewhere tries to write back.
  *
  * Group changes: adding a shard to a group is only valid through a move saga with the tenant in
  * Migrating. The new placement version gets a fresh ring, and writes stay blocked until the move completes.
@@ -114,6 +162,7 @@ export class ShardRouter {
   private readonly sharedCache: RoutingCache | undefined;
   private readonly localTtlMs: number;
   private readonly sharedTtlMs: number;
+  private readonly tombstoneTtlMs: number;
   private readonly clock: () => number;
   private readonly strategy: ShardingStrategy;
   private readonly currentRegion: string | undefined;
@@ -128,6 +177,7 @@ export class ShardRouter {
     this.sharedCache = options.sharedCache;
     this.localTtlMs = options.localTtlMs ?? 60_000;
     this.sharedTtlMs = options.sharedTtlMs ?? 300_000;
+    this.tombstoneTtlMs = options.tombstoneTtlMs ?? 30_000;
     this.clock = options.clock ?? (() => Date.now());
     this.strategy = options.strategy ?? new ConsistentHashStrategy();
     this.currentRegion = options.currentRegion;
@@ -185,23 +235,31 @@ export class ShardRouter {
   }
 
   /**
-   * Drops a tenant's placement from the in-process and shared caches, and the cached instances of its
-   * shard group. Works when the local placement already expired: the group is then read from the shared cache.
+   * Drops a tenant's placement from the in-process cache and the cached instances of its shard group, and
+   * replaces the shared entry with a versioned tombstone. The tombstone outranks the placement it replaces,
+   * so a read already in flight (in this or another process) cannot write the old placement back.
+   * Works when the local placement already expired: the group is then read from the shared cache.
    */
-  async invalidate(tenantId: string): Promise<void> {
+  async invalidate(
+    tenantId: string,
+    options: InvalidateOptions = {},
+  ): Promise<void> {
     const id = tenantId.toLowerCase();
+    const key = PLACEMENT_CACHE_PREFIX + id;
     this.bump(tenantGeneration(id));
     const local = readEntry(this.placements, id, this.clock());
     this.placements.delete(id);
+    const shared = await this.readSharedRecord(key);
     const group =
       local?.shardGroup ??
-      (await this.readSharedEntry(PLACEMENT_CACHE_PREFIX + id))?.placement
-        .shardGroup ??
-      [];
+      (shared?.kind === 'placement' ? shared.entry.placement.shardGroup : []);
     for (const shard of group) {
       this.invalidateShard(shard);
     }
-    await this.deleteShared(PLACEMENT_CACHE_PREFIX + id);
+    await this.writeTombstone(
+      key,
+      tombstoneVersion(local, shared, options.version),
+    );
   }
 
   /** Clears the cached instance of a logical shard, whatever placements reference it. */
@@ -236,8 +294,10 @@ export class ShardRouter {
     tenantId: string,
     generation: number,
   ): Promise<TenantPlacement> {
+    const startedAt = this.clock();
     const key = PLACEMENT_CACHE_PREFIX + tenantId;
-    const shared = await this.readSharedEntry(key);
+    const record = await this.readSharedRecord(key);
+    const shared = record?.kind === 'placement' ? record.entry : undefined;
     if (shared !== undefined && this.clock() < shared.expiresAt) {
       if (this.isCurrent(tenantId, generation)) {
         this.rememberPlacement(tenantId, shared.placement, shared.expiresAt);
@@ -261,9 +321,9 @@ export class ShardRouter {
       : Number.POSITIVE_INFINITY;
     this.rememberPlacement(tenantId, placement, sharedExpiresAt);
     await this.writeShared(
-      tenantId,
+      key,
       { placement, expiresAt: sharedExpiresAt },
-      generation,
+      startedAt,
     );
     return placement;
   }
@@ -279,54 +339,67 @@ export class ShardRouter {
     });
   }
 
+  /**
+   * Writes a placement read from the directory. `setIfNewer` refuses it when a tombstone or a newer placement
+   * is stored. A load that outlived the tombstone TTL is not written: a tombstone written after the load
+   * started could already be gone.
+   */
   private async writeShared(
-    tenantId: string,
+    key: string,
     entry: SharedPlacementEntry,
-    generation: number,
+    startedAt: number,
   ): Promise<void> {
     if (this.sharedCache === undefined) {
       return;
     }
-    const key = PLACEMENT_CACHE_PREFIX + tenantId;
+    if (this.clock() - startedAt >= this.tombstoneTtlMs) {
+      return;
+    }
     try {
       await this.sharedCache.setIfNewer(
         key,
         encodeSharedEntry(entry),
-        entry.placement.version,
+        placementCacheVersion(entry.placement.version),
         this.sharedTtlMs,
       );
     } catch (error) {
       this.onCacheError(error);
-      return;
-    }
-    if (!this.isCurrent(tenantId, generation)) {
-      // Invalidated while the write was in flight: remove what was just written.
-      await this.deleteShared(key);
     }
   }
 
-  private async readSharedEntry(
+  private async writeTombstone(
     key: string,
-  ): Promise<SharedPlacementEntry | undefined> {
-    if (this.sharedCache === undefined) {
-      return undefined;
-    }
-    try {
-      return decodeSharedEntry(await this.sharedCache.get(key));
-    } catch (error) {
-      this.onCacheError(error);
-      return undefined;
-    }
-  }
-
-  private async deleteShared(key: string): Promise<void> {
+    cacheVersion: number,
+  ): Promise<void> {
     if (this.sharedCache === undefined) {
       return;
     }
     try {
-      await this.sharedCache.delete(key);
+      await this.sharedCache.setIfNewer(
+        key,
+        encodeTombstone({
+          cacheVersion,
+          expiresAt: this.clock() + this.tombstoneTtlMs,
+        }),
+        cacheVersion,
+        this.tombstoneTtlMs,
+      );
     } catch (error) {
       this.onCacheError(error);
+    }
+  }
+
+  private async readSharedRecord(
+    key: string,
+  ): Promise<SharedRecord | undefined> {
+    if (this.sharedCache === undefined) {
+      return undefined;
+    }
+    try {
+      return decodeSharedRecord(await this.sharedCache.get(key));
+    } catch (error) {
+      this.onCacheError(error);
+      return undefined;
     }
   }
 

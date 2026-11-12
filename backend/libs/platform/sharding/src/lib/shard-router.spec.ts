@@ -6,6 +6,10 @@ import {
 } from './errors.js';
 import { InMemoryDirectoryStore } from './in-memory-directory-store.js';
 import { InMemoryRoutingCache } from './in-memory-routing-cache.js';
+import {
+  decodeSharedRecord,
+  UNVERSIONED_TOMBSTONE_VERSION,
+} from './placement-codec.js';
 import type { RoutingCache } from './ports.js';
 import { ShardRouter, type ShardRouterOptions } from './shard-router.js';
 import {
@@ -18,6 +22,7 @@ import {
 const LOCAL_TTL = 60_000;
 const SHARED_TTL = 300_000;
 const PLACEMENT_KEY = 'sharding:placement:t1';
+const TOMBSTONE_TTL = 30_000;
 const FAR_FUTURE = 1e12;
 
 const READ = { keyKind: ShardKey.Tenant, access: ShardAccess.Read } as const;
@@ -396,10 +401,11 @@ describe('ShardRouter', () => {
       await router.resolve({ tenantId: 't1', ...READ });
       expect(sharedGet).toHaveBeenCalledTimes(1);
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+      // Placements are stored with cache version 2 × version, leaving odd versions for tombstones.
       expect(sharedSet).toHaveBeenCalledWith(
         PLACEMENT_KEY,
         expect.any(String),
-        1,
+        2,
         SHARED_TTL,
       );
 
@@ -622,7 +628,7 @@ describe('ShardRouter', () => {
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
       await expect(router.invalidate('t1')).resolves.toBeUndefined();
-      expect(onCacheError).toHaveBeenCalledTimes(3); // delete
+      expect(onCacheError).toHaveBeenCalledTimes(4); // get and the tombstone setIfNewer
     });
 
     it('works without an error handler', async () => {
@@ -671,15 +677,18 @@ describe('ShardRouter', () => {
       await flush();
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
 
+      const placementWrites = () =>
+        setSpy.mock.calls.filter(([, value]) => value.includes('"placement"'));
+
       // The read started before the invalidation returns its answer but writes nothing.
       stale.resolve(placement({ shardGroup: ['shard-1'], version: 1 }));
       await expect(old).resolves.toMatchObject({ logicalShard: 'shard-1' });
-      expect(setSpy).not.toHaveBeenCalled();
+      expect(placementWrites()).toHaveLength(0);
 
       fresh.resolve(placement({ shardGroup: ['shard-2'], version: 2 }));
       await expect(next).resolves.toMatchObject({ logicalShard: 'shard-2' });
-      expect(setSpy).toHaveBeenCalledTimes(1);
-      expect(setSpy.mock.calls[0]?.[1]).toContain('"shard-2"');
+      expect(placementWrites()).toHaveLength(1);
+      expect(placementWrites()[0]?.[1]).toContain('"shard-2"');
 
       await expect(
         router.resolve({ tenantId: 't1', ...READ }),
@@ -687,44 +696,41 @@ describe('ShardRouter', () => {
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
 
-    // Reproduces audit finding P1.7. Fixed by the versioned tombstone in the next commit.
-    it.failing(
-      'does not let a read in flight in another process resurrect an invalidated placement',
-      async () => {
-        const env = setup();
-        env.store.setPlacement(
-          placement({ shardGroup: ['shard-1'], version: 1 }),
-        );
-        const stale = deferred<TenantPlacement | undefined>();
-        env.directory.getPlacement.mockImplementationOnce(() => stale.promise);
-        const reader = env.build({ sharedCache: env.shared });
-        const mover = env.build({ sharedCache: env.shared });
+    // Reproduces audit finding P1.7: invalidate used to delete the key and the read wrote it back.
+    it('does not let a read in flight in another process resurrect an invalidated placement', async () => {
+      const env = setup();
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-1'], version: 1 }),
+      );
+      const stale = deferred<TenantPlacement | undefined>();
+      env.directory.getPlacement.mockImplementationOnce(() => stale.promise);
+      const reader = env.build({ sharedCache: env.shared });
+      const mover = env.build({ sharedCache: env.shared });
 
-        // 1. Process A starts a read and reaches the directory (version 1).
-        const inFlight = reader.resolve({ tenantId: 't1', ...READ });
-        await flush();
-        expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+      // 1. Process A starts a read and reaches the directory (version 1).
+      const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+      await flush();
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
-        // 2. The move commits version 2 and process B invalidates.
-        env.store.setPlacement(
-          placement({ shardGroup: ['shard-2'], version: 2 }),
-        );
-        await mover.invalidate('t1');
+      // 2. The move commits version 2 and process B invalidates.
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-2'], version: 2 }),
+      );
+      await mover.invalidate('t1');
 
-        // 3. Process A's read answers with version 1 and tries to write it back.
-        stale.resolve(placement({ shardGroup: ['shard-1'], version: 1 }));
-        await expect(inFlight).resolves.toMatchObject({
-          logicalShard: 'shard-1',
-        });
+      // 3. Process A's read answers with version 1 and tries to write it back.
+      stale.resolve(placement({ shardGroup: ['shard-1'], version: 1 }));
+      await expect(inFlight).resolves.toMatchObject({
+        logicalShard: 'shard-1',
+      });
 
-        // A fresh process must not see the old placement in the shared cache.
-        await expect(
-          env
-            .build({ sharedCache: env.shared })
-            .resolve({ tenantId: 't1', ...READ }),
-        ).resolves.toMatchObject({ logicalShard: 'shard-2' });
-      },
-    );
+      // A fresh process must not see the old placement in the shared cache.
+      await expect(
+        env
+          .build({ sharedCache: env.shared })
+          .resolve({ tenantId: 't1', ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-2' });
+    });
 
     it('does not cache an instance that was overtaken by invalidateShard', async () => {
       const env = setup();
@@ -747,7 +753,7 @@ describe('ShardRouter', () => {
   });
 
   describe('invalidation', () => {
-    it('clears the in-process and shared caches so the next resolve reads the directory', async () => {
+    it('clears the in-process cache and tombstones the shared entry so the next resolve reads the directory', async () => {
       const env = setup();
       env.store.setPlacement(placement());
       const sharedDelete = jest.spyOn(env.shared, 'delete');
@@ -759,7 +765,11 @@ describe('ShardRouter', () => {
       );
       await router.invalidate('t1');
 
-      expect(sharedDelete).toHaveBeenCalledWith(PLACEMENT_KEY);
+      expect(sharedDelete).not.toHaveBeenCalled();
+      expect(decodeSharedRecord(await env.shared.get(PLACEMENT_KEY))).toEqual({
+        kind: 'tombstone',
+        tombstone: { cacheVersion: 3, expiresAt: TOMBSTONE_TTL },
+      });
       await expect(
         router.resolve({ tenantId: 't1', ...READ }),
       ).resolves.toMatchObject({
@@ -818,6 +828,124 @@ describe('ShardRouter', () => {
       ).resolves.toMatchObject({ instance: 'pg-new' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('versioned tombstones', () => {
+    const tombstoneOf = async (cache: RoutingCache) => {
+      const record = decodeSharedRecord(await cache.get(PLACEMENT_KEY));
+      return record?.kind === 'tombstone' ? record.tombstone : undefined;
+    };
+
+    it('lets the committed version be cached right away when the caller passes it', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ version: 1 }));
+      const router = env.build({ sharedCache: env.shared });
+      await router.resolve({ tenantId: 't1', ...READ });
+
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-2'], version: 4 }),
+      );
+      await router.invalidate('t1', { version: 4 });
+      expect((await tombstoneOf(env.shared))?.cacheVersion).toBe(7);
+
+      await router.resolve({ tenantId: 't1', ...READ });
+      const fresh = env.build({ sharedCache: env.shared });
+      await expect(
+        fresh.resolve({ tenantId: 't1', ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-2' });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
+    });
+
+    it('refuses the stale version even when the caller passes the committed version', async () => {
+      const env = setup();
+      const stale = deferred<TenantPlacement | undefined>();
+      env.directory.getPlacement.mockImplementationOnce(() => stale.promise);
+      const reader = env.build({ sharedCache: env.shared });
+      const mover = env.build({ sharedCache: env.shared });
+
+      const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+      await flush();
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-2'], version: 2 }),
+      );
+      await mover.invalidate('t1', { version: 2 });
+      stale.resolve(placement({ version: 1 }));
+      await inFlight;
+
+      expect(await tombstoneOf(env.shared)).toEqual({
+        cacheVersion: 3,
+        expiresAt: TOMBSTONE_TTL,
+      });
+    });
+
+    it('blocks every write until it expires when no version is known', async () => {
+      const env = setup();
+      const router = env.build({ sharedCache: env.shared });
+      await router.invalidate('t1');
+      expect((await tombstoneOf(env.shared))?.cacheVersion).toBe(
+        UNVERSIONED_TOMBSTONE_VERSION,
+      );
+
+      env.store.setPlacement(placement({ version: 9 }));
+      await router.resolve({ tenantId: 't1', ...READ });
+      expect(await tombstoneOf(env.shared)).toBeDefined();
+
+      env.advance(TOMBSTONE_TTL);
+      await env
+        .build({ sharedCache: env.shared })
+        .resolve({ tenantId: 't1', ...READ });
+      expect(await tombstoneOf(env.shared)).toBeUndefined();
+      expect(
+        decodeSharedRecord(await env.shared.get(PLACEMENT_KEY)),
+      ).toMatchObject({ kind: 'placement' });
+    });
+
+    it('outranks an earlier tombstone so a second invalidation refreshes it', async () => {
+      const env = setup();
+      const router = env.build({
+        sharedCache: env.shared,
+        tombstoneTtlMs: 1_000,
+      });
+      await router.invalidate('t1');
+      env.advance(600);
+      await router.invalidate('t1');
+      expect(await tombstoneOf(env.shared)).toEqual({
+        cacheVersion: UNVERSIONED_TOMBSTONE_VERSION + 1,
+        expiresAt: 1_600,
+      });
+    });
+
+    it('treats a tombstone as a miss and reads the directory', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      await env.build({ sharedCache: env.shared }).invalidate('t1');
+      await expect(
+        env
+          .build({ sharedCache: env.shared })
+          .resolve({ tenantId: 't1', ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-1' });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not write a load that outlived the tombstone TTL', async () => {
+      const env = setup();
+      const slow = deferred<TenantPlacement | undefined>();
+      env.directory.getPlacement.mockImplementationOnce(() => slow.promise);
+      const setSpy = jest.spyOn(env.shared, 'setIfNewer');
+      const reader = env.build({
+        sharedCache: env.shared,
+        tombstoneTtlMs: 1_000,
+      });
+
+      const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+      await flush();
+      env.advance(1_000);
+      slow.resolve(placement());
+      await expect(inFlight).resolves.toMatchObject({
+        logicalShard: 'shard-1',
+      });
+      expect(setSpy).not.toHaveBeenCalled();
     });
   });
 });
