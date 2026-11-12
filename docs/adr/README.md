@@ -33,3 +33,4 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0012   | [Front en Flutter con shells y microfrontends](0012-front-flutter-shells-microfrontends.md)                       | Aceptada |
 | 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                 | Aceptada |
 | 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                            | Aceptada |
+| 0016   | [Salida a Internet con NAT solo para las subredes de aplicación](0016-egress-de-red.md)                           | Aceptada |
