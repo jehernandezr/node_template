@@ -1,3 +1,13 @@
+import { SystemClock } from '@platform/kernel';
+import { FixedClock } from '@platform/kernel/testing';
+import { Deadline, DeadlineExceededError } from '@platform/primitives';
+import {
+  CacheCorruptEntryError,
+  CacheInvalidArgumentError,
+  CacheKeyTooLongError,
+  CacheTimeoutError,
+  CacheValueTooLargeError,
+} from './errors.js';
 import type { CachePort } from './cache-port.js';
 import { CacheAside } from './cache-aside.js';
 import { InMemoryCache } from './in-memory-cache.js';
@@ -393,9 +403,7 @@ describe('CacheAside', () => {
     });
 
     expect(value).toBe('db');
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'cache operation exceeded 10 ms' }),
-    );
+    expect(onError).toHaveBeenCalledWith(expect.any(CacheTimeoutError));
   });
 
   it('returns without waiting for a slow write and reports its timeout later', async () => {
@@ -415,9 +423,7 @@ describe('CacheAside', () => {
       }),
     ).toBe('db');
     await sleep(30);
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'cache operation exceeded 10 ms' }),
-    );
+    expect(onError).toHaveBeenCalledWith(expect.any(CacheTimeoutError));
   });
 
   it('shares a SingleFlight instance when one is provided', async () => {
@@ -436,5 +442,213 @@ describe('CacheAside', () => {
     });
 
     expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  describe('caller deadline and abort', () => {
+    it('lets one caller abort while the shared load serves the others', async () => {
+      const { aside } = setup();
+      let finish: (value: string) => void = () => undefined;
+      const load = jest.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const controller = new AbortController();
+      const reason = new Error('client left');
+      const base = { namespace, params: { id: 1 }, ttlMs: 1000, load };
+
+      const leaver = aside.getOrLoad({ ...base, signal: controller.signal });
+      const stayer = aside.getOrLoad(base);
+      await sleep(5);
+      controller.abort(reason);
+
+      await expect(leaver).rejects.toBe(reason);
+      finish('db');
+      await expect(stayer).resolves.toBe('db');
+      expect(load).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a caller whose deadline expires without failing the others', async () => {
+      const { aside } = setup();
+      const load = jest.fn(async () => {
+        await sleep(40);
+        return 'db';
+      });
+      const base = { namespace, params: { id: 2 }, ttlMs: 1000, load };
+
+      const hurried = aside.getOrLoad({
+        ...base,
+        deadline: Deadline.after(10, new SystemClock()),
+      });
+      const patient = aside.getOrLoad(base);
+
+      await expect(hurried).rejects.toBeInstanceOf(DeadlineExceededError);
+      await expect(patient).resolves.toBe('db');
+      expect(load).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not load for a caller that already gave up', async () => {
+      const { aside } = setup();
+      const load = jest.fn(async () => 'db');
+
+      await expect(
+        aside.getOrLoad({
+          namespace,
+          params: {},
+          ttlMs: 1000,
+          load,
+          deadline: Deadline.after(0, new FixedClock()),
+        }),
+      ).rejects.toBeInstanceOf(DeadlineExceededError);
+      await expect(
+        aside.getOrLoad({
+          namespace,
+          params: {},
+          ttlMs: 1000,
+          load,
+          inTransaction: true,
+          signal: AbortSignal.abort(new Error('gone')),
+        }),
+      ).rejects.toThrow('gone');
+      expect(load).not.toHaveBeenCalled();
+    });
+
+    it('does not fall back to the loader after the caller aborted during a slow cache call', async () => {
+      const cache = new InMemoryCache();
+      jest
+        .spyOn(cache, 'get')
+        .mockImplementation(
+          () => new Promise<string | undefined>(() => undefined),
+        );
+      const onError = jest.fn();
+      const { aside } = setup(cache, { onError, timeoutMs: 1_000 });
+      const load = jest.fn(async () => 'db');
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(new Error('stop')), 10);
+
+      await expect(
+        aside.getOrLoad({
+          namespace,
+          params: {},
+          ttlMs: 1000,
+          load,
+          signal: controller.signal,
+        }),
+      ).rejects.toThrow('stop');
+      expect(load).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('bounds', () => {
+    it('serves but never stores a value above maxValueBytes', async () => {
+      const cache = new InMemoryCache();
+      const set = jest.spyOn(cache, 'set');
+      const onError = jest.fn();
+      const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        onError,
+        maxValueBytes: 64,
+      });
+      const load = jest.fn(async () => 'x'.repeat(100));
+      const options = { namespace, params: {}, ttlMs: 1000, load };
+
+      expect(await aside.getOrLoad(options)).toBe('x'.repeat(100));
+      await sleep(5);
+      expect(await aside.getOrLoad(options)).toBe('x'.repeat(100));
+
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(set).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(CacheValueTooLargeError));
+    });
+
+    it('counts UTF-8 bytes, not characters, against maxValueBytes', async () => {
+      const cache = new InMemoryCache();
+      const onError = jest.fn();
+      const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        onError,
+        maxValueBytes: 40,
+      });
+
+      // 15 characters, 45 bytes once encoded.
+      await aside.getOrLoad({
+        namespace,
+        params: {},
+        ttlMs: 1000,
+        load: async () => '€'.repeat(15),
+      });
+
+      expect(onError).toHaveBeenCalledWith(expect.any(CacheValueTooLargeError));
+    });
+
+    it('falls back to the loader and reports a namespace that makes the key too long', async () => {
+      const onError = jest.fn();
+      const { aside } = setup(new InMemoryCache(), { onError });
+
+      const value = await aside.getOrLoad({
+        namespace: ['x'.repeat(2_000)],
+        params: {},
+        ttlMs: 1000,
+        load: async () => 'db',
+      });
+
+      expect(value).toBe('db');
+      expect(onError).toHaveBeenCalledWith(expect.any(CacheKeyTooLongError));
+    });
+
+    it('reports a corrupt envelope with CacheCorruptEntryError', async () => {
+      const cache = new InMemoryCache();
+      const onError = jest.fn();
+      const { aside, keyspace } = setup(cache, { onError });
+      await cache.set(await keyspace.key(namespace, {}), 'null', 1000);
+
+      expect(
+        await aside.getOrLoad({
+          namespace,
+          params: {},
+          ttlMs: 1000,
+          load: async () => 'db',
+        }),
+      ).toBe('db');
+      expect(onError).toHaveBeenCalledWith(expect.any(CacheCorruptEntryError));
+    });
+
+    it('rejects invalid options', () => {
+      const cache = new InMemoryCache();
+      const keyspace = new VersionedKeyspace(cache);
+      expect(
+        () => new CacheAside(cache, keyspace, { maxValueBytes: 0 }),
+      ).toThrow(CacheInvalidArgumentError);
+      expect(() => new CacheAside(cache, keyspace, { timeoutMs: -1 })).toThrow(
+        CacheInvalidArgumentError,
+      );
+    });
+  });
+
+  it('serves the committed value once invalidate resolves, under concurrent reads', async () => {
+    for (let round = 0; round < 10; round += 1) {
+      const { aside } = setup();
+      let db = 1;
+      const load = async (): Promise<number> => {
+        const snapshot = db;
+        await sleep(Math.floor(Math.random() * 5));
+        return snapshot;
+      };
+      const read = (): Promise<number> =>
+        aside.getOrLoad({ namespace, params: { q: 1 }, ttlMs: 10_000, load });
+
+      const before = Array.from({ length: 10 }, () => read());
+      await sleep(Math.floor(Math.random() * 3));
+      db = 2;
+      await aside.invalidate(namespace);
+      const during = Array.from({ length: 10 }, () => read());
+      await Promise.all([...before, ...during]);
+      await sleep(5);
+
+      // Readers that took the old token may have cached 1 under it; nobody
+      // reading after the invalidation can reach that entry.
+      expect(await Promise.all(during)).toEqual(Array(10).fill(2));
+      expect(await read()).toBe(2);
+    }
   });
 });

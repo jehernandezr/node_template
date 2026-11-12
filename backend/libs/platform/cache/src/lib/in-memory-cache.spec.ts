@@ -1,3 +1,5 @@
+import { FixedClock } from '@platform/kernel/testing';
+import { CacheNotACounterError } from './errors.js';
 import { InMemoryCache } from './in-memory-cache.js';
 
 describe('InMemoryCache', () => {
@@ -66,6 +68,18 @@ describe('InMemoryCache', () => {
   it('rejects incrementing a non-integer value', async () => {
     const cache = new InMemoryCache();
     await cache.set('s', 'text', 1000);
-    await expect(cache.incr('s')).rejects.toThrow(TypeError);
+    await expect(cache.incr('s')).rejects.toThrow(CacheNotACounterError);
+  });
+
+  it('reads time from a kernel Clock', async () => {
+    const clock = new FixedClock();
+    const cache = new InMemoryCache({ clock });
+    await cache.set('a', 'v', 1000);
+
+    clock.advance(999);
+    expect(await cache.get('a')).toBe('v');
+
+    clock.advance(1);
+    expect(await cache.get('a')).toBeUndefined();
   });
 });

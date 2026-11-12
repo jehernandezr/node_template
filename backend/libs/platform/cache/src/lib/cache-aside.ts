@@ -1,9 +1,20 @@
+import type { Deadline } from '@platform/primitives';
 import type { CachePort } from './cache-port.js';
+import {
+  CacheCorruptEntryError,
+  CacheInvalidArgumentError,
+  CacheTimeoutError,
+  CacheValueTooLargeError,
+} from './errors.js';
 import { jitteredTtl } from './jittered-ttl.js';
 import { SingleFlight } from './single-flight.js';
 import type { VersionedKeyspace } from './versioned-keyspace.js';
+import { cancellation, waitFor, type WaitOptions } from './wait.js';
 
 const DEFAULT_TIMEOUT_MS = 50;
+
+/** Default bound for a serialized entry, in UTF-8 bytes (512 KiB). */
+export const DEFAULT_MAX_CACHE_VALUE_BYTES = 512 * 1024;
 
 /** Options for {@link CacheAside}. */
 export interface CacheAsideOptions {
@@ -15,6 +26,12 @@ export interface CacheAsideOptions {
   onError?: (error: unknown) => void;
   /** Maximum wait for each cache call before it counts as a failure. Defaults to 50 ms. */
   timeoutMs?: number;
+  /**
+   * Largest serialized entry that is stored, in UTF-8 bytes. Larger values are
+   * returned but not cached, and reported as `CacheValueTooLargeError`.
+   * Defaults to {@link DEFAULT_MAX_CACHE_VALUE_BYTES}.
+   */
+  maxValueBytes?: number;
 }
 
 /**
@@ -53,6 +70,16 @@ export interface GetOrLoadOptions<T> {
   serialize?: (envelope: CacheEnvelope<T>) => string;
   /** Converts a stored string back to the `{ v }` envelope. Defaults to `JSON.parse`. */
   deserialize?: (raw: string) => CacheEnvelope<T>;
+  /**
+   * This caller stops waiting and rejects with the signal's reason when it
+   * aborts. A shared load keeps running for the other callers of the same key.
+   */
+  signal?: AbortSignal;
+  /**
+   * This caller stops waiting and rejects with `DeadlineExceededError` when it
+   * expires. A shared load keeps running for the other callers of the same key.
+   */
+  deadline?: Deadline;
 }
 
 /** What the single-flight leader produces. Waiters decode `raw` themselves so each gets its own copy. */
@@ -65,6 +92,7 @@ export class CacheAside {
   private readonly random: () => number;
   private readonly onError: (error: unknown) => void;
   private readonly timeoutMs: number;
+  private readonly maxValueBytes: number;
 
   constructor(
     private readonly cache: CachePort,
@@ -75,17 +103,33 @@ export class CacheAside {
     this.random = options.random ?? Math.random;
     this.onError = options.onError ?? ((): void => undefined);
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.maxValueBytes = options.maxValueBytes ?? DEFAULT_MAX_CACHE_VALUE_BYTES;
+    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs < 0) {
+      throw new CacheInvalidArgumentError('timeoutMs', 'a finite number >= 0');
+    }
+    if (!Number.isInteger(this.maxValueBytes) || this.maxValueBytes < 1) {
+      throw new CacheInvalidArgumentError('maxValueBytes', 'an integer >= 1');
+    }
   }
 
   /**
    * Returns the cached value for the query, or loads it and stores it in the background.
    * Cache failures and timeouts fall back to `load` and are reported through `onError`.
    * Errors thrown by `load` propagate to every concurrent caller of the same key.
+   * The caller's `signal` and `deadline` only bound its own wait.
    */
   async getOrLoad<T>(options: GetOrLoadOptions<T>): Promise<T> {
     const { namespace, params, ttlMs, load, inTransaction = false } = options;
+    const wait: WaitOptions = {
+      signal: options.signal,
+      deadline: options.deadline,
+    };
+    const cancelled = cancellation(wait);
+    if (cancelled !== undefined) {
+      throw cancelled;
+    }
     if (inTransaction) {
-      return load();
+      return waitFor(load(), wait);
     }
     const serialize =
       options.serialize ??
@@ -96,14 +140,18 @@ export class CacheAside {
 
     let key: string;
     try {
-      key = await this.timed(this.keyspace.key(namespace, params));
+      key = await waitFor(
+        this.timed(this.keyspace.key(namespace, params)),
+        wait,
+      );
     } catch (error) {
-      this.report(error);
-      return load();
+      return this.fallback(error, load, wait);
     }
 
-    const outcome = await this.singleFlight.run(key, () =>
-      this.fetchOrLoad(key, ttlMs, load, serialize),
+    const outcome = await this.singleFlight.run(
+      key,
+      () => this.fetchOrLoad(key, ttlMs, load, serialize),
+      wait,
     );
     if (outcome.kind === 'value') {
       return outcome.value;
@@ -111,13 +159,29 @@ export class CacheAside {
     try {
       const envelope = deserialize(outcome.raw);
       if (typeof envelope !== 'object' || envelope === null) {
-        throw new TypeError('cached entry is not an envelope');
+        throw new CacheCorruptEntryError('not an envelope');
       }
       return envelope.v;
     } catch (error) {
-      this.report(error);
-      return load();
+      return this.fallback(error, load, wait);
     }
+  }
+
+  /**
+   * Absorbs a cache failure by loading directly, unless the caller already gave
+   * up: then it rejects with the cancellation instead of starting a load.
+   */
+  private fallback<T>(
+    error: unknown,
+    load: () => Promise<T>,
+    wait: WaitOptions,
+  ): Promise<T> {
+    const cancelled = cancellation(wait);
+    if (cancelled !== undefined) {
+      return Promise.reject(cancelled);
+    }
+    this.report(error);
+    return waitFor(load(), wait);
   }
 
   /**
@@ -156,6 +220,12 @@ export class CacheAside {
       this.report(error);
       return { kind: 'value', value };
     }
+    const bytes = Buffer.byteLength(raw, 'utf8');
+    if (bytes > this.maxValueBytes) {
+      // Serve it, but never write an oversized entry to the shared cache.
+      this.report(new CacheValueTooLargeError(bytes, this.maxValueBytes));
+      return { kind: 'raw', raw };
+    }
     // Fire-and-forget: the caller does not wait for the write. store() never rejects.
     void this.store(key, raw, ttlMs);
     return { kind: 'raw', raw };
@@ -192,7 +262,7 @@ export class CacheAside {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => {
-        reject(new Error(`cache operation exceeded ${this.timeoutMs} ms`));
+        reject(new CacheTimeoutError(this.timeoutMs));
       }, this.timeoutMs);
     });
     return Promise.race([operation, timeout]).finally(() =>

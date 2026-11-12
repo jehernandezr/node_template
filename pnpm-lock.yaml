@@ -129,6 +129,12 @@ importers:
 
   backend/libs/platform/cache:
     dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@platform/primitives':
+        specifier: workspace:*
+        version: link:../primitives
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
@@ -207,6 +213,12 @@ importers:
 
   backend/libs/platform/resilience:
     dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@platform/primitives':
+        specifier: workspace:*
+        version: link:../primitives
       cockatiel:
         specifier: ^4.0.0
         version: 4.0.0

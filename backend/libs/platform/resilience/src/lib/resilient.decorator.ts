@@ -1,3 +1,4 @@
+import { ResilienceNotConfiguredError } from './errors.js';
 import type { ResiliencePolicyName } from './policy-name.js';
 import { ResilienceRegistry } from './registry.js';
 
@@ -13,7 +14,7 @@ export interface ResilientOptions {
  * Legacy method decorator: runs an async method through the default registry's
  * policy `name`. The method receives the per-attempt `AbortSignal` as an extra
  * last argument, so adapters can cancel work; callers do not pass it.
- * Rejects with a clear error when no default registry is set.
+ * Rejects with `ResilienceNotConfiguredError` when no default registry is set.
  * @param name Policy to apply to the method.
  * @param options Retry and dependency options.
  */
@@ -29,7 +30,10 @@ export function Resilient(
     const original = descriptor.value as
       ((this: unknown, ...args: unknown[]) => Promise<R>) | undefined;
     if (!original) {
-      throw new Error(`@Resilient(${name}) can only decorate methods`);
+      throw new ResilienceNotConfiguredError(
+        `@Resilient(${name}) can only decorate methods`,
+        name,
+      );
     }
     descriptor.value = function (
       this: unknown,
@@ -38,8 +42,9 @@ export function Resilient(
       const registry = ResilienceRegistry.getDefault();
       if (!registry) {
         return Promise.reject(
-          new Error(
+          new ResilienceNotConfiguredError(
             `@Resilient(${name}): no default ResilienceRegistry set; call ResilienceRegistry.setDefault first`,
+            name,
           ),
         );
       }

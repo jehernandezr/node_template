@@ -1,43 +1,54 @@
+import { SystemClock, type Clock } from '@platform/kernel';
+import {
+  backoffDelay,
+  BackoffStrategy,
+  Deadline,
+  DEFAULT_RETRY_AFTER_MAX_MS,
+  isTransientError,
+} from '@platform/primitives';
 import {
   ConsecutiveBreaker,
-  DelegateBackoff,
-  TimeoutStrategy as CockatielTimeoutStrategy,
   bulkhead as createBulkhead,
   circuitBreaker as createCircuitBreaker,
   handleWhen,
   isBrokenCircuitError,
   isBulkheadRejectedError,
-  isTaskCancelledError,
-  retry as createRetry,
-  timeout as createTimeout,
-  wrap,
   type BulkheadPolicy,
   type CircuitBreakerPolicy,
-  type IDefaultPolicyContext,
-  type IDisposable,
-  type IPolicy,
-  type IRetryBackoffContext,
-  type TimeoutPolicy,
 } from 'cockatiel';
 import {
   defaultPolicies,
   TimeoutStrategy,
+  validatePolicyConfig,
   type ResiliencePolicyConfig,
   type ResilienceRetryConfig,
 } from './config.js';
-import { ResilienceError, ResilienceErrorCode } from './errors.js';
+import {
+  BulkheadFullError,
+  CircuitOpenError,
+  ResilienceTimeoutError,
+  TimeoutScope,
+  UnknownPolicyError,
+} from './errors.js';
 import type {
-  ResilienceEvent,
   ResilienceEventDetail,
   ResilienceEventListener,
 } from './events.js';
 import { ResilienceEventKind, ResiliencePolicyName } from './policy-name.js';
-import { isTransientError, retryAfterMs } from './transient.js';
+import { retryAfterHintMs } from './transient.js';
 
 /** Overrides applied on top of {@link defaultPolicies}, per policy name (shallow merge per policy). */
 export type ResilienceOverrides = Partial<
   Record<ResiliencePolicyName, Partial<ResiliencePolicyConfig>>
 >;
+
+/** Collaborators of {@link ResilienceRegistry}. All optional. */
+export interface ResilienceRegistryOptions {
+  /** Time source for deadlines, `Retry-After` dates and event timestamps. Default: `SystemClock`. */
+  readonly clock?: Clock;
+  /** Random source in `[0, 1)` for the backoff jitter. Default: `Math.random`. */
+  readonly random?: () => number;
+}
 
 /** Per-call options for {@link ResilienceRegistry.execute}. */
 export interface ResilienceCallOptions {
@@ -45,35 +56,52 @@ export interface ResilienceCallOptions {
   readonly idempotent?: boolean;
   /** Dependency whose breaker and bulkhead are used. Default: the policy name. */
   readonly dependencyKey?: string;
-  /** Caller cancellation: stops retries and rejects with the signal's reason. */
+  /** Caller cancellation: stops retries, cancels pending waits and rejects with the signal's reason. */
   readonly signal?: AbortSignal;
+  /**
+   * Caller deadline. The whole call, retries and waits included, never runs
+   * past it; when the policy also has a total budget, the nearest one wins.
+   */
+  readonly deadline?: Deadline;
   /** Budget for the whole call, retries included. Overrides the policy default. */
   readonly totalTimeoutMs?: number;
 }
 
-type Pipeline = IPolicy<IDefaultPolicyContext, never>;
-
-/** Breaker, bulkhead and timeout shared by all calls to one dependency. */
-interface DependencyEntry {
-  readonly config: ResiliencePolicyConfig;
-  readonly bulkhead?: BulkheadPolicy;
-  readonly breaker?: CircuitBreakerPolicy;
-  readonly timeout: TimeoutPolicy;
+/** What the operation learns about the attempt it is running. */
+export interface ResilienceAttempt {
+  /** Attempt number, starting at 1. */
+  readonly number: number;
+  /**
+   * Limit of this attempt: `deadline.child(timeoutMs)` of the call deadline,
+   * or `timeoutMs` from now when the call has no deadline. Pass it downstream.
+   */
+  readonly deadline: Deadline;
 }
 
-/**
- * Exponential backoff with equal jitter: the delay lies between half and the
- * full capped exponential value, and never exceeds `maxDelayMs`.
- * @param retry Retry settings. @param retryNumber 1 for the first retry.
- */
-function backoffDelayMs(
-  retry: ResilienceRetryConfig,
-  retryNumber: number,
-): number {
-  const exponential = retry.initialDelayMs * 2 ** (retryNumber - 1);
-  const capped = Math.min(retry.maxDelayMs, exponential);
-  const jittered = capped / 2 + Math.random() * (capped / 2);
-  return Math.min(retry.maxDelayMs, Math.round(jittered));
+/** Operation run by {@link ResilienceRegistry.execute}. */
+export type ResilientOperation<T> = (
+  signal: AbortSignal,
+  attempt: ResilienceAttempt,
+) => Promise<T>;
+
+/** Breaker and bulkhead shared by all calls to one dependency. */
+interface DependencyEntry {
+  readonly bulkhead?: BulkheadPolicy;
+  readonly breaker?: CircuitBreakerPolicy;
+}
+
+/** State of one `execute` call. */
+interface CallContext<T> {
+  readonly name: ResiliencePolicyName;
+  readonly dependencyKey: string;
+  readonly config: ResiliencePolicyConfig;
+  readonly entry: DependencyEntry;
+  readonly fn: ResilientOperation<T>;
+  readonly idempotent: boolean;
+  readonly isTransient: (error: unknown) => boolean;
+  /** Aborted by the caller's signal or when the call deadline expires. */
+  readonly signal: AbortSignal;
+  readonly deadline?: Deadline;
 }
 
 /** Extracts only primitive, non-sensitive fields from an error. */
@@ -99,13 +127,12 @@ function abortReason(signal: AbortSignal): Error {
     : new Error('Resilience call aborted', { cause: signal.reason });
 }
 
-/** Rejects as soon as the caller's signal aborts, even if the work is still running. */
-function raceWithSignal<T>(
-  work: Promise<T>,
-  signal: AbortSignal | undefined,
-): Promise<T> {
-  if (!signal) {
-    return work;
+/** Rejects as soon as `signal` aborts, even if the work is still running. */
+function raceWithSignal<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) {
+    // The work may still settle; keep its rejection handled.
+    work.catch(() => undefined);
+    return Promise.reject(abortReason(signal));
   }
   return new Promise<T>((resolve, reject) => {
     const onAbort = (): void => reject(abortReason(signal));
@@ -116,47 +143,38 @@ function raceWithSignal<T>(
   });
 }
 
-/** Maps cockatiel errors to {@link ResilienceError}; other errors pass through unchanged. */
-function toResilienceError(
-  name: ResiliencePolicyName,
-  config: ResiliencePolicyConfig,
-  error: unknown,
-): unknown {
-  if (isBrokenCircuitError(error)) {
-    return new ResilienceError(
-      ResilienceErrorCode.CircuitOpen,
-      `Circuit open for policy "${name}"`,
-      {
-        cause: error,
-        retryAfterMs: config.circuitBreaker?.halfOpenAfterMs,
-      },
-    );
+/** Waits `ms`, or rejects with the abort reason as soon as `signal` aborts. */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) {
+    return Promise.reject(abortReason(signal));
   }
-  if (isTaskCancelledError(error)) {
-    return new ResilienceError(
-      ResilienceErrorCode.Timeout,
-      `Call to policy "${name}" timed out`,
-      { cause: error },
-    );
-  }
-  if (isBulkheadRejectedError(error)) {
-    return new ResilienceError(
-      ResilienceErrorCode.BulkheadFull,
-      `Bulkhead full for policy "${name}"`,
-      {
-        cause: error,
-      },
-    );
-  }
-  return error;
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      reject(abortReason(signal));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 /**
  * Runs outbound calls through the resilience policy declared for each adapter,
  * and reports what the policies do as events.
  *
- * Composition per call: total budget → bulkhead → retry (idempotent calls only)
- * → circuit breaker → timeout. Breakers and bulkheads are per (policy, dependencyKey).
+ * Composition per call: deadline (caller deadline and/or total budget) →
+ * bulkhead → retry (idempotent calls only) → circuit breaker → attempt timeout.
+ * Breakers and bulkheads are per (policy, dependencyKey).
+ *
+ * Retry rule (the only one): an idempotent call is repeated when the failure is
+ * transient for `config.isTransient` (default `isTransientError` from
+ * `@platform/primitives`) or when its own attempt timed out. The wait is the
+ * primitives backoff, at least the server's `Retry-After` (bounded by
+ * `maxRetryAfterMs`), and it is never started if it would not fit before the
+ * deadline; in that case the last error is rethrown.
  */
 export class ResilienceRegistry {
   private static defaultRegistry: ResilienceRegistry | undefined;
@@ -170,11 +188,24 @@ export class ResilienceRegistry {
     Map<string, DependencyEntry>
   >();
   private readonly listeners = new Set<ResilienceEventListener>();
+  private readonly clock: Clock;
+  private readonly random: () => number;
 
-  /** @param overrides Per-policy settings merged over {@link defaultPolicies}. */
-  constructor(overrides: ResilienceOverrides = {}) {
+  /**
+   * @param overrides Per-policy settings merged over {@link defaultPolicies}.
+   * @param options Clock and random source.
+   * @throws InvalidArgumentError when a merged policy is invalid.
+   */
+  constructor(
+    overrides: ResilienceOverrides = {},
+    options: ResilienceRegistryOptions = {},
+  ) {
+    this.clock = options.clock ?? new SystemClock();
+    this.random = options.random ?? Math.random;
     for (const name of Object.values(ResiliencePolicyName)) {
-      this.configs.set(name, { ...defaultPolicies[name], ...overrides[name] });
+      const config = { ...defaultPolicies[name], ...overrides[name] };
+      validatePolicyConfig(config);
+      this.configs.set(name, config);
     }
   }
 
@@ -191,103 +222,69 @@ export class ResilienceRegistry {
   /**
    * Runs `fn` under the policy `name`.
    * @param name Policy to apply.
-   * @param fn Operation; receives the per-attempt abort signal, which is aborted on timeout or caller abort.
-   * @param options Retry, dependency, cancellation and budget options.
-   * @throws ResilienceError with code CircuitOpen (with `retryAfterMs`), Timeout or BulkheadFull.
-   * Caller aborts reject with the signal's reason; other errors are rethrown as-is.
+   * @param fn Operation; receives the per-attempt abort signal (aborted on
+   *   timeout, deadline or caller abort) and the attempt with its child deadline.
+   * @param options Retry, dependency, cancellation, deadline and budget options.
+   * @throws CircuitOpenError (with `retryAfterMs`), ResilienceTimeoutError or
+   *   BulkheadFullError, all `ResilienceError`. Caller aborts reject with the
+   *   signal's reason; other errors are rethrown as-is.
    */
   async execute<T>(
     name: ResiliencePolicyName,
-    fn: (signal: AbortSignal) => Promise<T>,
+    fn: ResilientOperation<T>,
     options: ResilienceCallOptions = {},
   ): Promise<T> {
     const config = this.configs.get(name);
     if (!config) {
-      throw new Error(`Unknown resilience policy "${name}"`);
+      throw new UnknownPolicyError(name);
+    }
+    const callerSignal = options.signal;
+    if (callerSignal?.aborted) {
+      throw abortReason(callerSignal);
     }
     const dependencyKey = options.dependencyKey ?? name;
-    const signal = options.signal;
-    if (signal?.aborted) {
-      throw abortReason(signal);
-    }
-
-    const entry = this.entryFor(name, dependencyKey, config);
-    const isTransient = config.isTransient ?? isTransientError;
-    const abortOnReturn = config.abortOnReturn ?? true;
-    const totalTimeoutMs = options.totalTimeoutMs ?? config.totalTimeoutMs;
-    const subscriptions: IDisposable[] = [];
-    const layers: Pipeline[] = [];
-
-    if (totalTimeoutMs !== undefined) {
-      const total = createTimeout(totalTimeoutMs, {
-        strategy: CockatielTimeoutStrategy.Aggressive,
-        abortOnReturn,
+    const deadline = this.callDeadline(config, options);
+    const budgetMs = deadline?.remaining();
+    if (budgetMs === 0) {
+      this.emit(name, dependencyKey, ResilienceEventKind.Timeout, {
+        timeoutMs: 0,
       });
-      subscriptions.push(
-        total.onTimeout(() =>
-          this.emit(name, dependencyKey, ResilienceEventKind.Timeout, {
-            timeoutMs: totalTimeoutMs,
-          }),
-        ),
-      );
-      layers.push(total);
+      throw new ResilienceTimeoutError(name, TimeoutScope.Total, 0);
     }
-    if (entry.bulkhead) {
-      layers.push(entry.bulkhead);
-    }
-    if (options.idempotent === true && config.retry) {
-      const retryConfig = config.retry;
-      const retries = createRetry(handleWhen(isTransient), {
-        // cockatiel counts retries, not calls: maxAttempts includes the first call.
-        maxAttempts: Math.max(0, retryConfig.maxAttempts - 1),
-        backoff: new DelegateBackoff<IRetryBackoffContext<unknown>>(
-          (context) => {
-            // A Retry-After hint is a minimum delay for this attempt.
-            const hint =
-              'error' in context.result
-                ? retryAfterMs(context.result.error)
-                : undefined;
-            return Math.max(
-              backoffDelayMs(retryConfig, context.attempt),
-              hint ?? 0,
-            );
-          },
-        ),
-      });
-      subscriptions.push(
-        retries.onRetry((event) =>
-          this.emit(name, dependencyKey, ResilienceEventKind.Retry, {
-            attempt: event.attempt,
-            delayMs: event.delay,
-            ...('error' in event ? describeError(event.error) : {}),
-          }),
-        ),
-      );
-      layers.push(retries);
-    }
-    if (entry.breaker) {
-      layers.push(entry.breaker);
-    }
-    layers.push(entry.timeout);
 
+    const call = new AbortController();
+    const onCallerAbort = (): void => {
+      call.abort(abortReason(callerSignal as AbortSignal));
+    };
+    callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
+    let budgetTimer: ReturnType<typeof setTimeout> | undefined;
+    if (budgetMs !== undefined) {
+      budgetTimer = setTimeout(() => {
+        this.emit(name, dependencyKey, ResilienceEventKind.Timeout, {
+          timeoutMs: budgetMs,
+        });
+        call.abort(
+          new ResilienceTimeoutError(name, TimeoutScope.Total, budgetMs),
+        );
+      }, budgetMs);
+    }
+
+    const context: CallContext<T> = {
+      name,
+      dependencyKey,
+      config,
+      entry: this.entryFor(name, dependencyKey, config),
+      fn,
+      idempotent: options.idempotent === true,
+      isTransient: config.isTransient ?? isTransientError,
+      signal: call.signal,
+      deadline,
+    };
     try {
-      const pipeline = wrap(...layers);
-      return await raceWithSignal(
-        pipeline.execute<T>((context) => {
-          // Retry backoff is not abortable, so re-check the caller before every attempt.
-          if (signal?.aborted) {
-            throw abortReason(signal);
-          }
-          return fn(context.signal);
-        }, signal),
-        signal,
-      );
-    } catch (error) {
-      throw toResilienceError(name, config, error);
+      return await raceWithSignal(this.runBulkhead(context), call.signal);
     } finally {
-      for (const subscription of subscriptions) {
-        subscription.dispose();
-      }
+      clearTimeout(budgetTimer);
+      callerSignal?.removeEventListener('abort', onCallerAbort);
     }
   }
 
@@ -301,6 +298,204 @@ export class ResilienceRegistry {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  /** Nearest of the caller deadline and the total budget, if any. */
+  private callDeadline(
+    config: ResiliencePolicyConfig,
+    options: ResilienceCallOptions,
+  ): Deadline | undefined {
+    const totalMs = options.totalTimeoutMs ?? config.totalTimeoutMs;
+    const fromBudget =
+      totalMs === undefined ? undefined : Deadline.after(totalMs, this.clock);
+    if (options.deadline && fromBudget) {
+      return options.deadline.min(fromBudget);
+    }
+    return options.deadline ?? fromBudget;
+  }
+
+  private async runBulkhead<T>(context: CallContext<T>): Promise<T> {
+    const bulkhead = context.entry.bulkhead;
+    if (!bulkhead) {
+      return this.runAttempts(context);
+    }
+    try {
+      return await bulkhead.execute(() => {
+        // A queued call may get its slot after the caller gave up.
+        if (context.signal.aborted) {
+          throw abortReason(context.signal);
+        }
+        return this.runAttempts(context);
+      }, context.signal);
+    } catch (error) {
+      if (isBulkheadRejectedError(error)) {
+        throw new BulkheadFullError(context.name, context.dependencyKey, {
+          cause: error,
+        });
+      }
+      throw error;
+    }
+  }
+
+  private async runAttempts<T>(context: CallContext<T>): Promise<T> {
+    const retry = context.idempotent ? context.config.retry : undefined;
+    const maxAttempts = retry?.maxAttempts ?? 1;
+    for (let attempt = 1; ; attempt += 1) {
+      if (context.signal.aborted) {
+        throw abortReason(context.signal);
+      }
+      try {
+        return await this.runAttempt(context, attempt);
+      } catch (error) {
+        if (context.signal.aborted) {
+          throw abortReason(context.signal);
+        }
+        if (
+          retry === undefined ||
+          attempt >= maxAttempts ||
+          !this.shouldRetry(context, error)
+        ) {
+          throw error;
+        }
+        const delayMs = this.retryDelay(retry, attempt, error);
+        if (
+          context.deadline !== undefined &&
+          delayMs >= context.deadline.remaining()
+        ) {
+          // Waiting would spend the whole budget: report the real failure now.
+          throw error;
+        }
+        this.emit(
+          context.name,
+          context.dependencyKey,
+          ResilienceEventKind.Retry,
+          { attempt, delayMs, ...describeError(error) },
+        );
+        await sleep(delayMs, context.signal);
+      }
+    }
+  }
+
+  private shouldRetry<T>(context: CallContext<T>, error: unknown): boolean {
+    if (error instanceof CircuitOpenError) {
+      // The breaker stays open longer than any retry wait.
+      return false;
+    }
+    if (
+      error instanceof ResilienceTimeoutError &&
+      error.scope === TimeoutScope.Attempt
+    ) {
+      // The outcome is uncertain, but the caller declared the call idempotent.
+      return true;
+    }
+    return context.isTransient(error);
+  }
+
+  private retryDelay(
+    retry: ResilienceRetryConfig,
+    attempt: number,
+    error: unknown,
+  ): number {
+    const backoff = backoffDelay(attempt, {
+      strategy: BackoffStrategy.EqualJitter,
+      baseMs: retry.initialDelayMs,
+      maxMs: retry.maxDelayMs,
+      random: this.random,
+    });
+    // A Retry-After hint is a minimum delay for this attempt.
+    const hint = retryAfterHintMs(error, {
+      maxMs: retry.maxRetryAfterMs ?? DEFAULT_RETRY_AFTER_MAX_MS,
+      nowMs: this.clock.now().getTime(),
+    });
+    return Math.max(backoff, hint ?? 0);
+  }
+
+  private async runAttempt<T>(
+    context: CallContext<T>,
+    attempt: number,
+  ): Promise<T> {
+    const breaker = context.entry.breaker;
+    if (!breaker) {
+      return this.runTimedAttempt(context, attempt);
+    }
+    try {
+      return await breaker.execute(() =>
+        this.runTimedAttempt(context, attempt),
+      );
+    } catch (error) {
+      if (isBrokenCircuitError(error)) {
+        throw new CircuitOpenError(context.name, context.dependencyKey, {
+          cause: error,
+          retryAfterMs: context.config.circuitBreaker?.halfOpenAfterMs,
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Runs one attempt with its own timeout. The attempt timer is only armed
+   * when it ends before the call deadline; otherwise the deadline cuts it.
+   */
+  private async runTimedAttempt<T>(
+    context: CallContext<T>,
+    attempt: number,
+  ): Promise<T> {
+    const { config, deadline } = context;
+    const attemptDeadline = deadline
+      ? deadline.child(config.timeoutMs)
+      : Deadline.after(config.timeoutMs, this.clock);
+    const controller = new AbortController();
+    const forward = (): void => controller.abort(context.signal.reason);
+    if (context.signal.aborted) {
+      forward();
+    } else {
+      context.signal.addEventListener('abort', forward, { once: true });
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (deadline === undefined || config.timeoutMs < deadline.remaining()) {
+      timer = setTimeout(() => {
+        this.emit(
+          context.name,
+          context.dependencyKey,
+          ResilienceEventKind.Timeout,
+          { timeoutMs: config.timeoutMs },
+        );
+        controller.abort(
+          new ResilienceTimeoutError(
+            context.name,
+            TimeoutScope.Attempt,
+            config.timeoutMs,
+          ),
+        );
+      }, config.timeoutMs);
+    }
+
+    try {
+      const work = Promise.resolve().then(() =>
+        context.fn(controller.signal, {
+          number: attempt,
+          deadline: attemptDeadline,
+        }),
+      );
+      if (config.timeoutStrategy !== TimeoutStrategy.Cooperative) {
+        return await raceWithSignal(work, controller.signal);
+      }
+      try {
+        return await work;
+      } catch (error) {
+        // Cooperative: the operation honored the abort; report why it was aborted.
+        throw controller.signal.aborted
+          ? abortReason(controller.signal)
+          : error;
+      }
+    } finally {
+      clearTimeout(timer);
+      context.signal.removeEventListener('abort', forward);
+      if (config.abortOnReturn ?? true) {
+        controller.abort();
+      }
+    }
   }
 
   private entryFor(
@@ -340,10 +535,14 @@ export class ResilienceRegistry {
 
     let breaker: CircuitBreakerPolicy | undefined;
     if (config.circuitBreaker) {
-      // Timeouts count as failures for the breaker. Non-transient errors never open it.
+      // Attempt timeouts count as failures. Non-transient errors, caller
+      // aborts and an exhausted caller deadline never open the circuit.
       breaker = createCircuitBreaker(
         handleWhen(
-          (error) => isTransient(error) || isTaskCancelledError(error),
+          (error) =>
+            (error instanceof ResilienceTimeoutError &&
+              error.scope === TimeoutScope.Attempt) ||
+            (!(error instanceof ResilienceTimeoutError) && isTransient(error)),
         ),
         {
           breaker: new ConsecutiveBreaker(
@@ -362,18 +561,7 @@ export class ResilienceRegistry {
       breaker.onReset(() => notify(ResilienceEventKind.Reset));
     }
 
-    const timeout = createTimeout(config.timeoutMs, {
-      strategy:
-        config.timeoutStrategy === TimeoutStrategy.Cooperative
-          ? CockatielTimeoutStrategy.Cooperative
-          : CockatielTimeoutStrategy.Aggressive,
-      abortOnReturn: config.abortOnReturn ?? true,
-    });
-    timeout.onTimeout(() =>
-      notify(ResilienceEventKind.Timeout, { timeoutMs: config.timeoutMs }),
-    );
-
-    return { config, bulkhead, breaker, timeout };
+    return { bulkhead, breaker };
   }
 
   private emit(
@@ -382,11 +570,11 @@ export class ResilienceRegistry {
     kind: ResilienceEventKind,
     detail?: ResilienceEventDetail,
   ): void {
-    const event: ResilienceEvent = {
+    const event = {
       policy,
       dependencyKey,
       kind,
-      at: Date.now(),
+      at: this.clock.now().getTime(),
       detail,
     };
     for (const listener of this.listeners) {

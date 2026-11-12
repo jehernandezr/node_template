@@ -1,3 +1,9 @@
+import {
+  BackoffStrategy,
+  InvalidArgumentError,
+  MAX_BACKOFF_ATTEMPT,
+  validateBackoffOptions,
+} from '@platform/primitives';
 import { ResiliencePolicyName } from './policy-name.js';
 
 /** How a per-attempt timeout is enforced. */
@@ -8,11 +14,19 @@ export enum TimeoutStrategy {
   Aggressive = 'aggressive',
 }
 
-/** Retry settings. `maxAttempts` counts every call, including the first one. */
+/**
+ * Retry settings. `maxAttempts` counts every call, including the first one.
+ * The wait between attempts is the primitives backoff with equal jitter.
+ */
 export interface ResilienceRetryConfig {
   readonly maxAttempts: number;
   readonly initialDelayMs: number;
   readonly maxDelayMs: number;
+  /**
+   * Upper bound for a server `Retry-After` hint, in milliseconds. The call
+   * deadline bounds it further. Default: `DEFAULT_RETRY_AFTER_MAX_MS` (60 s).
+   */
+  readonly maxRetryAfterMs?: number;
 }
 
 /** Circuit breaker settings. */
@@ -44,7 +58,10 @@ export interface ResiliencePolicyConfig {
   readonly retry?: ResilienceRetryConfig;
   readonly circuitBreaker?: ResilienceCircuitBreakerConfig;
   readonly bulkhead?: ResilienceBulkheadConfig;
-  /** Decides which errors are retried and counted by the breaker. Defaults to `isTransientError`. */
+  /**
+   * Decides which errors are retried and counted by the breaker. Defaults to
+   * `isTransientError` from `@platform/primitives`.
+   */
   readonly isTransient?: (error: unknown) => boolean;
 }
 
@@ -100,3 +117,58 @@ export const defaultPolicies: Record<
     circuitBreaker: { consecutiveFailures: 5, halfOpenAfterMs: 15_000 },
   },
 };
+
+function assertFinite(name: string, value: number, min: number): void {
+  if (!Number.isFinite(value) || value < min) {
+    throw new InvalidArgumentError(name, `a finite number >= ${min}`);
+  }
+}
+
+/**
+ * Validates a policy once, when the registry is built, so a bad override fails
+ * at startup and not on the first retry.
+ * @throws InvalidArgumentError from `@platform/primitives`.
+ */
+export function validatePolicyConfig(config: ResiliencePolicyConfig): void {
+  assertFinite('timeoutMs', config.timeoutMs, 1);
+  if (config.totalTimeoutMs !== undefined) {
+    assertFinite('totalTimeoutMs', config.totalTimeoutMs, 0);
+  }
+  const retry = config.retry;
+  if (retry) {
+    if (
+      !Number.isInteger(retry.maxAttempts) ||
+      retry.maxAttempts < 1 ||
+      retry.maxAttempts > MAX_BACKOFF_ATTEMPT
+    ) {
+      throw new InvalidArgumentError(
+        'retry.maxAttempts',
+        `an integer between 1 and ${MAX_BACKOFF_ATTEMPT}`,
+      );
+    }
+    validateBackoffOptions({
+      strategy: BackoffStrategy.EqualJitter,
+      baseMs: retry.initialDelayMs,
+      maxMs: retry.maxDelayMs,
+    });
+    if (retry.maxRetryAfterMs !== undefined) {
+      assertFinite('retry.maxRetryAfterMs', retry.maxRetryAfterMs, 0);
+    }
+  }
+  if (config.circuitBreaker) {
+    assertFinite(
+      'circuitBreaker.consecutiveFailures',
+      config.circuitBreaker.consecutiveFailures,
+      1,
+    );
+    assertFinite(
+      'circuitBreaker.halfOpenAfterMs',
+      config.circuitBreaker.halfOpenAfterMs,
+      0,
+    );
+  }
+  if (config.bulkhead) {
+    assertFinite('bulkhead.limit', config.bulkhead.limit, 1);
+    assertFinite('bulkhead.queue', config.bulkhead.queue, 0);
+  }
+}
