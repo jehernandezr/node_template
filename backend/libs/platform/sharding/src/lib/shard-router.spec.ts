@@ -687,6 +687,45 @@ describe('ShardRouter', () => {
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
 
+    // Reproduces audit finding P1.7. Fixed by the versioned tombstone in the next commit.
+    it.failing(
+      'does not let a read in flight in another process resurrect an invalidated placement',
+      async () => {
+        const env = setup();
+        env.store.setPlacement(
+          placement({ shardGroup: ['shard-1'], version: 1 }),
+        );
+        const stale = deferred<TenantPlacement | undefined>();
+        env.directory.getPlacement.mockImplementationOnce(() => stale.promise);
+        const reader = env.build({ sharedCache: env.shared });
+        const mover = env.build({ sharedCache: env.shared });
+
+        // 1. Process A starts a read and reaches the directory (version 1).
+        const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+        await flush();
+        expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+
+        // 2. The move commits version 2 and process B invalidates.
+        env.store.setPlacement(
+          placement({ shardGroup: ['shard-2'], version: 2 }),
+        );
+        await mover.invalidate('t1');
+
+        // 3. Process A's read answers with version 1 and tries to write it back.
+        stale.resolve(placement({ shardGroup: ['shard-1'], version: 1 }));
+        await expect(inFlight).resolves.toMatchObject({
+          logicalShard: 'shard-1',
+        });
+
+        // A fresh process must not see the old placement in the shared cache.
+        await expect(
+          env
+            .build({ sharedCache: env.shared })
+            .resolve({ tenantId: 't1', ...READ }),
+        ).resolves.toMatchObject({ logicalShard: 'shard-2' });
+      },
+    );
+
     it('does not cache an instance that was overtaken by invalidateShard', async () => {
       const env = setup();
       env.store.setPlacement(placement());
