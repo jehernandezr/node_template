@@ -3,6 +3,7 @@ export * from './lib/result.js';
 export * from './lib/contract.js';
 export * from './lib/json-safety.js';
 export * from './lib/input-hash.js';
+export * from './lib/limits.js';
 export * from './lib/registry.js';
 export * from './lib/transport.js';
 export * from './lib/client.js';

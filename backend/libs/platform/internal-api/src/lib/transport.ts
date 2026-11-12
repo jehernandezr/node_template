@@ -1,16 +1,20 @@
-import type { OperationResult } from './result.js';
+import type { CallOutcome } from '@platform/primitives';
 
-/** Metadata propagated with every call. */
+/** Metadata propagated with every attempt. */
 export interface CallMeta {
   readonly idempotencyKey: string;
   readonly traceparent?: string;
   readonly tenantId?: string;
   readonly actorId?: string;
-  /** Budget for a single attempt, set by the client. */
+  /** Milliseconds left for this attempt when it was sent. */
   readonly timeoutMs: number;
-  /** Epoch milliseconds after which the server must not start the work. */
+  /**
+   * Epoch milliseconds after which the server must not start the work. It is
+   * the attempt deadline, never later than the caller's `Deadline`. The server
+   * derives the idempotency lease from it.
+   */
   readonly deadline: number;
-  /** Aborted by the client when the attempt times out. */
+  /** Aborted when the attempt times out or the caller cancels. */
   readonly signal?: AbortSignal;
 }
 
@@ -20,5 +24,5 @@ export interface Transport {
     operationId: string,
     input: unknown,
     meta: CallMeta,
-  ): Promise<OperationResult<unknown>>;
+  ): Promise<CallOutcome<unknown>>;
 }

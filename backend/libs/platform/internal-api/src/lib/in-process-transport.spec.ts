@@ -1,6 +1,10 @@
+import { defineOperation } from '@contracts/platform';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { CallOutcome, CallOutcomeKind, Deadline } from '@platform/primitives';
 import { z } from 'zod';
 import { Compensation, Operation, OperationContract } from './contract.js';
 import { InternalClient } from './client.js';
+import { InternalApiErrorCode } from './errors.js';
 import { InProcessTransport } from './in-process-transport.js';
 import { ContractRegistry } from './registry.js';
 import { InternalRouter } from './router.js';
@@ -207,7 +211,7 @@ describe('client -> InProcessTransport -> router', () => {
     expect(handler).toHaveBeenCalledTimes(2);
   });
 
-  it('reports a handler throw as ProtocolViolation handler-error and does not retry it', async () => {
+  it('reports an unknown handler throw as a protocol violation and does not retry it', async () => {
     const { router, client } = build();
     const handler = jest.fn(async (): Promise<never> => {
       throw new Error('boom');
@@ -218,7 +222,7 @@ describe('client -> InProcessTransport -> router', () => {
       client.call(Quote, { from: 'A', to: 'B' }, { idempotencyKey: 'q-throw' }),
     ).resolves.toEqual({
       kind: ResultKind.ProtocolViolation,
-      reason: 'handler-error',
+      reason: 'Error',
     });
     expect(handler).toHaveBeenCalledTimes(1);
   });
@@ -269,6 +273,83 @@ describe('client -> InProcessTransport -> router', () => {
     ).resolves.toEqual({
       kind: ResultKind.ProtocolViolation,
       reason: 'invalid-output',
+      code: InternalApiErrorCode.InvalidOutput,
     });
+  });
+});
+
+describe('defineOperation end to end', () => {
+  const Transfer = defineOperation({
+    id: 'wallet.transfer.v1',
+    input: z.object({ amount: z.number().int().positive() }),
+    output: z.object({ transferId: z.string() }),
+    idempotent: true,
+    compensatedBy: 'wallet.revert.v1',
+    errors: ['WALLET.TRANSFER.NO_FUNDS'],
+    timeoutMs: 2000,
+    description: 'Moves money between wallets.',
+  });
+
+  function wire() {
+    const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
+    const processed = new InMemoryProcessedOperationStore(
+      clock,
+      new SequentialIdGenerator(),
+    );
+    const claim = jest.spyOn(processed, 'claim');
+    const router = new InternalRouter({ processed, clock, leaseMarginMs: 500 });
+    const handler = jest.fn(async () =>
+      CallOutcome.success({ transferId: 'tr-1' }),
+    );
+    router.register(Transfer, handler);
+    const transport = new InProcessTransport(router);
+    const invoke = jest.spyOn(transport, 'invoke');
+    const registry = new ContractRegistry();
+    registry.register(Transfer);
+    const client = new InternalClient({ transport, registry, clock });
+    return { clock, claim, handler, invoke, client };
+  }
+
+  it('never reaches the server with an invalid input', async () => {
+    const { client, invoke } = wire();
+
+    const outcome = await client.call(
+      Transfer,
+      { amount: 0 },
+      { idempotencyKey: 'k' },
+    );
+
+    expect(outcome.kind).toBe(CallOutcomeKind.ProtocolViolation);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('derives the attempt deadline and the server lease from one caller deadline', async () => {
+    const { client, claim, clock } = wire();
+    const deadline = Deadline.after(800, clock);
+
+    await expect(
+      client.call(
+        Transfer,
+        { amount: 5 },
+        { idempotencyKey: 'k', tenantId: 't-1', deadline },
+      ),
+    ).resolves.toEqual(CallOutcome.success({ transferId: 'tr-1' }));
+
+    const [key, request] = claim.mock.calls[0] ?? [];
+    expect(key).toBe('["t-1","wallet.transfer.v1","k"]');
+    expect(request?.deadline.atMs).toBe(deadline.atMs);
+    expect(request?.leaseMarginMs).toBe(500);
+  });
+
+  it('runs the handler once per tenant-scoped key', async () => {
+    const { client, handler } = wire();
+    const call = (tenantId: string) =>
+      client.call(Transfer, { amount: 5 }, { idempotencyKey: 'k', tenantId });
+
+    await call('t-1');
+    await call('t-1');
+    await call('t-2');
+
+    expect(handler).toHaveBeenCalledTimes(2);
   });
 });

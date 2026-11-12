@@ -1,3 +1,4 @@
+import { defineOperation } from '@contracts/platform';
 import { z } from 'zod';
 import { Compensation, Operation, OperationContract } from './contract.js';
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
@@ -198,7 +199,8 @@ describe('ContractRegistry', () => {
     const registry = new ContractRegistry();
     registry.register(Reserve, Release);
     expect(registry.get('a.reserve.v1')?.ContractClass).toBe(Reserve);
-    expect(registry.get('a.reserve.v1')?.contract).toBeInstanceOf(Reserve);
+    expect(registry.get('a.reserve.v1')?.contract.input).toBe(schema);
+    expect(registry.get('a.reserve.v1')?.descriptor.id).toBe('a.reserve.v1');
     expect(registry.get('unknown')).toBeUndefined();
     expect(registry.operations().map((operation) => operation.id)).toEqual([
       'a.reserve.v1',
@@ -206,8 +208,54 @@ describe('ContractRegistry', () => {
     ]);
   });
 
-  it('rejects a class without @Operation', () => {
+  it('rejects a class without @Operation with InvalidOperation', () => {
     const registry = new ContractRegistry();
-    expect(() => registry.register(Plain)).toThrow(TypeError);
+    expect(() => registry.register(Plain)).toThrow(
+      expect.objectContaining({ code: InternalApiErrorCode.InvalidOperation }),
+    );
+  });
+
+  it('registers defineOperation descriptors next to legacy classes', () => {
+    const Revert = defineOperation({
+      id: 'a.revert.v1',
+      input: schema,
+      output: schema,
+      idempotent: true,
+      compensatedBy: 'a.reserve.v1',
+      errors: ['A.REVERT.GONE'],
+      timeoutMs: 1000,
+      description: 'Reverts a reservation.',
+    });
+    const registry = new ContractRegistry();
+    registry.register(Revert, Reserve, Release);
+
+    expect(registry.validate()).toEqual([]);
+    const entry = registry.get('a.revert.v1');
+    expect(entry?.ContractClass).toBeUndefined();
+    expect(entry?.metadata).toMatchObject({
+      id: 'a.revert.v1',
+      compensatedBy: 'a.reserve.v1',
+      mutating: true,
+      idempotent: true,
+      errors: ['A.REVERT.GONE'],
+      timeoutMs: 1000,
+    });
+  });
+
+  it('reports a descriptor whose compensation is not registered', () => {
+    const Orphan = defineOperation({
+      id: 'a.orphan.v1',
+      input: schema,
+      output: schema,
+      idempotent: true,
+      compensatedBy: 'a.missing.v1',
+      description: 'Has no registered compensation.',
+    });
+    const registry = new ContractRegistry();
+    registry.register(Orphan);
+
+    expect(registry.validate().map((issue) => issue.code)).toEqual([
+      'unknown-compensation',
+    ]);
   });
 });

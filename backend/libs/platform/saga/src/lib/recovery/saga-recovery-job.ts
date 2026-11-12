@@ -1,6 +1,6 @@
+import { SystemClock, type Clock } from '@platform/kernel';
 import { SagaError, SagaErrorCode } from '../errors.js';
 import { SagaEngine } from '../engine/saga-engine.js';
-import { Clock, systemClock } from '../model.js';
 import { SagaStore } from '../store/saga-store.js';
 
 /** Constructor options of `SagaRecoveryJob`. */
@@ -38,7 +38,7 @@ export class SagaRecoveryJob {
   constructor(options: SagaRecoveryJobOptions) {
     this.engine = options.engine;
     this.store = options.store;
-    this.clock = options.clock ?? systemClock;
+    this.clock = options.clock ?? new SystemClock();
   }
 
   /**

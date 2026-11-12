@@ -9,7 +9,20 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "references": [],
+  "references": [
+    {
+      "path": "../../contracts/platform/tsconfig.lib.json"
+    },
+    {
+      "path": "../primitives/tsconfig.lib.json"
+    },
+    {
+      "path": "../kernel/tsconfig.lib.json"
+    },
+    {
+      "path": "../internal-api/tsconfig.lib.json"
+    }
+  ],
   "exclude": [
     "jest.config.ts",
     "jest.config.cjs",

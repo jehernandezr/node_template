@@ -1,3 +1,5 @@
+import { PlatformError } from '@platform/kernel';
+
 /** Stable error codes of the saga library, format `PLATFORM.SAGA.<ERROR>`. */
 export enum SagaErrorCode {
   NotFound = 'PLATFORM.SAGA.NOT_FOUND',
@@ -12,6 +14,8 @@ export enum SagaErrorCode {
   LeaseLost = 'PLATFORM.SAGA.LEASE_LOST',
   TransientFailure = 'PLATFORM.SAGA.TRANSIENT_FAILURE',
   ProtocolViolation = 'PLATFORM.SAGA.PROTOCOL_VIOLATION',
+  /** A step call ended without knowing whether it applied (timeout or cancellation). */
+  UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME',
   StateUpdateFailed = 'PLATFORM.SAGA.STATE_UPDATE_FAILED',
   InputBuildFailed = 'PLATFORM.SAGA.INPUT_BUILD_FAILED',
   IdempotencyKeyConflict = 'PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT',
@@ -19,13 +23,27 @@ export enum SagaErrorCode {
   SimulatedCrash = 'PLATFORM.SAGA.SIMULATED_CRASH',
 }
 
-/** Base error of the saga library. Carries a stable `code`. */
-export class SagaError extends Error {
-  readonly code: SagaErrorCode;
+/** Codes that mean another run got in the way; trying again later can succeed. */
+const RETRYABLE: ReadonlySet<SagaErrorCode> = new Set([
+  SagaErrorCode.ConcurrentModification,
+  SagaErrorCode.LeaseNotAcquired,
+  SagaErrorCode.LeaseLost,
+  SagaErrorCode.SimulatedCrash,
+]);
 
-  constructor(code: SagaErrorCode, message: string) {
-    super(message);
-    this.name = 'SagaError';
+/** Base error of the saga library. Carries a stable `code`. */
+export class SagaError extends PlatformError {
+  override readonly code: SagaErrorCode;
+
+  constructor(
+    code: SagaErrorCode,
+    message: string,
+    details?: Readonly<Record<string, unknown>>,
+  ) {
+    super(message, {
+      retryable: RETRYABLE.has(code),
+      ...(details !== undefined && { details }),
+    });
     this.code = code;
   }
 }
@@ -34,6 +52,5 @@ export class SagaError extends Error {
 export class SimulatedCrash extends SagaError {
   constructor(detail: string) {
     super(SagaErrorCode.SimulatedCrash, `Simulated crash: ${detail}`);
-    this.name = 'SimulatedCrash';
   }
 }

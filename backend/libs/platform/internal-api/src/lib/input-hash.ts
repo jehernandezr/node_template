@@ -1,25 +1,10 @@
-import { createHash } from 'node:crypto';
+import { stableDigest } from '@platform/primitives';
 
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(canonicalize);
-  }
-  if (typeof value === 'object' && value !== null) {
-    const record = value as Record<string, unknown>;
-    const sorted: Record<string, unknown> = {};
-    for (const key of Object.keys(record).sort()) {
-      if (record[key] !== undefined) {
-        sorted[key] = canonicalize(record[key]);
-      }
-    }
-    return sorted;
-  }
-  return value;
-}
-
-/** SHA-256 of the canonical JSON (sorted keys) of an input. */
+/**
+ * SHA-256 of the canonical JSON of an input. `undefined` hashes as `null`.
+ * @deprecated Use `stableDigest` from `@platform/primitives`, which is also
+ * safe for `__proto__` keys and rejects values that are not JSON.
+ */
 export function hashInput(input: unknown): string {
-  return createHash('sha256')
-    .update(JSON.stringify(canonicalize(input)) ?? 'null')
-    .digest('hex');
+  return stableDigest(input === undefined ? null : input);
 }

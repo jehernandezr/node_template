@@ -1,9 +1,22 @@
-import { randomUUID } from 'node:crypto';
-import { v7 as uuidv7 } from 'uuid';
-import { SagaError, SagaErrorCode, SimulatedCrash } from '../errors.js';
-import { InvokeKind, InvokeResult, OperationInvoker } from '../invoker.js';
 import {
-  Clock,
+  SystemClock,
+  UuidV7IdGenerator,
+  type Clock,
+  type IdGenerator,
+} from '@platform/kernel';
+import {
+  BackoffStrategy,
+  CallOutcome,
+  CallOutcomeKind,
+  createBackoff,
+  Deadline,
+  DeadlineExceededError,
+  stableDigest,
+} from '@platform/primitives';
+import { SagaError, SagaErrorCode, SimulatedCrash } from '../errors.js';
+import { OperationInvoker, toCallOutcome } from '../invoker.js';
+import {
+  SagaCallContext,
   SagaEvent,
   SagaEventKind,
   SagaEventListener,
@@ -13,7 +26,6 @@ import {
   StepLogEntry,
   StepStatus,
   stepIdempotencyKey,
-  systemClock,
 } from '../model.js';
 import type {
   CompiledSaga,
@@ -22,15 +34,11 @@ import type {
 } from '../definition/saga-flow.js';
 import type { SagaDefinition } from '../definition/saga-definition.js';
 import type { SagaStore } from '../store/saga-store.js';
-import {
-  assertNever,
-  assertSerializableState,
-  describeError,
-  jsonClone,
-} from '../util.js';
+import { assertNever, assertSerializableState, jsonClone } from '../util.js';
 
 const TRANSIENT_CODE: string = SagaErrorCode.TransientFailure;
 const PROTOCOL_CODE: string = SagaErrorCode.ProtocolViolation;
+const UNCERTAIN_CODE: string = SagaErrorCode.UncertainOutcome;
 const DEADLINE_CODE: string = SagaErrorCode.DeadlineExceeded;
 const STATE_UPDATE_CODE: string = SagaErrorCode.StateUpdateFailed;
 const INPUT_BUILD_CODE: string = SagaErrorCode.InputBuildFailed;
@@ -56,8 +64,18 @@ export interface StartOptions {
   readonly sagaId?: string;
   /** Time budget from start. Once it has passed, pre-pivot steps are not dispatched and compensate instead. */
   readonly deadlineMs?: number;
-  /** When an instance with this key exists, it is returned instead of starting a new one. */
+  /**
+   * When an instance with this key exists, it is returned instead of starting
+   * a new one, provided it has the same type and the same initial state
+   * (compared by `stableDigest`); otherwise `IdempotencyKeyConflict`.
+   */
   readonly idempotencyKey?: string;
+  /**
+   * Tenant, actor and traceparent sent with every step. Persisted with the
+   * instance, so a recovered step sends exactly the same values and the
+   * callee builds the same idempotency key.
+   */
+  readonly context?: SagaCallContext;
 }
 
 /** Constructor options of `SagaEngine`. */
@@ -76,7 +94,12 @@ export interface SagaEngineOptions {
   /** Time in suspension before requiring intervention. Defaults to 24 hours. */
   readonly maxSuspendAgeMs?: number;
   readonly clock?: Clock;
-  /** Delay in milliseconds before retrying after the given failed attempt (1-based). */
+  /** Source of saga ids and lease tokens. Defaults to UUIDv7. */
+  readonly ids?: IdGenerator;
+  /**
+   * Delay in milliseconds before retrying after the given failed attempt
+   * (1-based). Defaults to exponential backoff from 1 s up to 60 s.
+   */
   readonly backoff?: (attempt: number) => number;
   /** Test hook: throws `SimulatedCrash` right after the dispatch of a step is persisted. */
   readonly crashAfterDispatch?: (stepIndex: number) => boolean;
@@ -88,8 +111,11 @@ interface Run {
   readonly token: string;
 }
 
-const DEFAULT_BACKOFF = (attempt: number): number =>
-  Math.min(1_000 * 2 ** Math.max(attempt - 1, 0), 60_000);
+const DEFAULT_BACKOFF = createBackoff({
+  strategy: BackoffStrategy.None,
+  baseMs: 1_000,
+  maxMs: 60_000,
+});
 
 const DEFAULT_LEASE_MS = 30_000;
 const DEFAULT_MAX_STEP_MS = 25_000;
@@ -100,6 +126,16 @@ const DEFAULT_MAX_SUSPEND_AGE_MS = 24 * 60 * 60 * 1000;
  * Runs sagas step by step. Each attempt persists its intent before calling the
  * operation and its outcome together with the next state. Every write is fenced
  * by the lease token and the instance version.
+ *
+ * Step outcomes follow one rule (the `CallOutcome` of `@platform/primitives`):
+ * - `success`: apply the output and advance.
+ * - `business-error`: compensate before the pivot; after it, require intervention.
+ * - `transient-failure` and `uncertain`: suspend and retry with the same key
+ *   and input until the suspension budget runs out, then require
+ *   intervention. Before the pivot, a passed saga deadline compensates instead.
+ * - `protocol-violation`: before the pivot, compensate including the step;
+ *   after it, require intervention. During compensation, `CompensationFailed`.
+ * A thrown invoker error is classified with `classifyFailure`.
  */
 export class SagaEngine {
   private readonly store: SagaStore;
@@ -111,6 +147,7 @@ export class SagaEngine {
   private readonly maxSuspendAttempts: number;
   private readonly maxSuspendAgeMs: number;
   private readonly clock: Clock;
+  private readonly ids: IdGenerator;
   private readonly backoff: (attempt: number) => number;
   private readonly crashAfterDispatch:
     ((stepIndex: number) => boolean) | undefined;
@@ -134,7 +171,8 @@ export class SagaEngine {
       options.maxSuspendAttempts ?? DEFAULT_MAX_SUSPEND_ATTEMPTS;
     this.maxSuspendAgeMs =
       options.maxSuspendAgeMs ?? DEFAULT_MAX_SUSPEND_AGE_MS;
-    this.clock = options.clock ?? systemClock;
+    this.clock = options.clock ?? new SystemClock();
+    this.ids = options.ids ?? new UuidV7IdGenerator();
     this.backoff = options.backoff ?? DEFAULT_BACKOFF;
     this.crashAfterDispatch = options.crashAfterDispatch;
   }
@@ -164,15 +202,18 @@ export class SagaEngine {
   ): Promise<SagaInstance> {
     this.compile(definitionType);
     assertSerializableState(initialState);
+    const context = callContext(options.context);
+    assertSerializableState(context);
+    const inputDigest = stableDigest(initialState ?? null);
     const key = options.idempotencyKey ?? null;
     if (key !== null) {
       const existing = await this.store.findByIdempotencyKey(key);
       if (existing !== null) {
-        return this.reuse(existing, definitionType);
+        return this.reuse(existing, definitionType, inputDigest);
       }
     }
     const now = this.clock.now();
-    const sagaId = options.sagaId ?? uuidv7();
+    const sagaId = options.sagaId ?? this.ids.next().toString();
     const run: Run = { sagaId, token: this.newToken() };
     try {
       await this.store.create({
@@ -194,6 +235,8 @@ export class SagaEngine {
             ? null
             : new Date(now.getTime() + options.deadlineMs),
         lastErrorCode: null,
+        context,
+        inputDigest,
         createdAt: now,
         updatedAt: now,
       });
@@ -205,7 +248,7 @@ export class SagaEngine {
       ) {
         const existing = await this.store.findByIdempotencyKey(key);
         if (existing !== null) {
-          return this.reuse(existing, definitionType);
+          return this.reuse(existing, definitionType, inputDigest);
         }
       }
       throw error;
@@ -353,8 +396,9 @@ export class SagaEngine {
     }
 
     this.maybeCrash(index);
-    await this.renew(run);
-    const result = await this.invokeSafely(
+    const result = await this.call(
+      run,
+      current,
       step.operationId,
       input,
       stepIdempotencyKey(run.sagaId, index, StepDirection.Forward),
@@ -375,7 +419,7 @@ export class SagaEngine {
     compiled: CompiledSaga<unknown>,
     steps: StepLogEntry[],
     dispatched: StepLogEntry,
-    result: InvokeResult,
+    result: CallOutcome<unknown>,
   ): Promise<SagaInstance> {
     const index = dispatched.stepIndex;
     const finish = (
@@ -387,10 +431,10 @@ export class SagaEngine {
     });
 
     switch (result.kind) {
-      case InvokeKind.Success: {
+      case CallOutcomeKind.Success: {
         let output: unknown;
         try {
-          output = jsonClone(result.output);
+          output = jsonClone(result.value);
         } catch {
           return this.uncertainForward(
             run,
@@ -410,7 +454,7 @@ export class SagaEngine {
           finish({ status: StepStatus.Succeeded, output, errorCode: null }),
         );
       }
-      case InvokeKind.BusinessError: {
+      case CallOutcomeKind.BusinessError: {
         const entry = finish({
           status: StepStatus.Failed,
           output: undefined,
@@ -440,7 +484,7 @@ export class SagaEngine {
           entry,
         );
       }
-      case InvokeKind.TransientFailure:
+      case CallOutcomeKind.TransientFailure:
         return this.uncertainForward(
           run,
           instance,
@@ -450,7 +494,17 @@ export class SagaEngine {
           TRANSIENT_CODE,
           false,
         );
-      case InvokeKind.ProtocolViolation:
+      case CallOutcomeKind.Uncertain:
+        return this.uncertainForward(
+          run,
+          instance,
+          compiled,
+          steps,
+          dispatched,
+          UNCERTAIN_CODE,
+          false,
+        );
+      case CallOutcomeKind.ProtocolViolation:
         return this.uncertainForward(
           run,
           instance,
@@ -465,7 +519,7 @@ export class SagaEngine {
     }
   }
 
-  /** Handles a step whose outcome is unknown: transient failure or protocol violation. */
+  /** Handles a step whose outcome is unknown: transient failure, uncertain outcome or protocol violation. */
   private async uncertainForward(
     run: Run,
     instance: SagaInstance,
@@ -615,8 +669,9 @@ export class SagaEngine {
     }
 
     this.maybeCrash(index);
-    await this.renew(run);
-    const result = await this.invokeSafely(
+    const result = await this.call(
+      run,
+      current,
       operationId,
       input,
       stepIdempotencyKey(run.sagaId, index, StepDirection.Compensate),
@@ -630,7 +685,7 @@ export class SagaEngine {
     });
 
     switch (result.kind) {
-      case InvokeKind.Success: {
+      case CallOutcomeKind.Success: {
         const done = finish({
           status: StepStatus.Succeeded,
           output: undefined,
@@ -642,7 +697,7 @@ export class SagaEngine {
           done,
         );
       }
-      case InvokeKind.BusinessError: {
+      case CallOutcomeKind.BusinessError: {
         const failed = finish({
           status: StepStatus.Failed,
           output: undefined,
@@ -660,19 +715,20 @@ export class SagaEngine {
           failed,
         );
       }
-      case InvokeKind.TransientFailure: {
+      case CallOutcomeKind.TransientFailure:
+      case CallOutcomeKind.Uncertain: {
+        const code =
+          result.kind === CallOutcomeKind.Uncertain
+            ? UNCERTAIN_CODE
+            : TRANSIENT_CODE;
         const uncertain = finish({
           status: StepStatus.Uncertain,
           output: undefined,
-          errorCode: TRANSIENT_CODE,
+          errorCode: code,
         });
-        return this.commit(
-          run,
-          this.suspend(current, TRANSIENT_CODE),
-          uncertain,
-        );
+        return this.commit(run, this.suspend(current, code), uncertain);
       }
-      case InvokeKind.ProtocolViolation: {
+      case CallOutcomeKind.ProtocolViolation: {
         const uncertain = finish({
           status: StepStatus.Uncertain,
           output: undefined,
@@ -782,13 +838,36 @@ export class SagaEngine {
     });
   }
 
-  /** Extends the lease before a call. If it was lost, stops without writing. */
-  private async renew(run: Run): Promise<void> {
-    const now = this.clock.now();
+  /**
+   * Calls a step within one `Deadline`: the lease is renewed to outlive it,
+   * the invoker receives it (the client cuts its attempts to it and the
+   * server derives its idempotency lease from it) and the engine stops
+   * waiting when it runs out.
+   */
+  private async call(
+    run: Run,
+    instance: SagaInstance,
+    operationId: string,
+    input: unknown,
+    idempotencyKey: string,
+  ): Promise<CallOutcome<unknown>> {
+    const deadline = Deadline.after(this.maxStepDurationMs, this.clock);
+    await this.renew(run, deadline);
+    return this.invokeSafely(
+      operationId,
+      input,
+      idempotencyKey,
+      deadline,
+      instance.context ?? {},
+    );
+  }
+
+  /** Extends the lease past the step deadline. If it was lost, stops without writing. */
+  private async renew(run: Run, deadline: Deadline): Promise<void> {
     const renewed = await this.store.renewLease(
       run.sagaId,
       run.token,
-      this.leaseUntil(now),
+      new Date(deadline.atMs + this.leaseMs - this.maxStepDurationMs),
     );
     if (!renewed) {
       throw new SagaError(
@@ -798,54 +877,74 @@ export class SagaEngine {
     }
   }
 
-  /** Calls the operation. A thrown error counts as a transient failure. Simulated crashes propagate. */
   /**
-   * Calls the operation, bounded by `maxStepDurationMs`. A thrown error or a
-   * timeout counts as a transient failure; a timeout also aborts the call's
-   * signal. The timer is cleared when the call settles. Simulated crashes propagate.
+   * Calls the operation until `deadline`. When it runs out, the call's signal
+   * aborts and the outcome is `uncertain`. A thrown error is classified with
+   * `classifyFailure`. The timer is cleared when the call settles. Simulated
+   * crashes propagate.
    */
   private async invokeSafely(
     operationId: string,
     input: unknown,
     idempotencyKey: string,
-  ): Promise<InvokeResult> {
+    deadline: Deadline,
+    context: SagaCallContext,
+  ): Promise<CallOutcome<unknown>> {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const timedOut = new Promise<InvokeResult>((resolve) => {
+    const timedOut = new Promise<CallOutcome<unknown>>((resolve) => {
       timer = setTimeout(() => {
-        controller.abort();
-        resolve({
-          kind: InvokeKind.TransientFailure,
-          reason: `timed out after ${this.maxStepDurationMs} ms`,
-        });
-      }, this.maxStepDurationMs);
+        controller.abort(new DeadlineExceededError(deadline.atMs));
+        resolve(
+          CallOutcome.uncertain(`timed out after ${this.maxStepDurationMs} ms`),
+        );
+      }, deadline.remaining());
     });
     try {
       return await Promise.race([
-        this.invoker.invoke(operationId, input, idempotencyKey, {
-          signal: controller.signal,
-        }),
+        this.invoker
+          .invoke(operationId, input, idempotencyKey, {
+            signal: controller.signal,
+            deadline,
+            context,
+          })
+          .then(toCallOutcome),
         timedOut,
       ]);
     } catch (error) {
       if (error instanceof SimulatedCrash) {
         throw error;
       }
-      return {
-        kind: InvokeKind.TransientFailure,
-        reason: describeError(error),
-      };
+      return CallOutcome.fromError(error);
     } finally {
       clearTimeout(timer);
     }
   }
 
-  /** Returns an instance found by idempotency key, provided it belongs to the same saga type. */
-  private reuse(existing: SagaInstance, definitionType: string): SagaInstance {
+  /**
+   * Returns an instance found by idempotency key, provided it belongs to the
+   * same saga type and was started with the same initial state.
+   */
+  private reuse(
+    existing: SagaInstance,
+    definitionType: string,
+    inputDigest: string,
+  ): SagaInstance {
     if (existing.type !== definitionType) {
       throw new SagaError(
         SagaErrorCode.IdempotencyKeyConflict,
         `Idempotency key is already used by a "${existing.type}" saga, not "${definitionType}"`,
+      );
+    }
+    if (
+      existing.inputDigest !== undefined &&
+      existing.inputDigest !== null &&
+      existing.inputDigest !== inputDigest
+    ) {
+      throw new SagaError(
+        SagaErrorCode.IdempotencyKeyConflict,
+        `Idempotency key is already used by saga ${existing.id} with a different input`,
+        { sagaId: existing.id },
       );
     }
     return existing;
@@ -894,7 +993,7 @@ export class SagaEngine {
   }
 
   private newToken(): string {
-    return `${this.owner}:${randomUUID()}`;
+    return `${this.owner}:${this.ids.next().toString()}`;
   }
 
   private maybeCrash(stepIndex: number): void {
@@ -959,6 +1058,22 @@ export class SagaEngine {
     }
     return step;
   }
+}
+
+/** Keeps only the defined fields of a call context; null when none is set. */
+function callContext(
+  context: SagaCallContext | undefined,
+): SagaCallContext | null {
+  if (context === undefined) {
+    return null;
+  }
+  const { tenantId, actorId, traceparent } = context;
+  const copy: SagaCallContext = {
+    ...(tenantId !== undefined && { tenantId }),
+    ...(actorId !== undefined && { actorId }),
+    ...(traceparent !== undefined && { traceparent }),
+  };
+  return Object.keys(copy).length === 0 ? null : copy;
 }
 
 /** Builds a value and checks that it is serializable. Returns null when building or checking fails. */

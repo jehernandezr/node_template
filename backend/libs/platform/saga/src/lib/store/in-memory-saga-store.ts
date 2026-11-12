@@ -180,6 +180,9 @@ function cloneInstance(instance: SagaInstance): SagaInstance {
   return {
     ...instance,
     state: jsonClone(instance.state),
+    ...(instance.context !== undefined && {
+      context: jsonClone(instance.context),
+    }),
     leaseUntil: copyDate(instance.leaseUntil),
     nextAttemptAt: copyDate(instance.nextAttemptAt),
     suspendedSince: copyDate(instance.suspendedSince),
