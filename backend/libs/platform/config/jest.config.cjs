@@ -16,5 +16,7 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
+  // @platform/kernel usa uuid v14, que es ESM puro, y Jest corre en CJS.
+  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
   coverageDirectory: 'test-output/jest/coverage',
 };

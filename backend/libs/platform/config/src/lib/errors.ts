@@ -1,4 +1,10 @@
+import { PlatformError } from '@platform/kernel';
 import type { z } from 'zod';
+
+/** Stable error codes for the config library. */
+export enum ConfigErrorCode {
+  Invalid = 'PLATFORM.CONFIG.INVALID',
+}
 
 export interface ConfigIssue {
   /** Dot-separated path to the offending key, e.g. `DB_SLOW_QUERY_MS`. `(root)` when the whole input is rejected. */
@@ -13,13 +19,16 @@ export interface ConfigIssue {
  * The message lists every issue as `PATH: message`; raw values are never included,
  * so secrets cannot leak through logs or crash output.
  */
-export class ConfigValidationError extends Error {
+export class ConfigValidationError extends PlatformError {
+  readonly code = ConfigErrorCode.Invalid;
   readonly issues: readonly ConfigIssue[];
 
   constructor(issues: readonly ConfigIssue[]) {
     const lines = issues.map((issue) => `  ${issue.path}: ${issue.message}`);
     const count = issues.length === 1 ? '1 issue' : `${issues.length} issues`;
-    super(`Invalid configuration (${count}):\n${lines.join('\n')}`);
+    super(`Invalid configuration (${count}):\n${lines.join('\n')}`, {
+      details: { issues },
+    });
     this.name = 'ConfigValidationError';
     this.issues = issues;
   }

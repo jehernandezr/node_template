@@ -1,18 +1,12 @@
-const encoder = new TextEncoder();
+import { fnv1a32 } from '@platform/primitives';
 
 /**
- * FNV-1a 32-bit hash over the UTF-8 bytes of `input`.
- * @returns an unsigned 32-bit integer.
+ * FNV-1a de 32 bits.
+ * @deprecated Importa `fnv1a32` desde `@platform/primitives`. Se mantiene como alias.
  */
-export function fnv1a32(input: string): number {
-  const bytes = encoder.encode(input);
-  let hash = 0x811c9dc5;
-  for (const byte of bytes) {
-    hash ^= byte;
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
+export { fnv1a32 };
+
+const encoder = new TextEncoder();
 
 /**
  * MurmurHash3 (x86, 32-bit) over the UTF-8 bytes of `input`.
