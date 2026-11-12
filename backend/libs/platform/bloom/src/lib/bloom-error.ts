@@ -1,3 +1,5 @@
+import { PlatformError } from '@platform/kernel';
+
 /** Stable error codes for the bloom filter library. */
 export enum BloomErrorCode {
   InvalidParameters = 'PLATFORM.BLOOM.INVALID_PARAMETERS',
@@ -8,12 +10,11 @@ export enum BloomErrorCode {
 }
 
 /** Base class for every error thrown by this library. */
-export class BloomError extends Error {
+export class BloomError extends PlatformError {
   readonly code: BloomErrorCode;
 
   constructor(code: BloomErrorCode, message: string) {
     super(message);
-    this.name = new.target.name;
     this.code = code;
   }
 }

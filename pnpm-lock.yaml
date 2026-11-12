@@ -117,6 +117,12 @@ importers:
 
   backend/libs/platform/bloom:
     dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@platform/primitives':
+        specifier: workspace:*
+        version: link:../primitives
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
@@ -129,6 +135,9 @@ importers:
 
   backend/libs/platform/config:
     dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
@@ -138,6 +147,9 @@ importers:
 
   backend/libs/platform/criteria:
     dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
@@ -174,12 +186,12 @@ importers:
 
   backend/libs/platform/observability:
     dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
 
   backend/libs/platform/primitives:
     dependencies:
