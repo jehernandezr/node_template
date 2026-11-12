@@ -9,6 +9,8 @@ export default [
         'error',
         {
           ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
+          // tslib solo lo usa el build (importHelpers).
+          ignoredDependencies: ['tslib'],
         },
       ],
     },

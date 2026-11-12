@@ -1,0 +1,44 @@
+{
+  "extends": "./backend/tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./backend/libs/platform/kernel"
+    },
+    {
+      "path": "./backend/libs/platform/config"
+    },
+    {
+      "path": "./backend/libs/platform/observability"
+    },
+    {
+      "path": "./backend/libs/contracts/platform"
+    },
+    {
+      "path": "./backend/libs/platform/sharding"
+    },
+    {
+      "path": "./backend/libs/platform/cache"
+    },
+    {
+      "path": "./backend/libs/platform/bloom"
+    },
+    {
+      "path": "./backend/libs/platform/resilience"
+    },
+    {
+      "path": "./backend/libs/platform/criteria"
+    },
+    {
+      "path": "./backend/libs/platform/messaging"
+    },
+    {
+      "path": "./backend/libs/platform/internal-api"
+    },
+    {
+      "path": "./backend/libs/platform/saga"
+    }
+  ],
+  "compilerOptions": {}
+}

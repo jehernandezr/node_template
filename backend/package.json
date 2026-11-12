@@ -2,18 +2,11 @@
   "name": "@node-template/backend",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {
-    "check": "nx run-many -t lint test typecheck build",
-    "format": "nx format:write",
-    "format:check": "nx format:check"
-  },
+  "scripts": {},
   "private": true,
   "devDependencies": {
     "@eslint/js": "^9.8.0",
-    "@nx/eslint": "24.0.0",
     "@nx/eslint-plugin": "24.0.0",
-    "@nx/jest": "24.0.0",
-    "@nx/js": "24.0.0",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.18",
@@ -26,7 +19,6 @@
     "jest-environment-node": "~30.3.0",
     "jest-util": "~30.3.0",
     "jsonc-eslint-parser": "^2.1.0",
-    "nx": "24.0.0",
     "prettier": "^3.8.1",
     "ts-jest": "^29.4.7",
     "ts-node": "10.9.1",
@@ -42,5 +34,11 @@
     "cockatiel": "^4.0.0",
     "uuid": "^14.0.3",
     "zod": "^4.6.7"
+  },
+  "nx": {
+    "name": "backend-tooling",
+    "tags": [
+      "type:tooling"
+    ]
   }
 }
