@@ -25,6 +25,9 @@
   "demoSignInSuperAdmin": "Sign in as super administrator",
   "forbiddenTitle": "Access denied",
   "forbiddenMessage": "You do not have permission to view this page.",
+  "stepUpTitle": "Additional verification",
+  "stepUpMessage": "This section requires you to confirm your identity with a second factor.",
+  "stepUpDemoVerify": "Verify (demo)",
   "goHome": "Go to home",
   "loading": "Loading",
 

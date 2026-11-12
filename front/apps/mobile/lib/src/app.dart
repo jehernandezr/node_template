@@ -31,8 +31,8 @@ class _MobileShellAppState extends State<MobileShellApp> {
   late final GoRouter _router;
   late final StreamSubscription<UnreadCountChanged> _unreadSubscription;
   final ValueNotifier<int> _unreadCount = ValueNotifier<int>(0);
-  String? _userId;
-  String? _tenantId;
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -59,14 +59,13 @@ class _MobileShellAppState extends State<MobileShellApp> {
       unreadCount: _unreadCount,
       onSignOut: _signOut,
     );
-    // Added before the runtime starts listening, so it runs first on a change.
-    widget.session.addListener(_onSessionChanged);
+    _runtime.identityEpoch.addListener(_onIdentityChanged);
     _runtime.start();
   }
 
   @override
   void dispose() {
-    widget.session.removeListener(_onSessionChanged);
+    _runtime.identityEpoch.removeListener(_onIdentityChanged);
     _unreadSubscription.cancel();
     _router.dispose();
     _runtime.dispose();
@@ -76,13 +75,10 @@ class _MobileShellAppState extends State<MobileShellApp> {
 
   Future<void> _signOut() => signOutAndGoToLogin(router: _router, session: widget.session);
 
-  /// A new identity must not show the previous user's badge.
-  void _onSessionChanged() {
-    final current = widget.session.value;
-    if (current.userId == _userId && current.tenantId == _tenantId) return;
-    _userId = current.userId;
-    _tenantId = current.tenantId;
+  /// A new identity must not show the previous user's badge or messages.
+  void _onIdentityChanged() {
     _unreadCount.value = 0;
+    _messengerKey.currentState?.clearSnackBars();
   }
 
   @override
@@ -97,6 +93,14 @@ class _MobileShellAppState extends State<MobileShellApp> {
       ],
       supportedLocales: supportedLocales,
       routerConfig: _router,
+      scaffoldMessengerKey: _messengerKey,
+      // Lets the shell chrome use AccessGate and context.can as well.
+      builder: (context, child) => ShellAccessScope(
+        session: widget.session,
+        clock: _runtime.clock,
+        paths: const ShellPaths(stepUp: stepUpPath),
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }

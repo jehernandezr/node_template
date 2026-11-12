@@ -4,8 +4,12 @@ import 'package:shell_core/shell_core.dart';
 
 import 'login/forbidden_page.dart';
 import 'login/login_page.dart';
+import 'login/step_up_page.dart';
 import 'screen_loader.dart';
 import 'shell/mobile_shell_scaffold.dart';
+
+/// Path of the page that asks for a recent second factor.
+const String stepUpPath = '/step-up';
 
 /// Builds the mobile router from the real [registry].
 ///
@@ -24,6 +28,7 @@ GoRouter buildMobileRouter({
     platform: AppPlatform.mobile,
     runtime: runtime,
     load: mobileScreenLoader,
+    stepUpPath: stepUpPath,
     routes: [
       GoRoute(
         path: '/',
@@ -42,6 +47,16 @@ GoRouter buildMobileRouter({
       GoRoute(
         path: '/forbidden',
         builder: (context, state) => ForbiddenPage(onSignOut: onSignOut),
+      ),
+      GoRoute(
+        path: stepUpPath,
+        redirect: (context, state) =>
+            session.value.isAuthenticated ? null : '/login',
+        builder: (context, state) => StepUpPage(
+          session: session,
+          from: state.uri.queryParameters['from'],
+          clock: runtime.clock,
+        ),
       ),
     ],
     shellBuilder: (context, state, child) => MobileShellScaffold(

@@ -13,12 +13,16 @@ import 'package:web_shell/src/screen_loader.dart';
 import 'package:web_shell/src/web_shell.dart';
 
 /// Pumps the shell in Spanish, optionally navigating to [location] first.
-Future<WebShell> pumpShell(WidgetTester tester, {String? location}) async {
+Future<WebShell> pumpShell(
+  WidgetTester tester, {
+  String? location,
+  MicrofrontendRegistry? registry,
+}) async {
   tester.platformDispatcher.localesTestValue = const [Locale('es')];
   addTearDown(tester.platformDispatcher.clearLocalesTestValue);
   ignoreAhemOverflow();
 
-  final shell = WebShell();
+  final shell = WebShell(registry: registry);
   await tester.pumpWidget(WebShellApp(shell: shell));
   addTearDown(() async {
     // Let queued identity syncs finish first; otherwise dispose races them.
@@ -285,4 +289,112 @@ void main() {
     expect(find.text('Revisar facturas de proveedores'), findsOneWidget);
     expect(find.text(adminTask), findsNothing);
   });
+
+  testWidgets('identity switch: a mounted route shows the new user\'s data', (tester) async {
+    final shell = await pumpShell(tester, registry: registryWithProbe());
+    shell.session.value = probeUser('u1');
+    shell.router.go('/verifier');
+    await waitFor(tester, find.text('usuario u1'));
+    expect(find.text('usuario u1'), findsOneWidget);
+
+    shell.session.value = probeUser('u2');
+    await settle(tester);
+
+    expect(location(shell), '/verifier');
+    expect(find.text('usuario u2'), findsOneWidget);
+    expect(find.text('usuario u1'), findsNothing);
+  });
+
+  testWidgets('identity switch clears the previous user\'s snack bars', (tester) async {
+    final shell = await pumpShell(tester, registry: registryWithProbe());
+    shell.session.value = probeUser('u1');
+    shell.router.go('/verifier');
+    await waitFor(tester, find.text('usuario u1'));
+
+    showActionError(
+      tester.element(find.text('usuario u1')),
+      StateError('x'),
+      message: 'Error de u1',
+    );
+    await tester.pump();
+    expect(find.text('Error de u1'), findsWidgets);
+
+    shell.session.value = probeUser('u2');
+    await settle(tester);
+    expect(find.text('Error de u1'), findsNothing);
+  });
+
+  testWidgets('an MFA sub-route sends to /step-up and returns after verifying', (tester) async {
+    final shell = await pumpShell(tester, registry: registryWithProbe());
+    shell.session.value = probeUser('u1');
+    shell.router.go('/verifier/secure');
+    await settle(tester);
+
+    expect(shell.router.state.uri.path, WebShell.stepUpPath);
+    expect(shell.router.state.uri.queryParameters['from'], '/verifier/secure');
+    expect(find.text('Verificación adicional'), findsOneWidget);
+
+    await tester.tap(find.text('Verificar (demostración)'));
+    await settle(tester);
+
+    expect(location(shell), '/verifier/secure');
+    expect(find.text('zona segura'), findsOneWidget);
+    expect(shell.session.value.mfaVerifiedAt, isNotNull);
+  });
+
+  testWidgets('/step-up sends an anonymous visitor to login', (tester) async {
+    final shell = await pumpShell(tester, location: WebShell.stepUpPath);
+    expect(shell.router.state.uri.path, '/login');
+  });
+}
+
+/// Signed-in user of the probe tests.
+UserSession probeUser(String id) => UserSession(userId: id, tenantId: 'demo-tenant');
+
+/// Real web registry plus a probe at `/verifier` (not composed by the web
+/// shell) that follows the WP0 contract: `screens`, scope data and `AppPage`.
+MicrofrontendRegistry registryWithProbe() => buildWebRegistry()
+  ..register(
+    MicrofrontendManifest(
+      id: MicrofrontendId.verifier,
+      platforms: {AppPlatform.web},
+      access: AccessRule.authenticated(),
+      menu: const [],
+      screens: [
+        ScreenRoute(
+          path: '/verifier',
+          loadLibrary: () async {},
+          builder: (scope, {params = const {}}) =>
+              _ProbeScreen(userId: scope.services.session.userId!),
+          routes: [
+            ScreenRoute(
+              path: 'secure',
+              access: AccessRule.mfa(const Duration(minutes: 10)),
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) =>
+                  const AppPage(title: 'Seguro', body: Text('zona segura')),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+/// Copies the user id into its state once, like a screen that loads data in
+/// `initState`. Only a rebuild from scratch shows another user.
+class _ProbeScreen extends StatefulWidget {
+  const _ProbeScreen({required this.userId});
+
+  final String userId;
+
+  @override
+  State<_ProbeScreen> createState() => _ProbeScreenState();
+}
+
+class _ProbeScreenState extends State<_ProbeScreen> {
+  late final String _loadedFor = widget.userId;
+
+  @override
+  Widget build(BuildContext context) =>
+      AppPage(title: 'Sonda', body: Text('usuario $_loadedFor'));
 }

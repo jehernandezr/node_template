@@ -231,6 +231,24 @@ abstract class AppLocalizations {
   /// **'No tienes permiso para ver esta página.'**
   String get forbiddenMessage;
 
+  /// No description provided for @stepUpTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificación adicional'**
+  String get stepUpTitle;
+
+  /// No description provided for @stepUpMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección exige que confirmes tu identidad con un segundo factor.'**
+  String get stepUpMessage;
+
+  /// No description provided for @stepUpDemoVerify.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificar (demostración)'**
+  String get stepUpDemoVerify;
+
   /// No description provided for @goHome.
   ///
   /// In es, this message translates to:

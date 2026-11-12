@@ -1,5 +1,6 @@
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
 import 'web_shell.dart';
@@ -40,6 +41,14 @@ class _WebShellAppState extends State<WebShellApp> {
       ],
       supportedLocales: supportedLocales,
       routerConfig: widget.shell.router,
+      scaffoldMessengerKey: widget.shell.scaffoldMessengerKey,
+      // Lets the shell chrome use AccessGate and context.can as well.
+      builder: (context, child) => ShellAccessScope(
+        session: widget.shell.session,
+        clock: widget.shell.runtime.clock,
+        paths: const ShellPaths(stepUp: WebShell.stepUpPath),
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
