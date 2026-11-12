@@ -221,6 +221,31 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'El esquema de la operación interna no se puede serializar a JSON.',
   ),
+  [C.InternalApiInvalidOperation]: internal(
+    500,
+    false,
+    'El valor recibido no es una operación declarada con defineOperation ni con @Operation.',
+  ),
+  [C.InternalApiInvalidIdempotencyKey]: internal(
+    400,
+    false,
+    'La llave de idempotencia o el tenant de la llamada interna falta o supera la longitud máxima.',
+  ),
+  [C.InternalApiIdempotencyKeyReuse]: internal(
+    409,
+    false,
+    'La llave de idempotencia de la operación interna ya se usó con otra entrada.',
+  ),
+  [C.InternalApiPayloadTooLarge]: internal(
+    413,
+    false,
+    'La entrada o la salida de la operación interna supera el tamaño máximo.',
+  ),
+  [C.InternalApiInvalidHandlerResult]: internal(
+    500,
+    false,
+    'El manejador de la operación interna devolvió un resultado que no es un CallOutcome.',
+  ),
   [C.MessagingInvalidEnvelope]: internal(
     400,
     false,
@@ -321,6 +346,11 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     500,
     false,
     'Un paso de la saga devolvió una respuesta fuera de su contrato.',
+  ),
+  [C.SagaUncertainOutcome]: internal(
+    504,
+    true,
+    'No se sabe si un paso de la saga se aplicó; se reintenta con la misma llave.',
   ),
   [C.SagaStateUpdateFailed]: internal(
     500,
