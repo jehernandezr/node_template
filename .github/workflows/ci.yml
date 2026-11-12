@@ -14,28 +14,270 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  main:
+  changes:
+    name: Cambios
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      contracts: ${{ steps.filter.outputs.contracts }}
+      front: ${{ steps.filter.outputs.front }}
+      web: ${{ steps.filter.outputs.web }}
+      terraform: ${{ steps.filter.outputs.terraform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            contracts:
+              - 'backend/libs/contracts/**'
+              - 'front/packages/contracts/**'
+              - 'front/tools/**'
+              - '.github/workflows/ci.yml'
+            front:
+              - 'front/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'front/**'
+              - '.github/workflows/ci.yml'
+            terraform:
+              - 'backend/infra/terraform/**'
+              - '.github/workflows/ci.yml'
+
+  backend:
+    name: Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: backend/package.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: backend/.nvmrc
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
-        working-directory: backend
 
-      - uses: nrwl/nx-set-shas@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: backend/.nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('backend/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('backend/pnpm-lock.yaml') }}-
+            nx-${{ runner.os }}-
+
+      - uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
+        with:
+          working-directory: backend
 
       - run: pnpm nx affected -t lint test typecheck build
-        working-directory: backend
 
       - run: pnpm nx format:check
+
+  contracts:
+    name: Contratos
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: backend/package.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: backend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - run: pnpm install --frozen-lockfile
         working-directory: backend
+
+      - name: Deriva del export de contratos (TypeScript)
+        run: pnpm --dir backend nx run contracts-export:check
+
+      - name: Deriva del Dart generado
+        run: |
+          flutter pub get
+          dart run contracts_gen --check
+        working-directory: front
+
+  front:
+    name: Front
+    needs: changes
+    if: needs.changes.outputs.front == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        working-directory: .
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - run: flutter pub get
+
+      - run: dart format --output=none --set-exit-if-changed .
+
+      - run: flutter analyze
+
+      - name: flutter test en cada miembro con test/
+        run: |
+          status=0
+          for dir in apps/* microfrontends/* packages/*; do
+            if [ -d "$dir/test" ]; then
+              echo "::group::flutter test $dir"
+              (cd "$dir" && flutter test) || status=1
+              echo "::endgroup::"
+            fi
+          done
+          exit $status
+
+  web-deferred:
+    name: Web diferido
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - run: flutter pub get
+        working-directory: front
+
+      - run: flutter build web --release --source-maps
+        working-directory: front/apps/web
+
+      - name: Comprobar que los microfrontends siguen diferidos
+        run: dart run ../../tools/check_deferred_chunks.dart
+        working-directory: front/apps/web
+
+  terraform:
+    name: Terraform
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend/infra/terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version_file: backend/infra/terraform/.terraform-version
+          terraform_wrapper: false
+
+      - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+
+      - run: terraform fmt -check -recursive
+
+      - name: init y validate (platform y ejemplos de módulos)
+        run: |
+          status=0
+          dirs="platform"
+          for d in modules/*/examples/*/ examples/*/; do
+            if [ -d "$d" ] && ls "$d"*.tf >/dev/null 2>&1; then
+              dirs="$dirs ${d%/}"
+            fi
+          done
+          for d in $dirs; do
+            echo "::group::terraform validate $d"
+            (cd "$d" && terraform init -backend=false -input=false && terraform validate) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: tflint
+        run: |
+          tflint --recursive --minimum-failure-severity=error
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      - changes
+      - backend
+      - contracts
+      - front
+      - web-deferred
+      - terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Comprobar el resultado de los jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Resultados: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::Hay jobs fallidos o cancelados."
+              exit 1
+            fi
+          done
