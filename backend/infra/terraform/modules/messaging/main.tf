@@ -160,7 +160,7 @@ resource "aws_sqs_queue" "this" {
   # maxAttempts lo usa el dispatcher de la aplicación para el backoff. Terraform lo etiqueta.
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq[each.key].arn
-    maxReceiveCount     = each.value.dlq.maxReceiveCount
+    maxReceiveCount     = coalesce(var.max_receive_count, each.value.dlq.maxReceiveCount)
   })
 
   tags = merge(var.tags, {
@@ -182,25 +182,36 @@ resource "aws_sqs_queue_redrive_allow_policy" "dlq" {
   })
 }
 
+# Toda cola exige TLS. Las que tienen suscripciones también autorizan a sus tópicos.
 resource "aws_sqs_queue_policy" "this" {
-  for_each = local.queue_topics
+  for_each = local.queues_by_name
 
   queue_url = aws_sqs_queue.this[each.key].url
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "AllowSnsTopics"
-      Effect    = "Allow"
-      Principal = { Service = "sns.amazonaws.com" }
-      Action    = "sqs:SendMessage"
-      Resource  = aws_sqs_queue.this[each.key].arn
-      Condition = {
-        ArnEquals = {
-          "aws:SourceArn" = [for t in each.value : aws_sns_topic.this[t].arn]
+    Statement = concat(
+      [{
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "sqs:*"
+        Resource  = aws_sqs_queue.this[each.key].arn
+        Condition = { Bool = { "aws:SecureTransport" = "false" } }
+      }],
+      contains(keys(local.queue_topics), each.key) ? [{
+        Sid       = "AllowSnsTopics"
+        Effect    = "Allow"
+        Principal = { Service = "sns.amazonaws.com" }
+        Action    = "sqs:SendMessage"
+        Resource  = aws_sqs_queue.this[each.key].arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = [for t in local.queue_topics[each.key] : aws_sns_topic.this[t].arn]
+          }
         }
-      }
-    }]
+      }] : [],
+    )
   })
 }
 
@@ -239,6 +250,55 @@ resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
   }
 
   alarm_actions = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
+  ok_actions    = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
+
+  tags = var.tags
+}
+
+# Mensajes atascados en la DLQ: nadie los reprocesa (redrive) dentro del plazo.
+resource "aws_cloudwatch_metric_alarm" "dlq_old_message" {
+  for_each = local.queues_by_name
+
+  alarm_name          = "${local.dlq_names[each.key]}-oldest-message-age"
+  namespace           = "AWS/SQS"
+  metric_name         = "ApproximateAgeOfOldestMessage"
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = var.dlq_oldest_message_age_seconds
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.dlq[each.key].name
+  }
+
+  alarm_actions = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
+  ok_actions    = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
+
+  tags = var.tags
+}
+
+# Consumidor detenido o lento: el mensaje más viejo de la cola principal supera el umbral.
+resource "aws_cloudwatch_metric_alarm" "queue_old_message" {
+  for_each = local.queues_by_name
+
+  alarm_name          = "${local.queue_names[each.key]}-oldest-message-age"
+  namespace           = "AWS/SQS"
+  metric_name         = "ApproximateAgeOfOldestMessage"
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 3
+  threshold           = var.queue_oldest_message_age_seconds
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.this[each.key].name
+  }
+
+  alarm_actions = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
+  ok_actions    = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
 
   tags = var.tags
 }

@@ -23,14 +23,69 @@ output "rds_proxy_endpoint" {
   value       = module.rds.proxy_endpoint
 }
 
+output "reader_endpoint" {
+  description = "Endpoint del RDS Proxy de lectura (primera réplica). Null sin réplicas. Es el que usan las apps para leer."
+  value       = module.rds.reader_endpoint
+}
+
+output "rds_reader_endpoints" {
+  description = "Endpoints de los proxies de lectura, uno por réplica."
+  value       = module.rds.reader_endpoints
+}
+
 output "rds_replica_endpoints" {
-  description = "Endpoints de las réplicas de lectura."
+  description = "Endpoints directos de las réplicas. Solo administración."
   value       = module.rds.replica_endpoints
 }
 
-output "rds_secret_arn" {
-  description = "ARN del secreto con las credenciales maestras."
-  value       = module.rds.secret_arn
+output "rds_master_secret_arn" {
+  description = "ARN del secreto del usuario maestro. Solo administración: las apps no lo usan."
+  value       = module.rds.master_secret_arn
+}
+
+output "rds_service_secret_arns" {
+  description = "ARN del secreto de cada usuario de servicio."
+  value       = module.rds.service_secret_arns
+}
+
+output "rds_kms_key_arn" {
+  description = "ARN de la clave KMS de RDS y sus secretos."
+  value       = module.rds.kms_key_arn
+}
+
+output "data_subnet_ids" {
+  description = "Subredes de datos, sin ruta a Internet."
+  value       = module.network.data_subnet_ids
+}
+
+output "nat_public_ips" {
+  description = "IPs públicas de salida de las apps, para listas de permitidos de proveedores externos."
+  value       = module.network.nat_public_ips
+}
+
+output "flow_log_group_name" {
+  description = "Grupo de CloudWatch Logs de los flow logs."
+  value       = module.network.flow_log_group_name
+}
+
+output "alarm_topic_arn" {
+  description = "ARN del tópico SNS que recibe las alarmas. Null si no hay."
+  value       = local.alarm_topic_arn
+}
+
+output "valkey_connect_resource_arns" {
+  description = "Por servicio, los ARN para elasticache:Connect (autenticación IAM de Valkey)."
+  value       = module.valkey.connect_resource_arns
+}
+
+output "valkey_iam_user_names" {
+  description = "Usuario Valkey de cada servicio, con el que se firma el token IAM."
+  value       = module.valkey.iam_user_names
+}
+
+output "valkey_kms_key_arn" {
+  description = "ARN de la clave KMS de Valkey."
+  value       = module.valkey.kms_key_arn
 }
 
 output "valkey_endpoint" {

@@ -115,13 +115,95 @@ variable "valkey_cache_usage_limits" {
 }
 
 variable "topology_file" {
-  description = "Ruta absoluta, o relativa a platform/, del JSON de la topología de mensajería."
+  description = "Ruta absoluta, o relativa a platform/, del JSON de la topología de mensajería exportado por backend/libs/platform/messaging. Obligatoria: no hay valor por defecto."
   type        = string
-  default     = "../examples/topology.example.json"
 }
 
 variable "alarm_topic_arn" {
-  description = "ARN de un tópico SNS para las alarmas de DLQ. Null desactiva la notificación."
+  description = "ARN de un tópico SNS existente para las alarmas de DLQ y RDS. Se ignora si defines alarm_email."
   type        = string
   default     = null
+}
+
+variable "alarm_email" {
+  description = "Correo que recibe las alarmas. Crea un tópico SNS cifrado y la suscripción (el destinatario debe confirmarla). En prod se requiere este valor o alarm_topic_arn."
+  type        = string
+  default     = null
+}
+
+variable "messaging_max_receive_count" {
+  description = "Recepciones antes de mover un mensaje a la DLQ. Null usa el valor de cada cola en la topología."
+  type        = number
+  default     = null
+}
+
+variable "egress" {
+  description = "Salida a Internet de las subredes privadas de aplicación: none, single_nat (dev) o per_az_nat (prod). Ver ADR 0016."
+  type        = string
+  default     = "per_az_nat"
+
+  validation {
+    condition     = contains(["none", "single_nat", "per_az_nat"], var.egress)
+    error_message = "egress debe ser none, single_nat o per_az_nat."
+  }
+}
+
+variable "flow_logs_retention_days" {
+  description = "Días de retención de los flow logs de la VPC."
+  type        = number
+  default     = 90
+}
+
+variable "flow_logs_traffic_type" {
+  description = "Tráfico que registran los flow logs: ALL, ACCEPT o REJECT."
+  type        = string
+  default     = "ALL"
+}
+
+variable "db_service_users" {
+  description = "Usuarios de base de datos por servicio. Cada uno recibe un secreto con rotación y un esquema propio. Las apps nunca usan el usuario maestro."
+  type = list(object({
+    name            = string
+    schema          = optional(string)
+    create_schema   = optional(bool, true)
+    rds_replication = optional(bool, false)
+  }))
+}
+
+variable "db_enable_secret_rotation" {
+  description = "Activa la rotación automática de los secretos de base de datos."
+  type        = bool
+  default     = true
+}
+
+variable "db_secret_rotation_days" {
+  description = "Días entre rotaciones de los secretos de base de datos."
+  type        = number
+  default     = 30
+}
+
+variable "db_secret_recovery_window_days" {
+  description = "Días de recuperación de un secreto borrado. 0 lo borra de inmediato (solo desechables)."
+  type        = number
+  default     = 30
+}
+
+variable "db_log_min_duration_statement_ms" {
+  description = "Milisegundos desde los que se registra una consulta lenta."
+  type        = number
+  default     = 500
+}
+
+variable "db_performance_insights_retention_days" {
+  description = "Retención de Performance Insights: 7 (gratis) o 731."
+  type        = number
+  default     = 7
+}
+
+variable "valkey_users" {
+  description = "Usuarios Valkey autenticados por IAM: nombre a ACL. Uno por servicio."
+  type        = map(string)
+  default = {
+    app = "on ~* &* +@all -@dangerous"
+  }
 }

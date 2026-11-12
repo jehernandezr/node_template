@@ -27,4 +27,22 @@ valkey_cache_usage_limits = {
 # Ruta a la topología exportada por backend/libs/platform/messaging.
 topology_file = "../examples/topology.example.json"
 
+# Red: un solo NAT gateway para abaratar (ADR 0016).
+egress                   = "single_nat"
+flow_logs_retention_days = 14
+flow_logs_traffic_type   = "REJECT"
+
+db_service_users = [
+  { name = "identity" },
+  { name = "tasks" },
+  { name = "replication", create_schema = false, rds_replication = true },
+]
+db_secret_recovery_window_days = 7
+
+valkey_users = {
+  identity = "on ~* &* +@all -@dangerous"
+  tasks    = "on ~* &* +@all -@dangerous"
+}
+
+# alarm_email = "REEMPLAZAR@example.com"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:111111111111:REEMPLAZAR"

@@ -7,9 +7,9 @@ Este directorio contiene la infraestructura AWS de la plataforma: la raíz `plat
 ```
 infra/terraform/
 ├── modules/
-│   ├── network/        VPC /16, subredes /22 públicas y privadas, endpoints de VPC
-│   ├── rds-postgres/   RDS PostgreSQL 17, réplicas de lectura, RDS Proxy y secreto administrado
-│   ├── valkey/         ElastiCache for Valkey serverless
+│   ├── network/        VPC /16, subredes /22 públicas, privadas y de datos, NAT opcional, endpoints de VPC y flow logs
+│   ├── rds-postgres/   RDS PostgreSQL 17 con CMK y parámetros propios, usuarios de servicio con rotación, RDS Proxy de escritura y de lectura
+│   ├── valkey/         ElastiCache for Valkey serverless con CMK, TLS y autenticación IAM
 │   └── messaging/      Tópicos SNS, colas SQS, DLQ, suscripciones, KMS y alarmas
 ├── platform/           Raíz de una región: compone los módulos
 │   └── environments/   Valores por entorno (dev.tfvars, prod.tfvars)
@@ -39,11 +39,11 @@ Terraform valida antes de crear recursos:
 - `retentionSeconds` no supera 14 días.
 - Los nombres finales de colas y DLQ, con prefijo y `.fifo`, no superan 80 caracteres.
 
-El archivo `examples/topology.example.json` sirve para validar y probar. Cada entorno apunta a la salida real con `topology_file`, como ruta absoluta o relativa a `platform/`.
+El archivo `examples/topology.example.json` solo sirve para validar y para dev. `topology_file` no tiene valor por defecto: prod apunta a la topología real que exporta `backend/libs/platform/messaging`, como ruta absoluta o relativa a `platform/`.
 
 ## Requisitos
 
-- Terraform 1.10 o superior, con el provider de AWS `>= 6.0, < 7.0`.
+- Terraform 1.11 (atributos de solo escritura y recursos efímeros) o superior, con el provider de AWS `>= 6.0, < 7.0`.
 - Credenciales AWS del entorno. El pipeline usa OIDC con GitHub Actions.
 - Un bucket S3 para el estado, con versionado activo.
 
@@ -83,10 +83,14 @@ Desde `infra/terraform/` puedes comprobar el formato con `terraform fmt -recursi
 
 ## Decisiones
 
-- No hay NAT gateway. Las subredes privadas salen a los servicios de AWS por endpoints de VPC: S3 por gateway, y SQS, SNS, Secrets Manager, ECR (api y dkr), CloudWatch Logs, STS, KMS y CloudWatch por interfaz.
+- Salida a Internet: la variable `egress` (`none`, `single_nat` en dev, `per_az_nat` en prod) pone NAT gateways solo para las subredes privadas de aplicación. Las subredes de datos (RDS, proxies, Valkey) no tienen ruta a Internet. El tráfico a AWS sigue por endpoints de VPC: S3 y DynamoDB por gateway; SQS, SNS, Secrets Manager, ECR (api y dkr), CloudWatch Logs, STS, KMS y CloudWatch por interfaz. Ver [ADR 0016](../../../docs/adr/0016-egress-de-red.md).
+- Los flow logs de la VPC van a CloudWatch Logs con CMK y retención configurable (`flow_logs_retention_days`, `flow_logs_traffic_type`).
 - Terraform quita la regla de salida por defecto de los security groups. Cada salida se declara como regla explícita.
-- Las aplicaciones escriben por el RDS Proxy. Las réplicas de lectura existen, pero el proxy no las enruta todavía.
-- La contraseña maestra la genera RDS y la guarda en Secrets Manager. Terraform no maneja secretos en claro.
+- Lectura: RDS Proxy no tiene endpoint lector fuera de Aurora. Cada réplica se registra como destino único de su propio proxy (`rds_reader_endpoints`); `reader_endpoint` es el de la primera. Con más de una réplica el cliente reparte entre los endpoints. Las apps escriben por `rds_proxy_endpoint` y leen por `reader_endpoint`.
+- Las apps nunca usan el usuario maestro. `db_service_users` crea un rol por servicio con esquema propio y un secreto en Secrets Manager con rotación (función oficial de AWS, usuario único). Una Lambda de bootstrap dentro de la VPC crea los roles; la contraseña inicial es efímera y no llega al estado. El campo `host` del secreto apunta a la instancia directa porque la rotación no puede pasar por el proxy: las apps toman el host de `rds_proxy_endpoint` o `reader_endpoint`. El maestro solo sirve para administración.
+- Grupo de parámetros propio: `rds.logical_replication = 1` (traslados de shard sin corte, pide reinicio la primera vez), `log_min_duration_statement`, `pg_stat_statements` y TLS obligatorio. Una CMK cifra el almacenamiento, Performance Insights y los secretos.
+- Valkey exige TLS, se cifra en reposo con CMK y autentica por IAM: el usuario `default` queda deshabilitado y cada servicio tiene su usuario (`valkey_users`). El rol del servicio necesita `elasticache:Connect` sobre `valkey_connect_resource_arns`.
+- Alarmas: `alarm_email` crea un tópico SNS cifrado, o `alarm_topic_arn` usa uno existente. En prod uno de los dos es obligatorio. Reciben las alarmas de DLQ (mensajes visibles y edad), de colas (consumidor detenido) y de RDS (CPU, disco, memoria y retraso de réplica).
 - Tópicos, colas y DLQ se cifran con una clave KMS administrada por el cliente, con rotación anual.
 - Cada DLQ tiene una alarma cuando hay mensajes visibles. Con `alarm_topic_arn` la alarma notifica a un tópico SNS.
 - `db_deletion_protection` está activo y el snapshot final se crea salvo que `db_skip_final_snapshot` sea `true`. Desactívalos solo en entornos desechables.

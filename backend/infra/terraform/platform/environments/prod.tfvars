@@ -24,8 +24,36 @@ valkey_cache_usage_limits = {
   ecpu_per_second_max = 10000
 }
 
-# Ruta real a la topología exportada por backend/libs/platform/messaging.
-topology_file = "../examples/topology.example.json"
+# Topología real exportada por backend/libs/platform/messaging (Topology.toJSON()).
+# El pipeline la genera en backend/dist/topology/topology.json antes de planear.
+# No apuntes a examples/: el ejemplo solo sirve para validar.
+topology_file = "../../../dist/topology/topology.json"
 
-# Requerido en prod para recibir alarmas de DLQ.
+# Red: un NAT gateway por AZ para las subredes privadas de aplicación (ADR 0016).
+egress                   = "per_az_nat"
+flow_logs_retention_days = 365
+flow_logs_traffic_type   = "ALL"
+
+# Base de datos: un usuario por servicio, nunca el maestro. replication sirve a SagaType.MoveShard.
+db_service_users = [
+  { name = "identity" },
+  { name = "tasks" },
+  { name = "replication", create_schema = false, rds_replication = true },
+]
+db_enable_secret_rotation              = true
+db_secret_rotation_days                = 30
+db_secret_recovery_window_days         = 30
+db_log_min_duration_statement_ms       = 500
+db_performance_insights_retention_days = 7
+
+# Valkey: un usuario IAM por servicio.
+valkey_users = {
+  identity = "on ~* &* +@all -@dangerous"
+  tasks    = "on ~* &* +@all -@dangerous"
+}
+
+# Alarmas de DLQ y RDS. En prod es obligatorio uno de los dos.
+# Con alarm_email se crea el tópico SNS y el destinatario confirma la suscripción.
+# Con alarm_topic_arn se usa un tópico existente.
+alarm_email = "REEMPLAZAR@example.com"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:222222222222:REEMPLAZAR"

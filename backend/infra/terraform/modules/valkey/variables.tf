@@ -24,6 +24,19 @@ variable "allowed_security_group_ids" {
   default     = []
 }
 
+variable "users" {
+  description = "Usuarios Valkey autenticados por IAM, por servicio: nombre a ACL (access string). El usuario default queda deshabilitado."
+  type        = map(string)
+  default = {
+    app = "on ~* &* +@all -@dangerous"
+  }
+
+  validation {
+    condition     = length(var.users) >= 1 && alltrue([for k in keys(var.users) : can(regex("^[a-z][a-z0-9-]{0,19}$", k))])
+    error_message = "Declara al menos un usuario. Los nombres usan minúsculas, números y guiones, y tienen hasta 20 caracteres."
+  }
+}
+
 variable "snapshot_retention_limit" {
   description = "Días de retención de snapshots diarios de la caché."
   type        = number
