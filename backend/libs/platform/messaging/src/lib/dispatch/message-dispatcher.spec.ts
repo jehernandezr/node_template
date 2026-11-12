@@ -34,6 +34,11 @@ const policy = RetryPolicy.exponential({
   jitter: false,
 });
 
+/** An error the shared classifier treats as transient. */
+function transient(message: string): Error {
+  return Object.assign(new Error(message), { retryable: true });
+}
+
 function envelopeFor(type: string, data: unknown, id = 'msg-1'): unknown {
   return createEnvelope({ type, source: '/test', data }, { newId: () => id });
 }
@@ -72,7 +77,7 @@ describe('MessageDispatcher', () => {
   it('asks for a retry with backoff delay while attempts remain', async () => {
     const { dispatcher } = setup();
     dispatcher.register(new TaskUpdated(), () => {
-      throw new Error('database unavailable');
+      throw transient('database unavailable');
     });
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
 
@@ -96,7 +101,7 @@ describe('MessageDispatcher', () => {
     const { dispatcher } = setup();
     let fail = true;
     const handler = jest.fn(() => {
-      if (fail) throw new Error('transient');
+      if (fail) throw transient('transient');
     });
     dispatcher.register(new TaskUpdated(), handler);
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
@@ -160,16 +165,18 @@ describe('MessageDispatcher', () => {
       outcome: DispatchOutcome.DeadLetter,
       id: 'msg-1',
       error: 'task no longer exists',
+      code: MessagingErrorCode.PermanentError,
     });
   });
 
-  it('treats domain errors with a code and retryable=false as permanent, but not others', async () => {
+  it('classifies handler errors with the shared classifyFailure rule', async () => {
     const { dispatcher } = setup();
     const domainError = (retryable?: boolean) =>
       Object.assign(new Error('insufficient stock'), {
         code: 'INVENTORY.STOCK.EMPTY',
         retryable,
       });
+    const timeout = Object.assign(new Error('slow'), { name: 'TimeoutError' });
     let next: unknown;
     dispatcher.register(new TaskUpdated(), () => {
       throw next;
@@ -181,11 +188,30 @@ describe('MessageDispatcher', () => {
       (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
         .outcome,
     ).toBe(DispatchOutcome.DeadLetter);
+    // Without any signal the platform rule does not retry.
     next = domainError(undefined);
+    expect(
+      await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }),
+    ).toMatchObject({
+      outcome: DispatchOutcome.DeadLetter,
+      code: 'INVENTORY.STOCK.EMPTY',
+    });
+    next = domainError(true);
     expect(
       (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
         .outcome,
     ).toBe(DispatchOutcome.RetryLater);
+    // A timeout leaves the result uncertain; the claim makes a retry safe.
+    next = timeout;
+    expect(
+      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
+        .outcome,
+    ).toBe(DispatchOutcome.RetryLater);
+    next = new Error('unclassified');
+    expect(
+      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
+        .outcome,
+    ).toBe(DispatchOutcome.DeadLetter);
   });
 
   it('lets isPermanent replace the default rule', async () => {
@@ -209,7 +235,7 @@ describe('MessageDispatcher', () => {
     ).toBe(DispatchOutcome.DeadLetter);
   });
 
-  it('retries a ZodError thrown inside the handler (only pre-handler validation is permanent)', async () => {
+  it('dead-letters a ZodError thrown inside the handler (a protocol violation)', async () => {
     const { dispatcher } = setup();
     dispatcher.register(new TaskUpdated(), () => {
       throw new ZodError([]);
@@ -224,7 +250,7 @@ describe('MessageDispatcher', () => {
           },
         )
       ).outcome,
-    ).toBe(DispatchOutcome.RetryLater);
+    ).toBe(DispatchOutcome.DeadLetter);
   });
 
   it('dead-letters payloads that fail the contract schema and does not run the handler', async () => {
@@ -316,6 +342,7 @@ describe('MessageDispatcher', () => {
   it('turns a claim failure into RetryLater instead of throwing', async () => {
     const failingStore: ProcessedMessageStore = {
       claim: () => Promise.reject(new Error('connection reset')),
+      complete: () => Promise.resolve(),
       release: () => Promise.resolve(),
     };
     const { dispatcher } = setup({ processed: failingStore });

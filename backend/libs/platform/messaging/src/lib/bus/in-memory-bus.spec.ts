@@ -171,6 +171,7 @@ describe('InMemoryBus', () => {
       ignored: 0,
       retried: 0,
       deadLettered: 0,
+      inProgress: 0,
     });
     expect(handled).toEqual(['t1']);
     expect(bus.pendingCount('notifications')).toBe(0);
@@ -179,7 +180,7 @@ describe('InMemoryBus', () => {
   it('re-enqueues retries after their backoff delay and dead-letters at max attempts', async () => {
     const { bus, dispatcher, setClock } = setup();
     dispatcher.register(new TaskUpdated(), () => {
-      throw new Error('downstream down');
+      throw Object.assign(new Error('downstream down'), { retryable: true });
     });
     await bus.publish(new TaskUpdated(), { id: 't1' });
 
@@ -197,6 +198,7 @@ describe('InMemoryBus', () => {
       ignored: 0,
       retried: 0,
       deadLettered: 0,
+      inProgress: 0,
     });
 
     setClock(1_000);

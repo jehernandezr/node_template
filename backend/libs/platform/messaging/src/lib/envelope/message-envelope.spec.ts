@@ -1,10 +1,17 @@
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { MessagingErrorCode } from '../errors/messaging-error.js';
 import {
+  MAX_ENVELOPE_ACTOR_ID_LENGTH,
   MAX_ENVELOPE_BYTES,
   MAX_ENVELOPE_ID_LENGTH,
+  MAX_ENVELOPE_SOURCE_LENGTH,
+  MAX_ENVELOPE_SUBJECT_LENGTH,
+  MAX_ENVELOPE_TENANT_ID_LENGTH,
+  MAX_ENVELOPE_TYPE_LENGTH,
   createEnvelope,
   envelopeSizeBytes,
   messageEnvelopeSchema,
+  parseEnvelope,
   toWireEnvelope,
 } from './message-envelope.js';
 
@@ -68,6 +75,20 @@ describe('createEnvelope', () => {
     ]);
   });
 
+  it('takes the id and time from the kernel IdGenerator and Clock', () => {
+    const envelope = createEnvelope(
+      { type: 't', source: 's', data: 1 },
+      {
+        ids: new SequentialIdGenerator(),
+        clock: new FixedClock(fixedNow),
+      },
+    );
+    expect(envelope).toMatchObject({
+      id: '01941f29-7c00-7000-8000-000000000001',
+      time: fixedNow.toISOString(),
+    });
+  });
+
   it('generates UUID v7 ids by default', () => {
     const envelope = createEnvelope({ type: 't', source: 's', data: 1 });
     expect(envelope.id).toMatch(
@@ -128,6 +149,25 @@ describe('messageEnvelopeSchema', () => {
   });
 
   it.each([
+    ['type', MAX_ENVELOPE_TYPE_LENGTH],
+    ['source', MAX_ENVELOPE_SOURCE_LENGTH],
+    ['subject', MAX_ENVELOPE_SUBJECT_LENGTH],
+    ['tenantid', MAX_ENVELOPE_TENANT_ID_LENGTH],
+    ['actorid', MAX_ENVELOPE_ACTOR_ID_LENGTH],
+  ])('bounds the length of %s', (field, max) => {
+    expect(
+      messageEnvelopeSchema.safeParse({ ...valid, [field]: 'x'.repeat(max) })
+        .success,
+    ).toBe(true);
+    expect(
+      messageEnvelopeSchema.safeParse({
+        ...valid,
+        [field]: 'x'.repeat(max + 1),
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each([
     ['wrong specversion', { ...valid, specversion: '0.3' }],
     ['missing id', { ...valid, id: undefined }],
     ['empty type', { ...valid, type: '' }],
@@ -135,6 +175,43 @@ describe('messageEnvelopeSchema', () => {
     ['invalid time', { ...valid, time: 'yesterday' }],
   ])('rejects %s', (_label, candidate) => {
     expect(messageEnvelopeSchema.safeParse(candidate).success).toBe(false);
+  });
+});
+
+describe('parseEnvelope', () => {
+  const envelope = createEnvelope(
+    { type: 't', source: 's', data: { a: 1 } },
+    { newId: () => 'id-1', now: () => fixedNow },
+  );
+
+  it('parses a decoded value or a JSON string', () => {
+    expect(parseEnvelope(envelope)).toEqual({ ok: true, value: envelope });
+    expect(parseEnvelope(JSON.stringify(envelope))).toEqual({
+      ok: true,
+      value: envelope,
+    });
+  });
+
+  it('rejects oversized input with PayloadTooLarge', () => {
+    const big = { ...envelope, data: 'x'.repeat(MAX_ENVELOPE_BYTES) };
+    for (const raw of [big, JSON.stringify(big)]) {
+      const result = parseEnvelope(raw);
+      expect(result.ok).toBe(false);
+      expect(!result.ok && result.error.code).toBe(
+        MessagingErrorCode.PayloadTooLarge,
+      );
+    }
+  });
+
+  it('rejects invalid JSON and non-serializable values with InvalidEnvelope', () => {
+    const cyclic: Record<string, unknown> = { ...envelope };
+    cyclic['self'] = cyclic;
+    for (const raw of ['{', cyclic, { ...envelope, id: '' }]) {
+      const result = parseEnvelope(raw);
+      expect(!result.ok && result.error.code).toBe(
+        MessagingErrorCode.InvalidEnvelope,
+      );
+    }
   });
 });
 

@@ -1,3 +1,9 @@
+import {
+  type Clock,
+  type IdGenerator,
+  SystemClock,
+  UuidV7IdGenerator,
+} from '@platform/kernel';
 import type { MessageContract } from '../contracts/message-contract.js';
 import {
   type CommandContract,
@@ -22,9 +28,13 @@ import type { MessageBus, PublishOptions, SendOptions } from './message-bus.js';
 export interface InMemoryBusOptions {
   /** Value of the envelope `source` attribute. */
   readonly source: string;
-  /** Clock used for delays and retries. Defaults to the current date. */
+  /** Clock used for envelope times, delays and retries. Defaults to the system clock. */
+  readonly clock?: Clock;
+  /** Id generator for envelopes. Defaults to UUIDv7. */
+  readonly ids?: IdGenerator;
+  /** @deprecated Use `clock`. Takes precedence over `clock` when given. */
   readonly now?: () => Date;
-  /** Id generator for envelopes. Defaults to UUID v7. */
+  /** @deprecated Use `ids`. Takes precedence over `ids` when given. */
   readonly newId?: () => string;
 }
 
@@ -49,6 +59,8 @@ export interface DrainReport {
   readonly ignored: number;
   readonly retried: number;
   readonly deadLettered: number;
+  /** Deliveries left for redelivery because another delivery holds the claim. */
+  readonly inProgress: number;
 }
 
 /**
@@ -60,11 +72,17 @@ export class InMemoryBus implements MessageBus {
   private readonly options: InMemoryBusOptions;
   private readonly queues = new Map<string, QueuedMessage[]>();
   private readonly deadLetterQueues = new Map<string, DeadLetterEntry[]>();
+  private readonly clockSource: Clock;
+  private readonly newId: () => string;
 
   constructor(topology: Topology, options: InMemoryBusOptions) {
     topology.assertValid();
     this.topology = topology;
     this.options = options;
+    const now = options.now;
+    this.clockSource = now ? { now } : (options.clock ?? new SystemClock());
+    const ids = options.ids ?? new UuidV7IdGenerator();
+    this.newId = options.newId ?? (() => ids.next().toString());
     for (const queue of topology.queues) {
       this.queues.set(queue.name, []);
       this.deadLetterQueues.set(queue.name, []);
@@ -124,9 +142,12 @@ export class InMemoryBus implements MessageBus {
     dispatcher: MessageDispatcher,
   ): Promise<DrainReport> {
     const queue = this.requireQueue(queueName);
-    const policy = this.topology.queues.find(
-      (q) => q.name === queueName,
-    )?.retryPolicy;
+    const queueDef = this.topology.queues.find((q) => q.name === queueName);
+    const policy = queueDef?.retryPolicy;
+    const visibilityTimeoutMs =
+      queueDef === undefined
+        ? undefined
+        : queueDef.visibilityTimeoutSeconds * 1000;
     const now = this.clock();
 
     const due = queue.filter((message) => message.availableAt <= now);
@@ -141,6 +162,7 @@ export class InMemoryBus implements MessageBus {
       ignored: 0,
       retried: 0,
       deadLettered: 0,
+      inProgress: 0,
     };
 
     for (const message of due) {
@@ -148,6 +170,7 @@ export class InMemoryBus implements MessageBus {
       const result = await dispatcher.dispatch(message.envelope, {
         receiveCount,
         retryPolicy: policy,
+        ...(visibilityTimeoutMs === undefined ? {} : { visibilityTimeoutMs }),
       });
       switch (result.outcome) {
         case DispatchOutcome.Processed:
@@ -161,6 +184,14 @@ export class InMemoryBus implements MessageBus {
           break;
         case DispatchOutcome.RetryLater:
           report.retried++;
+          this.push(queueName, {
+            envelope: message.envelope,
+            receiveCount,
+            availableAt: now + result.delayMs,
+          });
+          break;
+        case DispatchOutcome.InProgress:
+          report.inProgress++;
           this.push(queueName, {
             envelope: message.envelope,
             receiveCount,
@@ -227,13 +258,13 @@ export class InMemoryBus implements MessageBus {
           tenantId: options.tenantId,
           actorId: options.actorId,
         },
-        { now: this.options.now, newId: this.options.newId },
+        { clock: this.clockSource, newId: this.newId },
       ),
     );
   }
 
   private clock(): number {
-    return (this.options.now ?? (() => new Date()))().getTime();
+    return this.clockSource.now().getTime();
   }
 
   private push(queueName: string, message: QueuedMessage): void {
