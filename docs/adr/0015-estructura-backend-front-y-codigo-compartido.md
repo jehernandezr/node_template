@@ -13,11 +13,21 @@ El repositorio mezclaba en la raíz el workspace Node (Nx, pnpm, librerías, Ter
 
 La raíz contiene solo:
 
-- `backend/`: workspace Nx + pnpm completo (apps, librerías, herramientas, infraestructura).
+- `backend/`: apps, librerías, herramientas e infraestructura del backend, con sus herramientas de TypeScript (Jest, ESLint, `tsconfig.base.json`) en `backend/package.json`.
 - `front/`: pub workspace de Flutter (shells, microfrontends, paquetes, herramientas).
-- Lo propio del repositorio: `.github/` (CI/CD), `.husky/`, `commitlint.config.mjs`, `lint-staged.config.mjs`, Prettier, `docs/`, `README.md`, `CLAUDE.md`, `renovate.json` y un `package.json` mínimo con esas herramientas.
+- Nx como orquestador: `nx.json`, `package.json` (Nx, sus plugins y las herramientas de git), `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.nvmrc` y un `tsconfig.json` de solución que Nx exige en la raíz para sincronizar las referencias.
+- Lo propio del repositorio: `.github/` (CI/CD), `.husky/`, `commitlint.config.mjs`, `lint-staged.config.mjs`, Prettier, `docs/`, `README.md`, `CLAUDE.md` y `renovate.json`.
 
 Cada aplicación es dueña de sus librerías y utilidades. Nada compartido entre backend y front vive en la raíz: el front recibe los contratos generados desde el backend.
+
+### Orquestación con Nx
+
+Un solo grafo de Nx cubre backend y front:
+
+- Los proyectos TypeScript se descubren con los plugins de `@nx/js`, `@nx/jest` y `@nx/eslint`, limitados a `backend/**`.
+- `front/tools/nx-plugin` registra cada miembro del pub workspace como proyecto `front-<nombre>` con las tareas `analyze`, `format-check` y `test` (con caché). Las dependencias entre paquetes Dart salen de sus `pubspec.yaml`.
+- `front-contracts` depende de los paquetes de `backend/libs/contracts`, así que un cambio de contrato marca como afectados los paquetes y microfrontends del front que lo usan.
+- `pnpm nx affected -t lint test typecheck build analyze format-check` es el comando de CI y el de uso diario.
 
 ### Backend
 
@@ -96,6 +106,6 @@ Los contratos se escriben en TypeScript con zod en `backend/libs/contracts`. `co
 
 ## Consecuencias
 
-- `backend/` y `front/` se instalan y prueban por separado; la raíz solo instala las herramientas de git.
+- `pnpm install` en la raíz instala Nx y el backend; `flutter pub get` en `front/` prepara el front. Después, todo se corre con Nx desde la raíz.
 - Los enums de acceso (roles, permisos, planes, flags) pasan de Dart escrito a mano a TypeScript, y el front los recibe generados.
 - Un cambio en un contrato del backend obliga a regenerar el Dart en el mismo cambio.

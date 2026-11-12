@@ -4,12 +4,12 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 
 ## Estructura
 
-- La raíz solo tiene `backend/` (workspace Nx + pnpm), `front/` (pub workspace de Flutter) y herramientas del repositorio (CI/CD, hooks, docs). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+- La raíz solo tiene `backend/`, `front/` (pub workspace de Flutter), Nx como orquestador y herramientas del repositorio (CI/CD, hooks, docs). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
 - Cada aplicación es dueña de sus librerías: lo compartido del backend vive en `backend/libs`, lo del front en `front/packages`, y lo compartido dentro de un servicio o microfrontend en su carpeta `shared/{enums,constants,types,utils}`.
 
 ## Comandos
 
-- El backend se trabaja desde `backend/`. Ejecuta las comprobaciones con Nx: `pnpm nx ...`. Ejemplos: `pnpm nx affected -t lint test typecheck`, `pnpm nx test <proyecto>`.
+- Nx corre desde la raíz y cubre backend y front. Prepara con `pnpm install` en la raíz y `flutter pub get` en `front/`. Ejemplos: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
 - Usa `pnpm nx g @nx/js:library ...` para crear librerías y `backend/tools/generators` para servicios y módulos.
 - Las configuraciones de Jest son `jest.config.cjs`.
 
