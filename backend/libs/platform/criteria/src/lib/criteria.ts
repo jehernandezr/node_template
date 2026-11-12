@@ -5,7 +5,7 @@ import type {
   GroupNode,
   OrderItem,
 } from './ast.js';
-import { decodeCursor, type Cursor } from './cursor.js';
+import { decodeCursor, type Cursor, type CursorOptions } from './cursor.js';
 import { LogicalOperator, NodeKind, Operator, SortDirection } from './enums.js';
 import {
   assertDefined,
@@ -264,8 +264,8 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
    * Continues after the position encoded in `token` (see `encodeCursor` and `takePage`).
    * @throws CriteriaError with `InvalidValue` when the token is malformed.
    */
-  after(token: string): Criteria<Entity> {
-    return this.withState({ after: decodeCursor(token) });
+  after(token: string, options?: CursorOptions): Criteria<Entity> {
+    return this.withState({ after: decodeCursor(token, options) });
   }
 
   /** Returns the neutral AST. Callers receive copies and cannot change the builder. */

@@ -1,4 +1,4 @@
-import { encodeCursor } from './cursor.js';
+import { encodeCursor, type CursorOptions } from './cursor.js';
 import { assertLimit } from './validation.js';
 
 /** One page of results. `nextCursor` is an opaque token for `after()`, or `null` on the last page. */
@@ -17,6 +17,7 @@ export function takePage<T>(
   limit: number | undefined,
   getId: (row: T) => string,
   getSortValues: (row: T) => readonly unknown[],
+  cursorOptions?: CursorOptions,
 ): Page<T> {
   if (limit === undefined) {
     return { items: [...rows], nextCursor: null };
@@ -29,6 +30,9 @@ export function takePage<T>(
   const last = items[items.length - 1];
   return {
     items,
-    nextCursor: encodeCursor({ values: getSortValues(last), id: getId(last) }),
+    nextCursor: encodeCursor(
+      { values: getSortValues(last), id: getId(last) },
+      cursorOptions,
+    ),
   };
 }
