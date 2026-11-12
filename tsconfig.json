@@ -14,6 +14,30 @@
     },
     {
       "path": "./libs/contracts/platform"
+    },
+    {
+      "path": "./libs/platform/sharding"
+    },
+    {
+      "path": "./libs/platform/cache"
+    },
+    {
+      "path": "./libs/platform/bloom"
+    },
+    {
+      "path": "./libs/platform/resilience"
+    },
+    {
+      "path": "./libs/platform/criteria"
+    },
+    {
+      "path": "./libs/platform/messaging"
+    },
+    {
+      "path": "./libs/platform/internal-api"
+    },
+    {
+      "path": "./libs/platform/saga"
     }
   ],
   "compilerOptions": {}

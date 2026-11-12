@@ -57,3 +57,9 @@ test-output
 
 # test output
 test-output
+
+# terraform local state and plugins
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

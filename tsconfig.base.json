@@ -18,6 +18,8 @@
     "target": "es2022",
     "customConditions": ["@node-template/source"],
     "noUncheckedSideEffectImports": false,
-    "types": ["*"]
+    "types": ["*"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   }
 }
