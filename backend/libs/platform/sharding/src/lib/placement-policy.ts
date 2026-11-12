@@ -53,7 +53,8 @@ export class LeastLoadedPlacementPolicy implements PlacementPolicy {
     if (regionShards.length === 0) {
       throw new ShardingError(
         ShardingErrorCode.UnknownShard,
-        `No shards available in region "${request.region}"`,
+        'No shards available in region',
+        { details: { region: request.region } },
       );
     }
 
@@ -89,10 +90,9 @@ export class LeastLoadedPlacementPolicy implements PlacementPolicy {
       const kind = request.dedicated
         ? 'free shard for a dedicated tenant'
         : 'shard for a tenant';
-      throw new ShardingError(
-        ShardingErrorCode.UnknownShard,
-        `No ${kind} in region "${request.region}" for "${request.tenantId}"`,
-      );
+      throw new ShardingError(ShardingErrorCode.UnknownShard, `No ${kind}`, {
+        details: { region: request.region, tenantId: request.tenantId },
+      });
     }
 
     return {

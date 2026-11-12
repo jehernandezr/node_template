@@ -1,4 +1,5 @@
 import { ConsistentHashRing } from './consistent-hash-ring.js';
+import { ShardingErrorCode } from './errors.js';
 
 function keys(count: number): string[] {
   return Array.from({ length: count }, (_, i) => `key-${i}`);
@@ -105,7 +106,12 @@ describe('ConsistentHashRing', () => {
   });
 
   it('rejects a non-positive number of virtual nodes', () => {
-    expect(() => new ConsistentHashRing(0)).toThrow(RangeError);
-    expect(() => new ConsistentHashRing(1.5)).toThrow(RangeError);
+    for (const virtualNodes of [0, 1.5]) {
+      expect(() => new ConsistentHashRing(virtualNodes)).toThrow(
+        expect.objectContaining({
+          code: ShardingErrorCode.InvalidConfiguration,
+        }),
+      );
+    }
   });
 });

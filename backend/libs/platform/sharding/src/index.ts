@@ -1,3 +1,4 @@
+export type { ShardingClock } from './lib/clock.js';
 export * from './lib/errors.js';
 export * from './lib/types.js';
 export * from './lib/ports.js';

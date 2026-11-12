@@ -1,4 +1,5 @@
-import { fnv1a32 } from './hash.js';
+import { fnv1a32 } from '@platform/primitives';
+import { ShardingError, ShardingErrorCode } from './errors.js';
 
 /**
  * Position on the ring. FNV-1a alone clusters for sequential suffixes (`node#0`, `node#1`, ...),
@@ -32,10 +33,16 @@ export class ConsistentHashRing {
   private readonly members = new Set<string>();
   private points: RingPoint[] = [];
 
-  /** @param virtualNodes Points per node on the ring. Default 128. */
+  /**
+   * @param virtualNodes Points per node on the ring. Default 128.
+   * @throws ShardingError `InvalidConfiguration` when `virtualNodes` is not a positive integer.
+   */
   constructor(virtualNodes = 128) {
     if (!Number.isInteger(virtualNodes) || virtualNodes < 1) {
-      throw new RangeError('virtualNodes must be a positive integer');
+      throw new ShardingError(
+        ShardingErrorCode.InvalidConfiguration,
+        'virtualNodes must be a positive integer',
+      );
     }
     this.virtualNodes = virtualNodes;
   }
