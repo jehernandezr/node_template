@@ -1,12 +1,48 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "schedule": ["before 6am on monday"],
   "semanticCommits": "enabled",
+  "dependencyDashboard": true,
+  "enabledManagers": [
+    "npm",
+    "nvm",
+    "pub",
+    "terraform",
+    "terraform-version",
+    "github-actions",
+    "custom.regex"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versión de Flutter fijada en front/.flutter-version",
+      "managerFilePatterns": ["/^front/\\.flutter-version$/"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "depNameTemplate": "flutter/flutter",
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "packageRules": [
     {
-      "groupName": "Nx packages",
-      "matchPackageNames": ["nx", "@nx/*"]
+      "groupName": "Nx",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["nx", "@nx/*", "@nrwl/*"]
+    },
+    {
+      "groupName": "Flutter",
+      "matchManagers": ["pub", "custom.regex"],
+      "matchPackageNames": ["flutter/flutter", "flutter_*"]
+    },
+    {
+      "groupName": "Proveedor AWS (Terraform)",
+      "matchManagers": ["terraform"],
+      "matchPackageNames": ["hashicorp/aws", "terraform-aws-modules/*"]
+    },
+    {
+      "groupName": "AWS SDK",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@aws-sdk/*", "@smithy/*"]
     }
   ]
 }
