@@ -1,3 +1,10 @@
+import { type Clock, isErrorCode, SystemClock } from '@platform/kernel';
+import {
+  ClaimState,
+  Deadline,
+  type ClaimResult,
+  stableDigest,
+} from '@platform/primitives';
 import type { z } from 'zod';
 import {
   type MessageContract,
@@ -10,7 +17,7 @@ import {
 } from '../errors/messaging-error.js';
 import {
   type MessageEnvelope,
-  messageEnvelopeSchema,
+  parseEnvelope,
 } from '../envelope/message-envelope.js';
 import type { RetryPolicy } from '../topology/retry-policy.js';
 import type { Topology } from '../topology/topology.js';
@@ -18,9 +25,13 @@ import {
   ErrorDisposition,
   type PermanenceCheck,
   classifyError,
-  isPermanentByDefault,
+  isPermanentFailure,
 } from './classify-error.js';
-import type { ProcessedMessageStore } from './processed-message-store.js';
+import {
+  type ProcessedMessage,
+  type ProcessedMessageStore,
+  processedMessageKey,
+} from './processed-message-store.js';
 
 /** Result of handling one delivery. */
 export enum DispatchOutcome {
@@ -30,6 +41,12 @@ export enum DispatchOutcome {
   Ignored = 'ignored',
   RetryLater = 'retry-later',
   DeadLetter = 'dead-letter',
+  /**
+   * Another delivery of the same message holds the claim and its lease is still
+   * valid (the first handler may still be running). Never ack it: leave it for
+   * redelivery, e.g. as an SQS batch item failure.
+   */
+  InProgress = 'in-progress',
 }
 
 /** Outcome of {@link MessageDispatcher.dispatch}. */
@@ -46,12 +63,33 @@ export type DispatchResult =
       readonly id: string;
       readonly delayMs: number;
       readonly error: string;
+      /** Stable code of the error, when it has one. */
+      readonly code?: string;
+    }
+  | {
+      readonly outcome: DispatchOutcome.InProgress;
+      readonly id: string;
+      /** Time left on the current lease; a sensible redelivery delay. */
+      readonly delayMs: number;
     }
   | {
       readonly outcome: DispatchOutcome.DeadLetter;
       readonly id?: string;
       readonly error: string;
+      /** Stable code of the error, when it has one. */
+      readonly code?: string;
     };
+
+/**
+ * Whether the transport must leave the delivery for redelivery instead of
+ * acknowledging it (SQS: report it as a batch item failure).
+ */
+export function requiresRedelivery(result: DispatchResult): boolean {
+  return (
+    result.outcome === DispatchOutcome.RetryLater ||
+    result.outcome === DispatchOutcome.InProgress
+  );
+}
 
 /** Handles one validated message. */
 export type MessageHandler<T> = (
@@ -59,12 +97,33 @@ export type MessageHandler<T> = (
   envelope: MessageEnvelope<T>,
 ) => void | Promise<void>;
 
+/**
+ * Decides whether the envelope tenant is legitimate for this consumer, e.g. that
+ * the tenant exists and is subscribed. `tenantId` is undefined when the
+ * envelope has none. Throwing is treated as a transient failure.
+ */
+export type TenantVerifier = (
+  tenantId: string | undefined,
+  envelope: MessageEnvelope,
+) => boolean | Promise<boolean>;
+
 /** Per-delivery information supplied by the transport. */
 export interface DispatchOptions {
   /** Deliveries so far, counting this one (1 on the first delivery). */
   readonly receiveCount: number;
   /** Retry policy of the queue. Without one, the first failure dead-letters. */
   readonly retryPolicy?: RetryPolicy;
+  /**
+   * Current visibility timeout of this delivery, in milliseconds. The claim
+   * lease is never shorter than this.
+   */
+  readonly visibilityTimeoutMs?: number;
+  /**
+   * Tenant of the subscription the delivery came through. When set, the
+   * envelope `tenantid` must be exactly this one. Overrides the dispatcher's
+   * `expectedTenantId`.
+   */
+  readonly expectedTenantId?: string;
 }
 
 /** Dependencies and rules of the dispatcher. */
@@ -74,14 +133,40 @@ export interface MessageDispatcherOptions {
   readonly processed: ProcessedMessageStore;
   /** Resolves the kind of types without a handler: unknown events are ignored, commands dead-letter. */
   readonly topology?: Topology;
-  /** Overrides the default permanence rule for errors thrown by handlers. */
+  /**
+   * Overrides the permanence rule for errors thrown by handlers. Defaults to
+   * {@link isPermanentFailure} (the shared `classifyFailure`).
+   */
   readonly isPermanent?: PermanenceCheck;
   /** Wraps the claim and the handler, e.g. to open a transaction or a tenant context. */
   readonly runInContext?: (
     envelope: MessageEnvelope,
     fn: () => Promise<void>,
   ) => Promise<void>;
+  /** Source of time for leases. Defaults to the system clock. */
+  readonly clock?: Clock;
+  /**
+   * Minimum claim lease in milliseconds. Must be at least the queue visibility
+   * timeout. Defaults to the visibility timeout of the consumer queue in
+   * `topology`, or {@link DEFAULT_CLAIM_LEASE_MS}.
+   */
+  readonly minLeaseMs?: number;
+  /** Extra lease time over `minLeaseMs`. Defaults to the primitives default. */
+  readonly leaseMarginMs?: number;
+  /** Tenant this consumer serves (single-tenant queue). See {@link DispatchOptions.expectedTenantId}. */
+  readonly expectedTenantId?: string;
+  /** Verifies the envelope tenant before the handler runs. */
+  readonly verifyTenant?: TenantVerifier;
+  /**
+   * Accepts any envelope `tenantid` without verification. Insecure: a producer
+   * could act on another tenant's data.
+   * @deprecated Configure `expectedTenantId` or `verifyTenant` instead.
+   */
+  readonly trustEnvelopeTenant?: boolean;
 }
+
+/** Lease used when neither the options nor the topology give a visibility timeout (SQS default). */
+export const DEFAULT_CLAIM_LEASE_MS = 30_000;
 
 interface Registration {
   readonly schema: z.ZodType<unknown>;
@@ -91,27 +176,74 @@ interface Registration {
   ) => void | Promise<void>;
 }
 
+/** Where the run stopped, to decide what a thrown error means. */
+enum Stage {
+  /** Opening the context or claiming: an infrastructure failure. */
+  Claim = 'claim',
+  Handler = 'handler',
+  Complete = 'complete',
+  Done = 'done',
+}
+
 interface RunState {
-  claimed: boolean;
-  duplicate: boolean;
-  storeError: { readonly error: unknown } | undefined;
+  stage: Stage;
+  claimToken: string | undefined;
+  /** Set when the claim decided the outcome without running the handler. */
+  result: DispatchResult | undefined;
+}
+
+function codeOf(err: unknown): string | undefined {
+  const code = (err as { code?: unknown } | null)?.code;
+  return isErrorCode(code) ? code : undefined;
+}
+
+function assertLease(name: string, value: number | undefined): void {
+  if (value !== undefined && (!Number.isFinite(value) || value <= 0)) {
+    throw new MessagingError(
+      MessagingErrorCode.InvalidOptions,
+      `${name} must be a finite number > 0`,
+    );
+  }
 }
 
 /**
  * Validates and dispatches raw deliveries to registered handlers.
  *
- * Flow: envelope and data validation (permanent on failure, handler not run), then
- * `claim(consumer, id)`, then the handler. A handler failure releases the claim and is
- * classified by `isPermanent`. Store errors are always retried and never thrown.
+ * Flow:
+ * 1. Size limit and envelope validation, before any payload parsing (dead-letter on failure).
+ * 2. Handler lookup, then tenant verification (dead-letter on mismatch).
+ * 3. Contract validation of `data` (dead-letter on failure, handler not run).
+ * 4. Three-state claim of `(consumer, id)` with a lease of at least the visibility timeout:
+ *    `completed` is a duplicate, `in-progress` is left for redelivery, `acquired` runs the
+ *    handler and then completes the claim with its token.
+ * 5. A handler failure releases the claim and is classified by `isPermanent`. Store and
+ *    context errors are always retried and never thrown.
  */
 export class MessageDispatcher {
   private readonly registrations = new Map<string, Registration>();
   private readonly options: MessageDispatcherOptions;
   private readonly isPermanent: PermanenceCheck;
+  private readonly clock: Clock;
+  private readonly baseLeaseMs: number;
 
   constructor(options: MessageDispatcherOptions) {
+    assertLease('minLeaseMs', options.minLeaseMs);
+    if (options.leaseMarginMs !== undefined) {
+      if (!Number.isFinite(options.leaseMarginMs) || options.leaseMarginMs < 0)
+        throw new MessagingError(
+          MessagingErrorCode.InvalidOptions,
+          'leaseMarginMs must be a finite number >= 0',
+        );
+    }
     this.options = options;
-    this.isPermanent = options.isPermanent ?? isPermanentByDefault;
+    this.isPermanent = options.isPermanent ?? isPermanentFailure;
+    this.clock = options.clock ?? new SystemClock();
+    const queue = options.topology?.queues.find(
+      (q) => q.name === options.consumer,
+    );
+    this.baseLeaseMs =
+      options.minLeaseMs ??
+      (queue ? queue.visibilityTimeoutSeconds * 1000 : DEFAULT_CLAIM_LEASE_MS);
   }
 
   /** Registers the handler for a contract. One handler per message type. */
@@ -129,23 +261,41 @@ export class MessageDispatcher {
     return this;
   }
 
-  /** Handles one raw delivery and reports what the transport should do with it. */
+  /**
+   * Handles one raw delivery (a JSON string or a decoded value) and reports what
+   * the transport should do with it.
+   */
   async dispatch(
     raw: unknown,
     options: DispatchOptions,
   ): Promise<DispatchResult> {
-    const parsed = messageEnvelopeSchema.safeParse(raw);
-    if (!parsed.success) {
+    const parsed = parseEnvelope(raw);
+    if (!parsed.ok) {
       return {
         outcome: DispatchOutcome.DeadLetter,
-        error: `invalid envelope: ${parsed.error.message}`,
+        error: parsed.error.message,
+        code: parsed.error.code,
       };
     }
-    // Zod marks `data` optional in the inferred type; the payload is validated per contract below.
-    const envelope = parsed.data as MessageEnvelope;
+    const envelope = parsed.value;
 
     const registration = this.registrations.get(envelope.type);
     if (!registration) return this.unhandled(envelope);
+
+    let tenantRejection: MessagingError | undefined;
+    try {
+      tenantRejection = await this.checkTenant(envelope, options);
+    } catch (err) {
+      return this.failure(envelope.id, err, options, true);
+    }
+    if (tenantRejection) {
+      return {
+        outcome: DispatchOutcome.DeadLetter,
+        id: envelope.id,
+        error: tenantRejection.message,
+        code: tenantRejection.code,
+      };
+    }
 
     const data = registration.schema.safeParse(envelope.data);
     if (!data.success) {
@@ -153,6 +303,7 @@ export class MessageDispatcher {
         outcome: DispatchOutcome.DeadLetter,
         id: envelope.id,
         error: `invalid data: ${data.error.message}`,
+        code: MessagingErrorCode.InvalidPayload,
       };
     }
     const validated: MessageEnvelope<unknown> = {
@@ -160,28 +311,69 @@ export class MessageDispatcher {
       data: data.data,
     };
 
+    let fingerprint: string;
+    try {
+      fingerprint = stableDigest({
+        type: envelope.type,
+        tenantid: envelope.tenantid ?? null,
+        data: envelope.data,
+      });
+    } catch {
+      return {
+        outcome: DispatchOutcome.DeadLetter,
+        id: envelope.id,
+        error: 'invalid envelope: data is not canonical JSON',
+        code: MessagingErrorCode.InvalidEnvelope,
+      };
+    }
+
+    const key = processedMessageKey(this.options.consumer, envelope.id);
+    const leaseMs = Math.max(
+      this.baseLeaseMs,
+      options.visibilityTimeoutMs ?? 0,
+    );
     const state: RunState = {
-      claimed: false,
-      duplicate: false,
-      storeError: undefined,
+      stage: Stage.Claim,
+      claimToken: undefined,
+      result: undefined,
     };
+
     const run = async (): Promise<void> => {
-      let isNew: boolean;
-      try {
-        isNew = await this.options.processed.claim(
-          this.options.consumer,
-          envelope.id,
-        );
-      } catch (err) {
-        state.storeError = { error: err };
-        throw err;
+      const claim = await this.options.processed.claim(key, {
+        fingerprint,
+        deadline: Deadline.after(leaseMs, this.clock),
+        minLeaseMs: leaseMs,
+        ...(this.options.leaseMarginMs === undefined
+          ? {}
+          : { leaseMarginMs: this.options.leaseMarginMs }),
+      });
+      if (claim.state === ClaimState.Acquired) {
+        state.claimToken = claim.claimToken;
       }
-      if (!isNew) {
-        state.duplicate = true;
+      state.result = this.claimOutcome(envelope.id, claim, fingerprint);
+      if (state.result) {
+        if (state.claimToken !== undefined) {
+          // Acquired with a conflicting fingerprint: give the claim back.
+          await this.release(key, state.claimToken);
+          state.claimToken = undefined;
+        }
+        state.stage = Stage.Done;
         return;
       }
-      state.claimed = true;
+
+      state.stage = Stage.Handler;
       await registration.handler(data.data, validated);
+
+      state.stage = Stage.Complete;
+      const result: ProcessedMessage = {
+        processedAt: this.clock.now().getTime(),
+      };
+      await this.options.processed.complete(
+        key,
+        state.claimToken as string,
+        result,
+      );
+      state.stage = Stage.Done;
     };
 
     try {
@@ -191,18 +383,91 @@ export class MessageDispatcher {
         await run();
       }
     } catch (err) {
-      if (state.storeError) {
-        return this.failure(envelope.id, state.storeError.error, options, true);
+      switch (state.stage) {
+        case Stage.Handler:
+          await this.releaseHeld(key, state);
+          return this.failure(envelope.id, err, options, false);
+        case Stage.Complete:
+          // The effects may have been rolled back with the failed completion.
+          await this.releaseHeld(key, state);
+          return this.failure(envelope.id, err, options, true);
+        case Stage.Claim:
+        case Stage.Done:
+          return this.failure(envelope.id, err, options, true);
       }
-      if (state.claimed) {
-        await this.release(envelope.id);
-      }
-      return this.failure(envelope.id, err, options, false);
     }
 
-    if (state.duplicate)
-      return { outcome: DispatchOutcome.Duplicate, id: envelope.id };
-    return { outcome: DispatchOutcome.Processed, id: envelope.id };
+    return (
+      state.result ?? { outcome: DispatchOutcome.Processed, id: envelope.id }
+    );
+  }
+
+  /** Outcome decided by the claim alone, or undefined when the handler must run. */
+  private claimOutcome(
+    id: string,
+    claim: ClaimResult<ProcessedMessage>,
+    fingerprint: string,
+  ): DispatchResult | undefined {
+    if (claim.fingerprint !== fingerprint) {
+      return {
+        outcome: DispatchOutcome.DeadLetter,
+        id,
+        error: 'message id was already used with different content',
+        code: MessagingErrorCode.IdempotencyConflict,
+      };
+    }
+    switch (claim.state) {
+      case ClaimState.Completed:
+        return { outcome: DispatchOutcome.Duplicate, id };
+      case ClaimState.InProgress:
+        return {
+          outcome: DispatchOutcome.InProgress,
+          id,
+          delayMs: Math.max(0, claim.leaseUntil - this.clock.now().getTime()),
+        };
+      case ClaimState.Acquired:
+        return undefined;
+    }
+  }
+
+  /**
+   * Checks the envelope tenant against the expected tenant and the verifier.
+   * Without either, an envelope that names a tenant is rejected unless
+   * `trustEnvelopeTenant` is set. Returns the rejection, or undefined to accept.
+   */
+  private async checkTenant(
+    envelope: MessageEnvelope,
+    options: DispatchOptions,
+  ): Promise<MessagingError | undefined> {
+    const expected = options.expectedTenantId ?? this.options.expectedTenantId;
+    const tenant = envelope.tenantid;
+    const verify = this.options.verifyTenant;
+
+    if (expected !== undefined && tenant !== expected) {
+      return new MessagingError(
+        MessagingErrorCode.TenantMismatch,
+        'envelope tenant does not match the subscription tenant',
+      );
+    }
+    if (verify) {
+      return (await verify(tenant, envelope))
+        ? undefined
+        : new MessagingError(
+            MessagingErrorCode.TenantMismatch,
+            'envelope tenant was rejected by the tenant verifier',
+          );
+    }
+    if (
+      expected !== undefined ||
+      tenant === undefined ||
+      this.options.trustEnvelopeTenant === true
+    ) {
+      return undefined;
+    }
+    return new MessagingError(
+      MessagingErrorCode.TenantMismatch,
+      'envelope tenant cannot be verified: configure expectedTenantId or verifyTenant',
+    );
   }
 
   private unhandled(envelope: MessageEnvelope): DispatchResult {
@@ -218,15 +483,26 @@ export class MessageDispatcher {
       outcome: DispatchOutcome.DeadLetter,
       id: envelope.id,
       error: `no handler registered for type "${envelope.type}"`,
+      code: MessagingErrorCode.UnknownRoute,
     };
   }
 
-  /** Releases a claim. Best effort: if the release itself fails, the claim stays and a redelivery reports a duplicate. */
-  private async release(id: string): Promise<void> {
+  private async releaseHeld(key: string, state: RunState): Promise<void> {
+    if (state.claimToken === undefined) return;
+    await this.release(key, state.claimToken);
+    state.claimToken = undefined;
+  }
+
+  /**
+   * Releases a claim with its token. Best effort: if the release fails (store
+   * down, or the token is stale because the lease was taken over), the claim
+   * stays `in-progress` until its lease ends and a later delivery takes it over.
+   */
+  private async release(key: string, claimToken: string): Promise<void> {
     try {
-      await this.options.processed.release(this.options.consumer, id);
+      await this.options.processed.release(key, claimToken);
     } catch {
-      // The store is unavailable; the claim remains. Stores should expire stale claims.
+      // The lease bounds how long the claim can block redeliveries.
     }
   }
 
@@ -234,11 +510,12 @@ export class MessageDispatcher {
     id: string,
     err: unknown,
     options: DispatchOptions,
-    storeFailure: boolean,
+    infrastructureFailure: boolean,
   ): DispatchResult {
     const error = describeError(err);
+    const code = codeOf(err);
     const policy = options.retryPolicy;
-    const disposition = storeFailure
+    const disposition = infrastructureFailure
       ? ErrorDisposition.Retry
       : classifyError(err, this.isPermanent);
     if (
@@ -246,13 +523,19 @@ export class MessageDispatcher {
       !policy ||
       options.receiveCount >= policy.maxAttempts
     ) {
-      return { outcome: DispatchOutcome.DeadLetter, id, error };
+      return {
+        outcome: DispatchOutcome.DeadLetter,
+        id,
+        error,
+        ...(code === undefined ? {} : { code }),
+      };
     }
     return {
       outcome: DispatchOutcome.RetryLater,
       id,
       delayMs: policy.delayMs(options.receiveCount),
       error,
+      ...(code === undefined ? {} : { code }),
     };
   }
 }

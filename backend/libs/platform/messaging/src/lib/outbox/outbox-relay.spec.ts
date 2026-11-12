@@ -9,6 +9,7 @@ import { Topology } from '../topology/topology.js';
 import type {
   EnvelopePublisher,
   OutboundTarget,
+  OutboxLease,
   PublishOutboxOptions,
 } from './outbox.js';
 import { OutboxStatus } from './outbox.js';
@@ -88,6 +89,8 @@ describe('OutboxRelay', () => {
       published: 2,
       failed: 0,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
     expect(published).toEqual([
       {
@@ -107,6 +110,8 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 0,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
   });
 
@@ -116,9 +121,9 @@ describe('OutboxRelay', () => {
         super();
       }
 
-      override markPublished(id: string): Promise<void> {
+      override markPublished(id: string, lease: OutboxLease): Promise<boolean> {
         this.log.push(`mark:${id}`);
-        return super.markPublished(id);
+        return super.markPublished(id, lease);
       }
     }
     const log: string[] = [];
@@ -143,6 +148,8 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 1,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
     expect(store.get('m1')).toMatchObject({
       status: OutboxStatus.Failed,
@@ -157,6 +164,8 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 0,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
 
     // Second failure doubles the delay.
@@ -165,6 +174,8 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 1,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
     expect(store.get('m1')?.nextAttemptAt).toEqual(at(3_000));
 
@@ -174,6 +185,8 @@ describe('OutboxRelay', () => {
       published: 1,
       failed: 0,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
     expect(published.map((p) => p.id)).toEqual(['m1']);
     expect(store.get('m1')?.status).toBe(OutboxStatus.Published);
@@ -190,12 +203,16 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 1,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
     expect(await relay.relayOnce(at(1_000))).toEqual({
       claimed: 1,
       published: 0,
       failed: 0,
       dead: 1,
+      deferred: 0,
+      stale: 0,
     });
     expect(store.get('m1')).toMatchObject({
       status: OutboxStatus.Dead,
@@ -214,6 +231,8 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 0,
       dead: 1,
+      deferred: 0,
+      stale: 0,
     });
     expect(published).toEqual([]);
     expect(store.get('orphan')).toMatchObject({
@@ -235,6 +254,8 @@ describe('OutboxRelay', () => {
       published: 0,
       failed: 0,
       dead: 1,
+      deferred: 0,
+      stale: 0,
     });
     expect(published).toEqual([]);
     expect(store.get('big')).toMatchObject({
@@ -254,6 +275,8 @@ describe('OutboxRelay', () => {
       published: 1,
       failed: 1,
       dead: 0,
+      deferred: 0,
+      stale: 0,
     });
     expect(published.map((p) => p.id)).toEqual(['good']);
     expect(store.get('good')?.status).toBe(OutboxStatus.Published);

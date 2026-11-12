@@ -22,11 +22,34 @@ export interface OutboxRecord {
   readonly attempts: number;
   readonly nextAttemptAt: Date;
   readonly createdAt: Date;
-  /** Aggregate id, passed to the publisher so FIFO targets keep per-aggregate order. */
+  /**
+   * Ordering group (usually the aggregate id). Records of one group are published
+   * in `createdAt` order, and FIFO targets receive it as the message group id.
+   */
   readonly groupId?: string;
   readonly lastError?: string;
   readonly leaseOwner?: string;
+  /** Fencing token of the current lease; changes on every claim. */
+  readonly leaseToken?: string;
   readonly leaseExpiresAt?: Date;
+}
+
+/**
+ * Lease held by one relay pass. `owner` identifies the relay instance and
+ * `token` the claim; marks are applied only while both are still current.
+ */
+export interface OutboxLease {
+  readonly owner: string;
+  readonly token: string;
+}
+
+/** Arguments of {@link OutboxStore.claimPending}. */
+export interface ClaimOutboxRequest {
+  readonly now: Date;
+  readonly limit: number;
+  readonly lease: OutboxLease;
+  /** Lease duration in milliseconds. */
+  readonly leaseMs: number;
 }
 
 /** Destination of a published envelope, resolved from the topology. */
@@ -40,24 +63,44 @@ export interface PublishOutboxOptions {
   readonly groupId?: string;
 }
 
-/** Port for outbox persistence. */
+/**
+ * Port for outbox persistence.
+ *
+ * Fencing: every mark is conditional on the record still holding the given
+ * lease (`leaseOwner = owner AND leaseToken = token`). A relay whose lease was
+ * taken over cannot overwrite the new owner's state; the mark returns `false`.
+ */
 export interface OutboxStore {
   /**
-   * Atomically leases up to `limit` due records (Pending or Failed, `nextAttemptAt <= now`,
-   * no active lease), oldest `createdAt` first. The lease expires after `leaseMs`.
+   * Atomically leases up to `limit` due records, oldest `createdAt` first, and
+   * stamps them with `lease` until `now + leaseMs`. A record is due when it is
+   * Pending or Failed, `nextAttemptAt <= now` and it has no active lease.
+   *
+   * FIFO per `groupId`: once a Pending or Failed record of a group is not due
+   * (scheduled later, or leased by someone else), no later record of that group
+   * is returned. Published and Dead records do not block their group.
    */
-  claimPending(
-    now: Date,
-    limit: number,
-    owner: string,
-    leaseMs: number,
-  ): Promise<OutboxRecord[]>;
-  /** Marks one record published and releases its lease. */
-  markPublished(id: string): Promise<void>;
-  /** Stores the failure, increments `attempts`, schedules the next attempt and releases the lease. */
-  markFailed(id: string, error: string, nextAttemptAt: Date): Promise<void>;
-  /** Stores a terminal failure, increments `attempts` and releases the lease. */
-  markDead(id: string, error: string): Promise<void>;
+  claimPending(request: ClaimOutboxRequest): Promise<OutboxRecord[]>;
+  /** Marks one record published and clears its lease. `false` when the lease is no longer held. */
+  markPublished(id: string, lease: OutboxLease): Promise<boolean>;
+  /**
+   * Stores the failure, increments `attempts`, schedules the next attempt and
+   * clears the lease. `false` when the lease is no longer held.
+   */
+  markFailed(
+    id: string,
+    lease: OutboxLease,
+    error: string,
+    nextAttemptAt: Date,
+  ): Promise<boolean>;
+  /** Stores a terminal failure, increments `attempts` and clears the lease. `false` when the lease is no longer held. */
+  markDead(id: string, lease: OutboxLease, error: string): Promise<boolean>;
+  /**
+   * Clears the lease without counting an attempt, so the record is due again
+   * right away. Used for records of a group that is blocked in this pass.
+   * `false` when the lease is no longer held.
+   */
+  releaseLease(id: string, lease: OutboxLease): Promise<boolean>;
 }
 
 /** Port that sends one envelope to a topic or queue. */
