@@ -8,9 +8,110 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "private_subnet_ids" {
-  description = "Subredes privadas para el subnet group y el proxy."
+variable "data_subnet_ids" {
+  description = "Subredes de datos (sin ruta a Internet) para el subnet group, los proxies y las lambdas de administración."
   type        = list(string)
+}
+
+variable "service_users" {
+  description = "Usuarios de base de datos por servicio. Cada uno recibe un secreto en Secrets Manager con rotación y, por defecto, un esquema propio. Las apps nunca usan el usuario maestro."
+  type = list(object({
+    name            = string
+    schema          = optional(string)
+    create_schema   = optional(bool, true)
+    rds_replication = optional(bool, false)
+  }))
+
+  validation {
+    condition     = length(var.service_users) >= 1
+    error_message = "Declara al menos un usuario de servicio."
+  }
+
+  validation {
+    condition     = alltrue([for u in var.service_users : can(regex("^[a-z][a-z0-9_]{1,29}$", u.name))])
+    error_message = "Los nombres de usuario usan minúsculas, números y guion bajo, empiezan por letra y tienen entre 2 y 30 caracteres."
+  }
+
+  validation {
+    condition     = length(distinct([for u in var.service_users : u.name])) == length(var.service_users)
+    error_message = "Los nombres de usuario de servicio no pueden repetirse."
+  }
+}
+
+variable "enable_secret_rotation" {
+  description = "Activa la rotación automática de los secretos de servicio con la función oficial de AWS."
+  type        = bool
+  default     = true
+}
+
+variable "secret_rotation_days" {
+  description = "Días entre rotaciones de los secretos de servicio."
+  type        = number
+  default     = 30
+}
+
+variable "secret_recovery_window_days" {
+  description = "Días de recuperación de un secreto borrado. 0 lo borra de inmediato (solo entornos desechables)."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.secret_recovery_window_days == 0 || (var.secret_recovery_window_days >= 7 && var.secret_recovery_window_days <= 30)
+    error_message = "secret_recovery_window_days debe ser 0 o estar entre 7 y 30."
+  }
+}
+
+variable "log_min_duration_statement_ms" {
+  description = "Milisegundos a partir de los cuales PostgreSQL registra una consulta lenta. -1 desactiva."
+  type        = number
+  default     = 500
+}
+
+variable "max_replication_slots" {
+  description = "Slots de replicación disponibles. Los traslados de shard por replicación lógica consumen uno cada uno."
+  type        = number
+  default     = 10
+}
+
+variable "performance_insights_retention_days" {
+  description = "Retención de Performance Insights en días. 7 es gratis; 731 tiene costo."
+  type        = number
+  default     = 7
+
+  validation {
+    condition     = contains([7, 731], var.performance_insights_retention_days)
+    error_message = "performance_insights_retention_days debe ser 7 o 731."
+  }
+}
+
+variable "alarm_topic_arn" {
+  description = "ARN del tópico SNS que recibe las alarmas de RDS. Null deja las alarmas sin notificación."
+  type        = string
+  default     = null
+}
+
+variable "alarm_cpu_percent" {
+  description = "Porcentaje de CPU que dispara la alarma."
+  type        = number
+  default     = 80
+}
+
+variable "alarm_free_storage_bytes" {
+  description = "Bytes libres por debajo de los cuales suena la alarma de almacenamiento."
+  type        = number
+  default     = 10737418240
+}
+
+variable "alarm_freeable_memory_bytes" {
+  description = "Bytes de memoria liberable por debajo de los cuales suena la alarma."
+  type        = number
+  default     = 268435456
+}
+
+variable "alarm_replica_lag_seconds" {
+  description = "Segundos de retraso de réplica que disparan la alarma."
+  type        = number
+  default     = 30
 }
 
 variable "endpoint_security_group_id" {

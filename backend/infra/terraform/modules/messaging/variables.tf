@@ -25,6 +25,29 @@ variable "alarm_topic_arn" {
   default     = null
 }
 
+variable "max_receive_count" {
+  description = "Recepciones antes de mover un mensaje a la DLQ. Si es null se usa el maxReceiveCount de cada cola en la topología."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.max_receive_count == null || (var.max_receive_count >= 1 && var.max_receive_count <= 1000)
+    error_message = "max_receive_count debe estar entre 1 y 1000."
+  }
+}
+
+variable "dlq_oldest_message_age_seconds" {
+  description = "Edad en segundos del mensaje más viejo de una DLQ que dispara la alarma."
+  type        = number
+  default     = 3600
+}
+
+variable "queue_oldest_message_age_seconds" {
+  description = "Edad en segundos del mensaje más viejo de una cola principal que dispara la alarma (consumidor detenido)."
+  type        = number
+  default     = 900
+}
+
 variable "tags" {
   description = "Etiquetas adicionales para los recursos del módulo."
   type        = map(string)
