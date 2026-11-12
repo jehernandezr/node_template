@@ -1,8 +1,8 @@
-# Add files here to ignore them from prettier formatting
-/dist
-/coverage
-/.nx/cache
-/.nx/workspace-data
-.nx/self-healing
 # Flutter front: formatted by dart format and owned by Dart tooling
 front/
+# Backend build output and Nx cache
+backend/dist
+backend/coverage
+backend/.nx
+**/node_modules
+pnpm-lock.yaml

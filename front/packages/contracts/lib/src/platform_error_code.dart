@@ -1,6 +1,6 @@
 /// Error codes shared by the whole platform.
 ///
-/// Mirrors `PlatformErrorCode` in `libs/contracts/platform`. Each value keeps
+/// Mirrors `PlatformErrorCode` in `backend/libs/contracts/platform`. Each value keeps
 /// the exact wire [code]. Keep both sides in sync: the contracts test checks it.
 enum PlatformErrorCode {
   /// The input does not match the expected format or rules.

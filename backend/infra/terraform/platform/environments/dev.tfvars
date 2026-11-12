@@ -24,7 +24,7 @@ valkey_cache_usage_limits = {
   ecpu_per_second_max = 1000
 }
 
-# Ruta a la topología exportada por libs/platform/messaging.
+# Ruta a la topología exportada por backend/libs/platform/messaging.
 topology_file = "../examples/topology.example.json"
 
 # alarm_topic_arn = "arn:aws:sns:us-east-1:111111111111:REEMPLAZAR"

@@ -4,7 +4,7 @@ variable "name_prefix" {
 }
 
 variable "topology_file" {
-  description = "Ruta absoluta al JSON de la topología exportado por libs/platform/messaging."
+  description = "Ruta absoluta al JSON de la topología exportado por backend/libs/platform/messaging."
   type        = string
 }
 

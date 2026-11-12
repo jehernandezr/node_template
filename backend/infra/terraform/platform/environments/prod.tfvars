@@ -24,7 +24,7 @@ valkey_cache_usage_limits = {
   ecpu_per_second_max = 10000
 }
 
-# Ruta real a la topología exportada por libs/platform/messaging.
+# Ruta real a la topología exportada por backend/libs/platform/messaging.
 topology_file = "../examples/topology.example.json"
 
 # Requerido en prod para recibir alarmas de DLQ.
