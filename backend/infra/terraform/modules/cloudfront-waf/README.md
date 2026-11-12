@@ -26,15 +26,15 @@ El certificado ACM de los dominios debe estar también en us-east-1.
 
 ## Entradas principales
 
-| Variable                         | Descripción                                                              |
-| -------------------------------- | ------------------------------------------------------------------------ |
-| `acm_certificate_arn`            | Certificado en us-east-1 que cubre todos los alias.                      |
-| `web_aliases`, `api_aliases`     | Dominios de cada distribución.                                           |
-| `api_origin_domain_name`         | Dominio del origen. Debe coincidir con su certificado TLS. Null omite la API. |
-| `api_origin_verify_header_value` | Secreto en `X-Origin-Verify` para que el ALB rechace lo que no viene de CloudFront. |
-| `waf_block_mode`                 | `false` solo cuenta: úsalo para afinar reglas antes de bloquear.         |
-| `waf_rate_limit`, `waf_auth_rate_limit` | Peticiones por IP en 5 minutos.                                   |
-| `content_security_policy`        | CSP a medida de la web Flutter.                                          |
+| Variable                                | Descripción                                                                         |
+| --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `acm_certificate_arn`                   | Certificado en us-east-1 que cubre todos los alias.                                 |
+| `web_aliases`, `api_aliases`            | Dominios de cada distribución.                                                      |
+| `api_origin_domain_name`                | Dominio del origen. Debe coincidir con su certificado TLS. Null omite la API.       |
+| `api_origin_verify_header_value`        | Secreto en `X-Origin-Verify` para que el ALB rechace lo que no viene de CloudFront. |
+| `waf_block_mode`                        | `false` solo cuenta: úsalo para afinar reglas antes de bloquear.                    |
+| `waf_rate_limit`, `waf_auth_rate_limit` | Peticiones por IP en 5 minutos.                                                     |
+| `content_security_policy`               | CSP a medida de la web Flutter.                                                     |
 
 ## Salidas
 

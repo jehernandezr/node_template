@@ -11,11 +11,11 @@ Clúster ECS para Fargate con los capacity providers `FARGATE` y `FARGATE_SPOT`,
 
 ## Entradas principales
 
-| Variable                             | Descripción                                                                       |
-| ------------------------------------ | --------------------------------------------------------------------------------- |
-| `name_prefix`                        | Prefijo y nombre del clúster.                                                     |
-| `container_insights`                 | `enhanced`, `enabled` o `disabled`.                                               |
-| `default_capacity_provider_strategy` | Lista de `capacity_provider`, `weight` y `base`.                                  |
+| Variable                             | Descripción                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `name_prefix`                        | Prefijo y nombre del clúster.                                                                |
+| `container_insights`                 | `enhanced`, `enabled` o `disabled`.                                                          |
+| `default_capacity_provider_strategy` | Lista de `capacity_provider`, `weight` y `base`.                                             |
 | `kms_key_arn`                        | Clave existente. Debe permitir a `logs.<región>.amazonaws.com` sobre `/ecs/<name_prefix>/*`. |
 
 ## Salidas

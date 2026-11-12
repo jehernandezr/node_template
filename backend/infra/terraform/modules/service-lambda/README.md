@@ -14,17 +14,17 @@ Una Lambda consumidora de una cola SQS, en arm64, con respuesta parcial de lotes
 
 ## Entradas principales
 
-| Variable                                           | Descripción                                                                     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `name_prefix`, `function_name`, `environment`      | Nombres y entorno.                                                              |
-| `handler`, `runtime`                               | Handler y runtime (`nodejs22.x`).                                               |
-| `filename` o `s3_bucket` con `s3_key`, `source_code_hash` | Paquete.                                                                 |
-| `queue_arn`, `queue_kms_key_arn`                   | Cola de `messaging` y su clave KMS.                                             |
-| `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumo. |
-| `reserved_concurrent_executions`                   | Protege la base de datos de picos.                                              |
-| `otel_layer_arn`, `otel_collector_config_uri`      | OpenTelemetry. Null desactiva la capa.                                          |
-| `vpc_enabled`, `vpc_id`, `vpc_cidr`, `subnet_ids`  | Ejecución en la VPC.                                                            |
-| `secret_arns`, `secrets_kms_key_arns`, `task_policies` | Permisos adicionales.                                                       |
+| Variable                                                                                  | Descripción                            |
+| ----------------------------------------------------------------------------------------- | -------------------------------------- |
+| `name_prefix`, `function_name`, `environment`                                             | Nombres y entorno.                     |
+| `handler`, `runtime`                                                                      | Handler y runtime (`nodejs22.x`).      |
+| `filename` o `s3_bucket` con `s3_key`, `source_code_hash`                                 | Paquete.                               |
+| `queue_arn`, `queue_kms_key_arn`                                                          | Cola de `messaging` y su clave KMS.    |
+| `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumo.                               |
+| `reserved_concurrent_executions`                                                          | Protege la base de datos de picos.     |
+| `otel_layer_arn`, `otel_collector_config_uri`                                             | OpenTelemetry. Null desactiva la capa. |
+| `vpc_enabled`, `vpc_id`, `vpc_cidr`, `subnet_ids`                                         | Ejecución en la VPC.                   |
+| `secret_arns`, `secrets_kms_key_arns`, `task_policies`                                    | Permisos adicionales.                  |
 
 ## Salidas
 

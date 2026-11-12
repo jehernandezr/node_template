@@ -11,11 +11,11 @@ La primera versión de la red no tenía NAT: los servicios llegaban a AWS por en
 
 La VPC tiene tres niveles de subred en dos zonas de disponibilidad: públicas, privadas (aplicación) y de datos. La variable `egress` del módulo `network` fija la salida de las privadas:
 
-| Valor        | NAT gateways         | Uso  |
-| ------------ | -------------------- | ---- |
-| `none`       | Ninguno              | Entornos sin llamadas externas |
-| `single_nat` | Uno, en la primera AZ | dev |
-| `per_az_nat` | Uno por AZ           | prod |
+| Valor        | NAT gateways          | Uso                            |
+| ------------ | --------------------- | ------------------------------ |
+| `none`       | Ninguno               | Entornos sin llamadas externas |
+| `single_nat` | Uno, en la primera AZ | dev                            |
+| `per_az_nat` | Uno por AZ            | prod                           |
 
 - Las subredes privadas tienen una tabla de rutas por AZ con ruta `0.0.0.0/0` al NAT. Con `single_nat` ambas usan el mismo.
 - Las subredes de datos (RDS, RDS Proxy, Valkey y las lambdas de administración de la base) no tienen ruta por defecto. Solo llegan a AWS por endpoints.

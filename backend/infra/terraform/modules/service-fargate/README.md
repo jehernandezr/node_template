@@ -14,19 +14,19 @@ Un microservicio en Fargate: API con tráfico entrante detrás del ALB, o worker
 
 ## Entradas principales
 
-| Variable                                           | Descripción                                                                                    |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `name_prefix`, `service_name`, `environment`       | Nombres y entorno.                                                                             |
-| `cluster_arn`, `cluster_name`                      | Salidas de `ecs-cluster`.                                                                      |
-| `vpc_id`, `vpc_cidr`, `subnet_ids`                 | Red privada.                                                                                   |
-| `image`, `command`, `container_port`, `cpu`, `memory` | Contenedor y tamaño.                                                                       |
-| `environment_variables`, `secrets`                 | Entorno sin secretos y mapa nombre a ARN de secreto (con clave JSON opcional).                 |
-| `otlp_endpoint`, `otlp_authorization_secret`       | Salidas `otlp_http_endpoint` y `otlp_authorization_value_from` de `observability`.             |
-| `enable_load_balancer`, `alb_listener_arn`, `alb_security_group_id`, `path_patterns`, `host_headers`, `listener_rule_priority` | Integración con el ALB. |
-| `min_capacity`, `max_capacity`, `cpu_target_percent`, `memory_target_percent` | Autoescalado por métricas.                                       |
-| `sqs_scaling`                                      | `queue_name`, `messages_per_task`, `steps`: autoescalado por cola. Con `min_capacity = 0` el worker se apaga con la cola vacía. |
-| `capacity_provider_strategy`                       | `FARGATE` o `FARGATE_SPOT` (workers tolerantes a interrupciones).                              |
-| `task_policies`                                    | Mapa nombre a JSON de políticas IAM (SQS, S3, SES, etc.).                                      |
+| Variable                                                                                                                       | Descripción                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `name_prefix`, `service_name`, `environment`                                                                                   | Nombres y entorno.                                                                                                              |
+| `cluster_arn`, `cluster_name`                                                                                                  | Salidas de `ecs-cluster`.                                                                                                       |
+| `vpc_id`, `vpc_cidr`, `subnet_ids`                                                                                             | Red privada.                                                                                                                    |
+| `image`, `command`, `container_port`, `cpu`, `memory`                                                                          | Contenedor y tamaño.                                                                                                            |
+| `environment_variables`, `secrets`                                                                                             | Entorno sin secretos y mapa nombre a ARN de secreto (con clave JSON opcional).                                                  |
+| `otlp_endpoint`, `otlp_authorization_secret`                                                                                   | Salidas `otlp_http_endpoint` y `otlp_authorization_value_from` de `observability`.                                              |
+| `enable_load_balancer`, `alb_listener_arn`, `alb_security_group_id`, `path_patterns`, `host_headers`, `listener_rule_priority` | Integración con el ALB.                                                                                                         |
+| `min_capacity`, `max_capacity`, `cpu_target_percent`, `memory_target_percent`                                                  | Autoescalado por métricas.                                                                                                      |
+| `sqs_scaling`                                                                                                                  | `queue_name`, `messages_per_task`, `steps`: autoescalado por cola. Con `min_capacity = 0` el worker se apaga con la cola vacía. |
+| `capacity_provider_strategy`                                                                                                   | `FARGATE` o `FARGATE_SPOT` (workers tolerantes a interrupciones).                                                               |
+| `task_policies`                                                                                                                | Mapa nombre a JSON de políticas IAM (SQS, S3, SES, etc.).                                                                       |
 
 ## Salidas
 

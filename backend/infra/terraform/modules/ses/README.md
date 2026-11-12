@@ -13,14 +13,14 @@ Identidad de dominio de SES con DKIM y configuration sets que publican los event
 
 ## Entradas principales
 
-| Variable                   | Descripción                                                    |
-| -------------------------- | -------------------------------------------------------------- |
-| `name_prefix`, `domain`    | Prefijo y dominio remitente.                                   |
-| `route53_zone_id`          | Zona para crear los registros DNS. Opcional.                   |
-| `dmarc_policy`             | `none`, `quarantine` o `reject`. Empieza en `none`.            |
-| `dmarc_report_email`       | Destino de los informes `rua`.                                 |
-| `tracked_event_types`      | Eventos del set con seguimiento.                               |
-| `tracking_redirect_domain` | Dominio propio para enlaces de seguimiento.                    |
+| Variable                   | Descripción                                         |
+| -------------------------- | --------------------------------------------------- |
+| `name_prefix`, `domain`    | Prefijo y dominio remitente.                        |
+| `route53_zone_id`          | Zona para crear los registros DNS. Opcional.        |
+| `dmarc_policy`             | `none`, `quarantine` o `reject`. Empieza en `none`. |
+| `dmarc_report_email`       | Destino de los informes `rua`.                      |
+| `tracked_event_types`      | Eventos del set con seguimiento.                    |
+| `tracking_redirect_domain` | Dominio propio para enlaces de seguimiento.         |
 
 ## Salidas
 

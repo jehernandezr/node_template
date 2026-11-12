@@ -12,14 +12,14 @@ Balanceador de aplicación internet-facing para los servicios Fargate de larga c
 
 ## Entradas principales
 
-| Variable                                             | Descripción                                                                  |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `name_prefix`, `vpc_id`, `subnet_ids`                | Nombre, VPC y subredes públicas (mínimo dos).                                |
-| `certificate_arn`                                    | Certificado ACM del listener HTTPS.                                          |
-| `idle_timeout_seconds`                               | 3600 por defecto, para conexiones largas. Máximo 4000.                       |
-| `ingress_cidr_blocks`, `ingress_prefix_list_ids`     | Quién llega al ALB. Con CloudFront delante, usa su prefix list de origen.    |
-| `deletion_protection`                                | Activa por defecto.                                                          |
-| `target_groups`, `default_target_group_key`          | Target groups compartidos opcionales.                                        |
+| Variable                                         | Descripción                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| `name_prefix`, `vpc_id`, `subnet_ids`            | Nombre, VPC y subredes públicas (mínimo dos).                             |
+| `certificate_arn`                                | Certificado ACM del listener HTTPS.                                       |
+| `idle_timeout_seconds`                           | 3600 por defecto, para conexiones largas. Máximo 4000.                    |
+| `ingress_cidr_blocks`, `ingress_prefix_list_ids` | Quién llega al ALB. Con CloudFront delante, usa su prefix list de origen. |
+| `deletion_protection`                            | Activa por defecto.                                                       |
+| `target_groups`, `default_target_group_key`      | Target groups compartidos opcionales.                                     |
 
 ## Salidas
 

@@ -6,3 +6,4 @@ backend/coverage
 backend/.nx
 **/node_modules
 pnpm-lock.yaml
+**/lambda/*/vendor/
