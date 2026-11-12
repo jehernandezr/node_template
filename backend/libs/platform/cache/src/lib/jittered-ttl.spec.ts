@@ -1,3 +1,4 @@
+import { CacheInvalidArgumentError } from './errors.js';
 import { jitteredTtl } from './jittered-ttl.js';
 
 describe('jitteredTtl', () => {
@@ -23,7 +24,9 @@ describe('jitteredTtl', () => {
   });
 
   it('rejects invalid arguments', () => {
-    expect(() => jitteredTtl(-1)).toThrow(RangeError);
-    expect(() => jitteredTtl(1000, { ratio: 1.5 })).toThrow(RangeError);
+    expect(() => jitteredTtl(-1)).toThrow(CacheInvalidArgumentError);
+    expect(() => jitteredTtl(1000, { ratio: 1.5 })).toThrow(
+      CacheInvalidArgumentError,
+    );
   });
 });

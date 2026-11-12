@@ -1,3 +1,4 @@
+export * from './lib/errors.js';
 export * from './lib/cache-port.js';
 export * from './lib/in-memory-cache.js';
 export * from './lib/stable-hash.js';
