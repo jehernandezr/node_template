@@ -1,4 +1,4 @@
-import type { OperationContract } from './contract.js';
+import type { OperationSchemas } from './contract.js';
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
 
 /** Zod schema types that cannot round-trip through JSON transport unchanged. */
@@ -58,7 +58,7 @@ function findNonJsonType(
  * Such schemas would validate differently on each side of the wire.
  */
 export function assertJsonSafeContract(
-  contract: OperationContract<unknown, unknown>,
+  contract: OperationSchemas,
   label = 'contract',
 ): void {
   const sides: Array<[string, unknown]> = [

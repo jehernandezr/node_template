@@ -1,79 +1,70 @@
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import {
+  CallOutcome,
+  Deadline,
+  InMemoryIdempotencyStore,
+  StaleClaimError,
+  type AcquiredClaim,
+} from '@platform/primitives';
 import { ClaimState, InMemoryProcessedOperationStore } from './store.js';
-import { ResultKind } from './result.js';
 
-const request = (now: number, inputHash = 'h1') => ({
-  inputHash,
-  leaseMs: 100,
-  now,
-});
+function setup() {
+  const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
+  const store = new InMemoryProcessedOperationStore(
+    clock,
+    new SequentialIdGenerator(),
+  );
+  const request = (budgetMs = 1000) => ({
+    fingerprint: 'h1',
+    deadline: Deadline.after(budgetMs, clock),
+    leaseMarginMs: 100,
+  });
+  return { clock, store, request };
+}
 
 describe('InMemoryProcessedOperationStore', () => {
-  it('acquires a fresh key once and reports in-progress while the lease holds', async () => {
+  it('is the three-state store of @platform/primitives with default clock and ids', async () => {
     const store = new InMemoryProcessedOperationStore();
-    await expect(store.claim('k', request(0))).resolves.toEqual({
-      state: ClaimState.Acquired,
-      inputHash: 'h1',
+    expect(store).toBeInstanceOf(InMemoryIdempotencyStore);
+    const claim = await store.claim('k', {
+      fingerprint: 'h1',
+      deadline: Deadline.after(1000, { now: () => new Date() }),
     });
-    await expect(store.claim('k', request(50))).resolves.toEqual({
+    expect(claim.state).toBe(ClaimState.Acquired);
+  });
+
+  it('leases a claim until the deadline plus the margin', async () => {
+    const { store, request, clock } = setup();
+    const claim = (await store.claim('k', request())) as AcquiredClaim;
+
+    expect(claim.leaseUntil).toBe(clock.now().getTime() + 1100);
+    await expect(store.claim('k', request())).resolves.toMatchObject({
       state: ClaimState.InProgress,
-      inputHash: 'h1',
     });
   });
 
-  it('lets an expired lease be re-acquired, keeping the first input hash', async () => {
-    const store = new InMemoryProcessedOperationStore();
-    await store.claim('k', request(0));
-    await expect(store.claim('k', request(200, 'other'))).resolves.toEqual({
+  it('fences complete and release with the claim token after a takeover', async () => {
+    const { store, request, clock } = setup();
+    const first = (await store.claim('k', request())) as AcquiredClaim;
+    clock.advance(1101);
+    const second = (await store.claim('k', request())) as AcquiredClaim;
+
+    expect(second).toMatchObject({
       state: ClaimState.Acquired,
-      inputHash: 'h1',
+      takeover: true,
     });
-  });
-
-  it('returns the completed result to later claims', async () => {
-    const store = new InMemoryProcessedOperationStore();
-    await store.claim('k', request(0));
-    await store.complete('k', { kind: ResultKind.Success, value: 1 });
-    await expect(store.claim('k', request(1))).resolves.toEqual({
-      state: ClaimState.Completed,
-      inputHash: 'h1',
-      result: { kind: ResultKind.Success, value: 1 },
-    });
-  });
-
-  it('release frees an in-progress claim but never a completed one', async () => {
-    const store = new InMemoryProcessedOperationStore();
-    await store.claim('k', request(0));
-    await store.release('k');
-    await expect(store.claim('k', request(1))).resolves.toMatchObject({
-      state: ClaimState.Acquired,
-    });
-
-    await store.complete('k', { kind: ResultKind.Success, value: 2 });
-    await store.release('k');
-    await expect(store.claim('k', request(2))).resolves.toMatchObject({
-      state: ClaimState.Completed,
-    });
-  });
-
-  it('rejects complete without a claim', async () => {
-    const store = new InMemoryProcessedOperationStore();
     await expect(
-      store.complete('missing', { kind: ResultKind.Success, value: 1 }),
-    ).rejects.toThrow(/without a claim/);
-  });
+      store.complete('k', first.claimToken, CallOutcome.success(1)),
+    ).rejects.toBeInstanceOf(StaleClaimError);
+    await expect(store.release('k', first.claimToken)).rejects.toBeInstanceOf(
+      StaleClaimError,
+    );
 
-  it('resolves concurrent claims on one key to exactly one Acquired', async () => {
-    const store = new InMemoryProcessedOperationStore();
-    const outcomes = await Promise.all([
-      store.claim('k', request(0)),
-      store.claim('k', request(0)),
-      store.claim('k', request(0)),
-    ]);
-    expect(
-      outcomes.filter((o) => o.state === ClaimState.Acquired),
-    ).toHaveLength(1);
-    expect(
-      outcomes.filter((o) => o.state === ClaimState.InProgress),
-    ).toHaveLength(2);
+    await store.complete('k', second.claimToken, CallOutcome.success(2));
+    await expect(store.claim('k', request())).resolves.toEqual({
+      state: ClaimState.Completed,
+      result: CallOutcome.success(2),
+      fingerprint: 'h1',
+    });
   });
 });

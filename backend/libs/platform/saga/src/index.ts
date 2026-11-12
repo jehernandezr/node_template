@@ -1,5 +1,6 @@
 export * from './lib/errors.js';
 export * from './lib/invoker.js';
+export * from './lib/internal-client-invoker.js';
 export * from './lib/model.js';
 export * from './lib/definition/saga-flow.js';
 export * from './lib/definition/saga-definition.js';

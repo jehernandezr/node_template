@@ -1,10 +1,8 @@
+import { Compensation, type OperationDefinition } from '@contracts/platform';
 import type { z } from 'zod';
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
 
-/** Declares that an operation has no compensation. A non-empty reason is mandatory. */
-export enum Compensation {
-  None = 'none',
-}
+export { Compensation };
 
 /** Retry policy for idempotent operations. */
 export interface RetryPolicy {
@@ -28,7 +26,7 @@ export interface OperationOptions {
   readonly timeoutMs?: number;
 }
 
-/** Normalized metadata stored by `@Operation`. */
+/** Normalized metadata of an operation. */
 export interface OperationMetadata extends OperationOptions {
   readonly mutating: boolean;
   readonly errors: readonly string[];
@@ -47,11 +45,7 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = Object.freeze({
 });
 export const DEFAULT_TIMEOUT_MS = 5000;
 
-/**
- * Class decorator that stores the operation metadata on the contract class.
- * Throws `MissingCompensation` when `Compensation.None` has no reason.
- */
-export function Operation(options: OperationOptions): ClassDecorator {
+function assertCompensationReason(options: OperationOptions): void {
   if (
     options.compensatedBy === Compensation.None &&
     !options.compensationReason?.trim()
@@ -61,11 +55,25 @@ export function Operation(options: OperationOptions): ClassDecorator {
       `Operation "${options.id}" uses Compensation.None without a reason`,
     );
   }
-  const metadata: OperationMetadata = Object.freeze({
+}
+
+function normalizeMetadata(options: OperationOptions): OperationMetadata {
+  return Object.freeze({
     ...options,
     mutating: options.mutating ?? true,
     errors: Object.freeze([...(options.errors ?? [])]),
   });
+}
+
+/**
+ * Class decorator that stores the operation metadata on the contract class.
+ * Throws `MissingCompensation` when `Compensation.None` has no reason.
+ * @deprecated Declare operations with `defineOperation` from `@contracts/platform`
+ * and pass the descriptor to the registry, the client and the router.
+ */
+export function Operation(options: OperationOptions): ClassDecorator {
+  assertCompensationReason(options);
+  const metadata = normalizeMetadata(options);
   return (target) => {
     Object.defineProperty(target, OPERATION_METADATA, {
       value: metadata,
@@ -103,6 +111,18 @@ export function effectiveAttempts(metadata: OperationMetadata): number {
     : 1;
 }
 
+/**
+ * Default time budget of a whole call: every attempt plus the longest backoff
+ * between them. Used when the caller passes no `Deadline`.
+ */
+export function defaultCallBudgetMs(metadata: OperationMetadata): number {
+  const attempts = effectiveAttempts(metadata);
+  return (
+    attempts * effectiveTimeout(metadata) +
+    (attempts - 1) * effectiveRetry(metadata).maxMs
+  );
+}
+
 /** Business error codes a handler or transport may return for this operation. */
 export function allowedErrorCodes(
   metadata: OperationMetadata,
@@ -110,7 +130,10 @@ export function allowedErrorCodes(
   return new Set([...metadata.errors, INVALID_INPUT_CODE]);
 }
 
-/** Base class of every operation contract. Subclasses provide the zod schemas. */
+/**
+ * Base class of every operation contract. Subclasses provide the zod schemas.
+ * @deprecated Use `defineOperation` from `@contracts/platform`.
+ */
 export abstract class OperationContract<TIn, TOut> {
   abstract readonly input: z.ZodType<TIn>;
   abstract readonly output: z.ZodType<TOut>;
@@ -134,3 +157,125 @@ export type ContractOutput<C> = C extends new () => OperationContract<
 >
   ? O
   : never;
+
+/** Input and output schemas of an operation. */
+export interface OperationSchemas {
+  readonly input: z.ZodType;
+  readonly output: z.ZodType;
+}
+
+/**
+ * Anything accepted as an operation: a descriptor from `defineOperation`
+ * (the contract source) or a legacy `@Operation` class.
+ */
+export type OperationSource = OperationDefinition | ContractConstructor;
+
+/** Operation resolved from any `OperationSource`. */
+export interface OperationDescriptor extends OperationSchemas {
+  readonly id: string;
+  readonly metadata: OperationMetadata;
+}
+
+/** What a caller passes as input (before parsing). */
+export type CallInputOf<S> =
+  S extends OperationDefinition<infer I, z.ZodType>
+    ? z.input<I>
+    : ContractInput<S>;
+
+/** What a handler receives (the parsed input). */
+export type HandlerInputOf<S> =
+  S extends OperationDefinition<infer I, z.ZodType>
+    ? z.output<I>
+    : ContractInput<S>;
+
+/** Output of an operation, as returned by a handler and by the client. */
+export type OperationOutputOf<S> =
+  S extends OperationDefinition<z.ZodType, infer O>
+    ? z.output<O>
+    : ContractOutput<S>;
+
+/** Whether `value` looks like a `defineOperation` descriptor. */
+export function isOperationDefinition(
+  value: unknown,
+): value is OperationDefinition {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<OperationDefinition>;
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.idempotent === 'boolean' &&
+    typeof candidate.input?.safeParse === 'function' &&
+    typeof candidate.output?.safeParse === 'function'
+  );
+}
+
+const resolved = new WeakMap<object, OperationDescriptor>();
+
+function fromDefinition(definition: OperationDefinition): OperationDescriptor {
+  const options: OperationOptions = {
+    id: definition.id,
+    idempotent: definition.idempotent,
+    mutating: definition.mutating,
+    errors: definition.errors,
+    ...(definition.compensatedBy !== undefined && {
+      compensatedBy: definition.compensatedBy,
+    }),
+    ...(definition.compensationReason !== undefined && {
+      compensationReason: definition.compensationReason,
+    }),
+    ...(definition.retry !== undefined && { retry: definition.retry }),
+    ...(definition.timeoutMs !== undefined && {
+      timeoutMs: definition.timeoutMs,
+    }),
+  };
+  assertCompensationReason(options);
+  return Object.freeze({
+    id: definition.id,
+    input: definition.input,
+    output: definition.output,
+    metadata: normalizeMetadata(options),
+  });
+}
+
+function fromClass(ContractClass: ContractConstructor): OperationDescriptor {
+  const metadata = getOperationMetadata(ContractClass);
+  if (metadata === undefined) {
+    throw new InternalApiError(
+      InternalApiErrorCode.InvalidOperation,
+      `${ContractClass.name} is not decorated with @Operation`,
+    );
+  }
+  const contract = new ContractClass();
+  return Object.freeze({
+    id: metadata.id,
+    input: contract.input,
+    output: contract.output,
+    metadata,
+  });
+}
+
+/**
+ * Resolves an operation from a `defineOperation` descriptor or an
+ * `@Operation` class. The result is cached per source. Throws
+ * `InvalidOperation` for anything else.
+ */
+export function resolveOperation(source: OperationSource): OperationDescriptor {
+  const cached = resolved.get(source);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let descriptor: OperationDescriptor;
+  if (typeof source === 'function') {
+    descriptor = fromClass(source);
+  } else if (isOperationDefinition(source)) {
+    descriptor = fromDefinition(source);
+  } else {
+    throw new InternalApiError(
+      InternalApiErrorCode.InvalidOperation,
+      'Expected a defineOperation descriptor or an @Operation class',
+    );
+  }
+  resolved.set(source, descriptor);
+  return descriptor;
+}

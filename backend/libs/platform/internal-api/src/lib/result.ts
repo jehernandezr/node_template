@@ -1,33 +1,32 @@
-/** Discriminant of an operation result. */
-export enum ResultKind {
-  Success = 'success',
-  BusinessError = 'business-error',
-  TransientFailure = 'transient-failure',
-  ProtocolViolation = 'protocol-violation',
-}
+import { CallOutcomeKind, type CallOutcome } from '@platform/primitives';
 
 /**
- * Outcome of an operation call. Callers branch on `kind`.
- * - Success: validated output.
- * - BusinessError: a code declared by the contract (or the implicit INVALID_INPUT code).
- * - TransientFailure: retryable for idempotent operations.
- * - ProtocolViolation: a contract or implementation fault. Never retried, never stored.
+ * Discriminant of an operation outcome.
+ * @deprecated Use `CallOutcomeKind` from `@platform/primitives`; the values are the same.
  */
-export type OperationResult<T> =
-  | { readonly kind: ResultKind.Success; readonly value: T }
-  | {
-      readonly kind: ResultKind.BusinessError;
-      readonly code: string;
-      readonly message?: string;
-      readonly details?: Record<string, unknown>;
-    }
-  | {
-      readonly kind: ResultKind.TransientFailure;
-      readonly reason: string;
-      readonly cause?: unknown;
-    }
-  | {
-      readonly kind: ResultKind.ProtocolViolation;
-      readonly reason: string;
-      readonly code?: string;
-    };
+export const ResultKind = CallOutcomeKind;
+/** @deprecated Use `CallOutcomeKind` from `@platform/primitives`. */
+export type ResultKind = CallOutcomeKind;
+
+/**
+ * Outcome of an operation call.
+ * @deprecated Use `CallOutcome` from `@platform/primitives`.
+ */
+export type OperationResult<T> = CallOutcome<T>;
+
+/** Reasons the internal API puts in non-success outcomes. */
+export enum InternalApiReason {
+  InvalidInput = 'invalid-input',
+  InvalidOutput = 'invalid-output',
+  UnknownOperation = 'unknown-operation',
+  UndeclaredError = 'undeclared-error',
+  IdempotencyKeyReuse = 'idempotency-key-reuse',
+  InvalidIdempotencyKey = 'invalid-idempotency-key',
+  PayloadTooLarge = 'payload-too-large',
+  InvalidHandlerResult = 'invalid-handler-result',
+  DeadlineExceeded = 'deadline-exceeded',
+  InProgress = 'in-progress',
+  Timeout = 'timeout',
+  Cancelled = 'cancelled',
+  StaleClaim = 'stale-claim',
+}

@@ -1,3 +1,7 @@
+import { SystemClock, type Clock } from '@platform/kernel';
+
+export type { Clock } from '@platform/kernel';
+
 /** Lifecycle of a saga instance. */
 export enum SagaStatus {
   Running = 'running',
@@ -23,8 +27,19 @@ export enum StepStatus {
   Succeeded = 'succeeded',
   /** Definitive business error: the operation did not apply. */
   Failed = 'failed',
-  /** Transient failure or protocol violation: the operation may have applied. */
+  /** Transient failure, unknown outcome or protocol violation: the operation may have applied. */
   Uncertain = 'uncertain',
+}
+
+/**
+ * Context of the calls a saga makes, persisted with the instance. Every
+ * attempt of every step, including those of a recovered run, sends the same
+ * values, so the callee scopes idempotency keys identically.
+ */
+export interface SagaCallContext {
+  readonly tenantId?: string;
+  readonly actorId?: string;
+  readonly traceparent?: string;
 }
 
 /** Persistent state of a saga. */
@@ -49,6 +64,13 @@ export interface SagaInstance {
   readonly suspendedSince: Date | null;
   readonly deadlineAt: Date | null;
   readonly lastErrorCode: string | null;
+  /** Call context of every step (tenant, actor, traceparent). Absent on instances from older versions. */
+  readonly context?: SagaCallContext | null;
+  /**
+   * `stableDigest` of the initial state. An idempotent start with the same key
+   * and another input is rejected. Absent on instances from older versions.
+   */
+  readonly inputDigest?: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -69,16 +91,11 @@ export interface StepLogEntry {
   readonly finishedAt: Date | null;
 }
 
-/** Source of the current time. */
-export interface Clock {
-  /** Returns the current instant. */
-  now(): Date;
-}
-
-/** Clock backed by the system time. */
-export const systemClock: Clock = {
-  now: () => new Date(),
-};
+/**
+ * Clock backed by the system time.
+ * @deprecated Use `SystemClock` from `@platform/kernel`.
+ */
+export const systemClock: Clock = new SystemClock();
 
 /** Builds the idempotency key of a step attempt. */
 export function stepIdempotencyKey(

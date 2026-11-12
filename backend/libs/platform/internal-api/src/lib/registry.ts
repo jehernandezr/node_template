@@ -2,12 +2,14 @@ import {
   Compensation,
   effectiveAttempts,
   effectiveTimeout,
-  getOperationMetadata,
+  resolveOperation,
 } from './contract.js';
 import type {
   ContractConstructor,
-  OperationContract,
+  OperationDescriptor,
   OperationMetadata,
+  OperationSchemas,
+  OperationSource,
 } from './contract.js';
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
 import { assertJsonSafeContract } from './json-safety.js';
@@ -25,12 +27,15 @@ export interface RegistryIssue {
   readonly message: string;
 }
 
-/** A registered contract with its metadata and schema-bearing instance. */
+/** A registered operation with its metadata and schemas. */
 export interface RegisteredContract {
   readonly id: string;
-  readonly ContractClass: ContractConstructor;
+  /** The `@Operation` class, when the operation was registered from one. */
+  readonly ContractClass?: ContractConstructor;
   readonly metadata: OperationMetadata;
-  readonly contract: OperationContract<unknown, unknown>;
+  /** Input and output schemas. */
+  readonly contract: OperationSchemas;
+  readonly descriptor: OperationDescriptor;
 }
 
 export interface ContractRegistryOptions {
@@ -52,25 +57,22 @@ export class ContractRegistry {
   }
 
   /**
-   * Registers contract classes. Duplicates are accepted here and reported by `validate()`.
-   * Throws when a class is undecorated or uses schemas that are not JSON-safe.
+   * Registers operations, from `defineOperation` descriptors or `@Operation`
+   * classes. Duplicates are accepted here and reported by `validate()`.
+   * Throws `InvalidOperation` for anything else and `NonJsonSafeSchema` for
+   * schemas that do not survive JSON transport.
    */
-  register(...contracts: ContractConstructor[]): void {
-    for (const ContractClass of contracts) {
-      const metadata = getOperationMetadata(ContractClass);
-      if (!metadata) {
-        throw new TypeError(
-          `${ContractClass.name} is not decorated with @Operation`,
-        );
-      }
-      const contract = new ContractClass();
-      assertJsonSafeContract(contract, metadata.id);
+  register(...sources: OperationSource[]): void {
+    for (const source of sources) {
+      const descriptor = resolveOperation(source);
+      assertJsonSafeContract(descriptor, descriptor.id);
 
       const entry: RegisteredContract = {
-        id: metadata.id,
-        ContractClass,
-        metadata,
-        contract,
+        id: descriptor.id,
+        ...(typeof source === 'function' && { ContractClass: source }),
+        metadata: descriptor.metadata,
+        contract: { input: descriptor.input, output: descriptor.output },
+        descriptor,
       };
       this.entries.push(entry);
       if (!this.byId.has(entry.id)) {

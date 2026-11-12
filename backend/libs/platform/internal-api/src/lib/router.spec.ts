@@ -1,3 +1,12 @@
+import { defineOperation, PlatformErrorCode } from '@contracts/platform';
+import { DomainError } from '@platform/kernel';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import {
+  CallOutcome,
+  CallOutcomeKind,
+  type CallOutcome as Outcome,
+  type ClaimRequest,
+} from '@platform/primitives';
 import { z } from 'zod';
 import {
   Compensation,
@@ -5,47 +14,50 @@ import {
   Operation,
   OperationContract,
 } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiErrorCode } from './errors.js';
+import { MAX_CALL_IDEMPOTENCY_KEY_LENGTH } from './limits.js';
 import { ContractRegistry } from './registry.js';
+import { InternalApiReason } from './result.js';
 import { InternalRouter } from './router.js';
 import { InMemoryProcessedOperationStore } from './store.js';
-import { ResultKind } from './result.js';
-import type { OperationResult } from './result.js';
 import type { CallMeta } from './transport.js';
 
-@Operation({
-  id: 'stock.reserve.v1',
-  compensatedBy: 'stock.release.v1',
-  idempotent: true,
-  errors: ['OUT_OF_STOCK'],
-})
-class Reserve extends OperationContract<
-  { sku: string; qty: number },
-  { reservationId: string }
-> {
-  readonly input = z.object({
-    sku: z.string(),
-    qty: z.number().int().positive(),
-  });
-  readonly output = z.object({ reservationId: z.string() });
-}
+const OUT_OF_STOCK = 'STOCK.RESERVE.OUT_OF_STOCK';
 
-@Operation({
+const Reserve = defineOperation({
+  id: 'stock.reserve.v1',
+  input: z.object({ sku: z.string(), qty: z.number().int().positive() }),
+  output: z.object({ reservationId: z.string() }),
+  idempotent: true,
+  compensatedBy: 'stock.release.v1',
+  errors: [OUT_OF_STOCK],
+  description: 'Reserves stock.',
+});
+
+const Release = defineOperation({
   id: 'stock.release.v1',
+  input: z.object({ reservationId: z.string() }),
+  output: z.object({ released: z.boolean() }),
+  idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason: 'Idempotent release',
-  idempotent: true,
-})
-class Release extends OperationContract<
-  { reservationId: string },
-  { released: boolean }
-> {
-  readonly input = z.object({ reservationId: z.string() });
-  readonly output = z.object({ released: z.boolean() });
-}
+  description: 'Releases a reservation.',
+});
 
-@Operation({ id: 'stock.count.v1', mutating: false, idempotent: true })
-class Count extends OperationContract<{ sku: string }, { total: number }> {
+const Count = defineOperation({
+  id: 'stock.count.v1',
+  input: z.object({ sku: z.string() }),
+  output: z.object({ total: z.number() }),
+  idempotent: true,
+  mutating: false,
+  description: 'Counts stock.',
+});
+
+@Operation({ id: 'stock.legacy-count.v1', mutating: false, idempotent: true })
+class LegacyCount extends OperationContract<
+  { sku: string },
+  { total: number }
+> {
   readonly input = z.object({ sku: z.string() });
   readonly output = z.object({ total: z.number() });
 }
@@ -55,427 +67,574 @@ class Unannotated extends OperationContract<object, object> {
   readonly output = z.object({});
 }
 
-const success = (reservationId = 'r-1') => ({
-  kind: ResultKind.Success as const,
-  value: { reservationId },
-});
+class OutOfStock extends DomainError {
+  readonly code = OUT_OF_STOCK;
+}
 
-function meta(idempotencyKey: string, extra: Partial<CallMeta> = {}): CallMeta {
-  return {
+class Unexpected extends DomainError {
+  readonly code = 'STOCK.RESERVE.SURPRISE';
+}
+
+type ReserveOutcome = Outcome<{ reservationId: string }>;
+
+const success = (reservationId = 'r-1') =>
+  CallOutcome.success({ reservationId });
+
+function setup(options: { leaseMarginMs?: number } = {}) {
+  const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
+  const processed = new InMemoryProcessedOperationStore(
+    clock,
+    new SequentialIdGenerator(),
+  );
+  const claim = jest.spyOn(processed, 'claim');
+  const router = new InternalRouter({ processed, clock, ...options });
+  const meta = (
+    idempotencyKey: string,
+    extra: Partial<CallMeta> = {},
+  ): CallMeta => ({
     idempotencyKey,
     timeoutMs: 1000,
-    deadline: Date.now() + 1000,
+    deadline: clock.now().getTime() + 1000,
     ...extra,
-  };
+  });
+  return { router, processed, clock, claim, meta };
 }
 
-function setup(leaseMs?: number) {
-  const processed = new InMemoryProcessedOperationStore();
-  const router = new InternalRouter({
-    processed,
-    ...(leaseMs !== undefined && { leaseMs }),
-  });
-  return { router, processed };
-}
+const input = { sku: 'A', qty: 1 };
 
 describe('InternalRouter', () => {
-  it('assertComplete passes when every registered operation has a handler', () => {
-    const { router } = setup();
-    const registry = new ContractRegistry();
-    registry.register(Reserve, Release);
-    router.register(Reserve, async () => success());
-    router.register(Release, async () => ({
-      kind: ResultKind.Success,
-      value: { released: true },
-    }));
-    expect(() => router.assertComplete(registry)).not.toThrow();
-  });
-
-  it('assertComplete throws MissingHandler listing the missing ids', () => {
-    const { router } = setup();
-    const registry = new ContractRegistry();
-    registry.register(Reserve, Release, Count);
-    router.register(Reserve, async () => success());
-
-    let caught: unknown;
-    try {
-      router.assertComplete(registry);
-    } catch (error) {
-      caught = error;
-    }
-    expect(caught).toBeInstanceOf(InternalApiError);
-    expect((caught as InternalApiError).code).toBe(
-      InternalApiErrorCode.MissingHandler,
-    );
-    expect((caught as Error).message).toContain('stock.release.v1');
-    expect((caught as Error).message).toContain('stock.count.v1');
-    expect((caught as Error).message).not.toContain('stock.reserve.v1');
-  });
-
-  it('rejects a second handler for the same operation with DuplicateOperation', () => {
-    const { router } = setup();
-    const handler = async () => ({
-      kind: ResultKind.Success as const,
-      value: { total: 0 },
-    });
-    router.register(Count, handler);
-    expect(() => router.register(Count, handler)).toThrow(
-      expect.objectContaining({
-        code: InternalApiErrorCode.DuplicateOperation,
-      }),
-    );
-  });
-
-  it('rejects a class without @Operation', () => {
-    const { router } = setup();
-    expect(() =>
-      router.register(Unannotated, async () => ({
-        kind: ResultKind.Success,
-        value: {},
-      })),
-    ).toThrow(TypeError);
-  });
-
-  it('returns a BusinessError for invalid input without running the handler or storing anything', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
-
-    const result = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: -1 },
-      meta('k-1'),
-    );
-    expect(result).toMatchObject({
-      kind: ResultKind.BusinessError,
-      code: INVALID_INPUT_CODE,
-    });
-    expect(handler).not.toHaveBeenCalled();
-  });
-
-  it('runs the handler once for the same key and replays the stored result', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
-
-    const first = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-1'),
-    );
-    const second = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-1'),
-    );
-    expect(first).toEqual({
-      kind: ResultKind.Success,
-      value: { reservationId: 'r-1' },
-    });
-    expect(second).toEqual(first);
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('treats the same input with a different key order as the same call', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
-
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-order'),
-    );
-    await router.handle(
-      'stock.reserve.v1',
-      { qty: 1, sku: 'A' },
-      meta('k-order'),
-    );
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('concurrent calls on one key run the handler once; the second gets in-progress', async () => {
-    const { router } = setup();
-    let finish!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      finish = resolve;
-    });
-    const handler = jest.fn(async () => {
-      await gate;
-      return success();
-    });
-    router.register(Reserve, handler);
-
-    const first = router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-concurrent'),
-    );
-    const second = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-concurrent'),
-    );
-    expect(second).toEqual({
-      kind: ResultKind.TransientFailure,
-      reason: 'in-progress',
+  describe('registration', () => {
+    it('assertComplete passes when every registered operation has a handler', () => {
+      const { router } = setup();
+      const registry = new ContractRegistry();
+      registry.register(Reserve, Release);
+      router.register(Reserve, async () => success());
+      router.register(Release, async () =>
+        CallOutcome.success({ released: true }),
+      );
+      expect(() => router.assertComplete(registry)).not.toThrow();
     });
 
-    finish();
-    await expect(first).resolves.toEqual({
-      kind: ResultKind.Success,
-      value: { reservationId: 'r-1' },
-    });
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
+    it('assertComplete throws MissingHandler listing the missing ids', () => {
+      const { router } = setup();
+      const registry = new ContractRegistry();
+      registry.register(Reserve, Release, Count);
+      router.register(Reserve, async () => success());
 
-  it('stores a declared BusinessError and replays it', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => ({
-      kind: ResultKind.BusinessError as const,
-      code: 'OUT_OF_STOCK',
-    }));
-    router.register(Reserve, handler);
-
-    const first = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-2'),
-    );
-    const second = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-2'),
-    );
-    expect(first).toEqual({
-      kind: ResultKind.BusinessError,
-      code: 'OUT_OF_STOCK',
-    });
-    expect(second).toEqual(first);
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('returns an undeclared business code as ProtocolViolation, does not store it, and releases the claim', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => ({
-      kind: ResultKind.BusinessError as const,
-      code: 'SURPRISE',
-    }));
-    router.register(Reserve, handler);
-
-    const first = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-undeclared'),
-    );
-    expect(first).toEqual({
-      kind: ResultKind.ProtocolViolation,
-      reason: 'undeclared-error',
-      code: 'SURPRISE',
+      let caught: unknown;
+      try {
+        router.assertComplete(registry);
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toMatchObject({
+        code: InternalApiErrorCode.MissingHandler,
+      });
+      expect((caught as Error).message).toContain('stock.release.v1');
+      expect((caught as Error).message).toContain('stock.count.v1');
+      expect((caught as Error).message).not.toContain('stock.reserve.v1');
     });
 
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-undeclared'),
-    );
-    expect(handler).toHaveBeenCalledTimes(2);
-  });
-
-  it('turns a handler throw into ProtocolViolation handler-error, not stored, claim released', async () => {
-    const { router } = setup();
-    const handler = jest
-      .fn<Promise<OperationResult<{ reservationId: string }>>, []>()
-      .mockRejectedValueOnce(new Error('boom'));
-    handler.mockResolvedValueOnce(success('r-after'));
-    router.register(Reserve, handler);
-
-    const first = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-throw'),
-    );
-    expect(first).toEqual({
-      kind: ResultKind.ProtocolViolation,
-      reason: 'handler-error',
+    it('rejects a second handler for the same operation with DuplicateOperation', () => {
+      const { router } = setup();
+      const handler = async () => CallOutcome.success({ total: 0 });
+      router.register(Count, handler);
+      expect(() => router.register(Count, handler)).toThrow(
+        expect.objectContaining({
+          code: InternalApiErrorCode.DuplicateOperation,
+        }),
+      );
     });
 
-    const second = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-throw'),
-    );
-    expect(second).toEqual({
-      kind: ResultKind.Success,
-      value: { reservationId: 'r-after' },
-    });
-    expect(handler).toHaveBeenCalledTimes(2);
-  });
-
-  it('validates handler success output: invalid output is ProtocolViolation and not stored', async () => {
-    const { router } = setup();
-    const handler = jest
-      .fn<Promise<OperationResult<{ reservationId: string }>>, []>()
-      .mockResolvedValueOnce({
-        kind: ResultKind.Success,
-        value: { wrong: 1 },
-      } as unknown as OperationResult<{ reservationId: string }>)
-      .mockResolvedValueOnce(success('r-valid'));
-    router.register(Reserve, handler);
-
-    const first = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-output'),
-    );
-    expect(first).toEqual({
-      kind: ResultKind.ProtocolViolation,
-      reason: 'invalid-output',
+    it('rejects a class without @Operation with InvalidOperation', () => {
+      const { router } = setup();
+      expect(() =>
+        router.register(Unannotated, async () => CallOutcome.success({})),
+      ).toThrow(
+        expect.objectContaining({
+          code: InternalApiErrorCode.InvalidOperation,
+        }),
+      );
     });
 
-    const second = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-output'),
-    );
-    expect(second).toEqual({
-      kind: ResultKind.Success,
-      value: { reservationId: 'r-valid' },
+    it('keeps serving a legacy @Operation class', async () => {
+      const { router, meta } = setup();
+      router.register(LegacyCount, async ({ sku }) =>
+        CallOutcome.success({ total: sku.length }),
+      );
+      await expect(
+        router.handle('stock.legacy-count.v1', { sku: 'AB' }, meta('k')),
+      ).resolves.toEqual(CallOutcome.success({ total: 2 }));
     });
-    expect(handler).toHaveBeenCalledTimes(2);
   });
 
-  it('does not store TransientFailure, so a repeated key runs the handler again', async () => {
-    const { router } = setup();
-    const handler = jest
-      .fn<Promise<OperationResult<{ reservationId: string }>>, []>()
-      .mockResolvedValueOnce({
-        kind: ResultKind.TransientFailure,
-        reason: 'db-down',
-      })
-      .mockResolvedValueOnce(success('r-2'));
-    router.register(Reserve, handler);
+  describe('validation', () => {
+    it('returns INVALID_INPUT with field errors without running the handler or storing anything', async () => {
+      const { router, claim, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
 
-    const first = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-3'),
-    );
-    const second = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-3'),
-    );
-    expect(first.kind).toBe(ResultKind.TransientFailure);
-    expect(second).toEqual({
-      kind: ResultKind.Success,
-      value: { reservationId: 'r-2' },
+      const result = await router.handle(
+        'stock.reserve.v1',
+        { sku: 'A', qty: -1 },
+        meta('k-1'),
+      );
+
+      expect(result).toMatchObject({
+        kind: CallOutcomeKind.BusinessError,
+        code: INVALID_INPUT_CODE,
+        details: {
+          fieldErrors: [
+            { field: 'qty', code: PlatformErrorCode.ValidationTooSmall },
+          ],
+        },
+      });
+      expect(handler).not.toHaveBeenCalled();
+      expect(claim).not.toHaveBeenCalled();
     });
-    expect(handler).toHaveBeenCalledTimes(2);
-  });
 
-  it('rejects a reused key with a different input as ProtocolViolation idempotency-key-reuse', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
-
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-reuse'),
-    );
-    const reused = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 2 },
-      meta('k-reuse'),
-    );
-    expect(reused).toEqual({
-      kind: ResultKind.ProtocolViolation,
-      reason: 'idempotency-key-reuse',
+    it('returns a protocol violation for an unknown operation', async () => {
+      const { router, meta } = setup();
+      await expect(
+        router.handle('stock.nope.v1', {}, meta('k-5')),
+      ).resolves.toEqual(
+        CallOutcome.protocolViolation(
+          InternalApiReason.UnknownOperation,
+          InternalApiErrorCode.UnknownOperation,
+        ),
+      );
     });
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
 
-  it('scopes idempotency by tenant', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
+    it('rejects an input larger than the payload limit before parsing it', async () => {
+      const clock = new FixedClock();
+      const router = new InternalRouter({
+        processed: new InMemoryProcessedOperationStore(clock),
+        clock,
+        maxPayloadBytes: 32,
+      });
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
 
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('shared', { tenantId: 't-1' }),
-    );
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('shared', { tenantId: 't-2' }),
-    );
-    expect(handler).toHaveBeenCalledTimes(2);
-  });
+      const result = await router.handle(
+        'stock.reserve.v1',
+        { sku: 'A'.repeat(100), qty: 1 },
+        {
+          idempotencyKey: 'k',
+          timeoutMs: 1000,
+          deadline: clock.now().getTime() + 1000,
+        },
+      );
 
-  it('scopes idempotency by operation', async () => {
-    const { router } = setup();
-    const reserve = jest.fn(async () => success());
-    const release = jest.fn(async () => ({
-      kind: ResultKind.Success as const,
-      value: { released: true },
-    }));
-    router.register(Reserve, reserve);
-    router.register(Release, release);
-
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('shared'),
-    );
-    await router.handle(
-      'stock.release.v1',
-      { reservationId: 'r' },
-      meta('shared'),
-    );
-    expect(reserve).toHaveBeenCalledTimes(1);
-    expect(release).toHaveBeenCalledTimes(1);
-  });
-
-  it('rejects work whose deadline has passed, without running the handler', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
-
-    const result = await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 1 },
-      meta('k-late', { deadline: Date.now() - 1 }),
-    );
-    expect(result).toEqual({
-      kind: ResultKind.TransientFailure,
-      reason: 'deadline-exceeded',
+      expect(result).toMatchObject({
+        code: InternalApiErrorCode.PayloadTooLarge,
+      });
+      expect(handler).not.toHaveBeenCalled();
     });
-    expect(handler).not.toHaveBeenCalled();
+
+    it.each([
+      ['an empty key', ''],
+      ['an oversized key', 'k'.repeat(MAX_CALL_IDEMPOTENCY_KEY_LENGTH + 1)],
+    ])('rejects %s as a protocol violation', async (_label, key) => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
+
+      await expect(
+        router.handle('stock.reserve.v1', input, meta(key)),
+      ).resolves.toMatchObject({
+        kind: CallOutcomeKind.ProtocolViolation,
+        code: InternalApiErrorCode.InvalidIdempotencyKey,
+      });
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('rejects work whose deadline has passed, without running the handler', async () => {
+      const { router, clock, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
+
+      const result = await router.handle(
+        'stock.reserve.v1',
+        input,
+        meta('k-late', { deadline: clock.now().getTime() - 1 }),
+      );
+
+      expect(result).toEqual(
+        CallOutcome.transientFailure(InternalApiReason.DeadlineExceeded),
+      );
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('rejects a deadline that is not a finite epoch as a protocol violation', async () => {
+      const { router, meta } = setup();
+      router.register(Reserve, async () => success());
+
+      await expect(
+        router.handle('stock.reserve.v1', input, meta('k', { deadline: NaN })),
+      ).resolves.toMatchObject({ kind: CallOutcomeKind.ProtocolViolation });
+    });
+
+    it('passes the parsed input and the call metadata to the handler', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
+      const callMeta = meta('k-4', { tenantId: 't-1', timeoutMs: 100 });
+
+      await router.handle(
+        'stock.reserve.v1',
+        { sku: 'A', qty: 2, extra: 'ignored' },
+        callMeta,
+      );
+      expect(handler).toHaveBeenCalledWith({ sku: 'A', qty: 2 }, callMeta);
+    });
   });
 
-  it('passes the parsed input and the call metadata to the handler', async () => {
-    const { router } = setup();
-    const handler = jest.fn(async () => success());
-    router.register(Reserve, handler);
-    const callMeta = meta('k-4', { tenantId: 't-1', timeoutMs: 100 });
+  describe('idempotency', () => {
+    it('runs the handler once for the same key and replays the stored result', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
 
-    await router.handle(
-      'stock.reserve.v1',
-      { sku: 'A', qty: 2, extra: 'ignored' },
-      callMeta,
-    );
-    expect(handler).toHaveBeenCalledWith({ sku: 'A', qty: 2 }, callMeta);
+      const first = await router.handle('stock.reserve.v1', input, meta('k-1'));
+      const second = await router.handle(
+        'stock.reserve.v1',
+        input,
+        meta('k-1'),
+      );
+
+      expect(first).toEqual(success());
+      expect(second).toEqual(first);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('treats the same input with a different key order as the same call', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
+
+      await router.handle('stock.reserve.v1', { sku: 'A', qty: 1 }, meta('k'));
+      await router.handle('stock.reserve.v1', { qty: 1, sku: 'A' }, meta('k'));
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('claims the key as a canonical JSON array of tenant, operation and key', async () => {
+      const { router, claim, meta } = setup();
+      router.register(Reserve, async () => success());
+
+      await router.handle(
+        'stock.reserve.v1',
+        input,
+        meta('k|1', { tenantId: 't|1' }),
+      );
+      await router.handle('stock.reserve.v1', input, meta('k-2'));
+
+      expect(claim.mock.calls.map(([key]) => key)).toEqual([
+        '["t|1","stock.reserve.v1","k|1"]',
+        '[null,"stock.reserve.v1","k-2"]',
+      ]);
+    });
+
+    it('derives the lease from the request deadline plus the margin', async () => {
+      const { router, claim, meta, clock } = setup({ leaseMarginMs: 250 });
+      router.register(Reserve, async () => success());
+      const deadline = clock.now().getTime() + 1000;
+
+      await router.handle('stock.reserve.v1', input, meta('k', { deadline }));
+
+      const request = claim.mock.calls[0]?.[1] as ClaimRequest;
+      expect(request.deadline.atMs).toBe(deadline);
+      expect(request.leaseMarginMs).toBe(250);
+    });
+
+    it('concurrent calls on one key run the handler once; the second gets in-progress', async () => {
+      const { router, meta } = setup();
+      let finish!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const handler = jest.fn(async () => {
+        await gate;
+        return success();
+      });
+      router.register(Reserve, handler);
+
+      const first = router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+      expect(second).toEqual(
+        CallOutcome.transientFailure(InternalApiReason.InProgress),
+      );
+
+      finish();
+      await expect(first).resolves.toEqual(success());
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('fences a slow attempt whose lease was taken over: its result is uncertain and not stored', async () => {
+      const { router, meta, clock } = setup({ leaseMarginMs: 100 });
+      let finishSlow!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        finishSlow = resolve;
+      });
+      const handler = jest
+        .fn<Promise<ReserveOutcome>, []>()
+        .mockImplementationOnce(async () => {
+          await gate;
+          return success('r-slow');
+        })
+        .mockResolvedValueOnce(success('r-fast'));
+      router.register(Reserve, handler);
+
+      const slow = router.handle('stock.reserve.v1', input, meta('k'));
+      clock.advance(1_101);
+      const fast = await router.handle('stock.reserve.v1', input, meta('k'));
+      finishSlow();
+
+      expect(fast).toEqual(success('r-fast'));
+      await expect(slow).resolves.toEqual({
+        kind: CallOutcomeKind.Uncertain,
+        reason: InternalApiReason.StaleClaim,
+        cause: expect.objectContaining({
+          code: 'PLATFORM.PRIMITIVES.STALE_CLAIM',
+        }),
+      });
+      await expect(
+        router.handle('stock.reserve.v1', input, meta('k')),
+      ).resolves.toEqual(success('r-fast'));
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects a reused key with a different input as a protocol violation', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
+
+      await router.handle('stock.reserve.v1', input, meta('k-reuse'));
+      const reused = await router.handle(
+        'stock.reserve.v1',
+        { sku: 'A', qty: 2 },
+        meta('k-reuse'),
+      );
+
+      expect(reused).toEqual(
+        CallOutcome.protocolViolation(
+          InternalApiReason.IdempotencyKeyReuse,
+          InternalApiErrorCode.IdempotencyKeyReuse,
+        ),
+      );
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('scopes idempotency by tenant', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () => success());
+      router.register(Reserve, handler);
+
+      await router.handle(
+        'stock.reserve.v1',
+        input,
+        meta('shared', { tenantId: 't-1' }),
+      );
+      await router.handle(
+        'stock.reserve.v1',
+        input,
+        meta('shared', { tenantId: 't-2' }),
+      );
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it('scopes idempotency by operation', async () => {
+      const { router, meta } = setup();
+      const reserve = jest.fn(async () => success());
+      const release = jest.fn(async () =>
+        CallOutcome.success({ released: true }),
+      );
+      router.register(Reserve, reserve);
+      router.register(Release, release);
+
+      await router.handle('stock.reserve.v1', input, meta('shared'));
+      await router.handle(
+        'stock.release.v1',
+        { reservationId: 'r' },
+        meta('shared'),
+      );
+      expect(reserve).toHaveBeenCalledTimes(1);
+      expect(release).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('returns ProtocolViolation unknown-operation for an operation without a handler', async () => {
-    const { router } = setup();
-    await expect(
-      router.handle('stock.nope.v1', {}, meta('k-5')),
-    ).resolves.toEqual({
-      kind: ResultKind.ProtocolViolation,
-      reason: 'unknown-operation',
+  describe('handler outcomes', () => {
+    it('stores a declared business error and replays it', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () =>
+        CallOutcome.businessError(OUT_OF_STOCK),
+      );
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first).toEqual(CallOutcome.businessError(OUT_OF_STOCK));
+      expect(second).toEqual(first);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns an undeclared business code as a protocol violation, does not store it and releases the claim', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async () =>
+        CallOutcome.businessError('SURPRISE'),
+      );
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first).toEqual(
+        CallOutcome.protocolViolation(
+          InternalApiReason.UndeclaredError,
+          'SURPRISE',
+        ),
+      );
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it('treats a database outage thrown by the handler as transient, not stored, claim released', async () => {
+      const { router, meta } = setup();
+      const outage = Object.assign(new Error('terminating connection'), {
+        code: '57P01',
+      });
+      const handler = jest
+        .fn<Promise<ReserveOutcome>, []>()
+        .mockRejectedValueOnce(outage)
+        .mockResolvedValueOnce(success('r-after'));
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first).toMatchObject({
+        kind: CallOutcomeKind.TransientFailure,
+        reason: '57P01',
+      });
+      expect(second).toEqual(success('r-after'));
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it('turns a thrown declared domain error into a stored business error', async () => {
+      const { router, meta } = setup();
+      const handler = jest.fn(async (): Promise<ReserveOutcome> => {
+        throw new OutOfStock('No stock left', { sku: 'A' });
+      });
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first).toEqual({
+        kind: CallOutcomeKind.BusinessError,
+        code: OUT_OF_STOCK,
+        message: 'No stock left',
+        details: { sku: 'A' },
+      });
+      expect(second).toEqual(first);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('turns a thrown undeclared domain error into a protocol violation', async () => {
+      const { router, meta } = setup();
+      router.register(Reserve, async () => {
+        throw new Unexpected('surprise');
+      });
+
+      await expect(
+        router.handle('stock.reserve.v1', input, meta('k')),
+      ).resolves.toEqual(
+        CallOutcome.protocolViolation(
+          InternalApiReason.UndeclaredError,
+          'STOCK.RESERVE.SURPRISE',
+        ),
+      );
+    });
+
+    it('turns an unknown thrown error into a protocol violation, not stored, claim released', async () => {
+      const { router, meta } = setup();
+      const handler = jest
+        .fn<Promise<ReserveOutcome>, []>()
+        .mockRejectedValueOnce(new TypeError('x is undefined'))
+        .mockResolvedValueOnce(success('r-after'));
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first).toEqual(CallOutcome.protocolViolation('TypeError'));
+      expect(second).toEqual(success('r-after'));
+    });
+
+    it('turns a handler timeout into an uncertain outcome', async () => {
+      const { router, meta } = setup();
+      const timeout = Object.assign(new Error('took too long'), {
+        name: 'TimeoutError',
+      });
+      router.register(Reserve, async () => {
+        throw timeout;
+      });
+
+      await expect(
+        router.handle('stock.reserve.v1', input, meta('k')),
+      ).resolves.toMatchObject({ kind: CallOutcomeKind.Uncertain });
+    });
+
+    it('validates handler success output: invalid output is a protocol violation and not stored', async () => {
+      const { router, meta } = setup();
+      const handler = jest
+        .fn<Promise<ReserveOutcome>, []>()
+        .mockResolvedValueOnce(
+          CallOutcome.success({ wrong: 1 }) as unknown as ReserveOutcome,
+        )
+        .mockResolvedValueOnce(success('r-valid'));
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first).toEqual(
+        CallOutcome.protocolViolation(
+          InternalApiReason.InvalidOutput,
+          InternalApiErrorCode.InvalidOutput,
+        ),
+      );
+      expect(second).toEqual(success('r-valid'));
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects a handler result that is not a CallOutcome', async () => {
+      const { router, meta } = setup();
+      router.register(
+        Reserve,
+        async () => ({ ok: true }) as unknown as ReserveOutcome,
+      );
+
+      await expect(
+        router.handle('stock.reserve.v1', input, meta('k')),
+      ).resolves.toMatchObject({
+        code: InternalApiErrorCode.InvalidHandlerResult,
+      });
+    });
+
+    it('does not store a transient failure, so a repeated key runs the handler again', async () => {
+      const { router, meta } = setup();
+      const handler = jest
+        .fn<Promise<ReserveOutcome>, []>()
+        .mockResolvedValueOnce(CallOutcome.transientFailure('db-down'))
+        .mockResolvedValueOnce(success('r-2'));
+      router.register(Reserve, handler);
+
+      const first = await router.handle('stock.reserve.v1', input, meta('k'));
+      const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+      expect(first.kind).toBe(CallOutcomeKind.TransientFailure);
+      expect(second).toEqual(success('r-2'));
+      expect(handler).toHaveBeenCalledTimes(2);
     });
   });
 });
