@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     dependencies:
+      cockatiel:
+        specifier: ^4.0.0
+        version: 4.0.0
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -105,7 +108,34 @@ importers:
         specifier: ^2.3.0
         version: 2.9.1
 
+  libs/platform/bloom:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
+  libs/platform/cache:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
   libs/platform/config:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
+  libs/platform/criteria:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
+  libs/platform/internal-api:
     dependencies:
       tslib:
         specifier: ^2.3.0
@@ -123,6 +153,18 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
 
+  libs/platform/messaging:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   libs/platform/observability:
     dependencies:
       tslib:
@@ -131,6 +173,30 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+
+  libs/platform/resilience:
+    dependencies:
+      cockatiel:
+        specifier: ^4.0.0
+        version: 4.0.0
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
+  libs/platform/saga:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
+
+  libs/platform/sharding:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
 
 packages:
   '@babel/code-frame@7.29.7':
@@ -3187,6 +3253,13 @@ packages:
         integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==,
       }
     engines: { iojs: '>= 1.0.0', node: '>= 0.12.0' }
+
+  cockatiel@4.0.0:
+    resolution:
+      {
+        integrity: sha512-XpUZJnogsd03BGB19T9sv7Xb8SwvD8JddZV2Tlp0LNspopZ6Idv24ZwCl8vAGJ6JwODZ0zLRYVj3NWvmRcUDqA==,
+      }
+    engines: { node: '>=22' }
 
   collect-v8-coverage@1.0.3:
     resolution:
@@ -8057,6 +8130,8 @@ snapshots:
   clone@1.0.4: {}
 
   co@4.6.0: {}
+
+  cockatiel@4.0.0: {}
 
   collect-v8-coverage@1.0.3: {}
 

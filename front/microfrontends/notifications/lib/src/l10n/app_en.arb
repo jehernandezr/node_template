@@ -1,0 +1,30 @@
+{
+  "@@locale": "en",
+
+  "inboxTitle": "Notifications",
+  "preferencesTitle": "Notification preferences",
+  "preferencesTooltip": "Preferences",
+  "markAllRead": "Mark all as read",
+  "unreadLabel": "Unread",
+  "readLabel": "Read",
+  "emptyTitle": "You have no notifications",
+  "emptyMessage": "Account notices will appear here.",
+  "loadError": "We couldn't load your notifications.",
+  "saveError": "We couldn't save your preferences.",
+
+  "typeHeader": "Type",
+  "typeSecurityAlert": "Security alerts",
+  "typeTaskUpdated": "Tasks",
+  "typeInvoiceIssued": "Invoices",
+  "typeAccountActivity": "Account activity",
+  "channelInApp": "In app",
+  "channelPush": "Push",
+  "channelEmail": "Email",
+  "securityLocked": "Security alerts always arrive on every channel.",
+
+  "quietHoursTitle": "Quiet hours",
+  "quietHoursStart": "Start",
+  "quietHoursEnd": "End",
+  "quietHoursStartPicker": "Start time",
+  "quietHoursEndPicker": "End time"
+}

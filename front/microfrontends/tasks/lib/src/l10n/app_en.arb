@@ -1,0 +1,40 @@
+{
+  "@@locale": "en",
+
+  "screenTitle": "Tasks",
+  "newTask": "New task",
+  "editTaskTitle": "Edit task",
+  "detailTitle": "Task",
+
+  "filterAll": "All",
+  "filterOpen": "Open",
+  "filterInProgress": "In progress",
+  "filterDone": "Done",
+
+  "statusOpen": "Open",
+  "statusInProgress": "In progress",
+  "statusDone": "Done",
+
+  "searchHint": "Search by title or description",
+
+  "emptyTitle": "No tasks",
+  "emptyMessage": "Create a task to get started.",
+  "emptySearchTitle": "No results",
+  "emptySearchMessage": "Try a different text.",
+  "selectTask": "Select a task to see it here.",
+
+  "loadError": "The tasks could not be loaded.",
+  "detailError": "The task could not be loaded.",
+  "detailNotFound": "The task does not exist.",
+  "saveError": "The task could not be saved.",
+  "deleteError": "The task could not be deleted.",
+
+  "titleLabel": "Title",
+  "titleRequired": "Enter a title.",
+  "descriptionLabel": "Description",
+  "statusLabel": "Status",
+  "noDescription": "No description",
+
+  "deleteTitle": "Delete task?",
+  "deleteMessage": "This action cannot be undone."
+}

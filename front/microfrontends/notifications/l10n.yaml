@@ -1,0 +1,7 @@
+arb-dir: lib/src/l10n
+template-arb-file: app_es.arb
+output-localization-file: notifications_localizations.dart
+output-class: NotificationsLocalizations
+output-dir: lib/src/l10n/generated
+nullable-getter: false
+header: "// ignore_for_file: deprecated_member_use"

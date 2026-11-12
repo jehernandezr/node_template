@@ -57,3 +57,15 @@ test-output
 
 # test output
 test-output
+
+# terraform local state and plugins
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# flutter / dart
+.dart_tool/
+front/**/build/
+*.iml
+.flutter-plugins-dependencies

@@ -1,0 +1,113 @@
+{
+  "@@locale": "es",
+
+  "navOverview": "Resumen",
+  "navTenants": "Tenants",
+  "navSagas": "Sagas",
+  "navDlq": "Colas muertas",
+
+  "loadError": "No se pudo cargar la información. Intenta de nuevo.",
+  "notFound": "No encontramos este registro.",
+  "filterAll": "Todos",
+  "filterStatus": "Estado",
+  "filterRegion": "Región",
+  "actor": "Actor",
+  "action": "Acción",
+  "entity": "Entidad",
+  "traceId": "Trace ID",
+  "auditTitle": "Auditoría",
+  "auditEmpty": "Sin registros de auditoría.",
+
+  "overviewTitle": "Backoffice",
+  "overviewSubtitle": "Estado de la plataforma en este momento.",
+  "cardTenants": "Tenants",
+  "cardSagas": "Sagas que requieren intervención",
+  "cardDlq": "Mensajes en colas muertas",
+  "cardOpen": "Ver detalle",
+
+  "tenantsTitle": "Tenants",
+  "tenantSearchLabel": "Buscar por nombre o id",
+  "tenantsEmpty": "Ningún tenant coincide con los filtros.",
+  "tenantDetailTitle": "Detalle del tenant",
+  "tenantPlan": "Plan",
+  "tenantShardGroup": "Grupo de shards",
+  "tenantUsers": "Usuarios",
+  "tenantRegion": "Región",
+  "tenantStatusActive": "Activo",
+  "tenantStatusSuspended": "Suspendido",
+  "tenantStatusProvisioning": "Aprovisionando",
+  "tenantStatusDeleting": "Eliminando",
+  "regionEuWest": "Europa oeste",
+  "regionUsEast": "Estados Unidos este",
+  "regionSaEast": "Sudamérica este",
+
+  "sagasTitle": "Sagas",
+  "sagasEmpty": "No hay sagas con este estado.",
+  "sagaDetailTitle": "Detalle de la saga",
+  "sagaType": "Tipo",
+  "sagaTenant": "Tenant",
+  "sagaCurrentStep": "Último paso",
+  "sagaUpdated": "Actualizada",
+  "sagaSteps": "Pasos",
+  "sagaStepsEmpty": "La saga aún no ha ejecutado pasos.",
+  "sagaErrorCode": "Código de error",
+  "sagaManualActions": "Acciones manuales",
+  "sagaIntervention": "Requiere intervención",
+  "sagaActionDone": "Acción registrada en la auditoría.",
+  "reasonLabel": "Motivo (obligatorio)",
+  "reasonHelp": "Explica por qué haces esta acción. Queda registrado en la auditoría.",
+  "sagaStatusRunning": "En ejecución",
+  "sagaStatusWaitingReply": "Esperando respuesta",
+  "sagaStatusSuspended": "Suspendida",
+  "sagaStatusCompleted": "Completada",
+  "sagaStatusCompensating": "Compensando",
+  "sagaStatusCompensated": "Compensada",
+  "sagaStatusCompensationFailed": "Compensación fallida",
+  "sagaStatusRequiresIntervention": "Requiere intervención",
+  "sagaDirectionForward": "Avance",
+  "sagaDirectionCompensation": "Compensación",
+  "stepStatusDispatched": "Despachado",
+  "stepStatusSucceeded": "Correcto",
+  "stepStatusFailed": "Fallido",
+  "manualActionRetryStep": "Reintentar paso",
+  "manualActionForceCompensation": "Forzar compensación",
+  "manualActionMarkResolved": "Marcar como resuelta",
+  "sagaStepLabel": "{order}. {operation}",
+  "@sagaStepLabel": {
+    "placeholders": {
+      "order": {"type": "int"},
+      "operation": {"type": "String"}
+    }
+  },
+
+  "dlqTitle": "Colas muertas",
+  "dlqSubtitle": "Mensajes que agotaron sus reintentos.",
+  "dlqEmpty": "No hay colas configuradas.",
+  "dlqMessagesTitle": "Mensajes",
+  "dlqSelectQueue": "Elige una cola para ver sus mensajes.",
+  "dlqMessagesEmpty": "La cola no tiene mensajes.",
+  "dlqMessageType": "Tipo",
+  "dlqFirstError": "Primer error",
+  "dlqSentAt": "Enviado",
+  "dlqRedrive": "Redistribuir",
+  "dlqRedriveTitle": "Redistribuir mensajes",
+  "dlqMessagesCount": "{count, plural, =1{1 mensaje} other{{count} mensajes}}",
+  "@dlqMessagesCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dlqReceiveCount": "Recepciones: {count}",
+  "@dlqReceiveCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dlqRedriveConfirm": "Se moverán {count, plural, =1{1 mensaje} other{{count} mensajes}} de \"{queue}\" a su cola de origen. Revisa el primer error antes de continuar.",
+  "@dlqRedriveConfirm": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "queue": {"type": "String"}
+    }
+  },
+  "dlqRedriveDone": "{count, plural, =1{1 mensaje redistribuido.} other{{count} mensajes redistribuidos.}}",
+  "@dlqRedriveDone": {
+    "placeholders": {"count": {"type": "int"}}
+  }
+}

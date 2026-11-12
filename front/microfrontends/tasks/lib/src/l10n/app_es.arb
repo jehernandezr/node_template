@@ -1,0 +1,40 @@
+{
+  "@@locale": "es",
+
+  "screenTitle": "Tareas",
+  "newTask": "Nueva tarea",
+  "editTaskTitle": "Editar tarea",
+  "detailTitle": "Tarea",
+
+  "filterAll": "Todas",
+  "filterOpen": "Abiertas",
+  "filterInProgress": "En progreso",
+  "filterDone": "Hechas",
+
+  "statusOpen": "Abierta",
+  "statusInProgress": "En progreso",
+  "statusDone": "Hecha",
+
+  "searchHint": "Buscar por título o descripción",
+
+  "emptyTitle": "No hay tareas",
+  "emptyMessage": "Crea una tarea para empezar.",
+  "emptySearchTitle": "Sin resultados",
+  "emptySearchMessage": "Prueba con otro texto.",
+  "selectTask": "Selecciona una tarea para verla aquí.",
+
+  "loadError": "No se pudieron cargar las tareas.",
+  "detailError": "No se pudo cargar la tarea.",
+  "detailNotFound": "La tarea no existe.",
+  "saveError": "No se pudo guardar la tarea.",
+  "deleteError": "No se pudo eliminar la tarea.",
+
+  "titleLabel": "Título",
+  "titleRequired": "Escribe un título.",
+  "descriptionLabel": "Descripción",
+  "statusLabel": "Estado",
+  "noDescription": "Sin descripción",
+
+  "deleteTitle": "¿Eliminar tarea?",
+  "deleteMessage": "Esta acción no se puede deshacer."
+}

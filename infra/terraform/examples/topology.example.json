@@ -1,0 +1,45 @@
+{
+  "topics": [{ "name": "tasks-events", "fifo": false }],
+  "queues": [
+    {
+      "name": "notifications-tasks-events",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 60,
+      "maxAttempts": 6,
+      "dlq": {
+        "name": "notifications-tasks-events-dlq",
+        "maxReceiveCount": 6,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        { "topic": "tasks-events", "filterTypes": ["tasks.task.updated.v1"] }
+      ]
+    },
+    {
+      "name": "reports-commands",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 300,
+      "maxAttempts": 3,
+      "dlq": {
+        "name": "reports-commands-dlq",
+        "maxReceiveCount": 3,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": []
+    }
+  ],
+  "routes": [
+    {
+      "type": "tasks.task.updated.v1",
+      "kind": "event",
+      "target": "tasks-events",
+      "targetKind": "topic"
+    },
+    {
+      "type": "reports.report.generate.v1",
+      "kind": "command",
+      "target": "reports-commands",
+      "targetKind": "queue"
+    }
+  ]
+}

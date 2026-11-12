@@ -1,0 +1,30 @@
+{
+  "@@locale": "es",
+
+  "inboxTitle": "Notificaciones",
+  "preferencesTitle": "Preferencias de notificaciones",
+  "preferencesTooltip": "Preferencias",
+  "markAllRead": "Marcar todas como leídas",
+  "unreadLabel": "No leída",
+  "readLabel": "Leída",
+  "emptyTitle": "No tienes notificaciones",
+  "emptyMessage": "Aquí aparecerán los avisos de tu cuenta.",
+  "loadError": "No pudimos cargar tus notificaciones.",
+  "saveError": "No pudimos guardar tus preferencias.",
+
+  "typeHeader": "Tipo",
+  "typeSecurityAlert": "Alertas de seguridad",
+  "typeTaskUpdated": "Tareas",
+  "typeInvoiceIssued": "Facturas",
+  "typeAccountActivity": "Actividad de la cuenta",
+  "channelInApp": "En la app",
+  "channelPush": "Push",
+  "channelEmail": "Correo",
+  "securityLocked": "Las alertas de seguridad siempre llegan por todos los canales.",
+
+  "quietHoursTitle": "Horario de silencio",
+  "quietHoursStart": "Inicio",
+  "quietHoursEnd": "Fin",
+  "quietHoursStartPicker": "Hora de inicio",
+  "quietHoursEndPicker": "Hora de fin"
+}

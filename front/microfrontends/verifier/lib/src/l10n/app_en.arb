@@ -1,0 +1,34 @@
+{
+  "@@locale": "en",
+
+  "title": "Verifier",
+  "readyTitle": "This device is ready",
+  "readyMessage": "When someone tries to sign in to your account from another device, you will see the code to approve it here.",
+  "codeTitle": "Verification code",
+  "codeMessage": "Enter it on the device trying to sign in. Only you can see it.",
+  "codeLoading": "Generating code...",
+  "codeFailed": "We could not generate the code. Reopen this screen.",
+  "copyCode": "Copy code",
+  "codeCopied": "Code copied",
+  "expiresIn": "Expires in {remaining}",
+  "@expiresIn": {
+    "description": "Countdown label. remaining is already formatted as mm:ss.",
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "contextTitle": "Attempt details",
+  "browser": "Browser",
+  "os": "System",
+  "city": "Approximate city",
+  "ip": "IP address",
+  "denyButton": "It was not me",
+  "denyDialogTitle": "Block this attempt?",
+  "denyDialogBody": "We will cancel this attempt and send you an alert by email and push.",
+  "denyConfirm": "Yes, block it",
+  "blockedTitle": "Attempt blocked",
+  "blockedBody": "We blocked the attempt and sent an alert to your contact channels. Check your security if you do not recognize this activity.",
+  "denyFailed": "We could not block the attempt. Try again."
+}

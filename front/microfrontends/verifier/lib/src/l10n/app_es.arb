@@ -1,0 +1,34 @@
+{
+  "@@locale": "es",
+
+  "title": "Verificador",
+  "readyTitle": "Este dispositivo está listo",
+  "readyMessage": "Cuando alguien intente iniciar sesión con tu cuenta desde otro dispositivo, aquí verás el código para aprobarlo.",
+  "codeTitle": "Código de verificación",
+  "codeMessage": "Ingrésalo en el dispositivo que intenta entrar. Solo lo ves tú.",
+  "codeLoading": "Generando código...",
+  "codeFailed": "No pudimos generar el código. Vuelve a abrir esta pantalla.",
+  "copyCode": "Copiar código",
+  "codeCopied": "Código copiado",
+  "expiresIn": "Caduca en {remaining}",
+  "@expiresIn": {
+    "description": "Countdown label. remaining is already formatted as mm:ss.",
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "contextTitle": "Detalles del intento",
+  "browser": "Navegador",
+  "os": "Sistema",
+  "city": "Ciudad aproximada",
+  "ip": "Dirección IP",
+  "denyButton": "No fui yo",
+  "denyDialogTitle": "¿Bloquear este intento?",
+  "denyDialogBody": "Cancelaremos este intento y te enviaremos una alerta por email y push.",
+  "denyConfirm": "Sí, bloquear",
+  "blockedTitle": "Intento bloqueado",
+  "blockedBody": "Bloqueamos el intento y enviamos una alerta a tus canales de contacto. Revisa tu seguridad si no reconoces esta actividad.",
+  "denyFailed": "No pudimos bloquear el intento. Inténtalo de nuevo."
+}

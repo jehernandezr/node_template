@@ -1,0 +1,7 @@
+arb-dir: lib/src/l10n
+template-arb-file: app_es.arb
+output-localization-file: billing_localizations.dart
+output-class: BillingLocalizations
+output-dir: lib/src/l10n/generated
+nullable-getter: false
+header: "// ignore_for_file: deprecated_member_use"

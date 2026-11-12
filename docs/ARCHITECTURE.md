@@ -599,9 +599,13 @@ export class CreateTaskTool extends UseCaseTool<CreateTaskUseCase> {}
 `libs/platform/resilience` aplica políticas declaradas a cada adaptador de salida: base de datos, Valkey, colas, APIs externas, proveedores de IA y email. Usa la librería cockatiel.
 
 ```ts
-@Resilient(ResiliencePolicy.ExternalApi)
-export class VoyageEmbeddingAdapter implements EmbeddingProvider { ... }
+export class VoyageEmbeddingAdapter implements EmbeddingProvider {
+  @Resilient(ResiliencePolicyName.ExternalApi, { idempotent: true, dependencyKey: 'voyage' })
+  async embed(texts: string[], signal?: AbortSignal): Promise<number[][]> { ... }
+}
 ```
+
+Los reintentos solo aplican a operaciones marcadas como idempotentes, cada dependencia tiene su propio circuit breaker y bulkhead, y el decorador entrega un `AbortSignal` como último argumento para cancelar el trabajo cuando vence el timeout.
 
 | Patrón                                     | Qué hace                                                                      | Dónde se usa                         |
 | ------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------ |
@@ -879,27 +883,32 @@ const result = await this.billing.call(
 **Topología**
 
 ```ts
+const tasksEvents = new TopicDef(Topic.TasksEvents);
+const reportsCommands = new QueueDef(Queue.ReportsCommands).deadLetter({
+  maxReceiveCount: 5,
+});
+
 export class PlatformTopology extends Topology {
-  topics = [new TopicDef(Topic.TasksEvents)];
+  topics = [tasksEvents];
 
   queues = [
     new QueueDef(Queue.NotificationsTasksEvents)
-      .subscribesTo(Topic.TasksEvents, { events: [TasksEvent.TaskUpdated] })
+      .subscribesTo(tasksEvents, { types: [TasksEvent.TaskUpdated] })
       .retry(
         RetryPolicy.exponential({
           maxAttempts: 6,
-          base: '2s',
-          max: '10m',
+          baseMs: 2_000,
+          maxMs: 600_000,
           jitter: true,
         }),
       )
-      .deadLetter({ retention: '14d' }),
-    new QueueDef(Queue.ReportsCommands).deadLetter(),
+      .deadLetter({ maxReceiveCount: 6, retentionDays: 14 }),
+    reportsCommands,
   ];
 
   routes = [
-    Route.event(TasksEvent.TaskUpdated).to(Topic.TasksEvents),
-    Route.command(ReportsCommand.GenerateReport).to(Queue.ReportsCommands),
+    Route.event(new TaskUpdated()).to(tasksEvents),
+    Route.command(new GenerateReport()).to(reportsCommands),
   ];
 }
 ```

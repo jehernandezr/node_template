@@ -1,0 +1,26 @@
+name: front_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.14.0
+
+workspace:
+  - apps/mobile
+  - apps/web
+  - microfrontends/account
+  - microfrontends/assistant
+  - microfrontends/backoffice
+  - microfrontends/billing
+  - microfrontends/notifications
+  - microfrontends/tasks
+  - microfrontends/verifier
+  - packages/auth
+  - packages/contracts
+  - packages/i18n
+  - packages/realtime
+  - packages/shell_core
+  - packages/tokens
+  - packages/ui
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

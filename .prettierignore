@@ -4,3 +4,5 @@
 /.nx/cache
 /.nx/workspace-data
 .nx/self-healing
+# Flutter front: formatted by dart format and owned by Dart tooling
+front/
