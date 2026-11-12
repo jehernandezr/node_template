@@ -39,6 +39,22 @@ describe('Id', () => {
     expect((error as InvalidIdError).name).toBe('InvalidIdError');
   });
 
+  it('does not include the raw value in the message or details', () => {
+    const raw = 'secret-looking-value-123';
+    let error: unknown;
+    try {
+      Id.from(raw);
+    } catch (caught) {
+      error = caught;
+    }
+    const invalid = error as InvalidIdError;
+    expect(invalid.message).toBe('Invalid UUIDv7');
+    expect(invalid.message).not.toContain(raw);
+    expect(JSON.stringify(invalid.details)).not.toContain(raw);
+    expect(invalid.details).toEqual({ receivedType: 'string' });
+    expect(invalid.retryable).toBe(false);
+  });
+
   it('decodes the creation timestamp from the UUIDv7 prefix', () => {
     // 0x0190f3a2b4c5 ms
     const id = Id.from('0190f3a2-b4c5-7d6e-8f90-123456789abc');

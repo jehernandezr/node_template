@@ -6,6 +6,7 @@ export * from './entity.js';
 export * from './id.js';
 export * from './id-generator.js';
 export * from './invalid-id.error.js';
+export * from './platform-error.js';
+export * from './result.js';
 export * from './use-case.js';
 export * from './value-object.js';
-export * from './testing/index.js';
