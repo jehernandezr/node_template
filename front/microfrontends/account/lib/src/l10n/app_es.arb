@@ -1,0 +1,118 @@
+{
+  "@@locale": "es",
+
+  "overviewTitle": "Mi cuenta",
+  "organizationLine": "Organización: {tenantName}",
+  "@organizationLine": {
+    "placeholders": {
+      "tenantName": {"type": "String"}
+    }
+  },
+  "manageSection": "Administrar",
+  "sessionsLinkMessage": "Dispositivos con sesión abierta y cierre remoto.",
+  "devicesLinkTitle": "Dispositivos",
+  "devicesLinkMessage": "Dispositivos de confianza y verificador.",
+  "securityLinkTitle": "Seguridad",
+  "securityLinkMessage": "Verificación en dos pasos, passkeys y códigos de recuperación.",
+  "agreementsLinkTitle": "Acuerdos",
+  "agreementsLinkMessage": "Términos, consentimientos y documentos firmados.",
+
+  "actionFailed": "La acción no se pudo completar. Intenta de nuevo.",
+  "loadError": "No pudimos cargar esta información.",
+  "versionLabel": "Versión {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "createdOnLabel": "Creada el {date}",
+  "@createdOnLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "acceptedOnLabel": "Aceptado el {date}",
+  "@acceptedOnLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "deadlineLabel": "Plazo hasta {date}",
+  "@deadlineLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "trustedUntilLabel": "Confiable hasta {date}",
+  "@trustedUntilLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "noTrustDate": "Sin fecha de confianza",
+  "lastSeenLabel": "Última actividad: {dateTime}",
+  "@lastSeenLabel": {
+    "placeholders": {
+      "dateTime": {"type": "String"}
+    }
+  },
+
+  "stepUpTitle": "Confirma tu identidad",
+  "stepUpMessage": "Esta acción es sensible. Ingresa el código de tu app de autenticación para continuar.",
+  "stepUpCodeLabel": "Código de 6 dígitos",
+  "stepUpIncomplete": "Ingresa los 6 dígitos del código.",
+  "stepUpInvalid": "El código no es válido. Intenta de nuevo.",
+
+  "sessionsTitle": "Sesiones activas",
+  "sessionCurrent": "Actual",
+  "sessionClose": "Cerrar sesión",
+  "sessionClosed": "Sesión cerrada.",
+  "sessionsCloseOthers": "Cerrar todas las demás",
+  "othersClosed": "Sesiones cerradas: {count}.",
+  "@othersClosed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "sessionsEmptyTitle": "No hay sesiones activas",
+  "sessionsEmptyMessage": "Cuando inicies sesión en un dispositivo aparecerá aquí.",
+
+  "devicesTitle": "Dispositivos",
+  "verifierBadge": "Verificador",
+  "deviceRemove": "Quitar",
+  "deviceRemoved": "Confianza del dispositivo retirada.",
+  "devicesEmptyTitle": "No hay dispositivos de confianza",
+  "devicesEmptyMessage": "Los dispositivos en los que confías para verificar tu identidad aparecerán aquí.",
+
+  "securityTitle": "Seguridad",
+  "mfaTitle": "Verificación en dos pasos",
+  "mfaEnabled": "Activa. Método: {method}",
+  "@mfaEnabled": {
+    "placeholders": {
+      "method": {"type": "String"}
+    }
+  },
+  "mfaDisabled": "Inactiva. Activa la verificación en dos pasos.",
+  "passkeysTitle": "Passkeys",
+  "passkeyAdd": "Agregar passkey",
+  "passkeyAdded": "Passkey agregada.",
+  "passkeysEmpty": "Aún no tienes passkeys.",
+  "recoveryTitle": "Códigos de recuperación",
+  "recoveryDescription": "Te permiten entrar si pierdes acceso a tus dispositivos. Cada código sirve una sola vez.",
+  "recoveryRegenerate": "Regenerar códigos de recuperación",
+  "recoveryRegenerated": "Códigos de recuperación regenerados.",
+  "recoveryCodesTitle": "Nuevos códigos de recuperación",
+  "recoveryCodesNotice": "Guárdalos en un lugar seguro. Los códigos anteriores ya no funcionan.",
+
+  "agreementsTitle": "Acuerdos",
+  "pendingSection": "Pendientes",
+  "acceptedSection": "Aceptados",
+  "reviewAndAccept": "Revisar y aceptar",
+  "accept": "Aceptar",
+  "requiredLabel": "Obligatorio",
+  "optionalLabel": "Opcional",
+  "reviewNotice": "Al aceptar confirmas que revisaste este documento.",
+  "agreementAccepted": "Acuerdo aceptado.",
+  "pendingEmptyTitle": "No tienes acuerdos pendientes",
+  "acceptedEmptyMessage": "Todavía no has aceptado acuerdos."
+}

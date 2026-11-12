@@ -1,0 +1,31 @@
+{
+  "@@locale": "es",
+
+  "title": "Asistente",
+  "chatTitle": "Conversación",
+  "newConversation": "Nueva conversación",
+  "emptyConversations": "Aún no tienes conversaciones",
+  "listError": "No pudimos cargar tus conversaciones.",
+  "genericError": "Ocurrió un error inesperado.",
+  "quotaExceeded": "Alcanzaste el límite de consultas de tu plan.",
+
+  "inputHint": "Escribe tu pregunta",
+  "send": "Enviar",
+  "stop": "Detener",
+  "streaming": "Escribiendo...",
+  "stopped": "Respuesta detenida.",
+  "sources": "Fuentes",
+  "usage": "Tokens: {input} de entrada y {output} de salida",
+  "@usage": {
+    "placeholders": {
+      "input": {"type": "int"},
+      "output": {"type": "int"}
+    }
+  },
+
+  "toolRequestTitle": "El asistente quiere ejecutar una acción",
+  "toolConfirm": "Confirmar",
+  "toolCancel": "Cancelar",
+  "toolConfirmed": "Acción confirmada",
+  "toolRejected": "Acción cancelada"
+}

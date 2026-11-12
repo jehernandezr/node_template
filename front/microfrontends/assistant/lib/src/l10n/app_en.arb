@@ -1,0 +1,31 @@
+{
+  "@@locale": "en",
+
+  "title": "Assistant",
+  "chatTitle": "Conversation",
+  "newConversation": "New conversation",
+  "emptyConversations": "You have no conversations yet",
+  "listError": "We could not load your conversations.",
+  "genericError": "An unexpected error occurred.",
+  "quotaExceeded": "You have reached your plan's query limit.",
+
+  "inputHint": "Type your question",
+  "send": "Send",
+  "stop": "Stop",
+  "streaming": "Writing...",
+  "stopped": "Answer stopped.",
+  "sources": "Sources",
+  "usage": "Tokens: {input} input and {output} output",
+  "@usage": {
+    "placeholders": {
+      "input": {"type": "int"},
+      "output": {"type": "int"}
+    }
+  },
+
+  "toolRequestTitle": "The assistant wants to run an action",
+  "toolConfirm": "Confirm",
+  "toolCancel": "Cancel",
+  "toolConfirmed": "Action confirmed",
+  "toolRejected": "Action cancelled"
+}

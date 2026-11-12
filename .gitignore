@@ -63,3 +63,9 @@ test-output
 *.tfstate
 *.tfstate.*
 *.tfplan
+
+# flutter / dart
+.dart_tool/
+front/**/build/
+*.iml
+.flutter-plugins-dependencies

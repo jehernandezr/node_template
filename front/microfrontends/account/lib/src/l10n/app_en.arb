@@ -1,0 +1,118 @@
+{
+  "@@locale": "en",
+
+  "overviewTitle": "My account",
+  "organizationLine": "Organization: {tenantName}",
+  "@organizationLine": {
+    "placeholders": {
+      "tenantName": {"type": "String"}
+    }
+  },
+  "manageSection": "Manage",
+  "sessionsLinkMessage": "Devices with an open session and remote sign-out.",
+  "devicesLinkTitle": "Devices",
+  "devicesLinkMessage": "Trusted devices and the verifier.",
+  "securityLinkTitle": "Security",
+  "securityLinkMessage": "Two-step verification, passkeys and recovery codes.",
+  "agreementsLinkTitle": "Agreements",
+  "agreementsLinkMessage": "Terms, consents and signed documents.",
+
+  "actionFailed": "The action could not be completed. Try again.",
+  "loadError": "We could not load this information.",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "createdOnLabel": "Created on {date}",
+  "@createdOnLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "acceptedOnLabel": "Accepted on {date}",
+  "@acceptedOnLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "deadlineLabel": "Deadline {date}",
+  "@deadlineLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "trustedUntilLabel": "Trusted until {date}",
+  "@trustedUntilLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "noTrustDate": "No trust date",
+  "lastSeenLabel": "Last activity: {dateTime}",
+  "@lastSeenLabel": {
+    "placeholders": {
+      "dateTime": {"type": "String"}
+    }
+  },
+
+  "stepUpTitle": "Confirm your identity",
+  "stepUpMessage": "This action is sensitive. Enter the code from your authenticator app to continue.",
+  "stepUpCodeLabel": "6-digit code",
+  "stepUpIncomplete": "Enter all 6 digits of the code.",
+  "stepUpInvalid": "The code is not valid. Try again.",
+
+  "sessionsTitle": "Active sessions",
+  "sessionCurrent": "Current",
+  "sessionClose": "Close session",
+  "sessionClosed": "Session closed.",
+  "sessionsCloseOthers": "Close all others",
+  "othersClosed": "Sessions closed: {count}.",
+  "@othersClosed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "sessionsEmptyTitle": "No active sessions",
+  "sessionsEmptyMessage": "When you sign in on a device it will appear here.",
+
+  "devicesTitle": "Devices",
+  "verifierBadge": "Verifier",
+  "deviceRemove": "Remove",
+  "deviceRemoved": "Device trust removed.",
+  "devicesEmptyTitle": "No trusted devices",
+  "devicesEmptyMessage": "Devices you trust to verify your identity will appear here.",
+
+  "securityTitle": "Security",
+  "mfaTitle": "Two-step verification",
+  "mfaEnabled": "Enabled. Method: {method}",
+  "@mfaEnabled": {
+    "placeholders": {
+      "method": {"type": "String"}
+    }
+  },
+  "mfaDisabled": "Disabled. Turn on two-step verification.",
+  "passkeysTitle": "Passkeys",
+  "passkeyAdd": "Add passkey",
+  "passkeyAdded": "Passkey added.",
+  "passkeysEmpty": "You have no passkeys yet.",
+  "recoveryTitle": "Recovery codes",
+  "recoveryDescription": "They let you in if you lose access to your devices. Each code works only once.",
+  "recoveryRegenerate": "Regenerate recovery codes",
+  "recoveryRegenerated": "Recovery codes regenerated.",
+  "recoveryCodesTitle": "New recovery codes",
+  "recoveryCodesNotice": "Store them somewhere safe. The previous codes no longer work.",
+
+  "agreementsTitle": "Agreements",
+  "pendingSection": "Pending",
+  "acceptedSection": "Accepted",
+  "reviewAndAccept": "Review and accept",
+  "accept": "Accept",
+  "requiredLabel": "Required",
+  "optionalLabel": "Optional",
+  "reviewNotice": "By accepting you confirm that you reviewed this document.",
+  "agreementAccepted": "Agreement accepted.",
+  "pendingEmptyTitle": "You have no pending agreements",
+  "acceptedEmptyMessage": "You have not accepted any agreements yet."
+}

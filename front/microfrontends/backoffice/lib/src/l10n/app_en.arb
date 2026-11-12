@@ -1,0 +1,113 @@
+{
+  "@@locale": "en",
+
+  "navOverview": "Overview",
+  "navTenants": "Tenants",
+  "navSagas": "Sagas",
+  "navDlq": "Dead-letter queues",
+
+  "loadError": "Could not load the information. Try again.",
+  "notFound": "We could not find this record.",
+  "filterAll": "All",
+  "filterStatus": "Status",
+  "filterRegion": "Region",
+  "actor": "Actor",
+  "action": "Action",
+  "entity": "Entity",
+  "traceId": "Trace ID",
+  "auditTitle": "Audit",
+  "auditEmpty": "No audit records.",
+
+  "overviewTitle": "Backoffice",
+  "overviewSubtitle": "Platform status right now.",
+  "cardTenants": "Tenants",
+  "cardSagas": "Sagas that need intervention",
+  "cardDlq": "Messages in dead-letter queues",
+  "cardOpen": "View details",
+
+  "tenantsTitle": "Tenants",
+  "tenantSearchLabel": "Search by name or id",
+  "tenantsEmpty": "No tenant matches the filters.",
+  "tenantDetailTitle": "Tenant details",
+  "tenantPlan": "Plan",
+  "tenantShardGroup": "Shard group",
+  "tenantUsers": "Users",
+  "tenantRegion": "Region",
+  "tenantStatusActive": "Active",
+  "tenantStatusSuspended": "Suspended",
+  "tenantStatusProvisioning": "Provisioning",
+  "tenantStatusDeleting": "Deleting",
+  "regionEuWest": "Western Europe",
+  "regionUsEast": "US East",
+  "regionSaEast": "South America East",
+
+  "sagasTitle": "Sagas",
+  "sagasEmpty": "No sagas with this status.",
+  "sagaDetailTitle": "Saga details",
+  "sagaType": "Type",
+  "sagaTenant": "Tenant",
+  "sagaCurrentStep": "Last step",
+  "sagaUpdated": "Updated",
+  "sagaSteps": "Steps",
+  "sagaStepsEmpty": "The saga has not run any step yet.",
+  "sagaErrorCode": "Error code",
+  "sagaManualActions": "Manual actions",
+  "sagaIntervention": "Needs intervention",
+  "sagaActionDone": "Action recorded in the audit log.",
+  "reasonLabel": "Reason (required)",
+  "reasonHelp": "Explain why you are doing this action. It is recorded in the audit log.",
+  "sagaStatusRunning": "Running",
+  "sagaStatusWaitingReply": "Waiting for reply",
+  "sagaStatusSuspended": "Suspended",
+  "sagaStatusCompleted": "Completed",
+  "sagaStatusCompensating": "Compensating",
+  "sagaStatusCompensated": "Compensated",
+  "sagaStatusCompensationFailed": "Compensation failed",
+  "sagaStatusRequiresIntervention": "Needs intervention",
+  "sagaDirectionForward": "Forward",
+  "sagaDirectionCompensation": "Compensation",
+  "stepStatusDispatched": "Dispatched",
+  "stepStatusSucceeded": "Succeeded",
+  "stepStatusFailed": "Failed",
+  "manualActionRetryStep": "Retry step",
+  "manualActionForceCompensation": "Force compensation",
+  "manualActionMarkResolved": "Mark as resolved",
+  "sagaStepLabel": "{order}. {operation}",
+  "@sagaStepLabel": {
+    "placeholders": {
+      "order": {"type": "int"},
+      "operation": {"type": "String"}
+    }
+  },
+
+  "dlqTitle": "Dead-letter queues",
+  "dlqSubtitle": "Messages that exhausted their retries.",
+  "dlqEmpty": "No queues configured.",
+  "dlqMessagesTitle": "Messages",
+  "dlqSelectQueue": "Choose a queue to see its messages.",
+  "dlqMessagesEmpty": "The queue has no messages.",
+  "dlqMessageType": "Type",
+  "dlqFirstError": "First error",
+  "dlqSentAt": "Sent",
+  "dlqRedrive": "Redrive",
+  "dlqRedriveTitle": "Redrive messages",
+  "dlqMessagesCount": "{count, plural, =1{1 message} other{{count} messages}}",
+  "@dlqMessagesCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dlqReceiveCount": "Receives: {count}",
+  "@dlqReceiveCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dlqRedriveConfirm": "{count, plural, =1{1 message} other{{count} messages}} from \"{queue}\" will be moved back to their source queue. Check the first error before continuing.",
+  "@dlqRedriveConfirm": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "queue": {"type": "String"}
+    }
+  },
+  "dlqRedriveDone": "{count, plural, =1{1 message redriven.} other{{count} messages redriven.}}",
+  "@dlqRedriveDone": {
+    "placeholders": {"count": {"type": "int"}}
+  }
+}

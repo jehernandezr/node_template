@@ -1,0 +1,82 @@
+{
+  "color": {
+    "$type": "color",
+    "light": {
+      "brand": {
+        "primary": { "$value": "#2563EB" },
+        "on-primary": { "$value": "#FFFFFF" }
+      },
+      "surface": {
+        "base": { "$value": "#F8FAFC" },
+        "raised": { "$value": "#FFFFFF" },
+        "outline": { "$value": "#CBD5E1" }
+      },
+      "text": {
+        "primary": { "$value": "#0F172A" },
+        "secondary": { "$value": "#475569" }
+      },
+      "success": {
+        "base": { "$value": "#15803D" },
+        "on": { "$value": "#FFFFFF" }
+      },
+      "warning": {
+        "base": { "$value": "#B45309" },
+        "on": { "$value": "#FFFFFF" }
+      },
+      "danger": {
+        "base": { "$value": "#B91C1C" },
+        "on": { "$value": "#FFFFFF" }
+      }
+    },
+    "dark": {
+      "brand": {
+        "primary": { "$value": "#60A5FA" },
+        "on-primary": { "$value": "#0B1220" }
+      },
+      "surface": {
+        "base": { "$value": "#0B1220" },
+        "raised": { "$value": "#111C2E" },
+        "outline": { "$value": "#334155" }
+      },
+      "text": {
+        "primary": { "$value": "#F1F5F9" },
+        "secondary": { "$value": "#94A3B8" }
+      },
+      "success": {
+        "base": { "$value": "#4ADE80" },
+        "on": { "$value": "#052E16" }
+      },
+      "warning": {
+        "base": { "$value": "#FBBF24" },
+        "on": { "$value": "#422006" }
+      },
+      "danger": {
+        "base": { "$value": "#F87171" },
+        "on": { "$value": "#450A0A" }
+      }
+    }
+  },
+  "spacing": {
+    "$type": "dimension",
+    "xs": { "$value": 4 },
+    "sm": { "$value": 8 },
+    "md": { "$value": 16 },
+    "lg": { "$value": 24 },
+    "xl": { "$value": 32 }
+  },
+  "radius": {
+    "$type": "dimension",
+    "sm": { "$value": 4 },
+    "md": { "$value": 8 },
+    "lg": { "$value": 16 }
+  },
+  "typography": {
+    "size": {
+      "$type": "dimension",
+      "caption": { "$value": 12 },
+      "body": { "$value": 14 },
+      "title": { "$value": 20 },
+      "headline": { "$value": 28 }
+    }
+  }
+}
