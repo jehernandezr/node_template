@@ -15,9 +15,26 @@ export default [
         {
           enforceBuildableLibDependency: true,
           allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+          // Reglas de dependencia entre proyectos del ADR 0015.
           depConstraints: [
             {
-              sourceTag: '*',
+              sourceTag: 'type:contracts',
+              onlyDependOnLibsWithTags: ['type:contracts'],
+            },
+            {
+              sourceTag: 'type:util',
+              onlyDependOnLibsWithTags: ['type:util', 'type:contracts'],
+            },
+            {
+              sourceTag: 'type:platform',
+              onlyDependOnLibsWithTags: [
+                'type:platform',
+                'type:util',
+                'type:contracts',
+              ],
+            },
+            {
+              sourceTag: 'type:app',
               onlyDependOnLibsWithTags: ['*'],
             },
           ],

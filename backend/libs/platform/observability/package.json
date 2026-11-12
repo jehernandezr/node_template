@@ -16,7 +16,11 @@
     }
   },
   "nx": {
-    "name": "platform-observability"
+    "name": "platform-observability",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
   },
   "dependencies": {
     "tslib": "^2.3.0",

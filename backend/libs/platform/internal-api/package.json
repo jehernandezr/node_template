@@ -16,7 +16,11 @@
     }
   },
   "nx": {
-    "name": "platform-internal-api"
+    "name": "platform-internal-api",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
   },
   "dependencies": {
     "tslib": "^2.3.0",
