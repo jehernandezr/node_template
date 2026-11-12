@@ -31,7 +31,11 @@ void main() {
       'code': 'PLATFORM.VALIDATION.INVALID_INPUT',
       'traceId': 'trace-1',
       'errors': [
-        {'field': 'title', 'code': 'PLATFORM.VALIDATION.REQUIRED', 'message': 'Required'},
+        {
+          'field': 'title',
+          'code': 'PLATFORM.VALIDATION.REQUIRED',
+          'message': 'Required',
+        },
         {'code': 'PLATFORM.VALIDATION.INVALID_INPUT'},
       ],
     };
@@ -44,7 +48,11 @@ void main() {
       expect(problem.detail, 'The title is required.');
       expect(problem.traceId, 'trace-1');
       expect(problem.errors, const [
-        FieldError(field: 'title', code: 'PLATFORM.VALIDATION.REQUIRED', message: 'Required'),
+        FieldError(
+          field: 'title',
+          code: 'PLATFORM.VALIDATION.REQUIRED',
+          message: 'Required',
+        ),
         FieldError(code: 'PLATFORM.VALIDATION.INVALID_INPUT'),
       ]);
     });
@@ -63,16 +71,26 @@ void main() {
       expect(problem.traceId, isNull);
     });
 
-    test('fromJson throws FormatException when a required member is missing', () {
-      expect(
-        () => ProblemDetails.fromJson({'title': 'x', 'status': 400, 'code': 'c'}),
-        throwsFormatException,
-      );
-    });
+    test(
+      'fromJson throws FormatException when a required member is missing',
+      () {
+        expect(
+          () => ProblemDetails.fromJson({
+            'title': 'x',
+            'status': 400,
+            'code': 'c',
+          }),
+          throwsFormatException,
+        );
+      },
+    );
 
     test('toJson round-trips through fromJson', () {
       final problem = ProblemDetails.fromJson(json);
-      expect(ProblemDetails.fromJson(problem.toJson()).toJson(), problem.toJson());
+      expect(
+        ProblemDetails.fromJson(problem.toJson()).toJson(),
+        problem.toJson(),
+      );
     });
 
     test('toJson omits null members', () {
@@ -90,22 +108,26 @@ void main() {
 
   group('ApiErrorException', () {
     test('exposes the known platform code', () {
-      const exception = ApiErrorException(ProblemDetails(
-        type: 'about:blank',
-        title: 'Forbidden',
-        status: 403,
-        code: 'PLATFORM.AUTH.FORBIDDEN',
-      ));
+      const exception = ApiErrorException(
+        ProblemDetails(
+          type: 'about:blank',
+          title: 'Forbidden',
+          status: 403,
+          code: 'PLATFORM.AUTH.FORBIDDEN',
+        ),
+      );
       expect(exception.platformCode, PlatformErrorCode.authForbidden);
     });
 
     test('platformCode is null for codes the client does not know', () {
-      const exception = ApiErrorException(ProblemDetails(
-        type: 'about:blank',
-        title: 'Other',
-        status: 400,
-        code: 'TASKS.ITEM.LOCKED',
-      ));
+      const exception = ApiErrorException(
+        ProblemDetails(
+          type: 'about:blank',
+          title: 'Other',
+          status: 400,
+          code: 'TASKS.ITEM.LOCKED',
+        ),
+      );
       expect(exception.platformCode, isNull);
       expect(exception.problem.code, 'TASKS.ITEM.LOCKED');
     });

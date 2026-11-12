@@ -18,6 +18,12 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@contracts/identity':
+        specifier: workspace:*
+        version: link:libs/contracts/identity
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:libs/contracts/platform
       '@eslint/js':
         specifier: ^9.8.0
         version: 9.39.5
@@ -91,11 +97,26 @@ importers:
         specifier: ^8.58.0
         version: 8.72.2(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
+  libs/contracts/identity:
+    dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../platform
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   libs/contracts/platform:
     dependencies:
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   libs/platform/bloom:
     dependencies:
@@ -183,6 +204,15 @@ importers:
 
   libs/platform/sharding:
     dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
+  libs/shared/utils:
+    dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../contracts/platform
       tslib:
         specifier: ^2.3.0
         version: 2.9.1

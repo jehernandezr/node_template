@@ -16,6 +16,12 @@
       "path": "./libs/contracts/platform"
     },
     {
+      "path": "./libs/contracts/identity"
+    },
+    {
+      "path": "./libs/shared/utils"
+    },
+    {
       "path": "./libs/platform/sharding"
     },
     {
@@ -38,6 +44,9 @@
     },
     {
       "path": "./libs/platform/saga"
+    },
+    {
+      "path": "./tools/contracts-export"
     }
   ],
   "compilerOptions": {}
