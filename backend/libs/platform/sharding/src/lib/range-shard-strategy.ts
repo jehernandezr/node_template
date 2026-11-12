@@ -23,7 +23,7 @@ export class RangeShardStrategy implements ShardingStrategy {
 
   /**
    * @param compare Order used for boundaries and keys, for example a numeric comparator for numeric keys.
-   * @throws Error when the configuration is invalid (empty shard ids or duplicate boundaries).
+   * @throws ShardingError `InvalidConfiguration` for empty shard ids or duplicate boundaries.
    */
   constructor(
     boundaries: readonly RangeBoundary[],
@@ -31,17 +31,26 @@ export class RangeShardStrategy implements ShardingStrategy {
     compare: KeyComparator = compareCodeUnits,
   ) {
     if (lastShard.length === 0) {
-      throw new Error('lastShard must be a non-empty shard id');
+      throw new ShardingError(
+        ShardingErrorCode.InvalidConfiguration,
+        'lastShard must be a non-empty shard id',
+      );
     }
     for (const boundary of boundaries) {
       if (boundary.shard.length === 0) {
-        throw new Error(`Boundary "${boundary.upTo}" has an empty shard id`);
+        throw new ShardingError(
+          ShardingErrorCode.InvalidConfiguration,
+          `Boundary "${boundary.upTo}" has an empty shard id`,
+        );
       }
     }
     const sorted = [...boundaries].sort((a, b) => compare(a.upTo, b.upTo));
     for (let i = 1; i < sorted.length; i++) {
       if (compare(sorted[i - 1].upTo, sorted[i].upTo) === 0) {
-        throw new Error(`Duplicate range boundary "${sorted[i].upTo}"`);
+        throw new ShardingError(
+          ShardingErrorCode.InvalidConfiguration,
+          `Duplicate range boundary "${sorted[i].upTo}"`,
+        );
       }
     }
     this.boundaries = sorted;
@@ -57,7 +66,8 @@ export class RangeShardStrategy implements ShardingStrategy {
     if (!group.includes(shard)) {
       throw new ShardingError(
         ShardingErrorCode.UnknownShard,
-        `Shard "${shard}" is not in the tenant's group`,
+        "Range shard is not in the tenant's group",
+        { details: { shard } },
       );
     }
     return shard;

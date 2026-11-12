@@ -1,12 +1,7 @@
-const FNV_OFFSET_BASIS = 0x811c9dc5;
-const FNV_PRIME = 0x01000193;
+import { fnv1a32 as primitivesFnv1a32 } from '@platform/primitives';
 
-/** 32-bit FNV-1a hash of the UTF-8 bytes of `input`. Returns an unsigned integer. */
-export function fnv1a32(input: string): number {
-  let hash = FNV_OFFSET_BASIS;
-  for (const byte of new TextEncoder().encode(input)) {
-    hash ^= byte;
-    hash = Math.imul(hash, FNV_PRIME);
-  }
-  return hash >>> 0;
-}
+/**
+ * 32-bit FNV-1a hash of the UTF-8 bytes of `input`. Returns an unsigned integer.
+ * @deprecated Import `fnv1a32` from `@platform/primitives`. This alias goes away in WP-A phase 2.
+ */
+export const fnv1a32: (input: string) => number = primitivesFnv1a32;

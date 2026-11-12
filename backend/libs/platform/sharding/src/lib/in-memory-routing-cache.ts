@@ -1,3 +1,5 @@
+import type { Clock } from '@platform/kernel';
+import { nowMs, toClock, type ShardingClock } from './clock.js';
 import type { RoutingCache } from './ports.js';
 
 interface StoredValue {
@@ -9,11 +11,14 @@ interface StoredValue {
 /** In-memory {@link RoutingCache} with TTL. Useful for tests and single-process setups. */
 export class InMemoryRoutingCache implements RoutingCache {
   private readonly entries = new Map<string, StoredValue>();
-  private readonly clock: () => number;
+  private readonly clock: Clock;
 
-  /** @param clock Time source in milliseconds. Default `Date.now`. */
-  constructor(clock: () => number = () => Date.now()) {
-    this.clock = clock;
+  /**
+   * @param clock Time source. Default the system clock. A function returning epoch milliseconds is still
+   *   accepted but deprecated.
+   */
+  constructor(clock?: ShardingClock) {
+    this.clock = toClock(clock);
   }
 
   async get(key: string): Promise<string | undefined> {
@@ -21,7 +26,7 @@ export class InMemoryRoutingCache implements RoutingCache {
     if (!entry) {
       return undefined;
     }
-    if (this.clock() >= entry.expiresAt) {
+    if (nowMs(this.clock) >= entry.expiresAt) {
       this.entries.delete(key);
       return undefined;
     }
@@ -34,7 +39,7 @@ export class InMemoryRoutingCache implements RoutingCache {
     version: number,
     ttlMs: number,
   ): Promise<boolean> {
-    const now = this.clock();
+    const now = nowMs(this.clock);
     const existing = this.entries.get(key);
     if (existing && now < existing.expiresAt && existing.version >= version) {
       return false;

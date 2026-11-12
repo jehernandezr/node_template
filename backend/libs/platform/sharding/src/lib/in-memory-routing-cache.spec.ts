@@ -1,3 +1,4 @@
+import { FixedClock } from '@platform/kernel/testing';
 import { InMemoryRoutingCache } from './in-memory-routing-cache.js';
 
 describe('InMemoryRoutingCache', () => {
@@ -7,7 +8,19 @@ describe('InMemoryRoutingCache', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('expires values at the TTL with an injected clock', async () => {
+  it('expires values at the TTL with an injected kernel Clock', async () => {
+    const clock = new FixedClock(new Date(1_000));
+    const cache = new InMemoryRoutingCache(clock);
+    await cache.setIfNewer('key', 'value', 1, 500);
+
+    clock.advance(499);
+    await expect(cache.get('key')).resolves.toBe('value');
+
+    clock.advance(1);
+    await expect(cache.get('key')).resolves.toBeUndefined();
+  });
+
+  it('still accepts the deprecated millisecond clock function', async () => {
     let now = 1_000;
     const cache = new InMemoryRoutingCache(() => now);
     await cache.setIfNewer('key', 'value', 1, 500);
@@ -37,10 +50,10 @@ describe('InMemoryRoutingCache', () => {
   });
 
   it('treats an expired entry as absent when comparing versions', async () => {
-    let now = 0;
-    const cache = new InMemoryRoutingCache(() => now);
+    const clock = new FixedClock(new Date(0));
+    const cache = new InMemoryRoutingCache(clock);
     await cache.setIfNewer('key', 'old', 5, 100);
-    now = 100;
+    clock.advance(100);
     await expect(cache.setIfNewer('key', 'new', 1, 100)).resolves.toBe(true);
     await expect(cache.get('key')).resolves.toBe('new');
   });

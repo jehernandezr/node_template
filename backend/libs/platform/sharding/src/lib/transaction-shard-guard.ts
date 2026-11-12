@@ -32,7 +32,8 @@ export class TransactionShardGuard {
     if (this.firstShard !== logicalShard) {
       throw new ShardingError(
         ShardingErrorCode.CrossShardTransaction,
-        `Transaction spans shards "${this.firstShard}" and "${logicalShard}"`,
+        'Transaction spans more than one logical shard',
+        { details: { firstShard: this.firstShard, logicalShard } },
       );
     }
   }

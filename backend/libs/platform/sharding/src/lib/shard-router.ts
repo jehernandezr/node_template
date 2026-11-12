@@ -1,3 +1,5 @@
+import type { Clock } from '@platform/kernel';
+import { nowMs, toClock, type ShardingClock } from './clock.js';
 import {
   ShardingError,
   ShardingErrorCode,
@@ -39,8 +41,11 @@ export interface ShardRouterOptions {
    * this long or longer is not written to the shared cache, so no invalidation it overlapped can be undone.
    */
   readonly tombstoneTtlMs?: number;
-  /** Time source in milliseconds. Default `Date.now`. */
-  readonly clock?: () => number;
+  /**
+   * Time source. Default the system clock. A function returning epoch milliseconds is still accepted
+   * but deprecated.
+   */
+  readonly clock?: ShardingClock;
   /** Picks the shard inside a group with more than one shard. Default: consistent hashing. */
   readonly strategy?: ShardingStrategy;
   /** Region served by this process. Placements in other regions throw `WrongRegion`. */
@@ -134,12 +139,14 @@ function checkWritable(tenantId: string, status: TenantStatus): void {
   if (status === TenantStatus.Migrating) {
     throw new ShardingError(
       ShardingErrorCode.TenantMigrating,
-      `Tenant "${tenantId}" is migrating`,
+      'Tenant is migrating; writes are blocked until the move completes',
+      { details: { tenantId } },
     );
   }
   throw new ShardingError(
     ShardingErrorCode.TenantNotWritable,
-    `Tenant "${tenantId}" has status "${String(status)}" and cannot be written`,
+    'Tenant status does not allow writes',
+    { details: { tenantId, status: String(status) } },
   );
 }
 
@@ -163,7 +170,7 @@ export class ShardRouter {
   private readonly localTtlMs: number;
   private readonly sharedTtlMs: number;
   private readonly tombstoneTtlMs: number;
-  private readonly clock: () => number;
+  private readonly clock: Clock;
   private readonly strategy: ShardingStrategy;
   private readonly currentRegion: string | undefined;
   private readonly onCacheError: (error: unknown) => void;
@@ -178,7 +185,7 @@ export class ShardRouter {
     this.localTtlMs = options.localTtlMs ?? 60_000;
     this.sharedTtlMs = options.sharedTtlMs ?? 300_000;
     this.tombstoneTtlMs = options.tombstoneTtlMs ?? 30_000;
-    this.clock = options.clock ?? (() => Date.now());
+    this.clock = toClock(options.clock);
     this.strategy = options.strategy ?? new ConsistentHashStrategy();
     this.currentRegion = options.currentRegion;
     this.onCacheError = options.onCacheError ?? (() => undefined);
@@ -247,7 +254,7 @@ export class ShardRouter {
     const id = tenantId.toLowerCase();
     const key = PLACEMENT_CACHE_PREFIX + id;
     this.bump(tenantGeneration(id));
-    const local = readEntry(this.placements, id, this.clock());
+    const local = readEntry(this.placements, id, this.now());
     this.placements.delete(id);
     const shared = await this.readSharedRecord(key);
     const group =
@@ -269,7 +276,7 @@ export class ShardRouter {
   }
 
   private async getPlacement(tenantId: string): Promise<TenantPlacement> {
-    const local = readEntry(this.placements, tenantId, this.clock());
+    const local = readEntry(this.placements, tenantId, this.now());
     if (local !== undefined) {
       return local;
     }
@@ -294,11 +301,11 @@ export class ShardRouter {
     tenantId: string,
     generation: number,
   ): Promise<TenantPlacement> {
-    const startedAt = this.clock();
+    const startedAt = this.now();
     const key = PLACEMENT_CACHE_PREFIX + tenantId;
     const record = await this.readSharedRecord(key);
     const shared = record?.kind === 'placement' ? record.entry : undefined;
-    if (shared !== undefined && this.clock() < shared.expiresAt) {
+    if (shared !== undefined && this.now() < shared.expiresAt) {
       if (this.isCurrent(tenantId, generation)) {
         this.rememberPlacement(tenantId, shared.placement, shared.expiresAt);
       }
@@ -309,7 +316,8 @@ export class ShardRouter {
     if (placement === undefined) {
       throw new ShardingError(
         ShardingErrorCode.UnknownTenant,
-        `No placement for tenant "${tenantId}"`,
+        'No placement for tenant',
+        { details: { tenantId } },
       );
     }
     if (!this.isCurrent(tenantId, generation)) {
@@ -317,7 +325,7 @@ export class ShardRouter {
       return placement;
     }
     const sharedExpiresAt = this.sharedCache
-      ? this.clock() + this.sharedTtlMs
+      ? this.now() + this.sharedTtlMs
       : Number.POSITIVE_INFINITY;
     this.rememberPlacement(tenantId, placement, sharedExpiresAt);
     await this.writeShared(
@@ -335,7 +343,7 @@ export class ShardRouter {
   ): void {
     this.placements.set(tenantId, {
       value: placement,
-      expiresAt: Math.min(this.clock() + this.localTtlMs, sharedExpiresAt),
+      expiresAt: Math.min(this.now() + this.localTtlMs, sharedExpiresAt),
     });
   }
 
@@ -352,7 +360,7 @@ export class ShardRouter {
     if (this.sharedCache === undefined) {
       return;
     }
-    if (this.clock() - startedAt >= this.tombstoneTtlMs) {
+    if (this.now() - startedAt >= this.tombstoneTtlMs) {
       return;
     }
     try {
@@ -379,7 +387,7 @@ export class ShardRouter {
         key,
         encodeTombstone({
           cacheVersion,
-          expiresAt: this.clock() + this.tombstoneTtlMs,
+          expiresAt: this.now() + this.tombstoneTtlMs,
         }),
         cacheVersion,
         this.tombstoneTtlMs,
@@ -404,7 +412,7 @@ export class ShardRouter {
   }
 
   private async getInstance(logicalShard: string): Promise<string> {
-    const cached = readEntry(this.instances, logicalShard, this.clock());
+    const cached = readEntry(this.instances, logicalShard, this.now());
     if (cached !== undefined) {
       return cached;
     }
@@ -413,13 +421,14 @@ export class ShardRouter {
     if (!instance) {
       throw new ShardingError(
         ShardingErrorCode.UnknownShard,
-        `No instance for logical shard "${logicalShard}"`,
+        'No instance for logical shard',
+        { details: { logicalShard } },
       );
     }
     if (this.generationOf(shardGeneration(logicalShard)) === generation) {
       this.instances.set(logicalShard, {
         value: instance,
-        expiresAt: this.clock() + this.localTtlMs,
+        expiresAt: this.now() + this.localTtlMs,
       });
     }
     return instance;
@@ -434,13 +443,18 @@ export class ShardRouter {
     if (first === undefined) {
       throw new ShardingError(
         ShardingErrorCode.UnknownShard,
-        `Tenant "${placement.tenantId}" has no shards assigned`,
+        'Tenant has no shards assigned',
+        { details: { tenantId: placement.tenantId } },
       );
     }
     if (group.length === 1) {
       return first;
     }
     return this.strategy.locate(routingKey, group, placement.version);
+  }
+
+  private now(): number {
+    return nowMs(this.clock);
   }
 
   private bump(key: string): void {

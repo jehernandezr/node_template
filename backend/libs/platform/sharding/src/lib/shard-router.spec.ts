@@ -1,3 +1,4 @@
+import { FixedClock } from '@platform/kernel/testing';
 import { ConsistentHashRing } from './consistent-hash-ring.js';
 import {
   ShardingError,
@@ -59,8 +60,7 @@ const failingCache: RoutingCache = {
 };
 
 function setup() {
-  let now = 0;
-  const clock = () => now;
+  const clock = new FixedClock(new Date(0));
   const store = new InMemoryDirectoryStore();
   store.setInstance('shard-1', 'pg-1');
   store.setInstance('shard-2', 'pg-2');
@@ -79,9 +79,7 @@ function setup() {
     directory,
     shared,
     build,
-    advance: (ms: number) => {
-      now += ms;
-    },
+    advance: (ms: number) => clock.advance(ms),
   };
 }
 
@@ -508,7 +506,7 @@ describe('ShardRouter', () => {
     ])('treats a shared entry with %s as a miss', async (_label, raw) => {
       const env = setup();
       env.store.setPlacement(placement());
-      const cache = new InMemoryRoutingCache(() => 0);
+      const cache = new InMemoryRoutingCache(new FixedClock(new Date(0)));
       await cache.setIfNewer(PLACEMENT_KEY, raw, 1, SHARED_TTL);
       await expect(
         env.build({ sharedCache: cache }).resolve({ tenantId: 't1', ...READ }),
@@ -584,6 +582,20 @@ describe('ShardRouter', () => {
         router.resolve({ tenantId: 't1', ...READ }),
       ).resolves.toMatchObject({ instance: 'pg-moved' });
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
+    });
+
+    it('still accepts the deprecated millisecond clock function', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      let now = 0;
+      const router = env.build({ clock: () => now });
+      await router.resolve({ tenantId: 't1', ...READ });
+      now = LOCAL_TTL - 1;
+      await router.resolve({ tenantId: 't1', ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+      now = LOCAL_TTL;
+      await router.resolve({ tenantId: 't1', ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
 
     it('honours custom TTLs', async () => {
