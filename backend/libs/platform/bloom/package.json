@@ -16,7 +16,11 @@
     }
   },
   "nx": {
-    "name": "platform-bloom"
+    "name": "platform-bloom",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
   },
   "dependencies": {
     "tslib": "^2.3.0"

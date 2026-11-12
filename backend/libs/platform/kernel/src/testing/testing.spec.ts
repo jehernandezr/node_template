@@ -1,6 +1,17 @@
 import { Id } from '../id.js';
+import * as kernel from '../index.js';
 import { FixedClock } from './fixed-clock.js';
+import * as testing from './index.js';
 import { SequentialIdGenerator } from './sequential-id-generator.js';
+
+describe('testing entry point', () => {
+  it('exports the helpers only from @platform/kernel/testing', () => {
+    expect(testing.FixedClock).toBe(FixedClock);
+    expect(testing.SequentialIdGenerator).toBe(SequentialIdGenerator);
+    expect('FixedClock' in kernel).toBe(false);
+    expect('SequentialIdGenerator' in kernel).toBe(false);
+  });
+});
 
 describe('FixedClock', () => {
   it('returns a fixed time, advances it, and sets it', () => {

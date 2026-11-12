@@ -16,7 +16,11 @@
     }
   },
   "nx": {
-    "name": "platform-resilience"
+    "name": "platform-resilience",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
   },
   "dependencies": {
     "cockatiel": "^4.0.0",

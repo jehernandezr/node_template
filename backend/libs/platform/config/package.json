@@ -16,7 +16,11 @@
     }
   },
   "nx": {
-    "name": "platform-config"
+    "name": "platform-config",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
   },
   "dependencies": {
     "tslib": "^2.3.0",

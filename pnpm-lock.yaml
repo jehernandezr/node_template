@@ -181,6 +181,15 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
 
+  backend/libs/platform/primitives:
+    dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
   backend/libs/platform/resilience:
     dependencies:
       cockatiel:

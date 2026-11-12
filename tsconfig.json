@@ -38,6 +38,9 @@
     },
     {
       "path": "./backend/libs/platform/saga"
+    },
+    {
+      "path": "./backend/libs/platform/primitives"
     }
   ],
   "compilerOptions": {}
