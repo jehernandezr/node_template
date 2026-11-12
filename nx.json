@@ -45,7 +45,8 @@
       "options": {
         "targetName": "lint"
       },
-      "include": ["backend/**/*"]
+      "include": ["backend/**/*"],
+      "exclude": ["backend/eslint.config.mjs"]
     },
     "./front/tools/nx-plugin/index.cjs"
   ],

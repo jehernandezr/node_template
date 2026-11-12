@@ -34,6 +34,14 @@ export default [
               ],
             },
             {
+              sourceTag: 'type:tool',
+              onlyDependOnLibsWithTags: [
+                'type:contracts',
+                'type:util',
+                'type:platform',
+              ],
+            },
+            {
               sourceTag: 'type:app',
               onlyDependOnLibsWithTags: ['*'],
             },

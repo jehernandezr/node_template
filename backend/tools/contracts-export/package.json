@@ -1,0 +1,11 @@
+{
+  "name": "@tools/contracts-export",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Exporta los contratos de libs/contracts a JSON Schema 2020-12 con metadatos.",
+  "devDependencies": {
+    "@contracts/identity": "workspace:*",
+    "@contracts/platform": "workspace:*"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "contracts-export",
+  "sourceRoot": "backend/tools/contracts-export/src",
+  "projectType": "application",
+  "tags": ["type:tool", "scope:shared"],
+  "implicitDependencies": ["contracts-platform", "contracts-identity"],
+  "targets": {
+    "export": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "SWC_NODE_PROJECT=tools/contracts-export/tsconfig.lib.json node --conditions=@node-template/source --import @swc-node/register/esm-register tools/contracts-export/src/main.ts export",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "cache": false
+    },
+    "check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "SWC_NODE_PROJECT=tools/contracts-export/tsconfig.lib.json node --conditions=@node-template/source --import @swc-node/register/esm-register tools/contracts-export/src/main.ts check",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "inputs": [
+        "{workspaceRoot}/backend/libs/contracts/**/*",
+        "{projectRoot}/src/**/*"
+      ],
+      "cache": true
+    }
+  }
+}

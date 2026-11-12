@@ -1,0 +1,1283 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
+  "formatVersion": 1,
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "service": "platform",
+  "description": "Kit de contratos y piezas transversales: identificadores, paginación, montos y errores.",
+  "enums": {
+    "PlatformErrorCode": {
+      "values": [
+        {
+          "name": "ValidationInvalidInput",
+          "value": "PLATFORM.VALIDATION.INVALID_INPUT"
+        },
+        {
+          "name": "ValidationRequired",
+          "value": "PLATFORM.VALIDATION.REQUIRED"
+        },
+        {
+          "name": "ValidationInvalidType",
+          "value": "PLATFORM.VALIDATION.INVALID_TYPE"
+        },
+        {
+          "name": "ValidationInvalidFormat",
+          "value": "PLATFORM.VALIDATION.INVALID_FORMAT"
+        },
+        {
+          "name": "ValidationInvalidEnum",
+          "value": "PLATFORM.VALIDATION.INVALID_ENUM"
+        },
+        {
+          "name": "ValidationTooShort",
+          "value": "PLATFORM.VALIDATION.TOO_SHORT"
+        },
+        {
+          "name": "ValidationTooLong",
+          "value": "PLATFORM.VALIDATION.TOO_LONG"
+        },
+        {
+          "name": "ValidationTooSmall",
+          "value": "PLATFORM.VALIDATION.TOO_SMALL"
+        },
+        {
+          "name": "ValidationTooLarge",
+          "value": "PLATFORM.VALIDATION.TOO_LARGE"
+        },
+        {
+          "name": "ValidationUnknownField",
+          "value": "PLATFORM.VALIDATION.UNKNOWN_FIELD"
+        },
+        {
+          "name": "InternalUnexpected",
+          "value": "PLATFORM.INTERNAL.UNEXPECTED"
+        },
+        {
+          "name": "AuthUnauthenticated",
+          "value": "PLATFORM.AUTH.UNAUTHENTICATED"
+        },
+        { "name": "AuthForbidden", "value": "PLATFORM.AUTH.FORBIDDEN" },
+        {
+          "name": "RateLimitExceeded",
+          "value": "PLATFORM.RATE_LIMIT.EXCEEDED"
+        },
+        { "name": "ApiVersionSunset", "value": "PLATFORM.API.VERSION_SUNSET" },
+        { "name": "ResourceNotFound", "value": "PLATFORM.RESOURCE.NOT_FOUND" },
+        {
+          "name": "ConflictVersionMismatch",
+          "value": "PLATFORM.CONFLICT.VERSION_MISMATCH"
+        },
+        { "name": "KernelInvalidId", "value": "PLATFORM.KERNEL.INVALID_ID" },
+        {
+          "name": "ShardingKeyMissing",
+          "value": "PLATFORM.SHARDING.KEY_MISSING"
+        },
+        {
+          "name": "ShardingCrossShardTx",
+          "value": "PLATFORM.SHARDING.CROSS_SHARD_TX"
+        },
+        {
+          "name": "ShardingTenantMigrating",
+          "value": "PLATFORM.SHARDING.TENANT_MIGRATING"
+        },
+        {
+          "name": "ShardingTenantNotWritable",
+          "value": "PLATFORM.SHARDING.TENANT_NOT_WRITABLE"
+        },
+        {
+          "name": "ShardingUnknownTenant",
+          "value": "PLATFORM.SHARDING.UNKNOWN_TENANT"
+        },
+        {
+          "name": "ShardingUnknownShard",
+          "value": "PLATFORM.SHARDING.UNKNOWN_SHARD"
+        },
+        {
+          "name": "ShardingWrongRegion",
+          "value": "PLATFORM.SHARDING.WRONG_REGION"
+        },
+        {
+          "name": "CriteriaUnknownField",
+          "value": "PLATFORM.CRITERIA.UNKNOWN_FIELD"
+        },
+        {
+          "name": "CriteriaInvalidValue",
+          "value": "PLATFORM.CRITERIA.INVALID_VALUE"
+        },
+        {
+          "name": "CriteriaInvalidLimit",
+          "value": "PLATFORM.CRITERIA.INVALID_LIMIT"
+        },
+        {
+          "name": "ResilienceCircuitOpen",
+          "value": "PLATFORM.RESILIENCE.CIRCUIT_OPEN"
+        },
+        { "name": "ResilienceTimeout", "value": "PLATFORM.RESILIENCE.TIMEOUT" },
+        {
+          "name": "ResilienceBulkheadFull",
+          "value": "PLATFORM.RESILIENCE.BULKHEAD_FULL"
+        },
+        {
+          "name": "ResilienceOverloaded",
+          "value": "PLATFORM.RESILIENCE.OVERLOADED"
+        },
+        {
+          "name": "InternalApiInvalidInput",
+          "value": "PLATFORM.INTERNAL_API.INVALID_INPUT"
+        },
+        {
+          "name": "InternalApiInvalidOutput",
+          "value": "PLATFORM.INTERNAL_API.INVALID_OUTPUT"
+        },
+        {
+          "name": "InternalApiUnknownOperation",
+          "value": "PLATFORM.INTERNAL_API.UNKNOWN_OPERATION"
+        },
+        {
+          "name": "InternalApiDuplicateOperation",
+          "value": "PLATFORM.INTERNAL_API.DUPLICATE_OPERATION"
+        },
+        {
+          "name": "InternalApiMissingCompensation",
+          "value": "PLATFORM.INTERNAL_API.MISSING_COMPENSATION"
+        },
+        {
+          "name": "InternalApiMissingHandler",
+          "value": "PLATFORM.INTERNAL_API.MISSING_HANDLER"
+        },
+        {
+          "name": "InternalApiTimeout",
+          "value": "PLATFORM.INTERNAL_API.TIMEOUT"
+        },
+        {
+          "name": "InternalApiNonJsonSafeSchema",
+          "value": "PLATFORM.INTERNAL_API.NON_JSON_SAFE_SCHEMA"
+        },
+        {
+          "name": "MessagingInvalidEnvelope",
+          "value": "PLATFORM.MESSAGING.INVALID_ENVELOPE"
+        },
+        {
+          "name": "MessagingInvalidPayload",
+          "value": "PLATFORM.MESSAGING.INVALID_PAYLOAD"
+        },
+        {
+          "name": "MessagingInvalidRetryPolicy",
+          "value": "PLATFORM.MESSAGING.INVALID_RETRY_POLICY"
+        },
+        {
+          "name": "MessagingInvalidTopology",
+          "value": "PLATFORM.MESSAGING.INVALID_TOPOLOGY"
+        },
+        {
+          "name": "MessagingUnknownRoute",
+          "value": "PLATFORM.MESSAGING.UNKNOWN_ROUTE"
+        },
+        {
+          "name": "MessagingUnknownQueue",
+          "value": "PLATFORM.MESSAGING.UNKNOWN_QUEUE"
+        },
+        {
+          "name": "MessagingDuplicateHandler",
+          "value": "PLATFORM.MESSAGING.DUPLICATE_HANDLER"
+        },
+        {
+          "name": "MessagingPermanentError",
+          "value": "PLATFORM.MESSAGING.PERMANENT_ERROR"
+        },
+        {
+          "name": "MessagingPayloadTooLarge",
+          "value": "PLATFORM.MESSAGING.PAYLOAD_TOO_LARGE"
+        },
+        { "name": "SagaNotFound", "value": "PLATFORM.SAGA.NOT_FOUND" },
+        {
+          "name": "SagaDuplicateSaga",
+          "value": "PLATFORM.SAGA.DUPLICATE_SAGA"
+        },
+        {
+          "name": "SagaUnknownDefinition",
+          "value": "PLATFORM.SAGA.UNKNOWN_DEFINITION"
+        },
+        {
+          "name": "SagaInvalidDefinition",
+          "value": "PLATFORM.SAGA.INVALID_DEFINITION"
+        },
+        {
+          "name": "SagaInvalidConfiguration",
+          "value": "PLATFORM.SAGA.INVALID_CONFIGURATION"
+        },
+        { "name": "SagaInvalidState", "value": "PLATFORM.SAGA.INVALID_STATE" },
+        {
+          "name": "SagaMissingCompensation",
+          "value": "PLATFORM.SAGA.MISSING_COMPENSATION"
+        },
+        {
+          "name": "SagaConcurrentModification",
+          "value": "PLATFORM.SAGA.CONCURRENT_MODIFICATION"
+        },
+        {
+          "name": "SagaLeaseNotAcquired",
+          "value": "PLATFORM.SAGA.LEASE_NOT_ACQUIRED"
+        },
+        { "name": "SagaLeaseLost", "value": "PLATFORM.SAGA.LEASE_LOST" },
+        {
+          "name": "SagaTransientFailure",
+          "value": "PLATFORM.SAGA.TRANSIENT_FAILURE"
+        },
+        {
+          "name": "SagaProtocolViolation",
+          "value": "PLATFORM.SAGA.PROTOCOL_VIOLATION"
+        },
+        {
+          "name": "SagaStateUpdateFailed",
+          "value": "PLATFORM.SAGA.STATE_UPDATE_FAILED"
+        },
+        {
+          "name": "SagaInputBuildFailed",
+          "value": "PLATFORM.SAGA.INPUT_BUILD_FAILED"
+        },
+        {
+          "name": "SagaIdempotencyKeyConflict",
+          "value": "PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT"
+        },
+        {
+          "name": "SagaDeadlineExceeded",
+          "value": "PLATFORM.SAGA.DEADLINE_EXCEEDED"
+        },
+        {
+          "name": "SagaSimulatedCrash",
+          "value": "PLATFORM.SAGA.SIMULATED_CRASH"
+        },
+        {
+          "name": "BloomInvalidParameters",
+          "value": "PLATFORM.BLOOM.INVALID_PARAMETERS"
+        },
+        {
+          "name": "BloomCorruptedData",
+          "value": "PLATFORM.BLOOM.CORRUPTED_DATA"
+        },
+        {
+          "name": "BloomIncompatibleFilters",
+          "value": "PLATFORM.BLOOM.INCOMPATIBLE_FILTERS"
+        },
+        {
+          "name": "BloomUnknownFilter",
+          "value": "PLATFORM.BLOOM.UNKNOWN_FILTER"
+        },
+        {
+          "name": "BloomDuplicateFilter",
+          "value": "PLATFORM.BLOOM.DUPLICATE_FILTER"
+        },
+        {
+          "name": "CacheInvalidArgument",
+          "value": "PLATFORM.CACHE.INVALID_ARGUMENT"
+        },
+        { "name": "CacheKeyTooLong", "value": "PLATFORM.CACHE.KEY_TOO_LONG" },
+        {
+          "name": "CacheValueTooLarge",
+          "value": "PLATFORM.CACHE.VALUE_TOO_LARGE"
+        },
+        { "name": "CacheNotACounter", "value": "PLATFORM.CACHE.NOT_A_COUNTER" },
+        { "name": "CacheTimeout", "value": "PLATFORM.CACHE.TIMEOUT" },
+        {
+          "name": "CacheCorruptEntry",
+          "value": "PLATFORM.CACHE.CORRUPT_ENTRY"
+        },
+        { "name": "ConfigInvalid", "value": "PLATFORM.CONFIG.INVALID" },
+        {
+          "name": "MessagingTenantMismatch",
+          "value": "PLATFORM.MESSAGING.TENANT_MISMATCH"
+        },
+        {
+          "name": "MessagingIdempotencyConflict",
+          "value": "PLATFORM.MESSAGING.IDEMPOTENCY_CONFLICT"
+        },
+        {
+          "name": "MessagingInvalidOptions",
+          "value": "PLATFORM.MESSAGING.INVALID_OPTIONS"
+        },
+        {
+          "name": "PrimitivesInvalidArgument",
+          "value": "PLATFORM.PRIMITIVES.INVALID_ARGUMENT"
+        },
+        {
+          "name": "PrimitivesNonJsonValue",
+          "value": "PLATFORM.PRIMITIVES.NON_JSON_VALUE"
+        },
+        {
+          "name": "PrimitivesDeadlineExceeded",
+          "value": "PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED"
+        },
+        {
+          "name": "PrimitivesStaleClaim",
+          "value": "PLATFORM.PRIMITIVES.STALE_CLAIM"
+        },
+        {
+          "name": "ResilienceUnknownPolicy",
+          "value": "PLATFORM.RESILIENCE.UNKNOWN_POLICY"
+        },
+        {
+          "name": "ResilienceNotConfigured",
+          "value": "PLATFORM.RESILIENCE.NOT_CONFIGURED"
+        },
+        {
+          "name": "ShardingInvalidConfig",
+          "value": "PLATFORM.SHARDING.INVALID_CONFIG"
+        },
+        {
+          "name": "ShardingInvalidKey",
+          "value": "PLATFORM.SHARDING.INVALID_KEY"
+        },
+        {
+          "name": "ShardingInvalidTenantId",
+          "value": "PLATFORM.SHARDING.INVALID_TENANT_ID"
+        }
+      ]
+    },
+    "ErrorAudience": {
+      "values": [
+        { "name": "Public", "value": "public" },
+        { "name": "Internal", "value": "internal" }
+      ]
+    },
+    "HttpMethod": {
+      "values": [
+        { "name": "Get", "value": "GET" },
+        { "name": "Post", "value": "POST" },
+        { "name": "Put", "value": "PUT" },
+        { "name": "Patch", "value": "PATCH" },
+        { "name": "Delete", "value": "DELETE" }
+      ]
+    },
+    "AccessKind": {
+      "values": [
+        { "name": "Public", "value": "public" },
+        { "name": "Authenticated", "value": "authenticated" }
+      ]
+    }
+  },
+  "constants": {
+    "Pagination": {
+      "defaultLimit": 20,
+      "maxLimit": 100,
+      "maxCursorLength": 512,
+      "cursorPattern": "^[A-Za-z0-9_-]+$"
+    },
+    "MoneyLimits": {
+      "maxAbsAmountMinor": 9007199254740991,
+      "currencyPattern": "^[A-Z]{3}$"
+    },
+    "IdentifierFormat": {
+      "version": 7,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "ValidationRules": {
+      "fieldPathSeparator": ".",
+      "messageKeyPrefix": "error_"
+    }
+  },
+  "schemas": {
+    "Id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+      "description": "Identificador UUIDv7."
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+      "description": "Instante ISO 8601 en UTC."
+    },
+    "Cursor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Cursor opaco de paginación."
+    },
+    "PageLimit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "Tamaño de página."
+    },
+    "PageQuery": {
+      "type": "object",
+      "properties": {
+        "limit": { "$ref": "#/schemas/PageLimit" },
+        "after": { "$ref": "#/schemas/Cursor" }
+      },
+      "additionalProperties": false,
+      "description": "Parámetros de paginación por cursor."
+    },
+    "CurrencyCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Código de moneda ISO 4217."
+    },
+    "MoneyAmount": {
+      "type": "object",
+      "properties": {
+        "amountMinor": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "currency": { "$ref": "#/schemas/CurrencyCode" }
+      },
+      "required": ["amountMinor", "currency"],
+      "description": "Monto en unidades menores de la moneda."
+    },
+    "FieldError": {
+      "type": "object",
+      "properties": {
+        "field": { "type": "string", "maxLength": 512 },
+        "code": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "message": { "type": "string", "maxLength": 1024 }
+      },
+      "required": ["code"],
+      "description": "Error de un campo."
+    },
+    "ProblemDetails": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+        "detail": { "type": "string" },
+        "instance": { "type": "string" },
+        "code": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "traceId": { "type": "string" },
+        "errors": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/FieldError" }
+        }
+      },
+      "required": ["type", "title", "status", "code"],
+      "description": "Respuesta de error RFC 9457."
+    },
+    "Empty": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "description": "Petición sin campos."
+    }
+  },
+  "routes": [],
+  "operations": [],
+  "events": [],
+  "errors": {
+    "PlatformErrorCode": [
+      {
+        "name": "ValidationInvalidInput",
+        "code": "PLATFORM.VALIDATION.INVALID_INPUT",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_invalid_input",
+        "description": "La entrada no cumple el formato o las reglas esperadas."
+      },
+      {
+        "name": "ValidationRequired",
+        "code": "PLATFORM.VALIDATION.REQUIRED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_required",
+        "description": "Falta un campo obligatorio."
+      },
+      {
+        "name": "ValidationInvalidType",
+        "code": "PLATFORM.VALIDATION.INVALID_TYPE",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_invalid_type",
+        "description": "Un campo tiene un tipo de dato distinto al esperado."
+      },
+      {
+        "name": "ValidationInvalidFormat",
+        "code": "PLATFORM.VALIDATION.INVALID_FORMAT",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_invalid_format",
+        "description": "Un campo no cumple el formato esperado, como email, UUID o patrón."
+      },
+      {
+        "name": "ValidationInvalidEnum",
+        "code": "PLATFORM.VALIDATION.INVALID_ENUM",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_invalid_enum",
+        "description": "Un campo tiene un valor que no está entre los permitidos."
+      },
+      {
+        "name": "ValidationTooShort",
+        "code": "PLATFORM.VALIDATION.TOO_SHORT",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_too_short",
+        "description": "Un texto o una lista tiene menos elementos de los permitidos."
+      },
+      {
+        "name": "ValidationTooLong",
+        "code": "PLATFORM.VALIDATION.TOO_LONG",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_too_long",
+        "description": "Un texto o una lista tiene más elementos de los permitidos."
+      },
+      {
+        "name": "ValidationTooSmall",
+        "code": "PLATFORM.VALIDATION.TOO_SMALL",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_too_small",
+        "description": "Un número es menor que el mínimo permitido."
+      },
+      {
+        "name": "ValidationTooLarge",
+        "code": "PLATFORM.VALIDATION.TOO_LARGE",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_too_large",
+        "description": "Un número es mayor que el máximo permitido."
+      },
+      {
+        "name": "ValidationUnknownField",
+        "code": "PLATFORM.VALIDATION.UNKNOWN_FIELD",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_validation_unknown_field",
+        "description": "La petición incluye un campo que el contrato no define."
+      },
+      {
+        "name": "InternalUnexpected",
+        "code": "PLATFORM.INTERNAL.UNEXPECTED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_internal_unexpected",
+        "description": "Ocurrió un error inesperado en el servidor."
+      },
+      {
+        "name": "AuthUnauthenticated",
+        "code": "PLATFORM.AUTH.UNAUTHENTICATED",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_auth_unauthenticated",
+        "description": "La solicitud no incluye credenciales válidas."
+      },
+      {
+        "name": "AuthForbidden",
+        "code": "PLATFORM.AUTH.FORBIDDEN",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_auth_forbidden",
+        "description": "No tienes permiso para realizar esta acción."
+      },
+      {
+        "name": "RateLimitExceeded",
+        "code": "PLATFORM.RATE_LIMIT.EXCEEDED",
+        "httpStatus": 429,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_rate_limit_exceeded",
+        "description": "Se superó el límite de solicitudes. Intenta de nuevo más tarde."
+      },
+      {
+        "name": "ApiVersionSunset",
+        "code": "PLATFORM.API.VERSION_SUNSET",
+        "httpStatus": 410,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_api_version_sunset",
+        "description": "Esta versión de la API ya no está disponible."
+      },
+      {
+        "name": "ResourceNotFound",
+        "code": "PLATFORM.RESOURCE.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_resource_not_found",
+        "description": "El recurso solicitado no existe."
+      },
+      {
+        "name": "ConflictVersionMismatch",
+        "code": "PLATFORM.CONFLICT.VERSION_MISMATCH",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_conflict_version_mismatch",
+        "description": "El recurso cambió desde la última lectura. Vuelve a cargarlo."
+      },
+      {
+        "name": "KernelInvalidId",
+        "code": "PLATFORM.KERNEL.INVALID_ID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_kernel_invalid_id",
+        "description": "El identificador no tiene un formato válido."
+      },
+      {
+        "name": "ShardingKeyMissing",
+        "code": "PLATFORM.SHARDING.KEY_MISSING",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_sharding_key_missing",
+        "description": "Falta la clave de fragmentación del tenant en la solicitud."
+      },
+      {
+        "name": "ShardingCrossShardTx",
+        "code": "PLATFORM.SHARDING.CROSS_SHARD_TX",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_sharding_cross_shard_tx",
+        "description": "La transacción involucra datos de más de un fragmento."
+      },
+      {
+        "name": "ShardingTenantMigrating",
+        "code": "PLATFORM.SHARDING.TENANT_MIGRATING",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_sharding_tenant_migrating",
+        "description": "El tenant se está migrando. Intenta de nuevo en unos instantes."
+      },
+      {
+        "name": "ShardingTenantNotWritable",
+        "code": "PLATFORM.SHARDING.TENANT_NOT_WRITABLE",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_sharding_tenant_not_writable",
+        "description": "El tenant está en solo lectura por mantenimiento. Intenta más tarde."
+      },
+      {
+        "name": "ShardingUnknownTenant",
+        "code": "PLATFORM.SHARDING.UNKNOWN_TENANT",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_sharding_unknown_tenant",
+        "description": "El tenant no está en el directorio de fragmentos."
+      },
+      {
+        "name": "ShardingUnknownShard",
+        "code": "PLATFORM.SHARDING.UNKNOWN_SHARD",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_sharding_unknown_shard",
+        "description": "El fragmento indicado no existe en la configuración."
+      },
+      {
+        "name": "ShardingWrongRegion",
+        "code": "PLATFORM.SHARDING.WRONG_REGION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_sharding_wrong_region",
+        "description": "El tenant pertenece a otra región; la petición debió enrutarse allá."
+      },
+      {
+        "name": "CriteriaUnknownField",
+        "code": "PLATFORM.CRITERIA.UNKNOWN_FIELD",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_criteria_unknown_field",
+        "description": "La consulta filtra u ordena por un campo que no existe."
+      },
+      {
+        "name": "CriteriaInvalidValue",
+        "code": "PLATFORM.CRITERIA.INVALID_VALUE",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_criteria_invalid_value",
+        "description": "La consulta tiene un valor o un cursor inválido."
+      },
+      {
+        "name": "CriteriaInvalidLimit",
+        "code": "PLATFORM.CRITERIA.INVALID_LIMIT",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_criteria_invalid_limit",
+        "description": "El tamaño de página está fuera del rango permitido."
+      },
+      {
+        "name": "ResilienceCircuitOpen",
+        "code": "PLATFORM.RESILIENCE.CIRCUIT_OPEN",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_resilience_circuit_open",
+        "description": "Un servicio del que depende la operación no está disponible por ahora."
+      },
+      {
+        "name": "ResilienceTimeout",
+        "code": "PLATFORM.RESILIENCE.TIMEOUT",
+        "httpStatus": 504,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_resilience_timeout",
+        "description": "La operación tardó más de lo permitido."
+      },
+      {
+        "name": "ResilienceBulkheadFull",
+        "code": "PLATFORM.RESILIENCE.BULKHEAD_FULL",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_resilience_bulkhead_full",
+        "description": "Hay demasiadas operaciones en curso. Intenta de nuevo en unos instantes."
+      },
+      {
+        "name": "ResilienceOverloaded",
+        "code": "PLATFORM.RESILIENCE.OVERLOADED",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_resilience_overloaded",
+        "description": "El servicio está sobrecargado. Intenta de nuevo en unos instantes."
+      },
+      {
+        "name": "InternalApiInvalidInput",
+        "code": "PLATFORM.INTERNAL_API.INVALID_INPUT",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_invalid_input",
+        "description": "La entrada de una operación interna no cumple su contrato."
+      },
+      {
+        "name": "InternalApiInvalidOutput",
+        "code": "PLATFORM.INTERNAL_API.INVALID_OUTPUT",
+        "httpStatus": 502,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_invalid_output",
+        "description": "La salida de una operación interna no cumple su contrato."
+      },
+      {
+        "name": "InternalApiUnknownOperation",
+        "code": "PLATFORM.INTERNAL_API.UNKNOWN_OPERATION",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_unknown_operation",
+        "description": "La operación interna no está registrada."
+      },
+      {
+        "name": "InternalApiDuplicateOperation",
+        "code": "PLATFORM.INTERNAL_API.DUPLICATE_OPERATION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_duplicate_operation",
+        "description": "Dos operaciones internas usan el mismo identificador."
+      },
+      {
+        "name": "InternalApiMissingCompensation",
+        "code": "PLATFORM.INTERNAL_API.MISSING_COMPENSATION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_missing_compensation",
+        "description": "Una operación que modifica datos no declara su compensación."
+      },
+      {
+        "name": "InternalApiMissingHandler",
+        "code": "PLATFORM.INTERNAL_API.MISSING_HANDLER",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_missing_handler",
+        "description": "La operación interna no tiene manejador."
+      },
+      {
+        "name": "InternalApiTimeout",
+        "code": "PLATFORM.INTERNAL_API.TIMEOUT",
+        "httpStatus": 504,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_timeout",
+        "description": "La operación interna no respondió a tiempo."
+      },
+      {
+        "name": "InternalApiNonJsonSafeSchema",
+        "code": "PLATFORM.INTERNAL_API.NON_JSON_SAFE_SCHEMA",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_non_json_safe_schema",
+        "description": "El esquema de la operación interna no se puede serializar a JSON."
+      },
+      {
+        "name": "MessagingInvalidEnvelope",
+        "code": "PLATFORM.MESSAGING.INVALID_ENVELOPE",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_invalid_envelope",
+        "description": "El sobre del mensaje no cumple el formato CloudEvents esperado."
+      },
+      {
+        "name": "MessagingInvalidPayload",
+        "code": "PLATFORM.MESSAGING.INVALID_PAYLOAD",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_invalid_payload",
+        "description": "El payload del mensaje no cumple su contrato."
+      },
+      {
+        "name": "MessagingInvalidRetryPolicy",
+        "code": "PLATFORM.MESSAGING.INVALID_RETRY_POLICY",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_invalid_retry_policy",
+        "description": "La política de reintentos del consumidor es inválida."
+      },
+      {
+        "name": "MessagingInvalidTopology",
+        "code": "PLATFORM.MESSAGING.INVALID_TOPOLOGY",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_invalid_topology",
+        "description": "La topología de mensajería es inválida."
+      },
+      {
+        "name": "MessagingUnknownRoute",
+        "code": "PLATFORM.MESSAGING.UNKNOWN_ROUTE",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_unknown_route",
+        "description": "No hay ruta configurada para el tipo de mensaje."
+      },
+      {
+        "name": "MessagingUnknownQueue",
+        "code": "PLATFORM.MESSAGING.UNKNOWN_QUEUE",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_unknown_queue",
+        "description": "La cola indicada no existe en la topología."
+      },
+      {
+        "name": "MessagingDuplicateHandler",
+        "code": "PLATFORM.MESSAGING.DUPLICATE_HANDLER",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_duplicate_handler",
+        "description": "Dos manejadores atienden el mismo tipo de mensaje en la misma cola."
+      },
+      {
+        "name": "MessagingPermanentError",
+        "code": "PLATFORM.MESSAGING.PERMANENT_ERROR",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_permanent_error",
+        "description": "El manejador falló de forma permanente; el mensaje va a la cola de errores."
+      },
+      {
+        "name": "MessagingPayloadTooLarge",
+        "code": "PLATFORM.MESSAGING.PAYLOAD_TOO_LARGE",
+        "httpStatus": 413,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_payload_too_large",
+        "description": "El mensaje supera el tamaño máximo permitido."
+      },
+      {
+        "name": "SagaNotFound",
+        "code": "PLATFORM.SAGA.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_not_found",
+        "description": "La saga no existe."
+      },
+      {
+        "name": "SagaDuplicateSaga",
+        "code": "PLATFORM.SAGA.DUPLICATE_SAGA",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_duplicate_saga",
+        "description": "Ya existe una saga con ese identificador."
+      },
+      {
+        "name": "SagaUnknownDefinition",
+        "code": "PLATFORM.SAGA.UNKNOWN_DEFINITION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_unknown_definition",
+        "description": "La definición de saga no está registrada."
+      },
+      {
+        "name": "SagaInvalidDefinition",
+        "code": "PLATFORM.SAGA.INVALID_DEFINITION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_invalid_definition",
+        "description": "La definición de saga es inválida."
+      },
+      {
+        "name": "SagaInvalidConfiguration",
+        "code": "PLATFORM.SAGA.INVALID_CONFIGURATION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_invalid_configuration",
+        "description": "La configuración del orquestador de sagas es inválida."
+      },
+      {
+        "name": "SagaInvalidState",
+        "code": "PLATFORM.SAGA.INVALID_STATE",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_invalid_state",
+        "description": "La saga no está en un estado que permita la acción."
+      },
+      {
+        "name": "SagaMissingCompensation",
+        "code": "PLATFORM.SAGA.MISSING_COMPENSATION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_missing_compensation",
+        "description": "Un paso de la saga modifica datos y no declara compensación."
+      },
+      {
+        "name": "SagaConcurrentModification",
+        "code": "PLATFORM.SAGA.CONCURRENT_MODIFICATION",
+        "httpStatus": 409,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_concurrent_modification",
+        "description": "Otro proceso modificó la saga al mismo tiempo."
+      },
+      {
+        "name": "SagaLeaseNotAcquired",
+        "code": "PLATFORM.SAGA.LEASE_NOT_ACQUIRED",
+        "httpStatus": 409,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_lease_not_acquired",
+        "description": "Otro proceso tiene el turno de la saga."
+      },
+      {
+        "name": "SagaLeaseLost",
+        "code": "PLATFORM.SAGA.LEASE_LOST",
+        "httpStatus": 409,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_lease_lost",
+        "description": "El proceso perdió el turno de la saga durante la ejecución."
+      },
+      {
+        "name": "SagaTransientFailure",
+        "code": "PLATFORM.SAGA.TRANSIENT_FAILURE",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_transient_failure",
+        "description": "Un paso de la saga falló de forma transitoria."
+      },
+      {
+        "name": "SagaProtocolViolation",
+        "code": "PLATFORM.SAGA.PROTOCOL_VIOLATION",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_protocol_violation",
+        "description": "Un paso de la saga devolvió una respuesta fuera de su contrato."
+      },
+      {
+        "name": "SagaStateUpdateFailed",
+        "code": "PLATFORM.SAGA.STATE_UPDATE_FAILED",
+        "httpStatus": 500,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_state_update_failed",
+        "description": "No se pudo guardar el estado de la saga."
+      },
+      {
+        "name": "SagaInputBuildFailed",
+        "code": "PLATFORM.SAGA.INPUT_BUILD_FAILED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_input_build_failed",
+        "description": "No se pudo construir la entrada de un paso de la saga."
+      },
+      {
+        "name": "SagaIdempotencyKeyConflict",
+        "code": "PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_idempotency_key_conflict",
+        "description": "La clave de idempotencia ya se usó con otra entrada."
+      },
+      {
+        "name": "SagaDeadlineExceeded",
+        "code": "PLATFORM.SAGA.DEADLINE_EXCEEDED",
+        "httpStatus": 504,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_deadline_exceeded",
+        "description": "La saga superó su plazo máximo."
+      },
+      {
+        "name": "SagaSimulatedCrash",
+        "code": "PLATFORM.SAGA.SIMULATED_CRASH",
+        "httpStatus": 500,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_saga_simulated_crash",
+        "description": "Caída simulada en pruebas de recuperación de sagas."
+      },
+      {
+        "name": "BloomInvalidParameters",
+        "code": "PLATFORM.BLOOM.INVALID_PARAMETERS",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_bloom_invalid_parameters",
+        "description": "Los parámetros del filtro de Bloom son inválidos."
+      },
+      {
+        "name": "BloomCorruptedData",
+        "code": "PLATFORM.BLOOM.CORRUPTED_DATA",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_bloom_corrupted_data",
+        "description": "Los datos serializados del filtro de Bloom están corruptos."
+      },
+      {
+        "name": "BloomIncompatibleFilters",
+        "code": "PLATFORM.BLOOM.INCOMPATIBLE_FILTERS",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_bloom_incompatible_filters",
+        "description": "Los filtros de Bloom no tienen los mismos parámetros."
+      },
+      {
+        "name": "BloomUnknownFilter",
+        "code": "PLATFORM.BLOOM.UNKNOWN_FILTER",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_bloom_unknown_filter",
+        "description": "El filtro de Bloom no está registrado."
+      },
+      {
+        "name": "BloomDuplicateFilter",
+        "code": "PLATFORM.BLOOM.DUPLICATE_FILTER",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_bloom_duplicate_filter",
+        "description": "Ya hay un filtro de Bloom registrado con ese nombre."
+      },
+      {
+        "name": "CacheInvalidArgument",
+        "code": "PLATFORM.CACHE.INVALID_ARGUMENT",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_cache_invalid_argument",
+        "description": "Argumento inválido al usar la caché."
+      },
+      {
+        "name": "CacheKeyTooLong",
+        "code": "PLATFORM.CACHE.KEY_TOO_LONG",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_cache_key_too_long",
+        "description": "La llave de caché supera la longitud máxima."
+      },
+      {
+        "name": "CacheValueTooLarge",
+        "code": "PLATFORM.CACHE.VALUE_TOO_LARGE",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_cache_value_too_large",
+        "description": "El valor supera el tamaño máximo que se guarda en caché."
+      },
+      {
+        "name": "CacheNotACounter",
+        "code": "PLATFORM.CACHE.NOT_A_COUNTER",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_cache_not_a_counter",
+        "description": "La entrada de caché no contiene un contador."
+      },
+      {
+        "name": "CacheTimeout",
+        "code": "PLATFORM.CACHE.TIMEOUT",
+        "httpStatus": 504,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_cache_timeout",
+        "description": "La caché no respondió dentro del plazo."
+      },
+      {
+        "name": "CacheCorruptEntry",
+        "code": "PLATFORM.CACHE.CORRUPT_ENTRY",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_cache_corrupt_entry",
+        "description": "Una entrada de caché tiene un formato inválido."
+      },
+      {
+        "name": "ConfigInvalid",
+        "code": "PLATFORM.CONFIG.INVALID",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_config_invalid",
+        "description": "La configuración del proceso no es válida."
+      },
+      {
+        "name": "MessagingTenantMismatch",
+        "code": "PLATFORM.MESSAGING.TENANT_MISMATCH",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_tenant_mismatch",
+        "description": "El tenant del mensaje no coincide con el esperado."
+      },
+      {
+        "name": "MessagingIdempotencyConflict",
+        "code": "PLATFORM.MESSAGING.IDEMPOTENCY_CONFLICT",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_idempotency_conflict",
+        "description": "Se reutilizó el id de un mensaje con otro contenido."
+      },
+      {
+        "name": "MessagingInvalidOptions",
+        "code": "PLATFORM.MESSAGING.INVALID_OPTIONS",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_invalid_options",
+        "description": "Las opciones de mensajería no son válidas."
+      },
+      {
+        "name": "PrimitivesInvalidArgument",
+        "code": "PLATFORM.PRIMITIVES.INVALID_ARGUMENT",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_primitives_invalid_argument",
+        "description": "Argumento inválido en una primitiva de plataforma."
+      },
+      {
+        "name": "PrimitivesNonJsonValue",
+        "code": "PLATFORM.PRIMITIVES.NON_JSON_VALUE",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_primitives_non_json_value",
+        "description": "Un valor no se puede serializar como JSON canónico."
+      },
+      {
+        "name": "PrimitivesDeadlineExceeded",
+        "code": "PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED",
+        "httpStatus": 504,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_primitives_deadline_exceeded",
+        "description": "Se agotó el plazo de la operación."
+      },
+      {
+        "name": "PrimitivesStaleClaim",
+        "code": "PLATFORM.PRIMITIVES.STALE_CLAIM",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_primitives_stale_claim",
+        "description": "El claim de idempotencia ya pertenece a otro dueño."
+      },
+      {
+        "name": "ResilienceUnknownPolicy",
+        "code": "PLATFORM.RESILIENCE.UNKNOWN_POLICY",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_resilience_unknown_policy",
+        "description": "No existe la política de resiliencia pedida."
+      },
+      {
+        "name": "ResilienceNotConfigured",
+        "code": "PLATFORM.RESILIENCE.NOT_CONFIGURED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_resilience_not_configured",
+        "description": "El registro de resiliencia no está configurado."
+      },
+      {
+        "name": "ShardingInvalidConfig",
+        "code": "PLATFORM.SHARDING.INVALID_CONFIG",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_sharding_invalid_config",
+        "description": "La configuración de sharding no es válida."
+      },
+      {
+        "name": "ShardingInvalidKey",
+        "code": "PLATFORM.SHARDING.INVALID_KEY",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_sharding_invalid_key",
+        "description": "La llave de enrutamiento no es válida."
+      },
+      {
+        "name": "ShardingInvalidTenantId",
+        "code": "PLATFORM.SHARDING.INVALID_TENANT_ID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_sharding_invalid_tenant_id",
+        "description": "El id del tenant no tiene el formato esperado."
+      }
+    ]
+  }
+}

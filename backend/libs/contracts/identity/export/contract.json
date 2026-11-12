@@ -1,0 +1,673 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
+  "formatVersion": 1,
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "service": "identity",
+  "description": "Identidad: inicio de sesión, MFA, sesiones, dispositivos y enums de acceso.",
+  "enums": {
+    "Permission": {
+      "values": [
+        { "name": "TasksRead", "value": "tasks:read" },
+        { "name": "TasksWrite", "value": "tasks:write" },
+        { "name": "BillingRead", "value": "billing:read" },
+        { "name": "BackofficeAccess", "value": "backoffice:access" }
+      ]
+    },
+    "PlatformRole": {
+      "values": [
+        { "name": "SuperAdmin", "value": "super_admin" },
+        { "name": "Support", "value": "support" },
+        { "name": "Finance", "value": "finance" },
+        { "name": "ReadOnly", "value": "read_only" }
+      ]
+    },
+    "PlanFeature": {
+      "values": [
+        { "name": "AiAssistant", "value": "ai_assistant" },
+        { "name": "Webhooks", "value": "webhooks" },
+        { "name": "Billing", "value": "billing" }
+      ]
+    },
+    "FeatureFlag": {
+      "values": [{ "name": "NewReports", "value": "new_reports" }]
+    },
+    "MfaFactor": {
+      "values": [
+        { "name": "DeviceOtp", "value": "device_otp" },
+        { "name": "EmailOtp", "value": "email_otp" },
+        { "name": "Totp", "value": "totp" },
+        { "name": "RecoveryCode", "value": "recovery_code" },
+        { "name": "Passkey", "value": "passkey" }
+      ]
+    },
+    "SignInStatus": {
+      "values": [
+        { "name": "Authenticated", "value": "authenticated" },
+        { "name": "MfaRequired", "value": "mfa_required" }
+      ]
+    },
+    "ClientPlatform": {
+      "values": [
+        { "name": "Ios", "value": "ios" },
+        { "name": "Android", "value": "android" },
+        { "name": "Web", "value": "web" },
+        { "name": "Macos", "value": "macos" },
+        { "name": "Windows", "value": "windows" },
+        { "name": "Linux", "value": "linux" }
+      ]
+    },
+    "RevocationReason": {
+      "values": [
+        { "name": "Logout", "value": "logout" },
+        { "name": "UserAction", "value": "user_action" },
+        { "name": "PasswordChanged", "value": "password_changed" },
+        { "name": "AdminAction", "value": "admin_action" },
+        { "name": "Compromised", "value": "compromised" }
+      ]
+    },
+    "RevocationScope": {
+      "values": [
+        { "name": "Session", "value": "session" },
+        { "name": "User", "value": "user" },
+        { "name": "Tenant", "value": "tenant" }
+      ]
+    },
+    "IdentityErrorCode": {
+      "values": [
+        {
+          "name": "AuthInvalidCredentials",
+          "value": "IDENTITY.AUTH.INVALID_CREDENTIALS"
+        },
+        { "name": "MfaTokenInvalid", "value": "IDENTITY.MFA.TOKEN_INVALID" },
+        { "name": "MfaCodeInvalid", "value": "IDENTITY.MFA.CODE_INVALID" },
+        { "name": "MfaCodeExpired", "value": "IDENTITY.MFA.CODE_EXPIRED" },
+        {
+          "name": "MfaTooManyAttempts",
+          "value": "IDENTITY.MFA.TOO_MANY_ATTEMPTS"
+        },
+        {
+          "name": "MfaStepUpRequired",
+          "value": "IDENTITY.MFA.STEP_UP_REQUIRED"
+        },
+        { "name": "SessionRevoked", "value": "IDENTITY.SESSION.REVOKED" },
+        {
+          "name": "TokenStalePermissions",
+          "value": "IDENTITY.TOKEN.STALE_PERMISSIONS"
+        },
+        { "name": "UserNotFound", "value": "IDENTITY.USER.NOT_FOUND" }
+      ]
+    },
+    "IdentityRoute": {
+      "values": [
+        { "name": "SignIn", "value": "identity.auth.sign-in" },
+        { "name": "VerifyMfa", "value": "identity.auth.mfa-verify" },
+        { "name": "ListSessions", "value": "identity.sessions.list" },
+        { "name": "RevokeSession", "value": "identity.sessions.revoke" },
+        {
+          "name": "RevokeOtherSessions",
+          "value": "identity.sessions.revoke-others"
+        },
+        { "name": "ListDevices", "value": "identity.devices.list" }
+      ]
+    },
+    "IdentityOperation": {
+      "values": [
+        {
+          "name": "RevokeUserSessions",
+          "value": "identity.sessions.revoke-for-user"
+        },
+        { "name": "GetUserAccess", "value": "identity.users.get-access" }
+      ]
+    },
+    "IdentityEvent": {
+      "values": [
+        { "name": "SessionRevoked", "value": "identity.session.revoked.v1" },
+        { "name": "TokensRevoked", "value": "identity.tokens.revoked.v1" }
+      ]
+    }
+  },
+  "constants": {
+    "IdentityLimits": {
+      "emailMaxLength": 254,
+      "passwordMaxLength": 128,
+      "deviceIdMaxLength": 512,
+      "deviceNameMaxLength": 120,
+      "devicePublicKeyMaxLength": 2048,
+      "mfaTokenMaxLength": 2048,
+      "mfaCodeMinLength": 6,
+      "mfaCodeMaxLength": 64,
+      "tokenMaxLength": 8192
+    },
+    "MfaRules": {
+      "deviceCodeLength": 8,
+      "emailCodeLength": 6,
+      "maxAttemptsPerChallenge": 5,
+      "stepUpMaxAgeMinutes": 10
+    }
+  },
+  "schemas": {
+    "Permission": {
+      "type": "string",
+      "enum": [
+        "tasks:read",
+        "tasks:write",
+        "billing:read",
+        "backoffice:access"
+      ],
+      "description": "Permiso dentro de un tenant."
+    },
+    "PlatformRole": {
+      "type": "string",
+      "enum": ["super_admin", "support", "finance", "read_only"],
+      "description": "Rol de plataforma."
+    },
+    "PlanFeature": {
+      "type": "string",
+      "enum": ["ai_assistant", "webhooks", "billing"],
+      "description": "Funcionalidad del plan."
+    },
+    "FeatureFlag": {
+      "type": "string",
+      "enum": ["new_reports"],
+      "description": "Feature flag."
+    },
+    "MfaFactor": {
+      "type": "string",
+      "enum": ["device_otp", "email_otp", "totp", "recovery_code", "passkey"],
+      "description": "Método de segundo factor."
+    },
+    "SignInStatus": {
+      "type": "string",
+      "enum": ["authenticated", "mfa_required"],
+      "description": "Resultado de un inicio de sesión."
+    },
+    "ClientPlatform": {
+      "type": "string",
+      "enum": ["ios", "android", "web", "macos", "windows", "linux"],
+      "description": "Plataforma del cliente."
+    },
+    "RevocationReason": {
+      "type": "string",
+      "enum": [
+        "logout",
+        "user_action",
+        "password_changed",
+        "admin_action",
+        "compromised"
+      ],
+      "description": "Motivo de una revocación."
+    },
+    "RevocationScope": {
+      "type": "string",
+      "enum": ["session", "user", "tenant"],
+      "description": "Alcance de una revocación de tokens."
+    },
+    "SignInRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "password": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["email", "password"],
+      "additionalProperties": false,
+      "description": "Inicio de sesión con email y contraseña."
+    },
+    "SessionTokens": {
+      "type": "object",
+      "properties": {
+        "accessToken": { "type": "string", "minLength": 1, "maxLength": 8192 },
+        "accessExpiresAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "sessionToken": { "type": "string", "minLength": 1, "maxLength": 8192 }
+      },
+      "required": ["accessToken", "accessExpiresAt"],
+      "description": "Tokens de una sesión."
+    },
+    "PendingMfa": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "methods": {
+          "minItems": 1,
+          "type": "array",
+          "items": { "$ref": "#/schemas/MfaFactor" }
+        }
+      },
+      "required": ["mfaToken", "methods"],
+      "description": "Desafío MFA pendiente."
+    },
+    "SignInResponse": {
+      "type": "object",
+      "properties": {
+        "status": { "$ref": "#/schemas/SignInStatus" },
+        "tokens": { "$ref": "#/schemas/SessionTokens" },
+        "mfa": { "$ref": "#/schemas/PendingMfa" }
+      },
+      "required": ["status"],
+      "description": "Resultado de un login o de una verificación MFA."
+    },
+    "MfaVerifyRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "method": { "$ref": "#/schemas/MfaFactor" },
+        "code": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9-]+$"
+        },
+        "devicePublicKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": ["mfaToken", "method", "code"],
+      "additionalProperties": false,
+      "description": "Verificación de un desafío MFA."
+    },
+    "SessionSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "deviceName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "platform": { "$ref": "#/schemas/ClientPlatform" },
+        "lastSeenAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "current": { "type": "boolean" }
+      },
+      "required": ["id", "deviceName", "platform", "lastSeenAt", "current"],
+      "description": "Sesión activa en un dispositivo."
+    },
+    "SessionPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/SessionSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de sesiones."
+    },
+    "DeviceSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "platform": { "$ref": "#/schemas/ClientPlatform" },
+        "lastSeenAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "trustedUntil": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "verifier": { "type": "boolean" }
+      },
+      "required": ["id", "name", "platform", "lastSeenAt", "verifier"],
+      "description": "Dispositivo con confianza vigente."
+    },
+    "DevicePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/DeviceSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de dispositivos."
+    },
+    "RevokeSessionRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["sessionId"],
+      "additionalProperties": false,
+      "description": "Sesión a cerrar."
+    },
+    "RevokedSessions": {
+      "type": "object",
+      "properties": {
+        "revoked": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["revoked"],
+      "description": "Cantidad de sesiones cerradas."
+    },
+    "RevokeUserSessionsInput": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "reason": { "$ref": "#/schemas/RevocationReason" }
+      },
+      "required": ["userId", "reason"],
+      "additionalProperties": false,
+      "description": "Revoca todas las sesiones de un usuario."
+    },
+    "GetUserAccessInput": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["userId", "tenantId"],
+      "additionalProperties": false,
+      "description": "Usuario y tenant a consultar."
+    },
+    "UserAccess": {
+      "type": "object",
+      "properties": {
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/Permission" }
+        },
+        "platformRoles": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/PlatformRole" }
+        },
+        "features": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/PlanFeature" }
+        },
+        "flags": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/FeatureFlag" }
+        }
+      },
+      "required": ["permissions", "platformRoles", "features", "flags"],
+      "description": "Acceso efectivo de un usuario en un tenant."
+    },
+    "SessionRevokedPayload": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "reason": { "$ref": "#/schemas/RevocationReason" },
+        "revokedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["sessionId", "userId", "tenantId", "reason", "revokedAt"],
+      "description": "Se revocó una sesión."
+    },
+    "TokensRevokedPayload": {
+      "type": "object",
+      "properties": {
+        "scope": { "$ref": "#/schemas/RevocationScope" },
+        "subjectId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "revokedBefore": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["scope", "subjectId", "revokedBefore"],
+      "description": "Se revocaron tokens de una sesión, un usuario o un tenant."
+    }
+  },
+  "routes": [
+    {
+      "name": "signIn",
+      "id": "identity.auth.sign-in",
+      "method": "POST",
+      "path": "/v1/auth/sign-in",
+      "pathParams": [],
+      "requestLocation": "body",
+      "request": { "$ref": "#/schemas/SignInRequest" },
+      "response": { "$ref": "#/schemas/SignInResponse" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.AUTH.INVALID_CREDENTIALS",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Inicia sesión con email y contraseña. Responde tokens o un desafío MFA."
+    },
+    {
+      "name": "verifyMfa",
+      "id": "identity.auth.mfa-verify",
+      "method": "POST",
+      "path": "/v1/auth/mfa/verify",
+      "pathParams": [],
+      "requestLocation": "body",
+      "request": { "$ref": "#/schemas/MfaVerifyRequest" },
+      "response": { "$ref": "#/schemas/SignInResponse" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.MFA.TOKEN_INVALID",
+        "IDENTITY.MFA.CODE_INVALID",
+        "IDENTITY.MFA.CODE_EXPIRED",
+        "IDENTITY.MFA.TOO_MANY_ATTEMPTS",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Verifica un desafío MFA, crea la sesión y registra el dispositivo nuevo."
+    },
+    {
+      "name": "listSessions",
+      "id": "identity.sessions.list",
+      "method": "GET",
+      "path": "/v1/me/sessions",
+      "pathParams": [],
+      "requestLocation": "query",
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/SessionPage" },
+      "successStatus": 200,
+      "errors": ["IDENTITY.SESSION.REVOKED"],
+      "access": { "kind": "authenticated" },
+      "description": "Lista las sesiones activas del usuario, la actual primero."
+    },
+    {
+      "name": "revokeSession",
+      "id": "identity.sessions.revoke",
+      "method": "DELETE",
+      "path": "/v1/me/sessions/{sessionId}",
+      "pathParams": ["sessionId"],
+      "requestLocation": "query",
+      "request": { "$ref": "#/schemas/RevokeSessionRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": ["PLATFORM.RESOURCE.NOT_FOUND", "IDENTITY.SESSION.REVOKED"],
+      "access": { "kind": "authenticated" },
+      "description": "Cierra una sesión del usuario y revoca sus tokens."
+    },
+    {
+      "name": "revokeOtherSessions",
+      "id": "identity.sessions.revoke-others",
+      "method": "POST",
+      "path": "/v1/me/sessions/revoke-others",
+      "pathParams": [],
+      "requestLocation": "body",
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/RevokedSessions" },
+      "successStatus": 200,
+      "errors": ["IDENTITY.SESSION.REVOKED"],
+      "access": { "kind": "authenticated" },
+      "description": "Cierra todas las sesiones del usuario menos la actual."
+    },
+    {
+      "name": "listDevices",
+      "id": "identity.devices.list",
+      "method": "GET",
+      "path": "/v1/me/devices",
+      "pathParams": [],
+      "requestLocation": "query",
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/DevicePage" },
+      "successStatus": 200,
+      "errors": ["IDENTITY.SESSION.REVOKED"],
+      "access": { "kind": "authenticated" },
+      "description": "Lista los dispositivos del usuario con confianza vigente."
+    }
+  ],
+  "operations": [
+    {
+      "name": "revokeUserSessions",
+      "id": "identity.sessions.revoke-for-user",
+      "input": { "$ref": "#/schemas/RevokeUserSessionsInput" },
+      "output": { "$ref": "#/schemas/RevokedSessions" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Revocar sesiones no se deshace por seguridad: el usuario vuelve a iniciar sesión.",
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Revoca todas las sesiones de un usuario y publica el evento."
+    },
+    {
+      "name": "getUserAccess",
+      "id": "identity.users.get-access",
+      "input": { "$ref": "#/schemas/GetUserAccessInput" },
+      "output": { "$ref": "#/schemas/UserAccess" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "description": "Devuelve permisos, roles, funcionalidades y flags de un usuario en un tenant."
+    }
+  ],
+  "events": [
+    {
+      "name": "sessionRevoked",
+      "type": "identity.session.revoked.v1",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/SessionRevokedPayload" },
+      "description": "Se revocó una sesión. El gateway de tiempo real cierra sus conexiones."
+    },
+    {
+      "name": "tokensRevoked",
+      "type": "identity.tokens.revoked.v1",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TokensRevokedPayload" },
+      "description": "Se revocaron los tokens de una sesión, un usuario o un tenant. Cada servicio actualiza su caché."
+    }
+  ],
+  "errors": {
+    "IdentityErrorCode": [
+      {
+        "name": "AuthInvalidCredentials",
+        "code": "IDENTITY.AUTH.INVALID_CREDENTIALS",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_auth_invalid_credentials",
+        "description": "El email o la contraseña no son válidos, o el origen está bloqueado por intentos fallidos."
+      },
+      {
+        "name": "MfaTokenInvalid",
+        "code": "IDENTITY.MFA.TOKEN_INVALID",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_token_invalid",
+        "description": "El desafío MFA no existe o venció. Inicia sesión de nuevo."
+      },
+      {
+        "name": "MfaCodeInvalid",
+        "code": "IDENTITY.MFA.CODE_INVALID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_code_invalid",
+        "description": "El código de verificación no es correcto."
+      },
+      {
+        "name": "MfaCodeExpired",
+        "code": "IDENTITY.MFA.CODE_EXPIRED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_code_expired",
+        "description": "El código de verificación expiró. Solicita uno nuevo."
+      },
+      {
+        "name": "MfaTooManyAttempts",
+        "code": "IDENTITY.MFA.TOO_MANY_ATTEMPTS",
+        "httpStatus": 429,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_too_many_attempts",
+        "description": "Se agotaron los intentos del desafío. Solicita uno nuevo."
+      },
+      {
+        "name": "MfaStepUpRequired",
+        "code": "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_step_up_required",
+        "description": "La operación exige verificar de nuevo el segundo factor."
+      },
+      {
+        "name": "SessionRevoked",
+        "code": "IDENTITY.SESSION.REVOKED",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_session_revoked",
+        "description": "La sesión fue cerrada. Inicia sesión de nuevo."
+      },
+      {
+        "name": "TokenStalePermissions",
+        "code": "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "httpStatus": 401,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_identity_token_stale_permissions",
+        "description": "Los permisos cambiaron desde que se emitió el token. El cliente refresca y reintenta."
+      },
+      {
+        "name": "UserNotFound",
+        "code": "IDENTITY.USER.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_identity_user_not_found",
+        "description": "El usuario no existe."
+      }
+    ]
+  }
+}

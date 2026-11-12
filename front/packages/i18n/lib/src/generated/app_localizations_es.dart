@@ -171,5 +171,100 @@ class AppLocalizationsEs extends AppLocalizations {
       'Estamos actualizando tus datos. Intenta de nuevo en unos minutos.';
 
   @override
+  String get error_platform_validation_invalid_type =>
+      'Un campo tiene un tipo de dato no válido.';
+
+  @override
+  String get error_platform_validation_invalid_format =>
+      'Un campo no tiene el formato esperado.';
+
+  @override
+  String get error_platform_validation_invalid_enum =>
+      'Elige una de las opciones permitidas.';
+
+  @override
+  String get error_platform_validation_too_short =>
+      'El valor es demasiado corto.';
+
+  @override
+  String get error_platform_validation_too_long =>
+      'El valor es demasiado largo.';
+
+  @override
+  String get error_platform_validation_too_small =>
+      'El valor es menor que el mínimo permitido.';
+
+  @override
+  String get error_platform_validation_too_large =>
+      'El valor es mayor que el máximo permitido.';
+
+  @override
+  String get error_platform_validation_unknown_field =>
+      'La solicitud incluye un dato que no se esperaba.';
+
+  @override
+  String get error_platform_sharding_tenant_not_writable =>
+      'Estamos haciendo mantenimiento. Por ahora solo puedes consultar.';
+
+  @override
+  String get error_platform_criteria_unknown_field =>
+      'No se puede filtrar ni ordenar por ese campo.';
+
+  @override
+  String get error_platform_criteria_invalid_value =>
+      'La búsqueda tiene un valor no válido.';
+
+  @override
+  String get error_platform_criteria_invalid_limit =>
+      'La cantidad de resultados por página no es válida.';
+
+  @override
+  String get error_platform_resilience_circuit_open =>
+      'Un servicio no está disponible por ahora. Intenta en unos minutos.';
+
+  @override
+  String get error_platform_resilience_timeout =>
+      'La operación tardó demasiado. Intenta de nuevo.';
+
+  @override
+  String get error_platform_resilience_bulkhead_full =>
+      'Hay muchas operaciones en curso. Intenta en unos instantes.';
+
+  @override
+  String get error_platform_resilience_overloaded =>
+      'El servicio está ocupado. Intenta en unos instantes.';
+
+  @override
+  String get error_identity_auth_invalid_credentials =>
+      'El email o la contraseña no son correctos.';
+
+  @override
+  String get error_identity_mfa_token_invalid =>
+      'La verificación venció. Inicia sesión de nuevo.';
+
+  @override
+  String get error_identity_mfa_code_invalid => 'El código no es correcto.';
+
+  @override
+  String get error_identity_mfa_code_expired =>
+      'El código expiró. Solicita uno nuevo.';
+
+  @override
+  String get error_identity_mfa_too_many_attempts =>
+      'Agotaste los intentos. Solicita un código nuevo.';
+
+  @override
+  String get error_identity_mfa_step_up_required =>
+      'Confirma tu identidad para continuar.';
+
+  @override
+  String get error_identity_session_revoked =>
+      'Tu sesión se cerró. Inicia sesión de nuevo.';
+
+  @override
+  String get error_identity_token_stale_permissions =>
+      'Tus permisos cambiaron. Actualizando la sesión.';
+
+  @override
   String get errorFallback => 'Algo salió mal. Intenta de nuevo.';
 }

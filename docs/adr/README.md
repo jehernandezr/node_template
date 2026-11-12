@@ -17,22 +17,23 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 
 ## Índice
 
-| Número | Título                                                                                                                | Estado   |
-| ------ | --------------------------------------------------------------------------------------------------------------------- | -------- |
-| 0001   | [Monorepo Nx con pnpm y un microservicio por app](0001-monorepo-nx-pnpm-microservicios.md)                            | Aceptada |
-| 0002   | [Arquitectura hexagonal y plataforma agnóstica](0002-arquitectura-hexagonal-plataforma-agnostica.md)                  | Aceptada |
-| 0003   | [Identificadores UUIDv7 y traceId](0003-identificadores-uuidv7-traceid.md)                                            | Aceptada |
-| 0004   | [Observabilidad con OpenTelemetry y OpenObserve](0004-observabilidad-opentelemetry-openobserve.md)                    | Aceptada |
-| 0005   | [Autenticación propia con sesiones y JWT](0005-autenticacion-sesiones-jwt.md)                                         | Aceptada |
-| 0006   | [MFA con dispositivo registrado y passkeys](0006-mfa-dispositivo-registrado-passkeys.md)                              | Aceptada |
-| 0007   | [Mensajería con topología tipada, SNS/SQS y CloudEvents](0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md)     | Aceptada |
-| 0008   | [Sagas orquestadas con bitácora persistente](0008-sagas-orquestadas-bitacora-persistente.md)                          | Aceptada |
-| 0009   | [RDS PostgreSQL con capa de persistencia propia](0009-rds-postgresql-capa-persistencia-propia.md)                     | Aceptada |
-| 0010   | [Sharding lógico por grupos y residencia por región](0010-sharding-logico-residencia-region.md)                       | Aceptada |
-| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                   | Aceptada |
-| 0012   | [Front en Flutter con shells y microfrontends](0012-front-flutter-shells-microfrontends.md)                           | Aceptada |
-| 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                     | Aceptada |
-| 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                                | Aceptada |
-| 0015   | [Estructura del repositorio y código compartido por aplicación](0015-estructura-backend-front-y-codigo-compartido.md) | Aceptada |
-| 0016   | [Salida a Internet con NAT solo para las subredes de aplicación](0016-egress-de-red.md)                               | Aceptada |
-| 0019   | [CI y toolchain](0019-ci-y-toolchain.md)                                                                              | Aceptada |
+| Número | Título                                                                                                                | Estado    |
+| ------ | --------------------------------------------------------------------------------------------------------------------- | --------- |
+| 0001   | [Monorepo Nx con pnpm y un microservicio por app](0001-monorepo-nx-pnpm-microservicios.md)                            | Aceptada  |
+| 0002   | [Arquitectura hexagonal y plataforma agnóstica](0002-arquitectura-hexagonal-plataforma-agnostica.md)                  | Aceptada  |
+| 0003   | [Identificadores UUIDv7 y traceId](0003-identificadores-uuidv7-traceid.md)                                            | Aceptada  |
+| 0004   | [Observabilidad con OpenTelemetry y OpenObserve](0004-observabilidad-opentelemetry-openobserve.md)                    | Aceptada  |
+| 0005   | [Autenticación propia con sesiones y JWT](0005-autenticacion-sesiones-jwt.md)                                         | Aceptada  |
+| 0006   | [MFA con dispositivo registrado y passkeys](0006-mfa-dispositivo-registrado-passkeys.md)                              | Aceptada  |
+| 0007   | [Mensajería con topología tipada, SNS/SQS y CloudEvents](0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md)     | Aceptada  |
+| 0008   | [Sagas orquestadas con bitácora persistente](0008-sagas-orquestadas-bitacora-persistente.md)                          | Aceptada  |
+| 0009   | [RDS PostgreSQL con capa de persistencia propia](0009-rds-postgresql-capa-persistencia-propia.md)                     | Aceptada  |
+| 0010   | [Sharding lógico por grupos y residencia por región](0010-sharding-logico-residencia-region.md)                       | Aceptada  |
+| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                   | Aceptada  |
+| 0012   | [Front en Flutter con shells y microfrontends](0012-front-flutter-shells-microfrontends.md)                           | Aceptada  |
+| 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                     | Aceptada  |
+| 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                                | Aceptada  |
+| 0015   | [Estructura del repositorio y código compartido por aplicación](0015-estructura-backend-front-y-codigo-compartido.md) | Aceptada  |
+| 0016   | [Salida a Internet con NAT solo para las subredes de aplicación](0016-egress-de-red.md)                               | Aceptada  |
+| 0017   | [Export de contratos](0017-export-de-contratos.md)                                                                    | Propuesta |
+| 0019   | [CI y toolchain](0019-ci-y-toolchain.md)                                                                              | Aceptada  |

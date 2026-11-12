@@ -41,6 +41,15 @@
     },
     {
       "path": "./backend/libs/platform/primitives"
+    },
+    {
+      "path": "./backend/libs/contracts/identity"
+    },
+    {
+      "path": "./backend/tools/contracts-export"
+    },
+    {
+      "path": "./backend/libs/shared/utils"
     }
   ],
   "compilerOptions": {}
