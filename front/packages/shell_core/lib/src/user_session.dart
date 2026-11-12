@@ -12,6 +12,7 @@ final class UserSession {
     Set<PlatformRole> platformRoles = const {},
     Set<PlanFeature> planFeatures = const {},
     Set<FeatureFlag> featureFlags = const {},
+    this.mfaVerifiedAt,
   }) : permissions = Set.unmodifiable(permissions),
        platformRoles = Set.unmodifiable(platformRoles),
        planFeatures = Set.unmodifiable(planFeatures),
@@ -38,8 +39,26 @@ final class UserSession {
   /// Feature flags enabled for the user.
   final Set<FeatureFlag> featureFlags;
 
+  /// Last time the user completed a second factor, or null when never in this
+  /// session. `AccessRule.mfa` compares it with its maximum age.
+  final DateTime? mfaVerifiedAt;
+
   /// Whether a user is signed in.
   bool get isAuthenticated => userId != null;
+
+  /// Copy of this session whose second factor was verified [at].
+  ///
+  /// The step-up page calls this after a successful MFA challenge. Identity,
+  /// permissions, roles, plan and flags are kept.
+  UserSession withMfaVerifiedAt(DateTime at) => UserSession(
+    userId: userId,
+    tenantId: tenantId,
+    permissions: permissions,
+    platformRoles: platformRoles,
+    planFeatures: planFeatures,
+    featureFlags: featureFlags,
+    mfaVerifiedAt: at,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -47,6 +66,7 @@ final class UserSession {
       (other is UserSession &&
           other.userId == userId &&
           other.tenantId == tenantId &&
+          other.mfaVerifiedAt == mfaVerifiedAt &&
           _sameSet(other.permissions, permissions) &&
           _sameSet(other.platformRoles, platformRoles) &&
           _sameSet(other.planFeatures, planFeatures) &&
@@ -60,6 +80,7 @@ final class UserSession {
     Object.hashAllUnordered(platformRoles),
     Object.hashAllUnordered(planFeatures),
     Object.hashAllUnordered(featureFlags),
+    mfaVerifiedAt,
   );
 
   static bool _sameSet<T>(Set<T> a, Set<T> b) =>
