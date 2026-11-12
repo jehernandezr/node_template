@@ -16,6 +16,8 @@ final class NotificationsLifecycle extends Microfrontend {
     await dispose();
     final repository = notificationsRepositoryOf(context.scope!);
     _subscription = repository.watchUnreadCount().listen(
+      // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+      // ignore: deprecated_member_use
       (count) => context.eventBus.emit(UnreadCountChanged(count)),
     );
   }

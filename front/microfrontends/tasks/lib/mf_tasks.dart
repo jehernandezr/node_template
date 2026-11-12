@@ -19,6 +19,8 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.permissions([Permission.tasksRead]),
   menu: const [MenuEntry(labelKey: 'menuTasks', path: '/tasks', order: 20)],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: (load, scope) => [
     GoRoute(
       path: '/tasks',

@@ -17,6 +17,8 @@ final MicrofrontendManifest backofficeManifest = MicrofrontendManifest(
   platforms: {AppPlatform.web},
   access: AccessRule.platformRoles(PlatformRole.values),
   menu: const [MenuEntry(labelKey: 'menuBackoffice', path: '/backoffice', order: 90)],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: _routes,
 );
 

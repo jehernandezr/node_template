@@ -18,6 +18,8 @@ final MicrofrontendManifest verifierManifest = MicrofrontendManifest(
   menu: const [
     MenuEntry(labelKey: 'menuVerifier', path: '/verifier', order: 60),
   ],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: (load, scope) => [
     GoRoute(
       path: '/verifier',

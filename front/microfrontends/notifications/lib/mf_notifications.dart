@@ -22,7 +22,11 @@ final MicrofrontendManifest notificationsManifest = MicrofrontendManifest(
   menu: const [
     MenuEntry(labelKey: 'menuNotifications', path: '/notifications', order: 30),
   ],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   lifecycle: NotificationsLifecycle(),
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: (load, scope) => [
     GoRoute(
       path: '/notifications',

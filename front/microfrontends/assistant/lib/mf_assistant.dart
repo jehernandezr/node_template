@@ -13,6 +13,8 @@ final MicrofrontendManifest assistantManifest = MicrofrontendManifest(
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.planFeature(PlanFeature.aiAssistant),
   menu: const [MenuEntry(labelKey: 'menuAssistant', path: '/assistant', order: 40)],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: (load, scope) => [
     GoRoute(
       path: '/assistant',
