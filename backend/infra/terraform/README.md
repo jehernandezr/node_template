@@ -1,6 +1,6 @@
 # Infraestructura Terraform
 
-Este directorio contiene la infraestructura AWS de la plataforma: la raíz `platform` y sus módulos. Las raíces de servicio llegan en la fase F12.
+Este directorio contiene la infraestructura AWS de la plataforma: la raíz `platform` y sus módulos.
 
 ## Estructura
 
@@ -10,7 +10,15 @@ infra/terraform/
 │   ├── network/        VPC /16, subredes /22 públicas, privadas y de datos, NAT opcional, endpoints de VPC y flow logs
 │   ├── rds-postgres/   RDS PostgreSQL 17 con CMK y parámetros propios, usuarios de servicio con rotación, RDS Proxy de escritura y de lectura
 │   ├── valkey/         ElastiCache for Valkey serverless con CMK, TLS y autenticación IAM
-│   └── messaging/      Tópicos SNS, colas SQS, DLQ, suscripciones, KMS y alarmas
+│   ├── messaging/      Tópicos SNS, colas SQS, DLQ, suscripciones, KMS y alarmas
+│   ├── ecs-cluster/    Clúster ECS Fargate con Container Insights y ECS Exec auditado
+│   ├── alb/            ALB público para la API y Socket.IO/SSE
+│   ├── observability/  OpenObserve en Fargate con ALB interno
+│   ├── cloudfront-waf/ CloudFront (web Flutter y API) con WAFv2
+│   ├── files-bucket/   Bucket S3 de archivos de usuarios
+│   ├── ses/            Identidad SES, configuration sets y tópico de eventos
+│   ├── service-fargate/ Microservicio Fargate (API o worker)
+│   └── service-lambda/ Consumidor Lambda de una cola SQS
 ├── platform/           Raíz de una región: compone los módulos
 │   └── environments/   Valores por entorno (dev.tfvars, prod.tfvars)
 └── examples/           Ejemplo de topología de mensajería
@@ -95,6 +103,28 @@ Desde `infra/terraform/` puedes comprobar el formato con `terraform fmt -recursi
 - Cada DLQ tiene una alarma cuando hay mensajes visibles. Con `alarm_topic_arn` la alarma notifica a un tópico SNS.
 - `db_deletion_protection` está activo y el snapshot final se crea salvo que `db_skip_final_snapshot` sea `true`. Desactívalos solo en entornos desechables.
 
+## Servicios
+
+La raíz instancia los módulos de servicio desde la variable `services` (mapa, clave = nombre). Agregar un microservicio es una entrada en el tfvars; no hay que tocar el código de la raíz.
+
+- `kind = "fargate"`: con `path_patterns` o `host_headers` es una API detrás del ALB; sin ellos es un worker que puede escalar por cola (`scale_on_queue`, con `min_capacity = 0` se apaga con la cola vacía; `spot = true` usa FARGATE_SPOT).
+- `kind = "lambda"`: consumidor de `queue` (handler con `filename` o `s3_bucket` y `s3_key`).
+- `queue`: cola de la topología o `ses-events`. `send_queues` y `publish_topics` dan permiso de envío y publicación. `db_user`, `valkey_user`, `files_access` y `ses_send` generan variables de entorno y políticas del rol; `task_policies` agrega las propias.
+- Cada servicio recibe `DB_PROXY_HOST`, `DB_READER_HOST`, `VALKEY_HOST`, `VALKEY_PORT` y, según corresponda, `DB_CREDENTIALS` (secreto del usuario), `VALKEY_USER`, `FILES_BUCKET` y `QUEUE_URL`.
+- La raíz abre en el security group del RDS Proxy (escritura y lectura) y de Valkey el acceso desde el security group de cada servicio. Los servicios abren su propia salida: HTTPS y TCP dentro de la VPC (módulos de servicio).
+- Telemetría: con `observability_root_user_email` se despliega OpenObserve y cada servicio exporta por OTLP; sin él no se exporta.
+
+## Entrada pública
+
+Todo es opcional y se activa con variables; con los valores por defecto no se crea.
+
+- `alb_certificate_arn` crea el ALB público. Los servicios con rutas cuelgan de su listener HTTPS. `alb_hostname` es el nombre del ALB: origen de CloudFront para la API y entrada directa de Socket.IO y SSE.
+- `cloudfront_certificate_arn` (ACM en us-east-1, por el alias de provider `aws.us_east_1`) crea CloudFront con WAF para la web (`web_aliases`) y la API (`api_aliases`, origen `alb_hostname`).
+- Con la API tras CloudFront, la raíz genera un secreto (`random_password`, queda en el estado) o usa `origin_verify_header_value`, y por cada servicio con rutas agrega dos reglas en el ALB: con `X-Origin-Verify` reenvía al servicio y sin él responde 403. Los servicios de tiempo real usan `origin_verify = false`.
+- `route53_zone_id` crea los registros alias de CloudFront y del ALB y los de SES. Sin él, publícalos tú (`ses_dns_records` lista los de SES).
+- `ses_domain` crea SES y una cola `<prefijo>-ses-events` (con DLQ) suscrita al tópico de eventos, para el seguimiento de correo. Se consume como `queue = "ses-events"`.
+- El bucket de archivos se crea si hay orígenes CORS (`files_cors_allowed_origins` o `web_aliases`).
+
 ## Pendiente
 
-Las raíces de servicio (`services/<nombre>`) con Lambda de la API, workers Fargate y consumidores llegan en la fase F12. Se conectan a `platform` mediante `clients_security_group_id`.
+Las raíces de servicio por separado (`services/<nombre>`) de la fase F12 quedan como alternativa a `var.services`; se conectan a `platform` mediante `clients_security_group_id`.

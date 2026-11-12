@@ -57,3 +57,37 @@ valkey_users = {
 # Con alarm_topic_arn se usa un tópico existente.
 alarm_email = "REEMPLAZAR@example.com"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:222222222222:REEMPLAZAR"
+
+# --- Servicios, entrada pública, correo y observabilidad ---
+# Entrada pública (ALB + CloudFront + WAF). Sin certificados no se crean.
+# alb_certificate_arn        = "arn:aws:acm:us-east-1:222222222222:certificate/REEMPLAZAR"
+# alb_hostname               = "origin-api.example.com"
+# cloudfront_certificate_arn = "arn:aws:acm:us-east-1:222222222222:certificate/REEMPLAZAR" # Debe estar en us-east-1.
+# web_aliases                = ["app.example.com"]
+# api_aliases                = ["api.example.com"]
+# route53_zone_id            = "ZREEMPLAZAR"
+
+# Correo (SES) y observabilidad (OpenObserve). Sin valor no se crean.
+# ses_domain                    = "example.com"
+# observability_root_user_email = "REEMPLAZAR@example.com"
+
+# Un microservicio nuevo es una entrada en este mapa.
+services = {
+  # tasks = {
+  #   kind           = "fargate"
+  #   image          = "222222222222.dkr.ecr.us-east-1.amazonaws.com/node-template-tasks:REEMPLAZAR"
+  #   container_port = 3000
+  #   path_patterns  = ["/tasks/*"]
+  #   min_capacity   = 2
+  #   db_user        = "tasks"
+  #   valkey_user    = "tasks"
+  # }
+  # reports = {
+  #   kind           = "fargate" # Worker: sin rutas, escala por cola.
+  #   image          = "222222222222.dkr.ecr.us-east-1.amazonaws.com/node-template-reports:REEMPLAZAR"
+  #   queue          = "reports-commands"
+  #   min_capacity   = 0
+  #   spot           = true
+  #   scale_on_queue = {}
+  # }
+}

@@ -10,6 +10,20 @@ provider "aws" {
   }
 }
 
+# CloudFront, su WAF y su certificado ACM solo existen en us-east-1.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Environment = var.environment
+      NamePrefix  = var.name_prefix
+      ManagedBy   = "terraform"
+    }
+  }
+}
+
 locals {
   # Acepta ruta absoluta o relativa a la raíz platform.
   topology_file = startswith(var.topology_file, "/") ? var.topology_file : abspath("${path.root}/${var.topology_file}")

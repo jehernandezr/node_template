@@ -46,3 +46,41 @@ valkey_users = {
 
 # alarm_email = "REEMPLAZAR@example.com"
 # alarm_topic_arn = "arn:aws:sns:us-east-1:111111111111:REEMPLAZAR"
+
+# --- Servicios, entrada pública, correo y observabilidad ---
+# Dev desechable: permite borrar buckets y ALB.
+force_destroy_buckets   = true
+alb_deletion_protection = false
+
+# Entrada pública (ALB + CloudFront + WAF). Sin certificados no se crean.
+# alb_certificate_arn        = "arn:aws:acm:us-east-1:111111111111:certificate/REEMPLAZAR"
+# alb_hostname               = "origin-api.dev.example.com"
+# cloudfront_certificate_arn = "arn:aws:acm:us-east-1:111111111111:certificate/REEMPLAZAR" # Debe estar en us-east-1.
+# web_aliases                = ["app.dev.example.com"]
+# api_aliases                = ["api.dev.example.com"]
+# waf_block_mode             = false # Solo cuenta mientras afinas reglas.
+# route53_zone_id            = "ZREEMPLAZAR"
+
+# Correo (SES) y observabilidad (OpenObserve). Sin valor no se crean.
+# ses_domain                    = "dev.example.com"
+# observability_root_user_email = "REEMPLAZAR@example.com"
+
+# Un microservicio nuevo es una entrada en este mapa.
+services = {
+  # tasks = {
+  #   kind           = "fargate"
+  #   image          = "111111111111.dkr.ecr.us-east-1.amazonaws.com/node-template-tasks:REEMPLAZAR"
+  #   container_port = 3000
+  #   path_patterns  = ["/tasks/*"]
+  #   db_user        = "tasks"
+  #   valkey_user    = "tasks"
+  #   files_access   = true
+  # }
+  # notifications = {
+  #   kind     = "lambda"
+  #   queue    = "notifications-tasks-events"
+  #   handler  = "lambda.handler"
+  #   filename = "../../../dist/lambda/notifications.zip"
+  #   ses_send = true
+  # }
+}
