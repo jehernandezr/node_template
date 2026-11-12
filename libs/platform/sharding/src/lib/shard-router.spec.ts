@@ -204,14 +204,12 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement({ shardGroup: group }));
       const ring = new ConsistentHashRing();
       group.forEach((shard) => ring.add(shard));
-      const resolved = await env
-        .build()
-        .resolve({
-          tenantId: 't1',
-          keyKind: ShardKey.Tenant,
-          keyValue: 'ignored',
-          access: ShardAccess.Read,
-        });
+      const resolved = await env.build().resolve({
+        tenantId: 't1',
+        keyKind: ShardKey.Tenant,
+        keyValue: 'ignored',
+        access: ShardAccess.Read,
+      });
       expect(resolved.logicalShard).toBe(ring.locate('t1'));
     });
 
