@@ -1,4 +1,5 @@
 import { FixedClock } from '@platform/kernel/testing';
+import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import { ConsistentHashRing } from './consistent-hash-ring.js';
 import {
   ShardingError,
@@ -12,7 +13,11 @@ import {
   UNVERSIONED_TOMBSTONE_VERSION,
 } from './placement-codec.js';
 import type { RoutingCache } from './ports.js';
-import { ShardRouter, type ShardRouterOptions } from './shard-router.js';
+import {
+  MAX_TENANT_ID_LENGTH,
+  ShardRouter,
+  type ShardRouterOptions,
+} from './shard-router.js';
 import {
   ShardAccess,
   ShardKey,
@@ -22,7 +27,10 @@ import {
 
 const LOCAL_TTL = 60_000;
 const SHARED_TTL = 300_000;
-const PLACEMENT_KEY = 'sharding:placement:t1';
+const T1 = '01941f29-7c00-7000-8000-000000000001';
+const T2 = '01941f29-7c00-7000-8000-000000000002';
+const T3 = '01941f29-7c00-7000-8000-000000000003';
+const PLACEMENT_KEY = `sharding:placement:${T1}`;
 const TOMBSTONE_TTL = 30_000;
 const FAR_FUTURE = 1e12;
 
@@ -31,7 +39,7 @@ const WRITE = { keyKind: ShardKey.Tenant, access: ShardAccess.Write } as const;
 
 function placement(overrides: Partial<TenantPlacement> = {}): TenantPlacement {
   return {
-    tenantId: 't1',
+    tenantId: T1,
     region: 'eu',
     shardGroup: ['shard-1'],
     status: TenantStatus.Active,
@@ -96,10 +104,8 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build();
-      await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
-      ).resolves.toEqual({
-        tenantId: 't1',
+      await expect(router.resolve({ tenantId: T1, ...READ })).resolves.toEqual({
+        tenantId: T1,
         region: 'eu',
         logicalShard: 'shard-1',
         instance: 'pg-1',
@@ -127,7 +133,7 @@ describe('ShardRouter', () => {
         for (const keyValue of [undefined, '']) {
           await expect(
             router.resolve({
-              tenantId: 't1',
+              tenantId: T1,
               keyKind,
               keyValue,
               access: ShardAccess.Read,
@@ -143,7 +149,7 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       await expect(
-        env.build().resolve({ tenantId: 't1', ...READ }),
+        env.build().resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
     });
 
@@ -151,13 +157,13 @@ describe('ShardRouter', () => {
       const env = setup();
       const router = env.build({ sharedCache: env.shared });
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).rejects.toMatchObject({
         code: ShardingErrorCode.UnknownTenant,
       });
       env.store.setPlacement(placement());
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
     });
 
@@ -165,7 +171,7 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement({ shardGroup: ['shard-9'] }));
       await expect(
-        env.build().resolve({ tenantId: 't1', ...READ }),
+        env.build().resolve({ tenantId: T1, ...READ }),
       ).rejects.toMatchObject({
         code: ShardingErrorCode.UnknownShard,
       });
@@ -175,7 +181,7 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement({ shardGroup: [] }));
       await expect(
-        env.build().resolve({ tenantId: 't1', ...READ }),
+        env.build().resolve({ tenantId: T1, ...READ }),
       ).rejects.toMatchObject({
         code: ShardingErrorCode.UnknownShard,
       });
@@ -191,7 +197,7 @@ describe('ShardRouter', () => {
 
       for (let i = 0; i < 200; i++) {
         const resolved = await router.resolve({
-          tenantId: 't1',
+          tenantId: T1,
           keyKind: ShardKey.User,
           keyValue: `user-${i}`,
           access: ShardAccess.Read,
@@ -208,12 +214,12 @@ describe('ShardRouter', () => {
       const ring = new ConsistentHashRing();
       group.forEach((shard) => ring.add(shard));
       const resolved = await env.build().resolve({
-        tenantId: 't1',
+        tenantId: T1,
         keyKind: ShardKey.Tenant,
         keyValue: 'ignored',
         access: ShardAccess.Read,
       });
-      expect(resolved.logicalShard).toBe(ring.locate('t1'));
+      expect(resolved.logicalShard).toBe(ring.locate(T1));
     });
 
     it('lowercases tenant ids and routing keys before use', async () => {
@@ -223,27 +229,27 @@ describe('ShardRouter', () => {
       );
       const router = env.build();
       const upper = await router.resolve({
-        tenantId: 'T1',
+        tenantId: T1.toUpperCase(),
         keyKind: ShardKey.User,
         keyValue: 'USER-Ana',
         access: ShardAccess.Read,
       });
       const lower = await router.resolve({
-        tenantId: 't1',
+        tenantId: T1,
         keyKind: ShardKey.User,
         keyValue: 'user-ana',
         access: ShardAccess.Read,
       });
       expect(upper).toEqual(lower);
-      expect(upper.tenantId).toBe('t1');
-      expect(env.directory.getPlacement).toHaveBeenCalledWith('t1');
+      expect(upper.tenantId).toBe(T1);
+      expect(env.directory.getPlacement).toHaveBeenCalledWith(T1);
     });
 
     it('throws WrongRegion with the placement region when the tenant lives elsewhere', async () => {
       const env = setup();
       env.store.setPlacement(placement({ region: 'us' }));
       const router = env.build({ currentRegion: 'eu' });
-      const error = await errorOf(router.resolve({ tenantId: 't1', ...READ }));
+      const error = await errorOf(router.resolve({ tenantId: T1, ...READ }));
       expect(error).toBeInstanceOf(WrongRegionError);
       expect((error as WrongRegionError).code).toBe(
         ShardingErrorCode.WrongRegion,
@@ -255,7 +261,7 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement({ region: 'eu' }));
       await expect(
-        env.build({ currentRegion: 'eu' }).resolve({ tenantId: 't1', ...READ }),
+        env.build({ currentRegion: 'eu' }).resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({
         region: 'eu',
       });
@@ -267,7 +273,7 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       await expect(
-        env.build().resolve({ tenantId: 't1', ...WRITE }),
+        env.build().resolve({ tenantId: T1, ...WRITE }),
       ).resolves.toMatchObject({ status: TenantStatus.Active });
     });
 
@@ -276,12 +282,12 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement({ status: TenantStatus.Migrating }));
       const router = env.build();
       await expect(
-        router.resolve({ tenantId: 't1', ...WRITE }),
+        router.resolve({ tenantId: T1, ...WRITE }),
       ).rejects.toMatchObject({
         code: ShardingErrorCode.TenantMigrating,
       });
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({
         status: TenantStatus.Migrating,
       });
@@ -292,12 +298,12 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement({ status: 'frozen' as TenantStatus }));
       const router = env.build();
       await expect(
-        router.resolve({ tenantId: 't1', ...WRITE }),
+        router.resolve({ tenantId: T1, ...WRITE }),
       ).rejects.toMatchObject({
         code: ShardingErrorCode.TenantNotWritable,
       });
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
     });
 
@@ -305,7 +311,7 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build();
-      const active = await router.resolve({ tenantId: 't1', ...READ });
+      const active = await router.resolve({ tenantId: T1, ...READ });
       expect(() => router.assertWritable(active)).not.toThrow();
       expect(() =>
         router.assertWritable({ ...active, status: TenantStatus.Migrating }),
@@ -325,7 +331,7 @@ describe('ShardRouter', () => {
         placement({ shardGroup: ['shard-1', 'shard-2'], version: 1 }),
       );
       const router = env.build({ sharedCache: env.shared });
-      await router.resolve({ tenantId: 't1', ...WRITE });
+      await router.resolve({ tenantId: T1, ...WRITE });
 
       // Move saga: the group grows to three shards with the tenant Migrating (version 2).
       const group = ['shard-1', 'shard-2', 'shard-3'];
@@ -336,19 +342,19 @@ describe('ShardRouter', () => {
           version: 2,
         }),
       );
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       await expect(
-        router.resolve({ tenantId: 't1', ...WRITE }),
+        router.resolve({ tenantId: T1, ...WRITE }),
       ).rejects.toMatchObject({
         code: ShardingErrorCode.TenantMigrating,
       });
-      const duringMove = await router.resolve({ tenantId: 't1', ...READ });
+      const duringMove = await router.resolve({ tenantId: T1, ...READ });
       expect(group).toContain(duringMove.logicalShard);
 
       env.store.setPlacement(placement({ shardGroup: group, version: 3 }));
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       await expect(
-        router.resolve({ tenantId: 't1', ...WRITE }),
+        router.resolve({ tenantId: T1, ...WRITE }),
       ).resolves.toMatchObject({ logicalShard: expect.any(String) });
     });
 
@@ -361,7 +367,7 @@ describe('ShardRouter', () => {
       const keys = Array.from({ length: 200 }, (_, i) => `user-${i}`);
       for (const keyValue of keys) {
         await router.resolve({
-          tenantId: 't1',
+          tenantId: T1,
           keyKind: ShardKey.User,
           keyValue,
           access: ShardAccess.Read,
@@ -370,13 +376,13 @@ describe('ShardRouter', () => {
 
       const group = ['shard-1', 'shard-2', 'shard-3'];
       env.store.setPlacement(placement({ shardGroup: group, version: 2 }));
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       const ring = new ConsistentHashRing();
       group.forEach((shard) => ring.add(shard));
       const shards = new Set<string>();
       for (const keyValue of keys) {
         const resolved = await router.resolve({
-          tenantId: 't1',
+          tenantId: T1,
           keyKind: ShardKey.User,
           keyValue,
           access: ShardAccess.Read,
@@ -396,7 +402,7 @@ describe('ShardRouter', () => {
       const sharedSet = jest.spyOn(env.shared, 'setIfNewer');
       const router = env.build({ sharedCache: env.shared });
 
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(sharedGet).toHaveBeenCalledTimes(1);
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
       // Placements are stored with cache version 2 × version, leaving odd versions for tombstones.
@@ -407,7 +413,7 @@ describe('ShardRouter', () => {
         SHARED_TTL,
       );
 
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(sharedGet).toHaveBeenCalledTimes(1);
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
     });
@@ -417,14 +423,14 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement());
       await env
         .build({ sharedCache: env.shared })
-        .resolve({ tenantId: 't1', ...READ });
+        .resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
       const sharedGet = jest.spyOn(env.shared, 'get');
       await expect(
         env
           .build({ sharedCache: env.shared })
-          .resolve({ tenantId: 't1', ...READ }),
+          .resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({
         logicalShard: 'shard-1',
       });
@@ -439,7 +445,7 @@ describe('ShardRouter', () => {
         'a missing version',
         JSON.stringify({
           placement: {
-            tenantId: 't1',
+            tenantId: T1,
             region: 'eu',
             shardGroup: ['shard-1'],
             status: 'active',
@@ -452,7 +458,7 @@ describe('ShardRouter', () => {
         'an unknown status',
         JSON.stringify({
           placement: {
-            tenantId: 't1',
+            tenantId: T1,
             region: 'eu',
             shardGroup: ['shard-1'],
             status: 'frozen',
@@ -466,7 +472,7 @@ describe('ShardRouter', () => {
         'an empty shard group',
         JSON.stringify({
           placement: {
-            tenantId: 't1',
+            tenantId: T1,
             region: 'eu',
             shardGroup: [],
             status: 'active',
@@ -480,7 +486,7 @@ describe('ShardRouter', () => {
         'a string version',
         JSON.stringify({
           placement: {
-            tenantId: 't1',
+            tenantId: T1,
             region: 'eu',
             shardGroup: ['shard-1'],
             status: 'active',
@@ -494,7 +500,7 @@ describe('ShardRouter', () => {
         'a missing expiry',
         JSON.stringify({
           placement: {
-            tenantId: 't1',
+            tenantId: T1,
             region: 'eu',
             shardGroup: ['shard-1'],
             status: 'active',
@@ -509,7 +515,7 @@ describe('ShardRouter', () => {
       const cache = new InMemoryRoutingCache(new FixedClock(new Date(0)));
       await cache.setIfNewer(PLACEMENT_KEY, raw, 1, SHARED_TTL);
       await expect(
-        env.build({ sharedCache: cache }).resolve({ tenantId: 't1', ...READ }),
+        env.build({ sharedCache: cache }).resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({
         logicalShard: 'shard-1',
       });
@@ -524,14 +530,14 @@ describe('ShardRouter', () => {
         localTtlMs: LOCAL_TTL,
         sharedTtlMs: 30_000,
       });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.advance(29_999);
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
       env.advance(1);
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
 
@@ -539,15 +545,15 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build({ sharedCache: env.shared });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.advance(LOCAL_TTL - 1);
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
       env.advance(1);
       const sharedGet = jest.spyOn(env.shared, 'get');
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(sharedGet).toHaveBeenCalledTimes(1);
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
     });
@@ -556,14 +562,14 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build({ sharedCache: env.shared });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.store.setPlacement(
         placement({ shardGroup: ['shard-2'], version: 2 }),
       );
       env.advance(SHARED_TTL);
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-2' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
@@ -572,14 +578,14 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build();
-      await router.resolve({ tenantId: 't1', ...READ });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getInstance).toHaveBeenCalledTimes(1);
 
       env.store.setInstance('shard-1', 'pg-moved');
       env.advance(LOCAL_TTL);
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ instance: 'pg-moved' });
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
     });
@@ -589,12 +595,12 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement());
       let now = 0;
       const router = env.build({ clock: () => now });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       now = LOCAL_TTL - 1;
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
       now = LOCAL_TTL;
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
 
@@ -606,18 +612,18 @@ describe('ShardRouter', () => {
         localTtlMs: 10,
         sharedTtlMs: 20,
       });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.advance(10);
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
       env.advance(10);
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
 
       env.advance(10);
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
   });
@@ -630,16 +636,16 @@ describe('ShardRouter', () => {
       const router = env.build({ sharedCache: failingCache, onCacheError });
 
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
       expect(onCacheError).toHaveBeenCalledTimes(2); // get and setIfNewer
 
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
-      await expect(router.invalidate('t1')).resolves.toBeUndefined();
+      await expect(router.invalidate(T1)).resolves.toBeUndefined();
       expect(onCacheError).toHaveBeenCalledTimes(4); // get and the tombstone setIfNewer
     });
 
@@ -648,7 +654,7 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement());
       const router = env.build({ sharedCache: failingCache });
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
     });
   });
@@ -660,8 +666,8 @@ describe('ShardRouter', () => {
       env.directory.getPlacement.mockImplementationOnce(() => pending.promise);
       const router = env.build({ sharedCache: env.shared });
 
-      const first = router.resolve({ tenantId: 't1', ...READ });
-      const second = router.resolve({ tenantId: 't1', ...READ });
+      const first = router.resolve({ tenantId: T1, ...READ });
+      const second = router.resolve({ tenantId: T1, ...READ });
       await flush();
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
@@ -682,10 +688,10 @@ describe('ShardRouter', () => {
       const setSpy = jest.spyOn(env.shared, 'setIfNewer');
       const router = env.build({ sharedCache: env.shared });
 
-      const old = router.resolve({ tenantId: 't1', ...READ });
+      const old = router.resolve({ tenantId: T1, ...READ });
       await flush();
-      await router.invalidate('t1');
-      const next = router.resolve({ tenantId: 't1', ...READ });
+      await router.invalidate(T1);
+      const next = router.resolve({ tenantId: T1, ...READ });
       await flush();
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
 
@@ -703,7 +709,7 @@ describe('ShardRouter', () => {
       expect(placementWrites()[0]?.[1]).toContain('"shard-2"');
 
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-2' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
@@ -720,7 +726,7 @@ describe('ShardRouter', () => {
       const mover = env.build({ sharedCache: env.shared });
 
       // 1. Process A starts a read and reaches the directory (version 1).
-      const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+      const inFlight = reader.resolve({ tenantId: T1, ...READ });
       await flush();
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
 
@@ -728,7 +734,7 @@ describe('ShardRouter', () => {
       env.store.setPlacement(
         placement({ shardGroup: ['shard-2'], version: 2 }),
       );
-      await mover.invalidate('t1');
+      await mover.invalidate(T1);
 
       // 3. Process A's read answers with version 1 and tries to write it back.
       stale.resolve(placement({ shardGroup: ['shard-1'], version: 1 }));
@@ -740,7 +746,7 @@ describe('ShardRouter', () => {
       await expect(
         env
           .build({ sharedCache: env.shared })
-          .resolve({ tenantId: 't1', ...READ }),
+          .resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-2' });
     });
 
@@ -751,14 +757,14 @@ describe('ShardRouter', () => {
       env.directory.getInstance.mockImplementationOnce(() => pending.promise);
       const router = env.build();
 
-      const first = router.resolve({ tenantId: 't1', ...READ });
+      const first = router.resolve({ tenantId: T1, ...READ });
       await flush();
       router.invalidateShard('shard-1');
       pending.resolve('pg-old');
       await expect(first).resolves.toMatchObject({ instance: 'pg-old' });
 
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ instance: 'pg-1' });
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
     });
@@ -770,12 +776,12 @@ describe('ShardRouter', () => {
       env.store.setPlacement(placement());
       const sharedDelete = jest.spyOn(env.shared, 'delete');
       const router = env.build({ sharedCache: env.shared });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.store.setPlacement(
         placement({ shardGroup: ['shard-2'], version: 2 }),
       );
-      await router.invalidate('t1');
+      await router.invalidate(T1);
 
       expect(sharedDelete).not.toHaveBeenCalled();
       expect(decodeSharedRecord(await env.shared.get(PLACEMENT_KEY))).toEqual({
@@ -783,7 +789,7 @@ describe('ShardRouter', () => {
         tombstone: { cacheVersion: 3, expiresAt: TOMBSTONE_TTL },
       });
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({
         logicalShard: 'shard-2',
         instance: 'pg-2',
@@ -795,48 +801,48 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build();
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.store.setInstance('shard-1', 'pg-new');
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ instance: 'pg-new' });
     });
 
     it('clears the group from the shared cache when the local placement already expired', async () => {
       const env = setup();
-      env.store.setPlacement(placement({ tenantId: 't1' }));
-      env.store.setPlacement(placement({ tenantId: 't2' }));
+      env.store.setPlacement(placement({ tenantId: T1 }));
+      env.store.setPlacement(placement({ tenantId: T2 }));
       const router = env.build({ sharedCache: env.shared });
 
-      await router.resolve({ tenantId: 't1', ...READ }); // t=0: t1 placement and shard-1 instance cached
+      await router.resolve({ tenantId: T1, ...READ }); // t=0: t1 placement and shard-1 instance cached
       env.advance(50_000);
-      await router.resolve({ tenantId: 't2', ...READ }); // t=50: refreshes the shard-1 instance until t=110
+      await router.resolve({ tenantId: T2, ...READ }); // t=50: refreshes the shard-1 instance until t=110
       env.advance(11_000); // t=61: t1 placement expired locally, its shared entry still valid
 
       env.store.setInstance('shard-1', 'pg-new');
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       await expect(
-        router.resolve({ tenantId: 't2', ...READ }),
+        router.resolve({ tenantId: T2, ...READ }),
       ).resolves.toMatchObject({ instance: 'pg-new' });
     });
 
     it('works for unknown tenants without a shared cache', async () => {
       const env = setup();
-      await expect(env.build().invalidate('nobody')).resolves.toBeUndefined();
+      await expect(env.build().invalidate(T3)).resolves.toBeUndefined();
     });
 
     it('invalidateShard clears the instance whatever placements reference it', async () => {
       const env = setup();
       env.store.setPlacement(placement());
       const router = env.build();
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.store.setInstance('shard-1', 'pg-new');
       router.invalidateShard('shard-1');
       await expect(
-        router.resolve({ tenantId: 't1', ...READ }),
+        router.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ instance: 'pg-new' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
@@ -853,18 +859,18 @@ describe('ShardRouter', () => {
       const env = setup();
       env.store.setPlacement(placement({ version: 1 }));
       const router = env.build({ sharedCache: env.shared });
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
 
       env.store.setPlacement(
         placement({ shardGroup: ['shard-2'], version: 4 }),
       );
-      await router.invalidate('t1', { version: 4 });
+      await router.invalidate(T1, { version: 4 });
       expect((await tombstoneOf(env.shared))?.cacheVersion).toBe(7);
 
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       const fresh = env.build({ sharedCache: env.shared });
       await expect(
-        fresh.resolve({ tenantId: 't1', ...READ }),
+        fresh.resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-2' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
@@ -876,12 +882,12 @@ describe('ShardRouter', () => {
       const reader = env.build({ sharedCache: env.shared });
       const mover = env.build({ sharedCache: env.shared });
 
-      const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+      const inFlight = reader.resolve({ tenantId: T1, ...READ });
       await flush();
       env.store.setPlacement(
         placement({ shardGroup: ['shard-2'], version: 2 }),
       );
-      await mover.invalidate('t1', { version: 2 });
+      await mover.invalidate(T1, { version: 2 });
       stale.resolve(placement({ version: 1 }));
       await inFlight;
 
@@ -894,19 +900,19 @@ describe('ShardRouter', () => {
     it('blocks every write until it expires when no version is known', async () => {
       const env = setup();
       const router = env.build({ sharedCache: env.shared });
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       expect((await tombstoneOf(env.shared))?.cacheVersion).toBe(
         UNVERSIONED_TOMBSTONE_VERSION,
       );
 
       env.store.setPlacement(placement({ version: 9 }));
-      await router.resolve({ tenantId: 't1', ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
       expect(await tombstoneOf(env.shared)).toBeDefined();
 
       env.advance(TOMBSTONE_TTL);
       await env
         .build({ sharedCache: env.shared })
-        .resolve({ tenantId: 't1', ...READ });
+        .resolve({ tenantId: T1, ...READ });
       expect(await tombstoneOf(env.shared)).toBeUndefined();
       expect(
         decodeSharedRecord(await env.shared.get(PLACEMENT_KEY)),
@@ -919,9 +925,9 @@ describe('ShardRouter', () => {
         sharedCache: env.shared,
         tombstoneTtlMs: 1_000,
       });
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       env.advance(600);
-      await router.invalidate('t1');
+      await router.invalidate(T1);
       expect(await tombstoneOf(env.shared)).toEqual({
         cacheVersion: UNVERSIONED_TOMBSTONE_VERSION + 1,
         expiresAt: 1_600,
@@ -931,11 +937,11 @@ describe('ShardRouter', () => {
     it('treats a tombstone as a miss and reads the directory', async () => {
       const env = setup();
       env.store.setPlacement(placement());
-      await env.build({ sharedCache: env.shared }).invalidate('t1');
+      await env.build({ sharedCache: env.shared }).invalidate(T1);
       await expect(
         env
           .build({ sharedCache: env.shared })
-          .resolve({ tenantId: 't1', ...READ }),
+          .resolve({ tenantId: T1, ...READ }),
       ).resolves.toMatchObject({ logicalShard: 'shard-1' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
     });
@@ -950,7 +956,7 @@ describe('ShardRouter', () => {
         tombstoneTtlMs: 1_000,
       });
 
-      const inFlight = reader.resolve({ tenantId: 't1', ...READ });
+      const inFlight = reader.resolve({ tenantId: T1, ...READ });
       await flush();
       env.advance(1_000);
       slow.resolve(placement());
@@ -958,6 +964,280 @@ describe('ShardRouter', () => {
         logicalShard: 'shard-1',
       });
       expect(setSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('input limits', () => {
+    it.each([
+      ['not a UUID', 'tenant-1'],
+      ['a UUIDv4', '0b8f4f8e-3f5c-4c1a-9f2d-1a2b3c4d5e6f'],
+      ['too long', 'a'.repeat(MAX_TENANT_ID_LENGTH + 1)],
+    ])(
+      'rejects a tenant id that is %s without touching the caches',
+      async (_label, tenantId) => {
+        const env = setup();
+        const sharedGet = jest.spyOn(env.shared, 'get');
+        const router = env.build({ sharedCache: env.shared });
+        const error = await errorOf(router.resolve({ tenantId, ...READ }));
+        expect(error).toMatchObject({
+          code: ShardingErrorCode.InvalidTenantId,
+          details: { length: tenantId.length },
+        });
+        expect((error as Error).message).not.toContain(tenantId);
+        expect(sharedGet).not.toHaveBeenCalled();
+        expect(env.directory.getPlacement).not.toHaveBeenCalled();
+        await expect(router.invalidate(tenantId)).rejects.toMatchObject({
+          code: ShardingErrorCode.InvalidTenantId,
+        });
+      },
+    );
+
+    it('rejects a missing tenant id in invalidate', async () => {
+      await expect(setup().build().invalidate('')).rejects.toMatchObject({
+        code: ShardingErrorCode.KeyMissing,
+      });
+    });
+
+    it('accepts another tenant id format through tenantIdPattern', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ tenantId: 'acme' }));
+      const router = env.build({ tenantIdPattern: /^[a-z]+$/i });
+      await expect(
+        router.resolve({ tenantId: 'ACME', ...READ }),
+      ).resolves.toMatchObject({ tenantId: 'acme' });
+    });
+
+    it('refuses a stateful tenantIdPattern', () => {
+      expect(() => setup().build({ tenantIdPattern: /^[a-z]+$/g })).toThrow(
+        expect.objectContaining({
+          code: ShardingErrorCode.InvalidConfiguration,
+        }),
+      );
+    });
+
+    it('accepts a routing key of maxKeyLength and rejects a longer one', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ shardGroup: ['shard-1', 'shard-2'] }));
+      const router = env.build({ maxKeyLength: 8 });
+      const request = (keyValue: string) =>
+        router.resolve({
+          tenantId: T1,
+          keyKind: ShardKey.User,
+          keyValue,
+          access: ShardAccess.Read,
+        });
+      await expect(request('a'.repeat(8))).resolves.toBeDefined();
+      const error = await errorOf(request('secret-value'));
+      expect(error).toMatchObject({
+        code: ShardingErrorCode.InvalidKey,
+        details: { keyKind: ShardKey.User, length: 12, maxLength: 8 },
+      });
+      expect((error as Error).message).not.toContain('secret-value');
+    });
+
+    it('rejects a key that only grows past the limit once lowercased', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ shardGroup: ['shard-1', 'shard-2'] }));
+      const router = env.build({ maxKeyLength: 1 });
+      // U+0130 lowercases to two code units.
+      await expect(
+        router.resolve({
+          tenantId: T1,
+          keyKind: ShardKey.Custom,
+          keyValue: 'İ',
+          access: ShardAccess.Read,
+        }),
+      ).rejects.toMatchObject({ code: ShardingErrorCode.InvalidKey });
+    });
+
+    it.each([
+      ['maxPlacements', { maxPlacements: 0 }],
+      ['maxInstances', { maxInstances: 1.5 }],
+      ['maxKeyLength', { maxKeyLength: -1 }],
+      ['localTtlMs', { localTtlMs: Number.NaN }],
+      ['sharedTtlMs', { sharedTtlMs: -1 }],
+      ['tombstoneTtlMs', { tombstoneTtlMs: 0 }],
+    ])('rejects an invalid %s', (option, options) => {
+      expect(() => setup().build(options)).toThrow(
+        expect.objectContaining({
+          code: ShardingErrorCode.InvalidConfiguration,
+          details: { option },
+        }),
+      );
+    });
+
+    it.each([-1, 1.5])(
+      'rejects an invalidate version of %s',
+      async (version) => {
+        await expect(
+          setup().build().invalidate(T1, { version }),
+        ).rejects.toMatchObject({
+          code: ShardingErrorCode.InvalidConfiguration,
+          details: { option: 'version' },
+        });
+      },
+    );
+  });
+
+  describe('bounded memory', () => {
+    it('evicts the least recently used placement past maxPlacements', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ tenantId: T1 }));
+      env.store.setPlacement(placement({ tenantId: T2 }));
+      const router = env.build({ maxPlacements: 1 });
+
+      await router.resolve({ tenantId: T1, ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+
+      await router.resolve({ tenantId: T2, ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(3);
+    });
+
+    it('evicts the least recently used instance past maxInstances', async () => {
+      const env = setup();
+      env.store.setPlacement(
+        placement({ tenantId: T1, shardGroup: ['shard-1'] }),
+      );
+      env.store.setPlacement(
+        placement({ tenantId: T2, shardGroup: ['shard-2'] }),
+      );
+      const router = env.build({ maxInstances: 1 });
+
+      await router.resolve({ tenantId: T1, ...READ });
+      await router.resolve({ tenantId: T2, ...READ });
+      await router.resolve({ tenantId: T1, ...READ });
+      expect(env.directory.getInstance).toHaveBeenCalledTimes(3);
+    });
+
+    it('still refuses to cache a load whose invalidation record was evicted', async () => {
+      const env = setup();
+      const stale = deferred<TenantPlacement | undefined>();
+      env.directory.getPlacement.mockImplementationOnce(() => stale.promise);
+      env.store.setPlacement(placement({ tenantId: T1, version: 2 }));
+      const router = env.build({ maxPlacements: 1 });
+
+      const old = router.resolve({ tenantId: T1, ...READ });
+      await flush();
+      await router.invalidate(T1);
+      await router.invalidate(T2); // evicts the record of T1
+      stale.resolve(placement({ tenantId: T1, shardGroup: ['shard-9'] }));
+      await old.catch(() => undefined);
+
+      await expect(
+        router.resolve({ tenantId: T1, ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-1' });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
+    });
+
+    it('loads without single flight once maxPlacements loads are in flight', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ tenantId: T1 }));
+      env.store.setPlacement(placement({ tenantId: T2 }));
+      const first = deferred<TenantPlacement | undefined>();
+      env.directory.getPlacement.mockImplementationOnce(() => first.promise);
+      const router = env.build({ maxPlacements: 1 });
+
+      const t1 = router.resolve({ tenantId: T1, ...READ });
+      await flush();
+      const t2a = router.resolve({ tenantId: T2, ...READ });
+      const t2b = router.resolve({ tenantId: T2, ...READ });
+      await expect(Promise.all([t2a, t2b])).resolves.toHaveLength(2);
+      first.resolve(placement({ tenantId: T1 }));
+      await expect(t1).resolves.toMatchObject({ tenantId: T1 });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('deadline and cancellation', () => {
+    it('fails with DeadlineExceededError before any lookup when the deadline already passed', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      const deadline = Deadline.after(0, new FixedClock());
+      await expect(
+        env.build().resolve({ tenantId: T1, ...READ, deadline }),
+      ).rejects.toBeInstanceOf(DeadlineExceededError);
+      expect(env.directory.getPlacement).not.toHaveBeenCalled();
+    });
+
+    it('fails with the abort reason before any lookup when the signal is aborted', async () => {
+      const env = setup();
+      const reason = new Error('request closed');
+      await expect(
+        env.build().resolve({
+          tenantId: T1,
+          ...READ,
+          signal: AbortSignal.abort(reason),
+        }),
+      ).rejects.toBe(reason);
+      expect(env.directory.getPlacement).not.toHaveBeenCalled();
+    });
+
+    it('releases an aborted caller while the shared load still serves and caches for the others', async () => {
+      const env = setup();
+      const pending = deferred<TenantPlacement | undefined>();
+      env.directory.getPlacement.mockImplementationOnce(() => pending.promise);
+      const router = env.build({ sharedCache: env.shared });
+      const controller = new AbortController();
+
+      const aborted = router.resolve({
+        tenantId: T1,
+        ...READ,
+        signal: controller.signal,
+      });
+      const patient = router.resolve({ tenantId: T1, ...READ });
+      await flush();
+      const reason = new Error('client went away');
+      controller.abort(reason);
+      await expect(aborted).rejects.toBe(reason);
+
+      pending.resolve(placement());
+      await expect(patient).resolves.toMatchObject({ logicalShard: 'shard-1' });
+      await router.resolve({ tenantId: T1, ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+    });
+
+    it('fails with DeadlineExceededError when the directory is slower than the deadline', async () => {
+      const env = setup();
+      env.directory.getPlacement.mockImplementationOnce(
+        () => new Promise(() => undefined),
+      );
+      const deadline = Deadline.after(5, new FixedClock());
+      await expect(
+        env.build().resolve({ tenantId: T1, ...READ, deadline }),
+      ).rejects.toBeInstanceOf(DeadlineExceededError);
+    });
+
+    it('bounds the instance lookup too', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      env.directory.getInstance.mockImplementationOnce(
+        () => new Promise(() => undefined),
+      );
+      const controller = new AbortController();
+      const resolving = env
+        .build()
+        .resolve({ tenantId: T1, ...READ, signal: controller.signal });
+      await flush();
+      expect(env.directory.getInstance).toHaveBeenCalledTimes(1);
+      controller.abort(new Error('stop'));
+      await expect(resolving).rejects.toThrow('stop');
+    });
+
+    it('arms no timer when both lookups hit the in-process cache', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      const router = env.build();
+      await router.resolve({ tenantId: T1, ...READ });
+
+      const timer = jest.spyOn(globalThis, 'setTimeout');
+      const deadline = Deadline.after(60_000, new FixedClock());
+      await expect(
+        router.resolve({ tenantId: T1, ...READ, deadline }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-1' });
+      expect(timer).not.toHaveBeenCalled();
+      timer.mockRestore();
     });
   });
 });
