@@ -46,14 +46,69 @@ const SENSITIVE_LAST_WORDS = new Set([
   'credential',
   'credentials',
   'signature',
+  'jwt',
+  'bearer',
+  'otp',
+  'session',
+  'sessions',
+  'passphrase',
 ]);
 const SENSITIVE_FIRST_WORDS = new Set([
   'password',
   'passwd',
+  'passphrase',
   'secret',
   'authorization',
   'cookie',
+  'cookies',
+  'session',
+  'sessions',
+  'jwt',
+  'bearer',
+  'otp',
 ]);
+/** Compound names that only make sense joined (`privateKey`, `signing_key`). */
+const SENSITIVE_COMPOUNDS = [
+  'apikey',
+  'privatekey',
+  'secretkey',
+  'signingkey',
+  'accesskey',
+  'encryptionkey',
+];
+
+const USERINFO_IN_URL = /([a-z][a-z0-9+.-]*:\/\/)[^\s/?#@]*@/gi;
+const QUERY_PARAM = /([?&;])([^=&#\s;]+)=([^&#\s;]*)/g;
+const BEARER_VALUE = /\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{4,}/gi;
+const JWT_VALUE = /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/g;
+const PRIVATE_KEY_BLOCK =
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g;
+
+function isSensitiveParam(name: string): boolean {
+  let decoded = name;
+  try {
+    decoded = decodeURIComponent(name);
+  } catch {
+    // keep the raw name
+  }
+  return decoded.toLowerCase() === 'code' || isSensitiveKey(decoded);
+}
+
+/**
+ * Masks secrets that travel inside free text: credentials in URLs
+ * (`https://user:pass@host`), sensitive query params (`token=`, `code=`, ...),
+ * `Bearer`/`Basic` values, JWT-shaped strings and PEM private keys.
+ */
+export function redactString(text: string): string {
+  return text
+    .replace(PRIVATE_KEY_BLOCK, REDACTED)
+    .replace(USERINFO_IN_URL, `$1${REDACTED}@`)
+    .replace(QUERY_PARAM, (match, sep: string, name: string) =>
+      isSensitiveParam(name) ? `${sep}${name}=${REDACTED}` : match,
+    )
+    .replace(BEARER_VALUE, (_m, scheme: string) => `${scheme} ${REDACTED}`)
+    .replace(JWT_VALUE, REDACTED);
+}
 
 /**
  * Splits a key into lowercase words (camelCase, snake_case, kebab-case) and
@@ -74,7 +129,7 @@ export function isSensitiveKey(key: string): boolean {
   return (
     SENSITIVE_LAST_WORDS.has(last) ||
     SENSITIVE_FIRST_WORDS.has(first) ||
-    words.join('').includes('apikey')
+    SENSITIVE_COMPOUNDS.some((compound) => words.join('').includes(compound))
   );
 }
 
@@ -89,13 +144,20 @@ export function redact(value: unknown): unknown {
 
 function sanitize(value: unknown, ancestors: Set<object>): unknown {
   if (value instanceof Error) {
-    return { name: value.name, message: value.message, stack: value.stack };
+    return {
+      name: value.name,
+      message: redactString(value.message),
+      stack: value.stack === undefined ? undefined : redactString(value.stack),
+    };
   }
   if (value instanceof Date) {
     return value.toISOString();
   }
   if (typeof value === 'bigint') {
     return value.toString();
+  }
+  if (typeof value === 'string') {
+    return redactString(value);
   }
   if (value === null || typeof value !== 'object') {
     return value;
@@ -169,7 +231,7 @@ export class JsonLogger implements LoggerPort {
       level,
       service: this.options.service,
       context: this.options.context,
-      message,
+      message: redactString(message),
       traceId: ctx ? toDisplayTraceId(ctx.traceId) : undefined,
       spanId: ctx?.spanId,
       tenantId: ctx?.tenantId,

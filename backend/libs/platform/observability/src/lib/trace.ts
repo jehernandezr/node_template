@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { v7 as uuidv7 } from 'uuid';
+import { UuidV7IdGenerator, type IdGenerator } from '@platform/kernel';
 
 const TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
 const SPAN_ID_PATTERN = /^[0-9a-f]{16}$/;
@@ -17,8 +17,8 @@ export interface TraceparentFields {
  * Generates a trace id: a UUIDv7 without hyphens (32 lowercase hex chars),
  * which is a valid W3C trace-id.
  */
-export function newTraceId(): string {
-  return uuidv7().replace(/-/g, '');
+export function newTraceId(ids: IdGenerator = new UuidV7IdGenerator()): string {
+  return ids.next().toString().replace(/-/g, '');
 }
 
 /** Generates a W3C span id: 8 random bytes as 16 lowercase hex chars. */
