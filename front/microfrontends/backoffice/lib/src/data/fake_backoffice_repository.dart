@@ -1,6 +1,7 @@
 import 'package:contracts/contracts.dart';
 
-import 'backoffice_models.dart';
+import '../shared/enums/backoffice_enums.dart';
+import '../shared/types/backoffice_types.dart';
 import 'backoffice_repository.dart';
 
 /// In-memory repository with fixed seed data. Writes change only this instance.
@@ -21,6 +22,15 @@ class FakeBackofficeRepository implements BackofficeRepository {
   final List<Saga> _sagas;
   final Map<String, List<AuditEntry>> _sagaAudit;
   final Map<String, List<DeadLetterMessage>> _queues;
+
+  /// Whether the scope already released this repository.
+  bool get isDisposed => _disposed;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+  }
 
   @override
   Future<BackofficeOverview> overview() async {
@@ -94,14 +104,13 @@ class FakeBackofficeRepository implements BackofficeRepository {
     final trimmed = reason.trim();
     if (trimmed.isEmpty) {
       throw _problem(
-        400,
-        'PLATFORM.VALIDATION.REQUIRED',
+        PlatformErrorCode.validationRequired,
         'A reason is required',
       );
     }
     final index = _sagas.indexWhere((s) => s.id == sagaId);
     if (index == -1) {
-      throw _problem(404, 'PLATFORM.RESOURCE.NOT_FOUND', 'Saga not found');
+      throw _problem(PlatformErrorCode.resourceNotFound, 'Saga not found');
     }
 
     final saga = _sagas[index];
@@ -143,20 +152,20 @@ class FakeBackofficeRepository implements BackofficeRepository {
   Future<int> redrive(String queue) async {
     final messages = _queues[queue];
     if (messages == null) {
-      throw _problem(404, 'PLATFORM.RESOURCE.NOT_FOUND', 'Queue not found');
+      throw _problem(PlatformErrorCode.resourceNotFound, 'Queue not found');
     }
     final moved = messages.length;
     messages.clear();
     return moved;
   }
 
-  static ApiErrorException _problem(int status, String code, String title) =>
+  static ApiErrorException _problem(PlatformErrorCode code, String title) =>
       ApiErrorException(
         ProblemDetails(
           type: 'about:blank',
           title: title,
-          status: status,
-          code: code,
+          status: code.httpStatus,
+          code: code.code,
         ),
       );
 

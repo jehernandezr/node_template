@@ -1,88 +1,81 @@
 /// Microfrontend `backoffice`: manifest consumed by the web shell.
 ///
-/// This file is eager. It imports only `shell_core`, `go_router` and `material_ui`,
-/// plus the deferred screens library. Models, repository, fake, localizations and
-/// widgets are reachable only through that library, so customers never download them.
+/// This file is eager. It imports only `shell_core`, the access rules of
+/// `src/shared/constants` and, deferred, the screens library. Data, screens
+/// and localizations (`src/{data,screens,l10n}`) are reachable only through
+/// that library, so customers never download them.
 library;
 
-import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
 import 'src/screens/screens.dart' deferred as screens;
+import 'src/shared/constants/backoffice_access.dart';
+import 'src/shared/constants/backoffice_paths.dart';
 
 /// Manifest registered by the shells. Routes live under `/backoffice`.
+///
+/// Any platform role enters with a recent second factor; without one the shell
+/// sends the user to its step-up page. Sagas and dead-letter queues are not
+/// for `finance`; their actions are only for `superAdmin` and `support`.
 final MicrofrontendManifest backofficeManifest = MicrofrontendManifest(
   id: MicrofrontendId.backoffice,
   platforms: {AppPlatform.web},
-  access: AccessRule.platformRoles(PlatformRole.values),
+  access: backofficeAccess,
   menu: const [
-    MenuEntry(labelKey: 'menuBackoffice', path: '/backoffice', order: 90),
+    MenuEntry(
+      labelKey: 'menuBackoffice',
+      path: BackofficePaths.root,
+      order: 90,
+    ),
   ],
-  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
-  // ignore: deprecated_member_use
-  routes: _routes,
-);
-
-const Widget _loading = Center(child: CircularProgressIndicator());
-
-List<RouteBase> _routes(
-  ScreenLoader load,
-  MicrofrontendScope Function() scope,
-) {
-  // The entry point is referenced inside the builder, so it is only touched after the library loads.
-  Widget page(
-    BuildContext context,
-    Widget Function(BuildContext context, MicrofrontendScope scope) build,
-  ) => load(
-    loadLibrary: screens.loadLibrary,
-    loading: _loading,
-    builder: () => build(context, scope()),
-  );
-
-  return [
-    GoRoute(
-      path: '/backoffice',
-      builder: (context, state) =>
-          page(context, (c, s) => screens.overviewPage(c, s)),
+  screens: [
+    ScreenRoute(
+      path: BackofficePaths.root,
+      loadLibrary: screens.loadLibrary,
+      builder: (scope, {params = const {}}) => screens.overviewPage(scope),
       routes: [
-        GoRoute(
+        ScreenRoute(
           path: 'tenants',
-          builder: (context, state) =>
-              page(context, (c, s) => screens.tenantsPage(c, s)),
+          loadLibrary: screens.loadLibrary,
+          builder: (scope, {params = const {}}) => screens.tenantsPage(scope),
+          routes: [
+            ScreenRoute(
+              path: ':id',
+              loadLibrary: screens.loadLibrary,
+              builder: (scope, {params = const {}}) =>
+                  screens.tenantDetailPage(scope, params['id'] ?? ''),
+            ),
+          ],
         ),
-        GoRoute(
-          path: 'tenants/:id',
-          builder: (context, state) {
-            final id = state.pathParameters['id'] ?? '';
-            return page(context, (c, s) => screens.tenantDetailPage(c, s, id));
-          },
-        ),
-        GoRoute(
+        ScreenRoute(
           path: 'sagas',
-          builder: (context, state) =>
-              page(context, (c, s) => screens.sagasPage(c, s)),
+          access: backofficeOperationsReadAccess,
+          loadLibrary: screens.loadLibrary,
+          builder: (scope, {params = const {}}) => screens.sagasPage(scope),
+          routes: [
+            ScreenRoute(
+              path: ':id',
+              loadLibrary: screens.loadLibrary,
+              builder: (scope, {params = const {}}) =>
+                  screens.sagaDetailPage(scope, params['id'] ?? ''),
+            ),
+          ],
         ),
-        GoRoute(
-          path: 'sagas/:id',
-          builder: (context, state) {
-            final id = state.pathParameters['id'] ?? '';
-            return page(context, (c, s) => screens.sagaDetailPage(c, s, id));
-          },
-        ),
-        GoRoute(
+        ScreenRoute(
           path: 'dlq',
-          builder: (context, state) =>
-              page(context, (c, s) => screens.dlqPage(c, s)),
-        ),
-        GoRoute(
-          path: 'dlq/:queue',
-          builder: (context, state) {
-            final queue = state.pathParameters['queue'] ?? '';
-            return page(context, (c, s) => screens.dlqPage(c, s, queue: queue));
-          },
+          access: backofficeOperationsReadAccess,
+          loadLibrary: screens.loadLibrary,
+          builder: (scope, {params = const {}}) => screens.dlqPage(scope),
+          routes: [
+            ScreenRoute(
+              path: ':queue',
+              loadLibrary: screens.loadLibrary,
+              builder: (scope, {params = const {}}) =>
+                  screens.dlqPage(scope, queue: params['queue']),
+            ),
+          ],
         ),
       ],
     ),
-  ];
-}
+  ],
+);

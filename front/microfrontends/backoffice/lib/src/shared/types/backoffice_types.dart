@@ -1,12 +1,8 @@
-/// Models read by the backoffice screens. They mirror the backend read models
-/// of the internal API; the screens never see the transport format.
+/// Models read by the backoffice screens. They mirror the read models of the
+/// internal API; the screens never see the transport format.
 library;
 
-/// Lifecycle state of a tenant.
-enum TenantStatus { active, suspended, provisioning, deleting }
-
-/// Region where a tenant stores its data.
-enum TenantRegion { euWest, usEast, saEast }
+import '../enums/backoffice_enums.dart';
 
 /// A tenant (organization) as seen by platform operators.
 class Tenant {
@@ -49,24 +45,6 @@ class AuditEntry {
   /// Free text, for example the reason given for a manual saga action.
   final String? detail;
 }
-
-/// Saga states, including the ones that need a person.
-enum SagaStatus {
-  running,
-  waitingReply,
-  suspended,
-  completed,
-  compensating,
-  compensated,
-  compensationFailed,
-  requiresIntervention,
-}
-
-/// Whether a step ran forward or as its compensation.
-enum SagaDirection { forward, compensation }
-
-/// Result of one attempt at a step.
-enum SagaStepStatus { dispatched, succeeded, failed }
 
 /// One line of a saga's step log.
 class SagaStep {
@@ -123,9 +101,6 @@ class Saga {
     updatedAt: updatedAt ?? this.updatedAt,
   );
 }
-
-/// Manual actions an operator can apply to a saga. Each one needs a reason.
-enum SagaManualAction { retryStep, forceCompensation, markResolved }
 
 /// A dead-letter queue and how many messages it holds.
 class DeadLetterQueue {

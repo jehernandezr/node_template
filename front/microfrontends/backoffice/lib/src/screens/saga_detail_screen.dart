@@ -1,16 +1,21 @@
 import 'package:contracts/contracts.dart';
-import 'package:i18n/i18n.dart' show AppLocalizations;
+import 'package:i18n/i18n.dart' show AppLocalizations, errorMessage;
 import 'package:material_ui/material_ui.dart';
-// TODO(WP0): migrar al showActionError de ui (ADR 0018) y quitar este hide.
-import 'package:ui/ui.dart' hide showActionError;
+import 'package:shell_core/shell_core.dart';
+import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';
+import '../l10n/backoffice_labels.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import '../labels.dart';
-import 'backoffice_page.dart';
+import '../shared/constants/backoffice_access.dart';
+import '../shared/enums/backoffice_enums.dart';
+import '../shared/types/backoffice_types.dart';
+import '../shared/utils/format_timestamp.dart';
+import 'widgets.dart';
 
 /// Saga detail: step timeline, manual actions (each with a reason) and audit.
+///
+/// The manual actions appear only for `superAdmin` and `support`.
 class SagaDetailScreen extends StatefulWidget {
   const SagaDetailScreen({
     super.key,
@@ -38,8 +43,12 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
     return (saga: saga, audit: audit);
   }
 
+  void _reload() => setState(() {
+    _data = _load();
+  });
+
   Future<void> _runAction(SagaManualAction action) async {
-    final reason = await showDialog<String>(
+    final reason = await showBackofficeDialog<String>(
       context: context,
       builder: (_) => _ReasonDialog(action: action),
     );
@@ -51,13 +60,17 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
         reason: reason,
       );
     } on ApiErrorException catch (error) {
-      if (mounted) showActionError(context, error);
+      if (!mounted) return;
+      final shared = AppLocalizations.of(context);
+      showActionError(
+        context,
+        error,
+        message: errorMessage(shared, error.problem.code),
+      );
       return;
     }
     if (!mounted) return;
-    setState(() {
-      _data = _load();
-    });
+    _reload();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(BackofficeLocalizations.of(context).sagaActionDone),
@@ -70,9 +83,9 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
     final l10n = BackofficeLocalizations.of(context);
     return BackofficePage(
       title: l10n.sagaDetailTitle,
-      backPath: '/backoffice/sagas',
       child: AsyncBody<_SagaData>(
         future: _data,
+        onRetry: _reload,
         builder: (context, data) {
           final saga = data.saga;
           if (saga == null) {
@@ -121,20 +134,32 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
                 EmptyState(icon: Icons.timeline, title: l10n.sagaStepsEmpty)
               else
                 for (final step in saga.steps) _StepTile(step: step),
-              const SizedBox(height: AppSpacing.lg),
-              Text(l10n.sagaManualActions, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  for (final action in SagaManualAction.values)
-                    OutlinedButton(
-                      key: Key('saga-action-${action.name}'),
-                      onPressed: () => _runAction(action),
-                      child: Text(manualActionLabel(l10n, action)),
+              AccessGate(
+                rule: backofficeOperationsWriteAccess,
+                child: Column(
+                  key: const Key('saga-manual-actions'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      l10n.sagaManualActions,
+                      style: theme.textTheme.titleMedium,
                     ),
-                ],
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        for (final action in SagaManualAction.values)
+                          OutlinedButton(
+                            key: Key('saga-action-${action.name}'),
+                            onPressed: () => _runAction(action),
+                            child: Text(manualActionLabel(l10n, action)),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(l10n.auditTitle, style: theme.textTheme.titleMedium),

@@ -1,7 +1,10 @@
-import 'data/backoffice_models.dart';
-import 'l10n/generated/backoffice_localizations.dart';
+/// Localized labels of the backoffice enums. Part of the deferred l10n code:
+/// only the screens import it.
+library;
 
-/// Localized labels of the backoffice enums.
+import '../shared/enums/backoffice_enums.dart';
+import 'generated/backoffice_localizations.dart';
+
 String tenantStatusLabel(BackofficeLocalizations l10n, TenantStatus status) =>
     switch (status) {
       TenantStatus.active => l10n.tenantStatusActive,
@@ -52,10 +55,3 @@ String manualActionLabel(
   SagaManualAction.forceCompensation => l10n.manualActionForceCompensation,
   SagaManualAction.markResolved => l10n.manualActionMarkResolved,
 };
-
-/// Formats a timestamp as `dd/MM/yyyy HH:mm` in the time zone of the value.
-String formatTimestamp(DateTime value) {
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(value.day)}/${two(value.month)}/${value.year} '
-      '${two(value.hour)}:${two(value.minute)}';
-}

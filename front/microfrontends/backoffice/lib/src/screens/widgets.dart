@@ -1,60 +1,63 @@
-import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart' show AppLocalizations, errorMessage;
+import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import '../labels.dart';
+import '../shared/constants/backoffice_access.dart';
+import '../shared/constants/backoffice_paths.dart';
+import '../shared/types/backoffice_types.dart';
+import '../shared/utils/format_timestamp.dart';
 
-/// Shows an API error of a manual action in a SnackBar: the localized message
-/// of its code, followed by the code itself.
-void showActionError(BuildContext context, ApiErrorException error) {
-  final shared = AppLocalizations.of(context);
-  final code = error.problem.code;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        '${errorMessage(shared, code)} (${shared.errorCodeLabel}: $code)',
-      ),
-    ),
+/// Makes [BackofficeLocalizations] available to [child].
+///
+/// The shell does not register the backoffice delegate: the strings travel in
+/// the deferred chunk and are added here, around each page and each dialog.
+class BackofficeLocalized extends StatelessWidget {
+  const BackofficeLocalized({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Localizations.override(
+    context: context,
+    delegates: const [BackofficeLocalizations.delegate],
+    child: child,
   );
 }
 
-/// Frame of every backoffice page: its own app bar, the section navigation,
-/// a subtitle and a content column.
-///
-/// Pass [backPath] on detail pages to show a back button in the app bar.
+/// [showDialog] with the backoffice localizations. Dialogs live in the root
+/// navigator, outside the page's [BackofficeLocalized].
+Future<T?> showBackofficeDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) => showDialog<T>(
+  context: context,
+  builder: (dialogContext) =>
+      BackofficeLocalized(child: Builder(builder: builder)),
+);
+
+/// Frame of every backoffice page: its [AppPage] (the only top bar), the
+/// section navigation, a subtitle and a content column.
 class BackofficePage extends StatelessWidget {
   const BackofficePage({
     super.key,
     required this.title,
     required this.child,
     this.subtitle,
-    this.backPath,
   });
 
   final String title;
   final String? subtitle;
-  final String? backPath;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final back = backPath;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        leading: back == null
-            ? null
-            : IconButton(
-                tooltip: AppLocalizations.of(context).back,
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => context.go(back),
-              ),
-      ),
+    final text = subtitle;
+    return AppPage(
+      title: title,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -66,9 +69,9 @@ class BackofficePage extends StatelessWidget {
                 children: [
                   const _SectionNav(),
                   const SizedBox(height: AppSpacing.md),
-                  if (subtitle != null) ...[
+                  if (text != null) ...[
                     Text(
-                      subtitle!,
+                      text,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -86,17 +89,19 @@ class BackofficePage extends StatelessWidget {
   }
 }
 
+/// Links to the sections the session can read.
 class _SectionNav extends StatelessWidget {
   const _SectionNav();
 
   @override
   Widget build(BuildContext context) {
     final l10n = BackofficeLocalizations.of(context);
+    final operations = context.can(backofficeOperationsReadAccess);
     final items = [
-      (label: l10n.navOverview, path: '/backoffice'),
-      (label: l10n.navTenants, path: '/backoffice/tenants'),
-      (label: l10n.navSagas, path: '/backoffice/sagas'),
-      (label: l10n.navDlq, path: '/backoffice/dlq'),
+      (label: l10n.navOverview, path: BackofficePaths.root),
+      (label: l10n.navTenants, path: BackofficePaths.tenants),
+      if (operations) (label: l10n.navSagas, path: BackofficePaths.sagas),
+      if (operations) (label: l10n.navDlq, path: BackofficePaths.dlq),
     ];
     return Wrap(
       spacing: AppSpacing.sm,
@@ -112,32 +117,36 @@ class _SectionNav extends StatelessWidget {
   }
 }
 
-/// Shows a loading view, then an error view (with the API code when there is one),
-/// then [builder] with the loaded data.
+/// Shows [future] with [AsyncValueView]: loading, then an error view (with the
+/// API code and trace id when there is one), then [builder] with the data.
 class AsyncBody<T> extends StatelessWidget {
-  const AsyncBody({super.key, required this.future, required this.builder});
+  const AsyncBody({
+    super.key,
+    required this.future,
+    required this.builder,
+    this.onRetry,
+  });
 
   final Future<T> future;
   final Widget Function(BuildContext context, T data) builder;
+
+  /// Loads again; the error view shows a retry button when set.
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(
     future: future,
     builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        final shared = AppLocalizations.of(context);
-        return ErrorView.fromException(
-          snapshot.error!,
-          fallbackMessage: BackofficeLocalizations.of(context).loadError,
-          codeLabel: shared.errorCodeLabel,
-          traceIdLabel: shared.errorTraceIdLabel,
-          retryLabel: shared.actionRetry,
-        );
-      }
-      if (!snapshot.hasData) {
-        return const LoadingView();
-      }
-      return builder(context, snapshot.requireData);
+      final shared = AppLocalizations.of(context);
+      return AsyncValueView<T>(
+        value: AsyncValue.fromSnapshot(snapshot),
+        errorMessage: BackofficeLocalizations.of(context).loadError,
+        onRetry: onRetry,
+        retryLabel: shared.actionRetry,
+        codeLabel: shared.errorCodeLabel,
+        traceIdLabel: shared.errorTraceIdLabel,
+        data: (data) => builder(context, data),
+      );
     },
   );
 }
@@ -176,9 +185,9 @@ class AuditTimeline extends StatelessWidget {
                     '${l10n.traceId}: ${entry.traceId}',
                     style: theme.textTheme.labelSmall,
                   ),
-                  if (entry.detail != null)
+                  if (entry.detail case final detail?)
                     Text(
-                      entry.detail!,
+                      detail,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontStyle: FontStyle.italic,
                       ),

@@ -1,13 +1,18 @@
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import 'backoffice_page.dart';
+import '../shared/constants/backoffice_access.dart';
+import '../shared/constants/backoffice_paths.dart';
+import '../shared/types/backoffice_types.dart';
+import 'widgets.dart';
 
 /// Overview cards: tenants, sagas needing intervention and dead-letter messages.
+///
+/// The saga and dead-letter cards appear only for the roles that can open them.
 class OverviewScreen extends StatefulWidget {
   const OverviewScreen({super.key, required this.repository});
 
@@ -19,17 +24,22 @@ class OverviewScreen extends StatefulWidget {
 }
 
 class _OverviewScreenState extends State<OverviewScreen> {
-  late final Future<BackofficeOverview> _overview = widget.repository
-      .overview();
+  late Future<BackofficeOverview> _overview = widget.repository.overview();
+
+  void _reload() => setState(() {
+    _overview = widget.repository.overview();
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = BackofficeLocalizations.of(context);
+    final operations = context.can(backofficeOperationsReadAccess);
     return BackofficePage(
       title: l10n.overviewTitle,
       subtitle: l10n.overviewSubtitle,
       child: AsyncBody<BackofficeOverview>(
         future: _overview,
+        onRetry: _reload,
         builder: (context, overview) => Wrap(
           spacing: AppSpacing.md,
           runSpacing: AppSpacing.md,
@@ -38,22 +48,24 @@ class _OverviewScreenState extends State<OverviewScreen> {
               valueKey: const Key('overview-tenants'),
               label: l10n.cardTenants,
               value: overview.tenantCount,
-              path: '/backoffice/tenants',
+              path: BackofficePaths.tenants,
             ),
-            _OverviewCard(
-              valueKey: const Key('overview-sagas'),
-              label: l10n.cardSagas,
-              value: overview.sagasNeedingIntervention,
-              path: '/backoffice/sagas',
-              highlight: overview.sagasNeedingIntervention > 0,
-            ),
-            _OverviewCard(
-              valueKey: const Key('overview-dlq'),
-              label: l10n.cardDlq,
-              value: overview.deadLetterMessages,
-              path: '/backoffice/dlq',
-              highlight: overview.deadLetterMessages > 0,
-            ),
+            if (operations)
+              _OverviewCard(
+                valueKey: const Key('overview-sagas'),
+                label: l10n.cardSagas,
+                value: overview.sagasNeedingIntervention,
+                path: BackofficePaths.sagas,
+                highlight: overview.sagasNeedingIntervention > 0,
+              ),
+            if (operations)
+              _OverviewCard(
+                valueKey: const Key('overview-dlq'),
+                label: l10n.cardDlq,
+                value: overview.deadLetterMessages,
+                path: BackofficePaths.dlq,
+                highlight: overview.deadLetterMessages > 0,
+              ),
           ],
         ),
       ),

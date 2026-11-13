@@ -1,18 +1,22 @@
-import 'package:go_router/go_router.dart';
 import 'package:contracts/contracts.dart';
-import 'package:i18n/i18n.dart' show AppLocalizations;
+import 'package:go_router/go_router.dart';
+import 'package:i18n/i18n.dart' show AppLocalizations, errorMessage;
 import 'package:material_ui/material_ui.dart';
-// TODO(WP0): migrar al showActionError de ui (ADR 0018) y quitar este hide.
-import 'package:ui/ui.dart' hide showActionError;
+import 'package:shell_core/shell_core.dart';
+import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import '../labels.dart';
-import 'backoffice_page.dart';
+import '../shared/constants/backoffice_access.dart';
+import '../shared/constants/backoffice_paths.dart';
+import '../shared/types/backoffice_types.dart';
+import '../shared/utils/format_timestamp.dart';
+import 'widgets.dart';
 
-/// Dead-letter queues with their counts. Opening a queue goes to `/backoffice/dlq/:queue`
-/// and lists its messages; redrive moves them back to the source queue after confirmation.
+/// Dead-letter queues with their counts. Opening a queue goes to
+/// `/backoffice/dlq/:queue` and lists its messages; redrive moves them back to
+/// the source queue after confirmation, and only `superAdmin` and `support`
+/// see it.
 class DlqScreen extends StatefulWidget {
   const DlqScreen({super.key, required this.repository, this.queue});
 
@@ -45,13 +49,17 @@ class _DlqScreenState extends State<DlqScreen> {
     }
   }
 
+  void _reloadQueues() => setState(() {
+    _queues = widget.repository.deadLetterQueues();
+  });
+
   Future<List<DeadLetterMessage>>? _loadMessages(String? queue) =>
       queue == null ? null : widget.repository.deadLetterMessages(queue);
 
   Future<void> _confirmRedrive(String queue, int count) async {
     final l10n = BackofficeLocalizations.of(context);
     final shared = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showBackofficeDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.dlqRedriveTitle),
@@ -74,7 +82,12 @@ class _DlqScreenState extends State<DlqScreen> {
     try {
       moved = await widget.repository.redrive(queue);
     } on ApiErrorException catch (error) {
-      if (mounted) showActionError(context, error);
+      if (!mounted) return;
+      showActionError(
+        context,
+        error,
+        message: errorMessage(shared, error.problem.code),
+      );
       return;
     }
     if (!mounted) return;
@@ -99,6 +112,7 @@ class _DlqScreenState extends State<DlqScreen> {
         children: [
           AsyncBody<List<DeadLetterQueue>>(
             future: _queues,
+            onRetry: _reloadQueues,
             builder: (context, queues) {
               if (queues.isEmpty) {
                 return EmptyState(
@@ -114,9 +128,8 @@ class _DlqScreenState extends State<DlqScreen> {
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: AppCard(
                         key: ValueKey('dlq-queue-${queue.name}'),
-                        onTap: () => context.go(
-                          '/backoffice/dlq/${Uri.encodeComponent(queue.name)}',
-                        ),
+                        onTap: () =>
+                            context.go(BackofficePaths.dlqQueue(queue.name)),
                         child: Row(
                           children: [
                             Expanded(
@@ -184,10 +197,13 @@ class _QueueMessages extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              FilledButton(
-                key: const Key('dlq-redrive'),
-                onPressed: list.isEmpty ? null : () => onRedrive(list.length),
-                child: Text(l10n.dlqRedrive),
+              AccessGate(
+                rule: backofficeOperationsWriteAccess,
+                child: FilledButton(
+                  key: const Key('dlq-redrive'),
+                  onPressed: list.isEmpty ? null : () => onRedrive(list.length),
+                  child: Text(l10n.dlqRedrive),
+                ),
               ),
             ],
           ),
