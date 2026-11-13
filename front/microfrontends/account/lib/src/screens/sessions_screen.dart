@@ -1,11 +1,14 @@
+import 'package:contracts/contracts.dart' show SessionSummary;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../account_format.dart';
-import '../data/account_models.dart';
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
+import '../shared/enums/account_enums.dart';
+import '../shared/utils/account_format.dart';
+import '../shared/utils/account_paths.dart';
+import '../widgets/account_labels.dart';
 import '../widgets/account_widgets.dart';
 import '../widgets/step_up_dialog.dart';
 
@@ -20,57 +23,64 @@ class SessionsScreen extends StatefulWidget {
 }
 
 class _SessionsScreenState extends State<SessionsScreen> {
-  late Future<List<AppSession>> _sessions = widget.repository.listSessions();
+  AsyncValue<List<SessionSummary>> _sessions = const AsyncValue.loading();
 
-  void _reload() {
-    setState(() {
-      _sessions = widget.repository.listSessions();
-    });
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
 
-  Future<void> _closeSession(AppSession session) async {
+  Future<void> _load() async {
+    final result = await AsyncValue.guard(widget.repository.listSessions);
+    if (!mounted) return;
+    setState(() => _sessions = result);
+  }
+
+  void _reload() {
+    setState(() => _sessions = const AsyncValue.loading());
+    _load();
+  }
+
+  Future<void> _closeSession(SessionSummary session) async {
+    final l10n = AccountLocalizations.of(context);
     final done = await runAccountAction(
       context,
       () => widget.repository.revokeSession(session.id),
-      success: AccountLocalizations.of(context).sessionClosed,
+      success: () => l10n.sessionClosed,
     );
     if (done && mounted) _reload();
   }
 
   Future<void> _closeOthers() async {
+    final l10n = AccountLocalizations.of(context);
     final verified = await confirmStepUp(context, widget.repository);
     if (!verified || !mounted) return;
-    final l10n = AccountLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final closed = await widget.repository.revokeOtherSessions();
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.othersClosed(closed))),
-      );
-      if (mounted) _reload();
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.actionFailed)));
-    }
+    var closed = 0;
+    final done = await runAccountAction(
+      context,
+      () async => closed = await widget.repository.revokeOtherSessions(),
+      success: () => l10n.othersClosed(closed),
+    );
+    if (done && mounted) _reload();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/account')),
-        title: Text(AccountLocalizations.of(context).sessionsTitle),
-      ),
+    return AppPage(
+      title: AccountLocalizations.of(context).sessionsTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
       body: PlatformScreen(
-        compact: (_) => AsyncView<List<AppSession>>(
-          future: _sessions,
+        compact: (_) => AccountAsyncView<List<SessionSummary>>(
+          value: _sessions,
           onRetry: _reload,
-          builder: (context, sessions) => _buildList(context, sessions),
+          data: (sessions) => _buildList(context, sessions),
         ),
       ),
     );
   }
 
-  Widget _buildList(BuildContext context, List<AppSession> sessions) {
+  Widget _buildList(BuildContext context, List<SessionSummary> sessions) {
     final l10n = AccountLocalizations.of(context);
     if (sessions.isEmpty) {
       return EmptyState(
@@ -79,7 +89,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
         message: l10n.sessionsEmptyMessage,
       );
     }
-    final hasOthers = sessions.any((session) => !session.isCurrent);
+    final hasOthers = sessions.any((session) => !session.current);
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
@@ -98,8 +108,8 @@ class _SessionsScreenState extends State<SessionsScreen> {
             child: AccountRowCard(
               title: session.deviceName,
               subtitle:
-                  '${session.platform} · ${l10n.lastSeenLabel(formatDateTime(session.lastSeen))}',
-              trailing: session.isCurrent
+                  '${platformLabel(l10n, session.platform)} · ${l10n.lastSeenLabel(formatDateTime(session.lastSeenAt))}',
+              trailing: session.current
                   ? StatusBadge(label: l10n.sessionCurrent)
                   : AppButton(
                       label: l10n.sessionClose,

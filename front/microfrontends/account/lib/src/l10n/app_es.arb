@@ -114,5 +114,18 @@
   "reviewNotice": "Al aceptar confirmas que revisaste este documento.",
   "agreementAccepted": "Acuerdo aceptado.",
   "pendingEmptyTitle": "No tienes acuerdos pendientes",
-  "acceptedEmptyMessage": "Todavía no has aceptado acuerdos."
+  "acceptedEmptyMessage": "Todavía no has aceptado acuerdos.",
+
+  "platformIos": "iOS",
+  "platformAndroid": "Android",
+  "platformWeb": "Web",
+  "platformMacos": "macOS",
+  "platformWindows": "Windows",
+  "platformLinux": "Linux",
+
+  "factorDeviceOtp": "Dispositivo verificador",
+  "factorEmailOtp": "Código por correo",
+  "factorTotp": "App de autenticación",
+  "factorRecoveryCode": "Código de recuperación",
+  "factorPasskey": "Passkey"
 }

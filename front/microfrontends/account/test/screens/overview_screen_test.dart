@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mf_account/src/data/account_models.dart';
+import 'package:mf_account/src/shared/types/account_types.dart';
 import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/screens.dart';
 import 'package:ui/ui.dart';

@@ -7,8 +7,19 @@ import 'package:mf_account/src/l10n/generated/account_localizations.dart';
 import 'package:shell_core/shell_core.dart';
 
 /// App mínima con los textos de la cuenta y los compartidos, en español.
-Widget testApp(Widget home) => MaterialApp(
-  locale: const Locale('es'),
+///
+/// [session] es la sesión que ven `context.can` y `AccessGate`; por defecto no
+/// tiene un segundo factor reciente.
+Widget testApp(
+  Widget home, {
+  UserSession? session,
+  Locale locale = const Locale('es'),
+}) => MaterialApp(
+  locale: locale,
+  builder: (context, child) => ShellAccessScope(
+    session: ValueNotifier(session ?? testSession()),
+    child: child!,
+  ),
   supportedLocales: AppLocalizations.supportedLocales,
   localizationsDelegates: [
     ...GlobalMaterialLocalizations.delegates,
@@ -22,14 +33,24 @@ Widget testApp(Widget home) => MaterialApp(
 Future<AccountLocalizations> loadEs() =>
     AccountLocalizations.delegate.load(const Locale('es'));
 
+Future<AccountLocalizations> loadEn() =>
+    AccountLocalizations.delegate.load(const Locale('en'));
+
 Future<AppLocalizations> loadSharedEs() =>
     AppLocalizations.delegate.load(const Locale('es'));
+
+/// Sesión de prueba. Con [mfaFresh] el segundo factor se verificó ahora.
+UserSession testSession({bool mfaFresh = false}) => UserSession(
+  userId: 'user-1',
+  tenantId: 'tenant-1',
+  mfaVerifiedAt: mfaFresh ? DateTime.now() : null,
+);
 
 /// Scope de una identidad de prueba. Cada llamada crea un scope nuevo.
 MicrofrontendScope testScope({Future<void> Function()? onSignOut}) =>
     MicrofrontendScope(
       DefaultShellServices(
-        session: UserSession(userId: 'user-1', tenantId: 'tenant-1'),
+        session: testSession(),
         eventBus: ShellEventBus(),
         onSignOut: onSignOut,
       ),

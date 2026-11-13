@@ -479,6 +479,72 @@ abstract class AccountLocalizations {
   /// In es, this message translates to:
   /// **'Todavía no has aceptado acuerdos.'**
   String get acceptedEmptyMessage;
+
+  /// No description provided for @platformIos.
+  ///
+  /// In es, this message translates to:
+  /// **'iOS'**
+  String get platformIos;
+
+  /// No description provided for @platformAndroid.
+  ///
+  /// In es, this message translates to:
+  /// **'Android'**
+  String get platformAndroid;
+
+  /// No description provided for @platformWeb.
+  ///
+  /// In es, this message translates to:
+  /// **'Web'**
+  String get platformWeb;
+
+  /// No description provided for @platformMacos.
+  ///
+  /// In es, this message translates to:
+  /// **'macOS'**
+  String get platformMacos;
+
+  /// No description provided for @platformWindows.
+  ///
+  /// In es, this message translates to:
+  /// **'Windows'**
+  String get platformWindows;
+
+  /// No description provided for @platformLinux.
+  ///
+  /// In es, this message translates to:
+  /// **'Linux'**
+  String get platformLinux;
+
+  /// No description provided for @factorDeviceOtp.
+  ///
+  /// In es, this message translates to:
+  /// **'Dispositivo verificador'**
+  String get factorDeviceOtp;
+
+  /// No description provided for @factorEmailOtp.
+  ///
+  /// In es, this message translates to:
+  /// **'Código por correo'**
+  String get factorEmailOtp;
+
+  /// No description provided for @factorTotp.
+  ///
+  /// In es, this message translates to:
+  /// **'App de autenticación'**
+  String get factorTotp;
+
+  /// No description provided for @factorRecoveryCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de recuperación'**
+  String get factorRecoveryCode;
+
+  /// No description provided for @factorPasskey.
+  ///
+  /// In es, this message translates to:
+  /// **'Passkey'**
+  String get factorPasskey;
 }
 
 class _AccountLocalizationsDelegate

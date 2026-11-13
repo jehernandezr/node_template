@@ -1,16 +1,21 @@
 import 'package:i18n/i18n.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
 import '../data/account_repository.dart';
+import '../shared/constants/account_constants.dart';
+import '../shared/utils/account_access.dart';
 import '../l10n/generated/account_localizations.dart';
 import 'account_widgets.dart';
 
-/// Pide el código MFA del paso adicional. Devuelve true si el código es válido.
+/// Pide el código MFA del paso adicional. Devuelve true si el código es válido
+/// o si la sesión ya tiene un segundo factor reciente.
 Future<bool> confirmStepUp(
   BuildContext context,
   AccountRepository repository,
 ) async {
+  if (context.can(accountStepUpRule)) return true;
   final verified = await showDialog<bool>(
     context: context,
     builder: (_) => _StepUpDialog(repository: repository),
@@ -23,7 +28,7 @@ Future<bool> runSensitiveAction(
   BuildContext context,
   AccountRepository repository,
   Future<void> Function() action, {
-  required String success,
+  required String Function() success,
 }) async {
   final verified = await confirmStepUp(context, repository);
   if (!verified || !context.mounted) return false;
@@ -53,7 +58,7 @@ class _StepUpDialogState extends State<_StepUpDialog> {
   Future<void> _submit() async {
     final l10n = AccountLocalizations.of(context);
     final code = _controller.text.trim();
-    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+    if (!RegExp('^\\d{$stepUpCodeLength}\$').hasMatch(code)) {
       setState(() => _error = l10n.stepUpIncomplete);
       return;
     }
@@ -61,7 +66,17 @@ class _StepUpDialogState extends State<_StepUpDialog> {
       _checking = true;
       _error = null;
     });
-    final valid = await widget.repository.verifyStepUpCode(code);
+    final bool valid;
+    try {
+      valid = await widget.repository.verifyStepUpCode(code);
+    } on Exception {
+      if (!mounted) return;
+      setState(() {
+        _checking = false;
+        _error = l10n.actionFailed;
+      });
+      return;
+    }
     if (!mounted) return;
     if (valid) {
       Navigator.of(context).pop(true);
@@ -89,7 +104,7 @@ class _StepUpDialogState extends State<_StepUpDialog> {
             controller: _controller,
             autofocus: true,
             keyboardType: TextInputType.number,
-            maxLength: 6,
+            maxLength: stepUpCodeLength,
             decoration: InputDecoration(
               labelText: l10n.stepUpCodeLabel,
               errorText: _error,

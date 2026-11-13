@@ -90,81 +90,59 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-/// Carga [future] y muestra cargando, error con reintento o [builder] con el dato.
-class AsyncView<T> extends StatelessWidget {
-  const AsyncView({
+/// Muestra un [AsyncValue] con [AsyncValueView]: cargando, error con
+/// reintento o [data].
+///
+/// Un [ApiErrorException] muestra el mensaje de su código, junto con el código
+/// y la traza para soporte. Cualquier otro error muestra el texto genérico.
+class AccountAsyncView<T> extends StatelessWidget {
+  const AccountAsyncView({
     super.key,
-    required this.future,
+    required this.value,
     required this.onRetry,
-    required this.builder,
+    required this.data,
   });
 
-  final Future<T> future;
+  final AsyncValue<T> value;
   final VoidCallback onRetry;
-  final Widget Function(BuildContext context, T data) builder;
+  final Widget Function(T value) data;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<T>(
-      future: future,
-      builder: (context, snapshot) {
-        final error = snapshot.error;
-        if (error != null) {
-          return accountErrorView(context, error, onRetry);
-        }
-        if (!snapshot.hasData) {
-          return LoadingView(message: AppLocalizations.of(context).loading);
-        }
-        return builder(context, snapshot.requireData);
-      },
-    );
-  }
-}
-
-/// Vista de error de la cuenta.
-///
-/// Un [ApiErrorException] muestra el mensaje de su código y el código y la
-/// traza para soporte. Cualquier otro error muestra el texto genérico.
-Widget accountErrorView(
-  BuildContext context,
-  Object error,
-  VoidCallback onRetry,
-) {
-  final l10n = AppLocalizations.of(context);
-  if (error is ApiErrorException) {
-    return ErrorView.fromProblem(
-      error.problem,
-      message: errorMessage(l10n, error.problem.code),
+    final shared = AppLocalizations.of(context);
+    final current = value;
+    final error = current is AsyncError<T> ? current.error : null;
+    final message = error is ApiErrorException
+        ? errorMessage(shared, error.problem.code)
+        : AccountLocalizations.of(context).loadError;
+    return AsyncValueView<T>(
+      value: value,
+      data: data,
+      errorMessage: message,
       onRetry: onRetry,
-      codeLabel: l10n.errorCodeLabel,
-      traceIdLabel: l10n.errorTraceIdLabel,
-      retryLabel: l10n.actionRetry,
+      retryLabel: shared.actionRetry,
+      codeLabel: shared.errorCodeLabel,
+      traceIdLabel: shared.errorTraceIdLabel,
     );
   }
-  return ErrorView(
-    message: AccountLocalizations.of(context).loadError,
-    onRetry: onRetry,
-    codeLabel: l10n.errorCodeLabel,
-    traceIdLabel: l10n.errorTraceIdLabel,
-    retryLabel: l10n.actionRetry,
-  );
 }
 
-/// Ejecuta [action] y muestra [success] o un mensaje de error.
-/// Devuelve true cuando la acción se completó.
+/// Ejecuta [action] y muestra el texto de [success] o el error de la acción.
+/// Devuelve true cuando la acción se completó y el contexto sigue montado.
 Future<bool> runAccountAction(
   BuildContext context,
   Future<void> Function() action, {
-  required String success,
+  required String Function() success,
 }) async {
-  final messenger = ScaffoldMessenger.of(context);
   final failed = AccountLocalizations.of(context).actionFailed;
   try {
     await action();
-    messenger.showSnackBar(SnackBar(content: Text(success)));
-    return true;
-  } catch (_) {
-    messenger.showSnackBar(SnackBar(content: Text(failed)));
+  } on Exception catch (error) {
+    if (context.mounted) showActionError(context, error, message: failed);
     return false;
   }
+  if (!context.mounted) return false;
+  ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(success())));
+  return true;
 }

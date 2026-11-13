@@ -3,9 +3,11 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/account_models.dart';
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
+import '../shared/enums/account_enums.dart';
+import '../shared/types/account_types.dart';
+import '../shared/utils/account_paths.dart';
 import '../widgets/account_widgets.dart';
 
 /// Resumen del perfil con enlaces a las secciones de la cuenta y cierre de sesión.
@@ -26,24 +28,35 @@ class AccountOverviewScreen extends StatefulWidget {
 }
 
 class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
-  late Future<AccountProfile> _profile = widget.repository.loadProfile();
+  AsyncValue<AccountProfile> _profile = const AsyncValue.loading();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final result = await AsyncValue.guard(widget.repository.loadProfile);
+    if (!mounted) return;
+    setState(() => _profile = result);
+  }
 
   void _reload() {
-    setState(() {
-      _profile = widget.repository.loadProfile();
-    });
+    setState(() => _profile = const AsyncValue.loading());
+    _load();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AccountLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.overviewTitle)),
+    return AppPage(
+      title: l10n.overviewTitle,
       body: PlatformScreen(
-        compact: (_) => AsyncView<AccountProfile>(
-          future: _profile,
+        compact: (_) => AccountAsyncView<AccountProfile>(
+          value: _profile,
           onRetry: _reload,
-          builder: (context, profile) => ListView(
+          data: (profile) => ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
               AppCard(
@@ -73,22 +86,22 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
               _SectionLink(
                 title: l10n.sessionsTitle,
                 message: l10n.sessionsLinkMessage,
-                path: '/account/sessions',
+                section: AccountSection.sessions,
               ),
               _SectionLink(
                 title: l10n.devicesLinkTitle,
                 message: l10n.devicesLinkMessage,
-                path: '/account/devices',
+                section: AccountSection.devices,
               ),
               _SectionLink(
                 title: l10n.securityLinkTitle,
                 message: l10n.securityLinkMessage,
-                path: '/account/security',
+                section: AccountSection.security,
               ),
               _SectionLink(
                 title: l10n.agreementsLinkTitle,
                 message: l10n.agreementsLinkMessage,
-                path: '/account/agreements',
+                section: AccountSection.agreements,
               ),
               const SizedBox(height: AppSpacing.lg),
               AppButton(
@@ -108,12 +121,12 @@ class _SectionLink extends StatelessWidget {
   const _SectionLink({
     required this.title,
     required this.message,
-    required this.path,
+    required this.section,
   });
 
   final String title;
   final String message;
-  final String path;
+  final AccountSection section;
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +136,7 @@ class _SectionLink extends StatelessWidget {
         title: title,
         subtitle: message,
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go(path),
+        onTap: () => context.go(accountPath(section)),
       ),
     );
   }

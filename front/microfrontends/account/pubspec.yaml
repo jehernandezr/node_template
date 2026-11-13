@@ -9,6 +9,8 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  api:
+    path: ../../packages/api
   contracts:
     path: ../../packages/contracts
   flutter:

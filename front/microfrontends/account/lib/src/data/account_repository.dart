@@ -1,11 +1,17 @@
-import 'account_models.dart';
+import 'package:contracts/contracts.dart' show DeviceSummary, SessionSummary;
+import 'package:shell_core/shell_core.dart';
 
-/// Acceso a los datos de la cuenta. La implementación real llamará a la API de
-/// identity y agreements; por ahora solo existe [FakeAccountRepository].
-abstract interface class AccountRepository {
+import '../shared/types/account_types.dart';
+
+/// Acceso a los datos de la cuenta. Sesiones y dispositivos tienen contrato
+/// `identity` y los resuelve `ApiAccountRepository`; el resto (perfil,
+/// seguridad, acuerdos) no tiene contrato aún y solo lo cubre
+/// `FakeAccountRepository`.
+abstract interface class AccountRepository implements ScopedResource {
   Future<AccountProfile> loadProfile();
 
-  Future<List<AppSession>> listSessions();
+  /// Sesiones activas, la actual incluida.
+  Future<List<SessionSummary>> listSessions();
 
   /// Cierra una sesión remota.
   Future<void> revokeSession(String sessionId);
@@ -13,7 +19,7 @@ abstract interface class AccountRepository {
   /// Cierra todas las sesiones menos la actual. Devuelve cuántas cerró.
   Future<int> revokeOtherSessions();
 
-  Future<List<TrustedDevice>> listDevices();
+  Future<List<DeviceSummary>> listDevices();
 
   /// Retira la confianza de un dispositivo.
   Future<void> removeDeviceTrust(String deviceId);

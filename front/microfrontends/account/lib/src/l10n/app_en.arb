@@ -114,5 +114,18 @@
   "reviewNotice": "By accepting you confirm that you reviewed this document.",
   "agreementAccepted": "Agreement accepted.",
   "pendingEmptyTitle": "You have no pending agreements",
-  "acceptedEmptyMessage": "You have not accepted any agreements yet."
+  "acceptedEmptyMessage": "You have not accepted any agreements yet.",
+
+  "platformIos": "iOS",
+  "platformAndroid": "Android",
+  "platformWeb": "Web",
+  "platformMacos": "macOS",
+  "platformWindows": "Windows",
+  "platformLinux": "Linux",
+
+  "factorDeviceOtp": "Verifier device",
+  "factorEmailOtp": "Email code",
+  "factorTotp": "Authenticator app",
+  "factorRecoveryCode": "Recovery code",
+  "factorPasskey": "Passkey"
 }

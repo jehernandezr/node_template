@@ -227,4 +227,37 @@ class AccountLocalizationsEs extends AccountLocalizations {
 
   @override
   String get acceptedEmptyMessage => 'Todavía no has aceptado acuerdos.';
+
+  @override
+  String get platformIos => 'iOS';
+
+  @override
+  String get platformAndroid => 'Android';
+
+  @override
+  String get platformWeb => 'Web';
+
+  @override
+  String get platformMacos => 'macOS';
+
+  @override
+  String get platformWindows => 'Windows';
+
+  @override
+  String get platformLinux => 'Linux';
+
+  @override
+  String get factorDeviceOtp => 'Dispositivo verificador';
+
+  @override
+  String get factorEmailOtp => 'Código por correo';
+
+  @override
+  String get factorTotp => 'App de autenticación';
+
+  @override
+  String get factorRecoveryCode => 'Código de recuperación';
+
+  @override
+  String get factorPasskey => 'Passkey';
 }

@@ -1,11 +1,14 @@
+import 'package:contracts/contracts.dart' show DeviceSummary;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../account_format.dart';
-import '../data/account_models.dart';
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
+import '../shared/enums/account_enums.dart';
+import '../shared/utils/account_format.dart';
+import '../shared/utils/account_paths.dart';
+import '../widgets/account_labels.dart';
 import '../widgets/account_widgets.dart';
 import '../widgets/step_up_dialog.dart';
 
@@ -20,43 +23,53 @@ class DevicesScreen extends StatefulWidget {
 }
 
 class _DevicesScreenState extends State<DevicesScreen> {
-  late Future<List<TrustedDevice>> _devices = widget.repository.listDevices();
+  AsyncValue<List<DeviceSummary>> _devices = const AsyncValue.loading();
 
-  void _reload() {
-    setState(() {
-      _devices = widget.repository.listDevices();
-    });
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
 
-  Future<void> _removeTrust(TrustedDevice device) async {
+  Future<void> _load() async {
+    final result = await AsyncValue.guard(widget.repository.listDevices);
+    if (!mounted) return;
+    setState(() => _devices = result);
+  }
+
+  void _reload() {
+    setState(() => _devices = const AsyncValue.loading());
+    _load();
+  }
+
+  Future<void> _removeTrust(DeviceSummary device) async {
+    final l10n = AccountLocalizations.of(context);
     final verified = await confirmStepUp(context, widget.repository);
     if (!verified || !mounted) return;
     final done = await runAccountAction(
       context,
       () => widget.repository.removeDeviceTrust(device.id),
-      success: AccountLocalizations.of(context).deviceRemoved,
+      success: () => l10n.deviceRemoved,
     );
     if (done && mounted) _reload();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/account')),
-        title: Text(AccountLocalizations.of(context).devicesTitle),
-      ),
+    return AppPage(
+      title: AccountLocalizations.of(context).devicesTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
       body: PlatformScreen(
-        compact: (_) => AsyncView<List<TrustedDevice>>(
-          future: _devices,
+        compact: (_) => AccountAsyncView<List<DeviceSummary>>(
+          value: _devices,
           onRetry: _reload,
-          builder: (context, devices) => _buildList(context, devices),
+          data: (devices) => _buildList(context, devices),
         ),
       ),
     );
   }
 
-  Widget _buildList(BuildContext context, List<TrustedDevice> devices) {
+  Widget _buildList(BuildContext context, List<DeviceSummary> devices) {
     final l10n = AccountLocalizations.of(context);
     if (devices.isEmpty) {
       return EmptyState(
@@ -73,8 +86,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
             padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: AccountRowCard(
               title: device.name,
-              subtitle: '${device.platform} · ${_trustLabel(context, device)}',
-              badge: device.isVerifier
+              subtitle:
+                  '${platformLabel(l10n, device.platform)} · ${_trustLabel(l10n, device)}',
+              badge: device.verifier
                   ? StatusBadge(label: l10n.verifierBadge)
                   : null,
               trailing: AppButton(
@@ -88,8 +102,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  String _trustLabel(BuildContext context, TrustedDevice device) {
-    final l10n = AccountLocalizations.of(context);
+  String _trustLabel(AccountLocalizations l10n, DeviceSummary device) {
     final until = device.trustedUntil;
     if (until == null) return l10n.noTrustDate;
     return l10n.trustedUntilLabel(formatDate(until));

@@ -1,3 +1,5 @@
+import 'package:contracts/contracts.dart' show MfaFactor;
+
 /// Perfil del usuario autenticado.
 final class AccountProfile {
   const AccountProfile({
@@ -11,49 +13,13 @@ final class AccountProfile {
   final String tenantName;
 }
 
-/// Sesión activa del usuario en un dispositivo.
-final class AppSession {
-  const AppSession({
-    required this.id,
-    required this.deviceName,
-    required this.platform,
-    required this.lastSeen,
-    this.isCurrent = false,
-  });
-
-  final String id;
-  final String deviceName;
-  final String platform;
-  final DateTime lastSeen;
-  final bool isCurrent;
-}
-
-/// Dispositivo con confianza vigente. El verificador es el dispositivo
-/// registrado para aprobar acciones sensibles.
-final class TrustedDevice {
-  const TrustedDevice({
-    required this.id,
-    required this.name,
-    required this.platform,
-    required this.lastSeen,
-    this.trustedUntil,
-    this.isVerifier = false,
-  });
-
-  final String id;
-  final String name;
-  final String platform;
-  final DateTime lastSeen;
-  final DateTime? trustedUntil;
-  final bool isVerifier;
-}
-
-/// Estado de la verificación en dos pasos (MFA).
+/// Estado de la verificación en dos pasos (MFA). [method] es el factor que el
+/// usuario tiene activo.
 final class MfaStatus {
   const MfaStatus({required this.enabled, this.method});
 
   final bool enabled;
-  final String? method;
+  final MfaFactor? method;
 }
 
 /// Passkey registrada por el usuario.
@@ -103,4 +69,14 @@ final class Agreement {
     graceUntil: graceUntil,
     acceptedAt: at,
   );
+}
+
+/// El acuerdo que se intentó aceptar no está pendiente.
+final class AgreementNotPendingException implements Exception {
+  const AgreementNotPendingException(this.agreementId);
+
+  final String agreementId;
+
+  @override
+  String toString() => 'El acuerdo $agreementId no está pendiente.';
 }
