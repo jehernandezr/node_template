@@ -95,6 +95,56 @@ Map<String, String> generate(ContractModel model) {
   return files;
 }
 
+/// Ruta de `error_messages.dart`, relativa a `packages/i18n/lib/src`.
+const errorMessagesPath = 'generated/error_messages.dart';
+
+/// Genera `errorMessageFor`: de cada código de error público a su mensaje ARB.
+///
+/// Solo entran los códigos con audiencia `public`; el getter de
+/// `AppLocalizations` es el `messageKey` del catálogo.
+String generateErrorMessages(ContractModel model) {
+  final cases = <String, String>{};
+  for (final service in model.services) {
+    for (final catalog in model.errorsOf(service).values) {
+      for (final entry in (catalog as List<dynamic>).cast<Json>()) {
+        if (entry['audience'] != 'public') continue;
+        final code = entry['code'] as String;
+        final key = entry['messageKey'] as String;
+        if (!RegExp(r'^[a-z][A-Za-z0-9_]*$').hasMatch(key)) {
+          throw GeneratorException('$service: messageKey inválida "$key"');
+        }
+        if (cases.containsKey(code)) {
+          throw GeneratorException('$service: código repetido $code');
+        }
+        cases[code] = key;
+      }
+    }
+  }
+  final out = StringBuffer()
+    ..writeln(generatedHeader)
+    ..writeln('// Fuente: backend/libs/contracts/*/export/contract.json.')
+    ..writeln('// Regenerar: cd front && dart run contracts_gen')
+    ..writeln()
+    ..writeln('/// Mensajes de los códigos de error públicos de los contratos.')
+    ..writeln('library;')
+    ..writeln()
+    ..writeln("import 'app_localizations.dart';")
+    ..writeln()
+    ..writeln('/// Mensaje localizado de un código de error público [code].')
+    ..writeln('///')
+    ..writeln('/// Un código desconocido devuelve `errorFallback`.')
+    ..writeln('String errorMessageFor(AppLocalizations l10n, String code) {')
+    ..writeln('  return switch (code) {');
+  for (final entry in cases.entries) {
+    out.writeln('    ${dartString(entry.key)} => l10n.${entry.value},');
+  }
+  out
+    ..writeln('    _ => l10n.errorFallback,')
+    ..writeln('  };')
+    ..writeln('}');
+  return _format(out.toString(), errorMessagesPath);
+}
+
 final _formatter = DartFormatter(
   languageVersion: DartFormatter.latestLanguageVersion,
   pageWidth: 80,

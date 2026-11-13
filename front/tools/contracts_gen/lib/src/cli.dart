@@ -7,7 +7,8 @@ import 'model.dart';
 const _usage = '''
 Uso: dart run contracts_gen [--check] [--front <dir>] [--contracts <dir>]
 
-Genera packages/contracts/lib/src/<servicio>/ desde
+Genera packages/contracts/lib/src/<servicio>/ y
+packages/i18n/lib/src/generated/error_messages.dart desde
 backend/libs/contracts/<servicio>/export/contract.json.
 
   --check        No escribe nada; termina con código 1 si el Dart difiere.
@@ -106,9 +107,13 @@ Future<int> run(
   );
   final src = Directory('${front.path}/packages/contracts/lib/src');
 
+  final i18nSrc = Directory('${front.path}/packages/i18n/lib/src');
   final Map<String, String> files;
+  final String errorMessages;
   try {
-    files = generate(ContractModel(readContracts(contracts)));
+    final model = ContractModel(readContracts(contracts));
+    files = generate(model);
+    errorMessages = generateErrorMessages(model);
   } on GeneratorException catch (error) {
     err.writeln(error);
     return 1;
@@ -121,9 +126,12 @@ Future<int> run(
         entry.key,
   ];
 
+  final messagesFile = File('${i18nSrc.path}/$errorMessagesPath');
+  final messagesChanged = !_sameContent(messagesFile, errorMessages);
+
   if (check) {
-    if (changed.isEmpty && stale.isEmpty) {
-      out.writeln('Contratos Dart al día (${files.length} archivos).');
+    if (changed.isEmpty && stale.isEmpty && !messagesChanged) {
+      out.writeln('Contratos Dart al día (${files.length + 1} archivos).');
       return 0;
     }
     err.writeln('El Dart generado no coincide con los contratos:');
@@ -132,6 +140,9 @@ Future<int> run(
     }
     for (final path in stale) {
       err.writeln('  sobra   packages/contracts/lib/src/$path');
+    }
+    if (messagesChanged) {
+      err.writeln('  cambia  packages/i18n/lib/src/$errorMessagesPath');
     }
     err.writeln('Ejecuta: cd front && dart run contracts_gen');
     return 1;
@@ -145,8 +156,13 @@ Future<int> run(
   for (final path in stale) {
     File('${src.path}/$path').deleteSync();
   }
+  if (messagesChanged) {
+    messagesFile.parent.createSync(recursive: true);
+    messagesFile.writeAsStringSync(errorMessages);
+  }
   out.writeln(
-    'Generados ${files.length} archivos: ${changed.length} cambiados, '
+    'Generados ${files.length + 1} archivos: '
+    '${changed.length + (messagesChanged ? 1 : 0)} cambiados, '
     '${stale.length} borrados.',
   );
   return 0;

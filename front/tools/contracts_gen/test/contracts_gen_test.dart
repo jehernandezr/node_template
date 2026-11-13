@@ -161,6 +161,43 @@ void main() {
       );
     });
 
+    test('generates errorMessageFor with public codes only', () {
+      final source = generateErrorMessages(
+        _model({'platform': _platform(), 'sample': _sample()}),
+      );
+      expect(source, startsWith(generatedHeader));
+      expect(
+        source,
+        contains('String errorMessageFor(AppLocalizations l10n, String code)'),
+      );
+      expect(
+        source,
+        contains(
+          "'PLATFORM.VALIDATION.REQUIRED' => l10n.error_platform_validation_required,",
+        ),
+      );
+      expect(source, contains('_ => l10n.errorFallback,'));
+      expect(source, isNot(contains('SAGA')));
+      expect(source, isNot(contains('saga_lease_lost')));
+    });
+
+    test('rejects an invalid messageKey and a repeated public code', () {
+      List<dynamic> catalog(Json doc) =>
+          (doc['errors'] as Json)['PlatformErrorCode'] as List<dynamic>;
+      final bad = _platform();
+      (catalog(bad).first as Json)['messageKey'] = 'bad-key';
+      expect(
+        () => generateErrorMessages(_model({'platform': bad})),
+        throwsA(isA<GeneratorException>()),
+      );
+      final twice = jsonDecode(jsonEncode(_platform())) as Json;
+      catalog(twice).add({...(catalog(twice).first as Json)});
+      expect(
+        () => generateErrorMessages(_model({'platform': twice})),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+
     test(
       'generates enums from schemas, nested classes and cross-service refs',
       () {
@@ -268,6 +305,19 @@ void main() {
       expect(await runQuiet(['--check']), 1);
       await runQuiet([]);
       expect(File('$src/old/old.dart').existsSync(), isFalse);
+      expect(await runQuiet(['--check']), 0);
+    });
+
+    test('writes error_messages.dart and --check detects its edits', () async {
+      await runQuiet([]);
+      final file = File(
+        '${front.path}/packages/i18n/lib/src/generated/error_messages.dart',
+      );
+      expect(file.existsSync(), isTrue);
+      expect(file.readAsStringSync(), startsWith(generatedHeader));
+      file.writeAsStringSync('${file.readAsStringSync()}\n// edit');
+      expect(await runQuiet(['--check']), 1);
+      await runQuiet([]);
       expect(await runQuiet(['--check']), 0);
     });
 
