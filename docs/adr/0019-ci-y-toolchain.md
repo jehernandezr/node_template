@@ -5,7 +5,7 @@
 
 ## Contexto
 
-La auditoría del 12 de noviembre encontró que el CI solo cubría el workspace Nx: no había jobs de Flutter, Terraform, deriva de contratos ni verificación de microfrontends diferidos; las acciones se referenciaban por etiqueta móvil; no existía un check agregado y las versiones de Flutter y Terraform no estaban fijadas. Tras ADR 0015 el repositorio tiene dos workspaces (`backend/` y `front/`) con ciclos de cambio distintos.
+La auditoría del 12 de noviembre encontró que el CI solo cubría el workspace Nx: no había jobs de Flutter, Terraform, deriva de contratos ni verificación de microfrontends diferidos; las acciones se referenciaban por etiqueta móvil; no existía un check agregado y las versiones de Flutter y Terraform no estaban fijadas. Tras ADR 0015 el repositorio tiene dos aplicaciones (`backend/` y `front/`) y Nx en la raíz las orquesta en un solo grafo.
 
 ## Decisión
 
@@ -13,14 +13,13 @@ La auditoría del 12 de noviembre encontró que el CI solo cubría el workspace 
 
 Un job `changes` (`dorny/paths-filter`) decide qué corre. Cada job tiene `timeout-minutes` y permisos mínimos (`contents: read`).
 
-| Job            | Corre cuando cambia                                                 | Qué hace                                                                                                                                |
-| -------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend`      | `backend/**`                                                        | pnpm + Node de `backend/.nvmrc`, cachés de pnpm y de `backend/.nx/cache`, `nx affected -t lint test typecheck build`, `nx format:check` |
-| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `nx run contracts-export:check` y `dart run contracts_gen --check`: falla si el JSON/Dart generado difiere del TypeScript               |
-| `front`        | `front/**`                                                          | `flutter pub get`, `dart format --set-exit-if-changed`, `flutter analyze`, `flutter test` en cada miembro con `test/`                   |
-| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                  |
-| `terraform`    | `backend/infra/terraform/**`                                        | `terraform fmt -check -recursive`, `init -backend=false` + `validate` de `platform` y de cada ejemplo de módulo, `tflint`               |
-| `ci-ok`        | siempre                                                             | Agrega el resultado de todos los jobs                                                                                                   |
+| Job            | Corre cuando cambia                                                 | Qué hace                                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nx`           | cualquier cambio (Nx decide los proyectos afectados)                | pnpm + Node de `.nvmrc`, `flutter pub get`, caché de `.nx/cache`, `nx affected -t lint test typecheck build analyze format-check` (backend y front), `nx format:check` |
+| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `nx run contracts-export:check` y `dart run contracts_gen --check`: falla si el JSON/Dart generado difiere del TypeScript                                              |
+| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                                                 |
+| `terraform`    | `backend/infra/terraform/**`                                        | `terraform fmt -check -recursive`, `init -backend=false` + `validate` de `platform` y de cada ejemplo de módulo, `tflint`                                              |
+| `ci-ok`        | siempre                                                             | Agrega el resultado de todos los jobs                                                                                                                                  |
 
 `ci-ok` usa `if: always()` y falla si algún job necesario terminó en `failure` o `cancelled`; `skipped` es válido (el filtro de rutas lo omitió). **Es el único check requerido** en la protección de la rama `main` (nombre del check: `ci-ok`). Así los jobs condicionales no bloquean los PR que no los tocan.
 
@@ -35,9 +34,9 @@ Al introducirse, falla sobre el estado actual: las fuentes `microfrontends/notif
 
 ### Versiones de herramientas
 
-- Node: `backend/.nvmrc`. pnpm: campo `packageManager` de `backend/package.json`.
+- Node: `.nvmrc` de la raíz. pnpm: campo `packageManager` del `package.json` de la raíz.
 - Flutter: `front/.flutter-version` (3.50.0). El CI la lee y la pasa a `subosito/flutter-action`.
-- Terraform: `backend/infra/terraform/.terraform-version` (1.14.4; el código exige `>= 1.10`).
+- Terraform: `backend/infra/terraform/.terraform-version` (1.14.4; el código exige `>= 1.11`).
 - Renovate cubre `.flutter-version` con un gestor de expresiones regulares y `.terraform-version` y `.nvmrc` con sus gestores nativos.
 
 ### Acciones fijadas por SHA
@@ -50,7 +49,7 @@ Corre en PR, en `main` y cada lunes:
 
 - **gitleaks** con el CLI instalado desde la release fijada (8.30.1) y verificación SHA-256, sobre todo el historial. La versión y el checksum se actualizan a mano juntos (Renovate no los gestiona, para no abrir PR que fallen la verificación).
 - **dependency-review-action** en PR (severidad alta o crítica).
-- **OSV-Scanner** sobre `backend/pnpm-lock.yaml` y `front/pubspec.lock`.
+- **OSV-Scanner** sobre `pnpm-lock.yaml` y `front/pubspec.lock`.
 - **Trivy (config)** sobre `backend/infra/terraform` (HIGH y CRITICAL). Se eligió Trivy sobre Checkov por ser un solo binario sin dependencias de Python.
 - **CodeQL** para `javascript-typescript`.
 
