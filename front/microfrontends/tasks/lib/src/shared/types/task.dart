@@ -1,5 +1,4 @@
-/// Status of a task.
-enum TaskStatus { open, inProgress, done }
+import '../enums/task_status.dart';
 
 /// A task as the UI sees it.
 final class Task {

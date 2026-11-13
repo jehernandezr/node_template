@@ -1,13 +1,16 @@
-import 'task.dart';
+import 'package:shell_core/shell_core.dart';
 
-/// Default page size of [TasksRepository.list].
-const int tasksPageSize = 20;
+import '../shared/constants/tasks_pagination.dart';
+import '../shared/enums/task_status.dart';
+import '../shared/types/task.dart';
 
 /// Access to tasks. Screens depend only on this interface.
 ///
-/// Errors other than [TaskNotFoundException] surface as
-/// `ApiErrorException` (from `contracts`) when the API returns a problem.
-abstract interface class TasksRepository {
+/// The scope of the identity disposes it (see [ScopedResource]). Errors other
+/// than [TaskNotFoundException] surface as `ApiErrorException` (from
+/// `contracts`) when the API returns a problem. There is no backend contract
+/// for tasks yet, so the only implementation is `FakeTasksRepository`.
+abstract interface class TasksRepository implements ScopedResource {
   /// One page ordered by id. Pass the previous [TasksPage.nextCursor] as
   /// [cursor] to get the next page.
   Future<TasksPage> list({
@@ -33,8 +36,4 @@ abstract interface class TasksRepository {
   /// Emits after every successful create, update or delete. Screens that show
   /// tasks reload when it emits.
   Stream<void> changes();
-
-  /// Releases the resources of the repository. Called when the identity
-  /// changes and its scope is disposed.
-  void close();
 }

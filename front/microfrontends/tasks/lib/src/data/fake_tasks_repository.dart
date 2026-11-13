@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'task.dart';
+import '../shared/constants/tasks_pagination.dart';
+import '../shared/enums/task_status.dart';
+import '../shared/types/task.dart';
 import 'tasks_repository.dart';
 
 /// Demo tasks used when no seed is given.
@@ -119,7 +121,7 @@ final class FakeTasksRepository implements TasksRepository {
   Stream<void> changes() => _changes.stream;
 
   @override
-  void close() {
+  void dispose() {
     _changes.close();
   }
 

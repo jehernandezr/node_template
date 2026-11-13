@@ -1,11 +1,15 @@
+import 'dart:async';
+
+import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/task.dart';
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
+import '../shared/enums/task_status.dart';
+import '../shared/types/task.dart';
 import 'task_status_label.dart';
 
 /// Route `/tasks/new` (create) and `/tasks/:id/edit` (edit).
@@ -30,16 +34,17 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   TaskStatus _status = TaskStatus.open;
   bool _saving = false;
 
-  /// Loads the task being edited into the controllers. Null when creating.
-  /// Reassigned by [_retry] so a failed load runs again.
-  Future<void>? _loadTask;
+  /// State of the load of the task being edited. Data when creating.
+  late AsyncValue<Task?> _loaded = _editing
+      ? const AsyncValue.loading()
+      : const AsyncValue.data(null);
 
   bool get _editing => widget.taskId != null;
 
   @override
   void initState() {
     super.initState();
-    _loadTask = _editing ? _load() : null;
+    if (_editing) unawaited(_load());
   }
 
   @override
@@ -49,18 +54,23 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.dispose();
   }
 
+  /// Loads the task being edited into the controllers.
   Future<void> _load() async {
-    final task = await widget.repository.get(widget.taskId!);
-    _title.text = task.title;
-    _description.text = task.description;
-    _status = task.status;
+    final result = await AsyncValue.guard<Task?>(
+      () => widget.repository.get(widget.taskId!),
+    );
+    if (!mounted) return;
+    if (result case AsyncData<Task?>(:final value?)) {
+      _title.text = value.title;
+      _description.text = value.description;
+      _status = value.status;
+    }
+    setState(() => _loaded = result);
   }
 
   void _retry() {
-    final load = _load();
-    setState(() {
-      _loadTask = load;
-    });
+    setState(() => _loaded = const AsyncValue.loading());
+    unawaited(_load());
   }
 
   Future<void> _save() async {
@@ -78,16 +88,25 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       } else {
         await widget.repository.update(id, draft);
       }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(TasksLocalizations.of(context).saveError)),
-      );
+    } on ApiErrorException catch (error) {
+      _saveFailed(error);
+      return;
+    } on TaskNotFoundException catch (error) {
+      _saveFailed(error);
       return;
     }
     if (!mounted) return;
     context.go(id == null ? '/tasks' : '/tasks/$id');
+  }
+
+  void _saveFailed(Object error) {
+    if (!mounted) return;
+    setState(() => _saving = false);
+    showActionError(
+      context,
+      error,
+      message: TasksLocalizations.of(context).saveError,
+    );
   }
 
   Widget _form(BuildContext context) {
@@ -147,35 +166,24 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = TasksLocalizations.of(context);
-    final load = _loadTask;
-    return Scaffold(
-      appBar: AppBar(title: Text(_editing ? l10n.editTaskTitle : l10n.newTask)),
-      body: load == null
-          ? _form(context)
-          : FutureBuilder<void>(
-              future: load,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  final error = snapshot.error!;
-                  if (error is TaskNotFoundException) {
-                    return ErrorView(message: l10n.detailNotFound);
-                  }
-                  return ErrorView.fromException(
-                    error,
-                    fallbackMessage: l10n.detailError,
-                    codeLabel: AppLocalizations.of(context).errorCodeLabel,
-                    traceIdLabel: AppLocalizations.of(context)
-                        .errorTraceIdLabel,
-                    retryLabel: AppLocalizations.of(context).actionRetry,
-                    onRetry: _retry,
-                  );
-                }
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const LoadingView();
-                }
-                return _form(context);
-              },
-            ),
+    final shared = AppLocalizations.of(context);
+    final id = widget.taskId;
+    final notFound = switch (_loaded) {
+      AsyncError<Task?>(:final error) => error is TaskNotFoundException,
+      _ => false,
+    };
+    return AppPage(
+      title: _editing ? l10n.editTaskTitle : l10n.newTask,
+      onBack: () => context.go(id == null ? '/tasks' : '/tasks/$id'),
+      body: AsyncValueView<Task?>(
+        value: _loaded,
+        errorMessage: notFound ? l10n.detailNotFound : l10n.detailError,
+        onRetry: notFound ? null : _retry,
+        retryLabel: shared.actionRetry,
+        codeLabel: shared.errorCodeLabel,
+        traceIdLabel: shared.errorTraceIdLabel,
+        data: (_) => _form(context),
+      ),
     );
   }
 }

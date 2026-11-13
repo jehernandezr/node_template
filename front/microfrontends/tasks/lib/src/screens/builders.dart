@@ -13,12 +13,10 @@ import 'task_form_screen.dart';
 import 'tasks_list_screen.dart';
 
 /// The repository of the identity in [scope]. Created on first use, when the
-/// builder runs, so it belongs to the scope that was current then.
+/// builder runs, so it belongs to the scope that was current then. The scope
+/// disposes it.
 TasksRepository _repository(MicrofrontendScope scope) =>
-    scope.get<TasksRepository>(
-      (services) => FakeTasksRepository(),
-      dispose: (repository) => repository.close(),
-    );
+    scope.get<TasksRepository>((services) => FakeTasksRepository());
 
 /// Wraps [build] so its strings load with this library, not the shell bundle.
 Widget _localized(Widget Function() build) => Builder(

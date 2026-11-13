@@ -2,9 +2,10 @@ import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
-import 'package:mf_tasks/src/data/task.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';
 import 'package:mf_tasks/src/screens/screens.dart';
+import 'package:mf_tasks/src/shared/enums/task_status.dart';
+import 'package:mf_tasks/src/shared/types/task.dart';
 
 import 'support.dart';
 
@@ -23,8 +24,14 @@ Future<void> pumpTasks(
   TasksRepository repository, {
   String location = '/tasks',
   Locale locale = const Locale('es'),
+  Set<Permission> permissions = readWrite,
 }) => tester.pumpWidget(
-  tasksApp(scope: scopeWith(repository), location: location, locale: locale),
+  tasksApp(
+    scope: scopeWith(repository),
+    location: location,
+    locale: locale,
+    permissions: permissions,
+  ),
 );
 
 /// Id of the first task of [repository], which is the first seed task.
@@ -271,5 +278,124 @@ void main() {
     expect(find.text('Trace ID: trace-123'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
     expect(find.text('ID de traza: trace-123'), findsNothing);
+  });
+
+  testWidgets('without tasksWrite the list hides the create button', (
+    tester,
+  ) async {
+    await pumpTasks(
+      tester,
+      FakeTasksRepository(delay: Duration.zero, seed: _seed),
+      permissions: readOnly,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pagar factura de luz'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
+
+  testWidgets('with tasksWrite the list shows the create button', (
+    tester,
+  ) async {
+    await pumpTasks(
+      tester,
+      FakeTasksRepository(delay: Duration.zero, seed: _seed),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+  });
+
+  testWidgets('without tasksWrite the detail hides edit and delete', (
+    tester,
+  ) async {
+    final repository = FakeTasksRepository(delay: Duration.zero, seed: _seed);
+    final id = await firstId(tester, repository);
+    await pumpTasks(
+      tester,
+      repository,
+      location: '/tasks/$id',
+      permissions: readOnly,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pagar factura de luz'), findsOneWidget);
+    expect(find.text('Editar'), findsNothing);
+    expect(find.text('Eliminar'), findsNothing);
+  });
+
+  testWidgets('a direct link to /tasks/new without tasksWrite is forbidden', (
+    tester,
+  ) async {
+    await pumpTasks(
+      tester,
+      FakeTasksRepository(delay: Duration.zero, seed: _seed),
+      location: '/tasks/new',
+      permissions: readOnly,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(forbiddenText), findsOneWidget);
+    expect(find.byType(TaskFormScreen), findsNothing);
+    expect(find.byType(TextFormField), findsNothing);
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
+
+  testWidgets('a direct link to /tasks/:id/edit without tasksWrite is '
+      'forbidden', (tester) async {
+    final repository = FakeTasksRepository(delay: Duration.zero, seed: _seed);
+    final id = await firstId(tester, repository);
+    await pumpTasks(
+      tester,
+      repository,
+      location: '/tasks/$id/edit',
+      permissions: readOnly,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(forbiddenText), findsOneWidget);
+    expect(find.byType(TaskFormScreen), findsNothing);
+  });
+
+  testWidgets('with tasksWrite /tasks/new shows the form', (tester) async {
+    await pumpTasks(
+      tester,
+      FakeTasksRepository(delay: Duration.zero, seed: _seed),
+      location: '/tasks/new',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TaskFormScreen), findsOneWidget);
+    expect(find.text(forbiddenText), findsNothing);
+  });
+
+  testWidgets('detail of an unknown task shows not found without retry', (
+    tester,
+  ) async {
+    await pumpTasks(
+      tester,
+      FakeTasksRepository(delay: Duration.zero, seed: _seed),
+      location: '/tasks/does-not-exist',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('La tarea no existe.'), findsOneWidget);
+    expect(find.text('Reintentar'), findsNothing);
+  });
+
+  testWidgets('a failed save shows the error and keeps the form', (
+    tester,
+  ) async {
+    final repository = FakeTasksRepository(delay: Duration.zero, seed: _seed);
+    await pumpTasks(tester, repository, location: '/tasks/new');
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Nueva');
+    repository.failNext(const ApiErrorException(unavailableProblem));
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TaskFormScreen), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
   });
 }

@@ -1,13 +1,16 @@
 import 'dart:async';
 
+import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import '../data/task.dart';
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
+import '../shared/constants/tasks_access.dart';
+import '../shared/types/task.dart';
 import 'task_status_label.dart';
 
 /// Detail of one task with edit and delete actions.
@@ -32,7 +35,8 @@ class TaskDetailView extends StatefulWidget {
 }
 
 class _TaskDetailViewState extends State<TaskDetailView> {
-  late Future<Task> _task = widget.repository.get(widget.taskId);
+  AsyncValue<Task> _task = const AsyncValue.loading();
+  int _requestId = 0;
   StreamSubscription<void>? _changes;
 
   /// Set while this view deletes its task, so the delete's change event does
@@ -45,12 +49,13 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     _changes = widget.repository.changes().listen((_) {
       if (!_deleting) _reload();
     });
+    _reload();
   }
 
   @override
   void didUpdateWidget(covariant TaskDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.taskId != widget.taskId) _reload();
+    if (oldWidget.taskId != widget.taskId) _retry();
   }
 
   @override
@@ -59,12 +64,19 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     super.dispose();
   }
 
-  void _reload() {
-    if (!mounted) return;
-    final task = widget.repository.get(widget.taskId);
-    setState(() {
-      _task = task;
-    });
+  /// Loads the task. Older requests are ignored.
+  Future<void> _reload() async {
+    final request = ++_requestId;
+    final result = await AsyncValue.guard(
+      () => widget.repository.get(widget.taskId),
+    );
+    if (!mounted || request != _requestId) return;
+    setState(() => _task = result);
+  }
+
+  void _retry() {
+    setState(() => _task = const AsyncValue.loading());
+    _reload();
   }
 
   Future<void> _confirmDelete(Task task) async {
@@ -93,15 +105,21 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     _deleting = true;
     try {
       await widget.repository.delete(task.id);
-    } catch (_) {
-      _deleting = false;
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.deleteError)));
+    } on ApiErrorException catch (error) {
+      _deleteFailed(error, l10n.deleteError);
+      return;
+    } on TaskNotFoundException catch (error) {
+      _deleteFailed(error, l10n.deleteError);
       return;
     }
     if (!mounted) return;
     widget.onDeleted();
+  }
+
+  void _deleteFailed(Object error, String message) {
+    _deleting = false;
+    if (!mounted) return;
+    showActionError(context, error, message: message);
   }
 
   @override
@@ -109,38 +127,32 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     final l10n = TasksLocalizations.of(context);
     final shared = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
-    return FutureBuilder<Task>(
-      future: _task,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          final error = snapshot.error!;
-          if (error is TaskNotFoundException) {
-            return ErrorView(message: l10n.detailNotFound);
-          }
-          return ErrorView.fromException(
-            error,
-            fallbackMessage: l10n.detailError,
-            codeLabel: AppLocalizations.of(context).errorCodeLabel,
-            traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
-            retryLabel: AppLocalizations.of(context).actionRetry,
-            onRetry: _reload,
-          );
-        }
-        if (!snapshot.hasData) return const LoadingView();
-        final task = snapshot.data!;
-        return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            Text(task.title, style: textTheme.headlineSmall),
-            const SizedBox(height: AppSpacing.sm),
-            Chip(label: Text(taskStatusLabel(l10n, task.status))),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              task.description.isEmpty ? l10n.noDescription : task.description,
-              style: textTheme.bodyLarge,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Wrap(
+    final notFound = switch (_task) {
+      AsyncError<Task>(:final error) => error is TaskNotFoundException,
+      _ => false,
+    };
+    return AsyncValueView<Task>(
+      value: _task,
+      errorMessage: notFound ? l10n.detailNotFound : l10n.detailError,
+      onRetry: notFound ? null : _retry,
+      retryLabel: shared.actionRetry,
+      codeLabel: shared.errorCodeLabel,
+      traceIdLabel: shared.errorTraceIdLabel,
+      data: (task) => ListView(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          Text(task.title, style: textTheme.headlineSmall),
+          const SizedBox(height: AppSpacing.sm),
+          Chip(label: Text(taskStatusLabel(l10n, task.status))),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            task.description.isEmpty ? l10n.noDescription : task.description,
+            style: textTheme.bodyLarge,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AccessGate(
+            rule: tasksWriteRule,
+            child: Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
@@ -156,9 +168,9 @@ class _TaskDetailViewState extends State<TaskDetailView> {
                 ),
               ],
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }

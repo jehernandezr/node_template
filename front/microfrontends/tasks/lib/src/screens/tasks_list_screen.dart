@@ -1,13 +1,17 @@
 import 'dart:async';
 
+import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import '../data/task.dart';
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
+import '../shared/constants/tasks_access.dart';
+import '../shared/enums/task_status.dart';
+import '../shared/types/task.dart';
 import 'task_detail_view.dart';
 import 'task_status_label.dart';
 
@@ -30,11 +34,9 @@ class _TasksListScreenState extends State<TasksListScreen> {
   StreamSubscription<void>? _changes;
   TaskStatus? _status;
   String _query = '';
-  List<Task> _items = const [];
+  AsyncValue<List<Task>> _items = const AsyncValue.loading();
   String? _nextCursor;
-  bool _loading = true;
   bool _loadingMore = false;
-  Object? _error;
   String? _selectedId;
   int _requestId = 0;
 
@@ -58,39 +60,30 @@ class _TasksListScreenState extends State<TasksListScreen> {
   Future<void> _reload() async {
     final request = ++_requestId;
     setState(() {
-      _loading = true;
+      _items = const AsyncValue.loading();
       _loadingMore = false;
-      _error = null;
     });
-    try {
-      final List<Task> items;
-      String? next;
+    String? next;
+    final result = await AsyncValue.guard<List<Task>>(() async {
       if (_searching) {
-        items = await widget.repository.search(_query, status: _status);
-      } else {
-        final page = await widget.repository.list(status: _status);
-        items = page.items;
-        next = page.nextCursor;
+        return widget.repository.search(_query, status: _status);
       }
-      if (!mounted || request != _requestId) return;
-      setState(() {
-        _items = items;
-        _nextCursor = next;
-        _loading = false;
-      });
-    } catch (error) {
-      if (!mounted || request != _requestId) return;
-      setState(() {
-        _error = error;
-        _loading = false;
-      });
-    }
+      final page = await widget.repository.list(status: _status);
+      next = page.nextCursor;
+      return page.items;
+    });
+    if (!mounted || request != _requestId) return;
+    setState(() {
+      _items = result;
+      _nextCursor = next;
+    });
   }
 
   /// Appends the next page to the current list.
   Future<void> _loadMore() async {
     final cursor = _nextCursor;
-    if (cursor == null || _loadingMore) return;
+    final current = _items.valueOrNull;
+    if (cursor == null || current == null || _loadingMore) return;
     final request = _requestId;
     setState(() => _loadingMore = true);
     try {
@@ -100,13 +93,18 @@ class _TasksListScreenState extends State<TasksListScreen> {
       );
       if (!mounted || request != _requestId) return;
       setState(() {
-        _items = [..._items, ...page.items];
+        _items = AsyncValue.data([...current, ...page.items]);
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
-    } catch (_) {
+    } on ApiErrorException catch (error) {
       if (!mounted || request != _requestId) return;
       setState(() => _loadingMore = false);
+      showActionError(
+        context,
+        error,
+        message: TasksLocalizations.of(context).loadError,
+      );
     }
   }
 
@@ -130,12 +128,15 @@ class _TasksListScreenState extends State<TasksListScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = TasksLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.screenTitle)),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createTask,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.newTask),
+    return AppPage(
+      title: l10n.screenTitle,
+      floatingActionButton: AccessGate(
+        rule: tasksWriteRule,
+        child: FloatingActionButton.extended(
+          onPressed: _createTask,
+          icon: const Icon(Icons.add),
+          label: Text(l10n.newTask),
+        ),
       ),
       body: PlatformScreen(
         compact: (ctx) => _buildList(onOpen: _openTask),
@@ -222,19 +223,24 @@ class _TasksListScreenState extends State<TasksListScreen> {
 
   Widget _buildBody(ValueChanged<Task> onOpen, AppLocalizations shared) {
     final l10n = TasksLocalizations.of(context);
-    if (_loading) return const LoadingView();
-    final error = _error;
-    if (error != null) {
-      return ErrorView.fromException(
-        error,
-        fallbackMessage: l10n.loadError,
-        codeLabel: AppLocalizations.of(context).errorCodeLabel,
-        traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
-        retryLabel: AppLocalizations.of(context).actionRetry,
-        onRetry: _reload,
-      );
-    }
-    if (_items.isEmpty) {
+    return AsyncValueView<List<Task>>(
+      value: _items,
+      errorMessage: l10n.loadError,
+      onRetry: _reload,
+      retryLabel: shared.actionRetry,
+      codeLabel: shared.errorCodeLabel,
+      traceIdLabel: shared.errorTraceIdLabel,
+      data: (items) => _buildItems(items, onOpen, shared, l10n),
+    );
+  }
+
+  Widget _buildItems(
+    List<Task> items,
+    ValueChanged<Task> onOpen,
+    AppLocalizations shared,
+    TasksLocalizations l10n,
+  ) {
+    if (items.isEmpty) {
       return _searching
           ? EmptyState(
               icon: Icons.search_off,
@@ -249,10 +255,10 @@ class _TasksListScreenState extends State<TasksListScreen> {
     }
     final hasMore = _nextCursor != null;
     return ListView.separated(
-      itemCount: _items.length + (hasMore ? 1 : 0),
+      itemCount: items.length + (hasMore ? 1 : 0),
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        if (index == _items.length) {
+        if (index == items.length) {
           return Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Center(
@@ -265,7 +271,7 @@ class _TasksListScreenState extends State<TasksListScreen> {
             ),
           );
         }
-        final task = _items[index];
+        final task = items[index];
         return ListTile(
           key: ValueKey(task.id),
           selected: task.id == _selectedId,

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
-import 'package:mf_tasks/src/data/task.dart';
+import 'package:mf_tasks/src/shared/types/task.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
