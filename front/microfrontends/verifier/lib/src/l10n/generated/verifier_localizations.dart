@@ -108,6 +108,12 @@ abstract class VerifierLocalizations {
   /// **'Verificador'**
   String get title;
 
+  /// No description provided for @loadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar el verificador. Inténtalo de nuevo.'**
+  String get loadError;
+
   /// No description provided for @readyTitle.
   ///
   /// In es, this message translates to:

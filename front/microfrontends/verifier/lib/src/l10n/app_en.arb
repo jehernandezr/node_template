@@ -2,6 +2,7 @@
   "@@locale": "en",
 
   "title": "Verifier",
+  "loadError": "We could not load the verifier. Try again.",
   "readyTitle": "This device is ready",
   "readyMessage": "When someone tries to sign in to your account from another device, you will see the code to approve it here.",
   "codeTitle": "Verification code",

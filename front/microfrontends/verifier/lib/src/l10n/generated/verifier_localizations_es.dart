@@ -15,6 +15,10 @@ class VerifierLocalizationsEs extends VerifierLocalizations {
   String get title => 'Verificador';
 
   @override
+  String get loadError =>
+      'No pudimos cargar el verificador. Inténtalo de nuevo.';
+
+  @override
   String get readyTitle => 'Este dispositivo está listo';
 
   @override

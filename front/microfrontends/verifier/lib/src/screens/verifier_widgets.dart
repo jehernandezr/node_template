@@ -1,39 +1,22 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/login_challenge.dart';
 import '../l10n/generated/verifier_localizations.dart';
-
-/// Groups an 8-digit code as 4-4, e.g. `1234 5678`.
-String groupCode(String code) {
-  if (code.length != 8) return code;
-  return '${code.substring(0, 4)} ${code.substring(4)}';
-}
-
-/// Formats seconds as mm:ss.
-String formatCountdown(int seconds) {
-  final safe = seconds < 0 ? 0 : seconds;
-  final minutes = (safe ~/ 60).toString().padLeft(2, '0');
-  final rest = (safe % 60).toString().padLeft(2, '0');
-  return '$minutes:$rest';
-}
+import '../shared/types/login_challenge.dart';
+import '../shared/utils/verifier_codes.dart';
 
 /// Large monospaced code with a copy action.
 class VerifierCodeCard extends StatelessWidget {
-  /// Creates the card. A null [code] shows the loading placeholder.
+  /// Creates the card. An error in [code] shows a localized message.
   const VerifierCodeCard({
     super.key,
     required this.code,
-    required this.failed,
     required this.copied,
     required this.onCopy,
   });
 
-  /// The 8-digit code, or null while it is generated.
-  final String? code;
-
-  /// True when the device could not generate the code.
-  final bool failed;
+  /// The code while it is generated, ready or failed.
+  final AsyncValue<String> code;
 
   /// True right after the code was copied.
   final bool copied;
@@ -45,15 +28,12 @@ class VerifierCodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = VerifierLocalizations.of(context);
-    final value = code;
-    final String text;
-    if (failed) {
-      text = l10n.codeFailed;
-    } else if (value == null) {
-      text = l10n.codeLoading;
-    } else {
-      text = groupCode(value);
-    }
+    final value = code.valueOrNull;
+    final text = switch (code) {
+      AsyncError<String>() => l10n.codeFailed,
+      AsyncLoading<String>() => l10n.codeLoading,
+      AsyncData<String>(value: final ready) => groupCode(ready),
+    };
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,7 +50,7 @@ class VerifierCodeCard extends StatelessWidget {
           Text(
             text,
             textAlign: TextAlign.center,
-            style: (value == null || failed)
+            style: value == null
                 ? theme.textTheme.bodyLarge
                 : theme.textTheme.displaySmall?.copyWith(
                     fontFamily: 'monospace',
@@ -82,7 +62,7 @@ class VerifierCodeCard extends StatelessWidget {
           Align(
             alignment: Alignment.center,
             child: TextButton.icon(
-              onPressed: value == null || failed ? null : onCopy,
+              onPressed: value == null ? null : onCopy,
               icon: Icon(copied ? Icons.check : Icons.copy),
               label: Text(copied ? l10n.codeCopied : l10n.copyCode),
             ),

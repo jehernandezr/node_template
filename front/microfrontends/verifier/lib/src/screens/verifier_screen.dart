@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auth/auth.dart';
+import 'package:contracts/contracts.dart';
 import 'package:flutter/services.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -8,10 +9,11 @@ import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
 import '../data/fake_verifier_repository.dart';
-import '../data/login_challenge.dart';
 import '../data/verifier_repository.dart';
 import '../l10n/generated/verifier_localizations.dart';
-import '../widgets/verifier_widgets.dart';
+import '../shared/constants/verifier_constants.dart';
+import '../shared/types/login_challenge.dart';
+import 'verifier_widgets.dart';
 
 export '../l10n/generated/verifier_localizations.dart';
 
@@ -19,22 +21,21 @@ export '../l10n/generated/verifier_localizations.dart';
 ///
 /// This library is deferred: the manifest calls this function after it loads.
 /// The repository belongs to the scope, so it is created once per identity and
-/// closed when the identity changes. The device key comes from the shell
-/// extras when present, otherwise a [FakeDeviceKeyPort] is used.
+/// disposed by the scope when the identity changes. The device key comes from
+/// the shell extras when present, otherwise a [FakeDeviceKeyPort] is used.
 Widget buildVerifierScreen(MicrofrontendScope scope) {
-  final keyPort = scope.services.extra<DeviceKeyPort>() ?? FakeDeviceKeyPort();
   final repository = scope.get<VerifierRepository>(
-    (_) => FakeVerifierRepository(keyPort),
-    dispose: (repository) => repository.close(),
+    (services) => FakeVerifierRepository(
+      services.extra<DeviceKeyPort>() ?? FakeDeviceKeyPort(),
+    ),
   );
   return VerifierScreen(repository: repository);
 }
 
 /// Device verifier: shows the code for a login attempt from a new device.
 ///
-/// This library is loaded deferred by the manifest, so it must only be
-/// imported through `mf_verifier.dart`.
-class VerifierScreen extends StatefulWidget {
+/// It provides its own localizations, read here inside the deferred chunk.
+class VerifierScreen extends StatelessWidget {
   /// Creates the screen on top of [repository].
   const VerifierScreen({super.key, required this.repository});
 
@@ -42,19 +43,32 @@ class VerifierScreen extends StatefulWidget {
   final VerifierRepository repository;
 
   @override
-  State<VerifierScreen> createState() => _VerifierScreenState();
+  Widget build(BuildContext context) {
+    return Localizations.override(
+      context: context,
+      delegates: [VerifierLocalizations.delegate],
+      child: _VerifierView(repository: repository),
+    );
+  }
 }
 
-class _VerifierScreenState extends State<VerifierScreen> {
+class _VerifierView extends StatefulWidget {
+  const _VerifierView({required this.repository});
+
+  final VerifierRepository repository;
+
+  @override
+  State<_VerifierView> createState() => _VerifierViewState();
+}
+
+class _VerifierViewState extends State<_VerifierView> {
   StreamSubscription<LoginChallenge?>? _subscription;
   Timer? _ticker;
-  LoginChallenge? _challenge;
-  String? _code;
-  bool _codeFailed = false;
+  AsyncValue<LoginChallenge?> _pending = const AsyncValue.loading();
+  AsyncValue<String> _code = const AsyncValue.loading();
   bool _copied = false;
   bool _denying = false;
   bool _blocked = false;
-  bool _denyFailed = false;
   int _secondsLeft = 0;
 
   /// Incremented whenever the current challenge changes, so late results of
@@ -68,10 +82,13 @@ class _VerifierScreenState extends State<VerifierScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant VerifierScreen oldWidget) {
+  void didUpdateWidget(covariant _VerifierView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.repository != widget.repository) {
       _subscription?.cancel();
+      _ticker?.cancel();
+      _generation++;
+      _pending = const AsyncValue.loading();
       _listen();
     }
   }
@@ -84,7 +101,22 @@ class _VerifierScreenState extends State<VerifierScreen> {
   }
 
   void _listen() {
-    _subscription = widget.repository.pending().listen(_onChallenge);
+    _subscription = widget.repository.pending().listen(
+      _onChallenge,
+      onError: _onPendingError,
+    );
+  }
+
+  void _retry() {
+    _subscription?.cancel();
+    setState(() => _pending = const AsyncValue.loading());
+    _listen();
+  }
+
+  void _onPendingError(Object error, StackTrace stackTrace) {
+    _ticker?.cancel();
+    _generation++;
+    setState(() => _pending = AsyncValue.error(error, stackTrace));
   }
 
   void _onChallenge(LoginChallenge? challenge) {
@@ -92,38 +124,27 @@ class _VerifierScreenState extends State<VerifierScreen> {
     _generation++;
     if (challenge == null) {
       setState(() {
-        _challenge = null;
-        _code = null;
-        _codeFailed = false;
+        _pending = const AsyncValue.data(null);
+        _code = const AsyncValue.loading();
         _copied = false;
-        _denyFailed = false;
       });
       return;
     }
     final generation = _generation;
     setState(() {
-      _challenge = challenge;
-      _code = null;
-      _codeFailed = false;
+      _pending = AsyncValue.data(challenge);
+      _code = const AsyncValue.loading();
       _copied = false;
       _denying = false;
       _blocked = false;
-      _denyFailed = false;
       _secondsLeft = challenge.validFor.inSeconds;
     });
-    _ticker = Timer.periodic(const Duration(seconds: 1), _onTick);
-    widget.repository
-        .autoCode(challenge.id)
-        .then(
-          (code) {
-            if (!mounted || generation != _generation) return;
-            setState(() => _code = code);
-          },
-          onError: (Object _) {
-            if (!mounted || generation != _generation) return;
-            setState(() => _codeFailed = true);
-          },
-        );
+    _ticker = Timer.periodic(verifierTick, _onTick);
+    AsyncValue.guard(() => widget.repository.autoCode(challenge.id))
+        .then((value) {
+          if (!mounted || generation != _generation) return;
+          setState(() => _code = value);
+        });
   }
 
   void _onTick(Timer timer) {
@@ -133,8 +154,8 @@ class _VerifierScreenState extends State<VerifierScreen> {
       timer.cancel();
       _generation++;
       setState(() {
-        _challenge = null;
-        _code = null;
+        _pending = const AsyncValue.data(null);
+        _code = const AsyncValue.loading();
         _secondsLeft = 0;
       });
       return;
@@ -143,16 +164,15 @@ class _VerifierScreenState extends State<VerifierScreen> {
   }
 
   Future<void> _copyCode() async {
-    final code = _code;
+    final code = _code.valueOrNull;
     if (code == null) return;
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
     setState(() => _copied = true);
   }
 
-  Future<void> _confirmDeny() async {
-    final challenge = _challenge;
-    if (challenge == null || _denying) return;
+  Future<void> _confirmDeny(LoginChallenge challenge) async {
+    if (_denying) return;
     final l10n = VerifierLocalizations.of(context);
     final shared = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
@@ -173,10 +193,7 @@ class _VerifierScreenState extends State<VerifierScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    setState(() {
-      _denying = true;
-      _denyFailed = false;
-    });
+    setState(() => _denying = true);
     try {
       await widget.repository.deny(challenge.id);
       if (!mounted) return;
@@ -185,68 +202,68 @@ class _VerifierScreenState extends State<VerifierScreen> {
       setState(() {
         _denying = false;
         _blocked = true;
-        _challenge = null;
-        _code = null;
+        _pending = const AsyncValue.data(null);
+        _code = const AsyncValue.loading();
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _denying = false;
-        _denyFailed = true;
-      });
+    } on ApiErrorException catch (error) {
+      _denyFailed(error, l10n);
+    } on ContractViolationException catch (error) {
+      _denyFailed(error, l10n);
     }
+  }
+
+  void _denyFailed(Object error, VerifierLocalizations l10n) {
+    if (!mounted) return;
+    setState(() => _denying = false);
+    showActionError(context, error, message: l10n.denyFailed);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = VerifierLocalizations.of(context);
-    final challenge = _challenge;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.title)),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          if (_blocked) ...[
-            const VerifierBlockedNotice(),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          if (challenge == null)
-            EmptyState(
-              icon: Icons.verified_user_outlined,
-              title: l10n.readyTitle,
-              message: l10n.readyMessage,
-            )
-          else ...[
-            VerifierCodeCard(
-              code: _code,
-              failed: _codeFailed,
-              copied: _copied,
-              onCopy: _copyCode,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            VerifierCountdown(
-              secondsLeft: _secondsLeft,
-              totalSeconds: challenge.validFor.inSeconds,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            VerifierContextCard(attempt: challenge.context),
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              label: l10n.denyButton,
-              variant: AppButtonVariant.danger,
-              loading: _denying,
-              onPressed: _confirmDeny,
-            ),
-            if (_denyFailed) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.denyFailed,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-          ],
-        ],
+    return AppPage(
+      title: l10n.title,
+      body: AsyncValueView<LoginChallenge?>(
+        value: _pending,
+        errorMessage: l10n.loadError,
+        onRetry: _retry,
+        data: (challenge) => _content(l10n, challenge),
       ),
+    );
+  }
+
+  Widget _content(VerifierLocalizations l10n, LoginChallenge? challenge) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        if (_blocked) ...[
+          const VerifierBlockedNotice(),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        if (challenge == null)
+          EmptyState(
+            icon: Icons.verified_user_outlined,
+            title: l10n.readyTitle,
+            message: l10n.readyMessage,
+          )
+        else ...[
+          VerifierCodeCard(code: _code, copied: _copied, onCopy: _copyCode),
+          const SizedBox(height: AppSpacing.md),
+          VerifierCountdown(
+            secondsLeft: _secondsLeft,
+            totalSeconds: challenge.validFor.inSeconds,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          VerifierContextCard(attempt: challenge.context),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: l10n.denyButton,
+            variant: AppButtonVariant.danger,
+            loading: _denying,
+            onPressed: () => _confirmDeny(challenge),
+          ),
+        ],
+      ],
     );
   }
 }
