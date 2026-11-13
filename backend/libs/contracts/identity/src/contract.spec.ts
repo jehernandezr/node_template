@@ -1,6 +1,8 @@
 import {
+  decodeQuery,
   ErrorAudience,
   HttpMethod,
+  MessageKind,
   messageKeyFor,
   PlatformErrorCode,
   validateContract,
@@ -12,13 +14,23 @@ import {
   PlanFeature,
   PlatformRole,
 } from './enums/access.enum.js';
-import { IdentityErrorCode } from './enums/identifiers.enum.js';
+import {
+  IdentityErrorCode,
+  IdentityOperation,
+} from './enums/identifiers.enum.js';
 import { identityErrorCatalog } from './errors/identity-error-catalog.js';
 import {
+  GetSessionAccessRoute,
   RevokeSessionRoute,
   ListSessionsRoute,
 } from './http/session.routes.js';
-import { SignInRoute, VerifyMfaRoute } from './http/auth.routes.js';
+import {
+  RequestMfaChallengeRoute,
+  SignInRoute,
+  VerifyMfaRoute,
+} from './http/auth.routes.js';
+import { IdentityEventsTopic } from './events/identity.topics.js';
+import { SessionRevokedEvent } from './events/identity.events.js';
 import { RevokeUserSessionsOperation } from './internal/identity.operations.js';
 
 describe('identity access enums', () => {
@@ -27,6 +39,7 @@ describe('identity access enums', () => {
       'tasks:read',
       'tasks:write',
       'billing:read',
+      'billing:write',
       'backoffice:access',
     ]);
     expect(Object.values(PlatformRole)).toEqual([
@@ -100,8 +113,52 @@ describe('identity routes', () => {
     expect(
       validateContract(VerifyMfaRoute.request, {
         mfaToken: 't',
-        method: 'device_otp',
+        challengeId: '0190f2a4-7b3c-7d4e-8f00-000000000001',
         code: '12345678',
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('decodes the query text before validating a paginated route', () => {
+    expect(
+      validateContract(
+        ListSessionsRoute.request,
+        decodeQuery(ListSessionsRoute, { limit: '20' }),
+      ),
+    ).toEqual({ ok: true, value: { limit: 20 } });
+    expect(ListSessionsRoute.queryParams.map((p) => p.name)).toEqual([
+      'limit',
+      'after',
+    ]);
+  });
+
+  it('declares the MFA challenge step and the session access route', () => {
+    expect(RequestMfaChallengeRoute).toMatchObject({
+      method: HttpMethod.Post,
+      path: '/v1/auth/mfa/challenges',
+      successStatus: 201,
+    });
+    expect(
+      validateContract(RequestMfaChallengeRoute.request, {
+        mfaToken: 't',
+        method: 'email_otp',
+      }).ok,
+    ).toBe(true);
+    expect(GetSessionAccessRoute).toMatchObject({
+      method: HttpMethod.Get,
+      path: '/v1/me/access',
+      version: 1,
+    });
+    expect(
+      validateContract(GetSessionAccessRoute.response, {
+        userId: '0190f2a4-7b3c-7d4e-8f00-000000000001',
+        tenantId: '0190f2a4-7b3c-7d4e-8f00-000000000002',
+        sessionId: '0190f2a4-7b3c-7d4e-8f00-000000000003',
+        permissions: ['billing:write'],
+        platformRoles: [],
+        features: ['billing'],
+        flags: [],
+        mfaVerifiedAt: null,
       }).ok,
     ).toBe(true);
   });
@@ -120,6 +177,18 @@ describe('identityContract', () => {
     for (const event of Object.values(identityContract.events)) {
       expect(registered.has(event.payload)).toBe(true);
     }
+  });
+
+  it('versions the operation ids', () => {
+    for (const id of Object.values(IdentityOperation)) {
+      expect(id).toMatch(/\.v1$/);
+    }
+  });
+
+  it('publishes every event in the identity topic', () => {
+    expect(identityContract.topics['events']).toBe(IdentityEventsTopic);
+    expect(IdentityEventsTopic.events).toContain(SessionRevokedEvent);
+    expect(SessionRevokedEvent.kind).toBe(MessageKind.Event);
   });
 
   it('declares the compensation of mutating operations', () => {

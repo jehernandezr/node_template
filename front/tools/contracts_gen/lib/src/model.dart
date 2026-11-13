@@ -6,7 +6,7 @@ import 'naming.dart';
 typedef Json = Map<String, dynamic>;
 
 /// Versión de `contract.json` que entiende este generador.
-const supportedFormatVersion = 1;
+const supportedFormatVersion = 2;
 
 /// Error de generación: el contrato usa algo que el generador no soporta.
 class GeneratorException implements Exception {
@@ -169,8 +169,12 @@ final class ContractModel {
   Json constantsOf(String service) => _section(service, 'constants');
   Json schemasOf(String service) => _section(service, 'schemas');
   Json errorsOf(String service) => _section(service, 'errors');
-  List<Json> routesOf(String service) =>
-      ((docs[service]?['routes'] as List<dynamic>?) ?? const []).cast<Json>();
+  List<Json> routesOf(String service) => _list(service, 'routes');
+  List<Json> eventsOf(String service) => _list(service, 'events');
+  List<Json> commandsOf(String service) => _list(service, 'commands');
+
+  List<Json> _list(String service, String key) =>
+      ((docs[service]?[key] as List<dynamic>?) ?? const []).cast<Json>();
 
   Json schema(SchemaId id) {
     final schema = schemasOf(id.service)[id.name];
@@ -289,6 +293,8 @@ final class ContractModel {
         claim(name, SchemaId(service, name));
       }
       claim('${upperCamel(service)}Routes', SchemaId(service, 'routes'));
+      claim('${upperCamel(service)}Events', SchemaId(service, 'events'));
+      claim('${upperCamel(service)}Commands', SchemaId(service, 'commands'));
     }
   }
 

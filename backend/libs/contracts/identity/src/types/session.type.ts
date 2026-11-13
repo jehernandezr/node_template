@@ -65,6 +65,18 @@ export interface UserAccess {
   flags: FeatureFlag[];
 }
 
+/**
+ * Acceso de la sesión actual: de aquí se llena la sesión del front
+ * (usuario, tenant, roles, permisos, plan, flags y último MFA).
+ */
+export interface SessionAccess extends UserAccess {
+  userId: string;
+  tenantId: string;
+  sessionId: string;
+  /** Instante ISO 8601 del último segundo factor de la sesión, o null si nunca. */
+  mfaVerifiedAt: string | null;
+}
+
 /** Payload de `identity.session.revoked.v1`. */
 export interface SessionRevokedPayload {
   sessionId: string;

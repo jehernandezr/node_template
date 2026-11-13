@@ -5,7 +5,9 @@ import { ValidationRules } from './constants/validation.constants.js';
 import { AccessKind } from './enums/access-kind.enum.js';
 import { ErrorAudience } from './enums/error-audience.enum.js';
 import { HttpMethod } from './enums/http-method.enum.js';
+import { MessageKind } from './enums/message-kind.enum.js';
 import { PlatformErrorCode } from './enums/platform-error-code.enum.js';
+import { QueryValueKind } from './enums/query-value-kind.enum.js';
 import { platformErrorCatalog } from './errors/platform-error-catalog.js';
 import { defineServiceContract } from './kit/define-service-contract.js';
 import { EmptySchema } from './schemas/empty.schema.js';
@@ -30,7 +32,14 @@ export const platformContract = defineServiceContract({
   service: 'platform',
   description:
     'Kit de contratos y piezas transversales: identificadores, paginación, montos y errores.',
-  enums: { PlatformErrorCode, ErrorAudience, HttpMethod, AccessKind },
+  enums: {
+    PlatformErrorCode,
+    ErrorAudience,
+    HttpMethod,
+    AccessKind,
+    MessageKind,
+    QueryValueKind,
+  },
   constants: { Pagination, MoneyLimits, IdentifierFormat, ValidationRules },
   schemas: {
     Id: IdSchema,

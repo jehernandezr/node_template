@@ -10,6 +10,7 @@ enum Permission {
   tasksRead('tasks:read'),
   tasksWrite('tasks:write'),
   billingRead('billing:read'),
+  billingWrite('billing:write'),
   backofficeAccess('backoffice:access');
 
   const Permission(this.wireCode);
@@ -324,7 +325,9 @@ enum IdentityErrorCode {
 /// así un valor nuevo del backend se ignora sin romper.
 enum IdentityRoute {
   signIn('identity.auth.sign-in'),
+  requestMfaChallenge('identity.auth.mfa-challenge'),
   verifyMfa('identity.auth.mfa-verify'),
+  getSessionAccess('identity.me.access'),
   listSessions('identity.sessions.list'),
   revokeSession('identity.sessions.revoke'),
   revokeOtherSessions('identity.sessions.revoke-others'),
@@ -349,8 +352,8 @@ enum IdentityRoute {
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
 enum IdentityOperation {
-  revokeUserSessions('identity.sessions.revoke-for-user'),
-  getUserAccess('identity.users.get-access');
+  revokeUserSessions('identity.sessions.revoke-for-user.v1'),
+  getUserAccess('identity.users.get-access.v1');
 
   const IdentityOperation(this.wireCode);
 
@@ -381,6 +384,27 @@ enum IdentityEvent {
 
   /// Valor con [code] como `wireCode`, o null si es desconocido.
   static IdentityEvent? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}
+
+/// Enum `IdentityTopic` del contrato `identity`.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum IdentityTopic {
+  events('identity-events');
+
+  const IdentityTopic(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static IdentityTopic? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
     }

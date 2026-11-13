@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   usesQuery,
+  type MessageDefinition,
   type ServiceContract,
   type StringEnum,
 } from '@contracts/platform';
@@ -10,12 +11,13 @@ export const JSON_SCHEMA_DIALECT =
   'https://json-schema.org/draft/2020-12/schema';
 
 /** Versión del formato de `contract.json`; el generador Dart la verifica. */
-export const EXPORT_FORMAT_VERSION = 1;
+export const EXPORT_FORMAT_VERSION = 2;
 
-type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
-type JsonObject = { [key: string]: Json };
+export type Json =
+  null | boolean | number | string | Json[] | { [key: string]: Json };
+export type JsonObject = { [key: string]: Json };
 
-interface SchemaOwner {
+export interface SchemaOwner {
   readonly service: string;
   readonly name: string;
 }
@@ -31,7 +33,7 @@ function fail(service: string, message: string): never {
   throw new Error(`contracts-export (${service}): ${message}`);
 }
 
-function ownersOf(contracts: readonly ServiceContract[]) {
+export function ownersOf(contracts: readonly ServiceContract[]) {
   const owners = new Map<z.ZodType, SchemaOwner>();
   for (const contract of contracts) {
     for (const [name, schema] of Object.entries(contract.schemas)) {
@@ -91,12 +93,53 @@ function cleanSchema(schema: Record<string, unknown>): JsonObject {
 }
 
 /**
+ * Comprueba que los identificadores que viajan entre servicios no se repitan
+ * entre contratos: ids de ruta y de operación, tipos de mensaje y nombres de
+ * tópicos y colas. Dentro de cada contrato ya lo valida `defineServiceContract`.
+ */
+export function checkGlobalUniqueness(
+  contracts: readonly ServiceContract[],
+): void {
+  const seen = new Map<string, string>();
+  const claim = (kind: string, id: string, service: string) => {
+    const key = `${kind}:${id}`;
+    const previous = seen.get(key);
+    if (previous !== undefined && previous !== service) {
+      fail(service, `${kind} ${id} ya está declarado en ${previous}`);
+    }
+    seen.set(key, service);
+  };
+  for (const contract of contracts) {
+    const { service } = contract;
+    for (const route of Object.values(contract.routes)) {
+      claim('la ruta', route.id, service);
+    }
+    for (const op of Object.values(contract.operations)) {
+      claim('la operación', op.id, service);
+    }
+    for (const message of [
+      ...Object.values(contract.events),
+      ...Object.values(contract.commands),
+    ]) {
+      claim('el mensaje', message.type, service);
+    }
+    for (const target of [
+      ...Object.values(contract.topics),
+      ...Object.values(contract.queues),
+    ]) {
+      claim('el tópico o la cola', target.name, service);
+    }
+  }
+}
+
+/**
  * Construye el `contract.json` de cada servicio. Es una función pura: no lee
  * ni escribe archivos, así se prueba sin tocar el disco.
  */
 export function buildExport(
   contracts: readonly ServiceContract[],
 ): Map<string, JsonObject> {
+  checkGlobalUniqueness(contracts);
   const owners = ownersOf(contracts);
   const knownCodes = new Set<string>();
   for (const contract of contracts) {
@@ -161,13 +204,19 @@ export function buildExport(
         if (route.access.mfaMaxAgeMinutes !== undefined) {
           access['mfaMaxAgeMinutes'] = route.access.mfaMaxAgeMinutes;
         }
-        return {
+        const entry: JsonObject = {
           name,
           id: route.id,
           method: route.method,
           path: route.path,
+          version: route.version,
           pathParams: [...route.pathParams],
           requestLocation: usesQuery(route.method) ? 'query' : 'body',
+          queryParams: route.queryParams.map((param) => ({
+            name: param.name,
+            kind: param.kind,
+            list: param.list,
+          })),
           request: refOf(route.request, `la ruta ${name}`),
           response: route.response
             ? refOf(route.response, `la ruta ${name}`)
@@ -175,8 +224,19 @@ export function buildExport(
           successStatus: route.successStatus,
           errors: [...route.errors],
           access,
-          description: route.description,
         };
+        if (route.deprecated) {
+          const deprecated: JsonObject = {
+            since: route.deprecated.since,
+            sunset: route.deprecated.sunset,
+          };
+          if (route.deprecated.replacement !== undefined) {
+            deprecated['replacement'] = route.deprecated.replacement;
+          }
+          entry['deprecated'] = deprecated;
+        }
+        entry['description'] = route.description;
+        return entry;
       },
     );
 
@@ -186,6 +246,7 @@ export function buildExport(
         const entry: JsonObject = {
           name,
           id: op.id,
+          version: op.version,
           input: refOf(op.input, `la operación ${name}`),
           output: refOf(op.output, `la operación ${name}`),
           idempotent: op.idempotent,
@@ -205,15 +266,20 @@ export function buildExport(
       },
     );
 
-    const events: Json[] = Object.entries(contract.events).map(
-      ([name, event]) => ({
+    const messagesOf = (
+      entries: Readonly<Record<string, MessageDefinition>>,
+      label: string,
+    ): Json[] =>
+      Object.entries(entries).map(([name, message]) => ({
         name,
-        type: event.type,
-        version: event.version,
-        payload: refOf(event.payload, `el evento ${name}`),
-        description: event.description,
-      }),
-    );
+        type: message.type,
+        kind: message.kind,
+        version: message.version,
+        payload: refOf(message.payload, `${label} ${name}`),
+        description: message.description,
+      }));
+    const events = messagesOf(contract.events, 'el evento');
+    const commands = messagesOf(contract.commands, 'el comando');
 
     const errors: JsonObject = {};
     for (const [enumName, entries] of Object.entries(contract.errors)) {
@@ -248,6 +314,7 @@ export function buildExport(
       routes,
       operations,
       events,
+      commands,
       errors,
     });
   }

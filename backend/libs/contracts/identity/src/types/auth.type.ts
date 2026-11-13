@@ -33,10 +33,28 @@ export interface SignInResponse {
   mfa?: PendingMfa;
 }
 
+/** Pedido de un desafío MFA con uno de los métodos ofrecidos. */
+export interface MfaChallengeRequest {
+  mfaToken: string;
+  method: MfaFactor;
+}
+
+/** Desafío MFA creado. El código llega por el método elegido. */
+export interface MfaChallenge {
+  /** Id del desafío; se envía al verificar. */
+  challengeId: string;
+  method: MfaFactor;
+  /** Instante ISO 8601 en que vence el código. */
+  expiresAt: string;
+  /** Dígitos del código, cuando el método envía uno (dispositivo o email). */
+  codeLength?: number;
+}
+
 /** Verificación de un desafío MFA. */
 export interface MfaVerifyRequest {
   mfaToken: string;
-  method: MfaFactor;
+  /** Desafío pedido con `POST /v1/auth/mfa/challenges`. */
+  challengeId: string;
   code: string;
   /** Clave pública del dispositivo en base64url; solo al registrar uno nuevo. */
   devicePublicKey?: string;

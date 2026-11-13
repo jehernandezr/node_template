@@ -1,0 +1,30 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export desde los contratos. No editar: ejecuta pnpm nx run contracts-export:topology-export.",
+  "formatVersion": 1,
+  "topics": [
+    {
+      "name": "identity-events",
+      "fifo": false,
+      "owner": "identity",
+      "producers": ["identity"],
+      "description": "Eventos de identity: sesiones y tokens revocados. Cada servicio suscribe su propia cola."
+    }
+  ],
+  "queues": [],
+  "routes": [
+    {
+      "type": "identity.session.revoked.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.tokens.revoked.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    }
+  ]
+}

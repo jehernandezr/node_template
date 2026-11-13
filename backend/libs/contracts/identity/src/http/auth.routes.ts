@@ -6,6 +6,8 @@ import {
 } from '@contracts/platform';
 import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
 import {
+  MfaChallengeRequestSchema,
+  MfaChallengeSchema,
   MfaVerifyRequestSchema,
   SignInRequestSchema,
   SignInResponseSchema,
@@ -25,6 +27,28 @@ export const SignInRoute = defineRoute({
   access: Access.public(),
   description:
     'Inicia sesión con email y contraseña. Responde tokens o un desafío MFA.',
+});
+
+/**
+ * `POST /v1/auth/mfa/challenges`: pide un desafío con uno de los métodos que
+ * ofreció el inicio de sesión. Con un dispositivo registrado, el código aparece
+ * en su app; si es el primer dispositivo, llega por email.
+ */
+export const RequestMfaChallengeRoute = defineRoute({
+  id: IdentityRoute.RequestMfaChallenge,
+  method: HttpMethod.Post,
+  path: '/v1/auth/mfa/challenges',
+  request: MfaChallengeRequestSchema,
+  response: MfaChallengeSchema,
+  successStatus: 201,
+  errors: [
+    IdentityErrorCode.MfaTokenInvalid,
+    IdentityErrorCode.MfaTooManyAttempts,
+    PlatformErrorCode.RateLimitExceeded,
+  ],
+  access: Access.public(),
+  description:
+    'Crea un desafío MFA para el login pendiente y envía el código por el método elegido.',
 });
 
 /** `POST /v1/auth/mfa/verify`: verifica el desafío y crea la sesión. */

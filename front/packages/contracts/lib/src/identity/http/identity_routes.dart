@@ -18,6 +18,7 @@ abstract final class IdentityRoutes {
     id: 'identity.auth.sign-in',
     method: HttpMethod.post,
     path: '/v1/auth/sign-in',
+    version: 1,
     pathParams: <String>[],
     requestLocation: RequestLocation.body,
     successStatus: 200,
@@ -27,11 +28,38 @@ abstract final class IdentityRoutes {
     ],
     requiresAuth: false,
     permissions: <String>[],
+    platformRoles: <String>[],
     encodeRequest: SignInRequest.encode,
     validateRequest: SignInRequestSchema.validate,
     validateResponse: SignInResponseSchema.validate,
     decodeResponse: SignInResponse.fromJson,
   );
+
+  /// Crea un desafío MFA para el login pendiente y envía el código por el método elegido.
+  ///
+  /// `POST /v1/auth/mfa/challenges`
+  static const requestMfaChallenge =
+      RouteDescriptor<MfaChallengeRequest, MfaChallenge>(
+        id: 'identity.auth.mfa-challenge',
+        method: HttpMethod.post,
+        path: '/v1/auth/mfa/challenges',
+        version: 1,
+        pathParams: <String>[],
+        requestLocation: RequestLocation.body,
+        successStatus: 201,
+        errors: <String>[
+          'IDENTITY.MFA.TOKEN_INVALID',
+          'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
+          'PLATFORM.RATE_LIMIT.EXCEEDED',
+        ],
+        requiresAuth: false,
+        permissions: <String>[],
+        platformRoles: <String>[],
+        encodeRequest: MfaChallengeRequest.encode,
+        validateRequest: MfaChallengeRequestSchema.validate,
+        validateResponse: MfaChallengeSchema.validate,
+        decodeResponse: MfaChallenge.fromJson,
+      );
 
   /// Verifica un desafío MFA, crea la sesión y registra el dispositivo nuevo.
   ///
@@ -40,6 +68,7 @@ abstract final class IdentityRoutes {
     id: 'identity.auth.mfa-verify',
     method: HttpMethod.post,
     path: '/v1/auth/mfa/verify',
+    version: 1,
     pathParams: <String>[],
     requestLocation: RequestLocation.body,
     successStatus: 200,
@@ -52,10 +81,35 @@ abstract final class IdentityRoutes {
     ],
     requiresAuth: false,
     permissions: <String>[],
+    platformRoles: <String>[],
     encodeRequest: MfaVerifyRequest.encode,
     validateRequest: MfaVerifyRequestSchema.validate,
     validateResponse: SignInResponseSchema.validate,
     decodeResponse: SignInResponse.fromJson,
+  );
+
+  /// Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.
+  ///
+  /// `GET /v1/me/access`
+  static const getSessionAccess = RouteDescriptor<Empty, SessionAccess>(
+    id: 'identity.me.access',
+    method: HttpMethod.get,
+    path: '/v1/me/access',
+    version: 1,
+    pathParams: <String>[],
+    requestLocation: RequestLocation.query,
+    successStatus: 200,
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+    ],
+    requiresAuth: true,
+    permissions: <String>[],
+    platformRoles: <String>[],
+    encodeRequest: Empty.encode,
+    validateRequest: EmptySchema.validate,
+    validateResponse: SessionAccessSchema.validate,
+    decodeResponse: SessionAccess.fromJson,
   );
 
   /// Lista las sesiones activas del usuario, la actual primero.
@@ -65,12 +119,14 @@ abstract final class IdentityRoutes {
     id: 'identity.sessions.list',
     method: HttpMethod.get,
     path: '/v1/me/sessions',
+    version: 1,
     pathParams: <String>[],
     requestLocation: RequestLocation.query,
     successStatus: 200,
     errors: <String>['IDENTITY.SESSION.REVOKED'],
     requiresAuth: true,
     permissions: <String>[],
+    platformRoles: <String>[],
     encodeRequest: PageQuery.encode,
     validateRequest: PageQuerySchema.validate,
     validateResponse: SessionPageSchema.validate,
@@ -84,12 +140,14 @@ abstract final class IdentityRoutes {
     id: 'identity.sessions.revoke',
     method: HttpMethod.delete,
     path: '/v1/me/sessions/{sessionId}',
+    version: 1,
     pathParams: <String>['sessionId'],
     requestLocation: RequestLocation.query,
     successStatus: 204,
     errors: <String>['PLATFORM.RESOURCE.NOT_FOUND', 'IDENTITY.SESSION.REVOKED'],
     requiresAuth: true,
     permissions: <String>[],
+    platformRoles: <String>[],
     encodeRequest: RevokeSessionRequest.encode,
     validateRequest: RevokeSessionRequestSchema.validate,
   );
@@ -101,12 +159,14 @@ abstract final class IdentityRoutes {
     id: 'identity.sessions.revoke-others',
     method: HttpMethod.post,
     path: '/v1/me/sessions/revoke-others',
+    version: 1,
     pathParams: <String>[],
     requestLocation: RequestLocation.body,
     successStatus: 200,
     errors: <String>['IDENTITY.SESSION.REVOKED'],
     requiresAuth: true,
     permissions: <String>[],
+    platformRoles: <String>[],
     encodeRequest: Empty.encode,
     validateRequest: EmptySchema.validate,
     validateResponse: RevokedSessionsSchema.validate,
@@ -120,12 +180,14 @@ abstract final class IdentityRoutes {
     id: 'identity.devices.list',
     method: HttpMethod.get,
     path: '/v1/me/devices',
+    version: 1,
     pathParams: <String>[],
     requestLocation: RequestLocation.query,
     successStatus: 200,
     errors: <String>['IDENTITY.SESSION.REVOKED'],
     requiresAuth: true,
     permissions: <String>[],
+    platformRoles: <String>[],
     encodeRequest: PageQuery.encode,
     validateRequest: PageQuerySchema.validate,
     validateResponse: DevicePageSchema.validate,

@@ -341,3 +341,48 @@ enum AccessKind {
     return null;
   }
 }
+
+/// Enum `MessageKind` del contrato `platform`.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum MessageKind {
+  event('event'),
+  command('command');
+
+  const MessageKind(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static MessageKind? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}
+
+/// Enum `QueryValueKind` del contrato `platform`.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum QueryValueKind {
+  string('string'),
+  number('number'),
+  boolean('boolean');
+
+  const QueryValueKind(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static QueryValueKind? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}

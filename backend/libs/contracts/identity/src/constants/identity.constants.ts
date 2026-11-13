@@ -18,6 +18,13 @@ export const MfaRules = {
   /** Dígitos del código enviado por email al primer dispositivo. */
   emailCodeLength: 6,
   maxAttemptsPerChallenge: 5,
+  /** Desafíos que se pueden pedir por cada ventana de `challengeWindowMinutes`. */
+  maxChallengesPerWindow: 3,
+  challengeWindowMinutes: 15,
+  /** Vida del código que muestra el dispositivo registrado. */
+  deviceCodeTtlSeconds: 180,
+  /** Vida del código enviado por email. */
+  emailCodeTtlSeconds: 300,
   /** Edad máxima del último MFA para operaciones sensibles (step-up). */
   stepUpMaxAgeMinutes: 10,
 } as const;

@@ -10,7 +10,7 @@ const generatedHeader = '// GENERATED, do not edit.';
 const generatedBarrel = 'generated_contracts.dart';
 
 /// Carpetas de cada servicio.
-enum Folder { enums, constants, types, schemas, http }
+enum Folder { enums, constants, types, schemas, http, messages }
 
 String _fileName(String service, Folder folder) => switch (folder) {
   Folder.enums => '${snake(service)}_enums.dart',
@@ -18,6 +18,7 @@ String _fileName(String service, Folder folder) => switch (folder) {
   Folder.types => '${snake(service)}_types.dart',
   Folder.schemas => '${snake(service)}_schemas.dart',
   Folder.http => '${snake(service)}_routes.dart',
+  Folder.messages => '${snake(service)}_messages.dart',
 };
 
 /// Ruta de un archivo generado, relativa a `lib/src`.
@@ -64,12 +65,14 @@ Map<String, String> generate(ContractModel model) {
     final types = _types(model, service);
     final schemas = _schemas(model, service);
     final http = _routes(model, service);
+    final messages = _messages(model, service);
     final parts = {
       Folder.enums: enums,
       Folder.constants: constants,
       Folder.types: types,
       Folder.schemas: schemas,
       Folder.http: http,
+      Folder.messages: messages,
     };
     final exports = <String>[];
     for (final entry in parts.entries) {
@@ -804,6 +807,61 @@ final class _Validators {
 // ---------------------------------------------------------------------------
 // Rutas
 
+/// Clase generada a la que apunta [ref]; agrega sus importaciones.
+SchemaId _generatedClassOf(
+  ContractModel model,
+  String service,
+  _Imports imports,
+  Object? ref,
+  String where,
+) {
+  if (ref is! Map<String, dynamic> || ref[r'$ref'] is! String) {
+    throw GeneratorException('$service.$where: se espera un \$ref');
+  }
+  final id = model.resolve(service, ref[r'$ref'] as String);
+  if (!ContractModel.isObject(model.schema(id)) || coreClasses.contains(id)) {
+    throw GeneratorException('$service.$where: $id no es un objeto generado');
+  }
+  imports
+    ..of(id.service, Folder.types)
+    ..of(id.service, Folder.schemas);
+  return id;
+}
+
+/// Campos de `access` que entiende el generador.
+const _accessKeys = {
+  'kind',
+  'permissions',
+  'platformRoles',
+  'mfaMaxAgeMinutes',
+};
+
+/// Campos de `deprecated` que entiende el generador.
+const _deprecationKeys = {'since', 'sunset', 'replacement'};
+
+/// Valores de los enums de acceso declarados en algún contrato, por nombre.
+Map<String, Set<String>> _accessValues(ContractModel model) {
+  final result = <String, Set<String>>{};
+  for (final service in model.services) {
+    for (final name in const ['Permission', 'PlatformRole']) {
+      final declared = model.enumsOf(service)[name] as Json?;
+      if (declared == null) continue;
+      result.putIfAbsent(name, () => {}).addAll([
+        for (final v in declared['values'] as List)
+          (v as Json)['value'] as String,
+      ]);
+    }
+  }
+  return result;
+}
+
+void _checkKeys(String where, Json json, Set<String> known) {
+  final unknown = json.keys.where((k) => !known.contains(k)).toList();
+  if (unknown.isNotEmpty) {
+    throw GeneratorException('$where: campos desconocidos $unknown');
+  }
+}
+
 (_Imports, String) _routes(ContractModel model, String service) {
   final imports = _Imports();
   final routes = model.routesOf(service);
@@ -815,20 +873,10 @@ final class _Validators {
   final out = StringBuffer()
     ..writeln('/// Rutas HTTP públicas del contrato `$service`.')
     ..writeln('abstract final class $className {');
+  final accessValues = _accessValues(model);
 
-  SchemaId classOf(Object? ref, String where) {
-    if (ref is! Map<String, dynamic> || ref[r'$ref'] is! String) {
-      throw GeneratorException('$service.$where: se espera un \$ref');
-    }
-    final id = model.resolve(service, ref[r'$ref'] as String);
-    if (!ContractModel.isObject(model.schema(id)) || coreClasses.contains(id)) {
-      throw GeneratorException('$service.$where: $id no es un objeto generado');
-    }
-    imports
-      ..of(id.service, Folder.types)
-      ..of(id.service, Folder.schemas);
-    return id;
-  }
+  SchemaId classOf(Object? ref, String where) =>
+      _generatedClassOf(model, service, imports, ref, where);
 
   for (final route in routes) {
     final name = route['name'] as String;
@@ -837,6 +885,30 @@ final class _Validators {
         ? null
         : classOf(route['response'], name);
     final access = route['access'] as Json;
+    _checkKeys('$service.$name.access', access, _accessKeys);
+    if (access['kind'] != 'public' && access['kind'] != 'authenticated') {
+      throw GeneratorException(
+        '$service.$name.access: kind desconocido ${access['kind']}',
+      );
+    }
+    for (final (key, enumName) in const [
+      ('permissions', 'Permission'),
+      ('platformRoles', 'PlatformRole'),
+    ]) {
+      final known = accessValues[enumName];
+      for (final value in (access[key] as List?) ?? const []) {
+        if (known == null || !known.contains(value)) {
+          throw GeneratorException(
+            '$service.$name.access.$key: $value no está en el enum $enumName',
+          );
+        }
+      }
+    }
+    final mfaMaxAge = access['mfaMaxAgeMinutes'];
+    final deprecated = route['deprecated'] as Json?;
+    if (deprecated != null) {
+      _checkKeys('$service.$name.deprecated', deprecated, _deprecationKeys);
+    }
     String strings(Object? list) =>
         '<String>[${((list as List?) ?? const []).map((e) => dartString(e as String)).join(', ')}]';
     out
@@ -851,6 +923,7 @@ final class _Validators {
         '    method: HttpMethod.${(route['method'] as String).toLowerCase()},',
       )
       ..writeln('    path: ${dartString(route['path'] as String)},')
+      ..writeln('    version: ${route['version'] as int},')
       ..writeln('    pathParams: ${strings(route['pathParams'])},')
       ..writeln(
         '    requestLocation: RequestLocation.${route['requestLocation']},',
@@ -859,6 +932,24 @@ final class _Validators {
       ..writeln('    errors: ${strings(route['errors'])},')
       ..writeln('    requiresAuth: ${access['kind'] != 'public'},')
       ..writeln('    permissions: ${strings(access['permissions'])},')
+      ..writeln('    platformRoles: ${strings(access['platformRoles'])},');
+    if (mfaMaxAge != null) {
+      out.writeln('    mfaMaxAgeMinutes: ${mfaMaxAge as int},');
+    }
+    if (deprecated != null) {
+      final replacement = deprecated['replacement'] as String?;
+      out
+        ..writeln('    deprecated: RouteDeprecation(')
+        ..writeln('      since: ${dartString(deprecated['since'] as String)},')
+        ..writeln(
+          '      sunset: ${dartString(deprecated['sunset'] as String)},',
+        );
+      if (replacement != null) {
+        out.writeln('      replacement: ${dartString(replacement)},');
+      }
+      out.writeln('    ),');
+    }
+    out
       ..writeln('    encodeRequest: ${request.name}.encode,')
       ..writeln('    validateRequest: ${request.name}Schema.validate,');
     if (response != null) {
@@ -871,5 +962,82 @@ final class _Validators {
       ..writeln();
   }
   out.writeln('}');
+  return (imports, out.toString());
+}
+
+// ---------------------------------------------------------------------------
+// Mensajes (eventos y comandos)
+
+(_Imports, String) _messages(ContractModel model, String service) {
+  final imports = _Imports();
+  final groups = [
+    (
+      'Events',
+      'Eventos que publica el contrato `$service`.',
+      model.eventsOf(service),
+    ),
+    (
+      'Commands',
+      'Comandos que atiende el contrato `$service`.',
+      model.commandsOf(service),
+    ),
+  ];
+  if (groups.every((g) => g.$3.isEmpty)) return (imports, '');
+  imports
+    ..core()
+    ..of('platform', Folder.enums);
+  final out = StringBuffer();
+  for (final (suffix, description, messages) in groups) {
+    if (messages.isEmpty) continue;
+    final className = '${upperCamel(service)}$suffix';
+    out
+      ..writeln('/// $description')
+      ..writeln('abstract final class $className {');
+    final names = <String>[];
+    for (final message in messages) {
+      final name = safeIdentifier(message['name'] as String);
+      final kind = message['kind'] as String?;
+      if (kind != 'event' && kind != 'command') {
+        throw GeneratorException('$service.$name: kind desconocido $kind');
+      }
+      final payload = _generatedClassOf(
+        model,
+        service,
+        imports,
+        message['payload'],
+        name,
+      );
+      names.add(name);
+      out
+        ..write(docComment(message['description'] as String?, indent: '  '))
+        ..writeln('  ///')
+        ..writeln('  /// `${message['type']}`')
+        ..writeln('  static const $name = MessageDescriptor<${payload.name}>(')
+        ..writeln('    type: ${dartString(message['type'] as String)},')
+        ..writeln('    kind: MessageKind.$kind,')
+        ..writeln('    version: ${message['version'] as int},')
+        ..writeln('    validatePayload: ${payload.name}Schema.validate,')
+        ..writeln('    decodePayload: ${payload.name}.fromJson,')
+        ..writeln('  );')
+        ..writeln();
+    }
+    out
+      ..writeln('  /// Todos los descriptores, en el orden del contrato.')
+      ..writeln(
+        '  static const all = <MessageDescriptor<Object?>>[${names.join(', ')}];',
+      )
+      ..writeln()
+      ..writeln(
+        '  /// Descriptor con [type], o null si este cliente no lo conoce.',
+      )
+      ..writeln('  static MessageDescriptor<Object?>? byType(String type) {')
+      ..writeln('    for (final message in all) {')
+      ..writeln('      if (message.type == type) return message;')
+      ..writeln('    }')
+      ..writeln('    return null;')
+      ..writeln('  }')
+      ..writeln('}')
+      ..writeln();
+  }
   return (imports, out.toString());
 }

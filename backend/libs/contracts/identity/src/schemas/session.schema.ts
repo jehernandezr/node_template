@@ -19,6 +19,7 @@ import type {
   RevokedSessions,
   RevokeSessionRequest,
   RevokeUserSessionsInput,
+  SessionAccess,
   SessionPage,
   SessionRevokedPayload,
   SessionSummary,
@@ -117,6 +118,18 @@ export const UserAccessSchema = z
   .describe(
     'Acceso efectivo de un usuario en un tenant.',
   ) satisfies z.ZodType<UserAccess>;
+
+export const SessionAccessSchema = z
+  .object({
+    userId: IdSchema,
+    tenantId: IdSchema,
+    sessionId: IdSchema,
+    ...UserAccessSchema.shape,
+    mfaVerifiedAt: TimestampSchema.nullable(),
+  })
+  .describe(
+    'Acceso de la sesión actual: usuario, tenant, permisos, roles, plan, flags y último MFA.',
+  ) satisfies z.ZodType<SessionAccess>;
 
 export const SessionRevokedPayloadSchema = z
   .object({

@@ -107,17 +107,26 @@ void main() {
       expect(
         _pairs(
           MfaVerifyRequestSchema.validate({
-            'method': 'fax',
+            'challengeId': 'not-a-uuid',
             'code': 12345678,
             'extra': true,
           }),
         ),
         [
           ('mfaToken', PlatformErrorCode.validationRequired.code),
-          ('method', PlatformErrorCode.validationInvalidEnum.code),
+          ('challengeId', PlatformErrorCode.validationInvalidFormat.code),
           ('code', PlatformErrorCode.validationInvalidType.code),
           ('extra', PlatformErrorCode.validationUnknownField.code),
         ],
+      );
+      expect(
+        _pairs(
+          MfaChallengeRequestSchema.validate({
+            'mfaToken': 't',
+            'method': 'fax',
+          }),
+        ),
+        [('method', PlatformErrorCode.validationInvalidEnum.code)],
       );
     });
 
@@ -207,6 +216,87 @@ void main() {
         IdentityRoutes.verifyMfa.errors,
         contains(IdentityErrorCode.mfaCodeExpired.code),
       );
+    });
+
+    test('carry the version, the full access and the MFA flow', () {
+      expect(IdentityRoutes.listSessions.version, 1);
+      expect(IdentityRoutes.listSessions.platformRoles, isEmpty);
+      expect(IdentityRoutes.listSessions.mfaMaxAgeMinutes, isNull);
+      expect(IdentityRoutes.listSessions.deprecated, isNull);
+      expect(
+        IdentityRoutes.requestMfaChallenge.path,
+        '/v1/auth/mfa/challenges',
+      );
+      expect(IdentityRoutes.requestMfaChallenge.successStatus, 201);
+      expect(IdentityRoutes.getSessionAccess.requiresAuth, isTrue);
+      expect(Permission.billingWrite.wireCode, 'billing:write');
+    });
+
+    test('SessionAccess fills a session with a nullable last MFA', () {
+      final access = SessionAccess.fromJson({
+        'userId': _sessionId,
+        'tenantId': _sessionId,
+        'sessionId': _sessionId,
+        'permissions': ['billing:write', 'future:permission'],
+        'platformRoles': <String>[],
+        'features': ['billing'],
+        'flags': <String>[],
+        'mfaVerifiedAt': null,
+      });
+      expect(access.permissions, [Permission.billingWrite]);
+      expect(access.mfaVerifiedAt, isNull);
+    });
+
+    test('events decode their payload by type', () {
+      final descriptor = IdentityEvents.byType('identity.session.revoked.v1');
+      expect(descriptor, same(IdentityEvents.sessionRevoked));
+      expect(descriptor?.kind, MessageKind.event);
+      expect(IdentityEvents.byType('identity.unknown.v1'), isNull);
+      final payload = IdentityEvents.sessionRevoked.decodePayload({
+        'sessionId': _sessionId,
+        'userId': _sessionId,
+        'tenantId': _sessionId,
+        'reason': 'logout',
+        'revokedAt': '2026-11-13T10:00:00.000Z',
+      });
+      expect(payload.reason, RevocationReason.logout);
+    });
+
+    test('encodeQuery sends the text the backend decodes', () {
+      expect(
+        encodeQuery({
+          'limit': 20,
+          'ratio': 2.0,
+          'half': 0.5,
+          'archived': false,
+          'after': 'abc',
+          'tags': ['a', 'b'],
+          'missing': null,
+        }),
+        {
+          'limit': ['20'],
+          'ratio': ['2'],
+          'half': ['0.5'],
+          'archived': ['false'],
+          'after': ['abc'],
+          'tags': ['a', 'b'],
+        },
+      );
+      expect(
+        () => encodeQuery({
+          'nested': {'a': 1},
+        }),
+        throwsArgumentError,
+      );
+    });
+
+    test('a deprecation knows its sunset', () {
+      const deprecation = RouteDeprecation(
+        since: '2026-11-01',
+        sunset: '2027-05-01',
+      );
+      expect(deprecation.isSunset(DateTime.utc(2027, 4, 30)), isFalse);
+      expect(deprecation.isSunset(DateTime.utc(2027, 5, 1)), isTrue);
     });
 
     test('error enums carry the catalog metadata', () {

@@ -1,13 +1,20 @@
 import { z } from 'zod';
 import {
   Access,
+  defineCommand,
+  defineQueue,
   defineRoute,
   defineServiceContract,
   HttpMethod,
   IdSchema,
   platformContract,
 } from '@contracts/platform';
-import { buildExport, JSON_SCHEMA_DIALECT, schemaRef } from './build-export.js';
+import {
+  buildExport,
+  checkGlobalUniqueness,
+  JSON_SCHEMA_DIALECT,
+  schemaRef,
+} from './build-export.js';
 import { contracts } from './registry.js';
 
 type Obj = Record<string, unknown>;
@@ -74,6 +81,7 @@ describe('buildExport', () => {
         { name: 'TasksRead', value: 'tasks:read' },
         { name: 'TasksWrite', value: 'tasks:write' },
         { name: 'BillingRead', value: 'billing:read' },
+        { name: 'BillingWrite', value: 'billing:write' },
         { name: 'BackofficeAccess', value: 'backoffice:access' },
       ],
     });
@@ -85,18 +93,30 @@ describe('buildExport', () => {
       method: 'DELETE',
       pathParams: ['sessionId'],
       requestLocation: 'query',
+      version: 1,
+      queryParams: [],
       response: null,
       successStatus: 204,
     });
+    expect(routes.find((r) => r['name'] === 'listSessions')).toMatchObject({
+      queryParams: [
+        { name: 'limit', kind: 'number', list: false },
+        { name: 'after', kind: 'string', list: false },
+      ],
+    });
     const ops = identity['operations'] as Obj[];
     expect(ops.find((o) => o['name'] === 'revokeUserSessions')).toMatchObject({
+      id: 'identity.sessions.revoke-for-user.v1',
+      version: 1,
       mutating: true,
       compensatedBy: 'none',
     });
     expect((identity['events'] as Obj[])[0]).toMatchObject({
       type: 'identity.session.revoked.v1',
+      kind: 'event',
       version: 1,
     });
+    expect(identity['commands']).toEqual([]);
     const errors = (identity['errors'] as Obj)['IdentityErrorCode'] as Obj[];
     expect(errors[0]).toMatchObject({
       name: 'AuthInvalidCredentials',
@@ -155,6 +175,68 @@ describe('buildExport', () => {
     });
     expect(() => buildExport([platformContract, sample])).toThrow(
       /ya está registrado/,
+    );
+  });
+});
+
+describe('buildExport with commands, deprecations and shared ids', () => {
+  const Payload = z.object({ itemId: IdSchema });
+  const generate = defineCommand({
+    type: 'sample.report.generate.v1',
+    payload: Payload,
+    description: 'Genera.',
+  });
+  const legacy = defineRoute({
+    id: 'sample.items.legacy',
+    method: HttpMethod.Post,
+    path: '/v1/legacy',
+    request: Payload,
+    access: Access.public(),
+    deprecated: {
+      since: '2026-11-01',
+      sunset: '2027-05-01',
+      replacement: 'sample.items.legacy',
+    },
+    description: 'x',
+  });
+  const sample = defineServiceContract({
+    service: 'sample',
+    description: 'x',
+    schemas: { SamplePayload: Payload },
+    routes: { legacy },
+    commands: { generate },
+    queues: {
+      commands: defineQueue({
+        name: 'sample-commands',
+        commands: [generate],
+        description: 'x',
+      }),
+    },
+  });
+
+  it('exports commands and the deprecation of a route', () => {
+    const doc = buildExport([platformContract, sample]).get('sample') as Obj;
+    expect(doc['commands']).toEqual([
+      {
+        name: 'generate',
+        type: 'sample.report.generate.v1',
+        kind: 'command',
+        version: 1,
+        payload: { $ref: '#/schemas/SamplePayload' },
+        description: 'Genera.',
+      },
+    ]);
+    expect((doc['routes'] as Obj[])[0]['deprecated']).toEqual({
+      since: '2026-11-01',
+      sunset: '2027-05-01',
+      replacement: 'sample.items.legacy',
+    });
+  });
+
+  it('fails when two services declare the same id', () => {
+    const other = { ...sample, service: 'other' };
+    expect(() => checkGlobalUniqueness([sample, other])).toThrow(
+      /ya está declarado en sample/,
     );
   });
 });

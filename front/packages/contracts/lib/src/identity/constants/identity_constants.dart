@@ -20,5 +20,9 @@ abstract final class MfaRules {
   static const int deviceCodeLength = 8;
   static const int emailCodeLength = 6;
   static const int maxAttemptsPerChallenge = 5;
+  static const int maxChallengesPerWindow = 3;
+  static const int challengeWindowMinutes = 15;
+  static const int deviceCodeTtlSeconds = 180;
+  static const int emailCodeTtlSeconds = 300;
   static const int stepUpMaxAgeMinutes = 10;
 }

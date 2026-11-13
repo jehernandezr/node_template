@@ -11,7 +11,7 @@ export interface OperationRetryPolicy {
 }
 
 interface OperationSpecBase<I extends z.ZodType, O extends z.ZodType> {
-  /** Identificador estable, por ejemplo `identity.sessions.revoke-for-user`. */
+  /** Identificador estable y versionado, por ejemplo `identity.sessions.revoke-for-user.v1`. */
   readonly id: string;
   readonly input: I;
   readonly output: O;
@@ -57,7 +57,10 @@ export interface OperationDefinition<
   I extends z.ZodType = z.ZodType,
   O extends z.ZodType = z.ZodType,
 > {
+  /** `servicio.entidad.operación.vN`. Un cambio incompatible crea un id `.vN+1`. */
   readonly id: string;
+  /** Versión tomada del sufijo `.vN` del id. */
+  readonly version: number;
   readonly input: I;
   readonly output: O;
   readonly idempotent: boolean;
@@ -70,7 +73,11 @@ export interface OperationDefinition<
   readonly description: string;
 }
 
-const OPERATION_ID = /^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$/;
+/**
+ * `servicio.entidad.operación.vN`. El id queda guardado en la bitácora de sagas y
+ * en las llaves de idempotencia, por eso la versión va en el id desde el inicio.
+ */
+const OPERATION_ID = /^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+\.v([1-9][0-9]*)$/;
 
 /**
  * Declara una operación interna. Una operación que modifica datos declara
@@ -82,7 +89,8 @@ export function defineOperation<I extends z.ZodType, O extends z.ZodType>(
   const fail = (reason: string): never => {
     throw new ContractDefinitionError(`Operación ${spec.id}: ${reason}`);
   };
-  if (!OPERATION_ID.test(spec.id)) fail('id inválido');
+  const match = OPERATION_ID.exec(spec.id);
+  if (!match) fail('id inválido: se espera servicio.entidad.operación.vN');
   if (!spec.description.trim()) fail('falta la descripción');
   const mutating = spec.mutating ?? true;
   if (mutating) {
@@ -115,6 +123,7 @@ export function defineOperation<I extends z.ZodType, O extends z.ZodType>(
     >[K];
   } = {
     id: spec.id,
+    version: Number(match?.[2]),
     input: spec.input,
     output: spec.output,
     idempotent: spec.idempotent,

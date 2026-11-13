@@ -14,7 +14,9 @@ export enum IdentityErrorCode {
 /** Identificadores de las rutas públicas de identity. */
 export enum IdentityRoute {
   SignIn = 'identity.auth.sign-in',
+  RequestMfaChallenge = 'identity.auth.mfa-challenge',
   VerifyMfa = 'identity.auth.mfa-verify',
+  GetSessionAccess = 'identity.me.access',
   ListSessions = 'identity.sessions.list',
   RevokeSession = 'identity.sessions.revoke',
   RevokeOtherSessions = 'identity.sessions.revoke-others',
@@ -23,12 +25,17 @@ export enum IdentityRoute {
 
 /** Identificadores de las operaciones internas de identity. */
 export enum IdentityOperation {
-  RevokeUserSessions = 'identity.sessions.revoke-for-user',
-  GetUserAccess = 'identity.users.get-access',
+  RevokeUserSessions = 'identity.sessions.revoke-for-user.v1',
+  GetUserAccess = 'identity.users.get-access.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica identity. */
 export enum IdentityEvent {
   SessionRevoked = 'identity.session.revoked.v1',
   TokensRevoked = 'identity.tokens.revoked.v1',
+}
+
+/** Tópicos donde identity publica sus eventos. */
+export enum IdentityTopic {
+  Events = 'identity-events',
 }

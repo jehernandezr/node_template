@@ -7,7 +7,7 @@ import 'package:contracts_gen/src/naming.dart';
 import 'package:test/test.dart';
 
 Json _doc(String service, {Json schemas = const {}, Json enums = const {}}) => {
-  'formatVersion': 1,
+  'formatVersion': 2,
   'service': service,
   'enums': enums,
   'constants': {
@@ -243,12 +243,120 @@ void main() {
     test('rejects an unknown format version and the reserved core name', () {
       expect(
         () => _model({
-          'platform': {..._platform(), 'formatVersion': 2},
+          'platform': {..._platform(), 'formatVersion': 1},
         }),
         throwsA(isA<GeneratorException>()),
       );
       expect(
         () => _model({'core': _doc('core')}),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+  });
+
+  group('routes and messages', () {
+    const fullAccess = <String, dynamic>{
+      'kind': 'authenticated',
+      'permissions': ['items:write'],
+      'platformRoles': ['support'],
+      'mfaMaxAgeMinutes': 10,
+    };
+    Json routed({
+      Json access = fullAccess,
+      Json deprecated = const {
+        'since': '2026-11-01',
+        'sunset': '2027-05-01',
+        'replacement': 'sample.items.put2',
+      },
+    }) => {
+      ..._sample(),
+      'enums': {
+        'Permission': {
+          'values': [
+            {'name': 'ItemsWrite', 'value': 'items:write'},
+          ],
+        },
+        'PlatformRole': {
+          'values': [
+            {'name': 'Support', 'value': 'support'},
+          ],
+        },
+      },
+      'routes': [
+        {
+          'name': 'putItem',
+          'id': 'sample.items.put',
+          'method': 'PUT',
+          'path': '/v2/items/{id}',
+          'version': 2,
+          'pathParams': ['id'],
+          'requestLocation': 'body',
+          'queryParams': <dynamic>[],
+          'request': {r'$ref': '#/schemas/Item'},
+          'response': null,
+          'successStatus': 204,
+          'errors': <dynamic>[],
+          'access': access,
+          'deprecated': deprecated,
+          'description': 'Guarda un ítem.',
+        },
+      ],
+      'events': [
+        {
+          'name': 'itemSaved',
+          'type': 'sample.item.saved.v1',
+          'kind': 'event',
+          'version': 1,
+          'payload': {r'$ref': '#/schemas/Item'},
+          'description': 'Se guardó un ítem.',
+        },
+      ],
+      'commands': <dynamic>[],
+    };
+    Map<String, String> gen(Json sample) =>
+        generate(_model({'platform': _platform(), 'sample': sample}));
+
+    test('emit the full access, the version and the deprecation', () {
+      final routes = gen(routed())['sample/http/sample_routes.dart']!;
+      expect(routes, contains('version: 2,'));
+      expect(routes, contains("permissions: <String>['items:write'],"));
+      expect(routes, contains("platformRoles: <String>['support'],"));
+      expect(routes, contains('mfaMaxAgeMinutes: 10,'));
+      expect(routes, contains('deprecated: RouteDeprecation('));
+      expect(routes, contains("replacement: 'sample.items.put2',"));
+    });
+
+    test('generate the events of each service with their payload', () {
+      final messages = gen(routed())['sample/messages/sample_messages.dart']!;
+      expect(messages, contains('abstract final class SampleEvents {'));
+      expect(messages, contains('MessageDescriptor<Item>('));
+      expect(messages, contains('kind: MessageKind.event,'));
+      expect(messages, contains('decodePayload: Item.fromJson,'));
+      expect(messages, isNot(contains('SampleCommands')));
+    });
+
+    test('reject unknown access fields and values outside the enums', () {
+      expect(
+        () => gen(routed(access: {...fullAccess, 'audience': 'backoffice'})),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => gen(
+          routed(
+            access: {
+              ...fullAccess,
+              'permissions': ['items:delete'],
+            },
+          ),
+        ),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => gen(routed(access: {...fullAccess, 'kind': 'internal'})),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => gen(routed(deprecated: {'since': '2026-11-01', 'until': 'x'})),
         throwsA(isA<GeneratorException>()),
       );
     });

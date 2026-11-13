@@ -1,8 +1,10 @@
 import { z } from 'zod';
-import { TimestampSchema } from '@contracts/platform';
+import { IdSchema, TimestampSchema } from '@contracts/platform';
 import { IdentityLimits } from '../constants/identity.constants.js';
 import { MfaFactor, SignInStatus } from '../enums/auth.enum.js';
 import type {
+  MfaChallenge,
+  MfaChallengeRequest,
   MfaVerifyRequest,
   PendingMfa,
   SessionTokens,
@@ -65,10 +67,32 @@ export const SignInResponseSchema = z
     'Resultado de un login o de una verificación MFA.',
   ) satisfies z.ZodType<SignInResponse>;
 
-export const MfaVerifyRequestSchema = z
+export const MfaChallengeRequestSchema = z
   .strictObject({
     mfaToken: z.string().min(1).max(IdentityLimits.mfaTokenMaxLength),
     method: MfaFactorSchema,
+  })
+  .describe(
+    'Pedido de un desafío MFA.',
+  ) satisfies z.ZodType<MfaChallengeRequest>;
+
+export const MfaChallengeSchema = z
+  .object({
+    challengeId: IdSchema,
+    method: MfaFactorSchema,
+    expiresAt: TimestampSchema,
+    codeLength: z
+      .int()
+      .min(IdentityLimits.mfaCodeMinLength)
+      .max(IdentityLimits.mfaCodeMaxLength)
+      .optional(),
+  })
+  .describe('Desafío MFA creado.') satisfies z.ZodType<MfaChallenge>;
+
+export const MfaVerifyRequestSchema = z
+  .strictObject({
+    mfaToken: z.string().min(1).max(IdentityLimits.mfaTokenMaxLength),
+    challengeId: IdSchema,
     code: z
       .string()
       .min(IdentityLimits.mfaCodeMinLength)

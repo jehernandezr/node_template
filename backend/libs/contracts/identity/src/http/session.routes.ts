@@ -8,10 +8,26 @@ import {
 import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
 import {
   DevicePageSchema,
+  SessionAccessSchema,
   RevokedSessionsSchema,
   RevokeSessionRequestSchema,
   SessionPageSchema,
 } from '../schemas/session.schema.js';
+
+/** `GET /v1/me/access`: acceso de la sesión actual, para llenar la sesión del front. */
+export const GetSessionAccessRoute = defineRoute({
+  id: IdentityRoute.GetSessionAccess,
+  method: HttpMethod.Get,
+  path: '/v1/me/access',
+  response: SessionAccessSchema,
+  errors: [
+    IdentityErrorCode.SessionRevoked,
+    IdentityErrorCode.TokenStalePermissions,
+  ],
+  access: Access.authenticated(),
+  description:
+    'Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.',
+});
 
 /** `GET /v1/me/sessions`: sesiones activas del usuario. */
 export const ListSessionsRoute = defineRoute({

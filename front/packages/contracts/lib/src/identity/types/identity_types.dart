@@ -206,12 +206,113 @@ final class SignInResponse {
   int get hashCode => contractHash([status, tokens, mfa]);
 }
 
+/// Pedido de un desafío MFA.
+@immutable
+final class MfaChallengeRequest {
+  const MfaChallengeRequest({required this.mfaToken, required this.method});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory MfaChallengeRequest.fromJson(Map<String, dynamic> json) {
+    try {
+      return MfaChallengeRequest(
+        mfaToken: json['mfaToken'] as String,
+        method: decodeEnum(json['method'], MfaFactor.tryParse, 'MfaFactor'),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid MfaChallengeRequest: $error', json);
+    }
+  }
+
+  final String mfaToken;
+
+  final MfaFactor method;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'mfaToken': mfaToken,
+    'method': method.wireCode,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(MfaChallengeRequest value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MfaChallengeRequest &&
+          contractEquals(mfaToken, other.mfaToken) &&
+          contractEquals(method, other.method);
+
+  @override
+  int get hashCode => contractHash([mfaToken, method]);
+}
+
+/// Desafío MFA creado.
+@immutable
+final class MfaChallenge {
+  const MfaChallenge({
+    required this.challengeId,
+    required this.method,
+    required this.expiresAt,
+    this.codeLength,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory MfaChallenge.fromJson(Map<String, dynamic> json) {
+    try {
+      return MfaChallenge(
+        challengeId: json['challengeId'] as String,
+        method: decodeEnum(json['method'], MfaFactor.tryParse, 'MfaFactor'),
+        expiresAt: DateTime.parse(json['expiresAt'] as String),
+        codeLength: json['codeLength'] == null
+            ? null
+            : (json['codeLength'] as num).toInt(),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid MfaChallenge: $error', json);
+    }
+  }
+
+  final String challengeId;
+
+  final MfaFactor method;
+
+  final DateTime expiresAt;
+
+  final int? codeLength;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'challengeId': challengeId,
+    'method': method.wireCode,
+    'expiresAt': expiresAt.toUtc().toIso8601String(),
+    'codeLength': ?codeLength,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(MfaChallenge value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MfaChallenge &&
+          contractEquals(challengeId, other.challengeId) &&
+          contractEquals(method, other.method) &&
+          contractEquals(expiresAt, other.expiresAt) &&
+          contractEquals(codeLength, other.codeLength);
+
+  @override
+  int get hashCode =>
+      contractHash([challengeId, method, expiresAt, codeLength]);
+}
+
 /// Verificación de un desafío MFA.
 @immutable
 final class MfaVerifyRequest {
   const MfaVerifyRequest({
     required this.mfaToken,
-    required this.method,
+    required this.challengeId,
     required this.code,
     this.devicePublicKey,
   });
@@ -221,7 +322,7 @@ final class MfaVerifyRequest {
     try {
       return MfaVerifyRequest(
         mfaToken: json['mfaToken'] as String,
-        method: decodeEnum(json['method'], MfaFactor.tryParse, 'MfaFactor'),
+        challengeId: json['challengeId'] as String,
         code: json['code'] as String,
         devicePublicKey: json['devicePublicKey'] as String?,
       );
@@ -232,7 +333,7 @@ final class MfaVerifyRequest {
 
   final String mfaToken;
 
-  final MfaFactor method;
+  final String challengeId;
 
   final String code;
 
@@ -241,7 +342,7 @@ final class MfaVerifyRequest {
   /// JSON del objeto; omite los campos opcionales nulos.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'mfaToken': mfaToken,
-    'method': method.wireCode,
+    'challengeId': challengeId,
     'code': code,
     'devicePublicKey': ?devicePublicKey,
   };
@@ -254,12 +355,13 @@ final class MfaVerifyRequest {
       identical(this, other) ||
       other is MfaVerifyRequest &&
           contractEquals(mfaToken, other.mfaToken) &&
-          contractEquals(method, other.method) &&
+          contractEquals(challengeId, other.challengeId) &&
           contractEquals(code, other.code) &&
           contractEquals(devicePublicKey, other.devicePublicKey);
 
   @override
-  int get hashCode => contractHash([mfaToken, method, code, devicePublicKey]);
+  int get hashCode =>
+      contractHash([mfaToken, challengeId, code, devicePublicKey]);
 }
 
 /// Sesión activa en un dispositivo.
@@ -712,6 +814,112 @@ final class UserAccess {
   @override
   int get hashCode =>
       contractHash([permissions, platformRoles, features, flags]);
+}
+
+/// Acceso de la sesión actual: usuario, tenant, permisos, roles, plan, flags y último MFA.
+@immutable
+final class SessionAccess {
+  const SessionAccess({
+    required this.userId,
+    required this.tenantId,
+    required this.sessionId,
+    required this.permissions,
+    required this.platformRoles,
+    required this.features,
+    required this.flags,
+    required this.mfaVerifiedAt,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory SessionAccess.fromJson(Map<String, dynamic> json) {
+    try {
+      return SessionAccess(
+        userId: json['userId'] as String,
+        tenantId: json['tenantId'] as String,
+        sessionId: json['sessionId'] as String,
+        permissions: [
+          for (final e0 in json['permissions'] as List<dynamic>)
+            ?Permission.tryParse(e0 as String),
+        ],
+        platformRoles: [
+          for (final e0 in json['platformRoles'] as List<dynamic>)
+            ?PlatformRole.tryParse(e0 as String),
+        ],
+        features: [
+          for (final e0 in json['features'] as List<dynamic>)
+            ?PlanFeature.tryParse(e0 as String),
+        ],
+        flags: [
+          for (final e0 in json['flags'] as List<dynamic>)
+            ?FeatureFlag.tryParse(e0 as String),
+        ],
+        mfaVerifiedAt: json['mfaVerifiedAt'] == null
+            ? null
+            : DateTime.parse(json['mfaVerifiedAt'] as String),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid SessionAccess: $error', json);
+    }
+  }
+
+  final String userId;
+
+  final String tenantId;
+
+  final String sessionId;
+
+  final List<Permission> permissions;
+
+  final List<PlatformRole> platformRoles;
+
+  final List<PlanFeature> features;
+
+  final List<FeatureFlag> flags;
+
+  final DateTime? mfaVerifiedAt;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'userId': userId,
+    'tenantId': tenantId,
+    'sessionId': sessionId,
+    'permissions': [for (final e0 in permissions) e0.wireCode],
+    'platformRoles': [for (final e0 in platformRoles) e0.wireCode],
+    'features': [for (final e0 in features) e0.wireCode],
+    'flags': [for (final e0 in flags) e0.wireCode],
+    'mfaVerifiedAt': switch (mfaVerifiedAt) {
+      final value? => value.toUtc().toIso8601String(),
+      null => null,
+    },
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(SessionAccess value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SessionAccess &&
+          contractEquals(userId, other.userId) &&
+          contractEquals(tenantId, other.tenantId) &&
+          contractEquals(sessionId, other.sessionId) &&
+          contractEquals(permissions, other.permissions) &&
+          contractEquals(platformRoles, other.platformRoles) &&
+          contractEquals(features, other.features) &&
+          contractEquals(flags, other.flags) &&
+          contractEquals(mfaVerifiedAt, other.mfaVerifiedAt);
+
+  @override
+  int get hashCode => contractHash([
+    userId,
+    tenantId,
+    sessionId,
+    permissions,
+    platformRoles,
+    features,
+    flags,
+    mfaVerifiedAt,
+  ]);
 }
 
 /// Se revocó una sesión.

@@ -7,10 +7,30 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { format, resolveConfig } from 'prettier';
+import { ASYNCAPI_PATH, buildAsyncApi } from './build-asyncapi.js';
 import { buildExport } from './build-export.js';
+import { buildTopology, TOPOLOGY_PATH } from './build-topology.js';
 import { contracts } from './registry.js';
 
 const CONTRACTS_DIR = resolve('libs/contracts');
+
+const USAGE =
+  'Uso: contracts-export <export|check|topology-export|topology-check>';
+
+/** Qué archivos genera cada modo y si los escribe o solo los compara. */
+const MODES: Readonly<
+  Record<string, { readonly write: boolean; readonly topologyOnly: boolean }>
+> = {
+  export: { write: true, topologyOnly: false },
+  check: { write: false, topologyOnly: false },
+  'topology-export': { write: true, topologyOnly: true },
+  'topology-check': { write: false, topologyOnly: true },
+};
+
+interface Artifact {
+  readonly path: string;
+  readonly value: unknown;
+}
 
 function exportPath(service: string): string {
   return join(CONTRACTS_DIR, service, 'export', 'contract.json');
@@ -32,9 +52,26 @@ function unregisteredDirs(): string[] {
     .map((entry) => entry.name);
 }
 
+function artifacts(topologyOnly: boolean): Artifact[] {
+  const topology: Artifact = {
+    path: resolve(TOPOLOGY_PATH),
+    value: buildTopology(contracts),
+  };
+  if (topologyOnly) return [topology];
+  return [
+    ...[...buildExport(contracts)].map(([service, value]) => ({
+      path: exportPath(service),
+      value,
+    })),
+    topology,
+    { path: resolve(ASYNCAPI_PATH), value: buildAsyncApi(contracts) },
+  ];
+}
+
 async function main(mode: string | undefined): Promise<number> {
-  if (mode !== 'export' && mode !== 'check') {
-    console.error('Uso: contracts-export <export|check>');
+  const options = mode === undefined ? undefined : MODES[mode];
+  if (!options) {
+    console.error(USAGE);
     return 2;
   }
   const missing = unregisteredDirs();
@@ -44,12 +81,10 @@ async function main(mode: string | undefined): Promise<number> {
     );
     return 1;
   }
-  const exported = buildExport(contracts);
   const drift: string[] = [];
-  for (const [service, value] of exported) {
-    const path = exportPath(service);
+  for (const { path, value } of artifacts(options.topologyOnly)) {
     const content = await render(path, value);
-    if (mode === 'export') {
+    if (options.write) {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, content);
       console.log(`Escrito ${path}`);
@@ -59,7 +94,7 @@ async function main(mode: string | undefined): Promise<number> {
   }
   if (drift.length > 0) {
     console.error(
-      `Los contratos exportados no coinciden con el TypeScript:\n${drift
+      `Los archivos generados no coinciden con los contratos en TypeScript:\n${drift
         .map((p) => `  ${p}`)
         .join(
           '\n',
@@ -67,7 +102,7 @@ async function main(mode: string | undefined): Promise<number> {
     );
     return 1;
   }
-  if (mode === 'check') console.log('Contratos exportados al día.');
+  if (!options.write) console.log('Archivos generados al día.');
   return 0;
 }
 

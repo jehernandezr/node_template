@@ -1,6 +1,6 @@
 {
   "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
-  "formatVersion": 1,
+  "formatVersion": 2,
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "service": "platform",
   "description": "Kit de contratos y piezas transversales: identificadores, paginación, montos y errores.",
@@ -377,6 +377,19 @@
         { "name": "Public", "value": "public" },
         { "name": "Authenticated", "value": "authenticated" }
       ]
+    },
+    "MessageKind": {
+      "values": [
+        { "name": "Event", "value": "event" },
+        { "name": "Command", "value": "command" }
+      ]
+    },
+    "QueryValueKind": {
+      "values": [
+        { "name": "String", "value": "string" },
+        { "name": "Number", "value": "number" },
+        { "name": "Boolean", "value": "boolean" }
+      ]
     }
   },
   "constants": {
@@ -490,6 +503,7 @@
   "routes": [],
   "operations": [],
   "events": [],
+  "commands": [],
   "errors": {
     "PlatformErrorCode": [
       {

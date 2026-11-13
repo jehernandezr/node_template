@@ -18,14 +18,21 @@ import {
   IdentityEvent,
   IdentityOperation,
   IdentityRoute,
+  IdentityTopic,
 } from './enums/identifiers.enum.js';
 import { identityErrorCatalog } from './errors/identity-error-catalog.js';
 import {
   SessionRevokedEvent,
   TokensRevokedEvent,
 } from './events/identity.events.js';
-import { SignInRoute, VerifyMfaRoute } from './http/auth.routes.js';
+import { IdentityEventsTopic } from './events/identity.topics.js';
 import {
+  RequestMfaChallengeRoute,
+  SignInRoute,
+  VerifyMfaRoute,
+} from './http/auth.routes.js';
+import {
+  GetSessionAccessRoute,
   ListDevicesRoute,
   ListSessionsRoute,
   RevokeOtherSessionsRoute,
@@ -36,6 +43,8 @@ import {
   RevokeUserSessionsOperation,
 } from './internal/identity.operations.js';
 import {
+  MfaChallengeRequestSchema,
+  MfaChallengeSchema,
   MfaFactorSchema,
   MfaVerifyRequestSchema,
   PendingMfaSchema,
@@ -58,6 +67,7 @@ import {
   RevokedSessionsSchema,
   RevokeSessionRequestSchema,
   RevokeUserSessionsInputSchema,
+  SessionAccessSchema,
   SessionPageSchema,
   SessionRevokedPayloadSchema,
   SessionSummarySchema,
@@ -84,6 +94,7 @@ export const identityContract = defineServiceContract({
     IdentityRoute,
     IdentityOperation,
     IdentityEvent,
+    IdentityTopic,
   },
   constants: { IdentityLimits, MfaRules },
   schemas: {
@@ -100,6 +111,8 @@ export const identityContract = defineServiceContract({
     SessionTokens: SessionTokensSchema,
     PendingMfa: PendingMfaSchema,
     SignInResponse: SignInResponseSchema,
+    MfaChallengeRequest: MfaChallengeRequestSchema,
+    MfaChallenge: MfaChallengeSchema,
     MfaVerifyRequest: MfaVerifyRequestSchema,
     SessionSummary: SessionSummarySchema,
     SessionPage: SessionPageSchema,
@@ -110,12 +123,15 @@ export const identityContract = defineServiceContract({
     RevokeUserSessionsInput: RevokeUserSessionsInputSchema,
     GetUserAccessInput: GetUserAccessInputSchema,
     UserAccess: UserAccessSchema,
+    SessionAccess: SessionAccessSchema,
     SessionRevokedPayload: SessionRevokedPayloadSchema,
     TokensRevokedPayload: TokensRevokedPayloadSchema,
   },
   routes: {
     signIn: SignInRoute,
+    requestMfaChallenge: RequestMfaChallengeRoute,
     verifyMfa: VerifyMfaRoute,
+    getSessionAccess: GetSessionAccessRoute,
     listSessions: ListSessionsRoute,
     revokeSession: RevokeSessionRoute,
     revokeOtherSessions: RevokeOtherSessionsRoute,
@@ -129,5 +145,6 @@ export const identityContract = defineServiceContract({
     sessionRevoked: SessionRevokedEvent,
     tokensRevoked: TokensRevokedEvent,
   },
+  topics: { events: IdentityEventsTopic },
   errors: { IdentityErrorCode: identityErrorCatalog },
 });

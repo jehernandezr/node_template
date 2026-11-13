@@ -158,7 +158,7 @@ void main() {
           IdentityRoutes.verifyMfa,
           const MfaVerifyRequest(
             mfaToken: 't',
-            method: MfaFactor.deviceOtp,
+            challengeId: '0193f1c2-0000-7000-8000-000000000000',
             code: '12345678',
           ),
         ),

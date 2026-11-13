@@ -3,6 +3,7 @@ export enum Permission {
   TasksRead = 'tasks:read',
   TasksWrite = 'tasks:write',
   BillingRead = 'billing:read',
+  BillingWrite = 'billing:write',
   BackofficeAccess = 'backoffice:access',
 }
 

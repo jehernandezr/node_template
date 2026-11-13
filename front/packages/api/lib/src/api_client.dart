@@ -118,13 +118,9 @@ class ApiClient {
     if (route.requestLocation == RequestLocation.body) {
       return (baseUri.replace(path: '$basePath$path'), jsonEncode(rest));
     }
-    final query = <String, dynamic>{
-      for (final entry in rest.entries)
-        if (entry.value != null)
-          entry.key: entry.value is List
-              ? [for (final item in entry.value as List) '$item']
-              : '${entry.value}',
-    };
+    // Forma canónica del contrato: números en notación JSON, booleanos
+    // true/false y listas como parámetro repetido.
+    final query = encodeQuery(rest);
     return (
       baseUri.replace(
         path: '$basePath$path',
