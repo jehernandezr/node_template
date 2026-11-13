@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mf_assistant/src/data/assistant_models.dart';
+import 'package:mf_assistant/src/shared/types/assistant_types.dart';
 import 'package:mf_assistant/src/data/assistant_repository.dart';
-import 'package:mf_assistant/src/presentation/assistant_chat_controller.dart';
+import 'package:mf_assistant/src/screens/assistant_chat_controller.dart';
 
 /// Repository whose answer stream is driven by the test.
 final class _ManualRepository implements AssistantRepository {
@@ -23,6 +23,9 @@ final class _ManualRepository implements AssistantRepository {
 
   @override
   Stream<AssistantChunk> ask(String conversationId, String message) => answer;
+
+  @override
+  void dispose() {}
 }
 
 void main() {

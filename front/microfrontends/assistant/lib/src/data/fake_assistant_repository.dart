@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:contracts/contracts.dart';
 
-import 'assistant_models.dart';
+import '../shared/constants/assistant_constants.dart';
+import '../shared/enums/assistant_role.dart';
+import '../shared/types/assistant_types.dart';
 import 'assistant_repository.dart';
 
 /// In-memory repository that stands in for the API and its SSE stream.
@@ -10,7 +14,7 @@ import 'assistant_repository.dart';
 /// - `cuota`: fails with `BILLING.QUOTA.EXCEEDED` as an [ApiErrorException].
 /// - `tarea`: streams text, then asks to confirm a tool before continuing.
 /// - anything else: streams text, then citations and token usage.
-final class FakeAssistantRepository implements AssistantRepository {
+base class FakeAssistantRepository implements AssistantRepository {
   FakeAssistantRepository({this.chunkDelay = const Duration(milliseconds: 60)})
     : _conversations = [
         const Conversation(
@@ -44,6 +48,8 @@ final class FakeAssistantRepository implements AssistantRepository {
 
   final List<Conversation> _conversations;
   final Map<String, List<ChatMessage>> _messages;
+  final Set<_ActiveAnswer> _active = {};
+  bool _disposed = false;
   int _nextConversation = 3;
 
   // Scripted server content, kept here because it simulates what the API sends.
@@ -84,7 +90,24 @@ final class FakeAssistantRepository implements AssistantRepository {
       List.unmodifiable(_messages[conversationId] ?? const <ChatMessage>[]);
 
   @override
-  Stream<AssistantChunk> ask(String conversationId, String message) async* {
+  Stream<AssistantChunk> ask(String conversationId, String message) {
+    if (_disposed) return const Stream.empty();
+    final answer = _ActiveAnswer(_script(message), _active.remove);
+    _active.add(answer);
+    return answer.stream;
+  }
+
+  /// Cancels every answer in progress. Their streams end without more chunks.
+  @override
+  void dispose() {
+    _disposed = true;
+    for (final answer in _active.toList()) {
+      answer.close();
+    }
+    _active.clear();
+  }
+
+  Stream<AssistantChunk> _script(String message) async* {
     final text = message.toLowerCase();
 
     if (text.contains('cuota')) {
@@ -94,7 +117,7 @@ final class FakeAssistantRepository implements AssistantRepository {
           type: 'about:blank',
           title: 'Quota exceeded',
           status: 429,
-          code: 'BILLING.QUOTA.EXCEEDED',
+          code: quotaExceededCode,
           traceId: 'trace-quota-0001',
         ),
       );
@@ -122,5 +145,59 @@ final class FakeAssistantRepository implements AssistantRepository {
       await Future<void>.delayed(chunkDelay);
       yield AssistantTextChunk(part);
     }
+  }
+}
+
+/// One answer in progress: relays the scripted stream and can be cut from
+/// outside, rejecting a tool confirmation nobody will answer.
+final class _ActiveAnswer {
+  _ActiveAnswer(this._source, this._onEnded) {
+    _out = StreamController<AssistantChunk>(
+      onListen: _start,
+      onCancel: _cancelled,
+    );
+  }
+
+  final Stream<AssistantChunk> _source;
+  final void Function(_ActiveAnswer answer) _onEnded;
+  late final StreamController<AssistantChunk> _out;
+  StreamSubscription<AssistantChunk>? _subscription;
+  ToolConfirmationRequest? _pending;
+
+  Stream<AssistantChunk> get stream => _out.stream;
+
+  void _start() {
+    _subscription = _source.listen(
+      (chunk) {
+        if (chunk is ToolConfirmationRequest) _pending = chunk;
+        _out.add(chunk);
+      },
+      onError: _out.addError,
+      onDone: () {
+        _onEnded(this);
+        _out.close();
+      },
+    );
+  }
+
+  /// Does not return the source's cancel future: the stream would wait for it
+  /// before delivering its own done event.
+  void _cancelled() {
+    _onEnded(this);
+    unawaited(_stopSource());
+  }
+
+  /// Ends the answer from the repository side.
+  void close() {
+    _onEnded(this);
+    unawaited(_stopSource());
+    if (!_out.isClosed) unawaited(_out.close());
+  }
+
+  Future<void> _stopSource() {
+    // Unblock the script if it waits for a tool answer nobody will give.
+    final pending = _pending;
+    if (pending != null && !pending.isResolved) pending.reject();
+    return _subscription?.cancel() ?? Future<void>.value();
   }
 }

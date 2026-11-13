@@ -1,11 +1,15 @@
 import 'package:contracts/contracts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import '../data/assistant_models.dart';
 import '../data/assistant_repository.dart';
 import '../l10n/generated/assistant_localizations.dart';
+import '../shared/constants/assistant_constants.dart';
+import '../shared/enums/assistant_role.dart';
+import '../shared/types/assistant_types.dart';
 import 'assistant_chat_controller.dart';
 
 /// Chat with streaming answers, citations, tool confirmations and errors.
@@ -27,6 +31,7 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   late final AssistantChatController _controller;
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
+  Object? _reportedError;
 
   @override
   void initState() {
@@ -34,7 +39,7 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     _controller = AssistantChatController(
       repository: widget.repository,
       conversationId: widget.conversationId,
-    )..addListener(_scrollToEnd);
+    )..addListener(_onChanged);
     _controller.load();
   }
 
@@ -44,6 +49,19 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// Runs on every controller change, which may come from the answer stream
+  /// after the screen is gone, so it checks [mounted] first.
+  void _onChanged() {
+    if (!mounted) return;
+    final error = _controller.error;
+    if (error != null && !identical(error, _reportedError)) {
+      _reportedError = error;
+      final l10n = AssistantLocalizations.of(context);
+      showActionError(context, error, message: _errorMessage(l10n, error));
+    }
+    _scrollToEnd();
   }
 
   void _scrollToEnd() {
@@ -64,50 +82,40 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AssistantLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.chatTitle)),
+    final shared = AppLocalizations.of(context);
+    return AppPage(
+      title: l10n.chatTitle,
+      onBack: () => context.go(assistantBasePath),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: _controller,
-          builder: (context, _) {
-            if (_controller.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return Column(
+          builder: (context, _) => AsyncValueView<List<ChatMessage>>(
+            value: _controller.loadState,
+            errorMessage: l10n.loadMessagesError,
+            onRetry: _controller.load,
+            retryLabel: shared.actionRetry,
+            codeLabel: shared.errorCodeLabel,
+            traceIdLabel: shared.errorTraceIdLabel,
+            data: (_) => Column(
               children: [
                 Expanded(child: _buildMessages()),
                 _buildComposer(),
               ],
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMessages() {
-    final l10n = AssistantLocalizations.of(context);
     final messages = _controller.messages;
-    final error = _controller.error;
     return ListView.builder(
       controller: _scroll,
       padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: messages.length + (error == null ? 0 : 1),
-      itemBuilder: (context, index) {
-        if (index < messages.length) {
-          return _MessageBubble(
-            message: messages[index],
-            controller: _controller,
-          );
-        }
-        return ErrorView.fromException(
-          error!,
-          fallbackMessage: _errorMessage(l10n, error),
-          codeLabel: AppLocalizations.of(context).errorCodeLabel,
-          traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
-          retryLabel: AppLocalizations.of(context).actionRetry,
-        );
-      },
+      itemCount: messages.length,
+      itemBuilder: (context, index) =>
+          _MessageBubble(message: messages[index], controller: _controller),
     );
   }
 
@@ -139,11 +147,14 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   /// Quota errors get their own sentence; any other failure gets the generic one.
   String _errorMessage(AssistantLocalizations l10n, Object error) {
     final isQuota =
-        error is ApiErrorException &&
-        error.problem.code == 'BILLING.QUOTA.EXCEEDED';
+        error is ApiErrorException && error.problem.code == quotaExceededCode;
     return isQuota ? l10n.quotaExceeded : l10n.genericError;
   }
 }
+
+/// Permission needed to confirm the actions the assistant proposes (they
+/// create tasks). Without it the user can only reject them.
+final AccessRule toolAccess = AccessRule.permissions([Permission.tasksWrite]);
 
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({required this.message, required this.controller});
@@ -296,9 +307,12 @@ class _ToolConfirmationCard extends StatelessWidget {
                     child: Text(l10n.toolCancel),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  FilledButton(
-                    onPressed: onConfirm,
-                    child: Text(l10n.toolConfirm),
+                  AccessGate(
+                    rule: toolAccess,
+                    child: FilledButton(
+                      onPressed: onConfirm,
+                      child: Text(l10n.toolConfirm),
+                    ),
                   ),
                 ],
               )

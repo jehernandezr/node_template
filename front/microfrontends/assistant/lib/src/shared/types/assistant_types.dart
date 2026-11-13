@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../enums/assistant_role.dart';
+
 /// Conversation summary shown in the list.
 final class Conversation {
   const Conversation({required this.id, required this.title, this.lastMessage});
@@ -24,8 +26,6 @@ final class TokenUsage {
   final int input;
   final int output;
 }
-
-enum AssistantRole { user, assistant }
 
 /// Message shown in a conversation. Immutable; the controller replaces it.
 final class ChatMessage {

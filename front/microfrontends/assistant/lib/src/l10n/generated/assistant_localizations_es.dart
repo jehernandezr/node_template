@@ -27,6 +27,12 @@ class AssistantLocalizationsEs extends AssistantLocalizations {
   String get listError => 'No pudimos cargar tus conversaciones.';
 
   @override
+  String get createError => 'No pudimos crear la conversación.';
+
+  @override
+  String get loadMessagesError => 'No pudimos cargar la conversación.';
+
+  @override
   String get genericError => 'Ocurrió un error inesperado.';
 
   @override

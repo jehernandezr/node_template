@@ -6,6 +6,8 @@
   "newConversation": "New conversation",
   "emptyConversations": "You have no conversations yet",
   "listError": "We could not load your conversations.",
+  "createError": "We could not create the conversation.",
+  "loadMessagesError": "We could not load the conversation.",
   "genericError": "An unexpected error occurred.",
   "quotaExceeded": "You have reached your plan's query limit.",
 

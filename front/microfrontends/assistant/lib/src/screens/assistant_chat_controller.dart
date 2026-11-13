@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../data/assistant_models.dart';
+import 'package:ui/ui.dart';
+
 import '../data/assistant_repository.dart';
+import '../shared/enums/assistant_role.dart';
+import '../shared/types/assistant_types.dart';
 
 /// Holds the messages of one conversation and the state of the current answer.
 final class AssistantChatController extends ChangeNotifier {
@@ -16,7 +19,7 @@ final class AssistantChatController extends ChangeNotifier {
   final String conversationId;
 
   List<ChatMessage> _messages = const [];
-  bool _loading = true;
+  AsyncValue<List<ChatMessage>> _loadState = const AsyncValue.loading();
   Object? _error;
   StreamSubscription<AssistantChunk>? _subscription;
   String? _streamingId;
@@ -24,16 +27,24 @@ final class AssistantChatController extends ChangeNotifier {
   bool _disposed = false;
 
   List<ChatMessage> get messages => _messages;
-  bool get isLoading => _loading;
   bool get isStreaming => _subscription != null;
+
+  /// State of the initial load of the conversation.
+  AsyncValue<List<ChatMessage>> get loadState => _loadState;
 
   /// Error of the last answer: an `ApiErrorException` or any other object.
   Object? get error => _error;
 
+  /// Loads the history. Ignored result if the controller was disposed meanwhile.
   Future<void> load() async {
-    final loaded = await repository.loadMessages(conversationId);
-    _messages = loaded;
-    _loading = false;
+    _loadState = const AsyncValue.loading();
+    _notify();
+    final result = await AsyncValue.guard(
+      () => repository.loadMessages(conversationId),
+    );
+    if (_disposed) return;
+    _loadState = result;
+    _messages = result.valueOrNull ?? _messages;
     _notify();
   }
 

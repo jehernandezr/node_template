@@ -11,7 +11,8 @@ import '../l10n/generated/assistant_localizations.dart';
 import 'assistant_chat_screen.dart';
 import 'assistant_list_screen.dart';
 
-/// Creates the repository of one identity. Called once per scope by `scope.get`.
+/// Creates the repository of one identity. Called once per scope by `scope.get`;
+/// the scope disposes it, which cuts the answers in progress.
 AssistantRepository createAssistantRepository(ShellServices services) =>
     FakeAssistantRepository();
 

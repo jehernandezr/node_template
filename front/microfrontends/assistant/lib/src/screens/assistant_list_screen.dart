@@ -1,11 +1,13 @@
+import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/assistant_models.dart';
 import '../data/assistant_repository.dart';
 import '../l10n/generated/assistant_localizations.dart';
+import '../shared/types/assistant_types.dart';
+import '../shared/utils/assistant_paths.dart';
 
 /// Conversation list with a button to start a new one.
 class AssistantListScreen extends StatefulWidget {
@@ -18,44 +20,56 @@ class AssistantListScreen extends StatefulWidget {
 }
 
 class _AssistantListScreenState extends State<AssistantListScreen> {
-  late Future<List<Conversation>> _conversations = widget.repository
-      .listConversations();
+  AsyncValue<List<Conversation>> _conversations = const AsyncValue.loading();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final result = await AsyncValue.guard(widget.repository.listConversations);
+    if (!mounted) return;
+    setState(() => _conversations = result);
+  }
+
+  void _retry() {
+    setState(() => _conversations = const AsyncValue.loading());
+    _load();
+  }
 
   Future<void> _createConversation() async {
-    final conversation = await widget.repository.createConversation();
-    if (!mounted) return;
-    context.go('/assistant/${conversation.id}');
+    final l10n = AssistantLocalizations.of(context);
+    try {
+      final conversation = await widget.repository.createConversation();
+      if (!mounted) return;
+      context.go(conversationPath(conversation.id));
+    } on ApiErrorException catch (error) {
+      if (!mounted) return;
+      showActionError(context, error, message: l10n.createError);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AssistantLocalizations.of(context);
     final shared = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.title)),
+    return AppPage(
+      title: l10n.title,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createConversation,
         icon: const Icon(Icons.add),
         label: Text(l10n.newConversation),
       ),
-      body: FutureBuilder<List<Conversation>>(
-        future: _conversations,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return ErrorView(
-              message: l10n.listError,
-              retryLabel: shared.actionRetry,
-              codeLabel: shared.errorCodeLabel,
-              traceIdLabel: shared.errorTraceIdLabel,
-              onRetry: () => setState(() {
-                _conversations = widget.repository.listConversations();
-              }),
-            );
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final items = snapshot.requireData;
+      body: AsyncValueView<List<Conversation>>(
+        value: _conversations,
+        errorMessage: l10n.listError,
+        onRetry: _retry,
+        retryLabel: shared.actionRetry,
+        codeLabel: shared.errorCodeLabel,
+        traceIdLabel: shared.errorTraceIdLabel,
+        data: (items) {
           if (items.isEmpty) {
             return EmptyState(
               icon: Icons.chat_bubble_outline,
@@ -88,7 +102,7 @@ class _ConversationTile extends StatelessWidget {
     final theme = Theme.of(context);
     final last = conversation.lastMessage;
     return AppCard(
-      onTap: () => context.go('/assistant/${conversation.id}'),
+      onTap: () => context.go(conversationPath(conversation.id)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
