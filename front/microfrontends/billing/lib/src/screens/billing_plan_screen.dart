@@ -167,7 +167,7 @@ class _PlanContent extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         AccessGate(
-          rule: billingAccessRule,
+          rule: billingWriteRule,
           child: Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: AppButton(label: l10n.changePlan, onPressed: onChangePlan),

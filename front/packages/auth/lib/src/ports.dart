@@ -1,25 +1,29 @@
-import 'models.dart';
+import 'package:contracts/contracts.dart';
 
-/// Operaciones de identidad contra el backend de `identity`.
+/// Operaciones de identity que usa la sesión, con los tipos del contrato.
+///
+/// El login desde un dispositivo nuevo tiene tres pasos: [signIn] responde
+/// tokens o un desafío pendiente (`PendingMfa`); [requestMfaChallenge] crea el
+/// desafío para el método elegido y envía el código; [verifyMfa] lo verifica
+/// con su `challengeId` y entrega los tokens.
+///
+/// Los errores del servidor se lanzan como [ApiErrorException] y una petición
+/// que no cumple el contrato como [ContractViolationException].
 abstract interface class AuthRepository {
-  /// Email y contraseña. [deviceId] es el id firmado que el cliente guardó
-  /// en su primer login.
-  Future<LoginResult> login(String email, String password, {String? deviceId});
+  /// `POST /v1/auth/sign-in`.
+  Future<SignInResponse> signIn(SignInRequest request);
 
-  /// Verifica un desafío MFA. [devicePublicKey] se envía solo al registrar
-  /// un dispositivo nuevo.
-  Future<LoginResult> verifyMfa(
-    String mfaToken,
-    MfaMethod method,
-    String code, {
-    List<int>? devicePublicKey,
-  });
+  /// `POST /v1/auth/mfa/challenges`.
+  Future<MfaChallenge> requestMfaChallenge(MfaChallengeRequest request);
+
+  /// `POST /v1/auth/mfa/verify`.
+  Future<SignInResponse> verifyMfa(MfaVerifyRequest request);
 
   /// Rota el session token y devuelve un access token nuevo.
   ///
   /// [sessionToken] es el guardado en el [TokenStore]; es null en web, donde
   /// el navegador envía la cookie httpOnly.
-  Future<AuthTokens> refresh({String? sessionToken});
+  Future<SessionTokens> refresh({String? sessionToken});
 
   /// Revoca la sesión actual en el servidor.
   Future<void> logout();

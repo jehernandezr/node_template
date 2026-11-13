@@ -3,8 +3,11 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:convert';
 
-import 'models.dart';
+import 'package:contracts/contracts.dart';
+
+import 'auth_errors.dart';
 import 'ports.dart';
 
 /// Estado observable de la sesión.
@@ -18,6 +21,10 @@ typedef Clock = DateTime Function();
 ///
 /// El access token vive solo en memoria. El [TokenStore] guarda únicamente el
 /// session token, y [restore] obtiene un access token nuevo con un refresh.
+///
+/// Habla con identity a través de [AuthRepository] con los tipos del
+/// contrato: [signIn], [requestMfaChallenge] y [verifyMfa] siguen el flujo de
+/// tres pasos del plan.
 ///
 /// Un [logout] anula todo lo que esté en curso: un login, una verificación MFA
 /// o un refresh que termine después no reabre la sesión. Las escrituras y
@@ -42,17 +49,18 @@ class SessionManager {
   final Clock _clock;
 
   /// Antelación con la que se refresca el access token antes de
-  /// [AuthTokens.accessExpiresAt].
+  /// [SessionTokens.accessExpiresAt].
   final Duration refreshLead;
 
-  /// Códigos de error del refresh que cierran la sesión.
-  final Set<String> invalidationCodes;
+  /// Códigos de identity que cierran la sesión cuando el refresh los devuelve.
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` la cierra siempre.
+  final Set<IdentityErrorCode> invalidationCodes;
 
   final _states = StreamController<AuthState>.broadcast();
   AuthState _state = AuthState.signedOut;
-  AuthTokens? _tokens;
+  SessionTokens? _tokens;
   String? _sessionToken;
-  Future<AuthTokens>? _inFlightRefresh;
+  Future<SessionTokens>? _inFlightRefresh;
 
   /// Incrementa en cada cierre local para descartar operaciones que terminen
   /// después de un logout.
@@ -63,6 +71,10 @@ class SessionManager {
 
   AuthState get state => _state;
 
+  /// Si [verifyMfa] puede registrar este dispositivo, porque hay un
+  /// [DeviceKeyPort].
+  bool get canRegisterDevice => _deviceKeys != null;
+
   /// Cambios de estado. Solo emite cuando el estado cambia.
   Stream<AuthState> get states => _states.stream;
 
@@ -70,9 +82,9 @@ class SessionManager {
   ///
   /// Lee el session token guardado (en web, la cookie viaja sola) y pide un
   /// access token nuevo. Devuelve true si la sesión quedó abierta y false si no
-  /// había sesión o el servidor la rechazó. Lanza los errores que no son de
-  /// autenticación, como un fallo de red; el session token se conserva para
-  /// intentarlo de nuevo.
+  /// había sesión o el servidor la rechazó (un código de [invalidationCodes] o
+  /// `PLATFORM.AUTH.UNAUTHENTICATED`). Lanza los demás errores, como un fallo
+  /// de red; el session token se conserva para intentarlo de nuevo.
   Future<bool> restore() async {
     final generation = _generation;
     final stored = await _serialized(_store.readSessionToken);
@@ -82,65 +94,78 @@ class SessionManager {
     try {
       await _refresh();
       return true;
-    } on AuthException {
+    } on SignedOutException {
       return false;
+    } on ApiErrorException catch (error) {
+      if (_endsSession(error)) return false;
+      rethrow;
     }
   }
 
-  /// Login con email y contraseña. Si el resultado es [LoginSucceeded], guarda la sesión.
+  /// Primer paso del login: email y contraseña.
   ///
-  /// Lanza [AuthException] con [signedOutErrorCode] si hubo un [logout]
-  /// mientras tanto.
-  Future<LoginResult> login(
-    String email,
-    String password, {
-    String? deviceId,
-  }) async {
+  /// Si la respuesta trae tokens, guarda la sesión. Si trae `PendingMfa`, el
+  /// siguiente paso es [requestMfaChallenge]. Lanza [SignedOutException] si
+  /// hubo un [logout] mientras tanto.
+  Future<SignInResponse> signIn(SignInRequest request) async {
     final generation = _generation;
-    final result = await _repository.login(email, password, deviceId: deviceId);
-    if (result is LoginSucceeded) {
-      await _adopt(result.tokens, generation: generation);
-    }
-    return result;
+    final response = await _repository.signIn(request);
+    await _adoptResponse(response, generation: generation);
+    return response;
   }
 
-  /// Verifica el desafío MFA. Con [registerDevice] envía la clave pública del dispositivo.
+  /// Segundo paso: crea el desafío MFA de [mfaToken] con [method] y envía el
+  /// código. No cambia la sesión.
+  Future<MfaChallenge> requestMfaChallenge({
+    required String mfaToken,
+    required MfaFactor method,
+  }) => _repository.requestMfaChallenge(
+    MfaChallengeRequest(mfaToken: mfaToken, method: method),
+  );
+
+  /// Tercer paso: verifica [code] para el desafío [challengeId] y guarda la
+  /// sesión. Con [registerDevice] envía la clave pública del dispositivo en
+  /// base64url, como pide el contrato.
   ///
-  /// Lanza [AuthException] con [signedOutErrorCode] si hubo un [logout]
-  /// mientras tanto.
-  Future<LoginResult> verifyMfa(
-    String mfaToken,
-    MfaMethod method,
-    String code, {
+  /// Lanza [SignedOutException] si hubo un [logout] mientras tanto.
+  Future<SignInResponse> verifyMfa({
+    required String mfaToken,
+    required String challengeId,
+    required String code,
     bool registerDevice = false,
   }) async {
     final generation = _generation;
-    List<int>? publicKey;
+    String? publicKey;
     if (registerDevice) {
       final keys = _deviceKeys;
       if (keys == null) {
         throw StateError('registerDevice requiere un DeviceKeyPort');
       }
-      publicKey = await keys.publicKey();
+      publicKey = base64Url.encode(await keys.publicKey()).replaceAll('=', '');
     }
-    final result = await _repository.verifyMfa(
-      mfaToken,
-      method,
-      code,
-      devicePublicKey: publicKey,
+    final response = await _repository.verifyMfa(
+      MfaVerifyRequest(
+        mfaToken: mfaToken,
+        challengeId: challengeId,
+        code: code,
+        devicePublicKey: publicKey,
+      ),
     );
-    if (result is LoginSucceeded) {
-      await _adopt(result.tokens, generation: generation);
-    }
-    return result;
+    await _adoptResponse(response, generation: generation);
+    return response;
   }
 
-  /// Devuelve un access token vigente. Refresca si vence dentro de [refreshLead].
+  /// Devuelve un access token vigente, o null si no hay sesión. Refresca si
+  /// vence dentro de [refreshLead].
   ///
-  /// Lanza [AuthException] si no hay sesión o si el refresh la invalida.
-  Future<String> accessToken() async {
+  /// Es el `accessToken` de `ApiClient`: sin sesión, el cliente responde
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` sin llamar a la red. Lanza
+  /// [ApiErrorException] si el refresh falla en el servidor (y cierra la
+  /// sesión si el código la invalida) y [SignedOutException] si un [logout]
+  /// llegó durante el refresh.
+  Future<String?> accessToken() async {
     final current = _tokens;
-    if (current == null) throw const AuthException(signedOutErrorCode);
+    if (current == null) return null;
     if (_clock().isBefore(current.accessExpiresAt.subtract(refreshLead))) {
       return current.accessToken;
     }
@@ -151,9 +176,10 @@ class SessionManager {
   /// la API responde `IDENTITY.TOKEN.STALE_PERMISSIONS` (es el
   /// `onStalePermissions` de `ApiClient`). Comparte el refresh en vuelo.
   ///
-  /// Lanza [AuthException] si no hay sesión o si el refresh la invalida.
+  /// Lanza [SignedOutException] si no hay sesión y [ApiErrorException] si el
+  /// refresh falla en el servidor.
   Future<void> refresh() async {
-    if (_tokens == null) throw const AuthException(signedOutErrorCode);
+    if (_tokens == null) throw const SignedOutException();
     await _refresh();
   }
 
@@ -169,7 +195,7 @@ class SessionManager {
   Future<void> dispose() => _states.close();
 
   /// Un solo refresh en vuelo: los llamados concurrentes reciben el mismo resultado.
-  Future<AuthTokens> _refresh() {
+  Future<SessionTokens> _refresh() {
     final inFlight = _inFlightRefresh;
     if (inFlight != null) return inFlight;
     final future = _doRefresh();
@@ -181,7 +207,7 @@ class SessionManager {
     return future;
   }
 
-  Future<AuthTokens> _doRefresh() async {
+  Future<SessionTokens> _doRefresh() async {
     final generation = _generation;
     _setState(AuthState.refreshing);
     try {
@@ -191,13 +217,33 @@ class SessionManager {
     } catch (error) {
       // Tras un logout el estado ya es signedOut y no se toca.
       if (generation == _generation) {
-        if (error is AuthException && invalidationCodes.contains(error.code)) {
+        if (error is ApiErrorException && _endsSession(error)) {
           await _clearLocal();
         } else {
           _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
         }
       }
       rethrow;
+    }
+  }
+
+  /// Si el servidor dice que la sesión ya no existe.
+  bool _endsSession(ApiErrorException error) {
+    final code = error.problem.code;
+    final identity = IdentityErrorCode.fromCode(code);
+    return (identity != null && invalidationCodes.contains(identity)) ||
+        PlatformErrorCode.fromCode(code) ==
+            PlatformErrorCode.authUnauthenticated;
+  }
+
+  /// Adopta los tokens de [response] cuando el login quedó completo.
+  Future<void> _adoptResponse(
+    SignInResponse response, {
+    required int generation,
+  }) async {
+    final tokens = response.tokens;
+    if (response.status == SignInStatus.authenticated && tokens != null) {
+      await _adopt(tokens, generation: generation);
     }
   }
 
@@ -208,15 +254,15 @@ class SessionManager {
   /// mientras la escritura estaba pendiente, su borrado está detrás en la cola
   /// del almacén y deja el almacén vacío, y aquí no se toca ni la memoria ni el
   /// estado.
-  Future<void> _adopt(AuthTokens tokens, {required int generation}) async {
+  Future<void> _adopt(SessionTokens tokens, {required int generation}) async {
     if (generation != _generation) {
-      throw const AuthException(signedOutErrorCode);
+      throw const SignedOutException();
     }
     final sessionToken = tokens.sessionToken;
     if (sessionToken != null) {
       await _serialized(() => _store.writeSessionToken(sessionToken));
       if (generation != _generation) {
-        throw const AuthException(signedOutErrorCode);
+        throw const SignedOutException();
       }
       _sessionToken = sessionToken;
     }

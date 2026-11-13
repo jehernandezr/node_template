@@ -1,16 +1,25 @@
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:auth/auth.dart';
+import 'package:contracts/contracts.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 final t0 = DateTime.utc(2026, 11, 11, 12);
 
-AuthTokens tokens(String access, DateTime expiresAt) => AuthTokens(
+const challengeId = '0193f1c2-0000-7000-8000-000000000001';
+
+SessionTokens tokens(String access, DateTime expiresAt) => SessionTokens(
   accessToken: access,
   accessExpiresAt: expiresAt,
   sessionToken: 'session-$access',
 );
+
+SignInResponse authenticated(SessionTokens tokens) =>
+    SignInResponse(status: SignInStatus.authenticated, tokens: tokens);
+
+const credentials = SignInRequest(email: 'ana@example.com', password: 'secret');
+
+final revoked = FakeAuthRepository.apiError(IdentityErrorCode.sessionRevoked);
 
 void main() {
   late FakeAuthRepository repo;
@@ -33,56 +42,91 @@ void main() {
   });
 
   /// Abre la sesión con [initial] por la vía del login.
-  Future<void> signIn(AuthTokens initial) async {
-    repo.loginResult = LoginSucceeded(initial);
-    await manager.login('ana@example.com', 'secret');
+  Future<void> signIn(SessionTokens initial) async {
+    repo.signInResult = authenticated(initial);
+    await manager.signIn(credentials);
   }
 
-  test('login success stores tokens and signs in', () async {
-    repo.loginResult = LoginSucceeded(
+  test('sign-in success stores tokens and signs in', () async {
+    repo.signInResult = authenticated(
       tokens('access-1', t0.add(const Duration(minutes: 15))),
     );
 
-    final result = await manager.login(
-      'ana@example.com',
-      'secret',
-      deviceId: 'device-1',
+    final result = await manager.signIn(
+      const SignInRequest(
+        email: 'ana@example.com',
+        password: 'secret',
+        deviceId: 'device-1',
+      ),
     );
 
-    expect(result, isA<LoginSucceeded>());
-    expect(repo.lastLoginDeviceId, 'device-1');
+    expect(result.status, SignInStatus.authenticated);
+    expect(repo.lastSignIn?.deviceId, 'device-1');
     expect(store.sessionToken, 'session-access-1');
     expect(manager.state, AuthState.signedIn);
     expect(await manager.accessToken(), 'access-1');
   });
 
-  test('MFA path emits no tokens until the challenge is verified', () async {
-    repo.loginResult = LoginRequiresMfa(
-      const MfaChallenge(
+  test('rejected credentials throw the contract error and keep the session '
+      'closed', () async {
+    await expectLater(
+      manager.signIn(credentials),
+      throwsA(
+        isA<ApiErrorException>().having(
+          (e) => IdentityErrorCode.fromCode(e.problem.code),
+          'code',
+          IdentityErrorCode.authInvalidCredentials,
+        ),
+      ),
+    );
+    expect(manager.state, AuthState.signedOut);
+  });
+
+  test('MFA: sign-in, challenge and verify with challengeId', () async {
+    repo.signInResult = const SignInResponse(
+      status: SignInStatus.mfaRequired,
+      mfa: PendingMfa(
         mfaToken: 'mfa-1',
-        methods: {MfaMethod.deviceOtp, MfaMethod.emailOtp},
+        methods: [MfaFactor.deviceOtp, MfaFactor.emailOtp],
       ),
     );
 
-    final first = await manager.login('ana@example.com', 'secret');
-    expect(first, isA<LoginRequiresMfa>());
+    final first = await manager.signIn(credentials);
+    expect(first.status, SignInStatus.mfaRequired);
+    expect(first.mfa?.methods, [MfaFactor.deviceOtp, MfaFactor.emailOtp]);
     expect(manager.state, AuthState.signedOut);
     expect(store.sessionToken, isNull);
 
-    repo.mfaResult = LoginSucceeded(
+    repo.challengeResult = MfaChallenge(
+      challengeId: challengeId,
+      method: MfaFactor.deviceOtp,
+      expiresAt: t0.add(const Duration(seconds: MfaRules.deviceCodeTtlSeconds)),
+      codeLength: MfaRules.deviceCodeLength,
+    );
+    final challenge = await manager.requestMfaChallenge(
+      mfaToken: 'mfa-1',
+      method: MfaFactor.deviceOtp,
+    );
+    expect(repo.lastChallengeRequest?.mfaToken, 'mfa-1');
+    expect(repo.lastChallengeRequest?.method, MfaFactor.deviceOtp);
+    expect(manager.state, AuthState.signedOut);
+
+    repo.verifyResult = authenticated(
       tokens('access-2', t0.add(const Duration(minutes: 15))),
     );
     final second = await manager.verifyMfa(
-      'mfa-1',
-      MfaMethod.deviceOtp,
-      '12345678',
+      mfaToken: 'mfa-1',
+      challengeId: challenge.challengeId,
+      code: '12345678',
       registerDevice: true,
     );
 
-    expect(second, isA<LoginSucceeded>());
-    expect(repo.lastMfaMethod, MfaMethod.deviceOtp);
-    expect(repo.lastMfaCode, '12345678');
-    expect(repo.lastDevicePublicKey, [1, 2, 3, 4]);
+    expect(second.status, SignInStatus.authenticated);
+    expect(repo.lastVerify?.challengeId, challengeId);
+    expect(repo.lastVerify?.code, '12345678');
+    // [1, 2, 3, 4] en base64url sin relleno, como pide el contrato.
+    expect(repo.lastVerify?.devicePublicKey, 'AQIDBA');
+    expect(MfaVerifyRequestSchema.validate(repo.lastVerify!.toJson()), isEmpty);
     expect(store.sessionToken, 'session-access-2');
     expect(manager.state, AuthState.signedIn);
   });
@@ -124,28 +168,58 @@ void main() {
   });
 
   test('logout clears the store and signs out', () async {
-    repo.loginResult = LoginSucceeded(
-      tokens('access-1', t0.add(const Duration(minutes: 15))),
-    );
-    await manager.login('ana@example.com', 'secret');
+    await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
 
     await manager.logout();
 
     expect(repo.logoutCount, 1);
     expect(store.sessionToken, isNull);
     expect(manager.state, AuthState.signedOut);
-    await expectLater(manager.accessToken(), throwsA(isA<AuthException>()));
+    expect(await manager.accessToken(), isNull);
   });
 
   test('invalidated refresh signs out and clears the store', () async {
     await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
-    repo.refreshError = const AuthException('IDENTITY.SESSION.REVOKED');
+    repo.refreshError = revoked;
 
-    await expectLater(manager.accessToken(), throwsA(isA<AuthException>()));
+    await expectLater(manager.accessToken(), throwsA(isA<ApiErrorException>()));
 
     expect(store.sessionToken, isNull);
     expect(manager.state, AuthState.signedOut);
   });
+
+  test('an unauthenticated refresh also signs out', () async {
+    await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
+    const code = PlatformErrorCode.authUnauthenticated;
+    repo.refreshError = ApiErrorException(
+      ProblemDetails(
+        type: 'about:blank',
+        title: 'Unauthenticated',
+        status: code.httpStatus,
+        code: code.code,
+      ),
+    );
+
+    await expectLater(manager.accessToken(), throwsA(isA<ApiErrorException>()));
+    expect(manager.state, AuthState.signedOut);
+  });
+
+  test(
+    'an identity error that is not an invalidation keeps the session',
+    () async {
+      await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
+      repo.refreshError = FakeAuthRepository.apiError(
+        IdentityErrorCode.tokenStalePermissions,
+      );
+
+      await expectLater(
+        manager.accessToken(),
+        throwsA(isA<ApiErrorException>()),
+      );
+      expect(manager.state, AuthState.signedIn);
+      expect(store.sessionToken, isNotNull);
+    },
+  );
 
   test('a network error during refresh keeps the session', () async {
     await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
@@ -176,7 +250,7 @@ void main() {
   );
 
   test('refresh without a session throws', () async {
-    await expectLater(manager.refresh(), throwsA(isA<AuthException>()));
+    await expectLater(manager.refresh(), throwsA(isA<SignedOutException>()));
     expect(repo.refreshCount, 0);
   });
 
@@ -212,7 +286,7 @@ void main() {
         tokenStore: const CookieTokenStore(),
         clock: () => now,
       );
-      repo.refreshResult = AuthTokens(
+      repo.refreshResult = SessionTokens(
         accessToken: 'cookie-access',
         accessExpiresAt: DateTime.utc(2026, 11, 11, 12, 15),
       );
@@ -230,7 +304,7 @@ void main() {
         tokenStore: store,
         clock: () => now,
       );
-      repo.refreshError = const AuthException('IDENTITY.SESSION.REVOKED');
+      repo.refreshError = revoked;
 
       expect(await manager.restore(), isFalse);
 
@@ -266,33 +340,24 @@ void main() {
         expect(await restoring, isFalse);
         expect(manager.state, AuthState.signedOut);
         expect(store.sessionToken, isNull);
-        await expectLater(manager.accessToken(), throwsA(isA<AuthException>()));
+        expect(await manager.accessToken(), isNull);
       },
     );
 
-    test('logout during the login write does not sign in', () async {
-      repo.loginResult = LoginSucceeded(
+    test('logout during the sign-in write does not sign in', () async {
+      repo.signInResult = authenticated(
         tokens('access-1', t0.add(const Duration(minutes: 15))),
       );
       store.writeGate = Completer<void>();
 
-      final loggingIn = manager.login('ana@example.com', 'secret');
+      final loggingIn = manager.signIn(credentials);
       await pumpEventQueue();
       final loggingOut = manager.logout();
       await pumpEventQueue();
       store.writeGate!.complete();
       await loggingOut;
 
-      await expectLater(
-        loggingIn,
-        throwsA(
-          isA<AuthException>().having(
-            (e) => e.code,
-            'code',
-            signedOutErrorCode,
-          ),
-        ),
-      );
+      await expectLater(loggingIn, throwsA(isA<SignedOutException>()));
       expect(manager.state, AuthState.signedOut);
       expect(store.sessionToken, isNull);
     });
@@ -307,7 +372,7 @@ void main() {
       await manager.logout();
       repo.refreshGate!.complete();
 
-      await expectLater(refreshing, throwsA(isA<AuthException>()));
+      await expectLater(refreshing, throwsA(isA<SignedOutException>()));
       expect(manager.state, AuthState.signedOut);
       expect(store.sessionToken, isNull);
     });

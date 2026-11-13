@@ -21,6 +21,21 @@ final class UserSession {
   /// A session without a signed-in user.
   factory UserSession.anonymous() => UserSession();
 
+  /// Session of a real sign-in, from `GET /v1/me/access`.
+  ///
+  /// Copies the user, the tenant, the permissions, the platform roles, the
+  /// plan features, the feature flags and the last second factor. Values
+  /// this client does not know were already dropped when decoding.
+  factory UserSession.fromAccess(SessionAccess access) => UserSession(
+    userId: access.userId,
+    tenantId: access.tenantId,
+    permissions: access.permissions.toSet(),
+    platformRoles: access.platformRoles.toSet(),
+    planFeatures: access.features.toSet(),
+    featureFlags: access.flags.toSet(),
+    mfaVerifiedAt: access.mfaVerifiedAt,
+  );
+
   /// Id of the signed-in user, or null when anonymous.
   final String? userId;
 

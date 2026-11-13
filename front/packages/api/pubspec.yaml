@@ -12,6 +12,7 @@ dependencies:
     path: ../contracts
   flutter:
     sdk: flutter
+  http: 1.6.0
   meta: ^1.19.0
 
 dev_dependencies:

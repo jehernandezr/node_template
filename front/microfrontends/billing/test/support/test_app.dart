@@ -3,9 +3,16 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_billing/src/l10n/generated/billing_localizations.dart';
 import 'package:shell_core/shell_core.dart';
 
-/// Session that holds the billing permission.
+/// Session that reads billing and can change the subscription.
 UserSession billingSession() => UserSession(
   userId: 'u1',
+  tenantId: 't1',
+  permissions: {Permission.billingRead, Permission.billingWrite},
+);
+
+/// Session that reads billing but cannot change the subscription.
+UserSession billingReadOnlySession() => UserSession(
+  userId: 'u3',
   tenantId: 't1',
   permissions: {Permission.billingRead},
 );

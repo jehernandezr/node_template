@@ -74,6 +74,20 @@ void main() {
       expect(find.text('Pro'), findsOneWidget);
     });
 
+    testWidgets('reading billing alone does not show the change plan action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testApp(
+          BillingPlanScreen(repository: FakeBillingRepository()),
+          session: billingReadOnlySession(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(_es.changePlan), findsNothing);
+      expect(find.text(_es.viewInvoices), findsOneWidget);
+    });
+
     testWidgets('the action disappears when the session loses the permission', (
       tester,
     ) async {

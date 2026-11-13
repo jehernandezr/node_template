@@ -17,6 +17,7 @@ abstract final class DemoSessions {
       Permission.tasksRead,
       Permission.tasksWrite,
       Permission.billingRead,
+      Permission.billingWrite,
     },
     planFeatures: {PlanFeature.aiAssistant, PlanFeature.billing},
   );

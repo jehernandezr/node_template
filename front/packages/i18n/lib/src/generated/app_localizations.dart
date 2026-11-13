@@ -249,6 +249,60 @@ abstract class AppLocalizations {
   /// **'Verificar (demostración)'**
   String get stepUpDemoVerify;
 
+  /// No description provided for @signInEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Email'**
+  String get signInEmail;
+
+  /// No description provided for @signInPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get signInPassword;
+
+  /// No description provided for @mfaChooseMethod.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige cómo quieres recibir el código de verificación.'**
+  String get mfaChooseMethod;
+
+  /// No description provided for @mfaMethodDeviceOtp.
+  ///
+  /// In es, this message translates to:
+  /// **'Código en tu dispositivo de confianza'**
+  String get mfaMethodDeviceOtp;
+
+  /// No description provided for @mfaMethodEmailOtp.
+  ///
+  /// In es, this message translates to:
+  /// **'Código por email'**
+  String get mfaMethodEmailOtp;
+
+  /// No description provided for @mfaMethodTotp.
+  ///
+  /// In es, this message translates to:
+  /// **'App de autenticación'**
+  String get mfaMethodTotp;
+
+  /// No description provided for @mfaMethodRecoveryCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de recuperación'**
+  String get mfaMethodRecoveryCode;
+
+  /// No description provided for @mfaCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de verificación'**
+  String get mfaCode;
+
+  /// No description provided for @mfaVerify.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificar'**
+  String get mfaVerify;
+
   /// No description provided for @goHome.
   ///
   /// In es, this message translates to:

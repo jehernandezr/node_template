@@ -1,3 +1,4 @@
+import 'package:auth/auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
@@ -22,6 +23,8 @@ GoRouter buildMobileRouter({
   required ValueNotifier<UserSession> session,
   required ValueNotifier<int> unreadCount,
   required Future<void> Function() onSignOut,
+  required StepUpRequests stepUp,
+  IdentityConnection? connection,
 }) {
   return buildShellRouter(
     registry: registry,
@@ -42,6 +45,7 @@ GoRouter buildMobileRouter({
         builder: (context, state) => LoginPage(
           session: session,
           from: state.uri.queryParameters['from'],
+          connection: connection,
         ),
       ),
       GoRoute(
@@ -56,7 +60,7 @@ GoRouter buildMobileRouter({
           session: session,
           from: state.uri.queryParameters['from'],
           clock: runtime.clock,
-          returnsResult: identical(state.extra, StepUpPage.request),
+          onResult: stepUp.isRequest(state.extra) ? stepUp.complete : null,
         ),
       ),
     ],

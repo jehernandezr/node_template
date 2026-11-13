@@ -90,6 +90,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stepUpDemoVerify => 'Verificar (demostración)';
 
   @override
+  String get signInEmail => 'Email';
+
+  @override
+  String get signInPassword => 'Contraseña';
+
+  @override
+  String get mfaChooseMethod =>
+      'Elige cómo quieres recibir el código de verificación.';
+
+  @override
+  String get mfaMethodDeviceOtp => 'Código en tu dispositivo de confianza';
+
+  @override
+  String get mfaMethodEmailOtp => 'Código por email';
+
+  @override
+  String get mfaMethodTotp => 'App de autenticación';
+
+  @override
+  String get mfaMethodRecoveryCode => 'Código de recuperación';
+
+  @override
+  String get mfaCode => 'Código de verificación';
+
+  @override
+  String get mfaVerify => 'Verificar';
+
+  @override
   String get goHome => 'Ir al inicio';
 
   @override

@@ -2,21 +2,25 @@
 
 import 'dart:async';
 
-import 'models.dart';
+import 'package:contracts/contracts.dart';
+
 import 'ports.dart';
 
-/// Repositorio en memoria. Cada prueba configura los resultados y lee los contadores.
+/// Repositorio en memoria. Cada prueba configura los resultados y lee las
+/// peticiones recibidas.
 class FakeAuthRepository implements AuthRepository {
-  /// Resultado de [login].
-  LoginResult loginResult = const LoginFailed(
-    'IDENTITY.AUTH.INVALID_CREDENTIALS',
-  );
+  /// Resultado de [signIn]. Si no hay, lanza `IDENTITY.AUTH.INVALID_CREDENTIALS`.
+  SignInResponse? signInResult;
 
-  /// Resultado de [verifyMfa].
-  LoginResult mfaResult = const LoginFailed('IDENTITY.MFA.INVALID_CODE');
+  /// Resultado de [requestMfaChallenge]. Si no hay, lanza
+  /// `IDENTITY.MFA.TOKEN_INVALID`.
+  MfaChallenge? challengeResult;
+
+  /// Resultado de [verifyMfa]. Si no hay, lanza `IDENTITY.MFA.CODE_INVALID`.
+  SignInResponse? verifyResult;
 
   /// Tokens que devuelve [refresh].
-  AuthTokens? refreshResult;
+  SessionTokens? refreshResult;
 
   /// Si no es null, [refresh] lanza este error.
   Object? refreshError;
@@ -24,43 +28,39 @@ class FakeAuthRepository implements AuthRepository {
   /// Si no es null, [refresh] espera a que se complete antes de responder.
   Completer<void>? refreshGate;
 
-  int loginCount = 0;
+  int signInCount = 0;
   int refreshCount = 0;
+  int logoutCount = 0;
 
   /// Session token recibido en el último [refresh].
   String? lastRefreshSessionToken;
-  int logoutCount = 0;
-  String? lastLoginDeviceId;
-  MfaMethod? lastMfaMethod;
-  String? lastMfaCode;
-  List<int>? lastDevicePublicKey;
+  SignInRequest? lastSignIn;
+  MfaChallengeRequest? lastChallengeRequest;
+  MfaVerifyRequest? lastVerify;
 
   @override
-  Future<LoginResult> login(
-    String email,
-    String password, {
-    String? deviceId,
-  }) async {
-    loginCount++;
-    lastLoginDeviceId = deviceId;
-    return loginResult;
+  Future<SignInResponse> signIn(SignInRequest request) async {
+    signInCount++;
+    lastSignIn = request;
+    return signInResult ??
+        (throw apiError(IdentityErrorCode.authInvalidCredentials));
   }
 
   @override
-  Future<LoginResult> verifyMfa(
-    String mfaToken,
-    MfaMethod method,
-    String code, {
-    List<int>? devicePublicKey,
-  }) async {
-    lastMfaMethod = method;
-    lastMfaCode = code;
-    lastDevicePublicKey = devicePublicKey;
-    return mfaResult;
+  Future<MfaChallenge> requestMfaChallenge(MfaChallengeRequest request) async {
+    lastChallengeRequest = request;
+    return challengeResult ??
+        (throw apiError(IdentityErrorCode.mfaTokenInvalid));
   }
 
   @override
-  Future<AuthTokens> refresh({String? sessionToken}) async {
+  Future<SignInResponse> verifyMfa(MfaVerifyRequest request) async {
+    lastVerify = request;
+    return verifyResult ?? (throw apiError(IdentityErrorCode.mfaCodeInvalid));
+  }
+
+  @override
+  Future<SessionTokens> refresh({String? sessionToken}) async {
     refreshCount++;
     lastRefreshSessionToken = sessionToken;
     final gate = refreshGate;
@@ -78,6 +78,17 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> logout() async {
     logoutCount++;
   }
+
+  /// Error de la API con [code], como lo lanzaría `ApiClient`.
+  static ApiErrorException apiError(IdentityErrorCode code) =>
+      ApiErrorException(
+        ProblemDetails(
+          type: 'about:blank',
+          title: code.code,
+          status: code.httpStatus,
+          code: code.code,
+        ),
+      );
 }
 
 /// Almacén del session token en memoria.

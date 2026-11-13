@@ -1,3 +1,6 @@
+import 'package:api/api.dart';
+import 'package:auth/auth.dart';
+import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
@@ -17,12 +20,13 @@ Future<WebShell> pumpShell(
   WidgetTester tester, {
   String? location,
   MicrofrontendRegistry? registry,
+  IdentityConnection? connection,
 }) async {
   tester.platformDispatcher.localesTestValue = const [Locale('es')];
   addTearDown(tester.platformDispatcher.clearLocalesTestValue);
   ignoreAhemOverflow();
 
-  final shell = WebShell(registry: registry);
+  final shell = WebShell(registry: registry, connection: connection);
   await tester.pumpWidget(WebShellApp(shell: shell));
   addTearDown(() async {
     // Let queued identity syncs finish first; otherwise dispose races them.
@@ -423,6 +427,153 @@ void main() {
     );
   });
 
+  testWidgets('requestStepUp returns false when a go replaces the page', (
+    tester,
+  ) async {
+    final shell = await pumpShell(tester, registry: registryWithProbe());
+    shell.session.value = probeUser('u1');
+    shell.router.go('/verifier');
+    await settle(tester);
+
+    bool? verified;
+    shell.requestStepUp().then((value) => verified = value);
+    await settle(tester);
+    expect(find.text('Verificación adicional'), findsOneWidget);
+
+    // A menu entry or a deep link navigates with go, not pop.
+    shell.router.go('/account');
+    await settle(tester);
+
+    expect(verified, isFalse);
+    expect(shell.stepUp.isPending, isFalse);
+    expect(find.text('Verificación adicional'), findsNothing);
+  });
+
+  group('with a real identity connection', () {
+    late FakeAuthRepository repository;
+    late IdentityConnection connection;
+    late List<SessionAccess> served;
+
+    // Built inside each test: futures created in setUp live outside the
+    // fake async zone of testWidgets and never complete there.
+    void prepare() {
+      repository = FakeAuthRepository();
+      served = [
+        access(const [Permission.tasksRead]),
+      ];
+      final manager = SessionManager(
+        repository: repository,
+        tokenStore: const CookieTokenStore(),
+      );
+      connection = IdentityConnection.withParts(
+        sessionManager: manager,
+        apiClient: ApiClient(
+          transport: _NoNetwork(),
+          baseUri: Uri.parse('https://api.example.com'),
+          accessToken: manager.accessToken,
+        ),
+        loadAccess: () async => served.removeAt(0),
+      );
+    }
+
+    testWidgets('the sign-in page runs the MFA flow and the session comes '
+        'from /v1/me/access', (tester) async {
+      prepare();
+      repository.signInResult = const SignInResponse(
+        status: SignInStatus.mfaRequired,
+        mfa: PendingMfa(mfaToken: 'mfa-1', methods: [MfaFactor.emailOtp]),
+      );
+      repository.challengeResult = MfaChallenge(
+        challengeId: challengeId,
+        method: MfaFactor.emailOtp,
+        expiresAt: DateTime.now().add(const Duration(minutes: 5)),
+        codeLength: MfaRules.emailCodeLength,
+      );
+      repository.verifyResult = authenticated();
+      final shell = await pumpShell(
+        tester,
+        location: '/tasks',
+        connection: connection,
+      );
+      expect(shell.router.state.uri.path, '/login');
+      expect(find.text('Entrar como cliente'), findsNothing);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-email')),
+        'ana@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-password')),
+        'secret',
+      );
+      await tester.tap(find.text('Iniciar sesión').last);
+      await settle(tester);
+      await tester.tap(find.text('Código por email'));
+      await settle(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-code')),
+        '123456',
+      );
+      await tester.tap(find.text('Verificar'));
+      await settle(tester);
+
+      expect(repository.lastChallengeRequest?.method, MfaFactor.emailOtp);
+      expect(repository.lastVerify?.challengeId, challengeId);
+      expect(shell.session.value.userId, userId);
+      expect(shell.session.value.permissions, {Permission.tasksRead});
+      expect(shell.router.state.uri.path, '/tasks');
+      expect(
+        shell.runtime
+            .scopeFor(MicrofrontendId.tasks)
+            .services
+            .extra<ApiClient>(),
+        same(connection.apiClient),
+      );
+    });
+
+    testWidgets('a wrong password shows the contract message', (tester) async {
+      prepare();
+      await pumpShell(tester, connection: connection);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-email')),
+        'ana@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-password')),
+        'wrong',
+      );
+      await tester.tap(find.text('Iniciar sesión').last);
+      await settle(tester);
+
+      expect(
+        find.text('El email o la contraseña no son correctos.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('when identity closes the session the user goes to login', (
+      tester,
+    ) async {
+      prepare();
+      repository.signInResult = authenticated();
+      final shell = await pumpShell(tester, connection: connection);
+      await connection.sessionManager.signIn(
+        const SignInRequest(email: 'ana@example.com', password: 'secret'),
+      );
+      await connection.reloadAccess();
+      shell.router.go('/tasks');
+      await settle(tester);
+      expect(shell.session.value.isAuthenticated, isTrue);
+
+      await connection.sessionManager.logout();
+      await settle(tester);
+
+      expect(shell.session.value.isAuthenticated, isFalse);
+      expect(shell.router.state.uri.path, '/login');
+    });
+  });
+
   testWidgets('/step-up sends an anonymous visitor to login', (tester) async {
     final shell = await pumpShell(tester, location: WebShell.stepUpPath);
     expect(shell.router.state.uri.path, '/login');
@@ -479,4 +630,32 @@ class _ProbeScreenState extends State<_ProbeScreen> {
   @override
   Widget build(BuildContext context) =>
       AppPage(title: 'Sonda', body: Text('usuario $_loadedFor'));
+}
+
+const userId = '0193f1c2-0000-7000-8000-0000000000a1';
+const challengeId = '0193f1c2-0000-7000-8000-000000000001';
+
+SessionAccess access(List<Permission> permissions) => SessionAccess(
+  userId: userId,
+  tenantId: '0193f1c2-0000-7000-8000-0000000000b1',
+  sessionId: '0193f1c2-0000-7000-8000-0000000000c1',
+  permissions: permissions,
+  platformRoles: const [],
+  features: const [],
+  flags: const [],
+  mfaVerifiedAt: null,
+);
+
+SignInResponse authenticated() => SignInResponse(
+  status: SignInStatus.authenticated,
+  tokens: SessionTokens(
+    accessToken: 'access-1',
+    accessExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+  ),
+);
+
+class _NoNetwork implements HttpTransport {
+  @override
+  Future<TransportResponse> send(TransportRequest request) async =>
+      const TransportResponse(statusCode: 503);
 }

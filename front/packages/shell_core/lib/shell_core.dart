@@ -2,7 +2,7 @@
 library;
 
 export 'package:contracts/contracts.dart'
-    show FeatureFlag, PlanFeature, PlatformRole, Permission;
+    show FeatureFlag, PlanFeature, PlatformRole, Permission, SessionAccess;
 
 export 'src/access_rule.dart';
 export 'src/deferred_page.dart';
@@ -20,4 +20,5 @@ export 'src/shell_navigation.dart';
 export 'src/shell_router.dart';
 export 'src/shell_runtime.dart';
 export 'src/shell_services.dart';
+export 'src/step_up_requests.dart';
 export 'src/user_session.dart';

@@ -1,3 +1,6 @@
+import 'package:api/api.dart';
+import 'package:auth/auth.dart';
+import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,6 +17,7 @@ Future<ValueNotifier<UserSession>> _pumpShell(
   WidgetTester tester, {
   UserSession? session,
   MicrofrontendRegistry? registry,
+  IdentityConnection? connection,
 }) async {
   tester.view.physicalSize = _phoneSize * 3;
   tester.view.devicePixelRatio = 3;
@@ -30,6 +34,7 @@ Future<ValueNotifier<UserSession>> _pumpShell(
     MobileShellApp(
       registry: registry ?? buildMobileRegistry(),
       session: notifier,
+      connection: connection,
     ),
   );
   await tester.pump();
@@ -89,6 +94,14 @@ MicrofrontendRegistry _registryWithProbe() => buildMobileRegistry()
               loadLibrary: () async {},
               builder: (scope, {params = const {}}) =>
                   const AppPage(title: 'Seguro', body: Text('zona segura')),
+            ),
+            ScreenRoute(
+              path: 'api',
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) => AppPage(
+                title: 'Api',
+                body: Text('api: ${scope.services.extra<ApiClient>() != null}'),
+              ),
             ),
             ScreenRoute(
               path: 'sensitive',
@@ -177,6 +190,7 @@ GoRouter _routerFor(
   session: session,
   unreadCount: ValueNotifier<int>(0),
   onSignOut: () async {},
+  stepUp: StepUpRequests(path: stepUpPath),
 );
 
 /// Absolute paths of every GoRoute in [routes], nested ones included.
@@ -488,6 +502,116 @@ void main() {
     },
   );
 
+  testWidgets('requestStepUp answers false when a go replaces the page', (
+    tester,
+  ) async {
+    await _pumpShell(tester, session: _client, registry: _registryWithProbe());
+    await _go(tester, '/billing/sensitive');
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.text('pedir step-up'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Verificación adicional'), findsOneWidget);
+
+    // A tab or a deep link navigates with go, not pop.
+    await _go(tester, '/billing/sensitive');
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Verificación adicional'), findsNothing);
+    expect(find.text('step-up: false'), findsOneWidget);
+  });
+
+  group('with a real identity connection', () {
+    late FakeAuthRepository repository;
+    late IdentityConnection connection;
+
+    // Built inside each test: futures created in setUp live outside the
+    // fake async zone of testWidgets and never complete there.
+    void prepare() {
+      repository = FakeAuthRepository()
+        ..signInResult = SignInResponse(
+          status: SignInStatus.authenticated,
+          tokens: SessionTokens(
+            accessToken: 'access-1',
+            accessExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+            sessionToken: 'session-1',
+          ),
+        );
+      final manager = SessionManager(
+        repository: repository,
+        tokenStore: InMemoryTokenStore(),
+      );
+      connection = IdentityConnection.withParts(
+        sessionManager: manager,
+        apiClient: ApiClient(
+          transport: _NoNetwork(),
+          baseUri: Uri.parse('https://api.example.com'),
+          accessToken: manager.accessToken,
+        ),
+        loadAccess: () async => SessionAccess(
+          userId: '0193f1c2-0000-7000-8000-0000000000a1',
+          tenantId: '0193f1c2-0000-7000-8000-0000000000b1',
+          sessionId: '0193f1c2-0000-7000-8000-0000000000c1',
+          permissions: const [Permission.tasksRead],
+          platformRoles: const [],
+          features: const [],
+          flags: const [],
+          mfaVerifiedAt: null,
+        ),
+      );
+    }
+
+    testWidgets('signing in loads the session from identity and gives the '
+        'microfrontends the ApiClient', (tester) async {
+      prepare();
+      final session = await _pumpShell(
+        tester,
+        registry: _registryWithProbe(),
+        connection: connection,
+      );
+      await _go(tester, '/billing/api');
+      expect(_location(tester), startsWith('/login'));
+      expect(find.byKey(const ValueKey('demo-sign-in-client')), findsNothing);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-email')),
+        'ana@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('sign-in-password')),
+        'secret',
+      );
+      await tester.tap(find.text('Iniciar sesión').last);
+      await _settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(session.value.userId, '0193f1c2-0000-7000-8000-0000000000a1');
+      expect(session.value.permissions, {Permission.tasksRead});
+      expect(_location(tester), '/billing/api');
+      expect(find.text('api: true'), findsOneWidget);
+    });
+
+    testWidgets('when identity closes the session the shell goes to login', (
+      tester,
+    ) async {
+      prepare();
+      final session = await _pumpShell(tester, connection: connection);
+      await connection.sessionManager.signIn(
+        const SignInRequest(email: 'ana@example.com', password: 'secret'),
+      );
+      await connection.reloadAccess();
+      await _go(tester, '/tasks');
+      expect(session.value.isAuthenticated, isTrue);
+
+      await connection.sessionManager.logout();
+      await _settle(tester);
+
+      expect(session.value.isAuthenticated, isFalse);
+      expect(_location(tester), '/login');
+    });
+  });
+
   test('safeReturnLocation rejects external targets', () {
     expect(safeReturnLocation(null), '/');
     expect(safeReturnLocation('/tasks/t1'), '/tasks/t1');
@@ -495,4 +619,10 @@ void main() {
     expect(safeReturnLocation('//evil.test/x'), '/');
     expect(safeReturnLocation(r'/\evil.test'), '/');
   });
+}
+
+class _NoNetwork implements HttpTransport {
+  @override
+  Future<TransportResponse> send(TransportRequest request) async =>
+      const TransportResponse(statusCode: 503);
 }

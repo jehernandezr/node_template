@@ -28,6 +28,17 @@
   "stepUpTitle": "Verificación adicional",
   "stepUpMessage": "Esta sección exige que confirmes tu identidad con un segundo factor.",
   "stepUpDemoVerify": "Verificar (demostración)",
+
+  "signInEmail": "Email",
+  "signInPassword": "Contraseña",
+  "mfaChooseMethod": "Elige cómo quieres recibir el código de verificación.",
+  "mfaMethodDeviceOtp": "Código en tu dispositivo de confianza",
+  "mfaMethodEmailOtp": "Código por email",
+  "mfaMethodTotp": "App de autenticación",
+  "mfaMethodRecoveryCode": "Código de recuperación",
+  "mfaCode": "Código de verificación",
+  "mfaVerify": "Verificar",
+
   "goHome": "Ir al inicio",
   "loading": "Cargando",
 
