@@ -50,6 +50,9 @@
     },
     {
       "path": "./backend/libs/shared/utils"
+    },
+    {
+      "path": "./backend/libs/platform/persistence"
     }
   ],
   "compilerOptions": {}

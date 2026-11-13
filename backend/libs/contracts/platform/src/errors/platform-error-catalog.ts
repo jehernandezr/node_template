@@ -472,6 +472,41 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'El claim de idempotencia ya pertenece a otro dueño.',
   ),
+  [C.PersistenceQueryFailed]: internal(
+    500,
+    false,
+    'Falló una sentencia en la base de datos.',
+  ),
+  [C.PersistenceInvalidConfig]: internal(
+    500,
+    false,
+    'La configuración de persistencia no es válida.',
+  ),
+  [C.PersistenceTransactionRequired]: internal(
+    500,
+    false,
+    'La operación exige una transacción abierta.',
+  ),
+  [C.PersistenceTenantRequired]: internal(
+    400,
+    false,
+    'La operación exige un tenant en el contexto.',
+  ),
+  [C.PersistenceTenantMismatch]: internal(
+    403,
+    false,
+    'La fila pertenece a otro tenant.',
+  ),
+  [C.PersistenceCorruptRow]: internal(
+    500,
+    false,
+    'Una fila leída no tiene el formato esperado.',
+  ),
+  [C.PersistenceContention]: internal(
+    503,
+    true,
+    'Hay contención sobre el mismo registro; reintentar.',
+  ),
   [C.ResilienceUnknownPolicy]: internal(
     500,
     false,

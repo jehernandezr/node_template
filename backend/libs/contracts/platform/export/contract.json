@@ -336,6 +336,34 @@
           "value": "PLATFORM.PRIMITIVES.STALE_CLAIM"
         },
         {
+          "name": "PersistenceQueryFailed",
+          "value": "PLATFORM.PERSISTENCE.QUERY_FAILED"
+        },
+        {
+          "name": "PersistenceInvalidConfig",
+          "value": "PLATFORM.PERSISTENCE.INVALID_CONFIG"
+        },
+        {
+          "name": "PersistenceTransactionRequired",
+          "value": "PLATFORM.PERSISTENCE.TRANSACTION_REQUIRED"
+        },
+        {
+          "name": "PersistenceTenantRequired",
+          "value": "PLATFORM.PERSISTENCE.TENANT_REQUIRED"
+        },
+        {
+          "name": "PersistenceTenantMismatch",
+          "value": "PLATFORM.PERSISTENCE.TENANT_MISMATCH"
+        },
+        {
+          "name": "PersistenceCorruptRow",
+          "value": "PLATFORM.PERSISTENCE.CORRUPT_ROW"
+        },
+        {
+          "name": "PersistenceContention",
+          "value": "PLATFORM.PERSISTENCE.CONTENTION"
+        },
+        {
           "name": "ResilienceUnknownPolicy",
           "value": "PLATFORM.RESILIENCE.UNKNOWN_POLICY"
         },
@@ -1324,6 +1352,69 @@
         "audience": "internal",
         "messageKey": "error_platform_primitives_stale_claim",
         "description": "El claim de idempotencia ya pertenece a otro dueño."
+      },
+      {
+        "name": "PersistenceQueryFailed",
+        "code": "PLATFORM.PERSISTENCE.QUERY_FAILED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_query_failed",
+        "description": "Falló una sentencia en la base de datos."
+      },
+      {
+        "name": "PersistenceInvalidConfig",
+        "code": "PLATFORM.PERSISTENCE.INVALID_CONFIG",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_invalid_config",
+        "description": "La configuración de persistencia no es válida."
+      },
+      {
+        "name": "PersistenceTransactionRequired",
+        "code": "PLATFORM.PERSISTENCE.TRANSACTION_REQUIRED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_transaction_required",
+        "description": "La operación exige una transacción abierta."
+      },
+      {
+        "name": "PersistenceTenantRequired",
+        "code": "PLATFORM.PERSISTENCE.TENANT_REQUIRED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_tenant_required",
+        "description": "La operación exige un tenant en el contexto."
+      },
+      {
+        "name": "PersistenceTenantMismatch",
+        "code": "PLATFORM.PERSISTENCE.TENANT_MISMATCH",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_tenant_mismatch",
+        "description": "La fila pertenece a otro tenant."
+      },
+      {
+        "name": "PersistenceCorruptRow",
+        "code": "PLATFORM.PERSISTENCE.CORRUPT_ROW",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_corrupt_row",
+        "description": "Una fila leída no tiene el formato esperado."
+      },
+      {
+        "name": "PersistenceContention",
+        "code": "PLATFORM.PERSISTENCE.CONTENTION",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_persistence_contention",
+        "description": "Hay contención sobre el mismo registro; reintentar."
       },
       {
         "name": "ResilienceUnknownPolicy",
