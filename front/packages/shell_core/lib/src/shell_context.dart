@@ -18,7 +18,6 @@ final class ShellContext {
     required ShellEventBus eventBus,
     required this.session,
     this.scope,
-    // The public name keeps the constructor compatible; the getter is deprecated.
     // ignore: prefer_initializing_formals
   }) : _eventBus = eventBus;
 
@@ -29,15 +28,6 @@ final class ShellContext {
   /// without a runtime.
   final MicrofrontendScope? scope;
 
-  /// Bus used to exchange events with other microfrontends.
-  ///
-  /// Events published here directly are not bound to this context and can
-  /// outlive the identity.
-  @Deprecated(
-    'Use emit(event) and listen<T>(onEvent), which stop working once the '
-    'identity changes. See ADR 0018.',
-  )
-  ShellEventBus get eventBus => _eventBus;
   final ShellEventBus _eventBus;
 
   /// Returns the current session.

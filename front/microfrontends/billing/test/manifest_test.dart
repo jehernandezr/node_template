@@ -50,8 +50,8 @@ void main() {
     ]);
   });
 
-  test('the manifest has no legacy lifecycle', () {
-    expect(billingManifest.lifecycle, isNull);
+  test('the manifest declares screens and no lifecycle', () {
+    expect(billingManifest.hasLifecycle, isFalse);
     expect(billingManifest.screens, hasLength(1));
   });
 

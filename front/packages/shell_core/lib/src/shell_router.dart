@@ -24,13 +24,12 @@ import 'shell_runtime.dart';
 /// Each manifest receives `() => runtime.scopeFor(id)` as its scope accessor.
 /// The session comes from [runtime].
 ///
-/// Every page of a manifest route (each `GoRoute.builder`, including the ones
-/// built from `screens`) is wrapped in a [ShellAccessScope] and in a
+/// Every page of a manifest route (each `GoRoute.builder` built from
+/// `screens`) is wrapped in a [ShellAccessScope] and in a
 /// [KeyedSubtree] keyed by [ShellRuntime.identityEpoch]: when the user or
 /// tenant changes, the mounted pages are built again from scratch with the
 /// scope of the new identity, or replaced by an empty box when the new
-/// identity cannot use the microfrontend (until the redirect removes them). Routes inside a `StatefulShellRoute` and routes
-/// with a `pageBuilder` are not re-keyed; manifests should use `screens`.
+/// identity cannot use the microfrontend (until the redirect removes them).
 /// Route-level redirects run with the shell's access environment, so
 /// [accessRedirect] works in them.
 ///
@@ -86,7 +85,7 @@ GoRouter buildShellRouter({
     paths: paths,
   );
 
-  final microfrontendRoutes = <RouteBase>[];
+  final microfrontendRoutes = <GoRoute>[];
   for (final manifest in registry.manifests) {
     final prefix = '/${manifest.id.pathSegment}';
     final built = manifest.buildRoutes(
@@ -155,42 +154,18 @@ final class _PageWrapper {
   final MicrofrontendManifest manifest;
   final AppPlatform platform;
 
-  RouteBase wrap(RouteBase route) {
-    if (route is GoRoute) {
-      final builder = route.builder;
-      final redirect = route.redirect;
-      return GoRoute(
-        path: route.path,
-        name: route.name,
-        builder: builder == null
-            ? null
-            : (context, state) => _page((context) => builder(context, state)),
-        pageBuilder: route.pageBuilder,
-        parentNavigatorKey: route.parentNavigatorKey,
-        redirect: redirect == null ? null : _redirect(redirect),
-        metadata: route.metadata,
-        onExit: route.onExit,
-        caseSensitive: route.caseSensitive,
-        routes: route.routes.map(wrap).toList(),
-      );
-    }
-    if (route is ShellRoute) {
-      final redirect = route.redirect;
-      return ShellRoute(
-        redirect: redirect == null ? null : _redirect(redirect),
-        builder: route.builder,
-        pageBuilder: route.pageBuilder,
-        notifyRootObserver: route.notifyRootObserver,
-        observers: route.observers,
-        metadata: route.metadata,
-        routes: route.routes.map(wrap).toList(),
-        parentNavigatorKey: route.parentNavigatorKey,
-        navigatorKey: route.navigatorKey,
-        restorationScopeId: route.restorationScopeId,
-        clipBehavior: route.clipBehavior,
-      );
-    }
-    return route;
+  GoRoute wrap(GoRoute route) {
+    final builder = route.builder;
+    final redirect = route.redirect;
+    return GoRoute(
+      path: route.path,
+      name: route.name,
+      builder: builder == null
+          ? null
+          : (context, state) => _page((context) => builder(context, state)),
+      redirect: redirect == null ? null : _redirect(redirect),
+      routes: route.routes.map((child) => wrap(child as GoRoute)).toList(),
+    );
   }
 
   GoRouterRedirect _redirect(GoRouterRedirect redirect) =>
@@ -227,17 +202,9 @@ void _assertNotMicrofrontendPath(String path, String name) {
 }
 
 /// Absolute paths of every route in [routes], searching nested routes too.
-Iterable<String> _absolutePaths(List<RouteBase> routes) sync* {
+Iterable<String> _absolutePaths(List<GoRoute> routes) sync* {
   for (final route in routes) {
-    if (route is GoRoute) {
-      if (route.path.startsWith('/')) yield route.path;
-      yield* _absolutePaths(route.routes);
-    } else if (route is ShellRoute) {
-      yield* _absolutePaths(route.routes);
-    } else if (route is StatefulShellRoute) {
-      for (final branch in route.branches) {
-        yield* _absolutePaths(branch.routes);
-      }
-    }
+    if (route.path.startsWith('/')) yield route.path;
+    yield* _absolutePaths(route.routes.cast<GoRoute>());
   }
 }

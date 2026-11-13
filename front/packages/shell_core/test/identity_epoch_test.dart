@@ -99,31 +99,6 @@ void main() {
     expect(find.text('user: u1'), findsNothing);
   });
 
-  testWidgets('a legacy GoRoute page is rebuilt for the new identity too', (
-    tester,
-  ) async {
-    final session = ValueNotifier(_user('u1'));
-    final registry = MicrofrontendRegistry()
-      ..register(
-        fakeManifest(
-          id: MicrofrontendId.tasks,
-          routes: (load, scope) => [
-            GoRoute(
-              path: '/tasks',
-              builder: (context, state) =>
-                  _ProfileScreen(profile: _profileOf(scope())),
-            ),
-          ],
-        ),
-      );
-    await _pump(tester, registry, session, '/tasks');
-    expect(find.text('user: u1'), findsOneWidget);
-
-    session.value = _user('u2');
-    await tester.pumpAndSettle();
-    expect(find.text('user: u2'), findsOneWidget);
-  });
-
   testWidgets('a permission-only change keeps the mounted state', (
     tester,
   ) async {

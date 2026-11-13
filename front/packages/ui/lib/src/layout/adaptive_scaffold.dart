@@ -1,8 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import 'app_page.dart';
 import 'breakpoint.dart';
-import 'shell_chrome.dart';
 
 /// One navigation entry shown by [AdaptiveScaffold].
 class AdaptiveDestination {
@@ -40,11 +38,6 @@ class AdaptiveScaffold extends StatelessWidget {
     required this.body,
     this.appBar,
     this.railTrailing,
-    @Deprecated(
-      'Screens own the only top bar: use AppPage in the screen and ShellChrome '
-      'in the shell (its actions reach AppPage). See ADR 0018.',
-    )
-    this.compactActions,
   }) : assert(destinations.length >= 2),
        assert(selectedIndex >= 0 && selectedIndex < destinations.length);
 
@@ -61,27 +54,18 @@ class AdaptiveScaffold extends StatelessWidget {
   final Widget body;
 
   /// Optional app bar placed above [body] on every width.
-  ///
-  /// On compact widths it takes precedence over [compactActions].
   final PreferredSizeWidget? appBar;
 
   /// Optional widget shown at the bottom of the rail on medium and expanded
   /// widths, for example a sign-out button.
   final Widget? railTrailing;
 
-  /// Optional actions shown in a small top bar on compact widths only, for
-  /// example a sign-out button. Ignored when [appBar] is set.
-  ///
-  /// Legacy: it draws a second bar above the screen's own. Shells use
-  /// [ShellChrome] and screens use [AppPage].
-  final List<Widget>? compactActions;
-
   @override
   Widget build(BuildContext context) {
     final breakpoint = Breakpoint.of(context);
     if (breakpoint == Breakpoint.compact) {
       return Scaffold(
-        appBar: appBar ?? _compactActionsBar(),
+        appBar: appBar,
         body: body,
         bottomNavigationBar: NavigationBar(
           selectedIndex: selectedIndex,
@@ -130,16 +114,6 @@ class AdaptiveScaffold extends StatelessWidget {
           Expanded(child: body),
         ],
       ),
-    );
-  }
-
-  PreferredSizeWidget? _compactActionsBar() {
-    final actions = compactActions;
-    if (actions == null || actions.isEmpty) return null;
-    return AppBar(
-      toolbarHeight: 48,
-      automaticallyImplyLeading: false,
-      actions: actions,
     );
   }
 

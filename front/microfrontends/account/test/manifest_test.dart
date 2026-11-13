@@ -24,11 +24,10 @@ Iterable<(String, AccessRule?)> _screens(
 void main() {
   setUp(resetDeferredPageCache);
 
-  test('manifest id, menu and legacy API', () {
+  test('manifest id, menu and lifecycle', () {
     expect(accountManifest.id, MicrofrontendId.account);
     expect(accountManifest.menu.single.path, '/account');
     expect(accountManifest.hasLifecycle, isFalse);
-    expect(accountManifest.lifecycle, isNull);
   });
 
   test('every screen lives under /account, with the sections nested', () {

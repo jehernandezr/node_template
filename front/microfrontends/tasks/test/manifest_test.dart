@@ -28,14 +28,9 @@ void main() {
     }
   });
 
-  test('declares screens and no legacy routes or lifecycle', () {
+  test('declares screens and no lifecycle', () {
     expect(tasksManifest.screens, hasLength(1));
-    expect(tasksManifest.lifecycle, isNull);
-    expect(
-      tasksManifest.routes(loadNow, () => newScope()),
-      isEmpty,
-      reason: 'legacy routes are not used',
-    );
+    expect(tasksManifest.hasLifecycle, isFalse);
   });
 
   test('only the write routes carry the tasksWrite rule', () {

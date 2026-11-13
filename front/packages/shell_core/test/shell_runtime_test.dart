@@ -65,14 +65,14 @@ void main() {
         fakeManifest(
           id: MicrofrontendId.tasks,
           access: AccessRule.permissions([Permission.tasksRead]),
-          lifecycle: tasksProbe,
+          lifecycleFactory: () => tasksProbe,
         ),
       )
       ..register(
         fakeManifest(
           id: MicrofrontendId.backoffice,
           access: AccessRule.permissions([Permission.backofficeAccess]),
-          lifecycle: _Probe('backoffice', log),
+          lifecycleFactory: () => _Probe('backoffice', log),
         ),
       );
     runtime = fakeRuntime(registry: registry, session: session);

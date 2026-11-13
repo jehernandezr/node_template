@@ -35,7 +35,7 @@ void main() {
     expect(list.path, '/assistant');
     expect(list.routes.single.path, ':conversationId');
     final routes = assistantManifest.buildRoutes(loadNow, () => newScope());
-    final root = routes.single as GoRoute;
+    final root = routes.single;
     expect(root.path, '/assistant');
     expect((root.routes.single as GoRoute).path, ':conversationId');
   });

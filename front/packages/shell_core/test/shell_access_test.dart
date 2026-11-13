@@ -63,17 +63,15 @@ MicrofrontendRegistry _registry() => MicrofrontendRegistry()
     fakeManifest(
       id: MicrofrontendId.billing,
       access: AccessRule.authenticated(),
-      routes: (load, scope) => [
-        GoRoute(
-          path: '/billing',
-          builder: (_, _) => const Text('billing'),
+      screens: [
+        fakeScreen(
+          '/billing',
+          'billing',
           routes: [
-            GoRoute(
-              path: 'admin',
-              redirect: accessRedirect(
-                AccessRule.permissions([Permission.billingRead]),
-              ),
-              builder: (_, _) => const Text('billing admin'),
+            fakeScreen(
+              'admin',
+              'billing admin',
+              access: AccessRule.permissions([Permission.billingRead]),
             ),
           ],
         ),

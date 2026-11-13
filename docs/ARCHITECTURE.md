@@ -142,7 +142,7 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
 - **Layout:** cada pantalla es dueña de su única barra superior con `AppPage` de `ui`. El shell usa `ShellChrome`.
 - **Estados y errores:** `AsyncValueView` para carga, error y datos; `showActionError` para el error de una acción.
 
-Las API anteriores (`routes:`, `lifecycle:`, `ShellContext.eventBus`, `AdaptiveScaffold.compactActions`) siguen funcionando con `@Deprecated`. Hoy los siete manifiestos usan `routes:` y `notifications` usa `lifecycle:`. El siguiente paso es migrar cada microfrontend a `screens:` y `lifecycleFactory`.
+Los siete manifiestos usan `screens:`, y `notifications` crea su ciclo de vida con `lifecycleFactory`. Las API anteriores (`routes:`, `lifecycle:`, `ShellContext.eventBus` y `AdaptiveScaffold.compactActions`) se eliminaron.
 
 **Carga diferida**
 

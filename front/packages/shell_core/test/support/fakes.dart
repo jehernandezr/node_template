@@ -1,9 +1,23 @@
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shell_core/shell_core.dart';
 
-/// Builds a manifest for tests. When [routePath] is set, it exposes one GoRoute.
+/// A [ScreenRoute] that shows [text], loaded without delay.
+ScreenRoute fakeScreen(
+  String path,
+  String text, {
+  AccessRule? access,
+  List<ScreenRoute> routes = const [],
+}) => ScreenRoute(
+  path: path,
+  access: access,
+  loadLibrary: () async {},
+  builder: (scope, {params = const {}}) => Text(text),
+  routes: routes,
+);
+
+/// Builds a manifest for tests. When [routePath] is set, it exposes one
+/// screen at that path showing the same text.
 MicrofrontendManifest fakeManifest({
   required MicrofrontendId id,
   Set<AppPlatform> platforms = const {AppPlatform.web, AppPlatform.mobile},
@@ -11,12 +25,6 @@ MicrofrontendManifest fakeManifest({
   FeatureFlag? flag,
   int order = 0,
   String? routePath,
-  List<RouteBase> Function(
-    ScreenLoader load,
-    MicrofrontendScope Function() scope,
-  )?
-  routes,
-  Microfrontend? lifecycle,
   Microfrontend Function()? lifecycleFactory,
   List<ScreenRoute> screens = const [],
 }) {
@@ -26,9 +34,8 @@ MicrofrontendManifest fakeManifest({
     platforms: platforms,
     access: access ?? AccessRule.public(),
     flag: flag,
-    lifecycle: lifecycle,
     lifecycleFactory: lifecycleFactory,
-    screens: screens,
+    screens: [if (path != null) fakeScreen(path, path), ...screens],
     menu: [
       MenuEntry(
         labelKey: 'menu.${id.name}',
@@ -36,12 +43,6 @@ MicrofrontendManifest fakeManifest({
         order: order,
       ),
     ],
-    routes:
-        routes ??
-        (_, _) => [
-          if (path != null)
-            GoRoute(path: path, builder: (context, state) => Text(path)),
-        ],
   );
 }
 

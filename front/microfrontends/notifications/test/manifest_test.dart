@@ -12,12 +12,12 @@ void main() {
     });
   });
 
-  test('declares screens and no legacy routes', () {
-    final legacy = notificationsManifest.buildRoutes(
+  test('declares screens', () {
+    final built = notificationsManifest.buildRoutes(
       deferredPage,
       () => throw StateError('unused'),
     );
-    expect(legacy, hasLength(notificationsManifest.screens.length));
+    expect(built, hasLength(notificationsManifest.screens.length));
 
     final inbox = notificationsManifest.screens.single;
     expect(inbox.path, NotificationsPaths.inbox);
@@ -32,7 +32,7 @@ void main() {
       deferredPage,
       () => throw StateError('unused'),
     );
-    final inbox = routes.single as GoRoute;
+    final inbox = routes.single;
     expect(inbox.path, '/notifications');
     final preferences = inbox.routes.single as GoRoute;
     expect(preferences.path, 'preferences');
