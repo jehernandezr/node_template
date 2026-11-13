@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'app_page.dart';
 import 'breakpoint.dart';
+import 'shell_chrome.dart';
 
 /// One navigation entry shown by [AdaptiveScaffold].
 class AdaptiveDestination {
@@ -38,6 +40,10 @@ class AdaptiveScaffold extends StatelessWidget {
     required this.body,
     this.appBar,
     this.railTrailing,
+    @Deprecated(
+      'Screens own the only top bar: use AppPage in the screen and ShellChrome '
+      'in the shell (its actions reach AppPage). See ADR 0018.',
+    )
     this.compactActions,
   }) : assert(destinations.length >= 2),
        assert(selectedIndex >= 0 && selectedIndex < destinations.length);
@@ -65,6 +71,9 @@ class AdaptiveScaffold extends StatelessWidget {
 
   /// Optional actions shown in a small top bar on compact widths only, for
   /// example a sign-out button. Ignored when [appBar] is set.
+  ///
+  /// Legacy: it draws a second bar above the screen's own. Shells use
+  /// [ShellChrome] and screens use [AppPage].
   final List<Widget>? compactActions;
 
   @override

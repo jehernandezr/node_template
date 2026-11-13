@@ -25,21 +25,32 @@ final class MicrofrontendRegistry {
   /// Manifest registered for [id], or null.
   MicrofrontendManifest? manifestFor(MicrofrontendId id) => _manifests[id];
 
-  /// Manifests visible to [session] on [platform], in registration order.
+  /// Manifests visible to [session] on [platform] at [now], in registration
+  /// order.
   List<MicrofrontendManifest> visibleFor(
     UserSession session,
-    AppPlatform platform,
-  ) => [
+    AppPlatform platform, {
+    DateTime? now,
+  }) => [
     for (final manifest in _manifests.values)
-      if (manifest.isVisibleTo(session, platform)) manifest,
+      if (manifest.isVisibleTo(session, platform, now: now)) manifest,
   ];
 
-  /// Menu entries of the visible manifests, sorted by [MenuEntry.order].
+  /// Menu entries of the manifests [session] can reach on [platform], sorted
+  /// by [MenuEntry.order].
   ///
-  /// Entries with equal order keep registration order where the sort allows.
-  List<MenuEntry> menuFor(UserSession session, AppPlatform platform) {
+  /// A manifest that only lacks a recent second factor is included, so the
+  /// user can open it and step up. Entries with equal order keep registration
+  /// order where the sort allows.
+  List<MenuEntry> menuFor(
+    UserSession session,
+    AppPlatform platform, {
+    DateTime? now,
+  }) {
     final entries = [
-      for (final manifest in visibleFor(session, platform)) ...manifest.menu,
+      for (final manifest in _manifests.values)
+        if (manifest.isReachableBy(session, platform, now: now))
+          ...manifest.menu,
     ];
     entries.sort((a, b) => a.order.compareTo(b.order));
     return entries;
@@ -57,6 +68,6 @@ final class MicrofrontendRegistry {
   ) => [
     for (final manifest in _manifests.values)
       if (manifest.platforms.contains(platform))
-        ...manifest.routes(load, () => scopeFor(manifest.id)),
+        ...manifest.buildRoutes(load, () => scopeFor(manifest.id)),
   ];
 }

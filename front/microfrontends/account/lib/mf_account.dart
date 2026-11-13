@@ -16,6 +16,8 @@ final MicrofrontendManifest accountManifest = MicrofrontendManifest(
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.authenticated(),
   menu: const [MenuEntry(labelKey: 'menuAccount', path: '/account', order: 10)],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: _routes,
 );
 

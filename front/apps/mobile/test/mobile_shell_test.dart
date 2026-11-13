@@ -6,12 +6,14 @@ import 'package:mobile_shell/src/login/login_page.dart';
 import 'package:mobile_shell/src/registry.dart';
 import 'package:mobile_shell/src/router.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:ui/ui.dart';
 
 const _phoneSize = Size(390, 844);
 
 Future<ValueNotifier<UserSession>> _pumpShell(
   WidgetTester tester, {
   UserSession? session,
+  MicrofrontendRegistry? registry,
 }) async {
   tester.view.physicalSize = _phoneSize * 3;
   tester.view.devicePixelRatio = 3;
@@ -23,7 +25,7 @@ Future<ValueNotifier<UserSession>> _pumpShell(
 
   final notifier = ValueNotifier<UserSession>(session ?? UserSession.anonymous());
   await tester.pumpWidget(
-    MobileShellApp(registry: buildMobileRegistry(), session: notifier),
+    MobileShellApp(registry: registry ?? buildMobileRegistry(), session: notifier),
   );
   await tester.pump();
   return notifier;
@@ -60,6 +62,54 @@ final UserSession _clientNoAssistant = UserSession(
   tenantId: 't1',
   permissions: {Permission.tasksRead},
 );
+
+/// Real mobile registry plus a probe screen at `/billing` that uses [AppPage],
+/// as every screen does after the WP0 migration.
+MicrofrontendRegistry _registryWithProbe() => buildMobileRegistry()
+  ..register(
+    MicrofrontendManifest(
+      id: MicrofrontendId.billing,
+      platforms: {AppPlatform.mobile},
+      access: AccessRule.authenticated(),
+      menu: const [],
+      screens: [
+        ScreenRoute(
+          path: '/billing',
+          loadLibrary: () async {},
+          builder: (scope, {params = const {}}) =>
+              _ProbeScreen(userId: scope.services.session.userId!),
+          routes: [
+            ScreenRoute(
+              path: 'secure',
+              access: AccessRule.mfa(const Duration(minutes: 10)),
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) =>
+                  const AppPage(title: 'Seguro', body: Text('zona segura')),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+/// Copies the user id into its state once, like a screen that loads data in
+/// `initState`. Only a rebuild from scratch shows another user.
+class _ProbeScreen extends StatefulWidget {
+  const _ProbeScreen({required this.userId});
+
+  final String userId;
+
+  @override
+  State<_ProbeScreen> createState() => _ProbeScreenState();
+}
+
+class _ProbeScreenState extends State<_ProbeScreen> {
+  late final String _loadedFor = widget.userId;
+
+  @override
+  Widget build(BuildContext context) =>
+      AppPage(title: 'Probe', body: Text('usuario $_loadedFor'));
+}
 
 /// Runtime over [registry] that follows [session], with its own event bus.
 ShellRuntime _runtimeFor(MicrofrontendRegistry registry, ValueNotifier<UserSession> session) {
@@ -153,11 +203,33 @@ void main() {
     }
   });
 
-  testWidgets('sign-out is offered in the compact top bar of the shell', (tester) async {
+  testWidgets('on compact widths the screen owns the only top bar and shows sign-out', (
+    tester,
+  ) async {
+    await _pumpShell(tester, session: _client, registry: _registryWithProbe());
+    await _go(tester, '/billing');
+    // Let the page transition finish so the top bar is on screen.
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Probe'), findsOneWidget);
+    expect(find.byType(AppBar), findsOneWidget, reason: 'the shell draws no bar');
+    expect(
+      find.descendant(of: find.byType(AppPage), matching: find.byIcon(Icons.logout)),
+      findsOneWidget,
+    );
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('the shell no longer draws its own compact bar over legacy screens', (
+    tester,
+  ) async {
     await _pumpShell(tester, session: _client);
     await _go(tester, '/tasks');
 
-    expect(find.byIcon(Icons.logout), findsOneWidget);
+    expect(
+      find.ancestor(of: find.byType(Navigator).last, matching: find.byType(AppBar)),
+      findsNothing,
+    );
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
@@ -169,8 +241,10 @@ void main() {
   });
 
   testWidgets('sign-out goes to login without from', (tester) async {
-    await _pumpShell(tester, session: _client);
-    await _go(tester, '/tasks');
+    await _pumpShell(tester, session: _client, registry: _registryWithProbe());
+    await _go(tester, '/billing');
+    // Let the page transition finish so the top bar is on screen.
+    await tester.pump(const Duration(seconds: 1));
 
     await tester.tap(find.byIcon(Icons.logout));
     await _settle(tester);
@@ -214,8 +288,12 @@ void main() {
           platforms: {AppPlatform.mobile},
           access: AccessRule.public(),
           menu: const [],
-          routes: (load, scope) => [
-            GoRoute(path: '/billing', builder: (context, state) => const SizedBox.shrink()),
+          screens: [
+            ScreenRoute(
+              path: '/billing',
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) => const SizedBox.shrink(),
+            ),
           ],
         ),
       );
@@ -242,6 +320,37 @@ void main() {
 
     runtime.dispose();
     session.dispose();
+  });
+
+  testWidgets('identity switch: a mounted route shows the new user\'s data', (tester) async {
+    final session = await _pumpShell(tester, session: _client, registry: _registryWithProbe());
+    await _go(tester, '/billing');
+    await _settle(tester);
+    expect(find.text('usuario u1'), findsOneWidget);
+
+    session.value = _clientNoAssistant;
+    await _settle(tester);
+
+    expect(_location(tester), '/billing');
+    expect(find.text('usuario u2'), findsOneWidget);
+    expect(find.text('usuario u1'), findsNothing);
+  });
+
+  testWidgets('an MFA sub-route sends to /step-up and returns after verifying', (tester) async {
+    final session = await _pumpShell(tester, session: _client, registry: _registryWithProbe());
+    await _go(tester, '/billing/secure');
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(_location(tester), '/step-up?from=%2Fbilling%2Fsecure');
+    expect(find.text('Verificación adicional'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('step-up-verify')));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(_location(tester), '/billing/secure');
+    expect(find.text('zona segura'), findsOneWidget);
+    expect(session.value.mfaVerifiedAt, isNotNull);
   });
 
   test('safeReturnLocation rejects external targets', () {

@@ -13,6 +13,8 @@ final MicrofrontendManifest billingManifest = MicrofrontendManifest(
   platforms: {AppPlatform.web},
   access: AccessRule.permissions([Permission.billingRead]),
   menu: const [MenuEntry(labelKey: 'menuBilling', path: '/billing', order: 50)],
+  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
+  // ignore: deprecated_member_use
   routes: _routes,
 );
 

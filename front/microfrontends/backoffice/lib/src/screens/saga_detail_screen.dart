@@ -1,7 +1,8 @@
 import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
-import 'package:ui/ui.dart';
+// TODO(WP0): migrar al showActionError de ui (ADR 0018) y quitar este hide.
+import 'package:ui/ui.dart' hide showActionError;
 
 import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';

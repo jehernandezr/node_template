@@ -81,6 +81,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'You do not have permission to view this page.';
 
   @override
+  String get stepUpTitle => 'Additional verification';
+
+  @override
+  String get stepUpMessage =>
+      'This section requires you to confirm your identity with a second factor.';
+
+  @override
+  String get stepUpDemoVerify => 'Verify (demo)';
+
+  @override
   String get goHome => 'Go to home';
 
   @override

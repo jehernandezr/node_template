@@ -17,6 +17,8 @@ MicrofrontendManifest fakeManifest({
   )?
   routes,
   Microfrontend? lifecycle,
+  Microfrontend Function()? lifecycleFactory,
+  List<ScreenRoute> screens = const [],
 }) {
   final path = routePath;
   return MicrofrontendManifest(
@@ -25,6 +27,8 @@ MicrofrontendManifest fakeManifest({
     access: access ?? AccessRule.public(),
     flag: flag,
     lifecycle: lifecycle,
+    lifecycleFactory: lifecycleFactory,
+    screens: screens,
     menu: [
       MenuEntry(
         labelKey: 'menu.${id.name}',

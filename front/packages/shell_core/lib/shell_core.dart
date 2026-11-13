@@ -12,6 +12,8 @@ export 'src/microfrontend.dart';
 export 'src/microfrontend_manifest.dart';
 export 'src/microfrontend_registry.dart';
 export 'src/microfrontend_scope.dart';
+export 'src/screen_route.dart';
+export 'src/shell_access.dart';
 export 'src/shell_context.dart';
 export 'src/shell_event_bus.dart';
 export 'src/shell_navigation.dart';
