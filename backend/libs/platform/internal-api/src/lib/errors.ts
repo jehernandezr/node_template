@@ -1,32 +1,47 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 import { FailureKind } from '@platform/primitives';
 
-/** Stable error codes of the internal API, format `PLATFORM.INTERNAL_API.<ERROR>`. */
-export enum InternalApiErrorCode {
-  InvalidInput = 'PLATFORM.INTERNAL_API.INVALID_INPUT',
-  InvalidOutput = 'PLATFORM.INTERNAL_API.INVALID_OUTPUT',
-  UnknownOperation = 'PLATFORM.INTERNAL_API.UNKNOWN_OPERATION',
-  DuplicateOperation = 'PLATFORM.INTERNAL_API.DUPLICATE_OPERATION',
-  MissingCompensation = 'PLATFORM.INTERNAL_API.MISSING_COMPENSATION',
-  MissingHandler = 'PLATFORM.INTERNAL_API.MISSING_HANDLER',
-  Timeout = 'PLATFORM.INTERNAL_API.TIMEOUT',
-  NonJsonSafeSchema = 'PLATFORM.INTERNAL_API.NON_JSON_SAFE_SCHEMA',
+/**
+ * Error codes of the internal API, format `PLATFORM.INTERNAL_API.<ERROR>`.
+ * Each value is the `PlatformErrorCode` of the catalog, so the code is
+ * declared once in `@contracts/platform`.
+ */
+export const InternalApiErrorCode = {
+  /**
+   * @deprecated Calls answer an invalid input with the business error
+   * `PlatformErrorCode.ValidationInvalidInput`; the code stays in the catalog.
+   */
+  InvalidInput: PlatformErrorCode.InternalApiInvalidInput,
+  InvalidOutput: PlatformErrorCode.InternalApiInvalidOutput,
+  UnknownOperation: PlatformErrorCode.InternalApiUnknownOperation,
+  DuplicateOperation: PlatformErrorCode.InternalApiDuplicateOperation,
+  MissingCompensation: PlatformErrorCode.InternalApiMissingCompensation,
+  MissingHandler: PlatformErrorCode.InternalApiMissingHandler,
+  Timeout: PlatformErrorCode.InternalApiTimeout,
+  NonJsonSafeSchema: PlatformErrorCode.InternalApiNonJsonSafeSchema,
   /** The value given as an operation is neither an `@Operation` class nor a `defineOperation` descriptor. */
-  InvalidOperation = 'PLATFORM.INTERNAL_API.INVALID_OPERATION',
+  InvalidOperation: PlatformErrorCode.InternalApiInvalidOperation,
   /** Missing, empty or oversized idempotency key or tenant id. */
-  InvalidIdempotencyKey = 'PLATFORM.INTERNAL_API.INVALID_IDEMPOTENCY_KEY',
+  InvalidIdempotencyKey: PlatformErrorCode.InternalApiInvalidIdempotencyKey,
   /** The same idempotency key was reused with a different input. */
-  IdempotencyKeyReuse = 'PLATFORM.INTERNAL_API.IDEMPOTENCY_KEY_REUSE',
+  IdempotencyKeyReuse: PlatformErrorCode.InternalApiIdempotencyKeyReuse,
   /** The serialized input or output exceeds the configured limit. */
-  PayloadTooLarge = 'PLATFORM.INTERNAL_API.PAYLOAD_TOO_LARGE',
+  PayloadTooLarge: PlatformErrorCode.InternalApiPayloadTooLarge,
   /** A handler returned something that is not a `CallOutcome`. */
-  InvalidHandlerResult = 'PLATFORM.INTERNAL_API.INVALID_HANDLER_RESULT',
-}
+  InvalidHandlerResult: PlatformErrorCode.InternalApiInvalidHandlerResult,
+  /** An operation can take longer than the registry allows for one call, retries included. */
+  CallBudgetExceeded: PlatformErrorCode.InternalApiCallBudgetExceeded,
+} as const;
+
+/** One of the {@link InternalApiErrorCode} values. */
+export type InternalApiErrorCode =
+  (typeof InternalApiErrorCode)[keyof typeof InternalApiErrorCode];
 
 /**
  * Raised for contract violations found while defining or registering
  * operations. Calls never throw it: the client and the router report contract
- * violations as a `protocol-violation` outcome.
+ * violations as a `CallOutcome`.
  */
 export class InternalApiError extends PlatformError {
   override readonly code: InternalApiErrorCode;

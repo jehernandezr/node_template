@@ -173,6 +173,10 @@
           "value": "PLATFORM.INTERNAL_API.INVALID_HANDLER_RESULT"
         },
         {
+          "name": "InternalApiCallBudgetExceeded",
+          "value": "PLATFORM.INTERNAL_API.CALL_BUDGET_EXCEEDED"
+        },
+        {
           "name": "MessagingInvalidEnvelope",
           "value": "PLATFORM.MESSAGING.INVALID_ENVELOPE"
         },
@@ -946,6 +950,15 @@
         "audience": "internal",
         "messageKey": "error_platform_internal_api_invalid_handler_result",
         "description": "El manejador de la operación interna devolvió un resultado que no es un CallOutcome."
+      },
+      {
+        "name": "InternalApiCallBudgetExceeded",
+        "code": "PLATFORM.INTERNAL_API.CALL_BUDGET_EXCEEDED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_internal_api_call_budget_exceeded",
+        "description": "Una operación interna puede tardar más que el presupuesto de una llamada, reintentos incluidos."
       },
       {
         "name": "MessagingInvalidEnvelope",

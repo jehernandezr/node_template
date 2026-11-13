@@ -1,4 +1,8 @@
-import { Compensation, type OperationDefinition } from '@contracts/platform';
+import {
+  Compensation,
+  PlatformErrorCode,
+  type OperationDefinition,
+} from '@contracts/platform';
 import type { z } from 'zod';
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
 
@@ -35,8 +39,12 @@ export interface OperationMetadata extends OperationOptions {
 /** Symbol under which `@Operation` stores metadata on the contract class. */
 export const OPERATION_METADATA = Symbol.for('platform.internal-api.operation');
 
-/** Business error code allowed on every operation without being declared. */
-export const INVALID_INPUT_CODE = 'PLATFORM.VALIDATION.INVALID_INPUT';
+/**
+ * Business error code allowed on every operation without being declared. The
+ * client and the router answer an input that breaks the contract with it, as a
+ * `business-error` carrying `details.fieldErrors`.
+ */
+export const INVALID_INPUT_CODE = PlatformErrorCode.ValidationInvalidInput;
 
 export const DEFAULT_RETRY_POLICY: RetryPolicy = Object.freeze({
   maxAttempts: 3,
@@ -121,6 +129,18 @@ export function defaultCallBudgetMs(metadata: OperationMetadata): number {
     attempts * effectiveTimeout(metadata) +
     (attempts - 1) * effectiveRetry(metadata).maxMs
   );
+}
+
+/**
+ * Id of the operation that reverts this one, or `null` when it has none: a
+ * read-only operation, or one declared with `Compensation.None`.
+ */
+export function compensationOf(metadata: OperationMetadata): string | null {
+  const { compensatedBy, mutating } = metadata;
+  if (!mutating || compensatedBy === undefined) {
+    return null;
+  }
+  return compensatedBy === Compensation.None ? null : compensatedBy;
 }
 
 /** Business error codes a handler or transport may return for this operation. */

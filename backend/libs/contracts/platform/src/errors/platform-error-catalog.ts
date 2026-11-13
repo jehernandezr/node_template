@@ -246,6 +246,11 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'El manejador de la operación interna devolvió un resultado que no es un CallOutcome.',
   ),
+  [C.InternalApiCallBudgetExceeded]: internal(
+    500,
+    false,
+    'Una operación interna puede tardar más que el presupuesto de una llamada, reintentos incluidos.',
+  ),
   [C.MessagingInvalidEnvelope]: internal(
     400,
     false,

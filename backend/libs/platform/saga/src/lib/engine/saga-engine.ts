@@ -1,9 +1,16 @@
+import { context as otelContext, SpanKind } from '@opentelemetry/api';
+import type { ContractRegistry } from '@platform/internal-api';
 import {
   SystemClock,
   UuidV7IdGenerator,
   type Clock,
   type IdGenerator,
 } from '@platform/kernel';
+import {
+  contextFromTraceparent,
+  currentTraceparent,
+  withSpan,
+} from '@platform/observability';
 import {
   BackoffStrategy,
   CallOutcome,
@@ -33,6 +40,11 @@ import type {
   ForwardEntry,
 } from '../definition/saga-flow.js';
 import type { SagaDefinition } from '../definition/saga-definition.js';
+import {
+  SagaDefinitionIssueCode,
+  validateSagas,
+  type SagaDefinitionIssue,
+} from '../definition/saga-validation.js';
 import type { SagaStore } from '../store/saga-store.js';
 import { assertNever, assertSerializableState, jsonClone } from '../util.js';
 
@@ -73,16 +85,43 @@ export interface StartOptions {
   /**
    * Tenant, actor and traceparent sent with every step. Persisted with the
    * instance, so a recovered step sends exactly the same values and the
-   * callee builds the same idempotency key.
+   * callee builds the same idempotency key. The traceparent defaults to the
+   * active span (`currentTraceparent()`), so the saga continues the trace of
+   * whoever started it.
    */
   readonly context?: SagaCallContext;
 }
+
+/** Attributes of the span of each saga step. */
+export enum SagaSpanAttribute {
+  SagaType = 'platform.saga.type',
+  SagaId = 'platform.saga.id',
+  StepIndex = 'platform.saga.step',
+  Direction = 'platform.saga.direction',
+  Operation = 'platform.saga.operation',
+}
+
+/** Name of the span of each saga step. */
+export const SAGA_STEP_SPAN = 'saga.step';
 
 /** Constructor options of `SagaEngine`. */
 export interface SagaEngineOptions {
   readonly store: SagaStore;
   readonly invoker: OperationInvoker;
+  /**
+   * Sagas this engine runs, by type. They are compiled and validated when the
+   * engine is built: an invalid definition fails at startup, not with the
+   * first saga of its type.
+   */
   readonly registry: ReadonlyMap<string, SagaDefinition<unknown>>;
+  /**
+   * Operations the steps call. Defaults to the catalogue of the invoker
+   * (`InternalClientInvoker` exposes the one of its client). With it, startup
+   * checks that every operation and compensation is registered, that each
+   * compensation is the `compensatedBy` of the contract and that compensations
+   * are idempotent.
+   */
+  readonly contracts?: ContractRegistry;
   /** Identity of this worker. Lease tokens are derived from it. */
   readonly owner: string;
   /** Lease duration in milliseconds. Defaults to 30 000. Must exceed `maxStepDurationMs`. */
@@ -140,7 +179,8 @@ const DEFAULT_MAX_SUSPEND_AGE_MS = 24 * 60 * 60 * 1000;
 export class SagaEngine {
   private readonly store: SagaStore;
   private readonly invoker: OperationInvoker;
-  private readonly registry: ReadonlyMap<string, SagaDefinition<unknown>>;
+  private readonly compiled: ReadonlyMap<string, CompiledSaga<unknown>>;
+  private readonly contracts: ContractRegistry | undefined;
   private readonly owner: string;
   private readonly leaseMs: number;
   private readonly maxStepDurationMs: number;
@@ -153,10 +193,14 @@ export class SagaEngine {
     ((stepIndex: number) => boolean) | undefined;
   private readonly listeners = new Set<SagaEventListener>();
 
+  /**
+   * Compiles and validates every saga of `registry` (see `validate`). Throws
+   * `InvalidConfiguration` for a lease that does not outlive a step, and
+   * `InvalidDefinition` or `MissingCompensation` for an invalid saga.
+   */
   constructor(options: SagaEngineOptions) {
     this.store = options.store;
     this.invoker = options.invoker;
-    this.registry = options.registry;
     this.owner = options.owner;
     this.leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
     const maxStepDurationMs = options.maxStepDurationMs ?? DEFAULT_MAX_STEP_MS;
@@ -175,6 +219,30 @@ export class SagaEngine {
     this.ids = options.ids ?? new UuidV7IdGenerator();
     this.backoff = options.backoff ?? DEFAULT_BACKOFF;
     this.crashAfterDispatch = options.crashAfterDispatch;
+    this.compiled = compileAll(options.registry);
+    this.contracts = options.contracts ?? options.invoker.contracts;
+    const issues = this.validate();
+    if (issues.length > 0) {
+      throw new SagaError(
+        SagaErrorCode.InvalidDefinition,
+        `Invalid sagas:\n${issues.map((issue) => `  ${issue.message}`).join('\n')}`,
+        { issues },
+      );
+    }
+  }
+
+  /**
+   * Checks the compiled sagas against the contracts (given or taken from the
+   * invoker): operations and compensations registered, compensations equal to
+   * the `compensatedBy` of each contract, steps after the pivot and
+   * compensations idempotent, and call budgets within `maxStepDurationMs`.
+   * The constructor throws when this returns issues.
+   */
+  validate(contracts = this.contracts): SagaDefinitionIssue[] {
+    return validateSagas([...this.compiled.values()], {
+      ...(contracts !== undefined && { contracts }),
+      maxStepDurationMs: this.maxStepDurationMs,
+    });
   }
 
   /**
@@ -202,7 +270,10 @@ export class SagaEngine {
   ): Promise<SagaInstance> {
     this.compile(definitionType);
     assertSerializableState(initialState);
-    const context = callContext(options.context);
+    const context = callContext({
+      ...options.context,
+      traceparent: options.context?.traceparent ?? currentTraceparent(),
+    });
     assertSerializableState(context);
     const inputDigest = stableDigest(initialState ?? null);
     const key = options.idempotencyKey ?? null;
@@ -354,6 +425,36 @@ export class SagaEngine {
       );
     }
 
+    return this.inStepSpan(
+      instance,
+      entry,
+      index,
+      StepDirection.Forward,
+      step.operationId,
+      (traceparent) =>
+        this.forwardStep(
+          run,
+          instance,
+          compiled,
+          steps,
+          step,
+          entry,
+          traceparent,
+        ),
+    );
+  }
+
+  /** Dispatches a forward step (or re-invokes a dispatched one) and applies its outcome. */
+  private async forwardStep(
+    run: Run,
+    instance: SagaInstance,
+    compiled: CompiledSaga<unknown>,
+    steps: StepLogEntry[],
+    step: CompiledStep<unknown>,
+    entry: StepLogEntry | undefined,
+    traceparent: string | undefined,
+  ): Promise<SagaInstance> {
+    const index = step.index;
     let dispatched: StepLogEntry;
     let current: SagaInstance;
     let input: unknown;
@@ -382,6 +483,7 @@ export class SagaEngine {
         step.operationId,
         StepStatus.Dispatched,
         input,
+        entry?.traceparent ?? traceparent,
       );
       current = await this.store.dispatchStep({
         instance: this.stamp({
@@ -402,6 +504,7 @@ export class SagaEngine {
       step.operationId,
       input,
       stepIdempotencyKey(run.sagaId, index, StepDirection.Forward),
+      traceparent,
     );
     return this.forwardOutcome(
       run,
@@ -624,7 +727,38 @@ export class SagaEngine {
         `Step ${index} of saga ${run.sagaId} cannot be compensated`,
       );
     }
+    return this.inStepSpan(
+      instance,
+      entry,
+      index,
+      StepDirection.Compensate,
+      operationId,
+      (traceparent) =>
+        this.compensationStep(
+          run,
+          instance,
+          steps,
+          step,
+          operationId,
+          forward,
+          entry,
+          traceparent,
+        ),
+    );
+  }
 
+  /** Dispatches a compensation (or re-invokes a dispatched one) and applies its outcome. */
+  private async compensationStep(
+    run: Run,
+    instance: SagaInstance,
+    steps: StepLogEntry[],
+    step: CompiledStep<unknown>,
+    operationId: string,
+    forward: StepLogEntry,
+    entry: StepLogEntry | undefined,
+    traceparent: string | undefined,
+  ): Promise<SagaInstance> {
+    const index = step.index;
     let dispatched: StepLogEntry;
     let current: SagaInstance;
     let input: unknown;
@@ -655,6 +789,7 @@ export class SagaEngine {
         operationId,
         StepStatus.Dispatched,
         input,
+        entry?.traceparent ?? traceparent,
       );
       current = await this.store.dispatchStep({
         instance: this.stamp({
@@ -675,6 +810,7 @@ export class SagaEngine {
       operationId,
       input,
       stepIdempotencyKey(run.sagaId, index, StepDirection.Compensate),
+      traceparent,
     );
     const finish = (
       patch: Pick<StepLogEntry, 'status' | 'output' | 'errorCode'>,
@@ -760,7 +896,7 @@ export class SagaEngine {
     from: number,
     code: string,
   ): SagaInstance {
-    const next = compensableFrom(steps, from);
+    const next = compensableFrom(this.compile(instance.type), steps, from);
     return {
       ...instance,
       direction: StepDirection.Compensate,
@@ -778,7 +914,7 @@ export class SagaEngine {
     steps: StepLogEntry[],
     from: number,
   ): SagaInstance {
-    const next = compensableFrom(steps, from);
+    const next = compensableFrom(this.compile(instance.type), steps, from);
     return {
       ...instance,
       status: next === null ? SagaStatus.Compensated : SagaStatus.Compensating,
@@ -850,15 +986,55 @@ export class SagaEngine {
     operationId: string,
     input: unknown,
     idempotencyKey: string,
+    traceparent: string | undefined,
   ): Promise<CallOutcome<unknown>> {
     const deadline = Deadline.after(this.maxStepDurationMs, this.clock);
     await this.renew(run, deadline);
+    const context: SagaCallContext = {
+      ...instance.context,
+      ...(traceparent !== undefined && { traceparent }),
+    };
     return this.invokeSafely(
       operationId,
       input,
       idempotencyKey,
       deadline,
-      instance.context ?? {},
+      context,
+    );
+  }
+
+  /**
+   * Runs one attempt of a step in its own span. The parent is the trace the
+   * step was first dispatched in (saved in its log entry), or else the trace
+   * of the saga (its persisted traceparent): a step retried by another node,
+   * after a crash, stays in the same trace. `fn` receives the traceparent the
+   * call carries: the one of the step span, or the parent when no SDK records
+   * spans.
+   */
+  private inStepSpan<T>(
+    instance: SagaInstance,
+    entry: StepLogEntry | undefined,
+    index: number,
+    direction: StepDirection,
+    operationId: string,
+    fn: (traceparent: string | undefined) => Promise<T>,
+  ): Promise<T> {
+    const parent = entry?.traceparent ?? instance.context?.traceparent;
+    return inTrace(parent, () =>
+      withSpan(
+        SAGA_STEP_SPAN,
+        () => fn(currentTraceparent() ?? parent ?? undefined),
+        {
+          kind: SpanKind.INTERNAL,
+          attributes: {
+            [SagaSpanAttribute.SagaType]: instance.type,
+            [SagaSpanAttribute.SagaId]: instance.id,
+            [SagaSpanAttribute.StepIndex]: index,
+            [SagaSpanAttribute.Direction]: direction,
+            [SagaSpanAttribute.Operation]: operationId,
+          },
+        },
+      ),
     );
   }
 
@@ -968,6 +1144,7 @@ export class SagaEngine {
     operationId: string,
     status: StepStatus,
     input: unknown,
+    traceparent: string | null | undefined,
   ): StepLogEntry {
     return {
       sagaId,
@@ -979,6 +1156,7 @@ export class SagaEngine {
       input,
       output: undefined,
       errorCode: null,
+      traceparent: traceparent ?? null,
       startedAt: this.clock.now(),
       finishedAt: null,
     };
@@ -1035,14 +1213,14 @@ export class SagaEngine {
   }
 
   private compile(type: string): CompiledSaga<unknown> {
-    const definition = this.registry.get(type);
-    if (definition === undefined) {
+    const compiled = this.compiled.get(type);
+    if (compiled === undefined) {
       throw new SagaError(
         SagaErrorCode.UnknownDefinition,
         `No saga registered as "${type}"`,
       );
     }
-    return definition.build();
+    return compiled;
   }
 
   private stepAt(
@@ -1109,12 +1287,19 @@ function replaceEntry(
     : [...steps, entry];
 }
 
-/** Largest index at or below `from` whose forward effect may need undoing. */
+/**
+ * Largest index at or below `from` whose forward effect may need undoing.
+ * Steps without compensation (read-only operations) have nothing to undo.
+ */
 function compensableFrom(
+  compiled: CompiledSaga<unknown>,
   steps: readonly StepLogEntry[],
   from: number,
 ): number | null {
   for (let index = from; index >= 0; index--) {
+    if (compiled.steps[index]?.compensationOperationId === null) {
+      continue;
+    }
     const entry = findEntry(steps, index, StepDirection.Forward);
     if (
       entry?.status === StepStatus.Succeeded ||
@@ -1134,4 +1319,40 @@ function toForwardEntry(entry: StepLogEntry): ForwardEntry {
     idempotencyKey: entry.idempotencyKey,
     status: entry.status,
   };
+}
+
+/** Builds every saga once, checking that each is registered under its own type. */
+function compileAll(
+  registry: ReadonlyMap<string, SagaDefinition<unknown>>,
+): ReadonlyMap<string, CompiledSaga<unknown>> {
+  const compiled = new Map<string, CompiledSaga<unknown>>();
+  const mismatches: string[] = [];
+  for (const [key, definition] of registry) {
+    const saga = definition.build();
+    if (saga.type !== key) {
+      mismatches.push(
+        `Saga "${saga.type}" is registered as "${key}"; the key must be its type`,
+      );
+    }
+    compiled.set(key, saga);
+  }
+  if (mismatches.length > 0) {
+    throw new SagaError(
+      SagaErrorCode.InvalidDefinition,
+      mismatches.join('\n'),
+      { code: SagaDefinitionIssueCode.TypeMismatch },
+    );
+  }
+  return compiled;
+}
+
+/** Runs `fn` in the trace context of `traceparent`, or in the active one when it is absent or invalid. */
+function inTrace<T>(
+  traceparent: string | null | undefined,
+  fn: () => Promise<T>,
+): Promise<T> {
+  return otelContext.with(
+    contextFromTraceparent(traceparent, otelContext.active()),
+    fn,
+  );
 }

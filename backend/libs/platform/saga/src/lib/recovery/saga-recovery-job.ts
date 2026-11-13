@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { SystemClock, type Clock } from '@platform/kernel';
 import { SagaError, SagaErrorCode } from '../errors.js';
 import { SagaEngine } from '../engine/saga-engine.js';
@@ -13,7 +14,7 @@ export interface SagaRecoveryJobOptions {
 /** A saga that the job could not resume because of an error. */
 export interface RecoveryFailure {
   readonly sagaId: string;
-  /** Code of the `SagaError`, or `UNEXPECTED` for other errors. */
+  /** Code of the `SagaError`, or `PLATFORM.INTERNAL.UNEXPECTED` for other errors. */
   readonly errorCode: string;
 }
 
@@ -23,7 +24,7 @@ export interface RecoveryReport {
   readonly failed: RecoveryFailure[];
 }
 
-const CONTENTION: ReadonlySet<string> = new Set([
+const CONTENTION: ReadonlySet<string> = new Set<string>([
   SagaErrorCode.LeaseNotAcquired,
   SagaErrorCode.LeaseLost,
   SagaErrorCode.ConcurrentModification,
@@ -61,7 +62,10 @@ export class SagaRecoveryJob {
         if (code !== undefined && CONTENTION.has(code)) {
           continue;
         }
-        failed.push({ sagaId: candidate.id, errorCode: code ?? 'UNEXPECTED' });
+        failed.push({
+          sagaId: candidate.id,
+          errorCode: code ?? PlatformErrorCode.InternalUnexpected,
+        });
       }
     }
     return { resumed, failed };

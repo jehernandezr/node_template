@@ -1,4 +1,8 @@
-import type { CallOptions, InternalClient } from '@platform/internal-api';
+import type {
+  CallOptions,
+  ContractRegistry,
+  InternalClient,
+} from '@platform/internal-api';
 import type { CallOutcome } from '@platform/primitives';
 import type { InvokeOptions, OperationInvoker } from './invoker.js';
 
@@ -7,10 +11,19 @@ import type { InvokeOptions, OperationInvoker } from './invoker.js';
  * Each step call carries the persisted context (tenant, actor, traceparent),
  * the step `Deadline` and its abort signal, so the client validates the input
  * against the contract, retries within the step budget and the server derives
- * its idempotency lease from the same deadline.
+ * its idempotency lease from the same deadline. It exposes the catalogue of
+ * the client, so the engine validates its sagas against it at startup.
  */
 export class InternalClientInvoker implements OperationInvoker {
-  constructor(private readonly client: Pick<InternalClient, 'callById'>) {}
+  constructor(
+    private readonly client: Pick<InternalClient, 'callById'> &
+      Partial<Pick<InternalClient, 'contracts'>>,
+  ) {}
+
+  /** Catalogue of the client, used by `SagaEngine` to validate its sagas. */
+  get contracts(): ContractRegistry | undefined {
+    return this.client.contracts;
+  }
 
   invoke(
     operationId: string,

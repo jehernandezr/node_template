@@ -50,4 +50,32 @@ describe('toProblemDetails', () => {
     });
     expect(ProblemDetailsSchema.safeParse(problem).success).toBe(true);
   });
+
+  it('hides an internal code behind PLATFORM.INTERNAL.UNEXPECTED, without detail or errors', () => {
+    const internal = platformErrorCatalog.find(
+      (e) => e.code === PlatformErrorCode.SagaLeaseLost,
+    );
+    if (!internal)
+      throw new Error('Falta la entrada de PLATFORM.SAGA.LEASE_LOST');
+
+    const problem = toProblemDetails({
+      entry: internal,
+      title: 'Lease lost',
+      detail: 'Saga 0193 lost its lease',
+      instance: '/v1/tenants',
+      traceId: '0193f1c2-abcd',
+      errors: [{ field: 'x', code: PlatformErrorCode.ValidationRequired }],
+      typeBaseUrl,
+    });
+
+    expect(problem).toEqual({
+      type: 'https://docs.example.com/errors/PLATFORM.INTERNAL.UNEXPECTED',
+      title: 'Ocurrió un error inesperado en el servidor.',
+      status: 500,
+      code: PlatformErrorCode.InternalUnexpected,
+      instance: '/v1/tenants',
+      traceId: '0193f1c2-abcd',
+    });
+    expect(ProblemDetailsSchema.safeParse(problem).success).toBe(true);
+  });
 });

@@ -3,6 +3,7 @@ import {
   CallOutcomeKind,
   type Deadline,
 } from '@platform/primitives';
+import type { ContractRegistry } from '@platform/internal-api';
 import type { SagaCallContext } from './model.js';
 
 /**
@@ -49,6 +50,11 @@ export interface InvokeOptions {
  * A thrown error is classified with `classifyFailure`.
  */
 export interface OperationInvoker {
+  /**
+   * Operations this invoker can call. When present, `SagaEngine` validates
+   * its sagas against them at startup.
+   */
+  readonly contracts?: ContractRegistry;
   /** Calls `operationId` with `idempotencyKey`, which the callee must honour. */
   invoke(
     operationId: string,

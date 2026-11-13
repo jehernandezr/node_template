@@ -1,6 +1,8 @@
+import { defineOperation, PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 import { SequentialIdGenerator } from '@platform/kernel/testing';
 import { CallOutcome, stableDigest } from '@platform/primitives';
+import { z } from 'zod';
 import { SagaDefinition } from '../definition/saga-definition.js';
 import { OperationRef, SagaFlow } from '../definition/saga-flow.js';
 import { SagaError, SagaErrorCode, SimulatedCrash } from '../errors.js';
@@ -1047,6 +1049,80 @@ describe('SagaEngine', () => {
       );
     });
 
+    it('compiles every saga when it is built, not with the first saga of each type', async () => {
+      const { store, participant, clock } = setup();
+      class Empty extends SagaDefinition<State> {
+        readonly type = 'empty';
+
+        protected define(): void {
+          // no steps
+        }
+      }
+      const build = () =>
+        new SagaEngine({
+          store,
+          invoker: participant,
+          registry: new Map([
+            ['empty', new Empty() as SagaDefinition<unknown>],
+          ]),
+          owner: 'node-1',
+          clock,
+        });
+
+      await expect(codeOf(Promise.resolve().then(build))).resolves.toBe(
+        SagaErrorCode.InvalidDefinition,
+      );
+    });
+
+    it('skips read-only steps while compensating', async () => {
+      const { store, participant, clock } = setup();
+      const Lookup = defineOperation({
+        id: 'a.lookup.v1',
+        input: z.object({}),
+        output: z.object({}),
+        idempotent: true,
+        mutating: false,
+        description: 'Reads, nothing to undo.',
+      });
+      class WithLookup extends SagaDefinition<State> {
+        readonly type = 'with-lookup';
+
+        protected define(flow: SagaFlow<State>): void {
+          flow
+            .step(STEP_A)
+            .input(() => ({ name: 'a' }))
+            .onSuccess((s, out) => {
+              s.a = out.id;
+            })
+            .compensationInput((s) => ({ id: s.a }))
+            .step(Lookup)
+            .input(() => ({}))
+            .step(STEP_C)
+            .input(() => ({ name: 'c' }));
+        }
+      }
+      participant.script('c.create', business('SOLD_OUT'));
+      const engine = new SagaEngine({
+        store,
+        invoker: participant,
+        registry: new Map([
+          ['with-lookup', new WithLookup() as SagaDefinition<unknown>],
+        ]),
+        owner: 'node-1',
+        clock,
+      });
+
+      const result = await engine.start('with-lookup', {}, { sagaId: 's1' });
+
+      expect(result.status).toBe(SagaStatus.Compensated);
+      expect(participant.operations()).toEqual([
+        'a.create',
+        'a.lookup.v1',
+        'c.create',
+        'a.remove',
+      ]);
+    });
+
     it('rejects an unknown saga type', async () => {
       const { engineFor } = setup();
 
@@ -1071,6 +1147,21 @@ describe('SagaEngine', () => {
       expect(report.resumed).toEqual(['good']);
       expect(report.failed).toEqual([
         { sagaId: 'ghost', errorCode: SagaErrorCode.UnknownDefinition },
+      ]);
+    });
+
+    it('reports an unexpected error with the catalog code PLATFORM.INTERNAL.UNEXPECTED', async () => {
+      const { clock, engineFor, participant, recovery } = setup();
+      participant.script('b.create', transient());
+      await engineFor('node-1').start('three-step', {}, { sagaId: 's1' });
+      clock.advance(1_000);
+      const engine = engineFor('node-2');
+      jest.spyOn(engine, 'resume').mockRejectedValueOnce(new Error('boom'));
+
+      const report = await recovery(engine).runOnce();
+
+      expect(report.failed).toEqual([
+        { sagaId: 's1', errorCode: PlatformErrorCode.InternalUnexpected },
       ]);
     });
   });

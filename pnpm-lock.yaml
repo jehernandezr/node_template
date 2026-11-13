@@ -221,9 +221,18 @@ importers:
       '@contracts/platform':
         specifier: workspace:*
         version: link:../../contracts/platform
+      '@opentelemetry/api':
+        specifier: 1.10.0
+        version: 1.10.0
       '@platform/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@platform/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@platform/persistence':
+        specifier: workspace:*
+        version: link:../persistence
       '@platform/primitives':
         specifier: workspace:*
         version: link:../primitives
@@ -233,6 +242,10 @@ importers:
       zod:
         specifier: ^4.6.7
         version: 4.6.7
+    devDependencies:
+      '@opentelemetry/context-async-hooks':
+        specifier: 3.0.0
+        version: 3.0.0(@opentelemetry/api@1.10.0)
 
   backend/libs/platform/kernel:
     dependencies:
@@ -393,18 +406,34 @@ importers:
 
   backend/libs/platform/saga:
     dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../contracts/platform
+      '@opentelemetry/api':
+        specifier: 1.10.0
+        version: 1.10.0
       '@platform/internal-api':
         specifier: workspace:*
         version: link:../internal-api
       '@platform/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@platform/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@platform/primitives':
         specifier: workspace:*
         version: link:../primitives
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@opentelemetry/context-async-hooks':
+        specifier: 3.0.0
+        version: 3.0.0(@opentelemetry/api@1.10.0)
 
   backend/libs/platform/sharding:
     dependencies:

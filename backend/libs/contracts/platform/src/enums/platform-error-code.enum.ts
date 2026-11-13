@@ -49,6 +49,7 @@ export enum PlatformErrorCode {
   InternalApiIdempotencyKeyReuse = 'PLATFORM.INTERNAL_API.IDEMPOTENCY_KEY_REUSE',
   InternalApiPayloadTooLarge = 'PLATFORM.INTERNAL_API.PAYLOAD_TOO_LARGE',
   InternalApiInvalidHandlerResult = 'PLATFORM.INTERNAL_API.INVALID_HANDLER_RESULT',
+  InternalApiCallBudgetExceeded = 'PLATFORM.INTERNAL_API.CALL_BUDGET_EXCEEDED',
   MessagingInvalidEnvelope = 'PLATFORM.MESSAGING.INVALID_ENVELOPE',
   MessagingInvalidPayload = 'PLATFORM.MESSAGING.INVALID_PAYLOAD',
   MessagingInvalidRetryPolicy = 'PLATFORM.MESSAGING.INVALID_RETRY_POLICY',

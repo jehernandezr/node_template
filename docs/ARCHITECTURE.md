@@ -270,7 +270,7 @@ Cada error tiene un código único y legible con la forma `SERVICIO.SUBMÓDULO.E
 
 Los códigos se declaran como enums, nunca como literales sueltos:
 
-- Cada librería de `backend/libs/platform` declara los suyos con prefijo `PLATFORM.` (por ejemplo `SagaErrorCode.UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME'`).
+- Cada librería de `backend/libs/platform` nombra sus códigos con prefijo `PLATFORM.` tomando el valor de `PlatformErrorCode` (por ejemplo `SagaErrorCode.UncertainOutcome = PlatformErrorCode.SagaUncertainOutcome`). Un código con audiencia interna nunca llega al cliente: `toProblemDetails` responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId`.
 - `@contracts/platform` reúne todos los códigos de plataforma en `PlatformErrorCode`.
 - Cada servicio declara los suyos en su paquete de contratos, como `IdentityErrorCode` en `backend/libs/contracts/identity/src/enums`.
 

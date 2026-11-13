@@ -4,6 +4,7 @@ export * from './lib/internal-client-invoker.js';
 export * from './lib/model.js';
 export * from './lib/definition/saga-flow.js';
 export * from './lib/definition/saga-definition.js';
+export * from './lib/definition/saga-validation.js';
 export * from './lib/store/saga-store.js';
 export * from './lib/store/in-memory-saga-store.js';
 export * from './lib/engine/saga-engine.js';

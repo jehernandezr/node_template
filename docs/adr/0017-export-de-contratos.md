@@ -16,7 +16,7 @@ Además, la auditoría del 12 de noviembre encontró que los enums de acceso sol
 `backend/libs/contracts/platform/src` tiene las carpetas `enums`, `constants`, `types`, `schemas`, `errors` y `kit`:
 
 - `defineRoute`: método, path con parámetros entre llaves, esquema de petición (siempre un objeto), esquema de respuesta o `null` (204), códigos de error declarados y requisito de acceso (`Access.public()` o `Access.authenticated({ permissions, platformRoles, mfaMaxAgeMinutes })`). Los campos que no van en el path viajan en la query en GET y DELETE, y en el cuerpo JSON en los demás métodos.
-- `defineOperation`: operación interna con `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` o `Compensation.None` con `compensationReason` obligatorio, `errors`, `timeoutMs`, `retry` y `description`. Devuelve un descriptor congelado que `@platform/internal-api` acepta directamente: `ContractRegistry.register`, `InternalClient.call` e `InternalRouter.register` reciben el descriptor sin clases ni decoradores. El decorador `@Operation` y la clase `OperationContract` siguen funcionando, marcados `@deprecated`.
+- `defineOperation`: operación interna con `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` o `Compensation.None` con `compensationReason` obligatorio, `errors`, `timeoutMs`, `retry` y `description`. El `id` lleva la versión al final (`servicio.entidad.operación.vN`, por ejemplo `identity.sessions.revoke-for-user.v1`) y el descriptor la expone en `version`: el id queda guardado en la bitácora de sagas y en las llaves de idempotencia, y un cambio incompatible crea un id `.vN+1` que convive con el anterior. Devuelve un descriptor congelado que `@platform/internal-api` y `@platform/saga` aceptan directamente: `ContractRegistry.register`, `InternalClient.call`, `InternalRouter.register` y `SagaFlow.step` reciben el descriptor sin clases ni decoradores. La saga toma la compensación de su `compensatedBy` (ADR 0008). El decorador `@Operation` y la clase `OperationContract` siguen funcionando, marcados `@deprecated`.
 - `defineEvent`: tipo CloudEvents con la versión al final (`identity.session.revoked.v1`) y esquema del payload.
 - `defineErrorCatalog`: una entrada por valor del enum de códigos, con `httpStatus`, `retryable`, `audience` (`public` o `internal`) y `messageKey`. `messageKey` se deriva del código con la misma regla del front: `PLATFORM.AUTH.FORBIDDEN` → `error_platform_auth_forbidden`.
 - `defineServiceContract`: reúne enums, constantes, esquemas con nombre, rutas, operaciones, eventos y catálogos de un servicio, y valida nombres e identificadores únicos.
@@ -24,7 +24,7 @@ Además, la auditoría del 12 de noviembre encontró que los enums de acceso sol
 
 Esquemas transversales: `Id` (UUIDv7), `Timestamp` (ISO 8601 en UTC), `Cursor` y `PageLimit` acotados por `Pagination`, `PageQuery`, `pageOf(item)`, `CurrencyCode`, `MoneyAmount` (entero en unidades menores), `FieldError`, `ProblemDetails` y `Empty`.
 
-El catálogo de plataforma cubre todo código `PLATFORM.*` declarado en `backend/libs/platform`; una prueba falla si aparece uno nuevo sin entrada.
+El catálogo de plataforma cubre todo código `PLATFORM.*` declarado en `backend/libs/platform`; una prueba falla si aparece uno nuevo sin entrada. Las librerías no repiten el texto de sus códigos: `InternalApiErrorCode` y `SagaErrorCode` toman cada valor de `PlatformErrorCode`.
 
 ### Contratos por servicio
 
@@ -56,6 +56,8 @@ Cada `contract.json` tiene `formatVersion`, `jsonSchemaDialect` (2020-12), `enum
 ### Validar antes de llamar
 
 `front/packages/api` expone `ApiClient` con un puerto `HttpTransport` inyectable. Antes de enviar valida la petición con el validador generado; si falla, lanza `ContractViolationException` y no llama al transporte. Las respuestas de error se leen como `ProblemDetails` y se lanzan como `ApiErrorException`; las exitosas se validan y se decodifican con el tipo generado.
+
+En el backend, `InternalClient` valida la entrada de una operación interna con el mismo esquema antes de llamar. Si falla, devuelve sin llamar al transporte el mismo resultado que daría `InternalRouter`: `BusinessError` con `PLATFORM.VALIDATION.INVALID_INPUT` y `details.fieldErrors`. Quien llama trata el caso de una sola forma.
 
 ### CI
 

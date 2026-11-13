@@ -1,5 +1,6 @@
-import { validateContract, type FieldError } from '@contracts/platform';
+import { validateContract } from '@contracts/platform';
 import { SystemClock, type Clock } from '@platform/kernel';
+import { currentTraceparent } from '@platform/observability';
 import {
   backoffDelay,
   BackoffStrategy,
@@ -7,7 +8,6 @@ import {
   CallOutcomeKind,
   Deadline,
   DeadlineExceededError,
-  type ProtocolViolationOutcome,
 } from '@platform/primitives';
 import {
   allowedErrorCodes,
@@ -30,7 +30,7 @@ import {
   isValidCallKey,
 } from './limits.js';
 import type { ContractRegistry } from './registry.js';
-import { InternalApiReason } from './result.js';
+import { InternalApiReason, invalidInputOutcome } from './result.js';
 import type { CallMeta, Transport } from './transport.js';
 
 export interface InternalClientOptions {
@@ -53,6 +53,10 @@ export interface InternalClientOptions {
 /** Per-call values. `idempotencyKey` is required. */
 export interface CallOptions {
   readonly idempotencyKey: string;
+  /**
+   * W3C `traceparent` sent to the server, which continues that trace.
+   * Defaults to the active span (`currentTraceparent()`).
+   */
   readonly traceparent?: string;
   readonly tenantId?: string;
   readonly actorId?: string;
@@ -68,11 +72,6 @@ export interface CallOptions {
    * further attempt is made. The transport receives a signal that aborts too.
    */
   readonly signal?: AbortSignal;
-}
-
-/** Input rejected before any network call, with the field errors the server would give. */
-export interface InputViolationOutcome extends ProtocolViolationOutcome {
-  readonly fieldErrors: readonly FieldError[];
 }
 
 function defaultSleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -104,7 +103,9 @@ function isRetryable(outcome: CallOutcome<unknown>): boolean {
  * Typed client for internal operations. Owns retries, backoff and the time
  * budget. It never throws for contract problems: every result is a
  * `CallOutcome`.
- * - Invalid input: `protocol-violation` (`InputViolationOutcome`), without calling the transport.
+ * - Invalid input: business error `PLATFORM.VALIDATION.INVALID_INPUT` with
+ *   `details.fieldErrors` (`InputViolationOutcome`), without calling the
+ *   transport. The router answers the same input with the same outcome.
  * - Invalid or oversized output, or an undeclared business code: `protocol-violation`.
  * - Declared business error: `business-error`, never retried.
  * - Transport exceptions: classified with `classifyFailure`.
@@ -127,6 +128,11 @@ export class InternalClient {
     this.sleep = options.sleep ?? defaultSleep;
     this.random = options.random ?? Math.random;
     this.maxPayloadBytes = options.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES;
+  }
+
+  /** Catalogue of the operations this client may call, when it was given one. */
+  get contracts(): ContractRegistry | undefined {
+    return this.registry;
   }
 
   /** Calls an operation declared with `defineOperation` (or a legacy `@Operation` class). */
@@ -191,14 +197,7 @@ export class InternalClient {
     }
     const validation = validateContract(descriptor.input, input);
     if (!validation.ok) {
-      const violation: InputViolationOutcome = {
-        ...CallOutcome.protocolViolation(
-          InternalApiReason.InvalidInput,
-          InternalApiErrorCode.InvalidInput,
-        ),
-        fieldErrors: validation.errors,
-      };
-      return violation;
+      return invalidInputOutcome(descriptor.id, validation.errors);
     }
     if (!fitsPayload(input, this.maxPayloadBytes)) {
       return CallOutcome.protocolViolation(
@@ -330,14 +329,13 @@ export class InternalClient {
       options.signal?.addEventListener('abort', onCancel, { once: true });
     });
 
+    const traceparent = options.traceparent ?? currentTraceparent();
     const meta: CallMeta = {
       idempotencyKey: options.idempotencyKey,
       timeoutMs: budget,
       deadline: attemptAt,
       signal,
-      ...(options.traceparent !== undefined && {
-        traceparent: options.traceparent,
-      }),
+      ...(traceparent !== undefined && { traceparent }),
       ...(options.tenantId !== undefined && { tenantId: options.tenantId }),
       ...(options.actorId !== undefined && { actorId: options.actorId }),
     };

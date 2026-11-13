@@ -1,4 +1,6 @@
 import { defineOperation, PlatformErrorCode } from '@contracts/platform';
+import { context as otelContext } from '@opentelemetry/api';
+import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { DomainError } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/testing';
 import {
@@ -7,16 +9,17 @@ import {
   Deadline,
   type CallOutcome as Outcome,
 } from '@platform/primitives';
+import { contextFromTraceparent } from '@platform/observability';
 import { z } from 'zod';
 import { Operation, OperationContract } from './contract.js';
 import { InternalApiErrorCode } from './errors.js';
-import { InternalClient, type InputViolationOutcome } from './client.js';
+import { InternalClient } from './client.js';
 import {
   MAX_CALL_IDEMPOTENCY_KEY_LENGTH,
   MAX_TENANT_ID_LENGTH,
 } from './limits.js';
 import { ContractRegistry } from './registry.js';
-import { InternalApiReason } from './result.js';
+import { InternalApiReason, type InputViolationOutcome } from './result.js';
 import type { CallMeta, Transport } from './transport.js';
 
 const NO_FUNDS = 'BILLING.RESERVE.NO_FUNDS';
@@ -170,20 +173,24 @@ function econnreset(): Error {
 
 describe('InternalClient', () => {
   describe('contract checks before the call', () => {
-    it('returns a protocol violation with field errors for invalid input, without calling the transport', async () => {
+    it('returns the invalid input business error with field errors, without calling the transport', async () => {
       const { client, invoke } = setup([]);
 
       const outcome = await client.call(Reserve, { amount: -1 }, options);
 
       expect(outcome).toEqual({
-        kind: CallOutcomeKind.ProtocolViolation,
-        reason: InternalApiReason.InvalidInput,
-        code: InternalApiErrorCode.InvalidInput,
-        fieldErrors: [
-          { field: 'amount', code: PlatformErrorCode.ValidationTooSmall },
-        ],
+        kind: CallOutcomeKind.BusinessError,
+        code: PlatformErrorCode.ValidationInvalidInput,
+        message: `Invalid input for "${Reserve.id}"`,
+        details: {
+          fieldErrors: [
+            { field: 'amount', code: PlatformErrorCode.ValidationTooSmall },
+          ],
+        },
       });
-      expect((outcome as InputViolationOutcome).fieldErrors).toHaveLength(1);
+      expect(
+        (outcome as InputViolationOutcome).details.fieldErrors,
+      ).toHaveLength(1);
       expect(invoke).not.toHaveBeenCalled();
     });
 
@@ -578,5 +585,47 @@ describe('InternalClient', () => {
         client.call(Reserve, { amount: 1 }, options),
       ).resolves.toEqual(CallOutcome.success({ id: 'r-9' }));
     });
+  });
+});
+
+describe('InternalClient trace propagation', () => {
+  const TRACEPARENT = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+  const manager = new AsyncLocalStorageContextManager();
+
+  beforeAll(() => {
+    otelContext.setGlobalContextManager(manager.enable());
+  });
+
+  afterAll(() => {
+    otelContext.disable();
+  });
+
+  it('sends the traceparent of the active span when the caller gives none', async () => {
+    const { client, invoke } = setup([ok]);
+
+    await otelContext.with(contextFromTraceparent(TRACEPARENT), () =>
+      client.call(Reserve, { amount: 1 }, options),
+    );
+
+    expect(invoke.mock.calls[0]?.[2].traceparent).toBe(TRACEPARENT);
+  });
+
+  it('prefers the traceparent given by the caller', async () => {
+    const { client, invoke } = setup([ok]);
+    const given = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
+
+    await otelContext.with(contextFromTraceparent(TRACEPARENT), () =>
+      client.call(Reserve, { amount: 1 }, { ...options, traceparent: given }),
+    );
+
+    expect(invoke.mock.calls[0]?.[2].traceparent).toBe(given);
+  });
+
+  it('sends no traceparent outside a trace', async () => {
+    const { client, invoke } = setup([ok]);
+
+    await client.call(Reserve, { amount: 1 }, options);
+
+    expect(invoke.mock.calls[0]?.[2]).not.toHaveProperty('traceparent');
   });
 });

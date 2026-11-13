@@ -2,7 +2,7 @@ import { defineOperation } from '@contracts/platform';
 import { z } from 'zod';
 import { Compensation, Operation, OperationContract } from './contract.js';
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
-import { ContractRegistry } from './registry.js';
+import { ContractRegistry, RegistryIssueCode } from './registry.js';
 
 const schema = z.object({});
 
@@ -112,9 +112,12 @@ describe('ContractRegistry', () => {
     const registry = new ContractRegistry();
     registry.register(Reserve, ReserveDuplicate, Release);
     const issues = registry.validate();
-    expect(issues.map((issue) => issue.code)).toContain('duplicate-id');
+    expect(issues.map((issue) => issue.code)).toContain(
+      RegistryIssueCode.DuplicateId,
+    );
     expect(
-      issues.find((issue) => issue.code === 'duplicate-id')?.operationId,
+      issues.find((issue) => issue.code === RegistryIssueCode.DuplicateId)
+        ?.operationId,
     ).toBe('a.reserve.v1');
   });
 
@@ -123,7 +126,7 @@ describe('ContractRegistry', () => {
     registry.register(CreateWithoutCompensation);
     expect(registry.validate()).toEqual([
       expect.objectContaining({
-        code: 'missing-compensation',
+        code: RegistryIssueCode.MissingCompensation,
         operationId: 'a.create.v1',
       }),
     ]);
@@ -140,26 +143,53 @@ describe('ContractRegistry', () => {
     registry.register(Orphan);
     expect(registry.validate()).toEqual([
       expect.objectContaining({
-        code: 'unknown-compensation',
+        code: RegistryIssueCode.UnknownCompensation,
         operationId: 'a.orphan.v1',
       }),
     ]);
   });
 
-  it('reports a call whose timeout x attempts exceeds the default 25 000 ms budget', () => {
+  it('reports a call whose attempts exceed the default 25 000 ms budget', () => {
     const registry = new ContractRegistry();
     registry.register(SlowIdempotent, SlowOnce);
-    // 10 000 ms x 3 attempts = 30 000 ms; the non-idempotent op gets one attempt of 30 000 ms.
+    // 10 000 ms x 3 attempts + 2 backoffs = 34 000 ms; the non-idempotent op gets one attempt of 30 000 ms.
     expect(registry.validate()).toEqual([
       expect.objectContaining({
-        code: 'call-budget-exceeded',
+        code: RegistryIssueCode.CallBudgetExceeded,
         operationId: 'a.slow.v1',
       }),
       expect.objectContaining({
-        code: 'call-budget-exceeded',
+        code: RegistryIssueCode.CallBudgetExceeded,
         operationId: 'a.slow-once.v1',
       }),
     ]);
+  });
+
+  it('counts the backoffs between attempts in the call budget', () => {
+    const Tight = defineOperation({
+      id: 'a.tight.v1',
+      input: z.object({}),
+      output: z.object({}),
+      idempotent: true,
+      mutating: false,
+      timeoutMs: 8_000,
+      description: 'Fits with timeout x attempts, not with the backoffs.',
+    });
+    const registry = new ContractRegistry();
+    registry.register(Tight);
+
+    // 8 000 ms x 3 attempts = 24 000 ms, plus 2 backoffs of up to 2 000 ms = 28 000 ms.
+    expect(registry.validate()).toEqual([
+      expect.objectContaining({
+        code: RegistryIssueCode.CallBudgetExceeded,
+        operationId: 'a.tight.v1',
+      }),
+    ]);
+    expect(() => registry.assertValid()).toThrow(
+      expect.objectContaining({
+        code: InternalApiErrorCode.CallBudgetExceeded,
+      }),
+    );
   });
 
   it('honours a configurable call budget', () => {
@@ -255,7 +285,7 @@ describe('ContractRegistry', () => {
     registry.register(Orphan);
 
     expect(registry.validate().map((issue) => issue.code)).toEqual([
-      'unknown-compensation',
+      RegistryIssueCode.UnknownCompensation,
     ]);
   });
 });

@@ -1,30 +1,38 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 
-/** Stable error codes of the saga library, format `PLATFORM.SAGA.<ERROR>`. */
-export enum SagaErrorCode {
-  NotFound = 'PLATFORM.SAGA.NOT_FOUND',
-  DuplicateSaga = 'PLATFORM.SAGA.DUPLICATE_SAGA',
-  UnknownDefinition = 'PLATFORM.SAGA.UNKNOWN_DEFINITION',
-  InvalidDefinition = 'PLATFORM.SAGA.INVALID_DEFINITION',
-  InvalidConfiguration = 'PLATFORM.SAGA.INVALID_CONFIGURATION',
-  InvalidState = 'PLATFORM.SAGA.INVALID_STATE',
-  MissingCompensation = 'PLATFORM.SAGA.MISSING_COMPENSATION',
-  ConcurrentModification = 'PLATFORM.SAGA.CONCURRENT_MODIFICATION',
-  LeaseNotAcquired = 'PLATFORM.SAGA.LEASE_NOT_ACQUIRED',
-  LeaseLost = 'PLATFORM.SAGA.LEASE_LOST',
-  TransientFailure = 'PLATFORM.SAGA.TRANSIENT_FAILURE',
-  ProtocolViolation = 'PLATFORM.SAGA.PROTOCOL_VIOLATION',
+/**
+ * Error codes of the saga library, format `PLATFORM.SAGA.<ERROR>`. Each value
+ * is the `PlatformErrorCode` of the catalog, so the code is declared once in
+ * `@contracts/platform`.
+ */
+export const SagaErrorCode = {
+  NotFound: PlatformErrorCode.SagaNotFound,
+  DuplicateSaga: PlatformErrorCode.SagaDuplicateSaga,
+  UnknownDefinition: PlatformErrorCode.SagaUnknownDefinition,
+  InvalidDefinition: PlatformErrorCode.SagaInvalidDefinition,
+  InvalidConfiguration: PlatformErrorCode.SagaInvalidConfiguration,
+  InvalidState: PlatformErrorCode.SagaInvalidState,
+  MissingCompensation: PlatformErrorCode.SagaMissingCompensation,
+  ConcurrentModification: PlatformErrorCode.SagaConcurrentModification,
+  LeaseNotAcquired: PlatformErrorCode.SagaLeaseNotAcquired,
+  LeaseLost: PlatformErrorCode.SagaLeaseLost,
+  TransientFailure: PlatformErrorCode.SagaTransientFailure,
+  ProtocolViolation: PlatformErrorCode.SagaProtocolViolation,
   /** A step call ended without knowing whether it applied (timeout or cancellation). */
-  UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME',
-  StateUpdateFailed = 'PLATFORM.SAGA.STATE_UPDATE_FAILED',
-  InputBuildFailed = 'PLATFORM.SAGA.INPUT_BUILD_FAILED',
-  IdempotencyKeyConflict = 'PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT',
-  DeadlineExceeded = 'PLATFORM.SAGA.DEADLINE_EXCEEDED',
-  SimulatedCrash = 'PLATFORM.SAGA.SIMULATED_CRASH',
-}
+  UncertainOutcome: PlatformErrorCode.SagaUncertainOutcome,
+  StateUpdateFailed: PlatformErrorCode.SagaStateUpdateFailed,
+  InputBuildFailed: PlatformErrorCode.SagaInputBuildFailed,
+  IdempotencyKeyConflict: PlatformErrorCode.SagaIdempotencyKeyConflict,
+  DeadlineExceeded: PlatformErrorCode.SagaDeadlineExceeded,
+  SimulatedCrash: PlatformErrorCode.SagaSimulatedCrash,
+} as const;
+
+/** One of the {@link SagaErrorCode} values. */
+export type SagaErrorCode = (typeof SagaErrorCode)[keyof typeof SagaErrorCode];
 
 /** Codes that mean another run got in the way; trying again later can succeed. */
-const RETRYABLE: ReadonlySet<SagaErrorCode> = new Set([
+const RETRYABLE: ReadonlySet<SagaErrorCode> = new Set<SagaErrorCode>([
   SagaErrorCode.ConcurrentModification,
   SagaErrorCode.LeaseNotAcquired,
   SagaErrorCode.LeaseLost,

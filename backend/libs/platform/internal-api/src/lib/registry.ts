@@ -1,7 +1,6 @@
 import {
   Compensation,
-  effectiveAttempts,
-  effectiveTimeout,
+  defaultCallBudgetMs,
   resolveOperation,
 } from './contract.js';
 import type {
@@ -14,11 +13,13 @@ import type {
 import { InternalApiError, InternalApiErrorCode } from './errors.js';
 import { assertJsonSafeContract } from './json-safety.js';
 
-export type RegistryIssueCode =
-  | 'duplicate-id'
-  | 'missing-compensation'
-  | 'unknown-compensation'
-  | 'call-budget-exceeded';
+/** Kind of problem found by `ContractRegistry.validate()`. */
+export enum RegistryIssueCode {
+  DuplicateId = 'duplicate-id',
+  MissingCompensation = 'missing-compensation',
+  UnknownCompensation = 'unknown-compensation',
+  CallBudgetExceeded = 'call-budget-exceeded',
+}
 
 /** Problem found by `ContractRegistry.validate()`. */
 export interface RegistryIssue {
@@ -39,11 +40,33 @@ export interface RegisteredContract {
 }
 
 export interface ContractRegistryOptions {
-  /** Upper bound for `timeoutMs * maxAttempts` of one call. Defaults to 25 000 ms. */
+  /**
+   * Upper bound for the default budget of one call (`defaultCallBudgetMs`:
+   * every attempt plus the longest backoffs). Defaults to 25 000 ms, the
+   * default step budget of a saga.
+   */
   readonly maxCallBudgetMs?: number;
 }
 
 const DEFAULT_MAX_CALL_BUDGET_MS = 25_000;
+
+/** Error code of `assertValid`: the most severe kind of issue found. */
+function registryErrorCode(
+  issues: readonly RegistryIssue[],
+): InternalApiErrorCode {
+  const has = (code: RegistryIssueCode): boolean =>
+    issues.some((issue) => issue.code === code);
+  if (has(RegistryIssueCode.DuplicateId)) {
+    return InternalApiErrorCode.DuplicateOperation;
+  }
+  if (
+    has(RegistryIssueCode.MissingCompensation) ||
+    has(RegistryIssueCode.UnknownCompensation)
+  ) {
+    return InternalApiErrorCode.MissingCompensation;
+  }
+  return InternalApiErrorCode.CallBudgetExceeded;
+}
 
 /** Catalogue of the operations a service publishes. */
 export class ContractRegistry {
@@ -91,7 +114,7 @@ export class ContractRegistry {
       if (seen.has(id) && !reportedDuplicates.has(id)) {
         reportedDuplicates.add(id);
         issues.push({
-          code: 'duplicate-id',
+          code: RegistryIssueCode.DuplicateId,
           operationId: id,
           message: `Operation id "${id}" is registered more than once`,
         });
@@ -105,7 +128,7 @@ export class ContractRegistry {
       if (compensatedBy === undefined) {
         if (mutating) {
           issues.push({
-            code: 'missing-compensation',
+            code: RegistryIssueCode.MissingCompensation,
             operationId: id,
             message: `Mutating operation "${id}" must declare compensatedBy`,
           });
@@ -115,18 +138,18 @@ export class ContractRegistry {
         !this.byId.has(compensatedBy)
       ) {
         issues.push({
-          code: 'unknown-compensation',
+          code: RegistryIssueCode.UnknownCompensation,
           operationId: id,
           message: `Operation "${id}" is compensated by "${compensatedBy}", which is not registered`,
         });
       }
 
-      const budget = effectiveAttempts(metadata) * effectiveTimeout(metadata);
+      const budget = defaultCallBudgetMs(metadata);
       if (budget > this.maxCallBudgetMs) {
         issues.push({
-          code: 'call-budget-exceeded',
+          code: RegistryIssueCode.CallBudgetExceeded,
           operationId: id,
-          message: `Operation "${id}" can take ${budget} ms (timeout x attempts), above the ${this.maxCallBudgetMs} ms budget`,
+          message: `Operation "${id}" can take ${budget} ms (attempts and backoffs), above the ${this.maxCallBudgetMs} ms budget`,
         });
       }
     }
@@ -140,11 +163,8 @@ export class ContractRegistry {
     if (issues.length === 0) {
       return;
     }
-    const code = issues.some((issue) => issue.code === 'duplicate-id')
-      ? InternalApiErrorCode.DuplicateOperation
-      : InternalApiErrorCode.MissingCompensation;
     throw new InternalApiError(
-      code,
+      registryErrorCode(issues),
       `Invalid contract registry:\n${issues.map((issue) => `  ${issue.message}`).join('\n')}`,
     );
   }

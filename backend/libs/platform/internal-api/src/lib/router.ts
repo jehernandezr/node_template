@@ -1,5 +1,17 @@
 import { validateContract } from '@contracts/platform';
+import {
+  context as otelContext,
+  SpanKind,
+  trace,
+  type Context,
+} from '@opentelemetry/api';
 import { SystemClock, type Clock } from '@platform/kernel';
+import {
+  contextFromTraceparent,
+  parseTraceparent,
+  withSpan,
+} from '@platform/observability';
+import type { TransactionManager } from '@platform/persistence';
 import {
   CallOutcome,
   CallOutcomeKind,
@@ -11,11 +23,7 @@ import {
   type ClaimResult,
   type FinalOutcome,
 } from '@platform/primitives';
-import {
-  allowedErrorCodes,
-  INVALID_INPUT_CODE,
-  resolveOperation,
-} from './contract.js';
+import { allowedErrorCodes, resolveOperation } from './contract.js';
 import type {
   HandlerInputOf,
   OperationDescriptor,
@@ -31,9 +39,22 @@ import {
   operationIdempotencyKey,
 } from './limits.js';
 import type { ContractRegistry } from './registry.js';
-import { InternalApiReason } from './result.js';
+import { InternalApiReason, invalidInputOutcome } from './result.js';
 import type { ProcessedOperationStore } from './store.js';
 import type { CallMeta } from './transport.js';
+
+/** Attributes of the server span of each call. */
+export enum InternalApiSpanAttribute {
+  /** RPC system (OpenTelemetry semantic conventions). */
+  RpcSystem = 'rpc.system',
+  /** Operation id. */
+  RpcMethod = 'rpc.method',
+  /** `CallOutcomeKind` of the call. */
+  Outcome = 'platform.call.outcome',
+}
+
+/** Value of `rpc.system` for internal API calls. */
+export const INTERNAL_API_RPC_SYSTEM = 'platform.internal-api';
 
 export interface InternalRouterOptions {
   /** Three-state idempotency store with claim tokens. */
@@ -54,6 +75,17 @@ export interface InternalRouterOptions {
   readonly leaseMs?: number;
   /** Largest serialized input accepted or output stored, in bytes. Defaults to 256 KiB. */
   readonly maxPayloadBytes?: number;
+  /**
+   * Unit of work of the service, usually its `Database` from
+   * `@platform/persistence`. When given, the handler and the stored result
+   * (`processed.complete`) run in one transaction: the result is stored if and
+   * only if the effects are committed. The claim runs before, on its own. The
+   * store must then write through the open unit of work, as
+   * `PostgresIdempotencyStore` does, on the same database as the handler.
+   * Without it, a crash between the handler and `complete` leaves the key
+   * claimed until the lease expires, and the retry runs the handler again.
+   */
+  readonly transactions?: Pick<TransactionManager, 'runInTransaction'>;
 }
 
 /**
@@ -83,6 +115,29 @@ interface Claimed {
   readonly claimToken: string;
 }
 
+/** How far `execute` got, to settle the claim when something fails. */
+enum Stage {
+  /** Opening the unit of work; nothing ran. */
+  Begin = 'begin',
+  Handler = 'handler',
+  /** Storing the result inside the unit of work. */
+  Complete = 'complete',
+  /** The result is stored; the unit of work is committing. */
+  Commit = 'commit',
+}
+
+interface Progress {
+  stage: Stage;
+  /** Outcome that must not be stored; the unit of work rolls back. */
+  rejected?: CallOutcome<unknown>;
+  /** The handler threw; the unit of work rolls back. */
+  handlerThrew?: boolean;
+  thrown?: unknown;
+}
+
+/** Thrown inside the unit of work to roll it back; never escapes `execute`. */
+const ROLLBACK: unique symbol = Symbol('internal-api.rollback');
+
 const KNOWN_KINDS: ReadonlySet<unknown> = new Set(
   Object.values(CallOutcomeKind),
 );
@@ -90,7 +145,11 @@ const KNOWN_KINDS: ReadonlySet<unknown> = new Set(
 /**
  * Server side of the internal API. Validates input, enforces idempotency by
  * tenant, operation and key with a fenced three-state claim, checks deadlines
- * and results against the contract, and dispatches to handlers.
+ * and results against the contract, and dispatches to handlers. With
+ * `transactions`, the handler and the stored result share one unit of work.
+ *
+ * Calls come from other services of the platform, so the router continues the
+ * trace of `CallMeta.traceparent`: each call runs in a server span child of it.
  */
 export class InternalRouter {
   private readonly processed: ProcessedOperationStore;
@@ -98,6 +157,8 @@ export class InternalRouter {
   private readonly leaseMarginMs: number | undefined;
   private readonly minLeaseMs: number | undefined;
   private readonly maxPayloadBytes: number;
+  private readonly transactions:
+    Pick<TransactionManager, 'runInTransaction'> | undefined;
   private readonly routes = new Map<string, Route>();
 
   constructor(options: InternalRouterOptions) {
@@ -106,6 +167,7 @@ export class InternalRouter {
     this.leaseMarginMs = options.leaseMarginMs;
     this.minLeaseMs = options.minLeaseMs ?? options.leaseMs;
     this.maxPayloadBytes = options.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES;
+    this.transactions = options.transactions;
   }
 
   /**
@@ -156,8 +218,33 @@ export class InternalRouter {
    * - Handler exceptions: classified with `classifyFailure`.
    * - Success and declared business errors are stored and replayed; the rest
    *   release the claim. The lease lasts until the request deadline plus a margin.
+   * The call runs in a server span that continues `meta.traceparent`.
    */
-  async handle(
+  handle(
+    operationId: string,
+    rawInput: unknown,
+    meta: CallMeta,
+  ): Promise<CallOutcome<unknown>> {
+    return otelContext.with(traceContext(meta.traceparent), () =>
+      withSpan(
+        operationId,
+        async (span) => {
+          const outcome = await this.dispatch(operationId, rawInput, meta);
+          span.setAttribute(InternalApiSpanAttribute.Outcome, outcome.kind);
+          return outcome;
+        },
+        {
+          kind: SpanKind.SERVER,
+          attributes: {
+            [InternalApiSpanAttribute.RpcSystem]: INTERNAL_API_RPC_SYSTEM,
+            [InternalApiSpanAttribute.RpcMethod]: operationId,
+          },
+        },
+      ),
+    );
+  }
+
+  private async dispatch(
     operationId: string,
     rawInput: unknown,
     meta: CallMeta,
@@ -184,10 +271,7 @@ export class InternalRouter {
 
     const validation = validateContract(route.descriptor.input, rawInput);
     if (!validation.ok) {
-      return CallOutcome.businessError(INVALID_INPUT_CODE, {
-        message: `Invalid input for "${operationId}"`,
-        details: { fieldErrors: validation.errors },
-      });
+      return invalidInputOutcome(operationId, validation.errors);
     }
 
     let deadline: Deadline;
@@ -252,20 +336,114 @@ export class InternalRouter {
     }
   }
 
-  /** Runs the handler for a claimed key and settles the claim with its token. */
+  /**
+   * Runs the handler for a claimed key and stores its final outcome with the
+   * claim token, both inside the unit of work when there is one. An outcome
+   * that is not stored (a thrown handler, a transient failure, a broken
+   * contract) rolls the unit of work back.
+   */
   private async execute(
     route: Route,
     claimed: Claimed,
     input: unknown,
     meta: CallMeta,
   ): Promise<CallOutcome<unknown>> {
-    let outcome: CallOutcome<unknown>;
+    const progress: Progress = { stage: Stage.Begin };
+    const work = (): Promise<CallOutcome<unknown>> =>
+      this.runAndStore(route, claimed, input, meta, progress);
     try {
-      outcome = this.check(route, await route.handler(input, meta));
+      return this.transactions === undefined
+        ? await work()
+        : await this.transactions.runInTransaction(work);
     } catch (error) {
-      outcome = this.check(route, CallOutcome.fromError(error));
+      return this.recover(route, claimed, progress, error);
     }
+  }
 
+  private async runAndStore(
+    route: Route,
+    claimed: Claimed,
+    input: unknown,
+    meta: CallMeta,
+    progress: Progress,
+  ): Promise<CallOutcome<unknown>> {
+    progress.stage = Stage.Handler;
+    let returned: CallOutcome<unknown>;
+    try {
+      returned = await route.handler(input, meta);
+    } catch (error) {
+      progress.handlerThrew = true;
+      progress.thrown = error;
+      throw ROLLBACK;
+    }
+    const outcome = this.check(route, returned);
+    if (!isFinalOutcome(outcome)) {
+      progress.rejected = outcome;
+      throw ROLLBACK;
+    }
+    progress.stage = Stage.Complete;
+    await this.processed.complete(claimed.key, claimed.claimToken, outcome);
+    progress.stage = Stage.Commit;
+    return outcome;
+  }
+
+  /** Settles the claim after `runAndStore` threw or the unit of work failed. */
+  private async recover(
+    route: Route,
+    claimed: Claimed,
+    progress: Progress,
+    error: unknown,
+  ): Promise<CallOutcome<unknown>> {
+    const transactional = this.transactions !== undefined;
+    if (error === ROLLBACK) {
+      if (progress.handlerThrew === true) {
+        // A thrown error is classified: a DomainError is a final business error.
+        return this.storeAlone(
+          route,
+          claimed,
+          CallOutcome.fromError(progress.thrown),
+        );
+      }
+      await this.releaseQuietly(claimed);
+      return progress.rejected ?? CallOutcome.fromError(error);
+    }
+    switch (progress.stage) {
+      case Stage.Begin:
+      case Stage.Handler:
+        // The unit of work did not open: nothing ran.
+        await this.releaseQuietly(claimed);
+        return CallOutcome.fromError(error);
+      case Stage.Complete:
+        if (error instanceof StaleClaimError) {
+          // Another attempt took the key over. Without a unit of work the
+          // effects are already applied, so whether this result counts is unknown.
+          return transactional
+            ? CallOutcome.transientFailure(InternalApiReason.StaleClaim, {
+                cause: error,
+              })
+            : CallOutcome.uncertain(InternalApiReason.StaleClaim, error);
+        }
+        if (transactional) {
+          // The effects rolled back with the result: a retry applies them once.
+          await this.releaseQuietly(claimed);
+        }
+        return CallOutcome.fromError(error);
+      case Stage.Commit:
+        // The commit failed: the effects and the result may or may not be stored.
+        return CallOutcome.uncertain(InternalApiReason.CommitFailed, error);
+    }
+  }
+
+  /**
+   * Stores the outcome of a handler that threw. Its unit of work rolled back,
+   * so the result is stored on its own; a retry replays it.
+   */
+  private async storeAlone(
+    route: Route,
+    claimed: Claimed,
+    thrown: CallOutcome<unknown>,
+  ): Promise<CallOutcome<unknown>> {
+    const outcome = this.check(route, thrown);
     if (!isFinalOutcome(outcome)) {
       await this.releaseQuietly(claimed);
       return outcome;
@@ -274,7 +452,6 @@ export class InternalRouter {
       await this.processed.complete(claimed.key, claimed.claimToken, outcome);
     } catch (error) {
       if (error instanceof StaleClaimError) {
-        // Another attempt took the key over: whether this result counts is unknown.
         return CallOutcome.uncertain(InternalApiReason.StaleClaim, error);
       }
       return CallOutcome.fromError(error);
@@ -333,4 +510,22 @@ export class InternalRouter {
       // The outcome of this call is already decided; the lease expires anyway.
     }
   }
+}
+
+/**
+ * Context in which a call runs. It continues the caller's trace: the router
+ * only serves other services of the platform, so their `traceparent` is
+ * trusted. When the transport already continued that trace (a server span of
+ * the same trace is active), the active context is kept.
+ */
+function traceContext(traceparent: string | undefined): Context {
+  const active = otelContext.active();
+  const incoming = parseTraceparent(traceparent);
+  if (incoming === null) {
+    return active;
+  }
+  if (trace.getSpanContext(active)?.traceId === incoming.traceId) {
+    return active;
+  }
+  return contextFromTraceparent(traceparent, active);
 }

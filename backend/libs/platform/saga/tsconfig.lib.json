@@ -11,16 +11,19 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../../contracts/platform/tsconfig.lib.json"
+      "path": "../primitives/tsconfig.lib.json"
     },
     {
-      "path": "../primitives/tsconfig.lib.json"
+      "path": "../observability/tsconfig.lib.json"
     },
     {
       "path": "../kernel/tsconfig.lib.json"
     },
     {
       "path": "../internal-api/tsconfig.lib.json"
+    },
+    {
+      "path": "../../contracts/platform/tsconfig.lib.json"
     }
   ],
   "exclude": [

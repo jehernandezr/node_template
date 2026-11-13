@@ -1,3 +1,5 @@
+import { Compensation, defineOperation } from '@contracts/platform';
+import { z } from 'zod';
 import { SagaError, SagaErrorCode } from '../errors.js';
 import { StepStatus } from '../model.js';
 import { SagaDefinition } from './saga-definition.js';
@@ -134,5 +136,115 @@ describe('SagaDefinition.build', () => {
     expect(codeOf(() => new TwoPivots().build())).toBe(
       SagaErrorCode.InvalidDefinition,
     );
+  });
+});
+
+describe('SagaFlow with contract definitions', () => {
+  const Reserve = defineOperation({
+    id: 'stock.reserve.v1',
+    input: z.object({ sku: z.string() }),
+    output: z.object({ reservationId: z.string() }),
+    idempotent: true,
+    compensatedBy: 'stock.release.v1',
+    description: 'Reserves stock.',
+  });
+  const Lookup = defineOperation({
+    id: 'stock.lookup.v1',
+    input: z.object({ sku: z.string() }),
+    output: z.object({ price: z.number() }),
+    idempotent: true,
+    mutating: false,
+    description: 'Reads a price.',
+  });
+  const Ship = defineOperation({
+    id: 'stock.ship.v1',
+    input: z.object({ reservationId: z.string() }),
+    output: z.object({ shipmentId: z.string() }),
+    idempotent: true,
+    compensatedBy: Compensation.None,
+    compensationReason: 'A shipment cannot be recalled.',
+    description: 'Ships.',
+  });
+  const Email = defineOperation({
+    id: 'mail.send.v1',
+    input: z.object({ to: z.string() }),
+    output: z.object({ sent: z.boolean() }),
+    idempotent: false,
+    compensatedBy: Compensation.None,
+    compensationReason: 'An email cannot be unsent.',
+    description: 'Sends an email.',
+  });
+
+  interface Order {
+    sku: string;
+    reservationId?: string;
+    price?: number;
+  }
+
+  function compile(define: (flow: SagaFlow<Order>) => void) {
+    class Saga extends SagaDefinition<Order> {
+      readonly type = 'order';
+
+      protected define(flow: SagaFlow<Order>): void {
+        define(flow);
+      }
+    }
+    return new Saga().build();
+  }
+
+  it('takes the compensation from compensatedBy and the types from the schemas', () => {
+    const compiled = compile((flow) =>
+      flow
+        .step(Reserve)
+        .input((s) => ({ sku: s.sku }))
+        .onSuccess((s, out) => {
+          s.reservationId = out.reservationId;
+        })
+        .pivot()
+        .step(Ship)
+        .input((s) => ({ reservationId: s.reservationId ?? '' })),
+    );
+
+    expect(compiled.steps.map((s) => s.compensationOperationId)).toEqual([
+      'stock.release.v1',
+      null,
+    ]);
+    expect(compiled.steps[0]?.definition).toBe(Reserve);
+  });
+
+  it('rejects an operation with Compensation.None before the pivot', () => {
+    expect(codeOf(() => compile((flow) => flow.step(Ship)))).toBe(
+      SagaErrorCode.MissingCompensation,
+    );
+  });
+
+  it('accepts a read-only operation before the pivot, with nothing to compensate', () => {
+    const compiled = compile((flow) =>
+      flow
+        .step(Lookup)
+        .onSuccess((s, out) => {
+          s.price = out.price;
+        })
+        .step(Reserve),
+    );
+
+    expect(compiled.steps[0]?.compensationOperationId).toBeNull();
+    expect(compiled.steps[0]?.afterPivot).toBe(false);
+  });
+
+  it('rejects an operation that is not idempotent after the pivot', () => {
+    expect(
+      codeOf(() => compile((flow) => flow.step(Reserve).pivot().step(Email))),
+    ).toBe(SagaErrorCode.InvalidDefinition);
+  });
+
+  it('treats Compensation.None in a hand-written reference as no compensation', () => {
+    expect(
+      codeOf(() =>
+        compile((flow) =>
+          flow.step({ id: 'stock.ship.v1', compensatedBy: Compensation.None }),
+        ),
+      ),
+    ).toBe(SagaErrorCode.MissingCompensation);
   });
 });

@@ -1,4 +1,4 @@
-import { defineOperation } from '@contracts/platform';
+import { defineOperation, PlatformErrorCode } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { CallOutcome, CallOutcomeKind, Deadline } from '@platform/primitives';
 import { z } from 'zod';
@@ -319,8 +319,41 @@ describe('defineOperation end to end', () => {
       { idempotencyKey: 'k' },
     );
 
-    expect(outcome.kind).toBe(CallOutcomeKind.ProtocolViolation);
+    expect(outcome.kind).toBe(CallOutcomeKind.BusinessError);
     expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('gives the same outcome for an invalid input on the client and on the router', async () => {
+    const { client, clock } = wire();
+    const router = new InternalRouter({
+      processed: new InMemoryProcessedOperationStore(clock),
+      clock,
+    });
+    router.register(Transfer, async () =>
+      CallOutcome.success({ transferId: 'tr-1' }),
+    );
+
+    const fromClient = await client.call(
+      Transfer,
+      { amount: 0 },
+      { idempotencyKey: 'k' },
+    );
+    const fromRouter = await router.handle(
+      Transfer.id,
+      { amount: 0 },
+      {
+        idempotencyKey: 'k',
+        timeoutMs: 1000,
+        deadline: clock.now().getTime() + 1000,
+      },
+    );
+
+    expect(fromRouter).toEqual(fromClient);
+    expect(fromClient).toMatchObject({
+      kind: CallOutcomeKind.BusinessError,
+      code: PlatformErrorCode.ValidationInvalidInput,
+      details: { fieldErrors: [expect.objectContaining({ field: 'amount' })] },
+    });
   });
 
   it('derives the attempt deadline and the server lease from one caller deadline', async () => {

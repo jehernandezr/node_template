@@ -1,4 +1,10 @@
-import { CallOutcomeKind, type CallOutcome } from '@platform/primitives';
+import type { FieldError } from '@contracts/platform';
+import {
+  CallOutcome,
+  CallOutcomeKind,
+  type BusinessErrorOutcome,
+} from '@platform/primitives';
+import { INVALID_INPUT_CODE } from './contract.js';
 
 /**
  * Discriminant of an operation outcome.
@@ -29,4 +35,29 @@ export enum InternalApiReason {
   Timeout = 'timeout',
   Cancelled = 'cancelled',
   StaleClaim = 'stale-claim',
+  /** The unit of work failed while committing: the effects may or may not be stored. */
+  CommitFailed = 'commit-failed',
+}
+
+/**
+ * Input that breaks the contract: business error
+ * `PLATFORM.VALIDATION.INVALID_INPUT` with `details.fieldErrors`. The client
+ * returns it before any network call and the router returns the same outcome,
+ * so the caller handles the case one way. It is never stored.
+ */
+export interface InputViolationOutcome extends BusinessErrorOutcome {
+  readonly details: { readonly fieldErrors: readonly FieldError[] };
+}
+
+/** Outcome of an input that breaks the contract, on both ends of the call. */
+export function invalidInputOutcome(
+  operationId: string,
+  fieldErrors: readonly FieldError[],
+): InputViolationOutcome {
+  return {
+    ...CallOutcome.businessError(INVALID_INPUT_CODE, {
+      message: `Invalid input for "${operationId}"`,
+    }),
+    details: { fieldErrors },
+  };
 }

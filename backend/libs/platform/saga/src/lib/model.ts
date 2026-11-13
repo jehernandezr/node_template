@@ -87,6 +87,12 @@ export interface StepLogEntry {
   readonly input: unknown;
   readonly output: unknown;
   readonly errorCode: string | null;
+  /**
+   * W3C traceparent of the step, written with its dispatch. A retry of the
+   * step, also from another node after a crash, runs in that trace. Absent on
+   * entries from older versions.
+   */
+  readonly traceparent?: string | null;
   readonly startedAt: Date;
   readonly finishedAt: Date | null;
 }

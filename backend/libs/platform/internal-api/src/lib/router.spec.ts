@@ -1,4 +1,6 @@
 import { defineOperation, PlatformErrorCode } from '@contracts/platform';
+import { context as otelContext } from '@opentelemetry/api';
+import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { DomainError } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import {
@@ -7,6 +9,7 @@ import {
   type CallOutcome as Outcome,
   type ClaimRequest,
 } from '@platform/primitives';
+import { currentTraceparent, parseTraceparent } from '@platform/observability';
 import { z } from 'zod';
 import {
   Compensation,
@@ -636,5 +639,292 @@ describe('InternalRouter', () => {
       expect(second).toEqual(success('r-2'));
       expect(handler).toHaveBeenCalledTimes(2);
     });
+  });
+});
+
+/**
+ * Fake unit of work over an in-memory ledger: writes made inside
+ * `runInTransaction` become visible only when `fn` resolves and the commit
+ * succeeds; a thrown error discards them.
+ */
+class FakeTransactions {
+  readonly committed: string[] = [];
+  private pending: string[] | null = null;
+  /** Makes the next commit throw after `fn` resolved. */
+  failNextCommit = false;
+
+  get open(): boolean {
+    return this.pending !== null;
+  }
+
+  /** Writes an effect in the open unit of work. */
+  write(effect: string): void {
+    if (this.pending === null) {
+      throw new Error('no unit of work is open');
+    }
+    this.pending.push(effect);
+  }
+
+  async runInTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    this.pending = [];
+    try {
+      const result = await fn();
+      if (this.failNextCommit) {
+        this.failNextCommit = false;
+        throw Object.assign(new Error('connection lost during COMMIT'), {
+          code: 'ECONNRESET',
+        });
+      }
+      this.committed.push(...this.pending);
+      return result;
+    } finally {
+      this.pending = null;
+    }
+  }
+}
+
+function setupWithUnitOfWork() {
+  const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
+  const processed = new InMemoryProcessedOperationStore(
+    clock,
+    new SequentialIdGenerator(),
+  );
+  const transactions = new FakeTransactions();
+  const router = new InternalRouter({ processed, clock, transactions });
+  const meta = (idempotencyKey: string): CallMeta => ({
+    idempotencyKey,
+    timeoutMs: 1000,
+    deadline: clock.now().getTime() + 1000,
+  });
+  return { router, processed, transactions, clock, meta };
+}
+
+const outage = (): Error =>
+  Object.assign(new Error('terminating connection'), { code: '57P01' });
+
+describe('InternalRouter with a unit of work', () => {
+  it('runs the handler and stores the result inside the same unit of work', async () => {
+    const { router, processed, transactions, meta } = setupWithUnitOfWork();
+    const openOnComplete: boolean[] = [];
+    const complete = processed.complete.bind(processed);
+    jest.spyOn(processed, 'complete').mockImplementation(async (...args) => {
+      openOnComplete.push(transactions.open);
+      return complete(...args);
+    });
+    router.register(Reserve, async () => {
+      transactions.write('reserved A');
+      return success();
+    });
+
+    await expect(
+      router.handle('stock.reserve.v1', input, meta('k')),
+    ).resolves.toEqual(success());
+
+    expect(openOnComplete).toEqual([true]);
+    expect(transactions.committed).toEqual(['reserved A']);
+  });
+
+  it('rolls the effect back when storing the result fails, and the retry applies it once', async () => {
+    const { router, processed, transactions, meta } = setupWithUnitOfWork();
+    jest.spyOn(processed, 'complete').mockRejectedValueOnce(outage());
+    const handler = jest.fn(async (): Promise<ReserveOutcome> => {
+      transactions.write('reserved A');
+      return success();
+    });
+    router.register(Reserve, handler);
+
+    const first = await router.handle('stock.reserve.v1', input, meta('k'));
+    expect(first).toMatchObject({
+      kind: CallOutcomeKind.TransientFailure,
+      reason: '57P01',
+    });
+    expect(transactions.committed).toEqual([]);
+
+    // The claim was released with the rollback: the retry runs at once.
+    const second = await router.handle('stock.reserve.v1', input, meta('k'));
+    const third = await router.handle('stock.reserve.v1', input, meta('k'));
+
+    expect(second).toEqual(success());
+    expect(third).toEqual(success());
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(transactions.committed).toEqual(['reserved A']);
+  });
+
+  it('rolls back the writes of a handler that throws a declared domain error and stores the error', async () => {
+    const { router, transactions, meta } = setupWithUnitOfWork();
+    const handler = jest.fn(async (): Promise<ReserveOutcome> => {
+      transactions.write('half a reservation');
+      throw new OutOfStock('No stock left');
+    });
+    router.register(Reserve, handler);
+
+    const first = await router.handle('stock.reserve.v1', input, meta('k'));
+    const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+    expect(first).toMatchObject({
+      kind: CallOutcomeKind.BusinessError,
+      code: OUT_OF_STOCK,
+    });
+    expect(second).toEqual(first);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(transactions.committed).toEqual([]);
+  });
+
+  it('rolls back a transient outcome and releases the key', async () => {
+    const { router, transactions, meta } = setupWithUnitOfWork();
+    const handler = jest
+      .fn<Promise<ReserveOutcome>, []>()
+      .mockImplementationOnce(async () => {
+        transactions.write('partial write');
+        return CallOutcome.transientFailure('db-down');
+      })
+      .mockImplementationOnce(async () => {
+        transactions.write('reserved A');
+        return success();
+      });
+    router.register(Reserve, handler);
+
+    const first = await router.handle('stock.reserve.v1', input, meta('k'));
+    const second = await router.handle('stock.reserve.v1', input, meta('k'));
+
+    expect(first.kind).toBe(CallOutcomeKind.TransientFailure);
+    expect(second).toEqual(success());
+    expect(transactions.committed).toEqual(['reserved A']);
+  });
+
+  it('answers uncertain when the commit fails and does not release the key', async () => {
+    const { router, processed, transactions, meta } = setupWithUnitOfWork();
+    const release = jest.spyOn(processed, 'release');
+    const handler = jest.fn(async (): Promise<ReserveOutcome> => {
+      transactions.write('reserved A');
+      return success();
+    });
+    router.register(Reserve, handler);
+    transactions.failNextCommit = true;
+
+    const first = await router.handle('stock.reserve.v1', input, meta('k'));
+
+    // The commit may have stored the effect and the result: a retry must find
+    // the stored result or wait for the lease, never run the handler at once.
+    expect(first).toMatchObject({
+      kind: CallOutcomeKind.Uncertain,
+      reason: InternalApiReason.CommitFailed,
+    });
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it('rolls back a slow attempt whose lease was taken over and answers a transient failure', async () => {
+    const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
+    const processed = new InMemoryProcessedOperationStore(
+      clock,
+      new SequentialIdGenerator(),
+    );
+    const slowTx = new FakeTransactions();
+    const fastTx = new FakeTransactions();
+    const slowRouter = new InternalRouter({
+      processed,
+      clock,
+      transactions: slowTx,
+      leaseMarginMs: 100,
+    });
+    const fastRouter = new InternalRouter({
+      processed,
+      clock,
+      transactions: fastTx,
+      leaseMarginMs: 100,
+    });
+    let finishSlow!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      finishSlow = resolve;
+    });
+    slowRouter.register(Reserve, async () => {
+      slowTx.write('slow');
+      await gate;
+      return success('r-slow');
+    });
+    fastRouter.register(Reserve, async () => {
+      fastTx.write('fast');
+      return success('r-fast');
+    });
+    const meta = (): CallMeta => ({
+      idempotencyKey: 'k',
+      timeoutMs: 1000,
+      deadline: clock.now().getTime() + 1000,
+    });
+
+    const slow = slowRouter.handle('stock.reserve.v1', input, meta());
+    clock.advance(1_101);
+    const fast = await fastRouter.handle('stock.reserve.v1', input, meta());
+    finishSlow();
+
+    expect(fast).toEqual(success('r-fast'));
+    await expect(slow).resolves.toMatchObject({
+      kind: CallOutcomeKind.TransientFailure,
+      reason: InternalApiReason.StaleClaim,
+    });
+    expect(slowTx.committed).toEqual([]);
+    expect(fastTx.committed).toEqual(['fast']);
+  });
+});
+
+describe('InternalRouter trace propagation', () => {
+  const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
+  const TRACEPARENT = `00-${TRACE_ID}-00f067aa0ba902b7-01`;
+  const manager = new AsyncLocalStorageContextManager();
+
+  beforeAll(() => {
+    otelContext.setGlobalContextManager(manager.enable());
+  });
+
+  afterAll(() => {
+    otelContext.disable();
+  });
+
+  it('runs the handler in the trace of the incoming traceparent', async () => {
+    const { router, meta } = setup();
+    let seen: string | undefined;
+    router.register(Reserve, async () => {
+      await Promise.resolve();
+      seen = currentTraceparent();
+      return success();
+    });
+
+    await router.handle(
+      'stock.reserve.v1',
+      input,
+      meta('k', { traceparent: TRACEPARENT }),
+    );
+
+    expect(parseTraceparent(seen)?.traceId).toBe(TRACE_ID);
+  });
+
+  it('runs without a trace when the call carries none', async () => {
+    const { router, meta } = setup();
+    let seen: string | undefined = 'unset';
+    router.register(Reserve, async () => {
+      seen = currentTraceparent();
+      return success();
+    });
+
+    await router.handle('stock.reserve.v1', input, meta('k'));
+
+    expect(seen).toBeUndefined();
+  });
+
+  it('ignores an invalid traceparent', async () => {
+    const { router, meta } = setup();
+    let seen: string | undefined = 'unset';
+    router.register(Reserve, async () => {
+      seen = currentTraceparent();
+      return success();
+    });
+
+    await router.handle(
+      'stock.reserve.v1',
+      input,
+      meta('k', { traceparent: 'garbage' }),
+    );
+
+    expect(seen).toBeUndefined();
   });
 });
