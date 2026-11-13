@@ -153,7 +153,7 @@ El manifiesto se importa de forma inmediata: el shell lo lee al arrancar para ar
 1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`.
 2. Algún texto ARB del backoffice de 12 caracteres o más aparece en `main.dart.js`.
 
-Hoy la comprobación falla por un hallazgo conocido: `mf_notifications.dart` exporta sus archivos de `src/data` y su ciclo de vida, que es inmediato, importa `notifications_scope.dart`. Por eso tres archivos de `src/data` viajan en el bundle inicial. El siguiente paso es dejarlos solo detrás del import diferido; con eso el job `web-deferred` de CI pasa.
+El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto, así que carga `src/data` con `deferred as` a través de un puente (`lifecycle/unread_counts.dart`). En la VM (móvil y pruebas) un import condicional usa la variante directa, porque allí no hay bundle que dividir.
 
 **Reglas**
 
@@ -1028,12 +1028,23 @@ Los mensajes siguen CloudEvents 1.0, la especificación de la CNCF para eventos 
 
 `backend/libs/platform/saga` coordina operaciones entre servicios con una bitácora persistente de cada paso. Si el nodo que ejecuta una saga se cae, otro la retoma exactamente donde quedó, incluidas las compensaciones a medio camino. La saga orquesta; los reintentos y timeouts de cada llamada son del cliente de la API interna.
 
-**Definición con clases y contratos**
+**Definición con clases y referencias a operaciones**
 
 ```ts
-@Saga(SagaType.TenantOnboarding)
+// Referencias tipadas a operaciones de otros servicios, a partir de sus descriptores.
+const CreateTenant: OperationRef<CreateTenantInput, CreateTenantOutput> = {
+  id: CreateTenantOp.id,
+  compensatedBy: DeleteTenantOp.id,
+};
+const SendWelcomeEmail: OperationRef<WelcomeInput, WelcomeOutput> = {
+  id: SendWelcomeEmailOp.id,
+  compensatedBy: null,
+};
+
 export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> {
-  protected define(flow: SagaFlow<TenantOnboardingState>) {
+  readonly type = SagaType.TenantOnboarding;
+
+  protected define(flow: SagaFlow<TenantOnboardingState>): void {
     flow
       .step(CreateTenant)
       .input((s) => ({ name: s.tenantName, ownerId: s.ownerId }))
@@ -1050,11 +1061,9 @@ export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> 
       .input((s) => ({ tenantId: s.tenantId!, ownerId: s.ownerId }));
   }
 }
-
-await this.sagas.start(TenantOnboardingSaga, initialState, { idempotencyKey });
 ```
 
-Cada paso referencia la clase de contrato de la operación. La compensación sale del `compensatedBy` del contrato, así que la saga hereda las reversas que cada servicio ya expone. Renombrar una operación rompe la compilación.
+Cada paso recibe un `OperationRef` (`{ id, compensatedBy }`) tipado por la entrada y la salida de la operación. Los ids salen de los descriptores de `defineOperation` del paquete de contratos del servicio dueño, así que la saga usa las reversas que ese servicio ya declara. Renombrar una operación rompe la compilación.
 
 **Validaciones al arrancar**
 
@@ -1090,7 +1099,7 @@ Si el proceso muere entre el paso 1 y el 3, el registro queda en `Dispatched`. A
 | Resultado del cliente | En avance                                                                                                                                      | En compensación                                             |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `Success`             | Siguiente paso                                                                                                                                 | Siguiente compensación                                      |
-| `BusinessError`       | Inicia compensación en orden inverso                                                                                                           | Estado `CompensationFailed`, alerta e intervención manual   |
+| `BusinessError`       | Antes del pivote, inicia compensación en orden inverso. Después del pivote, estado `RequiresIntervention`                                      | Estado `CompensationFailed`, alerta e intervención manual   |
 | `TransientFailure`    | Estado `Suspended`; la recuperación la retoma más tarde. Al cumplirse `deadline_at`, compensa                                                  | Estado `Suspended`; la recuperación insiste hasta completar |
 | `Uncertain`           | Estado `Suspended` con `PLATFORM.SAGA.UNCERTAIN_OUTCOME`; se reintenta con la misma llave. Al cumplirse `deadline_at`, compensa desde ese paso | Estado `Suspended`; la recuperación insiste hasta completar |
 

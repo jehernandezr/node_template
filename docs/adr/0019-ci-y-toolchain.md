@@ -30,7 +30,7 @@ Un job `changes` (`dorny/paths-filter`) decide qué corre. Cada job tiene `timeo
 1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`; o
 2. algún texto ARB del backoffice (de 12 caracteres o más, para evitar coincidencias con palabras sueltas; los segmentos fuera de `{placeholders}`) aparece en `main.dart.js`, tanto literal como con los escapes `\xHH`/`\uHHHH` de dart2js.
 
-Al introducirse, falla sobre el estado actual: las fuentes `microfrontends/notifications/lib/src/data/*` viajan en el bundle inicial (el hallazgo "el fake de notificaciones viaja en el bundle inicial" de la auditoría). El job pasará cuando se corrija el import no diferido.
+Al introducirse, falló porque las fuentes de `microfrontends/notifications/lib/src/data/*` viajaban en el bundle inicial (el hallazgo "el fake de notificaciones viaja en el bundle inicial" de la auditoría). La migración de `mf_notifications` al contrato del ADR 0018 lo corrigió y hoy la comprobación pasa.
 
 ### Versiones de herramientas
 
