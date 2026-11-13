@@ -1,7 +1,6 @@
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mf_notifications/mf_notifications.dart';
 import 'package:mf_notifications/src/l10n/generated/notifications_localizations.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 
@@ -29,7 +28,7 @@ void main() {
       seed: [_item('a')],
       latency: const Duration(milliseconds: 100),
     );
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -44,7 +43,7 @@ void main() {
     final repo = FakeNotificationsRepository(
       seed: [_item('a'), _item('b', read: true)],
     );
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     await tester.pumpAndSettle();
@@ -59,7 +58,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeNotificationsRepository(seed: const []);
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     await tester.pumpAndSettle();
@@ -71,7 +70,7 @@ void main() {
   testWidgets('shows an error with retry when loading fails', (tester) async {
     final repo = FakeNotificationsRepository(seed: [_item('a')])
       ..fetchError = StateError('boom');
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     await tester.pumpAndSettle();
@@ -85,7 +84,7 @@ void main() {
 
   testWidgets('a live notification appears at the top', (tester) async {
     final repo = FakeNotificationsRepository(seed: [_item('a')]);
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     await tester.pumpAndSettle();
@@ -105,7 +104,7 @@ void main() {
 
   testWidgets('tapping an unread item marks it as read', (tester) async {
     final repo = FakeNotificationsRepository(seed: [_item('a')]);
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     await tester.pumpAndSettle();
@@ -119,7 +118,7 @@ void main() {
 
   testWidgets('mark all as read clears every unread item', (tester) async {
     final repo = FakeNotificationsRepository(seed: [_item('a'), _item('b')]);
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
     await tester.pumpAndSettle();
@@ -144,7 +143,7 @@ void main() {
           traceId: 'trace-1',
         ),
       );
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await tester.pumpWidget(
       testApp(
@@ -161,5 +160,76 @@ void main() {
     );
     expect(find.textContaining('Trace ID: trace-1'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('the screen owns the only top bar', (tester) async {
+    final repo = FakeNotificationsRepository(seed: [_item('a')]);
+    addTearDown(repo.dispose);
+
+    await _pumpInbox(tester, repo);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppBar), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(esText.inboxTitle),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a failed mark as read reverts and shows the action error', (
+    tester,
+  ) async {
+    final repo = FakeNotificationsRepository(seed: [_item('a'), _item('b')])
+      ..markError = StateError('offline');
+    addTearDown(repo.dispose);
+
+    await _pumpInbox(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(esText.markAllRead));
+    await tester.pumpAndSettle();
+
+    expect(find.text(esText.unreadLabel), findsNWidgets(2));
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.text(esText.markReadError), findsOneWidget);
+    expect(find.textContaining('offline'), findsNothing);
+  });
+
+  testWidgets('an action that fails after the screen closed shows nothing', (
+    tester,
+  ) async {
+    final repo = FakeNotificationsRepository(
+      seed: [_item('a')],
+      latency: const Duration(milliseconds: 50),
+    );
+    addTearDown(repo.dispose);
+
+    final showScreen = ValueNotifier(true);
+    addTearDown(showScreen.dispose);
+    await tester.pumpWidget(
+      testApp(
+        ValueListenableBuilder<bool>(
+          valueListenable: showScreen,
+          builder: (context, show, _) => show
+              ? NotificationsInboxScreen(repository: repo)
+              : const SizedBox(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(find.text('Título a'), findsOneWidget);
+
+    repo.markError = StateError('offline');
+    await tester.tap(find.text('Título a'));
+    // Otra identidad reemplaza la pantalla antes de que llegue el error.
+    showScreen.value = false;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SnackBar), findsNothing);
   });
 }

@@ -1,54 +1,44 @@
-/// Microfrontend `notifications`: manifest consumed by the web and mobile shells.
+/// Microfrontend `notifications`: manifiesto que registran los shells web y
+/// móvil.
+///
+/// Este archivo viaja en el bundle inicial. No importa nada de `src/data`,
+/// `src/screens` ni `src/l10n` sin `deferred as`; el ciclo de vida tampoco.
 library;
 
-import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
 import 'src/lifecycle/notifications_lifecycle.dart';
 import 'src/screens/screens.dart' deferred as screens;
+import 'src/shared/constants/notifications_paths.dart';
 
-export 'src/data/fake_notifications_repository.dart';
-export 'src/data/notification_models.dart';
-export 'src/data/notifications_repository.dart';
 export 'src/lifecycle/notifications_lifecycle.dart';
+export 'src/shared/constants/notifications_paths.dart';
 
-/// Manifest registered by the shells. Routes live under `/notifications`.
-/// Only the screens are deferred; the lifecycle is eager.
+/// Manifiesto registrado por los shells. Las rutas viven bajo
+/// `/notifications`; pantallas, datos y textos se cargan de forma diferida.
 final MicrofrontendManifest notificationsManifest = MicrofrontendManifest(
   id: MicrofrontendId.notifications,
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.authenticated(),
   menu: const [
-    MenuEntry(labelKey: 'menuNotifications', path: '/notifications', order: 30),
+    MenuEntry(
+      labelKey: 'menuNotifications',
+      path: NotificationsPaths.inbox,
+      order: 30,
+    ),
   ],
-  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
-  // ignore: deprecated_member_use
-  lifecycle: NotificationsLifecycle(),
-  // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
-  // ignore: deprecated_member_use
-  routes: (load, scope) => [
-    GoRoute(
-      path: '/notifications',
-      builder: (context, state) => load(
-        loadLibrary: screens.loadLibrary,
-        builder: () => screens.withNotificationsLocalizations(
-          context,
-          screens.buildInboxScreen(scope()),
-        ),
-        loading: const Center(child: CircularProgressIndicator()),
-      ),
+  lifecycleFactory: NotificationsLifecycle.new,
+  screens: [
+    ScreenRoute(
+      path: NotificationsPaths.inbox,
+      loadLibrary: screens.loadLibrary,
+      builder: (scope, {params = const {}}) => screens.buildInboxScreen(scope),
       routes: [
-        GoRoute(
-          path: 'preferences',
-          builder: (context, state) => load(
-            loadLibrary: screens.loadLibrary,
-            builder: () => screens.withNotificationsLocalizations(
-              context,
-              screens.buildPreferencesScreen(scope()),
-            ),
-            loading: const Center(child: CircularProgressIndicator()),
-          ),
+        ScreenRoute(
+          path: NotificationsPaths.preferencesSegment,
+          loadLibrary: screens.loadLibrary,
+          builder: (scope, {params = const {}}) =>
+              screens.buildPreferencesScreen(scope),
         ),
       ],
     ),

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'notification_models.dart';
+import '../shared/types/types.dart';
 import 'notifications_repository.dart';
 
 /// Repositorio en memoria. [push] simula una notificación que llega en vivo.
@@ -18,6 +18,9 @@ final class FakeNotificationsRepository implements NotificationsRepository {
   /// Si no es null, [fetchInbox] falla con este error.
   Object? fetchError;
 
+  /// Si no es null, [markAsRead] y [markAllAsRead] fallan con este error.
+  Object? markError;
+
   /// Si no es null, [savePreferences] falla con este error.
   Object? saveError;
 
@@ -27,21 +30,43 @@ final class FakeNotificationsRepository implements NotificationsRepository {
       StreamController<AppNotification>.broadcast();
   // Avisa cada vez que cambia la bandeja: llegada en vivo o marcado como leída.
   final StreamController<void> _changes = StreamController<void>.broadcast();
+  // Streams de [watchUnreadCount] abiertos, para cerrarlos en [dispose].
+  final Set<StreamController<int>> _counts = {};
+  bool _disposed = false;
+
+  /// Si ya se llamó a [dispose].
+  bool get isDisposed => _disposed;
 
   /// Agrega [notification] al inicio de la bandeja y la emite por [live].
+  /// No hace nada después de [dispose].
   void push(AppNotification notification) {
+    if (_disposed) return;
     _inbox.insert(0, notification);
     _live.add(notification);
     _changes.add(null);
   }
 
-  /// Cierra los streams. Llamarlo al terminar la prueba o al liberar el scope.
-  Future<void> close() async {
+  /// Cierra [live], [watchUnreadCount] y sus suscripciones internas. Lo llama
+  /// el scope de la identidad; llamarlo otra vez no hace nada.
+  @override
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    final counts = List.of(_counts);
+    _counts.clear();
+    // Sin esperar a los oyentes: un stream cerrado sin suscriptor no termina.
+    for (final controller in counts) {
+      unawaited(controller.close());
+    }
     await _live.close();
     await _changes.close();
   }
 
   int _unreadNow() => _inbox.where((notification) => !notification.read).length;
+
+  void _notifyChanged() {
+    if (!_disposed) _changes.add(null);
+  }
 
   Future<T> _delayed<T>(T value) async {
     if (latency > Duration.zero) await Future<void>.delayed(latency);
@@ -61,6 +86,7 @@ final class FakeNotificationsRepository implements NotificationsRepository {
 
   @override
   Stream<int> watchUnreadCount() {
+    if (_disposed) return const Stream<int>.empty();
     StreamSubscription<void>? changes;
     late final StreamController<int> counts;
     counts = StreamController<int>(
@@ -68,27 +94,35 @@ final class FakeNotificationsRepository implements NotificationsRepository {
         counts.add(_unreadNow());
         changes = _changes.stream.listen((_) => counts.add(_unreadNow()));
       },
-      onCancel: () => changes?.cancel(),
+      onCancel: () {
+        _counts.remove(counts);
+        return changes?.cancel();
+      },
     );
+    _counts.add(counts);
     return counts.stream;
   }
 
   @override
   Future<void> markAsRead(String id) async {
+    await _delayed(null);
+    final error = markError;
+    if (error != null) throw error;
     final index = _inbox.indexWhere((notification) => notification.id == id);
     if (index == -1) return;
     _inbox[index] = _inbox[index].copyWith(read: true);
-    _changes.add(null);
-    return _delayed(null);
+    _notifyChanged();
   }
 
   @override
-  Future<void> markAllAsRead() {
+  Future<void> markAllAsRead() async {
+    await _delayed(null);
+    final error = markError;
+    if (error != null) throw error;
     for (var i = 0; i < _inbox.length; i++) {
       _inbox[i] = _inbox[i].copyWith(read: true);
     }
-    _changes.add(null);
-    return _delayed(null);
+    _notifyChanged();
   }
 
   @override
