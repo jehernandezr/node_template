@@ -4,3 +4,8 @@ packages:
   - 'backend/libs/*'
   - 'backend/libs/*/*'
   - 'backend/tools/*'
+
+# nx 24.0.0 fija undici 7.29.0, que tiene avisos de seguridad (GHSA-2m5v-pch6-74hx y otros).
+# 7.30.2 es un parche de la misma versión mayor. Quitar cuando nx suba su versión.
+overrides:
+  undici: 7.30.2
