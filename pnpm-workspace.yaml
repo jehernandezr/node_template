@@ -9,3 +9,6 @@ packages:
 # 7.30.2 es un parche de la misma versión mayor. Quitar cuando nx suba su versión.
 overrides:
   undici: 7.30.2
+  # glob 10 y 13 (GHSA-3g3m-2fjr-6pw4) solo se corrige en la versión mayor siguiente.
+  # Lo traen Jest y test-exclude como herramientas de desarrollo.
+  'glob@>=10 <14': 14.0.6
