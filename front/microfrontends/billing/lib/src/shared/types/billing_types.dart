@@ -1,28 +1,11 @@
 /// Domain models for plans, subscriptions, metered usage and invoices.
 ///
 /// Money is stored as integer minor units plus its currency, never as a
-/// double. See `format/money_format.dart` for display.
+/// double. See `shared/utils/money_format.dart` for display.
 library;
 
-/// Currencies the billing service invoices in.
-enum Currency {
-  /// Colombian peso. No decimals: one minor unit is one peso.
-  cop('COP', r'$', 0),
-
-  /// US dollar. Two decimals: one minor unit is one cent.
-  usd('USD', r'US$', 2);
-
-  const Currency(this.code, this.symbol, this.minorUnitDigits);
-
-  /// ISO 4217 code.
-  final String code;
-
-  /// Symbol shown before the amount.
-  final String symbol;
-
-  /// Number of decimal digits in the minor unit.
-  final int minorUnitDigits;
-}
+import '../constants/billing_constants.dart';
+import '../enums/billing_enums.dart';
 
 /// Integer amount in the minor unit of [currency].
 final class Money {
@@ -35,27 +18,15 @@ final class Money {
   final Currency currency;
 }
 
-/// How often a plan is charged.
-enum PlanPeriodicity { monthly, annual }
-
-/// Lifecycle state of a subscription.
-enum SubscriptionStatus { trialing, active, pastDue, suspended, canceled }
-
-/// Lifecycle state of an invoice. The payment itself happens outside billing.
-enum InvoiceStatus { draft, issued, paid, failed, voided }
-
-/// Kind of invoice line: the fixed plan charge or metered usage.
-enum InvoiceLineKind { fixedFee, usage }
-
-/// Severity of a usage meter.
-enum UsageLevel { normal, warning, danger }
-
-/// Level for [used] out of [limit]: warning from 80%, danger from 100%.
+/// Level for [used] out of [limit]: warning from [usageWarningPercent], danger
+/// from [usageDangerPercent].
 ///
 /// A non-positive [limit] is always danger.
 UsageLevel usageLevelFor(int used, int limit) {
-  if (limit <= 0 || used >= limit) return UsageLevel.danger;
-  if (used * 100 >= limit * 80) return UsageLevel.warning;
+  if (limit <= 0 || used * 100 >= limit * usageDangerPercent) {
+    return UsageLevel.danger;
+  }
+  if (used * 100 >= limit * usageWarningPercent) return UsageLevel.warning;
   return UsageLevel.normal;
 }
 

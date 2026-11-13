@@ -1,12 +1,14 @@
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
+import '../billing_access.dart';
 import '../billing_labels.dart';
-import '../data/billing_models.dart';
+import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
-import '../format/money_format.dart';
+import '../shared/utils/money_format.dart';
 import '../format/period_format.dart';
 import '../l10n/generated/billing_localizations.dart';
 import '../widgets/billing_colors.dart';
@@ -34,15 +36,32 @@ class _PlanData {
 }
 
 class _BillingPlanScreenState extends State<BillingPlanScreen> {
-  late Future<_PlanData> _future = _load();
+  AsyncValue<_PlanData> _state = const AsyncValue.loading();
+  int _generation = 0;
 
-  Future<_PlanData> _load() async {
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<_PlanData> _fetch() async {
     final subscription = await widget.repository.currentSubscription();
     final usage = await widget.repository.currentUsage();
     return _PlanData(subscription: subscription, usage: usage);
   }
 
-  void _reload() => setState(() => _future = _load());
+  Future<void> _load() async {
+    final generation = ++_generation;
+    final result = await AsyncValue.guard(_fetch);
+    if (!mounted || generation != _generation) return;
+    setState(() => _state = result);
+  }
+
+  void _reload() {
+    setState(() => _state = const AsyncValue.loading());
+    _load();
+  }
 
   Future<void> _openChangePlan(String currentPlanId) async {
     final changed = await showModalBottomSheet<bool>(
@@ -53,34 +72,27 @@ class _BillingPlanScreenState extends State<BillingPlanScreen> {
         currentPlanId: currentPlanId,
       ),
     );
+    if (!mounted) return;
     if (changed == true) _reload();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = BillingLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.billingPageTitle)),
-      body: FutureBuilder<_PlanData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return ErrorView.fromException(
-              snapshot.error!,
-              fallbackMessage: l10n.loadError,
-              codeLabel: AppLocalizations.of(context).errorCodeLabel,
-              traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
-              retryLabel: AppLocalizations.of(context).actionRetry,
-              onRetry: _reload,
-            );
-          }
-          final data = snapshot.data;
-          if (data == null) return const LoadingView();
-          return _PlanContent(
-            data: data,
-            onChangePlan: () => _openChangePlan(data.subscription.plan.id),
-          );
-        },
+    final appL10n = AppLocalizations.of(context);
+    return AppPage(
+      title: l10n.billingPageTitle,
+      body: AsyncValueView<_PlanData>(
+        value: _state,
+        errorMessage: l10n.loadError,
+        codeLabel: appL10n.errorCodeLabel,
+        traceIdLabel: appL10n.errorTraceIdLabel,
+        retryLabel: appL10n.actionRetry,
+        onRetry: _reload,
+        data: (data) => _PlanContent(
+          data: data,
+          onChangePlan: () => _openChangePlan(data.subscription.plan.id),
+        ),
       ),
     );
   }
@@ -155,8 +167,13 @@ class _PlanContent extends StatelessWidget {
                 ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppButton(label: l10n.changePlan, onPressed: onChangePlan),
-        const SizedBox(height: AppSpacing.sm),
+        AccessGate(
+          rule: billingAccessRule,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: AppButton(label: l10n.changePlan, onPressed: onChangePlan),
+          ),
+        ),
         AppButton(
           label: l10n.viewInvoices,
           variant: AppButtonVariant.secondary,

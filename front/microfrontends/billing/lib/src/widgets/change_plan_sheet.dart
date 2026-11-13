@@ -1,11 +1,12 @@
+import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
 import '../billing_labels.dart';
-import '../data/billing_models.dart';
+import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
-import '../format/money_format.dart';
+import '../shared/utils/money_format.dart';
 import '../l10n/generated/billing_localizations.dart';
 
 /// Bottom sheet that lists plans and switches the subscription.
@@ -30,26 +31,43 @@ class ChangePlanSheet extends StatefulWidget {
 }
 
 class _ChangePlanSheetState extends State<ChangePlanSheet> {
-  late final Future<List<Plan>> _plans = widget.repository.availablePlans();
+  AsyncValue<List<Plan>> _plans = const AsyncValue.loading();
   String? _selectedId;
   bool _saving = false;
-  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlans();
+  }
+
+  Future<void> _loadPlans() async {
+    final result = await AsyncValue.guard(widget.repository.availablePlans);
+    if (!mounted) return;
+    setState(() => _plans = result);
+  }
+
+  void _reloadPlans() {
+    setState(() => _plans = const AsyncValue.loading());
+    _loadPlans();
+  }
 
   Future<void> _confirm() async {
     final planId = _selectedId;
     if (planId == null) return;
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+    final l10n = BillingLocalizations.of(context);
+    setState(() => _saving = true);
     try {
       await widget.repository.changePlan(planId);
-    } catch (error) {
+    } on ApiErrorException catch (error) {
       if (!mounted) return;
-      setState(() {
-        _saving = false;
-        _error = error;
-      });
+      setState(() => _saving = false);
+      showActionError(context, error, message: l10n.changePlanError);
+      return;
+    } on ContractViolationException catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      showActionError(context, error, message: l10n.changePlanError);
       return;
     }
     if (!mounted) return;
@@ -69,17 +87,18 @@ class _ChangePlanSheetState extends State<ChangePlanSheet> {
           AppSpacing.md,
           AppSpacing.lg,
         ),
-        child: FutureBuilder<List<Plan>>(
-          future: _plans,
-          builder: (context, snapshot) {
-            final plans = snapshot.data;
-            if (plans == null) {
-              return const SizedBox(height: 160, child: LoadingView());
-            }
+        child: AsyncValueView<List<Plan>>(
+          value: _plans,
+          errorMessage: l10n.loadError,
+          codeLabel: appL10n.errorCodeLabel,
+          traceIdLabel: appL10n.errorTraceIdLabel,
+          retryLabel: appL10n.actionRetry,
+          onRetry: _reloadPlans,
+          loading: const SizedBox(height: 160, child: LoadingView()),
+          data: (plans) {
             final selected = _selectedId;
             final showProration =
                 selected != null && selected != widget.currentPlanId;
-            final error = _error;
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,15 +138,6 @@ class _ChangePlanSheetState extends State<ChangePlanSheet> {
                     child: Text(
                       l10n.prorationNote,
                       style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-                if (error != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    l10n.changePlanError,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
                     ),
                   ),
                 ],

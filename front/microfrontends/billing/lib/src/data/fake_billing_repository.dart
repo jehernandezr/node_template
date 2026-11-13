@@ -1,6 +1,7 @@
 import 'package:contracts/contracts.dart';
 
-import 'billing_models.dart';
+import '../shared/enums/billing_enums.dart';
+import '../shared/types/billing_types.dart';
 import 'billing_repository.dart';
 
 /// In-memory [BillingRepository] with sample data. Changes live as long as
@@ -8,7 +9,7 @@ import 'billing_repository.dart';
 ///
 /// Errors use [ApiErrorException], as the real client does. Pass [failure] to
 /// make every call fail with it, for example to test error views.
-final class FakeBillingRepository implements BillingRepository {
+base class FakeBillingRepository implements BillingRepository {
   FakeBillingRepository({this.failure});
 
   /// Error thrown by every call when set.
@@ -172,6 +173,9 @@ final class FakeBillingRepository implements BillingRepository {
       lines: lines,
     );
   }
+
+  @override
+  void dispose() {}
 
   @override
   Future<Subscription> currentSubscription() async {
