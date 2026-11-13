@@ -68,4 +68,21 @@ void main() {
     await scope.dispose();
     expect(repository.isDisposed, isTrue);
   });
+
+  testWidgets('las acciones sensibles piden el step-up de los servicios', (
+    tester,
+  ) async {
+    final es = await loadEs();
+    final stepUp = RecordingStepUp(answer: false);
+    final scope = testScope(onStepUp: stepUp.call);
+    addTearDown(scope.dispose);
+    await tester.pumpWidget(testApp(buildAccountSessionsScreen(scope)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(es.sessionsCloseOthers));
+    await tester.pumpAndSettle();
+
+    expect(stepUp.calls, 1);
+    expect(find.text('Safari en iPhone'), findsOneWidget);
+  });
 }

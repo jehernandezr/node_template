@@ -90,11 +90,48 @@ MicrofrontendRegistry _registryWithProbe() => buildMobileRegistry()
               builder: (scope, {params = const {}}) =>
                   const AppPage(title: 'Seguro', body: Text('zona segura')),
             ),
+            ScreenRoute(
+              path: 'sensitive',
+              loadLibrary: () async {},
+              builder: (scope, {params = const {}}) =>
+                  _StepUpProbe(requestStepUp: scope.services.requestStepUp),
+            ),
           ],
         ),
       ],
     ),
   );
+
+/// Asks the shell for a step-up, as a sensitive action does, and shows the
+/// answer.
+class _StepUpProbe extends StatefulWidget {
+  const _StepUpProbe({required this.requestStepUp});
+
+  final Future<bool> Function() requestStepUp;
+
+  @override
+  State<_StepUpProbe> createState() => _StepUpProbeState();
+}
+
+class _StepUpProbeState extends State<_StepUpProbe> {
+  String _result = 'sin pedir';
+
+  Future<void> _ask() async {
+    final verified = await widget.requestStepUp();
+    if (mounted) setState(() => _result = 'step-up: $verified');
+  }
+
+  @override
+  Widget build(BuildContext context) => AppPage(
+    title: 'Acción sensible',
+    body: Column(
+      children: [
+        Text(_result),
+        TextButton(onPressed: _ask, child: const Text('pedir step-up')),
+      ],
+    ),
+  );
+}
 
 /// Copies the user id into its state once, like a screen that loads data in
 /// `initState`. Only a rebuild from scratch shows another user.
@@ -125,8 +162,7 @@ ShellRuntime _runtimeFor(
     registry: registry,
     platform: AppPlatform.mobile,
     session: session,
-    servicesFactory: (identity) =>
-        DefaultShellServices(session: identity, eventBus: runtime.eventBus),
+    servicesFactory: (identity) => DefaultShellServices(session: identity),
   );
   return runtime;
 }
@@ -421,6 +457,33 @@ void main() {
 
       expect(_location(tester), '/billing/secure');
       expect(find.text('zona segura'), findsOneWidget);
+      expect(session.value.mfaVerifiedAt, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'requestStepUp of the services pushes /step-up and returns the answer',
+    (tester) async {
+      final session = await _pumpShell(
+        tester,
+        session: _client,
+        registry: _registryWithProbe(),
+      );
+      await _go(tester, '/billing/sensitive');
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('sin pedir'), findsOneWidget);
+
+      await tester.tap(find.text('pedir step-up'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Verificación adicional'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('step-up-verify')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('step-up: true'), findsOneWidget);
+      expect(find.text('Verificación adicional'), findsNothing);
       expect(session.value.mfaVerifiedAt, isNotNull);
     },
   );

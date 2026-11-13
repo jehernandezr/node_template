@@ -55,9 +55,13 @@ sealed class AccessRule {
   factory AccessRule.mfa(Duration maxAge) = _MfaRule;
 
   /// Allows sessions that satisfy every rule in [rules].
+  ///
+  /// [rules] cannot be empty: an empty list would allow everyone, anonymous
+  /// visitors included. Use [AccessRule.public] for that.
   factory AccessRule.all(List<AccessRule> rules) = _AllRule;
 
-  /// Allows sessions that satisfy at least one rule in [rules].
+  /// Allows sessions that satisfy at least one rule in [rules], which cannot
+  /// be empty.
   factory AccessRule.any(List<AccessRule> rules) = _AnyRule;
 
   /// Whether [session] satisfies this rule at [now] (default: the current time).
@@ -203,7 +207,9 @@ final class _MfaRule extends AccessRule {
 }
 
 final class _AllRule extends AccessRule {
-  _AllRule(List<AccessRule> rules) : rules = List.unmodifiable(rules);
+  _AllRule(List<AccessRule> rules)
+    : assert(rules.isNotEmpty, 'all needs at least one rule'),
+      rules = List.unmodifiable(rules);
 
   final List<AccessRule> rules;
 

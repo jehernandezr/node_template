@@ -1,8 +1,6 @@
 import 'package:contracts/contracts.dart';
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
-
-/// Message used when neither the caller nor the error gives one.
-const String defaultActionErrorMessage = 'Algo salió mal. Intenta de nuevo.';
 
 /// Shows [error] of a user action (save, delete, send...) in a [SnackBar].
 ///
@@ -22,7 +20,8 @@ const String defaultActionErrorMessage = 'Algo salió mal. Intenta de nuevo.';
 /// snack bar and returns true.
 ///
 /// The text is [message] when given; otherwise the `detail` (or `title`) of an
-/// `ApiErrorException`; otherwise [defaultActionErrorMessage]. The error code
+/// `ApiErrorException`; otherwise the localized `errorFallback` of
+/// [AppLocalizations]. The error code
 /// of an `ApiErrorException` is appended for support. Raw exception text is
 /// never shown.
 bool showActionError(BuildContext context, Object error, {String? message}) {
@@ -32,7 +31,10 @@ bool showActionError(BuildContext context, Object error, {String? message}) {
 
   final problem = error is ApiErrorException ? error.problem : null;
   final text =
-      message ?? problem?.detail ?? problem?.title ?? defaultActionErrorMessage;
+      message ??
+      problem?.detail ??
+      problem?.title ??
+      AppLocalizations.of(context).errorFallback;
   final code = problem?.code;
   messenger
     ..hideCurrentSnackBar()
@@ -41,3 +43,19 @@ bool showActionError(BuildContext context, Object error, {String? message}) {
     );
   return true;
 }
+
+/// Localized message for the failure of a user action.
+///
+/// An `ApiErrorException` gives the catalog message of its code, a
+/// `ContractViolationException` the generic invalid input message, and any
+/// other error (network, timeout...) the `errorFallback` text. Pair it with
+/// [showActionError] when the screen has no message of its own.
+String actionErrorMessage(AppLocalizations l10n, Object error) =>
+    switch (error) {
+      ApiErrorException(:final problem) => errorMessage(l10n, problem.code),
+      ContractViolationException(inResponse: false) => errorMessage(
+        l10n,
+        PlatformErrorCode.validationInvalidInput.code,
+      ),
+      _ => l10n.errorFallback,
+    };

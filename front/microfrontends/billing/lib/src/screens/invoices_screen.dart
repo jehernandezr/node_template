@@ -2,15 +2,14 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatMoney;
 
-import '../billing_labels.dart';
+import '../l10n/billing_labels.dart';
 import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
-import '../shared/utils/money_format.dart';
-import '../format/period_format.dart';
 import '../l10n/generated/billing_localizations.dart';
-import '../widgets/billing_colors.dart';
-import '../widgets/status_chip.dart';
+import 'widgets/billing_colors.dart';
+import 'widgets/status_chip.dart';
 
 /// `/billing/invoices`: list of invoices, newest first.
 class InvoicesScreen extends StatefulWidget {
@@ -107,7 +106,11 @@ class _InvoiceTile extends StatelessWidget {
                 Text(invoice.number, style: theme.textTheme.titleSmall),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  formatPeriod(l10n, invoice.period),
+                  formatPeriod(
+                    l10n,
+                    invoice.period,
+                    locale: localeTag(context),
+                  ),
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -117,7 +120,7 @@ class _InvoiceTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                formatMoney(invoice.total),
+                formatMoney(invoice.total, locale: localeTag(context)),
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: AppSpacing.sm),

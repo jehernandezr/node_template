@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'shell_event_bus.dart';
 import 'shell_services.dart';
 
 /// Object that holds resources for one identity, such as a repository with
@@ -21,12 +22,18 @@ abstract interface class ScopedResource {
 /// obtain an object; the first call creates it and later calls return the same
 /// instance until [dispose] runs (which happens when the identity changes).
 final class MicrofrontendScope {
-  /// Creates an empty scope over [services]. The runtime creates these.
-  MicrofrontendScope(ShellServices services) : _services = services;
+  /// Creates an empty scope over [services]. The runtime creates these and
+  /// passes its [eventBus]; without one, [emit] drops every event.
+  MicrofrontendScope(ShellServices services, {ShellEventBus? eventBus})
+    : _services = services,
+      // ignore: prefer_initializing_formals
+      _eventBus = eventBus;
 
   /// Services of the identity this scope belongs to.
   ShellServices get services => _services;
   final ShellServices _services;
+
+  final ShellEventBus? _eventBus;
 
   final List<_Entry> _entries = [];
   final Map<Type, _Entry> _byType = {};
@@ -34,6 +41,15 @@ final class MicrofrontendScope {
 
   /// Whether [dispose] has started. A disposed scope refuses [get].
   bool get isDisposed => _disposed;
+
+  /// Publishes [event] on the shell bus while this scope is alive.
+  ///
+  /// After [dispose] (the identity changed) the event is dropped silently, so
+  /// a screen or repository of the previous user cannot reach the next one.
+  void emit(ShellEvent event) {
+    if (_disposed) return;
+    _eventBus?.emit(event);
+  }
 
   /// Returns the single instance of [T], creating it with [create] on first use.
   ///

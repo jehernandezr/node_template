@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:contracts/contracts.dart';
+import 'package:i18n/i18n.dart';
 import 'package:ui/ui.dart';
 
 import '../support/pump.dart';
@@ -157,5 +158,24 @@ void main() {
     );
     expect(find.text('No se pudo cargar.'), findsOneWidget);
     expect(find.byType(SelectableText), findsNothing);
+  });
+
+  testWidgets('default labels follow the app locale', (tester) async {
+    await pumpApp(
+      tester,
+      ErrorView(
+        message: 'Failed.',
+        code: 'X.CODE',
+        traceId: 'trace-1',
+        onRetry: () {},
+      ),
+      locale: const Locale('en'),
+    );
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text('${l10n.errorCodeLabel}: X.CODE'), findsOneWidget);
+    expect(find.text('${l10n.errorTraceIdLabel}: trace-1'), findsOneWidget);
+    expect(find.text(l10n.actionRetry), findsOneWidget);
+    expect(find.text('Reintentar'), findsNothing);
   });
 }

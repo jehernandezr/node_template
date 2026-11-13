@@ -13,6 +13,8 @@ dependencies:
     path: ../contracts
   flutter:
     sdk: flutter
+  i18n:
+    path: ../i18n
   material_ui: ^1.11.0
   tokens:
     path: ../tokens

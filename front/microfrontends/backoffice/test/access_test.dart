@@ -131,7 +131,7 @@ void main() {
       expect(locationOf(router).queryParameters['from'], '/backoffice/sagas');
     });
 
-    testWidgets('a second factor older than 15 minutes steps up', (
+    testWidgets('a second factor older than the window steps up', (
       tester,
     ) async {
       final router = await pumpThroughShell(

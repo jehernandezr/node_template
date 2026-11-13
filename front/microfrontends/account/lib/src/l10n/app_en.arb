@@ -57,12 +57,6 @@
     }
   },
 
-  "stepUpTitle": "Confirm your identity",
-  "stepUpMessage": "This action is sensitive. Enter the code from your authenticator app to continue.",
-  "stepUpCodeLabel": "6-digit code",
-  "stepUpIncomplete": "Enter all 6 digits of the code.",
-  "stepUpInvalid": "The code is not valid. Try again.",
-
   "sessionsTitle": "Active sessions",
   "sessionCurrent": "Current",
   "sessionClose": "Close session",

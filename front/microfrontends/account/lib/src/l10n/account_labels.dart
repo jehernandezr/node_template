@@ -1,6 +1,6 @@
 import 'package:contracts/contracts.dart' show ClientPlatform, MfaFactor;
 
-import '../l10n/generated/account_localizations.dart';
+import 'generated/account_localizations.dart';
 
 /// Nombre de [platform] para mostrar.
 String platformLabel(AccountLocalizations l10n, ClientPlatform platform) =>

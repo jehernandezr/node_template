@@ -28,7 +28,12 @@ void main() {
   testWidgets('muestra cargando y luego las sesiones', (tester) async {
     final es = await loadEs();
     await tester.pumpWidget(
-      testApp(SessionsScreen(repository: FakeAccountRepository())),
+      testApp(
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: FakeAccountRepository(),
+        ),
+      ),
     );
     expect(find.byType(LoadingView), findsOneWidget);
     await tester.pumpAndSettle();
@@ -43,6 +48,7 @@ void main() {
     await tester.pumpWidget(
       testApp(
         SessionsScreen(
+          requestStepUp: approveStepUp,
           repository: FakeAccountRepository(delay: Duration.zero, sessions: []),
         ),
       ),
@@ -55,7 +61,10 @@ void main() {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: FakeAccountRepository(delay: Duration.zero),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -70,20 +79,16 @@ void main() {
     tester,
   ) async {
     final es = await loadEs();
-    final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: FakeAccountRepository(delay: Duration.zero),
+        ),
       ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text(es.sessionsCloseOthers));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byType(TextField),
-      FakeAccountRepository.validStepUpCode,
-    );
-    await tester.tap(find.text(shared.confirm));
     await tester.pumpAndSettle();
     expect(find.text('Safari en iPhone'), findsNothing);
     expect(find.text('App en Pixel 8'), findsNothing);
@@ -96,7 +101,12 @@ void main() {
   ) async {
     final shared = await loadSharedEs();
     await tester.pumpWidget(
-      testApp(SessionsScreen(repository: _FlakyRepository(failList: true))),
+      testApp(
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: _FlakyRepository(failList: true),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.byType(ErrorView), findsOneWidget);
@@ -112,7 +122,12 @@ void main() {
   ) async {
     final es = await loadEs();
     await tester.pumpWidget(
-      testApp(SessionsScreen(repository: _FlakyRepository(failRevoke: true))),
+      testApp(
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: _FlakyRepository(failRevoke: true),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text(es.sessionClose).first);
@@ -121,40 +136,73 @@ void main() {
     expect(find.text('Safari en iPhone'), findsOneWidget);
   });
 
-  testWidgets('con segundo factor reciente no pide el código', (tester) async {
+  testWidgets('con segundo factor reciente no pide el step-up', (tester) async {
     final es = await loadEs();
+    final stepUp = RecordingStepUp();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
+        SessionsScreen(
+          requestStepUp: stepUp.call,
+          repository: FakeAccountRepository(delay: Duration.zero),
+        ),
         session: testSession(mfaFresh: true),
       ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text(es.sessionsCloseOthers));
     await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsNothing);
+    expect(stepUp.calls, 0);
     expect(find.text('Safari en iPhone'), findsNothing);
     expect(find.text('Chrome en MacBook'), findsOneWidget);
   });
 
-  testWidgets('sin segundo factor reciente pide el código', (tester) async {
+  testWidgets('sin segundo factor reciente pide el step-up del shell', (
+    tester,
+  ) async {
     final es = await loadEs();
+    final stepUp = RecordingStepUp();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
+        SessionsScreen(
+          requestStepUp: stepUp.call,
+          repository: FakeAccountRepository(delay: Duration.zero),
+        ),
       ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text(es.sessionsCloseOthers));
     await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsOneWidget);
+    expect(stepUp.calls, 1);
+    expect(find.text('Safari en iPhone'), findsNothing);
+  });
+
+  testWidgets('si el step-up no se completa, no cierra nada', (tester) async {
+    final es = await loadEs();
+    final stepUp = RecordingStepUp(answer: false);
+    await tester.pumpWidget(
+      testApp(
+        SessionsScreen(
+          requestStepUp: stepUp.call,
+          repository: FakeAccountRepository(delay: Duration.zero),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(es.sessionsCloseOthers));
+    await tester.pumpAndSettle();
+    expect(stepUp.calls, 1);
+    expect(find.text('Safari en iPhone'), findsOneWidget);
+    expect(find.text('App en Pixel 8'), findsOneWidget);
   });
 
   testWidgets('los textos salen en inglés con el locale en', (tester) async {
     final en = await loadEn();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: FakeAccountRepository(delay: Duration.zero),
+        ),
         locale: const Locale('en'),
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/painting.dart' show Color;
 
-import '../shared/enums/billing_enums.dart';
+import '../../shared/enums/billing_enums.dart';
 
 /// Warning tone used by usage meters and pending states. Material 3 has no
 /// warning role, so it is fixed here.

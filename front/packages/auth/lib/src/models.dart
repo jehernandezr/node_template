@@ -1,4 +1,16 @@
+// Tipos y códigos de autenticación escritos a mano, todos en este archivo.
+//
+// Son provisionales: cuando el contrato `identity` traiga el flujo completo de
+// MFA (FE-03), este archivo se reemplaza por los tipos generados de
+// `package:contracts` (`SessionTokens`, `SignInResponse`, `PendingMfa`,
+// `MfaFactor`, `IdentityErrorCode`). El resto del paquete solo los toma de
+// aquí, así que el cambio queda acotado a este archivo, al puerto y a los
+// fakes.
+
 /// Tokens devueltos por un login exitoso o un refresh.
+///
+/// Solo viven en memoria: el puerto `TokenStore` guarda el session token y
+/// nunca el access token.
 final class AuthTokens {
   const AuthTokens({
     required this.accessToken,
@@ -67,3 +79,21 @@ final class AuthException implements Exception {
   String toString() =>
       'AuthException($code${message == null ? '' : ': $message'})';
 }
+
+/// Códigos que invalidan la sesión de forma definitiva cuando el refresh los devuelve.
+///
+/// Solo `IDENTITY.SESSION.REVOKED` existe hoy en el contrato; los demás son
+/// supuestos de la sección "Identidad" del plan y pasan a
+/// `Set<IdentityErrorCode>` con FE-03. Pueden sobreescribirse en el
+/// constructor de `SessionManager`.
+const defaultInvalidationCodes = <String>{
+  'IDENTITY.SESSION.REVOKED',
+  'IDENTITY.SESSION.REUSED',
+  'IDENTITY.TOKEN.REVOKED',
+  'IDENTITY.USER.SUSPENDED',
+  'IDENTITY.TENANT.SUSPENDED',
+};
+
+/// Código de [AuthException] cuando no hay sesión activa o la operación quedó
+/// anulada por un cierre de sesión.
+const signedOutErrorCode = 'AUTH.SIGNED_OUT';

@@ -2,15 +2,14 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatMoney;
 
-import '../billing_labels.dart';
+import '../l10n/billing_labels.dart';
 import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
-import '../shared/utils/money_format.dart';
-import '../format/period_format.dart';
 import '../l10n/generated/billing_localizations.dart';
-import '../widgets/billing_colors.dart';
-import '../widgets/status_chip.dart';
+import 'widgets/billing_colors.dart';
+import 'widgets/status_chip.dart';
 
 /// `/billing/invoices/:id`: invoice header, its charges and a download
 /// placeholder.
@@ -116,7 +115,7 @@ class _InvoiceContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '${l10n.invoicePeriod}: ${formatPeriod(l10n, invoice.period)}',
+                '${l10n.invoicePeriod}: ${formatPeriod(l10n, invoice.period, locale: localeTag(context))}',
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -145,7 +144,9 @@ class _InvoiceContent extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Text(formatMoney(line.amount)),
+                      Text(
+                        formatMoney(line.amount, locale: localeTag(context)),
+                      ),
                     ],
                   ),
                 ),
@@ -156,7 +157,7 @@ class _InvoiceContent extends StatelessWidget {
                     child: Text(l10n.total, style: theme.textTheme.titleSmall),
                   ),
                   Text(
-                    formatMoney(invoice.total),
+                    formatMoney(invoice.total, locale: localeTag(context)),
                     style: theme.textTheme.titleSmall,
                   ),
                 ],

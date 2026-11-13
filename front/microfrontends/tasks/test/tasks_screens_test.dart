@@ -4,8 +4,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';
 import 'package:mf_tasks/src/screens/screens.dart';
+import 'package:mf_tasks/src/shared/constants/tasks_pagination.dart';
 import 'package:mf_tasks/src/shared/enums/task_status.dart';
 import 'package:mf_tasks/src/shared/types/task.dart';
+import 'package:ui/ui.dart';
 
 import 'support.dart';
 
@@ -398,4 +400,66 @@ void main() {
     expect(find.byType(TaskFormScreen), findsOneWidget);
     expect(find.byType(SnackBar), findsOneWidget);
   });
+
+  testWidgets(
+    'a contract violation on save shows the field error and frees the button',
+    (tester) async {
+      final repository = FakeTasksRepository(delay: Duration.zero, seed: _seed);
+      await pumpTasks(tester, repository, location: '/tasks/new');
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Nueva');
+      repository.failNext(
+        ContractViolationException(
+          routeId: 'tasks.create',
+          errors: [
+            FieldError(
+              field: 'title',
+              code: PlatformErrorCode.validationTooLong.code,
+            ),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskFormScreen), findsOneWidget);
+      expect(find.text('El valor es demasiado largo.'), findsOneWidget);
+      final button = tester.widget<AppButton>(find.byType(AppButton));
+      expect(button.loading, isFalse);
+    },
+  );
+
+  testWidgets('a network failure while loading more frees the list', (
+    tester,
+  ) async {
+    final repository = FakeTasksRepository(
+      delay: Duration.zero,
+      seed: [
+        for (var i = 0; i < tasksPageSize + 5; i++)
+          TaskDraft(
+            title: 'Tarea $i',
+            description: '',
+            status: TaskStatus.open,
+          ),
+      ],
+    );
+    await pumpTasks(tester, repository);
+    await tester.pumpAndSettle();
+
+    final loadMore = find.text('Cargar más');
+    await scrollListTo(tester, loadMore);
+    repository.failNext(const SocketLikeException());
+    await tester.tap(loadMore);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SnackBar), findsOneWidget);
+    // The button is back: the list is not stuck loading.
+    expect(find.text('Cargar más'), findsOneWidget);
+  });
+}
+
+/// Stand-in for the transport's network error.
+final class SocketLikeException implements Exception {
+  const SocketLikeException();
 }

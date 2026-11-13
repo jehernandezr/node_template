@@ -7,9 +7,11 @@
 //
 // Es un script independiente (sin pubspec): solo usa `dart:*`. Falla con
 // código 1 cuando:
-//   1. `main.dart.js.map` lista fuentes de
-//      `microfrontends/<mf>/lib/src/{data,screens,l10n}`: ese código debe
-//      vivir solo en chunks diferidos.
+//   1. `main.dart.js.map` lista fuentes de `microfrontends/<mf>/lib/src/`
+//      fuera de las carpetas que el manifiesto puede cargar de entrada
+//      (`shared/constants`, `shared/enums` y `lifecycle`). Todo lo demás
+//      (pantallas, datos, textos, widgets, utilidades) debe vivir solo en
+//      chunks diferidos, aunque esté en una carpeta nueva.
 //   2. algún texto de los ARB del backoffice aparece en `main.dart.js`.
 //
 // Opciones:
@@ -26,7 +28,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-const _forbiddenSourceDirs = ['data', 'screens', 'l10n'];
+/// Carpetas de `lib/src/` de un microfrontend que pueden ir en el bundle
+/// inicial: lo que el manifiesto y el ciclo de vida necesitan al arrancar.
+const _eagerSourceDirs = ['shared/constants/', 'shared/enums/', 'lifecycle/'];
 
 void main(List<String> args) {
   final options = _Options.parse(args);
@@ -70,15 +74,16 @@ void main(List<String> args) {
   if (sourceViolations.isNotEmpty) {
     stderr.writeln(
       'FALLO 1: main.dart.js.map incluye ${sourceViolations.length} fuentes '
-      'de microfrontends/*/lib/src/{${_forbiddenSourceDirs.join(',')}} '
-      'en el bundle inicial:',
+      'de microfrontends/*/lib/src/ fuera de '
+      '{${_eagerSourceDirs.join(',')}} en el bundle inicial:',
     );
     for (final s in sourceViolations) {
       stderr.writeln('  - $s');
     }
     stderr.writeln(
       '  Causa probable: un import no diferido (sin `deferred as`) hacia '
-      'esos archivos, directo o transitivo desde apps/web/lib/main.dart.',
+      'esos archivos, directo o transitivo desde apps/web/lib/main.dart. '
+      'Si el manifiesto los necesita, van en shared/constants o shared/enums.',
     );
     stderr.writeln('');
   }
@@ -95,27 +100,34 @@ void main(List<String> args) {
   exit(1);
 }
 
-/// Fuentes del mapa del bundle inicial dentro de las carpetas prohibidas.
+/// Fuentes del mapa del bundle inicial bajo `lib/src/` de un microfrontend y
+/// fuera de [_eagerSourceDirs].
 List<String> _checkSourceMap(File mapFile) {
   final map = jsonDecode(mapFile.readAsStringSync()) as Map<String, dynamic>;
   final sources = (map['sources'] as List).cast<String>();
-  // Cubre rutas relativas (`../../microfrontends/x/lib/src/data/a.dart`) y
-  // `package:mf_x/src/data/a.dart`.
-  final byPath = RegExp(
-    r'microfrontends/[^/]+/lib/src/(' + _forbiddenSourceDirs.join('|') + r')/',
-  );
-  final byPackage = RegExp(
-    r'package:mf_[^/]+/src/(' + _forbiddenSourceDirs.join('|') + r')/',
-  );
   final found = <String>[
     for (final s in sources)
-      if (byPath.hasMatch(s) || byPackage.hasMatch(s)) s,
+      if (isForbiddenEagerSource(s)) s,
   ]..sort();
   stdout.writeln(
     'Mapa de fuentes: ${sources.length} fuentes, '
     '${found.length} prohibidas.',
   );
   return found;
+}
+
+// Cubre rutas relativas (`../../microfrontends/x/lib/src/data/a.dart`) y
+// `package:mf_x/src/data/a.dart`.
+final _byPath = RegExp(r'microfrontends/[^/]+/lib/src/(.+)$');
+final _byPackage = RegExp(r'package:mf_[^/]+/src/(.+)$');
+
+/// Si [source] es código de `lib/src/` de un microfrontend que no puede ir en
+/// el bundle inicial.
+bool isForbiddenEagerSource(String source) {
+  final match = _byPath.firstMatch(source) ?? _byPackage.firstMatch(source);
+  if (match == null) return false;
+  final rest = match.group(1)!;
+  return !_eagerSourceDirs.any(rest.startsWith);
 }
 
 class _ArbText {

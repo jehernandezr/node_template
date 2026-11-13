@@ -216,36 +216,6 @@ abstract class AccountLocalizations {
   /// **'Última actividad: {dateTime}'**
   String lastSeenLabel(String dateTime);
 
-  /// No description provided for @stepUpTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Confirma tu identidad'**
-  String get stepUpTitle;
-
-  /// No description provided for @stepUpMessage.
-  ///
-  /// In es, this message translates to:
-  /// **'Esta acción es sensible. Ingresa el código de tu app de autenticación para continuar.'**
-  String get stepUpMessage;
-
-  /// No description provided for @stepUpCodeLabel.
-  ///
-  /// In es, this message translates to:
-  /// **'Código de 6 dígitos'**
-  String get stepUpCodeLabel;
-
-  /// No description provided for @stepUpIncomplete.
-  ///
-  /// In es, this message translates to:
-  /// **'Ingresa los 6 dígitos del código.'**
-  String get stepUpIncomplete;
-
-  /// No description provided for @stepUpInvalid.
-  ///
-  /// In es, this message translates to:
-  /// **'El código no es válido. Intenta de nuevo.'**
-  String get stepUpInvalid;
-
   /// No description provided for @sessionsTitle.
   ///
   /// In es, this message translates to:

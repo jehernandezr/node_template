@@ -200,8 +200,7 @@ void main() {
         registry: registry,
         platform: AppPlatform.web,
         session: session,
-        servicesFactory: (identity) =>
-            DefaultShellServices(session: identity, eventBus: ShellEventBus()),
+        servicesFactory: (identity) => DefaultShellServices(session: identity),
         lifecycleRetryDelay: (count) {
           failures.add(count);
           return const Duration(milliseconds: 5);
@@ -241,10 +240,8 @@ void main() {
           registry: registry,
           platform: AppPlatform.web,
           session: session,
-          servicesFactory: (identity) => DefaultShellServices(
-            session: identity,
-            eventBus: ShellEventBus(),
-          ),
+          servicesFactory: (identity) =>
+              DefaultShellServices(session: identity),
           lifecycleRetryDelay: (_) => const Duration(hours: 1),
         );
         addTearDown(runtime.dispose);
@@ -277,7 +274,7 @@ void main() {
     test('the scope disposes resources it created, in reverse order', () async {
       final log = <String>[];
       final scope = MicrofrontendScope(
-        DefaultShellServices(session: _user('u1'), eventBus: ShellEventBus()),
+        DefaultShellServices(session: _user('u1')),
       );
       scope.get<_Resource>((_) => _Resource(log, 'first'));
       scope.get<Object>((_) => Object());
@@ -291,7 +288,7 @@ void main() {
     test('an explicit dispose callback wins over ScopedResource', () async {
       final log = <String>[];
       final scope = MicrofrontendScope(
-        DefaultShellServices(session: _user('u1'), eventBus: ShellEventBus()),
+        DefaultShellServices(session: _user('u1')),
       );
       scope.get<_Resource>(
         (_) => _Resource(log, 'auto'),
@@ -329,7 +326,7 @@ void main() {
         final errors = _captureErrors();
         final log = <String>[];
         final scope = MicrofrontendScope(
-          DefaultShellServices(session: _user('u1'), eventBus: ShellEventBus()),
+          DefaultShellServices(session: _user('u1')),
         );
         scope.get<_Resource>((_) => _Resource(log, 'ok'));
         scope.get<_Broken>((_) => _Broken());

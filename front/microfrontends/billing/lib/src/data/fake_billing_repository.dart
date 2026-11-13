@@ -20,37 +20,40 @@ base class FakeBillingRepository implements BillingRepository {
     if (error != null) throw error;
   }
 
-  static const _catalog = <Plan>[
+  static final _cop = Currency.cop.code;
+  static final _usd = Currency.usd.code;
+
+  static final _catalog = <Plan>[
     Plan(
       id: 'inicio',
       name: 'Inicio',
-      price: Money(amountMinor: 49900, currency: Currency.cop),
+      price: MoneyAmount(amountMinor: 49900, currency: _cop),
       periodicity: PlanPeriodicity.monthly,
       quotas: [
-        Quota(key: 'users', label: 'Usuarios', limit: 5),
-        Quota(key: 'api_calls', label: 'Llamadas API', limit: 10000),
+        Quota(key: QuotaKey.users, limit: 5),
+        Quota(key: QuotaKey.apiCalls, limit: 10000),
       ],
     ),
     Plan(
       id: 'pro',
       name: 'Pro',
-      price: Money(amountMinor: 189000, currency: Currency.cop),
+      price: MoneyAmount(amountMinor: 189000, currency: _cop),
       periodicity: PlanPeriodicity.monthly,
       quotas: [
-        Quota(key: 'users', label: 'Usuarios', limit: 25),
-        Quota(key: 'api_calls', label: 'Llamadas API', limit: 100000),
-        Quota(key: 'storage_gb', label: 'Almacenamiento (GB)', limit: 50),
+        Quota(key: QuotaKey.users, limit: 25),
+        Quota(key: QuotaKey.apiCalls, limit: 100000),
+        Quota(key: QuotaKey.storageGb, limit: 50),
       ],
     ),
     Plan(
       id: 'empresa',
       name: 'Empresa',
-      price: Money(amountMinor: 110000, currency: Currency.usd),
+      price: MoneyAmount(amountMinor: 110000, currency: _usd),
       periodicity: PlanPeriodicity.annual,
       quotas: [
-        Quota(key: 'users', label: 'Usuarios', limit: 200),
-        Quota(key: 'api_calls', label: 'Llamadas API', limit: 1000000),
-        Quota(key: 'storage_gb', label: 'Almacenamiento (GB)', limit: 500),
+        Quota(key: QuotaKey.users, limit: 200),
+        Quota(key: QuotaKey.apiCalls, limit: 1000000),
+        Quota(key: QuotaKey.storageGb, limit: 500),
       ],
     ),
   ];
@@ -65,10 +68,10 @@ base class FakeBillingRepository implements BillingRepository {
     ),
   );
 
-  final Map<String, int> _usedByQuota = {
-    'users': 20,
-    'api_calls': 4200,
-    'storage_gb': 50,
+  final Map<QuotaKey, int> _usedByQuota = {
+    QuotaKey.users: 20,
+    QuotaKey.apiCalls: 4200,
+    QuotaKey.storageGb: 50,
   };
 
   late final List<Invoice> _invoices = [
@@ -77,16 +80,16 @@ base class FakeBillingRepository implements BillingRepository {
       number: 'FAC-2026-0011',
       month: 11,
       status: InvoiceStatus.draft,
-      lines: const [
+      lines: [
         InvoiceLine(
           kind: InvoiceLineKind.fixedFee,
           description: 'Plan Pro',
-          amount: Money(amountMinor: 189000, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 189000, currency: _cop),
         ),
         InvoiceLine(
           kind: InvoiceLineKind.usage,
           description: 'Usuarios adicionales (3)',
-          amount: Money(amountMinor: 36000, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 36000, currency: _cop),
         ),
       ],
     ),
@@ -95,16 +98,16 @@ base class FakeBillingRepository implements BillingRepository {
       number: 'FAC-2026-0010',
       month: 10,
       status: InvoiceStatus.issued,
-      lines: const [
+      lines: [
         InvoiceLine(
           kind: InvoiceLineKind.fixedFee,
           description: 'Plan Pro',
-          amount: Money(amountMinor: 189000, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 189000, currency: _cop),
         ),
         InvoiceLine(
           kind: InvoiceLineKind.usage,
           description: 'Llamadas API excedentes',
-          amount: Money(amountMinor: 12500, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 12500, currency: _cop),
         ),
       ],
     ),
@@ -113,11 +116,11 @@ base class FakeBillingRepository implements BillingRepository {
       number: 'FAC-2026-0009',
       month: 9,
       status: InvoiceStatus.paid,
-      lines: const [
+      lines: [
         InvoiceLine(
           kind: InvoiceLineKind.fixedFee,
           description: 'Plan Pro',
-          amount: Money(amountMinor: 189000, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 189000, currency: _cop),
         ),
       ],
     ),
@@ -126,16 +129,16 @@ base class FakeBillingRepository implements BillingRepository {
       number: 'FAC-2026-0008',
       month: 8,
       status: InvoiceStatus.failed,
-      lines: const [
+      lines: [
         InvoiceLine(
           kind: InvoiceLineKind.fixedFee,
           description: 'Plan Pro',
-          amount: Money(amountMinor: 189000, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 189000, currency: _cop),
         ),
         InvoiceLine(
           kind: InvoiceLineKind.usage,
           description: 'Almacenamiento adicional (GB)',
-          amount: Money(amountMinor: 24000, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 24000, currency: _cop),
         ),
       ],
     ),
@@ -144,11 +147,11 @@ base class FakeBillingRepository implements BillingRepository {
       number: 'FAC-2026-0007',
       month: 7,
       status: InvoiceStatus.voided,
-      lines: const [
+      lines: [
         InvoiceLine(
           kind: InvoiceLineKind.fixedFee,
           description: 'Plan Inicio',
-          amount: Money(amountMinor: 49900, currency: Currency.cop),
+          amount: MoneyAmount(amountMinor: 49900, currency: _cop),
         ),
       ],
     ),

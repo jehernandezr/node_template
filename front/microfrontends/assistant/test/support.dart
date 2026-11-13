@@ -61,10 +61,7 @@ UserSession readerSession() => UserSession(
 
 /// Scope of one identity. Each call is a new identity with no objects yet.
 MicrofrontendScope newScope({UserSession? session}) => MicrofrontendScope(
-  DefaultShellServices(
-    session: session ?? writerSession(),
-    eventBus: ShellEventBus(),
-  ),
+  DefaultShellServices(session: session ?? writerSession()),
 );
 
 /// Scope whose assistant repository is [repository].

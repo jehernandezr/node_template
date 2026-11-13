@@ -32,9 +32,6 @@ abstract interface class AccountRepository implements ScopedResource {
   /// Genera códigos de recuperación nuevos; invalida los anteriores.
   Future<List<String>> regenerateRecoveryCodes();
 
-  /// Valida el código del paso adicional de MFA.
-  Future<bool> verifyStepUpCode(String code);
-
   Future<List<Agreement>> listPendingAgreements();
 
   Future<List<Agreement>> listAcceptedAgreements();

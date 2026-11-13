@@ -84,9 +84,6 @@ class ApiAccountRepository implements AccountRepository {
       pending.regenerateRecoveryCodes();
 
   @override
-  Future<bool> verifyStepUpCode(String code) => pending.verifyStepUpCode(code);
-
-  @override
   Future<List<Agreement>> listPendingAgreements() =>
       pending.listPendingAgreements();
 

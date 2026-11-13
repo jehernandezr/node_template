@@ -14,11 +14,18 @@ typedef AccessTokenProvider = Future<String?> Function();
 /// with the same field errors the server would return, and the transport is
 /// never called. Error answers become [ApiErrorException] and successful
 /// answers are validated and decoded into the generated response type.
+///
+/// A route that requires a session fails with
+/// `PLATFORM.AUTH.UNAUTHENTICATED` before reaching the network when there is
+/// no access token. An `IDENTITY.TOKEN.STALE_PERMISSIONS` answer runs
+/// [onStalePermissions] (the shell refreshes the session there) and retries
+/// the request once with the new token.
 class ApiClient {
   ApiClient({
     required this.transport,
     required this.baseUri,
     this.accessToken,
+    this.onStalePermissions,
     this.defaultHeaders = const {},
   });
 
@@ -30,6 +37,10 @@ class ApiClient {
 
   /// Source of the access token for routes that need a session.
   final AccessTokenProvider? accessToken;
+
+  /// Refreshes the session after the API reports stale permissions. When
+  /// null, that answer is thrown as any other [ApiErrorException].
+  final Future<void> Function()? onStalePermissions;
 
   /// Headers added to every request, for example `accept-language`.
   final Map<String, String> defaultHeaders;
@@ -48,27 +59,17 @@ class ApiClient {
       throw ContractViolationException(routeId: route.id, errors: errors);
     }
 
-    final headers = <String, String>{
-      'accept': 'application/json, application/problem+json',
-      ...defaultHeaders,
-    };
-    if (route.requiresAuth) {
-      final token = await accessToken?.call();
-      if (token != null) headers['authorization'] = 'Bearer $token';
-    }
     final (uri, body) = _encode(route, json);
-    if (body != null) headers['content-type'] = 'application/json';
+    var response = await _dispatch(route, uri, body);
+    final refresh = onStalePermissions;
+    if (refresh != null &&
+        route.requiresAuth &&
+        _isStalePermissions(response)) {
+      await refresh();
+      response = await _dispatch(route, uri, body);
+    }
 
-    final response = await transport.send(
-      TransportRequest(
-        method: route.method.wireCode,
-        uri: uri,
-        headers: headers,
-        body: body,
-      ),
-    );
-
-    if (response.statusCode < 200 || response.statusCode > 299) {
+    if (!_isSuccess(response)) {
       throw ApiErrorException(_problemOf(response));
     }
     final decode = route.decodeResponse;
@@ -101,6 +102,49 @@ class ApiClient {
     }
     return decode(decoded);
   }
+
+  /// Sends one attempt of [route], adding the token when the route needs it.
+  Future<TransportResponse> _dispatch<Req, Res>(
+    RouteDescriptor<Req, Res> route,
+    Uri uri,
+    String? body,
+  ) async {
+    final headers = <String, String>{
+      'accept': 'application/json, application/problem+json',
+      ...defaultHeaders,
+    };
+    if (route.requiresAuth) {
+      final token = await accessToken?.call();
+      if (token == null) {
+        throw ApiErrorException(
+          ProblemDetails(
+            type: 'about:blank',
+            title: 'Unauthenticated',
+            status: PlatformErrorCode.authUnauthenticated.httpStatus,
+            code: PlatformErrorCode.authUnauthenticated.code,
+          ),
+        );
+      }
+      headers['authorization'] = 'Bearer $token';
+    }
+    if (body != null) headers['content-type'] = 'application/json';
+    return transport.send(
+      TransportRequest(
+        method: route.method.wireCode,
+        uri: uri,
+        headers: headers,
+        body: body,
+      ),
+    );
+  }
+
+  static bool _isSuccess(TransportResponse response) =>
+      response.statusCode >= 200 && response.statusCode <= 299;
+
+  bool _isStalePermissions(TransportResponse response) =>
+      !_isSuccess(response) &&
+      IdentityErrorCode.fromCode(_problemOf(response).code) ==
+          IdentityErrorCode.tokenStalePermissions;
 
   (Uri, String?) _encode<Req, Res>(
     RouteDescriptor<Req, Res> route,

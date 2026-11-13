@@ -1,5 +1,4 @@
-import 'package:contracts/contracts.dart';
-import 'package:i18n/i18n.dart' show AppLocalizations, errorMessage;
+import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
@@ -10,7 +9,6 @@ import '../l10n/generated/backoffice_localizations.dart';
 import '../shared/constants/backoffice_access.dart';
 import '../shared/enums/backoffice_enums.dart';
 import '../shared/types/backoffice_types.dart';
-import '../shared/utils/format_timestamp.dart';
 import 'widgets.dart';
 
 /// Saga detail: step timeline, manual actions (each with a reason) and audit.
@@ -59,13 +57,14 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
         action: action,
         reason: reason,
       );
-    } on ApiErrorException catch (error) {
+    } on Exception catch (error) {
+      // API, contract or network.
       if (!mounted) return;
       final shared = AppLocalizations.of(context);
       showActionError(
         context,
         error,
-        message: errorMessage(shared, error.problem.code),
+        message: actionErrorMessage(shared, error),
       );
       return;
     }
@@ -118,7 +117,7 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
                       '${l10n.sagaCurrentStep}: ${saga.currentOperation ?? '-'}',
                     ),
                     Text(
-                      '${l10n.sagaUpdated}: ${formatTimestamp(saga.updatedAt)}',
+                      '${l10n.sagaUpdated}: ${formatTimestamp(context, saga.updatedAt)}',
                     ),
                     SelectableText(
                       '${l10n.traceId}: ${saga.traceId}',

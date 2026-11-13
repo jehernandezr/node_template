@@ -1,3 +1,4 @@
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Builds a page whose library loads on demand. Passed to manifest route builders.
@@ -33,8 +34,10 @@ void resetDeferredPageCache() => _libraryLoads.clear();
 /// Shows [loading] (or nothing) until [loadLibrary] completes, then [builder].
 ///
 /// If the load fails, [errorBuilder] is shown instead; its `retry` callback loads
-/// the library again. The default error view shows the error text and a Retry
-/// button.
+/// the library again. Shells pass their own. The default error view shows the
+/// localized `errorFallback` text and an `actionRetry` button from
+/// [AppLocalizations] (only a retry icon when those texts are not in the tree);
+/// it never shows the raw error.
 ///
 /// Each library loads once per app run, however many pages use it.
 Widget deferredPage({
@@ -91,7 +94,7 @@ class _DeferredPageState extends State<_DeferredPage> {
         final error = snapshot.error!;
         final errorBuilder = widget.errorBuilder;
         if (errorBuilder != null) return errorBuilder(error, _retry);
-        return _DefaultLoadError(error: error, retry: _retry);
+        return _DefaultLoadError(retry: _retry);
       }
       if (snapshot.connectionState != ConnectionState.done) {
         return widget.loading ?? const SizedBox.shrink();
@@ -102,19 +105,26 @@ class _DeferredPageState extends State<_DeferredPage> {
 }
 
 final class _DefaultLoadError extends StatelessWidget {
-  const _DefaultLoadError({required this.error, required this.retry});
+  const _DefaultLoadError({required this.retry});
 
-  final Object error;
   final VoidCallback retry;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('$error', textAlign: TextAlign.center),
-        TextButton(onPressed: retry, child: const Text('Retry')),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    if (l10n == null) {
+      return Center(
+        child: TextButton(onPressed: retry, child: const Icon(Icons.refresh)),
+      );
+    }
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(l10n.errorFallback, textAlign: TextAlign.center),
+          TextButton(onPressed: retry, child: Text(l10n.actionRetry)),
+        ],
+      ),
+    );
+  }
 }

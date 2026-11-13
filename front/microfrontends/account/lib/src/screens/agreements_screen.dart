@@ -2,14 +2,14 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatDate;
 
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
 import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
-import '../shared/utils/account_format.dart';
 import '../shared/utils/account_paths.dart';
-import '../widgets/account_widgets.dart';
+import 'widgets/account_widgets.dart';
 
 typedef _Agreements = ({List<Agreement> pending, List<Agreement> accepted});
 
@@ -147,7 +147,7 @@ class _AgreementsScreenState extends State<AgreementsScreen> {
     final grace = agreement.graceUntil;
     final base = '${l10n.versionLabel(agreement.version)} · $kind';
     if (grace == null) return base;
-    return '$base · ${l10n.deadlineLabel(formatDate(grace))}';
+    return '$base · ${l10n.deadlineLabel(formatDate(grace, locale: localeTag(context)))}';
   }
 
   String _acceptedDetail(BuildContext context, Agreement agreement) {
@@ -155,6 +155,6 @@ class _AgreementsScreenState extends State<AgreementsScreen> {
     final at = agreement.acceptedAt;
     final base = l10n.versionLabel(agreement.version);
     if (at == null) return base;
-    return '$base · ${l10n.acceptedOnLabel(formatDate(at))}';
+    return '$base · ${l10n.acceptedOnLabel(formatDate(at, locale: localeTag(context)))}';
   }
 }

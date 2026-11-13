@@ -33,6 +33,15 @@ class BillingLocalizationsEs extends BillingLocalizations {
   String get usageTitle => 'Uso del periodo';
 
   @override
+  String get quotaUsers => 'Usuarios';
+
+  @override
+  String get quotaApiCalls => 'Llamadas API';
+
+  @override
+  String get quotaStorageGb => 'Almacenamiento (GB)';
+
+  @override
   String get noQuotas => 'Este plan no tiene cuotas medidas.';
 
   @override
@@ -135,40 +144,4 @@ class BillingLocalizationsEs extends BillingLocalizations {
   String periodRange(String start, String end) {
     return '$start a $end';
   }
-
-  @override
-  String get monthJan => 'ene';
-
-  @override
-  String get monthFeb => 'feb';
-
-  @override
-  String get monthMar => 'mar';
-
-  @override
-  String get monthApr => 'abr';
-
-  @override
-  String get monthMay => 'may';
-
-  @override
-  String get monthJun => 'jun';
-
-  @override
-  String get monthJul => 'jul';
-
-  @override
-  String get monthAug => 'ago';
-
-  @override
-  String get monthSep => 'sep';
-
-  @override
-  String get monthOct => 'oct';
-
-  @override
-  String get monthNov => 'nov';
-
-  @override
-  String get monthDec => 'dic';
 }

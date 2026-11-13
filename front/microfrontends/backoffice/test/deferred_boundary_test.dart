@@ -74,7 +74,8 @@ void main() {
     expect(graph.files, contains('mf_backoffice.dart'));
   });
 
-  test('the eager graph only adds shared constants and shell_core', () {
+  test('the eager graph only adds shared constants, shell_core and the '
+      'contract constants', () {
     expect(
       graph.files,
       unorderedEquals([
@@ -83,7 +84,10 @@ void main() {
         'src/shared/constants/backoffice_paths.dart',
       ]),
     );
-    expect(graph.packages, {'package:shell_core/shell_core.dart'});
+    expect(graph.packages, {
+      'package:contracts/contracts.dart',
+      'package:shell_core/shell_core.dart',
+    });
   });
 
   test('the screens library is the only deferred import', () {

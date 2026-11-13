@@ -54,7 +54,6 @@ UserSession tenantUser() => UserSession(
 MicrofrontendScope newScope([UserSession? session]) => MicrofrontendScope(
   DefaultShellServices(
     session: session ?? platformUser({PlatformRole.superAdmin}),
-    eventBus: ShellEventBus(),
   ),
 );
 
@@ -144,8 +143,7 @@ Future<GoRouter> pumpThroughShell(
     platform: AppPlatform.web,
     session: source,
     clock: testClock,
-    servicesFactory: (identity) =>
-        DefaultShellServices(session: identity, eventBus: runtime.eventBus),
+    servicesFactory: (identity) => DefaultShellServices(session: identity),
   );
   final router = buildShellRouter(
     registry: registry,

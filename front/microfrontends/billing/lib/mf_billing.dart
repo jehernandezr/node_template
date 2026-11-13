@@ -3,7 +3,7 @@ library;
 
 import 'package:shell_core/shell_core.dart';
 
-import 'src/billing_access.dart';
+import 'src/shared/constants/billing_access.dart';
 import 'src/screens/billing_screens.dart' deferred as screens;
 
 /// Manifest registered by the shells. Routes live under `/billing`.

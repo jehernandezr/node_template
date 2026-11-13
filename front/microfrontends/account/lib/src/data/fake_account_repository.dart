@@ -33,9 +33,6 @@ class FakeAccountRepository implements AccountRepository {
        _pending = List.of(pendingAgreements ?? _samplePending()),
        _accepted = List.of(acceptedAgreements ?? _sampleAccepted());
 
-  /// Código que este repositorio acepta en el paso adicional de MFA.
-  static const String validStepUpCode = '123456';
-
   /// Ids de las sesiones de ejemplo: la actual, iPhone y Pixel.
   static const List<String> sampleSessionIds = _sessionIds;
 
@@ -112,10 +109,6 @@ class FakeAccountRepository implements AccountRepository {
   Future<List<String>> regenerateRecoveryCodes() => _respond(
     () => List.generate(8, (index) => 'AB${100 + index}-CD${200 + index}'),
   );
-
-  @override
-  Future<bool> verifyStepUpCode(String code) =>
-      _respond(() => code == validStepUpCode);
 
   @override
   Future<List<Agreement>> listPendingAgreements() =>

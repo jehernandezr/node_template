@@ -244,6 +244,26 @@ void main() {
   });
 
   group('lifecycle', () {
+    testWidgets('a network error on deny shows the localized snackbar', (
+      tester,
+    ) async {
+      final repo = _ControlledRepository()
+        ..onDeny = (_) async => throw const _OfflineException();
+      await _pump(tester, repo);
+      repo.source.add(challenge);
+      await settle(tester);
+
+      await tester.tap(find.text(_es.denyButton));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(_es.denyConfirm));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(_es.denyFailed), findsOneWidget);
+      expect(find.text(_es.denyButton), findsOneWidget);
+    });
+
     testWidgets('removing the screen cancels the subscription and ticker', (
       tester,
     ) async {
@@ -284,3 +304,7 @@ void main() {
 FakeVerifierRepository scopeRepository(MicrofrontendScope scope) =>
     (buildVerifierScreen(scope) as VerifierScreen).repository
         as FakeVerifierRepository;
+
+final class _OfflineException implements Exception {
+  const _OfflineException();
+}

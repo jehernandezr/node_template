@@ -7,7 +7,10 @@ import 'transport.dart';
 /// Mantiene viva una conexión de tiempo real.
 ///
 /// Reconecta con [RealtimeBackoff] pasando el último id recibido, descarta los
-/// eventos cuyo id ya se vio y publica estados y eventos en streams.
+/// eventos cuyo id ya se vio y publica estados y eventos en streams. Una
+/// conexión cuenta como conectada cuando el transporte confirma la apertura o
+/// llega su primer evento. Los errores del transporte se publican en [errors]
+/// antes de reconectar.
 class RealtimeClient {
   RealtimeClient(
     this._transport, {
@@ -23,12 +26,17 @@ class RealtimeClient {
 
   final _events = StreamController<RealtimeEvent>.broadcast();
   final _statuses = StreamController<RealtimeStatus>.broadcast();
+  final _errors = StreamController<RealtimeError>.broadcast();
   final _seenIds = <String>{};
   RealtimeStatus _status = RealtimeStatus.disconnected;
   String? _lastEventId;
   StreamSubscription<RealtimeEvent>? _subscription;
   Timer? _reconnectTimer;
   int _consecutiveFailures = 0;
+
+  /// Incrementa en cada intento de conexión, para ignorar avisos de intentos
+  /// anteriores.
+  int _attempt = 0;
   bool _started = false;
   bool _everConnected = false;
   bool _disposed = false;
@@ -42,6 +50,10 @@ class RealtimeClient {
 
   /// Cambios de estado. Solo emite cuando el estado cambia.
   Stream<RealtimeStatus> get statuses => _statuses.stream;
+
+  /// Errores del transporte: una conexión que no se pudo abrir o que se cayó
+  /// con error. El cliente reconecta igual.
+  Stream<RealtimeError> get errors => _errors.stream;
 
   /// Eventos de un [type] concreto.
   Stream<RealtimeEvent> subscribe(String type) =>
@@ -68,33 +80,52 @@ class RealtimeClient {
     _setStatus(RealtimeStatus.disconnected);
     await _events.close();
     await _statuses.close();
+    await _errors.close();
   }
 
   void _open() {
     _reconnectTimer = null;
+    final attempt = ++_attempt;
     _setStatus(
       _everConnected ? RealtimeStatus.reconnecting : RealtimeStatus.connecting,
     );
     try {
-      final stream = _transport.connect(lastEventId: _lastEventId);
+      final stream = _transport.connect(
+        lastEventId: _lastEventId,
+        onOpen: () => _onOpened(attempt),
+      );
       _subscription = stream.listen(
-        _onEvent,
-        onError: (_, _) => _onDropped(),
+        (event) => _onEvent(attempt, event),
+        onError: (Object error, StackTrace stack) {
+          _reportError(error, stack);
+          _onDropped();
+        },
         onDone: _onDropped,
         cancelOnError: true,
       );
-      _everConnected = true;
-      _setStatus(RealtimeStatus.connected);
-    } catch (_) {
+    } catch (error, stack) {
+      _reportError(error, stack);
       _onDropped();
     }
   }
 
-  void _onEvent(RealtimeEvent event) {
-    if (_disposed || !_markSeen(event.id)) return;
+  void _onOpened(int attempt) {
+    if (_disposed || attempt != _attempt || _reconnectTimer != null) return;
+    _everConnected = true;
+    _setStatus(RealtimeStatus.connected);
+  }
+
+  void _onEvent(int attempt, RealtimeEvent event) {
+    if (_disposed) return;
+    _onOpened(attempt);
+    if (!_markSeen(event.id)) return;
     _lastEventId = event.id;
     _consecutiveFailures = 0;
     _events.add(event);
+  }
+
+  void _reportError(Object error, StackTrace stack) {
+    if (!_errors.isClosed) _errors.add(RealtimeError(error, stack));
   }
 
   /// Devuelve false si el id ya se vio dentro de la ventana de deduplicación.

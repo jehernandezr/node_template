@@ -61,8 +61,7 @@ ShellRuntime fakeRuntime({
     session: session,
     servicesFactory:
         servicesFactory ??
-        (identity) =>
-            DefaultShellServices(session: identity, eventBus: runtime.eventBus),
+        (identity) => DefaultShellServices(session: identity),
   );
   return runtime;
 }

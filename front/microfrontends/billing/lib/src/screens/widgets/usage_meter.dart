@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatInteger;
 
-import '../shared/enums/billing_enums.dart';
-import '../shared/types/billing_types.dart';
-import '../shared/utils/money_format.dart';
+import '../../shared/enums/billing_enums.dart';
+import '../../l10n/billing_labels.dart';
+import '../../l10n/generated/billing_localizations.dart';
+import '../../shared/types/billing_types.dart';
 import 'billing_colors.dart';
 
 /// Progress of one quota: label, `used / limit` and a bar that turns
@@ -19,6 +21,7 @@ class UsageMeter extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final level = usage.level;
+    final locale = localeTag(context);
     final color = switch (level) {
       UsageLevel.normal => scheme.primary,
       UsageLevel.warning => billingWarningColor,
@@ -31,12 +34,13 @@ class UsageMeter extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                usage.quota.label,
+                quotaLabel(BillingLocalizations.of(context), usage.quota.key),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             Text(
-              '${formatCount(usage.used)} / ${formatCount(usage.quota.limit)}',
+              '${formatInteger(usage.used, locale: locale)} / '
+              '${formatInteger(usage.quota.limit, locale: locale)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: level == UsageLevel.normal ? null : color,
                 fontWeight: FontWeight.w600,

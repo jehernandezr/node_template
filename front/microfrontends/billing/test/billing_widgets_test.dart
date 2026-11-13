@@ -6,15 +6,23 @@ import 'package:mf_billing/src/l10n/generated/billing_localizations.dart';
 import 'package:mf_billing/src/screens/billing_plan_screen.dart';
 import 'package:mf_billing/src/screens/invoice_detail_screen.dart';
 import 'package:mf_billing/src/screens/invoices_screen.dart';
-import 'package:mf_billing/src/widgets/billing_colors.dart';
-import 'package:mf_billing/src/widgets/usage_meter.dart';
+import 'package:mf_billing/src/screens/widgets/billing_colors.dart';
+import 'package:mf_billing/src/screens/widgets/usage_meter.dart';
+import 'package:mf_billing/src/shared/enums/billing_enums.dart';
+import 'package:utils/utils.dart' show formatMoney;
 import 'package:contracts/contracts.dart';
 
 import 'support/test_app.dart';
 
 final _es = lookupBillingLocalizations(const Locale('es'));
 
-Quota _quota(int limit) => Quota(key: 'k', label: 'Cuota', limit: limit);
+Quota _quota(int limit) => Quota(key: QuotaKey.users, limit: limit);
+
+/// Money as the screens show it in Spanish.
+String _cop(int amountMinor) => formatMoney(
+  MoneyAmount(amountMinor: amountMinor, currency: Currency.cop.code),
+  locale: 'es',
+);
 
 Color _meterColor(WidgetTester tester) {
   final indicator = tester.widget<LinearProgressIndicator>(
@@ -44,7 +52,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pro'), findsOneWidget);
-    expect(find.text('\$ 189.000 / Mensual'), findsOneWidget);
+    expect(find.text('${_cop(189000)} / Mensual'), findsOneWidget);
     expect(find.text('Activa'), findsOneWidget);
     expect(find.text('Usuarios'), findsOneWidget);
     expect(find.text('20 / 25'), findsOneWidget);
@@ -87,6 +95,24 @@ void main() {
     expect(await colorAt(100, 100), _scheme(tester).error);
   });
 
+  testWidgets('quota labels and counts follow the locale', (tester) async {
+    await tester.pumpWidget(
+      testApp(
+        UsageMeter(
+          usage: QuotaUsage(
+            quota: const Quota(key: QuotaKey.apiCalls, limit: 100000),
+            used: 4200,
+          ),
+        ),
+        locale: const Locale('en'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('API calls'), findsOneWidget);
+    expect(find.text('4,200 / 100,000'), findsOneWidget);
+  });
+
   testWidgets('meter bar is capped at full when over the limit', (
     tester,
   ) async {
@@ -107,7 +133,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('FAC-2026-0010'), findsOneWidget);
-    expect(find.text('\$ 201.500'), findsOneWidget);
+    expect(find.text(_cop(201500)), findsOneWidget);
     expect(find.text('Emitida'), findsOneWidget);
     expect(find.text('Pagada'), findsOneWidget);
     expect(find.text('Fallida'), findsOneWidget);
@@ -140,8 +166,8 @@ void main() {
     expect(find.text('FAC-2026-0008'), findsOneWidget);
     expect(find.text(_es.fixedFee), findsOneWidget);
     expect(find.text(_es.usageCharge), findsOneWidget);
-    expect(find.text('\$ 24.000'), findsOneWidget);
-    expect(find.text('\$ 213.000'), findsOneWidget);
+    expect(find.text(_cop(24000)), findsOneWidget);
+    expect(find.text(_cop(213000)), findsOneWidget);
     expect(find.text(_es.download), findsOneWidget);
   });
 

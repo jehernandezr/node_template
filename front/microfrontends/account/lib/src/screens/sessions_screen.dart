@@ -2,21 +2,29 @@ import 'package:contracts/contracts.dart' show SessionSummary;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatDateTime;
 
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
 import '../shared/enums/account_enums.dart';
-import '../shared/utils/account_format.dart';
 import '../shared/utils/account_paths.dart';
-import '../widgets/account_labels.dart';
-import '../widgets/account_widgets.dart';
-import '../widgets/step_up_dialog.dart';
+import '../l10n/account_labels.dart';
+import 'widgets/account_widgets.dart';
+import 'widgets/step_up.dart';
 
 /// Sesiones activas con cierre remoto.
 class SessionsScreen extends StatefulWidget {
-  const SessionsScreen({super.key, required this.repository});
+  const SessionsScreen({
+    super.key,
+    required this.repository,
+    required this.requestStepUp,
+  });
 
   final AccountRepository repository;
+
+  /// Step-up del shell (`ShellServices.requestStepUp`) para las acciones
+  /// sensibles.
+  final StepUpRequest requestStepUp;
 
   @override
   State<SessionsScreen> createState() => _SessionsScreenState();
@@ -54,7 +62,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   Future<void> _closeOthers() async {
     final l10n = AccountLocalizations.of(context);
-    final verified = await confirmStepUp(context, widget.repository);
+    final verified = await confirmStepUp(context, widget.requestStepUp);
     if (!verified || !mounted) return;
     var closed = 0;
     final done = await runAccountAction(
@@ -108,7 +116,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
             child: AccountRowCard(
               title: session.deviceName,
               subtitle:
-                  '${platformLabel(l10n, session.platform)} · ${l10n.lastSeenLabel(formatDateTime(session.lastSeenAt))}',
+                  '${platformLabel(l10n, session.platform)} · ${l10n.lastSeenLabel(formatDateTime(session.lastSeenAt, locale: localeTag(context)))}',
               trailing: session.current
                   ? StatusBadge(label: l10n.sessionCurrent)
                   : AppButton(

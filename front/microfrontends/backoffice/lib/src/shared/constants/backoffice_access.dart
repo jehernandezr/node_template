@@ -4,11 +4,15 @@
 /// what a session cannot use; the API checks every request again.
 library;
 
+import 'package:contracts/contracts.dart' show MfaRules;
 import 'package:shell_core/shell_core.dart';
 
-/// Maximum age of the second factor to enter the backoffice. An older one
-/// sends the user to the shell's step-up page.
-const Duration backofficeMfaMaxAge = Duration(minutes: 15);
+/// Maximum age of the second factor to enter the backoffice, the step-up
+/// window of the contract (`MfaRules.stepUpMaxAgeMinutes`). An older one sends
+/// the user to the shell's step-up page.
+const Duration backofficeMfaMaxAge = Duration(
+  minutes: MfaRules.stepUpMaxAgeMinutes,
+);
 
 /// Roles that apply saga actions and redrive dead-letter queues.
 const List<PlatformRole> backofficeOperatorRoles = [

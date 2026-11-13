@@ -47,14 +47,16 @@ UserSession testSession({bool mfaFresh = false}) => UserSession(
 );
 
 /// Scope de una identidad de prueba. Cada llamada crea un scope nuevo.
-MicrofrontendScope testScope({Future<void> Function()? onSignOut}) =>
-    MicrofrontendScope(
-      DefaultShellServices(
-        session: testSession(),
-        eventBus: ShellEventBus(),
-        onSignOut: onSignOut,
-      ),
-    );
+MicrofrontendScope testScope({
+  Future<void> Function()? onSignOut,
+  Future<bool> Function()? onStepUp,
+}) => MicrofrontendScope(
+  DefaultShellServices(
+    session: testSession(),
+    onSignOut: onSignOut,
+    onStepUp: onStepUp,
+  ),
+);
 
 /// Error de API de prueba con código y traza conocidos.
 ApiErrorException testApiError({
@@ -69,3 +71,19 @@ ApiErrorException testApiError({
     traceId: traceId,
   ),
 );
+
+/// Step-up del shell que siempre se completa.
+Future<bool> approveStepUp() async => true;
+
+/// Step-up de prueba que cuenta las llamadas y responde [answer].
+final class RecordingStepUp {
+  RecordingStepUp({this.answer = true});
+
+  final bool answer;
+  int calls = 0;
+
+  Future<bool> call() async {
+    calls++;
+    return answer;
+  }
+}

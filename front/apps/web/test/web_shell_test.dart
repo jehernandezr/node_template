@@ -368,6 +368,61 @@ void main() {
     },
   );
 
+  testWidgets(
+    'requestStepUp of the services opens /step-up and returns true after '
+    'verifying, keeping the page that asked',
+    (tester) async {
+      final shell = await pumpShell(tester, registry: registryWithProbe());
+      shell.session.value = probeUser('u1');
+      shell.router.go('/verifier');
+      await settle(tester);
+      expect(find.text('usuario u1'), findsOneWidget);
+
+      final services = shell.runtime
+          .scopeFor(MicrofrontendId.verifier)
+          .services;
+      bool? verified;
+      services.requestStepUp().then((value) => verified = value);
+      await settle(tester);
+      expect(find.text('Verificación adicional'), findsOneWidget);
+
+      await tester.tap(find.text('Verificar (demostración)'));
+      await settle(tester);
+
+      expect(verified, isTrue);
+      expect(shell.session.value.mfaVerifiedAt, isNotNull);
+      expect(find.text('Verificación adicional'), findsNothing);
+      expect(
+        shell.router.routerDelegate.currentConfiguration.uri.path,
+        '/verifier',
+      );
+      expect(find.text('usuario u1'), findsOneWidget);
+    },
+  );
+
+  testWidgets('requestStepUp returns false when the user goes back', (
+    tester,
+  ) async {
+    final shell = await pumpShell(tester, registry: registryWithProbe());
+    shell.session.value = probeUser('u1');
+    shell.router.go('/verifier');
+    await settle(tester);
+
+    bool? verified;
+    shell.requestStepUp().then((value) => verified = value);
+    await settle(tester);
+    await tester.tap(find.byType(BackButton));
+    await settle(tester);
+
+    expect(verified, isFalse);
+    expect(shell.session.value.mfaVerifiedAt, isNull);
+    expect(find.text('usuario u1'), findsOneWidget);
+    expect(
+      shell.router.routerDelegate.currentConfiguration.uri.path,
+      '/verifier',
+    );
+  });
+
   testWidgets('/step-up sends an anonymous visitor to login', (tester) async {
     final shell = await pumpShell(tester, location: WebShell.stepUpPath);
     expect(shell.router.state.uri.path, '/login');

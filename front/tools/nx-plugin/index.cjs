@@ -3,6 +3,9 @@
 // - Lee la lista `workspace:` de front/pubspec.yaml; solo esos paquetes son proyectos.
 // - Cada proyecto se llama `front-<nombre del pubspec>` y tiene las tareas
 //   `analyze`, `format-check` y, si tiene carpeta test/, `test`. Todas usan caché.
+// - En los microfrontends, `analyze` también corre
+//   `tools/check_microfrontend_boundaries.dart`: falla si el microfrontend
+//   declara o importa otro `mf_*`.
 // - Las dependencias entre paquetes salen de `dependencies` y `dev_dependencies`.
 // - `front-contracts` depende de los paquetes de contratos del backend
 //   (backend/libs/contracts/*), porque su Dart se genera desde ellos.
@@ -11,12 +14,14 @@
 'use strict';
 
 const { existsSync, readFileSync } = require('node:fs');
-const { dirname, join } = require('node:path');
+const { dirname, join, relative } = require('node:path');
 
 const FRONT_ROOT = 'front';
 const PROJECT_PREFIX = 'front-';
 const CONTRACTS_PACKAGE = 'contracts';
 const BACKEND_CONTRACTS_ROOT = 'backend/libs/contracts/';
+const MICROFRONTENDS_KIND = 'microfrontends';
+const BOUNDARIES_SCRIPT = 'front/tools/check_microfrontend_boundaries.dart';
 
 /** Lee los campos de pubspec.yaml que usa el plugin, sin dependencias externas. */
 function parsePubspec(text) {
@@ -61,14 +66,19 @@ const sharedInputs = [
   '{workspaceRoot}/front/.flutter-version',
 ];
 
-function targetsFor(workspaceRoot, projectRoot) {
+function targetsFor(workspaceRoot, projectRoot, kind) {
   const inputs = ['default', '^default', ...sharedInputs];
+  const isMicrofrontend = kind === MICROFRONTENDS_KIND;
+  // Ruta del script relativa a la carpeta del proyecto (front/microfrontends/<mf>).
+  const boundaries = relative(join(workspaceRoot, projectRoot), join(workspaceRoot, BOUNDARIES_SCRIPT));
   const targets = {
     analyze: {
-      command: 'flutter analyze --no-pub',
+      command: isMicrofrontend
+        ? `flutter analyze --no-pub && dart run ${boundaries}`
+        : 'flutter analyze --no-pub',
       options: { cwd: projectRoot },
       cache: true,
-      inputs,
+      inputs: isMicrofrontend ? [...inputs, `{workspaceRoot}/${BOUNDARIES_SCRIPT}`] : inputs,
     },
     'format-check': {
       command: 'dart format --output=none --set-exit-if-changed lib test',
@@ -108,7 +118,7 @@ const createNodes = [
               root,
               projectType: kind === 'apps' ? 'application' : 'library',
               tags: ['lang:dart', `type:front-${kind}`],
-              targets: targetsFor(context.workspaceRoot, root),
+              targets: targetsFor(context.workspaceRoot, root, kind),
             },
           },
         },

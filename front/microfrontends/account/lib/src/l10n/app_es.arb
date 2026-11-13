@@ -57,12 +57,6 @@
     }
   },
 
-  "stepUpTitle": "Confirma tu identidad",
-  "stepUpMessage": "Esta acción es sensible. Ingresa el código de tu app de autenticación para continuar.",
-  "stepUpCodeLabel": "Código de 6 dígitos",
-  "stepUpIncomplete": "Ingresa los 6 dígitos del código.",
-  "stepUpInvalid": "El código no es válido. Intenta de nuevo.",
-
   "sessionsTitle": "Sesiones activas",
   "sessionCurrent": "Actual",
   "sessionClose": "Cerrar sesión",

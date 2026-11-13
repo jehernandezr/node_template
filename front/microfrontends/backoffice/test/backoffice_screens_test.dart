@@ -71,6 +71,33 @@ class _ActionFailingRepository extends FakeBackofficeRepository {
   Future<int> redrive(String queue) => Future.error(_conflict());
 }
 
+/// Saga actions break the contract and redrive fails without an API answer.
+class _ClientFailingRepository extends FakeBackofficeRepository {
+  @override
+  Future<void> applySagaAction({
+    required String sagaId,
+    required SagaManualAction action,
+    required String reason,
+  }) => Future.error(
+    ContractViolationException(
+      routeId: 'backoffice.saga.action',
+      errors: [
+        FieldError(
+          field: 'reason',
+          code: PlatformErrorCode.validationTooLong.code,
+        ),
+      ],
+    ),
+  );
+
+  @override
+  Future<int> redrive(String queue) => Future.error(const _OfflineException());
+}
+
+final class _OfflineException implements Exception {
+  const _OfflineException();
+}
+
 Future<void> _forceCompensation(WidgetTester tester, String reason) async {
   await tester.tap(find.byKey(const Key('saga-action-forceCompensation')));
   await tester.pumpAndSettle();
@@ -246,6 +273,43 @@ void main() {
         find.text('${errorMessage(_shared, code)} ($code)'),
         findsOneWidget,
       );
+      expect(find.textContaining('SMTP timeout tras 30 s'), findsNWidgets(3));
+    });
+
+    testWidgets('a contract violation in a saga action shows a SnackBar', (
+      tester,
+    ) async {
+      await pumpBackoffice(
+        tester,
+        location: '/backoffice/sagas/s-102',
+        repository: _ClientFailingRepository(),
+      );
+      await _forceCompensation(tester, 'Motivo');
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text(
+          errorMessage(_shared, PlatformErrorCode.validationInvalidInput.code),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a network failure in redrive shows a SnackBar', (
+      tester,
+    ) async {
+      await pumpBackoffice(
+        tester,
+        location: '/backoffice/dlq/notifications-tasks-events',
+        repository: _ClientFailingRepository(),
+      );
+      await tester.tap(find.byKey(const Key('dlq-redrive')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dlq-redrive-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(_shared.errorFallback), findsOneWidget);
       expect(find.textContaining('SMTP timeout tras 30 s'), findsNWidgets(3));
     });
   });

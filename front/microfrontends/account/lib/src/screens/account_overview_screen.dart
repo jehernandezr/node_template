@@ -8,7 +8,7 @@ import '../l10n/generated/account_localizations.dart';
 import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 import '../shared/utils/account_paths.dart';
-import '../widgets/account_widgets.dart';
+import 'widgets/account_widgets.dart';
 
 /// Resumen del perfil con enlaces a las secciones de la cuenta y cierre de sesión.
 class AccountOverviewScreen extends StatefulWidget {

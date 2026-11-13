@@ -168,8 +168,7 @@ void main() {
         registry: registry,
         platform: AppPlatform.web,
         session: session,
-        servicesFactory: (s) =>
-            DefaultShellServices(session: s, eventBus: created.eventBus),
+        servicesFactory: (s) => DefaultShellServices(session: s),
       );
       runtime = created;
       addTearDown(runtime.dispose);

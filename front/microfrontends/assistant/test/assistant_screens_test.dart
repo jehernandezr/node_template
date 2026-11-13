@@ -125,6 +125,28 @@ void main() {
     );
   });
 
+  testWidgets('a contract violation on create shows a snack bar', (
+    tester,
+  ) async {
+    final repository = _FailingCreate(
+      ContractViolationException(
+        routeId: 'assistant.conversations.create',
+        errors: [FieldError(code: PlatformErrorCode.validationRequired.code)],
+      ),
+    );
+    await _pump(tester, repository);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Nueva conversación'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      find.textContaining('No pudimos crear la conversación.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('chat shows loading, then history', (tester) async {
     final gate = Completer<List<ChatMessage>>();
     await _pump(
@@ -240,6 +262,10 @@ void main() {
 
 /// Fake whose `createConversation` fails.
 base class _FailingCreate extends FakeAssistantRepository {
+  _FailingCreate([this.error = _failure]);
+
+  final Exception error;
+
   @override
-  Future<Conversation> createConversation() async => throw _failure;
+  Future<Conversation> createConversation() async => throw error;
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -97,7 +96,8 @@ class _TasksListScreenState extends State<TasksListScreen> {
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
-    } on ApiErrorException catch (error) {
+    } on Exception catch (error) {
+      // API, contract or network: the list must not stay loading forever.
       if (!mounted || request != _requestId) return;
       setState(() => _loadingMore = false);
       showActionError(

@@ -13,12 +13,8 @@ Widget _loader({
   Widget Function(Object error, VoidCallback retry)? errorBuilder,
 }) => const SizedBox.shrink();
 
-MicrofrontendScope _scope() => MicrofrontendScope(
-  DefaultShellServices(
-    session: UserSession.anonymous(),
-    eventBus: ShellEventBus(),
-  ),
-);
+MicrofrontendScope _scope() =>
+    MicrofrontendScope(DefaultShellServices(session: UserSession.anonymous()));
 
 String _join(String prefix, String path) =>
     path.startsWith('/') ? path : '$prefix/$path';

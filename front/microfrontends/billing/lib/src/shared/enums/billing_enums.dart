@@ -5,23 +5,33 @@
 library;
 
 /// Currencies the billing service invoices in.
+///
+/// Amounts are `MoneyAmount` of the contract, whose `currency` is [code]; the
+/// decimals and the symbol come from the locale (`utils.formatMoney`).
 enum Currency {
-  /// Colombian peso. No decimals: one minor unit is one peso.
-  cop('COP', r'$', 0),
+  /// Colombian peso.
+  cop('COP'),
 
-  /// US dollar. Two decimals: one minor unit is one cent.
-  usd('USD', r'US$', 2);
+  /// US dollar.
+  usd('USD');
 
-  const Currency(this.code, this.symbol, this.minorUnitDigits);
+  const Currency(this.code);
 
   /// ISO 4217 code.
   final String code;
+}
 
-  /// Symbol shown before the amount.
-  final String symbol;
+/// Metered limits a plan can include. The label of each one lives in the ARB
+/// (`quotaLabel`), not in the data.
+enum QuotaKey {
+  users('users'),
+  apiCalls('api_calls'),
+  storageGb('storage_gb');
 
-  /// Number of decimal digits in the minor unit.
-  final int minorUnitDigits;
+  const QuotaKey(this.code);
+
+  /// Stable code used by the billing service.
+  final String code;
 }
 
 /// How often a plan is charged.

@@ -1,5 +1,6 @@
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
@@ -62,7 +63,7 @@ void main() {
     await _pumpButton(tester, (context) => showActionError(context, Object()));
     await tester.tap(find.text('go'));
     await tester.pump();
-    expect(find.text(defaultActionErrorMessage), findsOneWidget);
+    expect(find.text('Algo salió mal. Intenta de nuevo.'), findsOneWidget);
   });
 
   testWidgets('does nothing once the context is unmounted', (tester) async {
@@ -97,5 +98,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('error 2'), findsOneWidget);
     expect(find.text('error 1'), findsNothing);
+  });
+
+  test('actionErrorMessage covers API, contract and any other error', () async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
+    final api = ApiErrorException(
+      ProblemDetails(
+        type: 'about:blank',
+        title: 'Conflict',
+        status: 409,
+        code: PlatformErrorCode.conflictVersionMismatch.code,
+      ),
+    );
+    expect(
+      actionErrorMessage(l10n, api),
+      errorMessage(l10n, PlatformErrorCode.conflictVersionMismatch.code),
+    );
+    expect(
+      actionErrorMessage(
+        l10n,
+        const ContractViolationException(routeId: 'x', errors: []),
+      ),
+      errorMessage(l10n, PlatformErrorCode.validationInvalidInput.code),
+    );
+    expect(actionErrorMessage(l10n, Exception('offline')), l10n.errorFallback);
   });
 }

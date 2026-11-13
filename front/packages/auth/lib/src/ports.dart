@@ -16,17 +16,49 @@ abstract interface class AuthRepository {
   });
 
   /// Rota el session token y devuelve un access token nuevo.
-  Future<AuthTokens> refresh();
+  ///
+  /// [sessionToken] es el guardado en el [TokenStore]; es null en web, donde
+  /// el navegador envía la cookie httpOnly.
+  Future<AuthTokens> refresh({String? sessionToken});
 
   /// Revoca la sesión actual en el servidor.
   Future<void> logout();
 }
 
-/// Almacenamiento persistente de tokens. El adaptador real usa Keychain o Keystore.
+/// Almacenamiento persistente del session token.
+///
+/// El access token nunca se persiste: vive solo en la memoria de
+/// `SessionManager` y, al arrancar, se obtiene con un refresh. En móvil el
+/// adaptador real usa Keychain o Keystore. En web el session token vive en una
+/// cookie httpOnly que el cliente no puede leer: se usa [CookieTokenStore].
 abstract interface class TokenStore {
-  Future<AuthTokens?> read();
-  Future<void> write(AuthTokens tokens);
+  /// Si el session token viaja en una cookie httpOnly que este almacén no ve.
+  ///
+  /// Con true, `SessionManager.restore` intenta el refresh aunque
+  /// [readSessionToken] devuelva null.
+  bool get sessionInCookie;
+
+  Future<String?> readSessionToken();
+  Future<void> writeSessionToken(String sessionToken);
   Future<void> clear();
+}
+
+/// [TokenStore] de web: el session token es una cookie httpOnly que gestiona
+/// el navegador, así que no hay nada que leer ni escribir.
+final class CookieTokenStore implements TokenStore {
+  const CookieTokenStore();
+
+  @override
+  bool get sessionInCookie => true;
+
+  @override
+  Future<String?> readSessionToken() async => null;
+
+  @override
+  Future<void> writeSessionToken(String sessionToken) async {}
+
+  @override
+  Future<void> clear() async {}
 }
 
 /// Clave de dispositivo que no sale del hardware (Secure Enclave, Keystore o WebCrypto no exportable).

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:auth/auth.dart';
-import 'package:contracts/contracts.dart';
 import 'package:flutter/services.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -205,9 +204,8 @@ class _VerifierViewState extends State<_VerifierView> {
         _pending = const AsyncValue.data(null);
         _code = const AsyncValue.loading();
       });
-    } on ApiErrorException catch (error) {
-      _denyFailed(error, l10n);
-    } on ContractViolationException catch (error) {
+    } on Exception catch (error) {
+      // API, contract or network.
       _denyFailed(error, l10n);
     }
   }

@@ -8,6 +8,9 @@
   "subscriptionStatus": "Estado de la suscripción",
   "currentPeriod": "Periodo actual",
   "usageTitle": "Uso del periodo",
+  "quotaUsers": "Usuarios",
+  "quotaApiCalls": "Llamadas API",
+  "quotaStorageGb": "Almacenamiento (GB)",
   "noQuotas": "Este plan no tiene cuotas medidas.",
 
   "changePlan": "Cambiar plan",
@@ -48,17 +51,5 @@
 
   "periodRange": "{start} a {end}",
 
-  "monthJan": "ene",
-  "monthFeb": "feb",
-  "monthMar": "mar",
-  "monthApr": "abr",
-  "monthMay": "may",
-  "monthJun": "jun",
-  "monthJul": "jul",
-  "monthAug": "ago",
-  "monthSep": "sep",
-  "monthOct": "oct",
-  "monthNov": "nov",
-  "monthDec": "dic",
   "@periodRange": {"placeholders": {"start": {"type": "String"}, "end": {"type": "String"}}}
 }

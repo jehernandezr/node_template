@@ -8,13 +8,17 @@ import 'package:flutter_test/flutter_test.dart';
 class FakeTransport implements HttpTransport {
   FakeTransport([this.next = const TransportResponse(statusCode: 204)]);
 
+  /// Answer used when [queue] is empty.
   TransportResponse next;
+
+  /// Answers used first, in order.
+  final List<TransportResponse> queue = [];
   final List<TransportRequest> requests = [];
 
   @override
   Future<TransportResponse> send(TransportRequest request) async {
     requests.add(request);
-    return next;
+    return queue.isEmpty ? next : queue.removeAt(0);
   }
 }
 
@@ -227,4 +231,102 @@ void main() {
       expect(transport.requests, hasLength(1));
     });
   });
+
+  group('session', () {
+    test('a route that needs a session fails without a token and never '
+        'reaches the transport', () async {
+      client = ApiClient(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com/'),
+        accessToken: () async => null,
+      );
+      await expectLater(
+        client.send(IdentityRoutes.revokeOtherSessions, const Empty()),
+        throwsA(
+          isA<ApiErrorException>().having(
+            (e) => e.platformCode,
+            'platformCode',
+            PlatformErrorCode.authUnauthenticated,
+          ),
+        ),
+      );
+      client = ApiClient(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com/'),
+      );
+      await expectLater(
+        client.send(IdentityRoutes.revokeOtherSessions, const Empty()),
+        throwsA(isA<ApiErrorException>()),
+      );
+      expect(transport.requests, isEmpty);
+    });
+
+    test('stale permissions refresh the session and retry once', () async {
+      var token = 'token-1';
+      var refreshes = 0;
+      client = ApiClient(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com/'),
+        accessToken: () async => token,
+        onStalePermissions: () async {
+          refreshes++;
+          token = 'token-2';
+        },
+      );
+      transport.queue.add(_stale());
+      transport.next = _json(200, {'revoked': 2});
+
+      final response = await client.send(
+        IdentityRoutes.revokeOtherSessions,
+        const Empty(),
+      );
+
+      expect(response.revoked, 2);
+      expect(refreshes, 1);
+      expect(
+        [for (final r in transport.requests) r.headers['authorization']],
+        ['Bearer token-1', 'Bearer token-2'],
+      );
+    });
+
+    test('stale permissions twice in a row throw after one retry', () async {
+      var refreshes = 0;
+      client = ApiClient(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com/'),
+        accessToken: () async => 'token-1',
+        onStalePermissions: () async => refreshes++,
+      );
+      transport.next = _stale();
+
+      await expectLater(
+        client.send(IdentityRoutes.revokeOtherSessions, const Empty()),
+        throwsA(
+          isA<ApiErrorException>().having(
+            (e) => e.problem.code,
+            'code',
+            IdentityErrorCode.tokenStalePermissions.code,
+          ),
+        ),
+      );
+      expect(refreshes, 1);
+      expect(transport.requests, hasLength(2));
+    });
+
+    test('without onStalePermissions the error is thrown as is', () async {
+      transport.next = _stale();
+      await expectLater(
+        client.send(IdentityRoutes.revokeOtherSessions, const Empty()),
+        throwsA(isA<ApiErrorException>()),
+      );
+      expect(transport.requests, hasLength(1));
+    });
+  });
 }
+
+TransportResponse _stale() => _json(401, {
+  'type': 'about:blank',
+  'title': 'Stale permissions',
+  'status': 401,
+  'code': IdentityErrorCode.tokenStalePermissions.code,
+});

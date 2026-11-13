@@ -1,22 +1,13 @@
 /// Domain models for plans, subscriptions, metered usage and invoices.
 ///
-/// Money is stored as integer minor units plus its currency, never as a
-/// double. See `shared/utils/money_format.dart` for display.
+/// Money is the contract's `MoneyAmount`: integer minor units plus the ISO
+/// currency, never a double. Screens show it with `utils.formatMoney`.
 library;
+
+import 'package:contracts/contracts.dart' show MoneyAmount;
 
 import '../constants/billing_constants.dart';
 import '../enums/billing_enums.dart';
-
-/// Integer amount in the minor unit of [currency].
-final class Money {
-  const Money({required this.amountMinor, required this.currency});
-
-  /// Amount in minor units (pesos for COP, cents for USD).
-  final int amountMinor;
-
-  /// Currency of [amountMinor].
-  final Currency currency;
-}
 
 /// Level for [used] out of [limit]: warning from [usageWarningPercent], danger
 /// from [usageDangerPercent].
@@ -43,13 +34,10 @@ final class BillingPeriod {
 
 /// A metered limit included in a plan.
 final class Quota {
-  const Quota({required this.key, required this.label, required this.limit});
+  const Quota({required this.key, required this.limit});
 
-  /// Stable key used to match usage with the quota.
-  final String key;
-
-  /// Name shown to the user.
-  final String label;
+  /// Which limit this is. Matches usage with the quota and picks the label.
+  final QuotaKey key;
 
   /// Maximum amount included in the plan for one period.
   final int limit;
@@ -72,7 +60,7 @@ final class Plan {
   final String name;
 
   /// Price per [periodicity].
-  final Money price;
+  final MoneyAmount price;
 
   /// How often [price] is charged.
   final PlanPeriodicity periodicity;
@@ -135,7 +123,7 @@ final class InvoiceLine {
   final String description;
 
   /// Amount of the line, in the invoice currency.
-  final Money amount;
+  final MoneyAmount amount;
 }
 
 /// A billing document for one period.
@@ -168,8 +156,8 @@ final class Invoice {
   final List<InvoiceLine> lines;
 
   /// Sum of all line amounts.
-  Money get total => Money(
+  MoneyAmount get total => MoneyAmount(
     amountMinor: lines.fold(0, (sum, line) => sum + line.amount.amountMinor),
-    currency: currency,
+    currency: currency.code,
   );
 }

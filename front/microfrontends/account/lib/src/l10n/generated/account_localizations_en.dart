@@ -85,22 +85,6 @@ class AccountLocalizationsEn extends AccountLocalizations {
   }
 
   @override
-  String get stepUpTitle => 'Confirm your identity';
-
-  @override
-  String get stepUpMessage =>
-      'This action is sensitive. Enter the code from your authenticator app to continue.';
-
-  @override
-  String get stepUpCodeLabel => '6-digit code';
-
-  @override
-  String get stepUpIncomplete => 'Enter all 6 digits of the code.';
-
-  @override
-  String get stepUpInvalid => 'The code is not valid. Try again.';
-
-  @override
   String get sessionsTitle => 'Active sessions';
 
   @override

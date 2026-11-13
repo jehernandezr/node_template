@@ -26,6 +26,9 @@ class FakeAuthRepository implements AuthRepository {
 
   int loginCount = 0;
   int refreshCount = 0;
+
+  /// Session token recibido en el último [refresh].
+  String? lastRefreshSessionToken;
   int logoutCount = 0;
   String? lastLoginDeviceId;
   MfaMethod? lastMfaMethod;
@@ -57,8 +60,9 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthTokens> refresh() async {
+  Future<AuthTokens> refresh({String? sessionToken}) async {
     refreshCount++;
+    lastRefreshSessionToken = sessionToken;
     final gate = refreshGate;
     if (gate != null) await gate.future;
     final error = refreshError;
@@ -76,23 +80,39 @@ class FakeAuthRepository implements AuthRepository {
   }
 }
 
-/// Almacén de tokens en memoria.
+/// Almacén del session token en memoria.
 class InMemoryTokenStore implements TokenStore {
-  InMemoryTokenStore([AuthTokens? initial]) : _tokens = initial;
+  InMemoryTokenStore([String? initial, this.sessionInCookie = false])
+    : _sessionToken = initial;
 
-  AuthTokens? _tokens;
-
-  @override
-  Future<AuthTokens?> read() async => _tokens;
+  String? _sessionToken;
 
   @override
-  Future<void> write(AuthTokens tokens) async {
-    _tokens = tokens;
+  final bool sessionInCookie;
+
+  /// Si no es null, [writeSessionToken] espera a que se complete antes de
+  /// guardar. Sirve para probar lo que pasa mientras la escritura está pendiente.
+  Completer<void>? writeGate;
+
+  int writeCount = 0;
+
+  /// Session token guardado, sin pasar por la interfaz asíncrona.
+  String? get sessionToken => _sessionToken;
+
+  @override
+  Future<String?> readSessionToken() async => _sessionToken;
+
+  @override
+  Future<void> writeSessionToken(String sessionToken) async {
+    writeCount++;
+    final gate = writeGate;
+    if (gate != null) await gate.future;
+    _sessionToken = sessionToken;
   }
 
   @override
   Future<void> clear() async {
-    _tokens = null;
+    _sessionToken = null;
   }
 }
 

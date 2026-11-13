@@ -14,6 +14,8 @@ dependencies:
   flutter:
     sdk: flutter
   go_router: ^18.1.4
+  i18n:
+    path: ../i18n
   material_ui: ^1.11.0
 
 dev_dependencies:

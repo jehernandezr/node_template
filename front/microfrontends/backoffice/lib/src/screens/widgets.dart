@@ -3,12 +3,12 @@ import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatDateTime;
 
 import '../l10n/generated/backoffice_localizations.dart';
 import '../shared/constants/backoffice_access.dart';
 import '../shared/constants/backoffice_paths.dart';
 import '../shared/types/backoffice_types.dart';
-import '../shared/utils/format_timestamp.dart';
 
 /// Makes [BackofficeLocalizations] available to [child].
 ///
@@ -151,6 +151,12 @@ class AsyncBody<T> extends StatelessWidget {
   );
 }
 
+/// Date and time of [value] in the locale and time zone of the user.
+String formatTimestamp(BuildContext context, DateTime value) => formatDateTime(
+  value,
+  locale: Localizations.localeOf(context).toLanguageTag(),
+);
+
 /// Audit entries, most recent first, with the reason of manual actions.
 class AuditTimeline extends StatelessWidget {
   const AuditTimeline({super.key, required this.entries});
@@ -175,7 +181,7 @@ class AuditTimeline extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${formatTimestamp(entry.occurredAt)} · ${entry.action}',
+                    '${formatTimestamp(context, entry.occurredAt)} · ${entry.action}',
                     style: theme.textTheme.titleSmall,
                   ),
                   const SizedBox(height: AppSpacing.xs),

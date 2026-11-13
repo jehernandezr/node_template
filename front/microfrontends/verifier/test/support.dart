@@ -23,7 +23,6 @@ const challenge = LoginChallenge(
 DefaultShellServices services({Map<Type, Object> extras = const {}}) =>
     DefaultShellServices(
       session: UserSession(userId: 'u1', tenantId: 't1'),
-      eventBus: ShellEventBus(),
       extras: extras,
     );
 

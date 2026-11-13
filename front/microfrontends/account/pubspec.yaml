@@ -26,6 +26,8 @@ dependencies:
     path: ../../packages/shell_core
   ui:
     path: ../../packages/ui
+  utils:
+    path: ../../packages/utils
 
 dev_dependencies:
   flutter_test:

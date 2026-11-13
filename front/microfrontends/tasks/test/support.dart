@@ -48,7 +48,6 @@ class _LoadedState extends State<_Loaded> {
 MicrofrontendScope newScope({String userId = 'user-1'}) => MicrofrontendScope(
   DefaultShellServices(
     session: UserSession(userId: userId, tenantId: 'tenant-1'),
-    eventBus: ShellEventBus(),
   ),
 );
 

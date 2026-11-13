@@ -1,3 +1,4 @@
+import 'package:contracts/contracts.dart' show MfaRules;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mf_backoffice/mf_backoffice.dart';
@@ -75,8 +76,11 @@ void main() {
     },
   );
 
-  test('the MFA window is a 15 minute constant', () {
-    expect(backofficeMfaMaxAge, const Duration(minutes: 15));
+  test('the MFA window is the step-up window of the contract', () {
+    expect(
+      backofficeMfaMaxAge,
+      const Duration(minutes: MfaRules.stepUpMaxAgeMinutes),
+    );
   });
 
   group('manifest access', () {
@@ -87,7 +91,7 @@ void main() {
       test('${role.name} with a recent second factor enters', () {
         expect(decide(platformUser({role})), AccessDecision.allowed);
         expect(
-          decide(platformUser({role}, mfaAge: const Duration(minutes: 15))),
+          decide(platformUser({role}, mfaAge: backofficeMfaMaxAge)),
           AccessDecision.allowed,
         );
       });
@@ -98,7 +102,11 @@ void main() {
           AccessDecision.stepUpRequired,
         );
         expect(
-          decide(platformUser({role}, mfaAge: const Duration(minutes: 16))),
+          decide(
+            platformUser({
+              role,
+            }, mfaAge: backofficeMfaMaxAge + const Duration(minutes: 1)),
+          ),
           AccessDecision.stepUpRequired,
         );
       });

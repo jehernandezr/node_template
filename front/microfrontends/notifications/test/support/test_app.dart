@@ -52,10 +52,8 @@ Widget routedApp(
 /// Scope de una identidad, como el que crea el runtime.
 MicrofrontendScope testScope({UserSession? session, ShellEventBus? bus}) =>
     MicrofrontendScope(
-      DefaultShellServices(
-        session: session ?? UserSession.anonymous(),
-        eventBus: bus ?? ShellEventBus(),
-      ),
+      DefaultShellServices(session: session ?? UserSession.anonymous()),
+      eventBus: bus ?? ShellEventBus(),
     );
 
 /// Textos en español del microfrontend, para buscar en los widgets.

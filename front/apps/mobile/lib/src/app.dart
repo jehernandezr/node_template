@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
+import 'login/step_up_page.dart';
 import 'router.dart';
 
 /// Root widget of the mobile shell. Owns the [ShellRuntime] and the router.
@@ -47,8 +48,8 @@ class _MobileShellAppState extends State<MobileShellApp> {
       session: widget.session,
       servicesFactory: (identity) => DefaultShellServices(
         session: identity,
-        eventBus: _runtime.eventBus,
         onSignOut: _signOut,
+        onStepUp: _requestStepUp,
         // Demo: the real Secure Enclave / Keystore adapter replaces this fake.
         extras: {DeviceKeyPort: _deviceKeys},
       ),
@@ -76,6 +77,11 @@ class _MobileShellAppState extends State<MobileShellApp> {
     _unreadCount.dispose();
     super.dispose();
   }
+
+  /// Pushes the step-up page and completes with whether the user verified the
+  /// second factor. Behind `ShellServices.requestStepUp`.
+  Future<bool> _requestStepUp() async =>
+      await _router.push<bool>(stepUpPath, extra: StepUpPage.request) ?? false;
 
   Future<void> _signOut() =>
       signOutAndGoToLogin(router: _router, session: widget.session);

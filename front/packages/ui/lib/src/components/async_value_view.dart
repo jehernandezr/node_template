@@ -117,13 +117,13 @@ class AsyncValueView<T> extends StatelessWidget {
   /// Shown while loading. Defaults to [LoadingView].
   final Widget? loading;
 
-  /// Label of the retry button. Defaults to the [ErrorView] label.
+  /// Label of the retry button. Defaults to the localized [ErrorView] label.
   final String? retryLabel;
 
-  /// Prefix of the error code line. Defaults to the [ErrorView] label.
+  /// Prefix of the error code line. Defaults to the localized [ErrorView] label.
   final String? codeLabel;
 
-  /// Prefix of the trace id line. Defaults to the [ErrorView] label.
+  /// Prefix of the trace id line. Defaults to the localized [ErrorView] label.
   final String? traceIdLabel;
 
   @override
@@ -133,15 +133,12 @@ class AsyncValueView<T> extends StatelessWidget {
     AsyncError<T>(:final error) => _error(error),
   };
 
-  Widget _error(Object error) {
-    const defaults = ErrorView(message: '');
-    return ErrorView.fromException(
-      error,
-      fallbackMessage: errorMessage,
-      onRetry: onRetry,
-      retryLabel: retryLabel ?? defaults.retryLabel,
-      codeLabel: codeLabel ?? defaults.codeLabel,
-      traceIdLabel: traceIdLabel ?? defaults.traceIdLabel,
-    );
-  }
+  Widget _error(Object error) => ErrorView.fromException(
+    error,
+    fallbackMessage: errorMessage,
+    onRetry: onRetry,
+    retryLabel: retryLabel,
+    codeLabel: codeLabel,
+    traceIdLabel: traceIdLabel,
+  );
 }

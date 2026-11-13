@@ -7,6 +7,7 @@ import 'enums.dart';
 import 'microfrontend.dart';
 import 'microfrontend_manifest.dart';
 import 'microfrontend_registry.dart';
+import 'screen_route.dart';
 import 'shell_access.dart';
 import 'shell_navigation.dart';
 import 'shell_runtime.dart';
@@ -29,7 +30,9 @@ import 'shell_runtime.dart';
 /// [KeyedSubtree] keyed by [ShellRuntime.identityEpoch]: when the user or
 /// tenant changes, the mounted pages are built again from scratch with the
 /// scope of the new identity, or replaced by an empty box when the new
-/// identity cannot use the microfrontend (until the redirect removes them).
+/// identity cannot reach the page (until the redirect removes them). A page is
+/// reachable when the identity can reach the microfrontend and every
+/// [ScreenRoute.access] rule of the page and its parent routes.
 /// Route-level redirects run with the shell's access environment, so
 /// [accessRedirect] works in them.
 ///
@@ -101,7 +104,12 @@ GoRouter buildShellRouter({
     }
     if (manifest.platforms.contains(platform)) {
       final wrapper = _PageWrapper(runtime, environment, manifest, platform);
-      microfrontendRoutes.addAll(built.map(wrapper.wrap));
+      // `buildRoutes` keeps the order of `screens`, children included.
+      for (var i = 0; i < built.length; i++) {
+        microfrontendRoutes.add(
+          wrapper.wrap(built[i], manifest.screens[i], const []),
+        );
+      }
     }
   }
 
@@ -154,7 +162,11 @@ final class _PageWrapper {
   final MicrofrontendManifest manifest;
   final AppPlatform platform;
 
-  GoRoute wrap(GoRoute route) {
+  /// Wraps [route], built from [screen]. [inherited] holds the access rules
+  /// of the parent screens.
+  GoRoute wrap(GoRoute route, ScreenRoute screen, List<AccessRule> inherited) {
+    final rule = screen.access;
+    final rules = rule == null ? inherited : [...inherited, rule];
     final builder = route.builder;
     final redirect = route.redirect;
     return GoRoute(
@@ -162,16 +174,23 @@ final class _PageWrapper {
       name: route.name,
       builder: builder == null
           ? null
-          : (context, state) => _page((context) => builder(context, state)),
+          : (context, state) =>
+                _page(rules, (context) => builder(context, state)),
       redirect: redirect == null ? null : _redirect(redirect),
-      routes: route.routes.map((child) => wrap(child as GoRoute)).toList(),
+      routes: [
+        for (var i = 0; i < route.routes.length; i++)
+          wrap(route.routes[i] as GoRoute, screen.routes[i], rules),
+      ],
     );
   }
 
   GoRouterRedirect _redirect(GoRouterRedirect redirect) =>
       (context, state) => environment.run(() => redirect(context, state));
 
-  Widget _page(Widget Function(BuildContext context) build) => ShellAccessScope(
+  Widget _page(
+    List<AccessRule> rules,
+    Widget Function(BuildContext context) build,
+  ) => ShellAccessScope(
     session: runtime.session,
     clock: environment.clock,
     paths: environment.paths,
@@ -183,7 +202,8 @@ final class _PageWrapper {
         // removes it: never build it for an identity that cannot use it.
         final session = runtime.session.value;
         final now = environment.clock();
-        if (!manifest.isReachableBy(session, platform, now: now)) {
+        if (!manifest.isReachableBy(session, platform, now: now) ||
+            !rules.every((rule) => rule.reachableBy(session, now: now))) {
           return const SizedBox.shrink();
         }
         return KeyedSubtree(

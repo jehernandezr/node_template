@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart';
 
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
@@ -15,7 +16,9 @@ import 'task_status_label.dart';
 /// Route `/tasks/new` (create) and `/tasks/:id/edit` (edit).
 ///
 /// Saving calls the repository and navigates with `go`: to the list after a
-/// create, to the task's page after an edit.
+/// create, to the task's page after an edit. A request that breaks the
+/// contract shows its field errors under the fields; any other failure shows
+/// a snack bar and keeps the form.
 class TaskFormScreen extends StatefulWidget {
   /// Creates the form. A null [taskId] creates a new task.
   const TaskFormScreen({super.key, required this.repository, this.taskId});
@@ -33,6 +36,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   final _description = TextEditingController();
   TaskStatus _status = TaskStatus.open;
   bool _saving = false;
+
+  /// Error codes of the last save, by field, from a contract violation.
+  Map<String, List<String>> _fieldErrors = const {};
 
   /// State of the load of the task being edited. Data when creating.
   late AsyncValue<Task?> _loaded = _editing
@@ -81,17 +87,24 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       status: _status,
     );
     final id = widget.taskId;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _fieldErrors = const {};
+    });
     try {
       if (id == null) {
         await widget.repository.create(draft);
       } else {
         await widget.repository.update(id, draft);
       }
-    } on ApiErrorException catch (error) {
+    } on ContractViolationException catch (error) {
+      if (mounted) {
+        setState(() => _fieldErrors = fieldErrorsByField(error.errors));
+      }
       _saveFailed(error);
       return;
-    } on TaskNotFoundException catch (error) {
+    } on Exception catch (error) {
+      // API, network or not found.
       _saveFailed(error);
       return;
     }
@@ -109,8 +122,16 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     );
   }
 
+  /// Message of the first contract error of [field], or null.
+  String? _fieldError(String field, AppLocalizations shared) {
+    final codes = _fieldErrors[field];
+    if (codes == null || codes.isEmpty) return null;
+    return errorMessage(shared, codes.first);
+  }
+
   Widget _form(BuildContext context) {
     final l10n = TasksLocalizations.of(context);
+    final shared = AppLocalizations.of(context);
     return Form(
       key: _formKey,
       child: ListView(
@@ -123,6 +144,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
             decoration: InputDecoration(
               labelText: l10n.titleLabel,
               border: const OutlineInputBorder(),
+              errorText: _fieldError('title', shared),
             ),
             validator: (value) =>
                 (value ?? '').trim().isEmpty ? l10n.titleRequired : null,
@@ -135,6 +157,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
             decoration: InputDecoration(
               labelText: l10n.descriptionLabel,
               border: const OutlineInputBorder(),
+              errorText: _fieldError('description', shared),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -154,7 +177,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
-            label: AppLocalizations.of(context).actionSave,
+            label: shared.actionSave,
             loading: _saving,
             onPressed: _save,
           ),

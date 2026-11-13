@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -105,10 +104,8 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     _deleting = true;
     try {
       await widget.repository.delete(task.id);
-    } on ApiErrorException catch (error) {
-      _deleteFailed(error, l10n.deleteError);
-      return;
-    } on TaskNotFoundException catch (error) {
+    } on Exception catch (error) {
+      // API, contract, network or not found.
       _deleteFailed(error, l10n.deleteError);
       return;
     }

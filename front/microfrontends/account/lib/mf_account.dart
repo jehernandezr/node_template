@@ -9,7 +9,7 @@ import 'package:shell_core/shell_core.dart';
 import 'src/screens/screens.dart' deferred as screens;
 import 'src/shared/constants/account_constants.dart';
 import 'src/shared/enums/account_enums.dart';
-import 'src/shared/utils/account_access.dart';
+import 'src/shared/constants/account_access.dart';
 
 /// Manifest registered by the shells. Routes live under `/account`.
 ///

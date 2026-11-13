@@ -7,7 +7,9 @@ Microfrontend `billing` for the web shell. Shows the tenant's plan, usage per qu
 - Screens load as a deferred library (`lib/src/screens/billing_screens.dart`). Its builders read the repository from the scope of the current identity (`billingRepositoryOf`) and wrap the screen in `Localizations.override` with `BillingLocalizations`, so the copy stays in that chunk.
 - Data: abstract `BillingRepository` in `lib/src/data/`. `FakeBillingRepository` serves in-memory sample data until the API is wired. Errors are `ApiErrorException`; screens show them with `ErrorView.fromException`. Pass `failure:` to the fake to exercise error views.
 - Copy: `lib/src/l10n/app_es.arb` (template) and `app_en.arb`, generated into `lib/src/l10n/generated/` (`billing_localizations.dart`, class `BillingLocalizations`). Shared words (`actionCancel`, and so on) come from `AppLocalizations` in `packages/i18n`. Regenerate with `flutter gen-l10n`.
-- Money: integer minor units plus `Currency`. COP uses es_CO separators with no decimals (`$ 189.000`); USD uses en_US with two decimals (`US$1,100.00`). Formatting is in `lib/src/format/money_format.dart` (intl).
+- Money: the contract's `MoneyAmount` (integer minor units plus the ISO code of `Currency`). Screens format amounts, counts and dates with `formatMoney`, `formatInteger` and `formatDate` of `packages/utils`, in the user's locale.
+- Quotas carry a typed `QuotaKey`; their names live in the ARB (`quotaLabel` in `lib/src/l10n/billing_labels.dart`).
+- Layout: `lib/src/shared/constants/billing_access.dart` is the only eager file besides the manifest; widgets live in `lib/src/screens/widgets/` and labels in `lib/src/l10n/`.
 - Spacing comes from `AppSpacing` (`package:ui`).
 - Usage meters turn warning at 80% and danger at 100% (`usageLevelFor`).
 

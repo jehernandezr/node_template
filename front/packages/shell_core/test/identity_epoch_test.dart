@@ -43,8 +43,9 @@ Future<GoRouter> _pump(
   WidgetTester tester,
   MicrofrontendRegistry registry,
   ValueNotifier<UserSession> session,
-  String location,
-) async {
+  String location, {
+  bool material = false,
+}) async {
   // Not started and not disposed: its futures belong to the test's fake zone,
   // so awaiting them from a tear-down would never finish.
   final runtime = fakeRuntime(registry: registry, session: session);
@@ -59,8 +60,15 @@ Future<GoRouter> _pump(
     shellBuilder: (context, state, child) => child,
   );
   addTearDown(router.dispose);
+  // MaterialApp animates page exits, so a removed page stays mounted (and
+  // can rebuild) during its exit transition.
   await tester.pumpWidget(
-    WidgetsApp.router(color: const Color(0xFF000000), routerConfig: router),
+    material
+        ? MaterialApp.router(routerConfig: router)
+        : WidgetsApp.router(
+            color: const Color(0xFF000000),
+            routerConfig: router,
+          ),
   );
   router.go(location);
   await tester.pumpAndSettle();
@@ -191,6 +199,63 @@ void main() {
 
       expect(router.routerDelegate.currentConfiguration.uri.path, '/login');
       expect(builtFor, isNot(contains(null)));
+    },
+  );
+
+  testWidgets(
+    'a protected sub-route is not built for an identity that fails its rule',
+    (tester) async {
+      final session = ValueNotifier(
+        UserSession(
+          userId: 'admin',
+          tenantId: 't1',
+          permissions: {Permission.tasksRead, Permission.tasksWrite},
+        ),
+      );
+      final builtFor = <String?>[];
+      final registry = MicrofrontendRegistry()
+        ..register(
+          fakeManifest(
+            id: MicrofrontendId.tasks,
+            access: AccessRule.permissions([Permission.tasksRead]),
+            screens: [
+              ScreenRoute(
+                path: '/tasks',
+                loadLibrary: () async {},
+                builder: (scope, {params = const {}}) => const Text('list'),
+                routes: [
+                  ScreenRoute(
+                    path: 'new',
+                    loadLibrary: () async {},
+                    access: AccessRule.permissions([Permission.tasksWrite]),
+                    builder: (scope, {params = const {}}) {
+                      builtFor.add(scope.services.session.userId);
+                      return const Text('form');
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      final router = await _pump(
+        tester,
+        registry,
+        session,
+        '/tasks/new',
+        material: true,
+      );
+      expect(find.text('form'), findsOneWidget);
+
+      session.value = _user('reader');
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(builtFor, ['admin']);
+      await tester.pumpAndSettle();
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/forbidden');
+      expect(builtFor, ['admin']);
     },
   );
 }

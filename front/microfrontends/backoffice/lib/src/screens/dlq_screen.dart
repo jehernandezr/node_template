@@ -1,6 +1,5 @@
-import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart' show AppLocalizations, errorMessage;
+import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
@@ -10,7 +9,6 @@ import '../l10n/generated/backoffice_localizations.dart';
 import '../shared/constants/backoffice_access.dart';
 import '../shared/constants/backoffice_paths.dart';
 import '../shared/types/backoffice_types.dart';
-import '../shared/utils/format_timestamp.dart';
 import 'widgets.dart';
 
 /// Dead-letter queues with their counts. Opening a queue goes to
@@ -81,12 +79,13 @@ class _DlqScreenState extends State<DlqScreen> {
     final int moved;
     try {
       moved = await widget.repository.redrive(queue);
-    } on ApiErrorException catch (error) {
+    } on Exception catch (error) {
+      // API, contract or network.
       if (!mounted) return;
       showActionError(
         context,
         error,
-        message: errorMessage(shared, error.problem.code),
+        message: actionErrorMessage(shared, error),
       );
       return;
     }
@@ -228,7 +227,7 @@ class _QueueMessages extends StatelessWidget {
                       Text('${l10n.dlqFirstError}: ${message.firstError}'),
                       Text(l10n.dlqReceiveCount(message.receiveCount)),
                       Text(
-                        '${l10n.dlqSentAt}: ${formatTimestamp(message.sentAt)}',
+                        '${l10n.dlqSentAt}: ${formatTimestamp(context, message.sentAt)}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

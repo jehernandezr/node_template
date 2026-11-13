@@ -39,8 +39,8 @@ final class WebShell {
       session: session,
       servicesFactory: (identity) => DefaultShellServices(
         session: identity,
-        eventBus: runtime.eventBus,
         onSignOut: signOut,
+        onStepUp: requestStepUp,
       ),
     );
     session.addListener(_onSessionChanged);
@@ -80,6 +80,15 @@ final class WebShell {
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
   late final StreamSubscription<UnreadCountChanged> _unreadSubscription;
+
+  /// Opens the step-up page on top of the current one and completes with
+  /// whether the user verified the second factor.
+  ///
+  /// Microfrontends call it through `ShellServices.requestStepUp` before a
+  /// sensitive action. The page updates `UserSession.mfaVerifiedAt` and pops
+  /// with the result, so the screen that asked stays mounted.
+  Future<bool> requestStepUp() async =>
+      await router.push<bool>(stepUpPath, extra: StepUpPage.request) ?? false;
 
   /// Ends the session and goes to `/login` without `from`.
   Future<void> signOut() =>
@@ -128,6 +137,7 @@ final class WebShell {
         session: session,
         from: state.uri.queryParameters['from'],
         clock: runtime.clock,
+        returnsResult: identical(state.extra, StepUpPage.request),
       ),
     ),
   ];

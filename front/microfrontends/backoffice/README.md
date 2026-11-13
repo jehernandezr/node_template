@@ -20,7 +20,7 @@ El manifiesto declara `screens: [ScreenRoute(...)]` anidadas bajo `/backoffice`.
 
 Las reglas viven en `lib/src/shared/constants/backoffice_access.dart`:
 
-- **Manifiesto:** `AccessRule.all([platformRoles(todos), mfa(backofficeMfaMaxAge)])`, con 15 minutos. Un rol de plataforma sin segundo factor reciente va a la página de step-up del shell; un usuario sin rol de plataforma va a `forbidden`.
+- **Manifiesto:** `AccessRule.all([platformRoles(todos), mfa(backofficeMfaMaxAge)])`, con la ventana de step-up del contrato (`MfaRules.stepUpMaxAgeMinutes`). Un rol de plataforma sin segundo factor reciente va a la página de step-up del shell; un usuario sin rol de plataforma va a `forbidden`.
 - **Lectura de operaciones** (sagas y DLQ): `superAdmin`, `support` y `readOnly`, con `ScreenRoute(access:)`. `finance` solo ve la parte de facturación: el resumen con la tarjeta de tenants y los tenants con su plan.
 - **Acciones** (acciones manuales de saga y redistribución de DLQ): solo `superAdmin` y `support`, con `AccessGate`. Para los demás roles los botones no aparecen.
 

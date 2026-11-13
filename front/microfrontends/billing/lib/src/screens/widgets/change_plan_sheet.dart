@@ -1,13 +1,12 @@
-import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatMoney;
 
-import '../billing_labels.dart';
-import '../shared/types/billing_types.dart';
-import '../data/billing_repository.dart';
-import '../shared/utils/money_format.dart';
-import '../l10n/generated/billing_localizations.dart';
+import '../../l10n/billing_labels.dart';
+import '../../shared/types/billing_types.dart';
+import '../../data/billing_repository.dart';
+import '../../l10n/generated/billing_localizations.dart';
 
 /// Bottom sheet that lists plans and switches the subscription.
 ///
@@ -59,12 +58,8 @@ class _ChangePlanSheetState extends State<ChangePlanSheet> {
     setState(() => _saving = true);
     try {
       await widget.repository.changePlan(planId);
-    } on ApiErrorException catch (error) {
-      if (!mounted) return;
-      setState(() => _saving = false);
-      showActionError(context, error, message: l10n.changePlanError);
-      return;
-    } on ContractViolationException catch (error) {
+    } on Exception catch (error) {
+      // API, contract or network: the sheet must not stay saving.
       if (!mounted) return;
       setState(() => _saving = false);
       showActionError(context, error, message: l10n.changePlanError);
@@ -112,7 +107,7 @@ class _ChangePlanSheetState extends State<ChangePlanSheet> {
                     selected: plan.id == selected,
                     title: Text(plan.name),
                     subtitle: Text(
-                      '${formatMoney(plan.price)} / '
+                      '${formatMoney(plan.price, locale: localeTag(context))} / '
                       '${periodicityLabel(l10n, plan.periodicity)}',
                     ),
                     trailing: plan.id == widget.currentPlanId

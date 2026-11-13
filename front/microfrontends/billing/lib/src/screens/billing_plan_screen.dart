@@ -3,18 +3,17 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatMoney;
 
-import '../billing_access.dart';
-import '../billing_labels.dart';
+import '../shared/constants/billing_access.dart';
+import '../l10n/billing_labels.dart';
 import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
-import '../shared/utils/money_format.dart';
-import '../format/period_format.dart';
 import '../l10n/generated/billing_localizations.dart';
-import '../widgets/billing_colors.dart';
-import '../widgets/change_plan_sheet.dart';
-import '../widgets/status_chip.dart';
-import '../widgets/usage_meter.dart';
+import 'widgets/billing_colors.dart';
+import 'widgets/change_plan_sheet.dart';
+import 'widgets/status_chip.dart';
+import 'widgets/usage_meter.dart';
 
 /// `/billing`: current plan, subscription status and usage of each quota.
 class BillingPlanScreen extends StatefulWidget {
@@ -123,7 +122,7 @@ class _PlanContent extends StatelessWidget {
               Text(plan.name, style: theme.textTheme.headlineSmall),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                '${formatMoney(plan.price)} / '
+                '${formatMoney(plan.price, locale: localeTag(context))} / '
                 '${periodicityLabel(l10n, plan.periodicity)}',
                 style: theme.textTheme.bodyLarge,
               ),
@@ -144,7 +143,7 @@ class _PlanContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '${l10n.currentPeriod}: ${formatPeriod(l10n, period)}',
+                '${l10n.currentPeriod}: ${formatPeriod(l10n, period, locale: localeTag(context))}',
                 style: theme.textTheme.bodySmall,
               ),
             ],

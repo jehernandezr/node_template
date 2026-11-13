@@ -48,6 +48,14 @@ void main() {
     });
   });
 
+  group('numbers', () {
+    test('groups integers with the locale separators', () {
+      expect(formatInteger(1234567, locale: 'en'), '1,234,567');
+      expect(formatInteger(1234567, locale: 'es'), '1.234.567');
+      expect(formatInteger(7, locale: 'es'), '7');
+    });
+  });
+
   group('ids', () {
     const id = '0193f1c2-0000-7000-8000-000000000000';
 

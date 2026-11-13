@@ -3,7 +3,11 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../l10n/generated/account_localizations.dart';
+import '../../l10n/generated/account_localizations.dart';
+
+/// Etiqueta BCP 47 del locale de [context], para los formatos de `utils`.
+String localeTag(BuildContext context) =>
+    Localizations.localeOf(context).toLanguageTag();
 
 /// Fila dentro de una [AppCard]: título, detalle opcional, insignia y acción.
 class AccountRowCard extends StatelessWidget {

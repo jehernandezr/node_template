@@ -1,4 +1,3 @@
-import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -45,7 +44,8 @@ class _AssistantListScreenState extends State<AssistantListScreen> {
       final conversation = await widget.repository.createConversation();
       if (!mounted) return;
       context.go(conversationPath(conversation.id));
-    } on ApiErrorException catch (error) {
+    } on Exception catch (error) {
+      // API, contract or network.
       if (!mounted) return;
       showActionError(context, error, message: l10n.createError);
     }

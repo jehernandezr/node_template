@@ -20,12 +20,8 @@ import 'support/test_app.dart';
 final _es = lookupBillingLocalizations(const Locale('es'));
 final _en = lookupBillingLocalizations(const Locale('en'));
 
-MicrofrontendScope _scope() => MicrofrontendScope(
-  DefaultShellServices(
-    session: UserSession.anonymous(),
-    eventBus: ShellEventBus(),
-  ),
-);
+MicrofrontendScope _scope() =>
+    MicrofrontendScope(DefaultShellServices(session: UserSession.anonymous()));
 
 /// Repository whose invoices never arrive, to keep a screen loading.
 base class _PendingRepository extends FakeBillingRepository {

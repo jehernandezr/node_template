@@ -113,7 +113,10 @@ final class ShellRuntime {
     }
     _checkIdentity();
     final services = _services ??= servicesFactory(session.value);
-    return _scopes.putIfAbsent(id, () => MicrofrontendScope(services));
+    return _scopes.putIfAbsent(
+      id,
+      () => MicrofrontendScope(services, eventBus: eventBus),
+    );
   }
 
   /// Starts the lifecycles. Returns when the first sync completes.
@@ -184,6 +187,10 @@ final class ShellRuntime {
     // A sync queued before dispose must not touch scopes or lifecycles after it.
     if (_disposed) return;
     final current = session.value;
+    // The identity this sync works for. If it changes while a lifecycle
+    // initializes, the rest of the list belongs to the previous identity: the
+    // sync queued by that change does the work for the new one.
+    final startEpoch = _identityEpoch.value;
     final identityChanged = _identityChanged;
     _identityChanged = false;
 
@@ -204,7 +211,7 @@ final class ShellRuntime {
     }
 
     for (final entry in wanted.entries) {
-      if (_disposed) return;
+      if (_disposed || _identityEpoch.value != startEpoch) return;
       final id = entry.key;
       if (_active.containsKey(id)) continue;
       if (_retries[id]?.waiting ?? false) continue;
