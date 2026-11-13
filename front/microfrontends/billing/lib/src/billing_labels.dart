@@ -1,4 +1,4 @@
-import 'data/billing_models.dart';
+import 'shared/enums/billing_enums.dart';
 import 'l10n/generated/billing_localizations.dart';
 
 /// Localized label of a billing cadence.

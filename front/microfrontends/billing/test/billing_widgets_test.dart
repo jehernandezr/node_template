@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mf_billing/src/data/billing_models.dart';
+import 'package:mf_billing/src/shared/types/billing_types.dart';
 import 'package:mf_billing/src/data/fake_billing_repository.dart';
 import 'package:mf_billing/src/l10n/generated/billing_localizations.dart';
 import 'package:mf_billing/src/screens/billing_plan_screen.dart';

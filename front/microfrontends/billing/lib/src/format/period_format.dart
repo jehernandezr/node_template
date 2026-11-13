@@ -1,4 +1,4 @@
-import '../data/billing_models.dart';
+import '../shared/types/billing_types.dart';
 import '../l10n/generated/billing_localizations.dart';
 
 /// Formats a period as `1 nov 2026 a 30 nov 2026`, using the localized

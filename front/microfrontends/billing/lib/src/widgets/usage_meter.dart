@@ -1,8 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/billing_models.dart';
-import '../format/money_format.dart';
+import '../shared/enums/billing_enums.dart';
+import '../shared/types/billing_types.dart';
+import '../shared/utils/money_format.dart';
 import 'billing_colors.dart';
 
 /// Progress of one quota: label, `used / limit` and a bar that turns

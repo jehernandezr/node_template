@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
-import '../data/billing_models.dart';
+import '../enums/billing_enums.dart';
+import '../types/billing_types.dart';
 
 /// Formats [money] for display.
 ///

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mf_billing/src/data/billing_models.dart';
-import 'package:mf_billing/src/format/money_format.dart';
+import 'package:mf_billing/src/shared/enums/billing_enums.dart';
+import 'package:mf_billing/src/shared/types/billing_types.dart';
+import 'package:mf_billing/src/shared/utils/money_format.dart';
 
 void main() {
   group('formatMoney', () {
