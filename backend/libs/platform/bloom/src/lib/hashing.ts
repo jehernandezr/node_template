@@ -1,11 +1,3 @@
-import { fnv1a32 } from '@platform/primitives';
-
-/**
- * FNV-1a de 32 bits.
- * @deprecated Importa `fnv1a32` desde `@platform/primitives`. Se mantiene como alias.
- */
-export { fnv1a32 };
-
 const encoder = new TextEncoder();
 
 /**

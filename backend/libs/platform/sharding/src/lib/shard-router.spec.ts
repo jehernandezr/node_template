@@ -2,6 +2,11 @@ import { FixedClock } from '@platform/kernel/testing';
 import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import { ConsistentHashRing } from './consistent-hash-ring.js';
 import {
+  InMemoryShardDirectoryChannel,
+  ShardDirectoryChangeKind,
+  ShardingEvent,
+} from './directory-changes.js';
+import {
   ShardingError,
   ShardingErrorCode,
   WrongRegionError,
@@ -590,20 +595,6 @@ describe('ShardRouter', () => {
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
     });
 
-    it('still accepts the deprecated millisecond clock function', async () => {
-      const env = setup();
-      env.store.setPlacement(placement());
-      let now = 0;
-      const router = env.build({ clock: () => now });
-      await router.resolve({ tenantId: T1, ...READ });
-      now = LOCAL_TTL - 1;
-      await router.resolve({ tenantId: T1, ...READ });
-      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
-      now = LOCAL_TTL;
-      await router.resolve({ tenantId: T1, ...READ });
-      expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
-    });
-
     it('honours custom TTLs', async () => {
       const env = setup();
       env.store.setPlacement(placement());
@@ -846,6 +837,111 @@ describe('ShardRouter', () => {
       ).resolves.toMatchObject({ instance: 'pg-new' });
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
       expect(env.directory.getInstance).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // Audit PLAT-13: other processes kept the old placement for up to localTtlMs after a move.
+  describe('directory changes across processes', () => {
+    it('drops the placement in every listening process when one of them invalidates', async () => {
+      const env = setup();
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-1'], version: 1 }),
+      );
+      const channel = new InMemoryShardDirectoryChannel();
+      const mover = env.build({ sharedCache: env.shared, changes: channel });
+      const other = env.build({ sharedCache: env.shared });
+      await other.listen(channel);
+      await other.resolve({ tenantId: T1, ...READ });
+
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-2'], version: 2 }),
+      );
+      await mover.invalidate(T1, { version: 2 });
+
+      await expect(
+        other.resolve({ tenantId: T1, ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-2' });
+    });
+
+    it('ignores older placements from the shared cache and a lagging directory after a change', async () => {
+      const env = setup();
+      const router = env.build({ sharedCache: env.shared });
+      // The shared cache still holds version 1 (the publisher could not write its tombstone).
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-1'], version: 1 }),
+      );
+      await router.resolve({ tenantId: T1, ...READ });
+
+      router.applyDirectoryChange({
+        type: ShardingEvent.ShardDirectoryChanged,
+        kind: ShardDirectoryChangeKind.TenantPlacement,
+        tenantId: T1,
+        version: 2,
+      });
+      // The replica has not caught up yet: answered, but not cached.
+      await expect(
+        router.resolve({ tenantId: T1, ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-1' });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
+
+      env.store.setPlacement(
+        placement({ shardGroup: ['shard-2'], version: 2 }),
+      );
+      await expect(
+        router.resolve({ tenantId: T1, ...READ }),
+      ).resolves.toMatchObject({ logicalShard: 'shard-2' });
+      await router.resolve({ tenantId: T1, ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(3);
+    });
+
+    it('keeps a placement that is already at the announced version', async () => {
+      const env = setup();
+      env.store.setPlacement(placement({ version: 3 }));
+      const router = env.build();
+      await router.resolve({ tenantId: T1, ...READ });
+      router.applyDirectoryChange({
+        type: ShardingEvent.ShardDirectoryChanged,
+        kind: ShardDirectoryChangeKind.TenantPlacement,
+        tenantId: T1,
+        version: 3,
+      });
+      await router.resolve({ tenantId: T1, ...READ });
+      expect(env.directory.getPlacement).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops a moved shard instance', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      const router = env.build();
+      await router.resolve({ tenantId: T1, ...READ });
+      env.store.setInstance('shard-1', 'pg-new');
+      router.applyDirectoryChange({
+        type: ShardingEvent.ShardDirectoryChanged,
+        kind: ShardDirectoryChangeKind.ShardInstance,
+        logicalShard: 'shard-1',
+      });
+      await expect(
+        router.resolve({ tenantId: T1, ...READ }),
+      ).resolves.toMatchObject({ instance: 'pg-new' });
+    });
+
+    it('reports a malformed change and a failing publisher without throwing', async () => {
+      const env = setup();
+      env.store.setPlacement(placement());
+      const onCacheError = jest.fn();
+      const router = env.build({
+        onCacheError,
+        changes: {
+          publish: () => Promise.reject(new Error('channel down')),
+        },
+      });
+      router.applyDirectoryChange({
+        type: ShardingEvent.ShardDirectoryChanged,
+        kind: ShardDirectoryChangeKind.TenantPlacement,
+        tenantId: 'not-a-uuid',
+      });
+      await expect(router.invalidate(T1)).resolves.toBeUndefined();
+      expect(onCacheError).toHaveBeenCalledTimes(2);
     });
   });
 

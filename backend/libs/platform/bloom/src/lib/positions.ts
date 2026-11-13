@@ -1,4 +1,5 @@
-import { fnv1a32, murmur3_32 } from './hashing.js';
+import { fnv1a32 } from '@platform/primitives';
+import { murmur3_32 } from './hashing.js';
 
 /**
  * Bit positions for an item using enhanced double hashing:

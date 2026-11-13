@@ -1,9 +1,5 @@
-import { isTransientError as primitivesIsTransientError } from '@platform/primitives';
-import {
-  isTransientError,
-  retryAfterHintMs,
-  retryAfterMs,
-} from './transient.js';
+import { isTransientError } from '@platform/primitives';
+import { retryAfterHintMs } from './transient.js';
 
 describe('isTransientError', () => {
   it.each([
@@ -84,42 +80,38 @@ describe('isTransientError', () => {
   );
 });
 
-describe('retryAfterMs', () => {
+describe('retryAfterHintMs without options', () => {
   it('reads a numeric retryAfterMs', () => {
-    expect(retryAfterMs({ retryAfterMs: 250 })).toBe(250);
+    expect(retryAfterHintMs({ retryAfterMs: 250 })).toBe(250);
   });
 
   it('reads Retry-After in seconds from a plain headers object', () => {
-    expect(retryAfterMs({ headers: { 'retry-after': '2' } })).toBe(2_000);
+    expect(retryAfterHintMs({ headers: { 'retry-after': '2' } })).toBe(2_000);
   });
 
   it('reads Retry-After from response headers with a get method', () => {
     const headers = {
       get: (name: string) => (name === 'retry-after' ? '3' : null),
     };
-    expect(retryAfterMs({ response: { headers } })).toBe(3_000);
+    expect(retryAfterHintMs({ response: { headers } })).toBe(3_000);
   });
 
   it('reads Retry-After as an HTTP date', () => {
     const date = new Date(Date.now() + 5_000).toUTCString();
-    const value = retryAfterMs({ headers: { 'retry-after': date } });
+    const value = retryAfterHintMs({ headers: { 'retry-after': date } });
     expect(value).toBeGreaterThan(3_000);
     expect(value).toBeLessThanOrEqual(5_000);
   });
 
   it('returns undefined without a hint', () => {
-    expect(retryAfterMs(new Error('plain'))).toBeUndefined();
+    expect(retryAfterHintMs(new Error('plain'))).toBeUndefined();
     expect(
-      retryAfterMs({ headers: { 'retry-after': 'soon' } }),
+      retryAfterHintMs({ headers: { 'retry-after': 'soon' } }),
     ).toBeUndefined();
   });
 });
 
-describe('deprecated aliases', () => {
-  it('isTransientError is the primitives rule', () => {
-    expect(isTransientError).toBe(primitivesIsTransientError);
-  });
-
+describe('isTransientError precedence', () => {
   it('treats an outer retryable false as final even with a transient cause', () => {
     expect(
       isTransientError(
@@ -149,7 +141,7 @@ describe('retryAfterHintMs', () => {
     expect(retryAfterHintMs({ headers: { 'retry-after': '86400' } })).toBe(
       60_000,
     );
-    expect(retryAfterMs({ retryAfterMs: 10_000_000 })).toBe(60_000);
+    expect(retryAfterHintMs({ retryAfterMs: 10_000_000 })).toBe(60_000);
   });
 
   it('resolves HTTP dates against the given now', () => {

@@ -53,6 +53,9 @@
     },
     {
       "path": "./backend/libs/platform/persistence"
+    },
+    {
+      "path": "./backend/libs/platform/adapters/valkey"
     }
   ],
   "compilerOptions": {}

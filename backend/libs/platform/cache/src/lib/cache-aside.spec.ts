@@ -2,10 +2,16 @@ import { SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/testing';
 import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import {
+  CircuitOpenError,
+  ResilienceEventKind,
+  ResiliencePolicyName,
+  ResilienceRegistry,
+  ResilienceTimeoutError,
+} from '@platform/resilience';
+import {
   CacheCorruptEntryError,
   CacheInvalidArgumentError,
   CacheKeyTooLongError,
-  CacheTimeoutError,
   CacheValueTooLargeError,
 } from './errors.js';
 import type { CachePort } from './cache-port.js';
@@ -24,10 +30,16 @@ function setup(
   options: SetupOptions = {},
 ) {
   const keyspace = new VersionedKeyspace(cache);
+  const resilience =
+    options.timeoutMs === undefined
+      ? undefined
+      : new ResilienceRegistry({
+          [ResiliencePolicyName.Cache]: { timeoutMs: options.timeoutMs },
+        });
   const aside = new CacheAside(cache, keyspace, {
     random: () => 0,
     onError: options.onError,
-    timeoutMs: options.timeoutMs,
+    resilience,
   });
   return { cache, keyspace, aside };
 }
@@ -70,8 +82,8 @@ describe('CacheAside', () => {
   });
 
   it('expires entries using the jittered TTL with a fake clock', async () => {
-    let now = 0;
-    const cache = new InMemoryCache({ clock: () => now });
+    const clock = new FixedClock(new Date(0));
+    const cache = new InMemoryCache({ clock });
     const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
       random: () => 0,
     });
@@ -80,11 +92,11 @@ describe('CacheAside', () => {
 
     await aside.getOrLoad(options);
     await sleep(5);
-    now = 899;
+    clock.set(new Date(899));
     await aside.getOrLoad(options);
     expect(load).toHaveBeenCalledTimes(1);
 
-    now = 900;
+    clock.set(new Date(900));
     await aside.getOrLoad(options);
     expect(load).toHaveBeenCalledTimes(2);
   });
@@ -403,7 +415,7 @@ describe('CacheAside', () => {
     });
 
     expect(value).toBe('db');
-    expect(onError).toHaveBeenCalledWith(expect.any(CacheTimeoutError));
+    expect(onError).toHaveBeenCalledWith(expect.any(ResilienceTimeoutError));
   });
 
   it('returns without waiting for a slow write and reports its timeout later', async () => {
@@ -423,7 +435,117 @@ describe('CacheAside', () => {
       }),
     ).toBe('db');
     await sleep(30);
-    expect(onError).toHaveBeenCalledWith(expect.any(CacheTimeoutError));
+    expect(onError).toHaveBeenCalledWith(expect.any(ResilienceTimeoutError));
+  });
+
+  describe('resilience policy', () => {
+    const unreachable = Object.assign(new Error('connect refused'), {
+      code: 'ECONNREFUSED',
+    });
+
+    function unreachableCache(): CachePort & { calls: () => number } {
+      let calls = 0;
+      const fail = async (): Promise<never> => {
+        calls += 1;
+        throw unreachable;
+      };
+      return {
+        get: fail,
+        set: fail,
+        setIfAbsent: fail,
+        delete: fail,
+        incr: fail,
+        calls: () => calls,
+      };
+    }
+
+    it('opens the cache breaker after repeated transient failures and stops calling the cache', async () => {
+      const cache = unreachableCache();
+      const registry = new ResilienceRegistry();
+      const events: ResilienceEventKind[] = [];
+      registry.onEvent((event) => {
+        events.push(event.kind);
+      });
+      const onError = jest.fn();
+      const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        resilience: registry,
+        onError,
+      });
+      const read = () =>
+        aside.getOrLoad({
+          namespace,
+          params: {},
+          ttlMs: 1000,
+          load: async () => 'db',
+        });
+
+      // Five keyspace failures (the default threshold) open the circuit.
+      for (let i = 0; i < 5; i += 1) {
+        await expect(read()).resolves.toBe('db');
+      }
+      expect(events).toContain(ResilienceEventKind.Break);
+      const callsWhenOpen = cache.calls();
+
+      await expect(read()).resolves.toBe('db');
+      expect(cache.calls()).toBe(callsWhenOpen);
+      expect(onError).toHaveBeenLastCalledWith(expect.any(CircuitOpenError));
+    });
+
+    it('keeps one breaker per dependencyKey', async () => {
+      const registry = new ResilienceRegistry();
+      const broken = unreachableCache();
+      const brokenAside = new CacheAside(
+        broken,
+        new VersionedKeyspace(broken),
+        { resilience: registry, dependencyKey: 'valkey-a' },
+      );
+      for (let i = 0; i < 5; i += 1) {
+        await brokenAside.getOrLoad({
+          namespace,
+          params: {},
+          ttlMs: 1000,
+          load: async () => 'db',
+        });
+      }
+
+      const healthy = new InMemoryCache();
+      const get = jest.spyOn(healthy, 'get');
+      const healthyAside = new CacheAside(
+        healthy,
+        new VersionedKeyspace(healthy),
+        { resilience: registry, dependencyKey: 'valkey-b' },
+      );
+      await healthyAside.getOrLoad({
+        namespace,
+        params: {},
+        ttlMs: 1000,
+        load: async () => 'db',
+      });
+      expect(get).toHaveBeenCalled();
+    });
+
+    it('runs every cache call through the cache policy of the given registry', async () => {
+      const registry = new ResilienceRegistry();
+      const execute = jest.spyOn(registry, 'execute');
+      const cache = new InMemoryCache();
+      const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        resilience: registry,
+        dependencyKey: 'valkey-main',
+      });
+      await aside.getOrLoad({
+        namespace,
+        params: {},
+        ttlMs: 1000,
+        load: async () => 'db',
+      });
+      await aside.invalidate(namespace);
+
+      expect(execute).toHaveBeenCalled();
+      for (const [name, , options] of execute.mock.calls) {
+        expect(name).toBe(ResiliencePolicyName.Cache);
+        expect(options).toEqual({ dependencyKey: 'valkey-main' });
+      }
+    });
   });
 
   it('shares a SingleFlight instance when one is provided', async () => {
@@ -619,9 +741,6 @@ describe('CacheAside', () => {
       expect(
         () => new CacheAside(cache, keyspace, { maxValueBytes: 0 }),
       ).toThrow(CacheInvalidArgumentError);
-      expect(() => new CacheAside(cache, keyspace, { timeoutMs: -1 })).toThrow(
-        CacheInvalidArgumentError,
-      );
     });
   });
 

@@ -1,8 +1,6 @@
 import { PlatformError } from '@platform/kernel';
-import { fnv1a32 as primitivesFnv1a32 } from '@platform/primitives';
 import { BloomError, CorruptedData } from './bloom-error.js';
 import { BloomFilter, type SerializedBloomFilter } from './bloom-filter.js';
-import { fnv1a32 } from './hashing.js';
 
 describe('compatibilidad de bloom', () => {
   it('lee un payload serializado con el formato v1 original', () => {
@@ -18,10 +16,6 @@ describe('compatibilidad de bloom', () => {
     expect(filter.mightContain('beta')).toBe(true);
     expect(filter.mightContain('gamma-missing-item')).toBe(false);
     expect(filter.serialize()).toEqual(old);
-  });
-
-  it('el alias fnv1a32 es el de primitives', () => {
-    expect(fnv1a32).toBe(primitivesFnv1a32);
   });
 
   it('los errores extienden PlatformError', () => {

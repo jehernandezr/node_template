@@ -1,5 +1,11 @@
 import { InvalidParameters } from './bloom-error.js';
-import { optimalParameters } from './optimal-parameters.js';
+import { BloomFilter } from './bloom-filter.js';
+import { MAX_BITS } from './limits.js';
+import {
+  DEFAULT_FALSE_POSITIVE_RATE,
+  optimalParameters,
+  requiredBits,
+} from './optimal-parameters.js';
 
 describe('optimalParameters', () => {
   it('computes the classic sizing for 1_000_000 items at 1 %', () => {
@@ -34,5 +40,22 @@ describe('optimalParameters', () => {
     expect(() => optimalParameters(Number.MAX_SAFE_INTEGER, 0.5)).toThrow(
       InvalidParameters,
     );
+  });
+});
+
+describe('default false positive rate', () => {
+  it('is 1 % when a filter does not declare one', () => {
+    expect(DEFAULT_FALSE_POSITIVE_RATE).toBe(0.01);
+    expect(optimalParameters(1_000_000)).toEqual(
+      optimalParameters(1_000_000, 0.01),
+    );
+    const filter = BloomFilter.create({ expectedItems: 1_000_000 });
+    expect(filter.bits).toBe(9_585_059);
+  });
+
+  // Audit PLAT-15: one filter of 2^32 bits does not hold the HIBP list at 1 %.
+  it('shows why HIBP needs partitions', () => {
+    expect(requiredBits(1_000_000_000)).toBeGreaterThan(MAX_BITS);
+    expect(() => optimalParameters(1_000_000_000)).toThrow(InvalidParameters);
   });
 });

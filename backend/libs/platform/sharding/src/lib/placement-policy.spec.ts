@@ -1,5 +1,11 @@
 import { ShardingError, ShardingErrorCode } from './errors.js';
-import { LeastLoadedPlacementPolicy } from './placement-policy.js';
+import { InMemoryDirectoryStore } from './in-memory-directory-store.js';
+import {
+  LeastLoadedPlacementPolicy,
+  placeTenant,
+  type ShardPlacementPolicy,
+} from './placement-policy.js';
+import { DirectoryWriteResult, type DirectoryWriter } from './ports.js';
 import { TenantStatus, type TenantPlacement } from './types.js';
 
 function placement(
@@ -176,5 +182,93 @@ describe('LeastLoadedPlacementPolicy', () => {
     ).toThrow(
       expect.objectContaining({ code: ShardingErrorCode.UnknownShard }),
     );
+  });
+});
+
+describe('placeTenant', () => {
+  const policy: ShardPlacementPolicy = new LeastLoadedPlacementPolicy();
+  const request = { tenantId: 't-new', region: 'eu', dedicated: true };
+
+  it('writes the placement chosen by the policy', async () => {
+    const directory = new InMemoryDirectoryStore();
+    const result = await placeTenant({
+      policy,
+      directory,
+      request,
+      availableShards: SHARDS,
+    });
+    expect(result).toMatchObject({
+      placed: true,
+      placement: { shardGroup: ['eu-1'] },
+    });
+    await expect(directory.getPlacement('t-new')).resolves.toMatchObject({
+      shardGroup: ['eu-1'],
+    });
+  });
+
+  // Audit PLAT-13: two concurrent dedicated sign-ups could take the same empty shard.
+  it('never gives one empty shard to two concurrent dedicated tenants', async () => {
+    const directory = new InMemoryDirectoryStore();
+    const [first, second] = await Promise.all([
+      placeTenant({ policy, directory, request, availableShards: SHARDS }),
+      placeTenant({
+        policy,
+        directory,
+        request: { ...request, tenantId: 't-other' },
+        availableShards: SHARDS,
+      }),
+    ]);
+    const shards = [first, second].map((result) =>
+      result.placed ? result.placement.shardGroup[0] : undefined,
+    );
+    expect(new Set(shards)).toEqual(new Set(['eu-1', 'eu-2']));
+  });
+
+  it('returns the existing placement on a retry', async () => {
+    const directory = new InMemoryDirectoryStore();
+    const first = await placeTenant({
+      policy,
+      directory,
+      request,
+      availableShards: SHARDS,
+    });
+    const again = await placeTenant({
+      policy,
+      directory,
+      request,
+      availableShards: SHARDS,
+    });
+    expect(again).toEqual(first);
+  });
+
+  it('gives up with the last conflict after maxAttempts', async () => {
+    const directory: DirectoryWriter = {
+      listPlacements: async () => [],
+      putPlacement: async () => DirectoryWriteResult.ShardTaken,
+    };
+    await expect(
+      placeTenant({
+        policy,
+        directory,
+        request,
+        availableShards: SHARDS,
+        maxAttempts: 2,
+      }),
+    ).resolves.toEqual({
+      placed: false,
+      conflict: DirectoryWriteResult.ShardTaken,
+    });
+  });
+
+  it('rejects an invalid maxAttempts', async () => {
+    await expect(
+      placeTenant({
+        policy,
+        directory: new InMemoryDirectoryStore(),
+        request,
+        availableShards: SHARDS,
+        maxAttempts: 0,
+      }),
+    ).rejects.toBeInstanceOf(ShardingError);
   });
 });

@@ -1,16 +1,4 @@
-import { fnv1a32, murmur3_32 } from './hashing.js';
-
-describe('fnv1a32', () => {
-  it('matches the reference vectors', () => {
-    expect(fnv1a32('')).toBe(0x811c9dc5);
-    expect(fnv1a32('a')).toBe(0xe40c292c);
-  });
-
-  it('hashes UTF-8 bytes deterministically', () => {
-    expect(fnv1a32('ñandú')).toBe(fnv1a32('ñandú'));
-    expect(fnv1a32('ñ')).not.toBe(fnv1a32('n'));
-  });
-});
+import { murmur3_32 } from './hashing.js';
 
 describe('murmur3_32', () => {
   it('matches the reference vectors', () => {

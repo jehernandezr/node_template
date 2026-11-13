@@ -1,9 +1,9 @@
 import type { Deadline } from '@platform/primitives';
+import { ResiliencePolicyName, ResilienceRegistry } from '@platform/resilience';
 import type { CachePort } from './cache-port.js';
 import {
   CacheCorruptEntryError,
   CacheInvalidArgumentError,
-  CacheTimeoutError,
   CacheValueTooLargeError,
 } from './errors.js';
 import { jitteredTtl } from './jittered-ttl.js';
@@ -11,10 +11,14 @@ import { SingleFlight } from './single-flight.js';
 import type { VersionedKeyspace } from './versioned-keyspace.js';
 import { cancellation, waitFor, type WaitOptions } from './wait.js';
 
-const DEFAULT_TIMEOUT_MS = 50;
-
 /** Default bound for a serialized entry, in UTF-8 bytes (512 KiB). */
 export const DEFAULT_MAX_CACHE_VALUE_BYTES = 512 * 1024;
+
+/**
+ * What {@link CacheAside} needs from `@platform/resilience`: running a call
+ * under a named policy. A `ResilienceRegistry` satisfies it.
+ */
+export type CacheResilience = Pick<ResilienceRegistry, 'execute'>;
 
 /** Options for {@link CacheAside}. */
 export interface CacheAsideOptions {
@@ -24,8 +28,19 @@ export interface CacheAsideOptions {
   random?: () => number;
   /** Called with cache failures that were absorbed by falling back to the loader. */
   onError?: (error: unknown) => void;
-  /** Maximum wait for each cache call before it counts as a failure. Defaults to 50 ms. */
-  timeoutMs?: number;
+  /**
+   * Runs every cache call under `ResiliencePolicyName.Cache` (attempt timeout,
+   * total budget and circuit breaker). Pass the application's shared
+   * `ResilienceRegistry` so all caches of one Valkey share a breaker and its
+   * events. Defaults to a private registry with the default policies, so the
+   * timeout is `defaultPolicies[ResiliencePolicyName.Cache].timeoutMs`.
+   */
+  resilience?: CacheResilience;
+  /**
+   * Breaker and bulkhead key inside the cache policy, for example one per
+   * Valkey cluster. Defaults to the policy name.
+   */
+  dependencyKey?: string;
   /**
    * Largest serialized entry that is stored, in UTF-8 bytes. Larger values are
    * returned but not cached, and reported as `CacheValueTooLargeError`.
@@ -91,7 +106,8 @@ export class CacheAside {
   private readonly singleFlight: SingleFlight;
   private readonly random: () => number;
   private readonly onError: (error: unknown) => void;
-  private readonly timeoutMs: number;
+  private readonly resilience: CacheResilience;
+  private readonly dependencyKey: string | undefined;
   private readonly maxValueBytes: number;
 
   constructor(
@@ -102,11 +118,9 @@ export class CacheAside {
     this.singleFlight = options.singleFlight ?? new SingleFlight();
     this.random = options.random ?? Math.random;
     this.onError = options.onError ?? ((): void => undefined);
-    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.resilience = options.resilience ?? new ResilienceRegistry();
+    this.dependencyKey = options.dependencyKey;
     this.maxValueBytes = options.maxValueBytes ?? DEFAULT_MAX_CACHE_VALUE_BYTES;
-    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs < 0) {
-      throw new CacheInvalidArgumentError('timeoutMs', 'a finite number >= 0');
-    }
     if (!Number.isInteger(this.maxValueBytes) || this.maxValueBytes < 1) {
       throw new CacheInvalidArgumentError('maxValueBytes', 'an integer >= 1');
     }
@@ -114,7 +128,8 @@ export class CacheAside {
 
   /**
    * Returns the cached value for the query, or loads it and stores it in the background.
-   * Cache failures and timeouts fall back to `load` and are reported through `onError`.
+   * Cache failures, timeouts and an open circuit fall back to `load` and are
+   * reported through `onError`.
    * Errors thrown by `load` propagate to every concurrent caller of the same key.
    * The caller's `signal` and `deadline` only bound its own wait.
    */
@@ -141,7 +156,7 @@ export class CacheAside {
     let key: string;
     try {
       key = await waitFor(
-        this.timed(this.keyspace.key(namespace, params)),
+        this.guarded(() => this.keyspace.key(namespace, params)),
         wait,
       );
     } catch (error) {
@@ -233,7 +248,7 @@ export class CacheAside {
 
   private async readRaw(key: string): Promise<string | undefined> {
     try {
-      return await this.timed(this.cache.get(key));
+      return await this.guarded(() => this.cache.get(key));
     } catch (error) {
       this.report(error);
       return undefined;
@@ -243,7 +258,7 @@ export class CacheAside {
   private async store(key: string, raw: string, ttlMs: number): Promise<void> {
     try {
       const ttl = jitteredTtl(ttlMs, { random: this.random });
-      await this.timed(this.cache.set(key, raw, ttl));
+      await this.guarded(() => this.cache.set(key, raw, ttl));
     } catch (error) {
       this.report(error);
     }
@@ -251,23 +266,21 @@ export class CacheAside {
 
   private async bumpSafely(namespace: readonly string[]): Promise<void> {
     try {
-      await this.timed(this.keyspace.bump(namespace));
+      await this.guarded(() => this.keyspace.bump(namespace));
     } catch (error) {
       this.report(error);
     }
   }
 
-  /** Races an operation against the configured timeout. The timer is cleared once the race settles. */
-  private timed<T>(operation: Promise<T>): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(() => {
-        reject(new CacheTimeoutError(this.timeoutMs));
-      }, this.timeoutMs);
+  /**
+   * Runs one cache call under `ResiliencePolicyName.Cache`. The policy owns the
+   * timeout and the breaker: with Valkey down, the breaker opens after a few
+   * failures and later calls fail at once with `CircuitOpenError`.
+   */
+  private guarded<T>(operation: () => Promise<T>): Promise<T> {
+    return this.resilience.execute(ResiliencePolicyName.Cache, operation, {
+      dependencyKey: this.dependencyKey,
     });
-    return Promise.race([operation, timeout]).finally(() =>
-      clearTimeout(timer),
-    );
   }
 
   private report(error: unknown): void {

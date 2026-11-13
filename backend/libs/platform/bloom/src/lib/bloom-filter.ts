@@ -1,6 +1,7 @@
 import { CorruptedData, IncompatibleFilters } from './bloom-error.js';
 import { bloomPositions } from './positions.js';
 import {
+  DEFAULT_FALSE_POSITIVE_RATE,
   optimalParameters,
   type BloomParameters,
 } from './optimal-parameters.js';
@@ -29,7 +30,8 @@ export interface BloomFilterOptions extends BloomParameters {
 /** Options accepted by {@link BloomFilter.create}. */
 export interface CreateBloomFilterOptions {
   readonly expectedItems: number;
-  readonly falsePositiveRate: number;
+  /** Default {@link DEFAULT_FALSE_POSITIVE_RATE} (1 %). */
+  readonly falsePositiveRate?: number;
 }
 
 /** JSON-friendly representation of a filter. `data` is canonical base64 of the bit array. */
@@ -77,7 +79,10 @@ export class BloomFilter {
   /** Builds an empty filter sized for `expectedItems` at `falsePositiveRate`. */
   static create(options: CreateBloomFilterOptions): BloomFilter {
     return new BloomFilter(
-      optimalParameters(options.expectedItems, options.falsePositiveRate),
+      optimalParameters(
+        options.expectedItems,
+        options.falsePositiveRate ?? DEFAULT_FALSE_POSITIVE_RATE,
+      ),
     );
   }
 

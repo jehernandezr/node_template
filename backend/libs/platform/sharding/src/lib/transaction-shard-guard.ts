@@ -5,20 +5,27 @@ const guardStorage = new AsyncLocalStorage<TransactionShardGuard>();
 
 /**
  * Ensures a transaction touches a single logical shard.
- * The first shard touched is remembered; touching another one throws.
+ * The first shard touched is remembered; touching another one throws `PLATFORM.SHARDING.CROSS_SHARD_TX`.
  *
- * Per request: `TransactionShardGuard.run(fn)` gives `fn` and everything it awaits its own guard,
- * readable with `TransactionShardGuard.current()`.
+ * One guard per transaction, never per request: the `TransactionManager` of `@platform/persistence` wraps
+ * each transaction it opens in `TransactionShardGuard.run(fn)`, and calls `current()?.touch(shard)` before
+ * each statement. So:
+ * - Two transactions of one request, one after the other or in parallel (`Promise.all`), each get their own
+ *   guard and may use different shards.
+ * - A savepoint or a nested call that joins the open transaction must not call `run` again: it uses the
+ *   guard of the transaction it joins.
+ * - Outside a transaction there is no guard (`current()` is undefined) and nothing is checked; reads and
+ *   `acrossShards()` queries run there.
  */
 export class TransactionShardGuard {
   private firstShard: string | undefined;
 
-  /** Runs `fn` with a fresh guard visible through {@link TransactionShardGuard.current}. */
+  /** Runs one transaction body `fn` with a fresh guard visible through {@link TransactionShardGuard.current}. */
   static run<T>(fn: () => T): T {
     return guardStorage.run(new TransactionShardGuard(), fn);
   }
 
-  /** The guard of the surrounding `run`, or undefined outside one. */
+  /** The guard of the surrounding transaction, or undefined outside one. */
   static current(): TransactionShardGuard | undefined {
     return guardStorage.getStore();
   }
@@ -36,10 +43,5 @@ export class TransactionShardGuard {
         { details: { firstShard: this.firstShard, logicalShard } },
       );
     }
-  }
-
-  /** Forgets the remembered shard, for reuse across transactions. */
-  reset(): void {
-    this.firstShard = undefined;
   }
 }

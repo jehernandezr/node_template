@@ -1,5 +1,6 @@
 import { ShardingError, ShardingErrorCode } from './errors.js';
 import type { ShardingStrategy } from './sharding-strategy.js';
+import { ShardStrategy } from './types.js';
 
 /** Upper bound (inclusive) of a key range and the shard that serves it. */
 export interface RangeBoundary {
@@ -17,6 +18,7 @@ const compareCodeUnits: KeyComparator = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
  * A key goes to the first boundary with `key <= upTo`; keys above every boundary go to the last shard.
  */
 export class RangeShardStrategy implements ShardingStrategy {
+  readonly kind = ShardStrategy.Range;
   private readonly boundaries: readonly RangeBoundary[];
   private readonly lastShard: string;
   private readonly compare: KeyComparator;

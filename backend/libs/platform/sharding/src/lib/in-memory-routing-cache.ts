@@ -1,5 +1,5 @@
-import type { Clock } from '@platform/kernel';
-import { nowMs, toClock, type ShardingClock } from './clock.js';
+import { SystemClock, type Clock } from '@platform/kernel';
+import { nowMs } from './clock.js';
 import type { RoutingCache } from './ports.js';
 
 interface StoredValue {
@@ -13,12 +13,9 @@ export class InMemoryRoutingCache implements RoutingCache {
   private readonly entries = new Map<string, StoredValue>();
   private readonly clock: Clock;
 
-  /**
-   * @param clock Time source. Default the system clock. A function returning epoch milliseconds is still
-   *   accepted but deprecated.
-   */
-  constructor(clock?: ShardingClock) {
-    this.clock = toClock(clock);
+  /** @param clock Time source. Default the system clock. */
+  constructor(clock: Clock = new SystemClock()) {
+    this.clock = clock;
   }
 
   async get(key: string): Promise<string | undefined> {

@@ -20,18 +20,6 @@ describe('InMemoryRoutingCache', () => {
     await expect(cache.get('key')).resolves.toBeUndefined();
   });
 
-  it('still accepts the deprecated millisecond clock function', async () => {
-    let now = 1_000;
-    const cache = new InMemoryRoutingCache(() => now);
-    await cache.setIfNewer('key', 'value', 1, 500);
-
-    now = 1_499;
-    await expect(cache.get('key')).resolves.toBe('value');
-
-    now = 1_500;
-    await expect(cache.get('key')).resolves.toBeUndefined();
-  });
-
   it('writes when the key is absent', async () => {
     const cache = new InMemoryRoutingCache();
     await expect(cache.setIfNewer('key', 'v1', 1, 10_000)).resolves.toBe(true);

@@ -1,17 +1,8 @@
 import {
   DEFAULT_RETRY_AFTER_MAX_MS,
-  isTransientError as primitivesIsTransientError,
   MAX_CAUSE_DEPTH,
   retryAfterMs as parseRetryAfterMs,
 } from '@platform/primitives';
-
-/**
- * Indica si reintentar la misma llamada puede funcionar.
- * @deprecated Importa `isTransientError` (o `classifyFailure`) de
- * `@platform/primitives`; esta es la misma función y se quitará en la fase 2.
- */
-export const isTransientError: (error: unknown) => boolean =
-  primitivesIsTransientError;
 
 /** Opciones de {@link retryAfterHintMs}. */
 export interface RetryAfterHintOptions {
@@ -87,13 +78,4 @@ export function retryAfterHintMs(
     node = (node as { cause?: unknown }).cause;
   }
   return undefined;
-}
-
-/**
- * Espera sugerida por el servidor, en milisegundos.
- * @deprecated Usa {@link retryAfterHintMs}, que acota el valor. Para interpretar
- * un encabezado suelto usa `retryAfterMs` de `@platform/primitives`.
- */
-export function retryAfterMs(error: unknown): number | undefined {
-  return retryAfterHintMs(error);
 }

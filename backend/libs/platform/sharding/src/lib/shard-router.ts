@@ -1,6 +1,13 @@
-import type { Clock } from '@platform/kernel';
+import { SystemClock, type Clock } from '@platform/kernel';
 import type { Deadline } from '@platform/primitives';
-import { nowMs, toClock, type ShardingClock } from './clock.js';
+import { nowMs } from './clock.js';
+import {
+  ShardDirectoryChangeKind,
+  ShardingEvent,
+  type ShardDirectoryChangePublisher,
+  type ShardDirectoryChangeSubscriber,
+  type ShardDirectoryChanged,
+} from './directory-changes.js';
 import {
   ShardingError,
   ShardingErrorCode,
@@ -61,17 +68,23 @@ export interface ShardRouterOptions {
    * this long or longer is not written to the shared cache, so no invalidation it overlapped can be undone.
    */
   readonly tombstoneTtlMs?: number;
-  /**
-   * Time source. Default the system clock. A function returning epoch milliseconds is still accepted
-   * but deprecated.
-   */
-  readonly clock?: ShardingClock;
+  /** Time source. Default the system clock. */
+  readonly clock?: Clock;
   /** Picks the shard inside a group with more than one shard. Default: consistent hashing. */
   readonly strategy?: ShardingStrategy;
   /** Region served by this process. Placements in other regions throw `WrongRegion`. */
   readonly currentRegion?: string;
-  /** Receives shared cache failures. A failing cache never fails a resolve. */
+  /**
+   * Receives failures of the shared cache and of the change channel, and malformed changes. A failing cache
+   * or channel never fails a resolve or an invalidation.
+   */
   readonly onCacheError?: (error: unknown) => void;
+  /**
+   * Channel to the other processes of the service. When set, `invalidate` publishes
+   * `ShardingEvent.ShardDirectoryChanged` after writing the tombstone, and every process that called
+   * {@link ShardRouter.listen} drops its in-process copy at once instead of waiting for `localTtlMs`.
+   */
+  readonly changes?: ShardDirectoryChangePublisher;
   /**
    * Most tenants kept in the in-process placement cache, and most tracked invalidations and loads in flight.
    * The least recently used tenant is evicted first. Default 10 000.
@@ -218,6 +231,9 @@ function assertTtl(option: string, value: number, allowZero: boolean): void {
  * Memory: placements, instances, invalidation records and loads in flight are bounded by `maxPlacements`
  * and `maxInstances`; the least recently used entries are evicted first.
  *
+ * Across processes: each process keeps placements up to `localTtlMs`. A directory change reaches the
+ * others through `ShardingEvent.ShardDirectoryChanged` (`changes` option, {@link ShardRouter.listen}).
+ *
  * Group changes: adding a shard to a group is only valid through a move saga with the tenant in
  * Migrating. The new placement version gets a fresh ring, and writes stay blocked until the move completes.
  */
@@ -239,6 +255,9 @@ export class ShardRouter {
   private readonly tenantInvalidations: InvalidationLog;
   private readonly shardInvalidations: InvalidationLog;
   private readonly inflight = new Map<string, InFlightLoad>();
+  /** Lowest placement version still acceptable per tenant, learned from invalidations and change events. */
+  private readonly minVersions: LruMap<string, number>;
+  private readonly changes: ShardDirectoryChangePublisher | undefined;
   private sequence = 0;
 
   /** @throws ShardingError `InvalidConfiguration` when a TTL, limit or pattern is invalid. */
@@ -252,10 +271,11 @@ export class ShardRouter {
     assertTtl('localTtlMs', this.localTtlMs, true);
     assertTtl('sharedTtlMs', this.sharedTtlMs, true);
     assertTtl('tombstoneTtlMs', this.tombstoneTtlMs, false);
-    this.clock = toClock(options.clock);
+    this.clock = options.clock ?? new SystemClock();
     this.strategy = options.strategy ?? new ConsistentHashStrategy();
     this.currentRegion = options.currentRegion;
     this.onCacheError = options.onCacheError ?? (() => undefined);
+    this.changes = options.changes;
 
     this.maxPlacements = options.maxPlacements ?? defaults.maxPlacements;
     const maxInstances = options.maxInstances ?? defaults.maxInstances;
@@ -274,6 +294,7 @@ export class ShardRouter {
     this.placements = new LruMap(this.maxPlacements);
     this.instances = new LruMap(maxInstances);
     this.tenantInvalidations = new InvalidationLog(this.maxPlacements);
+    this.minVersions = new LruMap(this.maxPlacements);
     this.shardInvalidations = new InvalidationLog(maxInstances);
   }
 
@@ -330,6 +351,9 @@ export class ShardRouter {
    * replaces the shared entry with a versioned tombstone. The tombstone outranks the placement it replaces,
    * so a read already in flight (in this or another process) cannot write the old placement back.
    * Works when the local placement already expired: the group is then read from the shared cache.
+   * With `options.version`, this process also refuses older placements from then on. With a `changes`
+   * publisher, it finally publishes `ShardingEvent.ShardDirectoryChanged` so the other processes drop their
+   * in-process copy (see {@link ShardRouter.applyDirectoryChange}). Call it after the directory write commits.
    * @throws ShardingError `KeyMissing` or `InvalidTenantId` for a bad tenant id, `InvalidConfiguration`
    *   when `options.version` is not a non-negative integer.
    */
@@ -347,6 +371,9 @@ export class ShardRouter {
     }
     const key = PLACEMENT_CACHE_PREFIX + id;
     this.tenantInvalidations.record(id, this.nextSequence());
+    if (version !== undefined) {
+      this.raiseMinVersion(id, version);
+    }
     const local = readEntry(this.placements, id, this.now());
     this.placements.delete(id);
     const shared = await this.readSharedRecord(key);
@@ -357,6 +384,62 @@ export class ShardRouter {
       this.invalidateShard(shard);
     }
     await this.writeTombstone(key, tombstoneVersion(local, shared, version));
+    await this.publish({
+      type: ShardingEvent.ShardDirectoryChanged,
+      kind: ShardDirectoryChangeKind.TenantPlacement,
+      tenantId: id,
+      ...(version === undefined ? {} : { version }),
+    });
+  }
+
+  /**
+   * Applies a `ShardingEvent.ShardDirectoryChanged` published by another process. Only in-process state
+   * changes: the publisher already left the tombstone in the shared cache.
+   *
+   * - Tenant placement with `version`: drops the cached placement unless it is already at that version or
+   *   newer, and from then on ignores older placements read from the shared cache or from a lagging
+   *   directory replica (they are answered but not cached).
+   * - Tenant placement without `version`: drops the cached placement.
+   * - Shard instance: drops the cached instance of the logical shard.
+   *
+   * Never throws for a bad event: it is reported through `onCacheError` and ignored.
+   */
+  applyDirectoryChange(event: ShardDirectoryChanged): void {
+    try {
+      if (event.kind === ShardDirectoryChangeKind.ShardInstance) {
+        if (typeof event.logicalShard !== 'string' || !event.logicalShard) {
+          throw invalidOption('logicalShard', 'a non-empty string');
+        }
+        this.invalidateShard(event.logicalShard);
+        return;
+      }
+      const id = this.normalizeTenantId(event.tenantId);
+      const { version } = event;
+      if (version !== undefined) {
+        if (!Number.isSafeInteger(version) || version < 0) {
+          throw invalidOption('version', 'a non-negative integer');
+        }
+        const local = readEntry(this.placements, id, this.now());
+        if (local !== undefined && local.version >= version) {
+          return;
+        }
+        this.raiseMinVersion(id, version);
+      }
+      this.tenantInvalidations.record(id, this.nextSequence());
+      this.placements.delete(id);
+    } catch (error) {
+      this.onCacheError(error);
+    }
+  }
+
+  /**
+   * Subscribes this router to the directory changes of every process.
+   * @returns a function that stops listening.
+   */
+  listen(
+    subscriber: ShardDirectoryChangeSubscriber,
+  ): Promise<() => Promise<void>> {
+    return subscriber.subscribe((event) => this.applyDirectoryChange(event));
   }
 
   /** Clears the cached instance of a logical shard, whatever placements reference it. */
@@ -457,7 +540,11 @@ export class ShardRouter {
     const key = PLACEMENT_CACHE_PREFIX + tenantId;
     const record = await this.readSharedRecord(key);
     const shared = record?.kind === 'placement' ? record.entry : undefined;
-    if (shared !== undefined && this.now() < shared.expiresAt) {
+    if (
+      shared !== undefined &&
+      this.now() < shared.expiresAt &&
+      !this.isOutdated(tenantId, shared.placement.version)
+    ) {
       if (this.isCurrent(tenantId, sequence)) {
         this.rememberPlacement(tenantId, shared.placement, shared.expiresAt);
       }
@@ -472,8 +559,12 @@ export class ShardRouter {
         { details: { tenantId } },
       );
     }
-    if (!this.isCurrent(tenantId, sequence)) {
-      // Invalidated while the directory was read: answer the caller, cache nothing.
+    if (
+      !this.isCurrent(tenantId, sequence) ||
+      this.isOutdated(tenantId, placement.version)
+    ) {
+      // Invalidated while the directory was read, or a replica behind a version this process already saw:
+      // answer the caller, cache nothing.
       return placement;
     }
     const sharedExpiresAt = this.sharedCache
@@ -493,6 +584,10 @@ export class ShardRouter {
     placement: TenantPlacement,
     sharedExpiresAt: number,
   ): void {
+    if (placement.version >= (this.minVersions.peek(tenantId) ?? 0)) {
+      // The cached placement now carries the guarantee.
+      this.minVersions.delete(tenantId);
+    }
     this.placements.set(tenantId, {
       value: placement,
       expiresAt: Math.min(this.now() + this.localTtlMs, sharedExpiresAt),
@@ -608,6 +703,27 @@ export class ShardRouter {
   private nextSequence(): number {
     this.sequence += 1;
     return this.sequence;
+  }
+
+  /** True when a change event or invalidation announced a newer version than `version`. */
+  private isOutdated(tenantId: string, version: number): boolean {
+    return version < (this.minVersions.peek(tenantId) ?? 0);
+  }
+
+  private raiseMinVersion(tenantId: string, version: number): void {
+    const current = this.minVersions.peek(tenantId) ?? 0;
+    this.minVersions.set(tenantId, Math.max(current, version));
+  }
+
+  private async publish(event: ShardDirectoryChanged): Promise<void> {
+    if (this.changes === undefined) {
+      return;
+    }
+    try {
+      await this.changes.publish(event);
+    } catch (error) {
+      this.onCacheError(error);
+    }
   }
 
   /** True when no invalidation of the tenant was recorded after `sequence`. */

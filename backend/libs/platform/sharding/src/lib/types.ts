@@ -5,6 +5,39 @@ export enum ShardKey {
   Custom = 'custom',
 }
 
+/**
+ * Declarative routing strategy of a module, as in
+ * `PersistenceModule.forFeature({ sharding: { strategy: ShardStrategy.Directory, key: ShardKey.User } })`.
+ */
+export enum ShardStrategy {
+  /**
+   * Default. The catalog directory maps tenant → region → shard group; a group with more than one shard is
+   * split by consistent hashing on the routing key (`ConsistentHashStrategy`). Lets tenants move.
+   */
+  Directory = 'directory',
+  /** Ring with virtual nodes over the group (`ConsistentHashStrategy`). Many small keys. */
+  ConsistentHash = 'consistent-hash',
+  /** Sorted key ranges (`RangeShardStrategy`). Keys with a natural order, such as dates. */
+  Range = 'range',
+}
+
+/**
+ * Produces the routing key of a module that shards by its own key (`ShardKey.Custom`), for example an
+ * account id or a business region.
+ * @typeParam TSource what the persistence layer hands over: the entity, the criteria or the request.
+ */
+export interface ShardKeyResolver<TSource = unknown> {
+  /** @returns the routing key, or undefined when the source does not carry one (the query stops). */
+  resolve(source: TSource): string | undefined;
+}
+
+/** Sharding declaration of a module. `keyResolver` is required with `ShardKey.Custom` and refused otherwise. */
+export interface ShardingFeatureOptions<TSource = unknown> {
+  readonly strategy: ShardStrategy;
+  readonly key: ShardKey;
+  readonly keyResolver?: ShardKeyResolver<TSource>;
+}
+
 /** Lifecycle status of a tenant placement. */
 export enum TenantStatus {
   Active = 'active',

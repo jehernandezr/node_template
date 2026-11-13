@@ -532,4 +532,10 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'El id del tenant no tiene el formato esperado.',
   ),
+  [C.ValkeyCommandFailed]: internal(503, true, 'Falló un comando de Valkey.'),
+  [C.ValkeyUnexpectedReply]: internal(
+    500,
+    false,
+    'Valkey respondió con una forma inesperada.',
+  ),
 });

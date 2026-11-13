@@ -107,4 +107,6 @@ export enum PlatformErrorCode {
   ShardingInvalidConfig = 'PLATFORM.SHARDING.INVALID_CONFIG',
   ShardingInvalidKey = 'PLATFORM.SHARDING.INVALID_KEY',
   ShardingInvalidTenantId = 'PLATFORM.SHARDING.INVALID_TENANT_ID',
+  ValkeyCommandFailed = 'PLATFORM.VALKEY.COMMAND_FAILED',
+  ValkeyUnexpectedReply = 'PLATFORM.VALKEY.UNEXPECTED_REPLY',
 }

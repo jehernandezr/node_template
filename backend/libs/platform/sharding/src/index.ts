@@ -1,8 +1,6 @@
-export type { ShardingClock } from './lib/clock.js';
 export * from './lib/errors.js';
 export * from './lib/types.js';
 export * from './lib/ports.js';
-export * from './lib/hash.js';
 export * from './lib/consistent-hash-ring.js';
 export * from './lib/sharding-strategy.js';
 export * from './lib/range-shard-strategy.js';
@@ -11,3 +9,5 @@ export * from './lib/in-memory-directory-store.js';
 export * from './lib/in-memory-routing-cache.js';
 export * from './lib/placement-policy.js';
 export * from './lib/transaction-shard-guard.js';
+export * from './lib/sharding-feature.js';
+export * from './lib/directory-changes.js';

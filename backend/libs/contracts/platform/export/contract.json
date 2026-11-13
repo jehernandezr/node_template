@@ -382,6 +382,14 @@
         {
           "name": "ShardingInvalidTenantId",
           "value": "PLATFORM.SHARDING.INVALID_TENANT_ID"
+        },
+        {
+          "name": "ValkeyCommandFailed",
+          "value": "PLATFORM.VALKEY.COMMAND_FAILED"
+        },
+        {
+          "name": "ValkeyUnexpectedReply",
+          "value": "PLATFORM.VALKEY.UNEXPECTED_REPLY"
         }
       ]
     },
@@ -1460,6 +1468,24 @@
         "audience": "internal",
         "messageKey": "error_platform_sharding_invalid_tenant_id",
         "description": "El id del tenant no tiene el formato esperado."
+      },
+      {
+        "name": "ValkeyCommandFailed",
+        "code": "PLATFORM.VALKEY.COMMAND_FAILED",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_valkey_command_failed",
+        "description": "Falló un comando de Valkey."
+      },
+      {
+        "name": "ValkeyUnexpectedReply",
+        "code": "PLATFORM.VALKEY.UNEXPECTED_REPLY",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_valkey_unexpected_reply",
+        "description": "Valkey respondió con una forma inesperada."
       }
     ]
   }

@@ -1,6 +1,4 @@
 import {
-  canonicalJson,
-  fnv1a32Hex,
   MAX_CANONICAL_JSON_DEPTH,
   stableDigest as canonicalDigest,
 } from '@platform/primitives';
@@ -57,38 +55,4 @@ function toJsonValue(value: unknown, depth: number): unknown {
  */
 export function queryDigest(params: unknown): string {
   return canonicalDigest(toJsonValue(params, 0));
-}
-
-/**
- * JSON con las llaves ordenadas en todos los niveles.
- * @deprecated Usa `canonicalJson` de `@platform/primitives`. Ahora rechaza
- * valores que no son JSON en lugar de omitirlos; `undefined` sigue dando `'null'`.
- */
-export function stableStringify(value: unknown): string {
-  return value === undefined ? 'null' : canonicalJson(toJsonValue(value, 0));
-}
-
-/**
- * SHA-256 del JSON canónico, recortado a 32 caracteres hexadecimales.
- * @deprecated Usa {@link queryDigest} (64 caracteres) o `stableDigest` de
- * `@platform/primitives`.
- */
-export function stableDigest(value: unknown): string {
-  return queryDigest(value).slice(0, 32);
-}
-
-/**
- * FNV-1a de 32 bits como 8 caracteres hexadecimales. No sirve para llaves.
- * @deprecated Usa `fnv1a32Hex` de `@platform/primitives`.
- */
-export function fnv1a32(text: string): string {
-  return fnv1a32Hex(text);
-}
-
-/**
- * FNV-1a del JSON canónico de un valor.
- * @deprecated Usa `fnv1a32Hex(canonicalJson(value))` de `@platform/primitives`.
- */
-export function stableHash(value: unknown): string {
-  return fnv1a32Hex(stableStringify(value));
 }

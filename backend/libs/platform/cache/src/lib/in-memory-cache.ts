@@ -4,12 +4,8 @@ import { CacheNotACounterError } from './errors.js';
 
 /** Options for {@link InMemoryCache}. */
 export interface InMemoryCacheOptions {
-  /**
-   * Time source. Defaults to `SystemClock`.
-   * A function returning epoch milliseconds is still accepted but deprecated:
-   * pass a kernel `Clock` (for tests, `FixedClock` from `@platform/kernel/testing`).
-   */
-  clock?: Clock | (() => number);
+  /** Time source. Defaults to `SystemClock`; in tests use `FixedClock` from `@platform/kernel/testing`. */
+  clock?: Clock;
 }
 
 interface Entry {
@@ -18,24 +14,14 @@ interface Entry {
   expiresAt: number | undefined;
 }
 
-function toMillis(clock: Clock | (() => number) | undefined): () => number {
-  if (clock === undefined) {
-    const system = new SystemClock();
-    return () => system.now().getTime();
-  }
-  if (typeof clock === 'function') {
-    return clock;
-  }
-  return () => clock.now().getTime();
-}
-
 /** Process-local {@link CachePort} with TTL expiry. Useful for tests and single-instance setups. */
 export class InMemoryCache implements CachePort {
   private readonly entries = new Map<string, Entry>();
   private readonly now: () => number;
 
   constructor(options: InMemoryCacheOptions = {}) {
-    this.now = toMillis(options.clock);
+    const clock = options.clock ?? new SystemClock();
+    this.now = () => clock.now().getTime();
   }
 
   async get(key: string): Promise<string | undefined> {

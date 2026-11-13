@@ -2,7 +2,11 @@ import { InvalidParameters } from './bloom-error.js';
 
 /** Smallest allowed bit array size. */
 export const MIN_BITS = 1;
-/** Largest allowed bit array size (2^32 bits). */
+/**
+ * Largest allowed bit array size (2^32 bits, 512 MiB), the size of the largest Valkey string. At the
+ * default 1 % rate that holds about 448 million items: a bigger set, such as the Have I Been Pwned
+ * password list (over a billion hashes), is split over several filters with `PartitionedBloomFilter`.
+ */
 export const MAX_BITS = 2 ** 32;
 /** Smallest allowed hash count. */
 export const MIN_HASHES = 1;

@@ -21,12 +21,22 @@ describe('TransactionShardGuard', () => {
     );
   });
 
-  it('allows a new shard after reset', () => {
-    const guard = new TransactionShardGuard();
-    guard.touch('shard-1');
-    guard.reset();
-    expect(() => guard.touch('shard-2')).not.toThrow();
-    expect(() => guard.touch('shard-1')).toThrow(ShardingError);
+  // Audit PLAT-12: the guard lived per request, so a second legitimate transaction failed.
+  it('lets one request run successive transactions on different shards', async () => {
+    const transaction = (shard: string) =>
+      TransactionShardGuard.run(async () => {
+        await Promise.resolve();
+        TransactionShardGuard.current()?.touch(shard);
+      });
+
+    await expect(
+      (async () => {
+        await transaction('shard-1');
+        await transaction('shard-2');
+        await Promise.all([transaction('shard-1'), transaction('shard-3')]);
+      })(),
+    ).resolves.toBeUndefined();
+    expect(TransactionShardGuard.current()).toBeUndefined();
   });
 
   it('exposes no guard outside run()', () => {
