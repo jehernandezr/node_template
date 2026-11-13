@@ -1,4 +1,3 @@
-import { v7 } from 'uuid';
 import { InvalidIdError } from './invalid-id.error.js';
 import { ValueObject } from './value-object.js';
 
@@ -6,15 +5,13 @@ import { ValueObject } from './value-object.js';
 const UUID_V7 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** Identificador UUIDv7. Se ordena por tiempo de creación. */
+/**
+ * Identificador UUIDv7. Se ordena por tiempo de creación. No se genera aquí: los
+ * identificadores nuevos salen del puerto `IdGenerator`.
+ */
 export class Id extends ValueObject<{ value: string }> {
   private constructor(value: string) {
     super({ value });
-  }
-
-  /** Genera un UUIDv7 nuevo con la hora actual. */
-  static generate(): Id {
-    return new Id(v7());
   }
 
   /** Valida y crea un `Id` desde un string. Lanza `InvalidIdError` si no es UUIDv7. */

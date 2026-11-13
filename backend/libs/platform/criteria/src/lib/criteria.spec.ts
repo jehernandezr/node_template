@@ -352,11 +352,11 @@ describe('Criteria', () => {
       );
     });
 
-    it.each([1, 500, 1000])('accepts limit %p', (count) => {
+    it.each([1, 50, 100])('accepts limit %p', (count) => {
       expect(Criteria.for<Task>().limit(count).toAst().limit).toBe(count);
     });
 
-    it.each([0, -1, 1001, 1.5, Number.NaN])(
+    it.each([0, -1, 101, 1.5, Number.NaN])(
       'rejects limit %p with InvalidLimit',
       (count) => {
         expectCode(

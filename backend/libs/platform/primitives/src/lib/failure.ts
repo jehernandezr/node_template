@@ -82,6 +82,7 @@ interface ErrorLike {
   readonly status?: unknown;
   readonly statusCode?: unknown;
   readonly retryable?: unknown;
+  readonly retryableExplicit?: unknown;
   readonly failureKind?: unknown;
   readonly cause?: unknown;
   /** SDK de AWS v3: presente cuando el SDK considera el error reintentable. */
@@ -120,7 +121,7 @@ function explicitKind(node: ErrorLike): FailureKind | undefined {
   if (node.name === 'TimeoutError') {
     return FailureKind.Timeout;
   }
-  if (typeof node.retryable === 'boolean') {
+  if (typeof node.retryable === 'boolean' && node.retryableExplicit !== false) {
     return node.retryable ? FailureKind.Transient : FailureKind.Permanent;
   }
   if (
@@ -152,7 +153,9 @@ function explicitKind(node: ErrorLike): FailureKind | undefined {
  * afuera hacia adentro:
  * 1. Una propiedad `failureKind` con un valor de `FailureKind`.
  * 2. `name` `AbortError` (cancelado) o `TimeoutError` (tiempo agotado).
- * 3. Un booleano `retryable`, como el de `PlatformError` (`DomainError` es permanente).
+ * 3. Un booleano `retryable` declarado, como el de `PlatformError` (un
+ *    `PlatformError` sin `retryable` explícito no cuenta: se sigue a su `cause`;
+ *    `DomainError` siempre lo declara y es permanente salvo que diga lo contrario).
  * 4. Un error del SDK de AWS v3 marcado con `$retryable`, o con nombre de
  *    limitación de tasa o tiempo agotado del servicio (`ThrottlingException`,
  *    `SlowDown`, `RequestTimeout`...): pasajero.

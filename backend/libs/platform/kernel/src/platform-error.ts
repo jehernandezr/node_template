@@ -31,6 +31,13 @@ export abstract class PlatformError extends Error {
   /** Si reintentar la misma operación puede dar otro resultado. */
   readonly retryable: boolean;
 
+  /**
+   * Si quien lo lanzó declaró `retryable` (`true` o `false`). Si es `false`, el
+   * valor de `retryable` es solo el predeterminado y un clasificador debe
+   * seguir a la `cause` en lugar de tomarlo como señal.
+   */
+  readonly retryableExplicit: boolean;
+
   /** Datos adicionales opcionales para diagnóstico. */
   readonly details?: Readonly<Record<string, unknown>>;
 
@@ -41,6 +48,7 @@ export abstract class PlatformError extends Error {
     );
     this.name = new.target.name;
     this.retryable = options.retryable ?? false;
+    this.retryableExplicit = options.retryable !== undefined;
     this.details = options.details;
   }
 }

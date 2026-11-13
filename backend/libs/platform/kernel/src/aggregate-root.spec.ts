@@ -19,7 +19,31 @@ class Order extends AggregateRoot {
   }
 }
 
+enum ShopEventType {
+  Placed = 'sales.order.placed',
+}
+
+class TypedOrder extends AggregateRoot<Id, DomainEvent<ShopEventType>> {
+  place(eventId: Id): void {
+    this.addDomainEvent({
+      id: eventId,
+      type: ShopEventType.Placed,
+      occurredAt: new Date('2025-01-01T00:00:00Z'),
+      aggregateId: this.id.toString(),
+      payload: {},
+    });
+  }
+}
+
 describe('AggregateRoot', () => {
+  it('pins the event type to an enum', () => {
+    const ids = new SequentialIdGenerator();
+    const order = new TypedOrder(ids.next());
+    order.place(ids.next());
+    const [event] = order.pullDomainEvents();
+    expect(event?.type).toBe(ShopEventType.Placed);
+  });
+
   const ids = new SequentialIdGenerator();
 
   it('returns recorded events in order and clears them on pull', () => {

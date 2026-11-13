@@ -37,6 +37,16 @@ describe('PlatformError', () => {
     expect('cause' in error).toBe(false);
   });
 
+  it('records whether retryable was declared', () => {
+    expect(new UpstreamUnavailableError('x').retryableExplicit).toBe(false);
+    expect(
+      new UpstreamUnavailableError('x', { retryable: false }).retryableExplicit,
+    ).toBe(true);
+    expect(
+      new UpstreamUnavailableError('x', { retryable: true }).retryableExplicit,
+    ).toBe(true);
+  });
+
   it('keeps falsy causes other than undefined', () => {
     expect(new UpstreamUnavailableError('x', { cause: null }).cause).toBeNull();
     expect(new UpstreamUnavailableError('x', { cause: 0 }).cause).toBe(0);

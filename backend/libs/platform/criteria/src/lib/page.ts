@@ -1,11 +1,9 @@
+import type { Page } from '@contracts/platform';
 import { encodeCursor, type CursorOptions } from './cursor.js';
 import { assertLimit } from './validation.js';
 
-/** One page of results. `nextCursor` is an opaque token for `after()`, or `null` on the last page. */
-export interface Page<T> {
-  readonly items: T[];
-  readonly nextCursor: string | null;
-}
+/** One page of results: the contract type, so the response schema accepts it as is. */
+export type { Page };
 
 /**
  * Applies the original limit to rows fetched with `limit + 1` and builds the next cursor.

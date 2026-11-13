@@ -118,6 +118,27 @@ describe('classifyFailure', () => {
     expect(classifyFailure({ retryable: true })).toBe(FailureKind.Transient);
   });
 
+  it('follows the cause of a PlatformError that did not declare retryable', () => {
+    class PersistenceError extends PlatformError {
+      override readonly code = 'PLATFORM.TEST.PERSISTENCE';
+      constructor(cause: unknown, retryable?: boolean) {
+        super('Persistence failed', { cause, retryable });
+      }
+    }
+    expect(classifyFailure(new PersistenceError(withCode('40001')))).toBe(
+      FailureKind.Transient,
+    );
+    expect(classifyFailure(new PersistenceError(withCode('ECONNRESET')))).toBe(
+      FailureKind.Transient,
+    );
+    expect(classifyFailure(new PersistenceError(new Error('boom')))).toBe(
+      FailureKind.Permanent,
+    );
+    expect(
+      classifyFailure(new PersistenceError(withCode('ECONNRESET'), false)),
+    ).toBe(FailureKind.Permanent);
+  });
+
   it('prefers a declared failureKind', () => {
     expect(classifyFailure(new DeadlineExceededError(0))).toBe(
       FailureKind.Timeout,

@@ -118,6 +118,22 @@ describe('CallOutcome.fromError', () => {
     });
   });
 
+  it('maps a retryable DomainError to a non-final transient failure', () => {
+    class ConflictError extends DomainError {
+      override readonly code = 'SALES.STOCK.CONFLICT';
+    }
+    const error = new ConflictError('Conflict', undefined, {
+      retryable: true,
+    });
+    const outcome = CallOutcome.fromError(error);
+    expect(outcome).toEqual({
+      kind: 'transient-failure',
+      reason: 'SALES.STOCK.CONFLICT',
+      cause: error,
+    });
+    expect(isFinalOutcome(outcome)).toBe(false);
+  });
+
   it('omits details when the DomainError has none', () => {
     expect(CallOutcome.fromError(new OutOfStockError('x'))).not.toHaveProperty(
       'details',

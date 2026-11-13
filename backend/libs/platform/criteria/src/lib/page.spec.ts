@@ -50,7 +50,7 @@ describe('takePage', () => {
     expect(takePage(rows, 10, getId, getValues).items).not.toBe(rows);
   });
 
-  it('rejects a limit outside 1 to 1000 with InvalidLimit', () => {
+  it('rejects a limit outside 1 to 100 with InvalidLimit', () => {
     let caught: unknown;
     try {
       takePage(rows, 0, getId, getValues);

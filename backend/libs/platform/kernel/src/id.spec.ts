@@ -1,10 +1,13 @@
+import { UuidV7IdGenerator } from './id-generator.js';
 import { Id } from './id.js';
 import { InvalidIdError, KernelErrorCode } from './invalid-id.error.js';
 
+const generator = new UuidV7IdGenerator();
+
 describe('Id', () => {
   it('generates valid UUIDv7 values that are distinct', () => {
-    const a = Id.generate();
-    const b = Id.generate();
+    const a = generator.next();
+    const b = generator.next();
     expect(a.toString()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
@@ -63,7 +66,7 @@ describe('Id', () => {
 
   it('decodes timestamps of generated ids close to now', () => {
     const before = Date.now();
-    const id = Id.generate();
+    const id = generator.next();
     const after = Date.now();
     const ms = id.timestamp().getTime();
     expect(ms).toBeGreaterThanOrEqual(before);

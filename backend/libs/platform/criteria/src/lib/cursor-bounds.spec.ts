@@ -1,3 +1,4 @@
+import { CursorSchema, Pagination, pageOf } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 import {
   MAX_CURSOR_LENGTH,
@@ -6,7 +7,9 @@ import {
   decodeCursor,
   encodeCursor,
 } from './cursor.js';
+import { z } from 'zod';
 import { CriteriaErrorCode } from './enums.js';
+import { MAX_LIMIT } from './validation.js';
 import { CriteriaError } from './errors.js';
 
 function b64(value: unknown): string {
@@ -30,6 +33,11 @@ describe('cursor bounds and tampering', () => {
     expect(codeOf(() => decodeCursor(token))).toBe(
       CriteriaErrorCode.InvalidValue,
     );
+  });
+
+  it('uses the limits of the pagination contract', () => {
+    expect(MAX_CURSOR_LENGTH).toBe(Pagination.maxCursorLength);
+    expect(MAX_LIMIT).toBe(Pagination.maxLimit);
   });
 
   it('rejects encoding oversized ids, texts, value lists and tokens', () => {
@@ -92,8 +100,11 @@ describe('cursor bounds and tampering', () => {
 
     it('rejects a modified payload, a wrong secret and a missing signature', () => {
       const token = encodeCursor(cursor, { secret });
-      const [, signature] = token.split('.');
-      const forged = `${b64({ v: ['open', 4], i: 'row-1' })}.${signature}`;
+      const signature = Buffer.from(token, 'base64url').subarray(-32);
+      const forged = Buffer.concat([
+        Buffer.from(JSON.stringify({ v: ['open', 4], i: 'row-1' })),
+        signature,
+      ]).toString('base64url');
       expect(codeOf(() => decodeCursor(forged, { secret }))).toBe(
         CriteriaErrorCode.InvalidValue,
       );
@@ -101,6 +112,22 @@ describe('cursor bounds and tampering', () => {
         CriteriaErrorCode.InvalidValue,
       );
       expect(codeOf(() => decodeCursor(encodeCursor(cursor), { secret }))).toBe(
+        CriteriaErrorCode.InvalidValue,
+      );
+    });
+
+    it('keeps a signed cursor inside the pagination contract', () => {
+      const token = encodeCursor(cursor, { secret });
+      expect(token).not.toContain('.');
+      expect(CursorSchema.safeParse(token).success).toBe(true);
+      expect(
+        pageOf(z.string()).safeParse({ items: ['a'], nextCursor: token })
+          .success,
+      ).toBe(true);
+    });
+
+    it('rejects a token that is too short to hold a signature', () => {
+      expect(codeOf(() => decodeCursor('QUJD', { secret }))).toBe(
         CriteriaErrorCode.InvalidValue,
       );
     });

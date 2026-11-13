@@ -1,8 +1,9 @@
+import { Pagination } from '@contracts/platform';
 import { CriteriaErrorCode } from './enums.js';
 import { CriteriaError } from './errors.js';
 
-/** Largest page size accepted by `limit`. */
-export const MAX_LIMIT = 1000;
+/** Largest page size accepted by `limit`. Same as the contract. */
+export const MAX_LIMIT = Pagination.maxLimit;
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 

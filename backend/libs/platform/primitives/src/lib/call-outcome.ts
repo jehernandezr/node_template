@@ -114,12 +114,17 @@ function reasonOf(error: unknown): string {
 
 /**
  * Convierte un valor lanzado en un `CallOutcome` con `classifyFailure`:
- * - `DomainError` → `business-error` con su código, mensaje y detalles.
+ * - `DomainError` → `business-error` con su código, mensaje y detalles; si es
+ *   `retryable`, `transient-failure` (no final, libera el claim de idempotencia).
  * - `Transient` → `transient-failure`.
  * - `Timeout` y `Cancelled` → `uncertain`.
  * - `ProtocolViolation` y el resto de `Permanent` → `protocol-violation`.
  */
 function fromError(error: unknown): CallOutcome<never> {
+  if (error instanceof DomainError && error.retryable) {
+    // Un conflicto reintentable no es un resultado final: no se guarda para idempotencia.
+    return transientFailure(error.code, { cause: error });
+  }
   if (error instanceof DomainError) {
     return businessError(error.code, {
       message: error.message,

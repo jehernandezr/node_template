@@ -1,5 +1,20 @@
 import nx from '@nx/eslint-plugin';
 
+const awsSdkPattern = {
+  group: ['@aws-sdk/*'],
+  message:
+    '@aws-sdk/* solo se importa dentro de backend/libs/platform/adapters/aws (ADR 0002).',
+};
+
+// Dentro del dominio no entra infraestructura ni framework.
+const domainPatterns = [
+  awsSdkPattern,
+  {
+    group: ['typeorm', 'typeorm/*', '@nestjs/*', 'pg', 'pg/*'],
+    message: 'El dominio no depende de infraestructura ni de frameworks.',
+  },
+];
+
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
@@ -43,11 +58,57 @@ export default [
             },
             {
               sourceTag: 'type:app',
-              onlyDependOnLibsWithTags: ['*'],
+              onlyDependOnLibsWithTags: [
+                'type:app',
+                'type:platform',
+                'type:util',
+                'type:contracts',
+              ],
+            },
+            // Reglas por servicio: el código interno de un servicio es privado.
+            // De otro servicio solo se importa su paquete `@contracts/<servicio>`
+            // (`type:contracts`). Al crear un servicio, agrega aquí su `scope:<servicio>`
+            // con la misma forma que `scope:identity`.
+            {
+              sourceTag: 'scope:platform',
+              onlyDependOnLibsWithTags: ['scope:platform', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:shared',
+              // Las herramientas compartidas leen los contratos de todos los servicios.
+              onlyDependOnLibsWithTags: [
+                'scope:shared',
+                'scope:platform',
+                'type:contracts',
+              ],
+            },
+            {
+              sourceTag: 'scope:identity',
+              onlyDependOnLibsWithTags: [
+                'scope:identity',
+                'scope:platform',
+                'scope:shared',
+                'type:contracts',
+              ],
             },
           ],
         },
       ],
+    },
+  },
+  {
+    // El SDK de AWS solo vive en libs/platform/adapters/aws. Las rutas de `files` son
+    // relativas al proyecto que carga esta configuración, así que esa librería apaga
+    // la regla en su propio eslint.config.mjs (`'no-restricted-imports': 'off'`).
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [awsSdkPattern] }],
+    },
+  },
+  {
+    files: ['**/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: domainPatterns }],
     },
   },
   {

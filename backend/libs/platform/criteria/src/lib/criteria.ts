@@ -252,7 +252,7 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
   }
 
   /**
-   * Sets the page size, from 1 to 1000.
+   * Sets the page size, from 1 to `MAX_LIMIT` (the contract's `Pagination.maxLimit`).
    * @throws CriteriaError with `InvalidLimit` when out of range.
    */
   limit(count: number): Criteria<Entity> {

@@ -172,6 +172,9 @@ importers:
 
   backend/libs/platform/criteria:
     dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../contracts/platform
       '@platform/kernel':
         specifier: workspace:*
         version: link:../kernel
