@@ -24,6 +24,10 @@ enum ShopEventType {
 }
 
 class TypedOrder extends AggregateRoot<Id, DomainEvent<ShopEventType>> {
+  constructor(id: Id) {
+    super(id);
+  }
+
   place(eventId: Id): void {
     this.addDomainEvent({
       id: eventId,

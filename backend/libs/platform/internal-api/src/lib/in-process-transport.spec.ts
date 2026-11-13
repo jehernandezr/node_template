@@ -178,7 +178,7 @@ describe('client -> InProcessTransport -> router', () => {
   it('does not retry a non-idempotent operation on transient failure', async () => {
     const { router, client } = build();
     const handler = jest.fn(async () => ({
-      kind: ResultKind.TransientFailure as const,
+      kind: CallOutcomeKind.TransientFailure as const,
       reason: 'busy',
     }));
     router.register(Label, handler);
@@ -195,7 +195,7 @@ describe('client -> InProcessTransport -> router', () => {
   it('turns an undeclared server business error into ProtocolViolation on the client, not stored', async () => {
     const { router, client } = build();
     const handler = jest.fn(async () => ({
-      kind: ResultKind.BusinessError as const,
+      kind: CallOutcomeKind.BusinessError as const,
       code: 'NOT_IN_CONTRACT',
     }));
     router.register(Book, handler);
@@ -235,7 +235,7 @@ describe('client -> InProcessTransport -> router', () => {
     });
     const handler = jest.fn(async () => {
       await gate;
-      return { kind: ResultKind.Success as const, value: { price: 9 } };
+      return { kind: CallOutcomeKind.Success as const, value: { price: 9 } };
     });
     router.register(SlowQuote, handler);
 

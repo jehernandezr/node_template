@@ -665,10 +665,11 @@ class FakeTransactions {
     this.pending.push(effect);
   }
 
-  async runInTransaction<T>(fn: () => Promise<T>): Promise<T> {
+  async runInTransaction<T>(fn: (uow: never) => Promise<T>): Promise<T> {
     this.pending = [];
     try {
-      const result = await fn();
+      // El router no usa la unidad de trabajo; la prueba solo registra efectos.
+      const result = await fn(undefined as never);
       if (this.failNextCommit) {
         this.failNextCommit = false;
         throw Object.assign(new Error('connection lost during COMMIT'), {

@@ -164,7 +164,7 @@ class FakeParticipant implements OperationInvoker {
     input: unknown,
     idempotencyKey: string,
     options?: InvokeOptions,
-  ): Promise<InvokeResult> {
+  ): ReturnType<OperationInvoker['invoke']> {
     this.calls.push({ operationId, idempotencyKey, input, options });
     const replay = this.results.get(idempotencyKey);
     if (replay !== undefined) {
@@ -208,7 +208,7 @@ class CrashAfterEffect implements OperationInvoker {
     input: unknown,
     key: string,
     options?: InvokeOptions,
-  ): Promise<InvokeResult> {
+  ): ReturnType<OperationInvoker['invoke']> {
     const result = await this.inner.invoke(operationId, input, key, options);
     if (this.armed && operationId === this.operationId) {
       this.armed = false;
@@ -233,7 +233,7 @@ class StaleRunInvoker implements OperationInvoker {
     input: unknown,
     key: string,
     options?: InvokeOptions,
-  ): Promise<InvokeResult> {
+  ): ReturnType<OperationInvoker['invoke']> {
     if (this.armed && operationId === this.operationId) {
       this.armed = false;
       await this.takeOver();
@@ -469,7 +469,7 @@ class HangingInvoker implements OperationInvoker {
     input: unknown,
     key: string,
     options?: InvokeOptions,
-  ): Promise<InvokeResult> {
+  ): ReturnType<OperationInvoker['invoke']> {
     if (operationId === this.operationId && this.hangs > 0) {
       this.hangs -= 1;
       this.signals.push(options?.signal);

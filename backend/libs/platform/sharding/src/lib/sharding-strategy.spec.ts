@@ -1,6 +1,9 @@
 import { ConsistentHashRing } from './consistent-hash-ring.js';
 import { ShardingErrorCode } from './errors.js';
-import { ConsistentHashStrategy } from './sharding-strategy.js';
+import {
+  ConsistentHashStrategy,
+  type ShardingStrategy,
+} from './sharding-strategy.js';
 import { ShardStrategy } from './types.js';
 
 const keys = (count: number) =>
@@ -59,7 +62,7 @@ describe('ConsistentHashStrategy', () => {
   // Audit PLAT-11: two tenants of one group with different versions rebuilt the ring on every call.
   it('builds one ring per group, whatever the placement versions of its tenants', () => {
     const add = jest.spyOn(ConsistentHashRing.prototype, 'add');
-    const strategy = new ConsistentHashStrategy();
+    const strategy: ShardingStrategy = new ConsistentHashStrategy();
     const group = ['shard-1', 'shard-2'];
     for (let i = 0; i < 50; i += 1) {
       strategy.locate(`key-${i}`, group, 3);
@@ -76,7 +79,7 @@ describe('ConsistentHashStrategy', () => {
   });
 
   it('builds a fresh ring when the group changes', () => {
-    const strategy = new ConsistentHashStrategy();
+    const strategy: ShardingStrategy = new ConsistentHashStrategy();
     expect(strategy.locate('key-1', ['shard-1', 'shard-2'], 1)).toBeDefined();
 
     const grown = ['shard-1', 'shard-2', 'shard-3'];
