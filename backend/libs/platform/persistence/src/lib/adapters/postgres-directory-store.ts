@@ -1,11 +1,15 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { SystemClock, type Clock } from '@platform/kernel';
 import {
+  DirectoryWriteResult,
+  ShardingError,
+  ShardingErrorCode,
   TenantStatus,
   type DirectoryStore,
+  type DirectoryWriter,
   type TenantPlacement,
 } from '@platform/sharding';
 import type { Database } from '../database.js';
-import { PersistenceErrorCode } from '../enums.js';
 import { invalidConfiguration, PersistenceError } from '../errors.js';
 import type { SqlSession } from '../sql/sql-session.js';
 
@@ -37,7 +41,7 @@ const STATUSES = new Set<string>(Object.values(TenantStatus));
 
 function corrupt(): PersistenceError {
   return new PersistenceError(
-    PersistenceErrorCode.CorruptRow,
+    PlatformErrorCode.PersistenceCorruptRow,
     'Shard directory row has an invalid shape',
   );
 }
@@ -97,10 +101,20 @@ function assertPlacement(placement: TenantPlacement): void {
 }
 
 /**
- * Adaptador Postgres del `DirectoryStore` de `@platform/sharding`, sobre las
- * tablas `shard_directory` y `shard_instances` del catálogo.
+ * Adaptador Postgres del `DirectoryStore` y el `DirectoryWriter` de
+ * `@platform/sharding`, sobre las tablas `shard_directory`, `shard_instances` y
+ * `shard_locks` del catálogo.
  *
- * Las escrituras son condicionales por versión, con la misma semántica que
+ * `putPlacement` es la escritura de las sagas de alta y traslado: compare-and-set
+ * por versión y exclusividad de shards en una sola transacción. Primero toma con
+ * `SELECT … FOR UPDATE` la fila de cada shard destino en `shard_locks` (creándola
+ * si falta, en orden para evitar interbloqueos) y la del tenant; con los candados
+ * puestos relee el directorio y comprueba versión y exclusividad. Dos altas
+ * dedicadas sobre el mismo shard vacío se serializan y la segunda recibe
+ * `ShardTaken`.
+ *
+ * `setPlacementIfNewer` es la escritura simple por versión (sin exclusividad):
+ * conviene a réplicas y cachés. Sus escrituras son condicionales por versión, con la misma semántica que
  * `RoutingCache.setIfNewer`: `setPlacementIfNewer` solo escribe si no hay fila
  * o si la versión guardada es menor; una versión igual se rechaza. Cada
  * sentencia es atómica: el `UPDATE … WHERE version < $v` reevalúa la condición
@@ -108,7 +122,7 @@ function assertPlacement(placement: TenantPlacement): void {
  * dejan la versión vieja encima de la nueva. Quien escribe después llama a
  * `ShardRouter.invalidate(tenantId, { version })`.
  */
-export class PostgresDirectoryStore implements DirectoryStore {
+export class PostgresDirectoryStore implements DirectoryStore, DirectoryWriter {
   private readonly catalog: Database;
   private readonly clock: Clock;
   private readonly readPrimary: boolean;
@@ -138,6 +152,92 @@ export class PostgresDirectoryStore implements DirectoryStore {
       ),
     );
     return result.rows[0]?.instance;
+  }
+
+  async listPlacements(region: string): Promise<readonly TenantPlacement[]> {
+    if (typeof region !== 'string' || region.length === 0) {
+      throw invalidConfiguration('region', 'a non-empty string');
+    }
+    // Siempre del primario: la política de ubicación no tolera datos atrasados.
+    const result = await this.catalog.readPrimary((session) =>
+      session.query<PlacementRow>(
+        'SELECT tenant_id, region, shard_group, status, version, dedicated FROM shard_directory WHERE region = $1 ORDER BY tenant_id',
+        [region],
+      ),
+    );
+    return result.rows.map(toPlacement);
+  }
+
+  /**
+   * @throws ShardingError `InvalidConfiguration` cuando la versión nueva no es
+   *   `expectedVersion + 1` (o 1 para un tenant nuevo), igual que el directorio en memoria.
+   */
+  async putPlacement(
+    placement: TenantPlacement,
+    expectedVersion: number | undefined,
+  ): Promise<DirectoryWriteResult> {
+    assertPlacement(placement);
+    if (
+      expectedVersion !== undefined &&
+      (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0)
+    ) {
+      throw invalidConfiguration(
+        'expectedVersion',
+        'a non-negative integer or undefined',
+      );
+    }
+    if (placement.version !== (expectedVersion ?? 0) + 1) {
+      throw new ShardingError(
+        ShardingErrorCode.InvalidConfiguration,
+        'placement.version must be expectedVersion + 1, or 1 for a new tenant',
+        { details: { option: 'version' } },
+      );
+    }
+    return this.catalog.write(async (session) => {
+      await this.lockShards(session, placement.shardGroup);
+      const stored = await session.query<{ version: unknown }>(
+        'SELECT version FROM shard_directory WHERE tenant_id = $1 FOR UPDATE',
+        [placement.tenantId],
+      );
+      const storedVersion =
+        stored.rows[0] === undefined
+          ? undefined
+          : Number(stored.rows[0].version);
+      if (storedVersion !== expectedVersion) {
+        return DirectoryWriteResult.VersionConflict;
+      }
+      const taken = await session.query(
+        'SELECT 1 AS taken FROM shard_directory WHERE tenant_id <> $1 AND shard_group && $2::text[] AND (dedicated OR $3::boolean) LIMIT 1',
+        [placement.tenantId, [...placement.shardGroup], placement.dedicated],
+      );
+      if (taken.rows.length > 0) {
+        return DirectoryWriteResult.ShardTaken;
+      }
+      const values = [
+        placement.tenantId,
+        placement.region,
+        [...placement.shardGroup],
+        placement.status,
+        placement.version,
+        placement.dedicated,
+        this.clock.now(),
+      ];
+      const written =
+        expectedVersion === undefined
+          ? await session.query(
+              'INSERT INTO shard_directory (tenant_id, region, shard_group, status, version, dedicated, updated_at) ' +
+                'VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (tenant_id) DO NOTHING',
+              values,
+            )
+          : await session.query(
+              'UPDATE shard_directory SET region = $2, shard_group = $3, status = $4, version = $5, dedicated = $6, updated_at = $7 ' +
+                'WHERE tenant_id = $1 AND version = $8',
+              [...values, expectedVersion],
+            );
+      return written.rowCount > 0
+        ? DirectoryWriteResult.Written
+        : DirectoryWriteResult.VersionConflict;
+    });
   }
 
   /** Shards lógicos registrados, ordenados por id. */
@@ -175,6 +275,24 @@ export class PostgresDirectoryStore implements DirectoryStore {
           'ON CONFLICT (logical_shard) DO UPDATE SET instance = EXCLUDED.instance, updated_at = EXCLUDED.updated_at',
         [logicalShard, instance, this.clock.now()],
       ),
+    );
+  }
+
+  /** Toma el candado de cada shard, en orden y sin repetidos, hasta el fin de la transacción. */
+  private async lockShards(
+    session: SqlSession,
+    shards: readonly string[],
+  ): Promise<void> {
+    const ordered = [...new Set(shards)].sort();
+    for (const shard of ordered) {
+      await session.query(
+        'INSERT INTO shard_locks (logical_shard) VALUES ($1) ON CONFLICT (logical_shard) DO NOTHING',
+        [shard],
+      );
+    }
+    await session.query(
+      'SELECT logical_shard FROM shard_locks WHERE logical_shard = ANY($1::text[]) ORDER BY logical_shard FOR UPDATE',
+      [ordered],
     );
   }
 
@@ -226,7 +344,7 @@ export class PostgresDirectoryStore implements DirectoryStore {
       // La fila cambió entre sentencias (se borró o bajó de versión): se reintenta.
     }
     throw new PersistenceError(
-      PersistenceErrorCode.Contention,
+      PlatformErrorCode.PersistenceContention,
       'Shard directory row kept changing while writing it',
       { details: { rounds: MAX_WRITE_ROUNDS } },
     );

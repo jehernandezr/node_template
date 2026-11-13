@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   Criteria,
   encodeCursor,
@@ -10,7 +11,7 @@ import {
 } from '@platform/criteria';
 import { SystemClock, type Clock } from '@platform/kernel';
 import { Database } from '../database.js';
-import { DataAccess, PersistenceErrorCode, type RowLock } from '../enums.js';
+import { DataAccess, type RowLock } from '../enums.js';
 import {
   invalidConfiguration,
   OptimisticLockError,
@@ -392,7 +393,7 @@ export class BaseRepository<D, R extends object> {
   ): Promise<Row[]> {
     if (options.lock !== undefined && !database.isInTransaction()) {
       throw new PersistenceError(
-        PersistenceErrorCode.TransactionRequired,
+        PlatformErrorCode.PersistenceTransactionRequired,
         'A row lock needs an open transaction',
         { details: { table: this.table.name } },
       );
@@ -648,7 +649,7 @@ export class BaseRepository<D, R extends object> {
     const tenantId = database.currentContext().tenantId;
     if (tenantId === undefined || tenantId.length === 0) {
       throw new PersistenceError(
-        PersistenceErrorCode.TenantRequired,
+        PlatformErrorCode.PersistenceTenantRequired,
         'The table is tenant scoped and the context has no tenant',
         { details: { table: this.table.name } },
       );
@@ -658,7 +659,7 @@ export class BaseRepository<D, R extends object> {
 
   private tenantMismatch(): PersistenceError {
     return new PersistenceError(
-      PersistenceErrorCode.TenantMismatch,
+      PlatformErrorCode.PersistenceTenantMismatch,
       'The row belongs to another tenant',
       { details: { table: this.table.name } },
     );

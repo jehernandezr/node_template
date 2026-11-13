@@ -9,6 +9,7 @@ import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { RequestContext } from '@platform/observability';
 import { ClaimState, Deadline } from '@platform/primitives';
 import {
+  DirectoryWriteResult,
   ShardingErrorCode,
   ShardKey,
   TenantStatus,
@@ -498,6 +499,64 @@ describeWithDocker('persistence against PostgreSQL (Testcontainers)', () => {
       expect(
         await directory.setPlacementIfNewer(placement(tenant, 'shard-x', 12)),
       ).toBe(false);
+    });
+
+    it('lets only one dedicated tenant take an empty shard when placements race', async () => {
+      const persistence = sharded();
+      const directory = persistence.directory;
+      if (directory === undefined) {
+        throw new Error('expected a directory');
+      }
+      const tenants = Array.from(
+        { length: 8 },
+        (_, index) => `0193f1c2-0000-7000-8000-0000000001${index}0`,
+      );
+      const results = await Promise.all(
+        tenants.map((tenantId) =>
+          directory.putPlacement(
+            { ...placement(tenantId, 'shard-empty', 1), dedicated: true },
+            undefined,
+          ),
+        ),
+      );
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.Written),
+      ).toHaveLength(1);
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.ShardTaken),
+      ).toHaveLength(7);
+      expect(await directory.listPlacements('co')).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ shardGroup: ['shard-empty'] }),
+        ]),
+      );
+    });
+
+    it('lets one of several concurrent updates win by version', async () => {
+      const persistence = sharded();
+      const directory = persistence.directory;
+      if (directory === undefined) {
+        throw new Error('expected a directory');
+      }
+      const tenant = '0193f1c2-0000-7000-8000-0000000002f1';
+      expect(
+        await directory.putPlacement(
+          placement(tenant, 'shard-cas', 1),
+          undefined,
+        ),
+      ).toBe(DirectoryWriteResult.Written);
+      const results = await Promise.all(
+        ['shard-cas-a', 'shard-cas-b', 'shard-cas-c', 'shard-cas-d'].map(
+          (shard) => directory.putPlacement(placement(tenant, shard, 2), 1),
+        ),
+      );
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.Written),
+      ).toHaveLength(1);
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.VersionConflict),
+      ).toHaveLength(3);
+      expect((await directory.getPlacement(tenant))?.version).toBe(2);
     });
 
     it('routes each tenant to its shard, refuses cross-shard transactions and queries across shards', async () => {

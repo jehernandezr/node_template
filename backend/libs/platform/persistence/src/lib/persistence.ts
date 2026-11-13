@@ -1,7 +1,8 @@
 import type { IdGenerator } from '@platform/kernel';
 import {
-  ShardKey,
   ShardRouter,
+  ShardStrategy,
+  type ShardingFeatureOptions,
   type ShardRouterOptions,
 } from '@platform/sharding';
 import { PostgresDirectoryStore } from './adapters/postgres-directory-store.js';
@@ -28,11 +29,12 @@ export type CommonDatabaseOptions = Omit<
 >;
 
 /** Sharding del servicio, como `PersistenceModule.forFeature({ sharding })` del plan. */
-export interface PersistenceShardingOptions {
-  /** Llave del servicio: `ShardKey.Tenant`, `ShardKey.User` o propia. */
-  readonly key: ShardKey;
-  /** Valor de la llave cuando no es el tenant. Ver `ShardedDatabaseResolverOptions.keyValue`. */
-  readonly keyValue?: (context: PersistenceContext) => string | undefined;
+export interface PersistenceShardingOptions extends Omit<
+  ShardingFeatureOptions<PersistenceContext>,
+  'strategy'
+> {
+  /** Estrategia declarada. Por defecto `ShardStrategy.Directory`. */
+  readonly strategy?: ShardStrategy;
   /** Conexión a cada shard lógico en su instancia. */
   readonly connect: (target: ShardTarget) => DatabaseConnection;
   /** Opciones del `ShardRouter`, salvo el directorio, que sale del catálogo. */
@@ -131,8 +133,10 @@ export function createPersistence(options: PersistenceOptions): Persistence {
   const router = new ShardRouter({ ...sharding.router, directory });
   const resolver = new ShardedDatabaseResolver({
     router,
-    key: sharding.key,
-    keyValue: sharding.keyValue,
+    sharding: {
+      ...sharding,
+      strategy: sharding.strategy ?? ShardStrategy.Directory,
+    },
     connect: sharding.connect,
     listShards: () => directory.listShards(),
     directory,

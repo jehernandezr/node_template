@@ -6,7 +6,6 @@ import {
   EMPTY_PERSISTENCE_CONTEXT,
   requestContextProvider,
 } from './context/persistence-context.js';
-import { PersistenceErrorCode } from './enums.js';
 import {
   OptimisticLockError,
   PersistenceError,
@@ -14,9 +13,13 @@ import {
 } from './errors.js';
 import { sqlComment, withSqlComment } from './sql/sql-comment.js';
 
+const persistenceCodes = Object.values(PlatformErrorCode).filter((code) =>
+  code.startsWith('PLATFORM.PERSISTENCE.'),
+);
+
 describe('errors', () => {
   it('uses well formed codes', () => {
-    for (const code of Object.values(PersistenceErrorCode)) {
+    for (const code of persistenceCodes) {
       expect(isErrorCode(code)).toBe(true);
     }
   });
@@ -41,7 +44,7 @@ describe('errors', () => {
       Object.assign(new Error('driver text with a value'), { code }),
     );
     expect(error).toMatchObject({
-      code: PersistenceErrorCode.QueryFailed,
+      code: PlatformErrorCode.PersistenceQueryFailed,
       failureKind: kind,
       retryable: kind === FailureKind.Transient,
       details: { sqlState: code },
@@ -57,10 +60,11 @@ describe('errors', () => {
 
   it('fixes the failure kind by code', () => {
     expect(
-      new PersistenceError(PersistenceErrorCode.Contention, 'x').retryable,
+      new PersistenceError(PlatformErrorCode.PersistenceContention, 'x')
+        .retryable,
     ).toBe(true);
     expect(
-      new PersistenceError(PersistenceErrorCode.TenantRequired, 'x')
+      new PersistenceError(PlatformErrorCode.PersistenceTenantRequired, 'x')
         .failureKind,
     ).toBe(FailureKind.ProtocolViolation);
   });

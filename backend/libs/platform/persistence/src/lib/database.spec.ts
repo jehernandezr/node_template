@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/testing';
 import { FailureKind } from '@platform/primitives';
 import {
@@ -8,12 +9,7 @@ import {
 import { RecordingConnection } from '../../test/support/recording-connection.js';
 import type { PersistenceContext } from './context/persistence-context.js';
 import { currentUnitOfWork, Database } from './database.js';
-import {
-  DatabaseRole,
-  IsolationLevel,
-  PersistenceErrorCode,
-  SessionSetting,
-} from './enums.js';
+import { DatabaseRole, IsolationLevel, SessionSetting } from './enums.js';
 import { PersistenceError } from './errors.js';
 
 const CONTEXT: PersistenceContext = {
@@ -130,7 +126,7 @@ describe('Database', () => {
           statementTimeoutMs: 0,
         }),
       ).rejects.toMatchObject({
-        code: PersistenceErrorCode.InvalidConfiguration,
+        code: PlatformErrorCode.PersistenceInvalidConfig,
       });
       expect(connection.statements).toEqual([]);
     });
@@ -202,7 +198,7 @@ describe('Database', () => {
         .catch((caught: unknown) => caught);
       expect(error).toBeInstanceOf(PersistenceError);
       expect(error).toMatchObject({
-        code: PersistenceErrorCode.QueryFailed,
+        code: PlatformErrorCode.PersistenceQueryFailed,
         failureKind: FailureKind.Transient,
         retryable: true,
         details: { sqlState: '40001' },
@@ -252,7 +248,7 @@ describe('Database', () => {
       await expect(
         database.runInTransaction(async () => undefined),
       ).rejects.toMatchObject({
-        code: PersistenceErrorCode.QueryFailed,
+        code: PlatformErrorCode.PersistenceQueryFailed,
         failureKind: FailureKind.Transient,
       });
     });
@@ -277,20 +273,50 @@ describe('Database', () => {
     it('opens a fresh guard per transaction: sequential and parallel transactions on different shards work', async () => {
       const a = setup({ name: 'shard-a' });
       const b = setup({ name: 'shard-b' });
-      await TransactionShardGuard.run(async () => {
-        await a.database.runInTransaction(async () => undefined);
-        await b.database.runInTransaction(async () => undefined);
-        await Promise.all([
-          a.database.runInTransaction(async () => undefined),
-          b.database.runInTransaction(async () => undefined),
-        ]);
-      });
+      await a.database.runInTransaction(async () => undefined);
+      await b.database.runInTransaction(async () => undefined);
+      await Promise.all([
+        a.database.runInTransaction(async () => undefined),
+        b.database.runInTransaction(async () => undefined),
+      ]);
       expect(a.connection.sql().filter((sql) => sql === 'COMMIT')).toHaveLength(
         2,
       );
       expect(b.connection.sql().filter((sql) => sql === 'COMMIT')).toHaveLength(
         2,
       );
+    });
+
+    it('runs one guard per transaction: a joined call keeps the guard of the open one', async () => {
+      const { database } = setup();
+      const guards: (TransactionShardGuard | undefined)[] = [];
+      await database.runInTransaction(async () => {
+        guards.push(TransactionShardGuard.current());
+        await database.runInTransaction(async () => {
+          guards.push(TransactionShardGuard.current());
+        });
+      });
+      await database.runInTransaction(async () => {
+        guards.push(TransactionShardGuard.current());
+      });
+      expect(guards[0]).toBeDefined();
+      expect(guards[1]).toBe(guards[0]);
+      expect(guards[2]).toBeDefined();
+      expect(guards[2]).not.toBe(guards[0]);
+    });
+
+    it('gives parallel transactions their own guard', async () => {
+      const a = setup({ name: 'shard-a' });
+      const b = setup({ name: 'shard-b' });
+      const seen = await Promise.all([
+        a.database.runInTransaction(async () =>
+          TransactionShardGuard.current(),
+        ),
+        b.database.runInTransaction(async () =>
+          TransactionShardGuard.current(),
+        ),
+      ]);
+      expect(seen[0]).not.toBe(seen[1]);
     });
 
     it('has no guard outside a transaction and one inside it', async () => {
@@ -366,7 +392,7 @@ describe('Database', () => {
         .read((session) => session.query('SELEC 1'))
         .catch((caught: unknown) => caught);
       expect(error).toMatchObject({
-        code: PersistenceErrorCode.QueryFailed,
+        code: PlatformErrorCode.PersistenceQueryFailed,
         failureKind: FailureKind.Permanent,
         details: { sqlState: '42601' },
       });

@@ -1,8 +1,5 @@
-import {
-  PartitionBy,
-  PartitionInterval,
-  PersistenceErrorCode,
-} from '../enums.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { PartitionBy, PartitionInterval } from '../enums.js';
 import {
   Audited,
   EntityPlacement,
@@ -127,7 +124,7 @@ describe('schema helpers', () => {
     );
     expect(() => uuidV7LowerBound(new Date(-1))).toThrow(
       expect.objectContaining({
-        code: PersistenceErrorCode.InvalidConfiguration,
+        code: PlatformErrorCode.PersistenceInvalidConfig,
       }),
     );
   });

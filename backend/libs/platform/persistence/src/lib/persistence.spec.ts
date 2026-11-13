@@ -1,8 +1,9 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { SequentialIdGenerator } from '@platform/kernel/testing';
 import { ShardKey } from '@platform/sharding';
 import { RecordingConnection } from '../../test/support/recording-connection.js';
 import { Database } from './database.js';
-import { DataAccess, PersistenceErrorCode } from './enums.js';
+import { DataAccess } from './enums.js';
 import { createPersistence } from './persistence.js';
 import { ShardedDatabaseResolver } from './sharding/database-resolver.js';
 
@@ -40,7 +41,7 @@ describe('createPersistence', () => {
   it('requires exactly one mode and a catalog for sharding', () => {
     expect(() => createPersistence({})).toThrow(
       expect.objectContaining({
-        code: PersistenceErrorCode.InvalidConfiguration,
+        code: PlatformErrorCode.PersistenceInvalidConfig,
       }),
     );
     expect(() =>

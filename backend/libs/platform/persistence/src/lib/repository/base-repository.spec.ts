@@ -15,7 +15,7 @@ import {
 } from '../../../test/support/tasks.js';
 import type { PersistenceContext } from '../context/persistence-context.js';
 import { Database } from '../database.js';
-import { PersistenceErrorCode, RowLock } from '../enums.js';
+import { RowLock } from '../enums.js';
 import { OptimisticLockError } from '../errors.js';
 import type { DatabaseResolver } from '../sharding/database-resolver.js';
 import { BaseRepository } from './base-repository.js';
@@ -124,10 +124,10 @@ describe('BaseRepository on pg-mem', () => {
     it('requires a tenant in the context for a tenant scoped table', async () => {
       const { repository } = setup({ actorId: 'user-1' });
       await expect(repository.save(newTask(1))).rejects.toMatchObject({
-        code: PersistenceErrorCode.TenantRequired,
+        code: PlatformErrorCode.PersistenceTenantRequired,
       });
       await expect(repository.findById(taskId(1))).rejects.toMatchObject({
-        code: PersistenceErrorCode.TenantRequired,
+        code: PlatformErrorCode.PersistenceTenantRequired,
       });
     });
 
@@ -273,7 +273,7 @@ describe('BaseRepository on pg-mem', () => {
       await expect(
         repository.findById(taskId(1), { lock: RowLock.ForUpdate }),
       ).rejects.toMatchObject({
-        code: PersistenceErrorCode.TransactionRequired,
+        code: PlatformErrorCode.PersistenceTransactionRequired,
       });
     });
 
@@ -388,7 +388,7 @@ describe('BaseRepository on pg-mem', () => {
         {
           shard: 'shard-c',
           timedOut: false,
-          code: PersistenceErrorCode.QueryFailed,
+          code: PlatformErrorCode.PersistenceQueryFailed,
         },
       ]);
     });
@@ -398,7 +398,7 @@ describe('BaseRepository on pg-mem', () => {
       await expect(
         repository.acrossShards(Criteria.for<TaskRecord>().orderBy('title')),
       ).rejects.toMatchObject({
-        code: PersistenceErrorCode.InvalidConfiguration,
+        code: PlatformErrorCode.PersistenceInvalidConfig,
       });
       await expect(
         shards[0].runInTransaction(() =>

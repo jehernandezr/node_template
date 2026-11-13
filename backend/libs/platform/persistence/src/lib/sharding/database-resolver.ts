@@ -1,7 +1,9 @@
 import {
+  routingKeyFor,
   ShardAccess,
-  ShardKey,
+  validateShardingFeature,
   type DirectoryStore,
+  type ShardingFeatureOptions,
   type ShardRouter,
 } from '@platform/sharding';
 import {
@@ -14,7 +16,6 @@ import {
   type DatabaseOptions,
 } from '../database.js';
 import { DataAccess } from '../enums.js';
-import { invalidConfiguration } from '../errors.js';
 import type { DatabaseConnection } from '../sql/sql-session.js';
 import type {
   TransactionHook,
@@ -54,14 +55,13 @@ export interface ShardTarget {
 export interface ShardedDatabaseResolverOptions {
   /** Router de `@platform/sharding`. Se consume tal cual. */
   readonly router: ShardRouter;
-  /** Llave de shard del servicio o la entidad. */
-  readonly key: ShardKey;
   /**
-   * Valor de la llave cuando no es `ShardKey.Tenant`. Por defecto, con
-   * `ShardKey.User`, el actor del contexto. Sin valor, el router responde
+   * Declaración de sharding del servicio. Se valida al construir el resolver.
+   * `ShardKey.User` toma el actor del contexto; `ShardKey.Custom` pide un
+   * `keyResolver` que lee la llave del contexto. Sin llave, el resultado es
    * `PLATFORM.SHARDING.KEY_MISSING`.
    */
-  readonly keyValue?: (context: PersistenceContext) => string | undefined;
+  readonly sharding: ShardingFeatureOptions<PersistenceContext>;
   /** Abre la conexión a un shard lógico en su instancia. Se llama una vez por par. */
   readonly connect: (target: ShardTarget) => DatabaseConnection;
   /** Lista los shards lógicos del servicio, por ejemplo `PostgresDirectoryStore.listShards`. */
@@ -92,18 +92,21 @@ export class ShardedDatabaseResolver
   private readonly context: () => PersistenceContext;
 
   constructor(private readonly options: ShardedDatabaseResolverOptions) {
-    if (!Object.values(ShardKey).includes(options.key)) {
-      throw invalidConfiguration('key', 'a ShardKey');
-    }
+    validateShardingFeature(options.sharding);
     this.context = options.database?.context ?? requestContextProvider;
   }
 
   async resolve(access: DataAccess): Promise<Database> {
     const context = this.context();
+    const key = routingKeyFor(
+      this.options.sharding,
+      { tenantId: context.tenantId ?? '', userId: context.actorId },
+      context,
+    );
     const resolved = await this.options.router.resolve({
       tenantId: context.tenantId ?? '',
-      keyKind: this.options.key,
-      keyValue: this.keyValueOf(context),
+      keyKind: key.keyKind,
+      keyValue: key.keyValue,
       access:
         access === DataAccess.Write ? ShardAccess.Write : ShardAccess.Read,
     });
@@ -161,16 +164,6 @@ export class ShardedDatabaseResolver
     this.databases.clear();
     this.retired.length = 0;
     await Promise.all(all.map((database) => database.close()));
-  }
-
-  private keyValueOf(context: PersistenceContext): string | undefined {
-    if (this.options.key === ShardKey.Tenant) {
-      return undefined;
-    }
-    if (this.options.keyValue !== undefined) {
-      return this.options.keyValue(context);
-    }
-    return this.options.key === ShardKey.User ? context.actorId : undefined;
   }
 
   /**

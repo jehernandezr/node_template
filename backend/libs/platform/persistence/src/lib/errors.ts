@@ -1,20 +1,30 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 import { classifyFailure, FailureKind } from '@platform/primitives';
-import { PersistenceErrorCode } from './enums.js';
+
+/** Códigos de `PlatformErrorCode` que lanza esta capa. */
+export type PersistenceErrorCode =
+  | PlatformErrorCode.PersistenceInvalidConfig
+  | PlatformErrorCode.PersistenceQueryFailed
+  | PlatformErrorCode.PersistenceTransactionRequired
+  | PlatformErrorCode.PersistenceTenantRequired
+  | PlatformErrorCode.PersistenceTenantMismatch
+  | PlatformErrorCode.PersistenceCorruptRow
+  | PlatformErrorCode.PersistenceContention;
 
 const FAILURE_KIND: Readonly<
   Record<
-    Exclude<PersistenceErrorCode, PersistenceErrorCode.QueryFailed>,
+    Exclude<PersistenceErrorCode, PlatformErrorCode.PersistenceQueryFailed>,
     FailureKind
   >
 > = {
-  [PersistenceErrorCode.InvalidConfiguration]: FailureKind.ProtocolViolation,
-  [PersistenceErrorCode.TransactionRequired]: FailureKind.ProtocolViolation,
-  [PersistenceErrorCode.TenantRequired]: FailureKind.ProtocolViolation,
-  [PersistenceErrorCode.TenantMismatch]: FailureKind.ProtocolViolation,
-  [PersistenceErrorCode.CorruptRow]: FailureKind.Permanent,
-  [PersistenceErrorCode.Contention]: FailureKind.Transient,
+  [PlatformErrorCode.PersistenceInvalidConfig]: FailureKind.ProtocolViolation,
+  [PlatformErrorCode.PersistenceTransactionRequired]:
+    FailureKind.ProtocolViolation,
+  [PlatformErrorCode.PersistenceTenantRequired]: FailureKind.ProtocolViolation,
+  [PlatformErrorCode.PersistenceTenantMismatch]: FailureKind.ProtocolViolation,
+  [PlatformErrorCode.PersistenceCorruptRow]: FailureKind.Permanent,
+  [PlatformErrorCode.PersistenceContention]: FailureKind.Transient,
 };
 
 /** Opciones de un {@link PersistenceError}. */
@@ -40,7 +50,7 @@ export class PersistenceError extends PlatformError {
     options: PersistenceErrorOptions = {},
   ) {
     const failureKind =
-      code === PersistenceErrorCode.QueryFailed
+      code === PlatformErrorCode.PersistenceQueryFailed
         ? (options.failureKind ?? classifyFailure(options.cause))
         : FAILURE_KIND[code];
     super(message, {
@@ -75,7 +85,7 @@ export function invalidConfiguration(
   expectation: string,
 ): PersistenceError {
   return new PersistenceError(
-    PersistenceErrorCode.InvalidConfiguration,
+    PlatformErrorCode.PersistenceInvalidConfig,
     `${option} must be ${expectation}`,
     { details: { option } },
   );
@@ -99,7 +109,7 @@ export function toPersistenceError(error: unknown): PlatformError {
   }
   const sqlState = sqlStateOf(error);
   return new PersistenceError(
-    PersistenceErrorCode.QueryFailed,
+    PlatformErrorCode.PersistenceQueryFailed,
     'Database statement failed',
     {
       cause: error,

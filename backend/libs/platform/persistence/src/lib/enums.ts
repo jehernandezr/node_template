@@ -60,21 +60,3 @@ export enum PartitionInterval {
   Day = 'day',
   Month = 'month',
 }
-
-/** Códigos de error de `@platform/persistence`. */
-export enum PersistenceErrorCode {
-  /** Opción o declaración inválida. Es un error de programación. */
-  InvalidConfiguration = 'PLATFORM.PERSISTENCE.INVALID_CONFIG',
-  /** La base rechazó la sentencia o se perdió la conexión. La clase sale de la causa. */
-  QueryFailed = 'PLATFORM.PERSISTENCE.QUERY_FAILED',
-  /** La operación exige una transacción abierta (por ejemplo, un bloqueo pesimista). */
-  TransactionRequired = 'PLATFORM.PERSISTENCE.TRANSACTION_REQUIRED',
-  /** La tabla es por tenant y el contexto no trae `tenantId`. */
-  TenantRequired = 'PLATFORM.PERSISTENCE.TENANT_REQUIRED',
-  /** El registro trae un tenant distinto al del contexto. */
-  TenantMismatch = 'PLATFORM.PERSISTENCE.TENANT_MISMATCH',
-  /** Una fila guardada no tiene la forma esperada. */
-  CorruptRow = 'PLATFORM.PERSISTENCE.CORRUPT_ROW',
-  /** Varios intentos concurrentes compiten por la misma fila; reintentar puede funcionar. */
-  Contention = 'PLATFORM.PERSISTENCE.CONTENTION',
-}

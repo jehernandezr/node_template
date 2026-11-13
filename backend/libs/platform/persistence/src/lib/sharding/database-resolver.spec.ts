@@ -3,6 +3,8 @@ import {
   ShardingErrorCode,
   ShardKey,
   ShardRouter,
+  ShardStrategy,
+  type ShardKeyResolver,
   TenantStatus,
 } from '@platform/sharding';
 import { RecordingConnection } from '../../../test/support/recording-connection.js';
@@ -17,7 +19,10 @@ const TENANT_A = '0193f1c2-0000-7000-8000-00000000000a';
 const TENANT_B = '0193f1c2-0000-7000-8000-00000000000b';
 const TENANT_MOVING = '0193f1c2-0000-7000-8000-00000000000c';
 
-function setup(key: ShardKey = ShardKey.Tenant) {
+function setup(
+  key: ShardKey = ShardKey.Tenant,
+  keyResolver?: ShardKeyResolver<PersistenceContext>,
+) {
   const directory = new InMemoryDirectoryStore();
   directory.setPlacement({
     tenantId: TENANT_A,
@@ -51,7 +56,7 @@ function setup(key: ShardKey = ShardKey.Tenant) {
   let context: PersistenceContext = { tenantId: TENANT_A, actorId: 'user-1' };
   const resolver = new ShardedDatabaseResolver({
     router,
-    key,
+    sharding: { strategy: ShardStrategy.Directory, key, keyResolver },
     connect: (target) => {
       opened.push(target);
       const connection = new RecordingConnection();
@@ -114,6 +119,26 @@ describe('ShardedDatabaseResolver', () => {
       code: ShardingErrorCode.KeyMissing,
     });
     setContext({ tenantId: TENANT_A, actorId: 'user-1' });
+    await expect(resolver.resolve(DataAccess.Read)).resolves.toMatchObject({
+      name: 'shard-1',
+    });
+  });
+
+  it('rejects an invalid sharding declaration when it is built', () => {
+    expect(() => setup(ShardKey.Custom)).toThrow(
+      expect.objectContaining({ code: ShardingErrorCode.InvalidConfiguration }),
+    );
+  });
+
+  it('routes by the key a ShardKey.Custom resolver reads from the context', async () => {
+    const { resolver, setContext } = setup(ShardKey.Custom, {
+      resolve: (context: PersistenceContext) => context.actorId,
+    });
+    setContext({ tenantId: TENANT_A });
+    await expect(resolver.resolve(DataAccess.Read)).rejects.toMatchObject({
+      code: ShardingErrorCode.KeyMissing,
+    });
+    setContext({ tenantId: TENANT_A, actorId: 'account-1' });
     await expect(resolver.resolve(DataAccess.Read)).resolves.toMatchObject({
       name: 'shard-1',
     });

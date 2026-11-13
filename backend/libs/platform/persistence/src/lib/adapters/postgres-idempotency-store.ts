@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { SystemClock, type Clock, type IdGenerator } from '@platform/kernel';
 import {
   assertClaimInput,
@@ -10,7 +11,7 @@ import {
   type IdempotencyStore,
 } from '@platform/primitives';
 import type { Database } from '../database.js';
-import { DataAccess, PersistenceErrorCode } from '../enums.js';
+import { DataAccess } from '../enums.js';
 import { invalidConfiguration, PersistenceError } from '../errors.js';
 import type { DatabaseResolver } from '../sharding/database-resolver.js';
 import { SingleDatabaseResolver } from '../sharding/database-resolver.js';
@@ -46,7 +47,7 @@ function toMs(value: unknown): number {
   const ms = Number(value);
   if (!Number.isSafeInteger(ms)) {
     throw new PersistenceError(
-      PersistenceErrorCode.CorruptRow,
+      PlatformErrorCode.PersistenceCorruptRow,
       'Idempotency row has an invalid lease',
     );
   }
@@ -207,7 +208,7 @@ export class PostgresIdempotencyStore<
       }
     }
     throw new PersistenceError(
-      PersistenceErrorCode.Contention,
+      PlatformErrorCode.PersistenceContention,
       'Idempotency key kept changing while claiming it',
       { details: { rounds: MAX_CLAIM_ROUNDS } },
     );
@@ -236,7 +237,7 @@ export class PostgresIdempotencyStore<
     }
     if (row.state !== ClaimState.InProgress) {
       throw new PersistenceError(
-        PersistenceErrorCode.CorruptRow,
+        PlatformErrorCode.PersistenceCorruptRow,
         'Idempotency row has an unknown state',
       );
     }
