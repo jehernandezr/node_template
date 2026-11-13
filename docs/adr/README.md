@@ -38,3 +38,4 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0017   | [Export de contratos](0017-export-de-contratos.md)                                                                    | Propuesta |
 | 0018   | [Contrato de microfrontend](0018-contrato-de-microfrontend.md)                                                        | Aceptada  |
 | 0019   | [CI y toolchain](0019-ci-y-toolchain.md)                                                                              | Aceptada  |
+| 0020   | [Terraform por stacks y runtime de API elegido por servicio](0020-terraform-por-stacks-y-runtime-por-servicio.md)     | Aceptada  |

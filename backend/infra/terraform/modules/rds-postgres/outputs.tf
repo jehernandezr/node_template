@@ -9,18 +9,18 @@ output "proxy_endpoint" {
 }
 
 output "reader_endpoint" {
-  description = "Endpoint del RDS Proxy de lectura de la primera réplica (host, sin puerto). Null si no hay réplicas."
-  value       = try(aws_db_proxy.reader[0].endpoint, null)
+  description = "Host de la primera réplica de lectura. Null si no hay réplicas. RDS Proxy solo admite la escritora fuera de Aurora, así que la lectura va directo a la réplica."
+  value       = try(aws_db_instance.replica[0].address, null)
 }
 
 output "reader_endpoints" {
-  description = "Endpoints de los proxies de lectura, uno por réplica. Con más de una réplica, el cliente reparte entre ellos."
-  value       = aws_db_proxy.reader[*].endpoint
+  description = "Host de cada réplica de lectura. Con más de una, el cliente reparte entre ellas."
+  value       = aws_db_instance.replica[*].address
 }
 
-output "replica_endpoints" {
-  description = "Endpoints directos de las réplicas (host:puerto). Solo para administración: las apps usan reader_endpoint."
-  value       = aws_db_instance.replica[*].endpoint
+output "replica_security_group_id" {
+  description = "Security group de las réplicas. Null sin réplicas."
+  value       = try(aws_security_group.replica[0].id, null)
 }
 
 output "master_secret_arn" {
@@ -49,6 +49,6 @@ output "security_group_id" {
 }
 
 output "proxy_security_group_id" {
-  description = "Security group de los RDS Proxy. Los clientes salen hacia él por el puerto 5432."
+  description = "Security group del RDS Proxy. Los clientes salen hacia él por el puerto 5432."
   value       = aws_security_group.proxy.id
 }

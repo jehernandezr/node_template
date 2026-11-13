@@ -14,7 +14,7 @@ OpenObserve en un solo nodo sobre Fargate. Recibe logs, métricas y trazas por O
 
 | Variable                           | Descripción                                                                                                |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `cluster_arn`, `cluster_name`      | Clúster ECS (módulo `ecs-cluster`).                                                                        |
+| `cluster_arn`                      | Clúster ECS (módulo `ecs-cluster`).                                                                        |
 | `vpc_id`, `vpc_cidr`, `subnet_ids` | Red privada.                                                                                               |
 | `create_internal_alb`              | `true` crea un ALB interno. `false` requiere `alb_listener_arn`, `alb_security_group_id` y `host_headers`. |
 | `internal_alb_certificate_arn`     | Si es null, el ALB interno atiende HTTP en el puerto 80 solo dentro de la VPC.                             |

@@ -38,9 +38,10 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  description = "CIDR de la VPC. El servicio puede salir a cualquier puerto TCP dentro de ella (RDS Proxy, Valkey, endpoints)."
-  type        = string
+variable "additional_security_group_ids" {
+  description = "Security groups extra de las tareas. El de clientes de datos (stack data) abre la salida hacia RDS Proxy, las réplicas, Valkey y OpenObserve; el del servicio solo sale por HTTPS."
+  type        = list(string)
+  default     = []
 }
 
 variable "subnet_ids" {

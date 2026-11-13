@@ -163,7 +163,7 @@ variable "log_retention_days" {
 }
 
 variable "vpc_enabled" {
-  description = "Ejecuta la función dentro de la VPC (para llegar a RDS Proxy o Valkey). Requiere vpc_id, vpc_cidr y subnet_ids."
+  description = "Ejecuta la función dentro de la VPC (para llegar a RDS Proxy o Valkey). Requiere vpc_id y subnet_ids."
   type        = bool
   default     = false
 }
@@ -174,10 +174,10 @@ variable "vpc_id" {
   default     = null
 }
 
-variable "vpc_cidr" {
-  description = "CIDR de la VPC, para la salida de la función. Requerido con vpc_enabled."
-  type        = string
-  default     = null
+variable "additional_security_group_ids" {
+  description = "Security groups extra de la función. El de clientes de datos (stack data) abre la salida hacia RDS Proxy, las réplicas, Valkey y OpenObserve; el de la función solo sale por HTTPS."
+  type        = list(string)
+  default     = []
 }
 
 variable "subnet_ids" {
@@ -187,8 +187,9 @@ variable "subnet_ids" {
 }
 
 variable "queue_arn" {
-  description = "ARN de la cola SQS de origen. Su DLQ y su redrive los define el módulo messaging."
+  description = "ARN de la cola SQS de origen. Su DLQ y su redrive los define el módulo messaging. Null para una función sin cola, por ejemplo la API detrás de API Gateway."
   type        = string
+  default     = null
 }
 
 variable "queue_kms_key_arn" {

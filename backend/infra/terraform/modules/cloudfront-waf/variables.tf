@@ -48,6 +48,12 @@ variable "api_aliases" {
   default     = []
 }
 
+variable "api_origin_forward_host_header" {
+  description = "true reenvía el Host del cliente al origen (un ALB). false lo omite, como exige API Gateway, que es el origen por defecto."
+  type        = bool
+  default     = false
+}
+
 variable "api_origin_read_timeout" {
   description = "Segundos que CloudFront espera la respuesta del origen. Entre 1 y 180 (más de 60 requiere subir la cuota)."
   type        = number
@@ -60,7 +66,7 @@ variable "api_origin_read_timeout" {
 }
 
 variable "api_origin_verify_header_value" {
-  description = "Valor del encabezado X-Origin-Verify que CloudFront agrega hacia el origen, para que el ALB rechace tráfico que no pasó por CloudFront. Null no lo agrega."
+  description = "Valor del encabezado X-Origin-Verify que CloudFront agrega hacia el origen, para que el origen rechace tráfico que no pasó por CloudFront. Null no lo agrega."
   type        = string
   default     = null
   sensitive   = true

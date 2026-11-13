@@ -36,6 +36,18 @@ variable "max_receive_count" {
   }
 }
 
+variable "redrive_allow_policy_enabled" {
+  description = "Limita cada DLQ a recibir solo de su cola. false en LocalStack, que no borra la política al destruir."
+  type        = bool
+  default     = true
+}
+
+variable "alarms_enabled" {
+  description = "Crea las alarmas de CloudWatch de colas y DLQ. false en LocalStack, que no las emula de forma confiable."
+  type        = bool
+  default     = true
+}
+
 variable "dlq_oldest_message_age_seconds" {
   description = "Edad en segundos del mensaje más viejo de una DLQ que dispara la alarma."
   type        = number

@@ -1238,58 +1238,64 @@ El servicio `billing` calcula qué debe pagar cada tenant y lleva el estado de c
 
 ## Infraestructura AWS y CI/CD
 
-La infraestructura vive en `backend/infra/terraform`: una raíz `platform` por región que compone módulos reutilizables. El detalle de variables y salidas está en el [README de Terraform](../backend/infra/terraform/README.md).
+La infraestructura vive en `backend/infra/terraform` y se organiza en módulos reutilizables, stacks con estado propio y valores por ambiente ([ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md)). El detalle de variables, salidas y comandos está en el [README de Terraform](../backend/infra/terraform/README.md).
 
-| Módulo            | Recursos                                                                                                             |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `network`         | VPC con subredes públicas, privadas y de datos en dos zonas, NAT opcional, endpoints de VPC y flow logs              |
-| `rds-postgres`    | RDS PostgreSQL 17 con CMK, parámetros propios, usuarios por servicio con rotación y RDS Proxy de escritura y lectura |
-| `valkey`          | ElastiCache for Valkey serverless con CMK, TLS y autenticación IAM                                                   |
-| `messaging`       | Tópicos SNS, colas SQS, DLQ, suscripciones, KMS y alarmas, leídos del JSON de la topología                           |
-| `ecs-cluster`     | Clúster ECS Fargate con Container Insights                                                                           |
-| `alb`             | ALB público para la API y para Socket.IO y SSE                                                                       |
-| `observability`   | OpenObserve en Fargate con ALB interno                                                                               |
-| `cloudfront-waf`  | CloudFront con WAFv2 para la web Flutter y la API                                                                    |
-| `files-bucket`    | Bucket S3 de archivos de usuarios                                                                                    |
-| `ses`             | Identidad SES, configuration sets y tópico de eventos                                                                |
-| `service-fargate` | Microservicio en Fargate: API detrás del ALB o worker que escala por cola                                            |
-| `service-lambda`  | Lambda consumidora de una cola SQS                                                                                   |
+| Stack                        | Recursos                                                                                                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `network`                    | VPC con subredes públicas, privadas y de datos, NAT según `egress`, endpoints de VPC y flow logs                                                                                                         |
+| `platform`                   | Tópico de alarmas y presupuesto; clúster ECS; OpenObserve; API Gateway HTTP con su autorizador de origen; ALB interno de APIs en Fargate y VPC link; ALB público de tiempo real; bucket de archivos; SES |
+| `data`                       | RDS PostgreSQL con RDS Proxy y réplicas, una base por shard de cada servicio y el catálogo; Valkey; security group de clientes                                                                           |
+| `messaging`                  | Tópicos, colas y DLQ leídos de `topology.json`, y la cola de eventos de SES                                                                                                                              |
+| `edge`                       | CloudFront con WAF para la web Flutter y la API, y los registros DNS                                                                                                                                     |
+| `service` (uno por servicio) | API (Lambda o Fargate) y sus rutas, tiempo real, workers Fargate, consumidores Lambda, IAM derivado de la topología, logs y alarmas                                                                      |
 
-**Raíz `platform`**
+**Stacks y ambientes**
 
-- Una raíz por región, con el mismo código y otro `tfvars`. `environments/dev.tfvars` y `environments/prod.tfvars` traen los valores de cada entorno; la variable `environment` acepta `dev`, `staging` y `prod`.
-- Estado en S3 con `encrypt` y `use_lockfile`. El bucket, la clave y la región llegan con `-backend-config`: un estado por región y entorno.
-- Los servicios se declaran en la variable `services`, un mapa por nombre. `kind = "fargate"` crea una API o un worker; `kind = "lambda"`, un consumidor de cola. Agregar un microservicio es agregar una entrada en el `tfvars`.
-- El módulo `messaging` lee la topología que exporta `Topology.toJSON()` de `@platform/messaging`. `examples/topology.example.json` sirve para validar y para dev.
-- Terraform `>= 1.11` y provider de AWS `>= 6.0, < 7.0`. La versión fijada para CI está en `backend/infra/terraform/.terraform-version`.
+- Cada stack tiene su `config.tf` con backend S3 vacío, su `remote_state.tf` para leer a los anteriores y el mismo `variables_common.tf`. Los valores viven en `environments/<ambiente>/<stack>/{backend.tfvars,terraform.tfvars}`; un servicio, en `environments/<ambiente>/services/<servicio>/`.
+- El orden de despliegue es network, platform, data, messaging, edge y luego cada servicio. Desplegar un servicio no planea ni aplica la red, la base ni la plataforma.
+- Ambientes `local` (LocalStack), `dev`, `staging` y `prod`. La clave de cada estado es `<región>/<stack>/terraform.tfstate`: otra región es otro juego de estados con el mismo código.
+- `backend/infra/scripts/deploy-aws.sh` corre plan, apply o destroy por stack o por servicio; `local.sh` levanta Docker y aplica el ambiente local.
+- Terraform `>= 1.11` y provider de AWS `>= 6.0, < 7.0`. CI usa la versión de `.terraform-version` y tflint la de `.tflint-version`.
+
+**Runtime por servicio**
+
+- La API de cada servicio elige `runtime = "lambda"` (API Gateway HTTP) o `"fargate"` (ALB interno detrás del VPC link). En los dos casos entra por la misma API HTTP, detrás de CloudFront y su WAF, y un autorizador exige el encabezado `X-Origin-Verify` que solo CloudFront conoce. Cambiar de runtime es cambiar ese campo y el artefacto.
+- El tiempo real (Socket.IO y SSE) corre siempre en Fargate detrás del ALB público, porque API Gateway HTTP corta a los 30 segundos.
+- Los permisos de mensajería salen de `producers` y `consumer` de la topología exportada: el `tfvars` del servicio no repite tópicos ni colas.
 
 **Red y salida a Internet**
 
-La variable `egress` del módulo `network` decide la salida de las subredes privadas ([ADR 0016](adr/0016-egress-de-red.md)): `none`, `single_nat` (dev) o `per_az_nat` (prod). Las subredes de datos (RDS, RDS Proxy, Valkey) no tienen ruta a Internet y llegan a AWS solo por endpoints de VPC. El tráfico a AWS no pasa por el NAT.
+La variable `egress` del stack `network` decide la salida de las subredes privadas ([ADR 0016](adr/0016-egress-de-red.md)): `none`, `single_nat` (dev) o `per_az_nat` (staging y prod). Las subredes de datos (RDS, RDS Proxy, Valkey) no tienen ruta a Internet y llegan a AWS solo por endpoints de VPC. Los servicios salen solo por HTTPS; el security group de clientes del stack `data` abre la salida exacta hacia RDS Proxy, las réplicas, Valkey y OpenObserve.
 
 **Datos**
 
-- Las apps nunca usan el usuario maestro de RDS. Cada servicio tiene su rol, su esquema y un secreto con rotación; una Lambda de bootstrap dentro de la VPC crea los roles.
-- Las apps escriben por `rds_proxy_endpoint` y leen por `reader_endpoint`.
+- Una instancia RDS por región con una base por shard lógico de cada servicio (`<servicio>_shard_<n>`) y la base `catalog` ([ADR 0010](adr/0010-sharding-logico-residencia-region.md)), igual que `backend/infra/local/postgres/init.sql`. Una Lambda de bootstrap dentro de la VPC crea roles, bases con su dueño y la extensión `vector`; nunca borra.
+- Las apps nunca usan el usuario maestro. Cada servicio tiene su rol, dueño de sus shards, y un secreto con rotación. El catálogo pertenece a `catalog_owner`; los servicios con `catalog = "owner"` lo migran y los de `"read"` lo consultan por `catalog_reader`.
+- Cada servicio recibe `DB_DATABASES` con el mapa de sus bases, escribe por `DB_PROXY_HOST` (RDS Proxy) y lee de `DB_READER_HOSTS`, directo a las réplicas: fuera de Aurora, RDS Proxy solo admite la instancia escritora.
 - El grupo de parámetros activa `rds.logical_replication`, que habilita los traslados de shard sin corte.
-- Valkey autentica por IAM con un usuario por servicio.
+- Valkey autentica por IAM con un usuario por servicio limitado a `~<servicio>:*`; la caché antepone el nombre del servicio a sus llaves.
+- Los logs de PostgreSQL y de las Lambdas de administración tienen retención y CMK.
+
+**Costos y alarmas**
+
+El stack `platform` crea el tópico de alarmas (obligatorio en staging y prod) y un presupuesto mensual con AWS Budgets (`monthly_budget`) que avisa al 80 % y al 100 % real y al 100 % pronosticado. `alarm_email` rechaza valores de ejemplo en staging y prod.
 
 **Validación en CI**
 
-El job `terraform` de `ci.yml` corre cuando cambia `backend/infra/terraform/**`: `terraform fmt -check -recursive`, `terraform init -backend=false` y `terraform validate` de `platform` y de cada ejemplo en `examples/`, y `tflint`. `security.yml` revisa la configuración con Trivy (ver [Calidad y seguridad](#calidad-y-seguridad)).
+El job `terraform` de `ci.yml` corre cuando cambia `backend/infra/**`: `terraform fmt -check -recursive`, `backend/infra/scripts/tf-validate.mjs` (init sin backend, `validate` y `terraform test` con proveedores simulados en cada stack y ejemplo), las pruebas en Python de la Lambda de bootstrap y del script de LocalStack, `shellcheck` y `tflint` con el ruleset de AWS. `security.yml` revisa la configuración con Trivy y las dependencias de la Lambda con OSV-Scanner (ver [Calidad y seguridad](#calidad-y-seguridad)).
 
 **Siguiente paso: despliegue**
 
-El siguiente paso es el pipeline de despliegue en GitHub Actions con OIDC hacia AWS:
+El siguiente paso es el pipeline de despliegue en GitHub Actions con OIDC hacia AWS, sobre `deploy-aws.sh`:
 
-1. `terraform plan` de las raíces afectadas como comentario en el PR.
+1. `terraform plan` de los stacks y servicios afectados como comentario en el PR.
 2. Al hacer merge, migraciones de cada servicio afectado en todos sus shards, como tarea única en Fargate.
-3. `terraform apply` y publicación de la imagen o la Lambda del servicio.
+3. `terraform apply` del stack del servicio con su imagen o su bundle (`TF_VAR_image`, `TF_VAR_lambda_package`).
 4. Smoke tests contra el entorno y promoción de `staging` a `prod` con aprobación manual.
 
 **Desarrollo local**
 
-`backend/docker-compose.yml` levanta PostgreSQL con pgvector (bases `catalog`, `identity_shard_0`, `identity_shard_1` y `tasks_shard_0`), Valkey, LocalStack, Mailpit y OpenObserve. La guía está en [Desarrollo local](local-development.md).
+`backend/docker-compose.yml` levanta PostgreSQL con pgvector (bases `catalog`, `identity_shard_0`, `identity_shard_1` y `tasks_shard_0`), Valkey con sus módulos (Bloom), LocalStack, Mailpit, OpenObserve y un OpenTelemetry Collector con tail sampling. Las imágenes van fijadas por digest y los puertos solo se publican en `127.0.0.1`. Al arrancar, LocalStack crea las colas, DLQ, tópicos y suscripciones de `topology.json` con el prefijo `local`. La guía está en [Desarrollo local](local-development.md).
 
 Con los adaptadores de cada capacidad, el siguiente paso son dos modos de ejecución:
 
@@ -1297,6 +1303,8 @@ Con los adaptadores de cada capacidad, el siguiente paso son dos modos de ejecuc
 | ------------ | ------------------------------------------------------------ | ------------------------------------------------ |
 | `local`      | En memoria, Postgres, Valkey y Mailpit                       | Desarrollo diario rápido, sin AWS                |
 | `localstack` | Adaptadores AWS contra LocalStack, el simulador local de AWS | Probar la integración con AWS antes de desplegar |
+
+El ambiente `local` de Terraform aplica `platform` (archivos, correo y alarmas, sin cómputo) y `messaging` contra LocalStack con el prefijo `node-template-local`, para probar el Terraform antes de AWS.
 
 ## Calidad y seguridad
 

@@ -20,12 +20,11 @@ provider "aws" {
 module "observability" {
   source = "../../modules/observability"
 
-  name_prefix  = "nt-dev"
-  vpc_id       = "vpc-0123456789abcdef0"
-  vpc_cidr     = "10.0.0.0/16"
-  subnet_ids   = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
-  cluster_arn  = "arn:aws:ecs:us-east-1:123456789012:cluster/nt-dev"
-  cluster_name = "nt-dev"
+  name_prefix = "nt-dev"
+  vpc_id      = "vpc-0123456789abcdef0"
+  vpc_cidr    = "10.0.0.0/16"
+  subnet_ids  = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+  cluster_arn = "arn:aws:ecs:us-east-1:123456789012:cluster/nt-dev"
 
   root_user_email = "observability@dev.example.com"
 

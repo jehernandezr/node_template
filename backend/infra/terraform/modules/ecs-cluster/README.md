@@ -31,4 +31,4 @@ module "ecs_cluster" {
 }
 ```
 
-Los módulos `service-fargate` y `observability` reciben `cluster_arn` y `cluster_name`.
+`service-fargate` recibe `cluster_arn` y `cluster_name`; `observability`, solo `cluster_arn`.

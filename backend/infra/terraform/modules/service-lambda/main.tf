@@ -43,8 +43,8 @@ resource "terraform_data" "input_check" {
     }
 
     precondition {
-      condition     = !var.vpc_enabled || (var.vpc_id != null && var.vpc_cidr != null && length(var.subnet_ids) > 0)
-      error_message = "vpc_enabled requiere vpc_id, vpc_cidr y subnet_ids."
+      condition     = !var.vpc_enabled || (var.vpc_id != null && length(var.subnet_ids) > 0)
+      error_message = "vpc_enabled requiere vpc_id y subnet_ids."
     }
   }
 }
@@ -152,10 +152,14 @@ data "aws_iam_policy_document" "base" {
     resources = ["${aws_cloudwatch_log_group.this.arn}:*"]
   }
 
-  statement {
-    sid       = "ConsumeQueue"
-    actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:ChangeMessageVisibility"]
-    resources = [var.queue_arn]
+  dynamic "statement" {
+    for_each = var.queue_arn == null ? [] : [var.queue_arn]
+
+    content {
+      sid       = "ConsumeQueue"
+      actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:ChangeMessageVisibility"]
+      resources = [statement.value]
+    }
   }
 
   statement {
@@ -171,7 +175,7 @@ data "aws_iam_policy_document" "base" {
   }
 
   dynamic "statement" {
-    for_each = var.queue_kms_key_arn == null ? [] : [1]
+    for_each = var.queue_arn == null || var.queue_kms_key_arn == null ? [] : [1]
 
     content {
       sid       = "DecryptQueue"
@@ -257,17 +261,6 @@ resource "aws_vpc_security_group_egress_rule" "https" {
   description       = "HTTPS hacia endpoints de VPC y servicios externos"
 }
 
-resource "aws_vpc_security_group_egress_rule" "vpc" {
-  count = var.vpc_enabled ? 1 : 0
-
-  security_group_id = aws_security_group.this[0].id
-  cidr_ipv4         = var.vpc_cidr
-  from_port         = 0
-  to_port           = 65535
-  ip_protocol       = "tcp"
-  description       = "TCP dentro de la VPC: base de datos, Valkey y OpenObserve"
-}
-
 # --- Función y origen de eventos --------------------------------------------
 
 resource "aws_lambda_function" "this" {
@@ -314,7 +307,7 @@ resource "aws_lambda_function" "this" {
 
     content {
       subnet_ids         = var.subnet_ids
-      security_group_ids = [aws_security_group.this[0].id]
+      security_group_ids = concat([aws_security_group.this[0].id], var.additional_security_group_ids)
     }
   }
 
@@ -328,6 +321,8 @@ resource "aws_lambda_function" "this" {
 }
 
 resource "aws_lambda_event_source_mapping" "sqs" {
+  count = var.queue_arn == null ? 0 : 1
+
   event_source_arn                   = var.queue_arn
   function_name                      = aws_lambda_function.this.arn
   enabled                            = var.event_source_enabled

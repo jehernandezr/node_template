@@ -75,6 +75,7 @@ jobs:
           scan-args: |-
             --lockfile=pnpm-lock.yaml
             --lockfile=front/pubspec.lock
+            --lockfile=requirements.txt:backend/infra/terraform/modules/rds-postgres/lambda/db_bootstrap/requirements.txt
 
   iac-scan:
     name: Trivy (Terraform)

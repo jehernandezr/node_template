@@ -1,6 +1,6 @@
 # Módulo service-lambda
 
-Una Lambda consumidora de una cola SQS, en arm64, con respuesta parcial de lotes.
+Una Lambda en arm64: consumidora de una cola SQS con respuesta parcial de lotes, o API detrás de API Gateway HTTP (`queue_arn = null`, rutas con el módulo `api-routes`).
 
 ## Qué crea
 
@@ -10,7 +10,7 @@ Una Lambda consumidora de una cola SQS, en arm64, con respuesta parcial de lotes
 - Cola de mensajes fallidos para invocaciones asíncronas (`dead_letter_config`), cifrada con KMS, con alarma.
 - Capa de OpenTelemetry (ADOT) por `otel_layer_arn`: el módulo fija `AWS_LAMBDA_EXEC_WRAPPER`, `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` y la configuración del collector que reenvía a OpenObserve.
 - Log group con retención y KMS, rol de mínimo privilegio y alarma de errores.
-- Opcional: ejecución en la VPC con su propio security group (`vpc_enabled`).
+- Opcional: ejecución en la VPC con su propio security group (`vpc_enabled`), que solo sale por HTTPS. El acceso a RDS Proxy, réplicas, Valkey y OpenObserve llega con `additional_security_group_ids` (security group de clientes del stack data).
 
 ## Entradas principales
 
@@ -23,7 +23,7 @@ Una Lambda consumidora de una cola SQS, en arm64, con respuesta parcial de lotes
 | `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumo.                               |
 | `reserved_concurrent_executions`                                                          | Protege la base de datos de picos.     |
 | `otel_layer_arn`, `otel_collector_config_uri`                                             | OpenTelemetry. Null desactiva la capa. |
-| `vpc_enabled`, `vpc_id`, `vpc_cidr`, `subnet_ids`                                         | Ejecución en la VPC.                   |
+| `vpc_enabled`, `vpc_id`, `subnet_ids`                                                     | Ejecución en la VPC.                   |
 | `secret_arns`, `secrets_kms_key_arns`, `task_policies`                                    | Permisos adicionales.                  |
 
 ## Salidas

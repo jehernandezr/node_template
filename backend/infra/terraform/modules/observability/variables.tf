@@ -33,11 +33,6 @@ variable "cluster_arn" {
   type        = string
 }
 
-variable "cluster_name" {
-  description = "Nombre del clúster ECS."
-  type        = string
-}
-
 variable "create_internal_alb" {
   description = "true crea un ALB interno solo para OpenObserve. false usa un listener existente con alb_listener_arn."
   type        = bool

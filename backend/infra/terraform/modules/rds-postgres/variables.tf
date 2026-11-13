@@ -9,16 +9,14 @@ variable "vpc_id" {
 }
 
 variable "data_subnet_ids" {
-  description = "Subredes de datos (sin ruta a Internet) para el subnet group, los proxies y las lambdas de administración."
+  description = "Subredes de datos (sin ruta a Internet) para el subnet group, el proxy y las lambdas de administración."
   type        = list(string)
 }
 
 variable "service_users" {
-  description = "Usuarios de base de datos por servicio. Cada uno recibe un secreto en Secrets Manager con rotación y, por defecto, un esquema propio. Las apps nunca usan el usuario maestro."
+  description = "Usuarios de base de datos por servicio. Cada uno recibe un secreto en Secrets Manager con rotación. Las apps nunca usan el usuario maestro. rds_replication da el permiso de replicación lógica y CONNECT en todas las bases."
   type = list(object({
     name            = string
-    schema          = optional(string)
-    create_schema   = optional(bool, true)
     rds_replication = optional(bool, false)
   }))
 
@@ -36,6 +34,47 @@ variable "service_users" {
     condition     = length(distinct([for u in var.service_users : u.name])) == length(var.service_users)
     error_message = "Los nombres de usuario de servicio no pueden repetirse."
   }
+}
+
+variable "group_roles" {
+  description = "Roles de grupo sin login, por ejemplo catalog_owner y catalog_reader. members son usuarios de service_users."
+  type = list(object({
+    name    = string
+    members = optional(list(string), [])
+  }))
+  default = []
+
+  validation {
+    condition     = alltrue([for g in var.group_roles : can(regex("^[a-z][a-z0-9_]{1,62}$", g.name))])
+    error_message = "Los roles de grupo usan minúsculas, números y guion bajo y empiezan por letra."
+  }
+}
+
+variable "databases" {
+  description = "Bases que crea el bootstrap: nombre, dueño (usuario de servicio o rol de grupo), roles con lectura y extensiones. Quitar una base de la lista no la borra."
+  type = list(object({
+    name       = string
+    owner      = string
+    readers    = optional(list(string), [])
+    extensions = optional(list(string), [])
+  }))
+  default = []
+
+  validation {
+    condition     = alltrue([for d in var.databases : can(regex("^[a-z][a-z0-9_]{0,62}$", d.name)) && !contains(["postgres", "rdsadmin", "template0", "template1"], d.name)])
+    error_message = "Los nombres de base usan minúsculas, números y guion bajo, empiezan por letra y no pueden ser bases del sistema."
+  }
+
+  validation {
+    condition     = length(distinct([for d in var.databases : d.name])) == length(var.databases)
+    error_message = "Los nombres de base no pueden repetirse."
+  }
+}
+
+variable "log_retention_days" {
+  description = "Días de retención de los logs de PostgreSQL y de las Lambdas de bootstrap y rotación."
+  type        = number
+  default     = 30
 }
 
 variable "enable_secret_rotation" {
@@ -120,7 +159,7 @@ variable "endpoint_security_group_id" {
 }
 
 variable "allowed_security_group_ids" {
-  description = "Security groups de clientes que pueden conectarse al proxy por el puerto 5432."
+  description = "Security groups de clientes que pueden conectarse al proxy y a las réplicas por el puerto 5432."
   type        = list(string)
   default     = []
 }
@@ -187,17 +226,6 @@ variable "skip_final_snapshot" {
   description = "Omite el snapshot final al borrar la instancia. Solo para entornos desechables."
   type        = bool
   default     = false
-}
-
-variable "db_name" {
-  description = "Nombre de la base de datos inicial."
-  type        = string
-  default     = "platform"
-
-  validation {
-    condition     = can(regex("^[a-zA-Z][a-zA-Z0-9_]*$", var.db_name))
-    error_message = "db_name solo admite letras, números y guion bajo, y empieza por letra."
-  }
 }
 
 variable "db_username" {

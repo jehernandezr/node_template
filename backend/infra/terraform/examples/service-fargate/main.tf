@@ -24,7 +24,6 @@ module "realtime" {
   cluster_arn  = "arn:aws:ecs:us-east-1:123456789012:cluster/nt-dev"
   cluster_name = "nt-dev"
   vpc_id       = "vpc-0123456789abcdef0"
-  vpc_cidr     = "10.0.0.0/16"
   subnet_ids   = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
 
   image          = "123456789012.dkr.ecr.us-east-1.amazonaws.com/realtime:0.1.0"
@@ -63,7 +62,6 @@ module "reports_worker" {
   cluster_arn  = "arn:aws:ecs:us-east-1:123456789012:cluster/nt-dev"
   cluster_name = "nt-dev"
   vpc_id       = "vpc-0123456789abcdef0"
-  vpc_cidr     = "10.0.0.0/16"
   subnet_ids   = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
 
   image   = "123456789012.dkr.ecr.us-east-1.amazonaws.com/reports:0.1.0"

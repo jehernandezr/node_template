@@ -345,15 +345,6 @@ resource "aws_vpc_security_group_egress_rule" "https" {
   description       = "HTTPS hacia endpoints de VPC y servicios externos"
 }
 
-resource "aws_vpc_security_group_egress_rule" "vpc" {
-  security_group_id = aws_security_group.this.id
-  cidr_ipv4         = var.vpc_cidr
-  from_port         = 0
-  to_port           = 65535
-  ip_protocol       = "tcp"
-  description       = "TCP dentro de la VPC: base de datos, Valkey y OpenObserve"
-}
-
 resource "aws_lb_target_group" "this" {
   count = local.alb_count
 
@@ -471,7 +462,7 @@ resource "aws_ecs_service" "this" {
 
   network_configuration {
     subnets          = var.subnet_ids
-    security_groups  = [aws_security_group.this.id]
+    security_groups  = concat([aws_security_group.this.id], var.additional_security_group_ids)
     assign_public_ip = false
   }
 

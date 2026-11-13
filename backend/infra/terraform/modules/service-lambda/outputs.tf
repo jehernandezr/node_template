@@ -3,6 +3,11 @@ output "function_name" {
   value       = aws_lambda_function.this.function_name
 }
 
+output "invoke_arn" {
+  description = "ARN de invocación, para integraciones de API Gateway."
+  value       = aws_lambda_function.this.invoke_arn
+}
+
 output "function_arn" {
   description = "ARN de la función Lambda."
   value       = aws_lambda_function.this.arn
@@ -19,7 +24,7 @@ output "role_name" {
 }
 
 output "security_group_id" {
-  description = "Security group de la función. Null si no corre en la VPC. Pásalo a allowed_security_group_ids de RDS Proxy y Valkey."
+  description = "Security group de la función. Null si no corre en la VPC. El acceso a datos llega con additional_security_group_ids."
   value       = var.vpc_enabled ? aws_security_group.this[0].id : null
 }
 
@@ -39,6 +44,6 @@ output "kms_key_arn" {
 }
 
 output "event_source_mapping_uuid" {
-  description = "UUID del mapeo de eventos de la cola SQS."
-  value       = aws_lambda_event_source_mapping.sqs.uuid
+  description = "UUID del mapeo de eventos de la cola SQS. Null sin cola."
+  value       = try(aws_lambda_event_source_mapping.sqs[0].uuid, null)
 }

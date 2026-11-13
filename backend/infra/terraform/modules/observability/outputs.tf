@@ -47,3 +47,13 @@ output "alb_zone_id" {
   description = "ID de zona Route 53 del ALB interno, para registros alias. Null si se usa un listener existente."
   value       = var.create_internal_alb ? aws_lb.internal[0].zone_id : null
 }
+
+output "alb_security_group_id" {
+  description = "Security group del ALB interno. Los clientes de OTLP salen hacia él. Null si se usa un listener existente."
+  value       = var.create_internal_alb ? aws_security_group.alb[0].id : null
+}
+
+output "alb_port" {
+  description = "Puerto del listener del ALB interno: 443 con certificado, 80 sin él."
+  value       = local.tls_internal ? 443 : 80
+}

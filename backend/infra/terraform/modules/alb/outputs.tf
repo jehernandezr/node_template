@@ -23,13 +23,23 @@ output "security_group_id" {
   value       = aws_security_group.this.id
 }
 
+output "listener_arn" {
+  description = "ARN del listener donde los servicios agregan sus reglas: HTTPS con certificado, HTTP en un ALB interno sin certificado."
+  value       = local.tls ? aws_lb_listener.https[0].arn : aws_lb_listener.http.arn
+}
+
+output "listener_port" {
+  description = "Puerto del listener de los servicios."
+  value       = local.listener_port
+}
+
 output "https_listener_arn" {
-  description = "ARN del listener HTTPS, donde los servicios agregan sus reglas."
-  value       = aws_lb_listener.https.arn
+  description = "ARN del listener HTTPS. Null sin certificado."
+  value       = try(aws_lb_listener.https[0].arn, null)
 }
 
 output "http_listener_arn" {
-  description = "ARN del listener HTTP, que redirige a HTTPS."
+  description = "ARN del listener HTTP: redirige a HTTPS con certificado y atiende dentro de la VPC sin él."
   value       = aws_lb_listener.http.arn
 }
 

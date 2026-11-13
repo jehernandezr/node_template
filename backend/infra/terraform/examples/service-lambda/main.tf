@@ -38,7 +38,6 @@ module "billing_worker" {
 
   vpc_enabled = true
   vpc_id      = "vpc-0123456789abcdef0"
-  vpc_cidr    = "10.0.0.0/16"
   subnet_ids  = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
 
   tags = { Environment = "dev" }

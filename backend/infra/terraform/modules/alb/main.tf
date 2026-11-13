@@ -3,7 +3,22 @@ data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 
 locals {
-  logs_bucket_name = "${var.name_prefix}-alb-logs-${data.aws_caller_identity.current.account_id}"
+  base_name        = "${var.name_prefix}-${var.name}"
+  logs_bucket_name = "${local.base_name}-logs-${data.aws_caller_identity.current.account_id}"
+  tls              = var.certificate_arn != null
+  # Puerto de entrada: 443 con certificado; 80 solo en un ALB interno sin certificado.
+  listener_port = local.tls ? 443 : 80
+}
+
+resource "terraform_data" "input_check" {
+  input = local.base_name
+
+  lifecycle {
+    precondition {
+      condition     = var.internal || local.tls
+      error_message = "Un ALB internet-facing requiere certificate_arn: solo un ALB interno puede escuchar en HTTP."
+    }
+  }
 }
 
 # Los access logs del ALB solo admiten cifrado SSE-S3; ELB no puede usar una CMK de KMS.
@@ -90,11 +105,11 @@ resource "aws_s3_bucket_policy" "logs" {
 }
 
 resource "aws_security_group" "this" {
-  name        = "${var.name_prefix}-alb"
-  description = "ALB de ${var.name_prefix}"
+  name        = local.base_name
+  description = "ALB ${var.internal ? "interno" : "público"} ${local.base_name}"
   vpc_id      = var.vpc_id
 
-  tags = merge(var.tags, { Name = "${var.name_prefix}-alb" })
+  tags = merge(var.tags, { Name = local.base_name })
 }
 
 # La salida hacia cada servicio la declara service-fargate al conectar su target group.
@@ -103,14 +118,14 @@ resource "aws_vpc_security_group_ingress_rule" "https_ipv4" {
 
   security_group_id = aws_security_group.this.id
   cidr_ipv4         = each.value
-  from_port         = 443
-  to_port           = 443
+  from_port         = local.listener_port
+  to_port           = local.listener_port
   ip_protocol       = "tcp"
-  description       = "HTTPS"
+  description       = local.tls ? "HTTPS" : "HTTP dentro de la VPC"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http_ipv4" {
-  for_each = toset(var.ingress_cidr_blocks)
+  for_each = local.tls ? toset(var.ingress_cidr_blocks) : toset([])
 
   security_group_id = aws_security_group.this.id
   cidr_ipv4         = each.value
@@ -125,14 +140,14 @@ resource "aws_vpc_security_group_ingress_rule" "https_ipv6" {
 
   security_group_id = aws_security_group.this.id
   cidr_ipv6         = each.value
-  from_port         = 443
-  to_port           = 443
+  from_port         = local.listener_port
+  to_port           = local.listener_port
   ip_protocol       = "tcp"
-  description       = "HTTPS"
+  description       = local.tls ? "HTTPS" : "HTTP dentro de la VPC"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http_ipv6" {
-  for_each = toset(var.ingress_ipv6_cidr_blocks)
+  for_each = local.tls ? toset(var.ingress_ipv6_cidr_blocks) : toset([])
 
   security_group_id = aws_security_group.this.id
   cidr_ipv6         = each.value
@@ -147,18 +162,31 @@ resource "aws_vpc_security_group_ingress_rule" "https_prefix_list" {
 
   security_group_id = aws_security_group.this.id
   prefix_list_id    = each.value
-  from_port         = 443
-  to_port           = 443
+  from_port         = local.listener_port
+  to_port           = local.listener_port
   ip_protocol       = "tcp"
-  description       = "HTTPS desde una prefix list"
+  description       = "Entrada desde una prefix list"
 }
 
-# El ALB es la entrada pública de la plataforma.
+# Entrada desde otros security groups, por ejemplo el VPC link de API Gateway hacia un ALB interno.
+resource "aws_vpc_security_group_ingress_rule" "from_security_group" {
+  count = length(var.ingress_security_group_ids)
+
+  security_group_id            = aws_security_group.this.id
+  referenced_security_group_id = var.ingress_security_group_ids[count.index]
+  from_port                    = local.listener_port
+  to_port                      = local.listener_port
+  ip_protocol                  = "tcp"
+  description                  = "Entrada desde un security group autorizado"
+}
+
+# El ALB público es la entrada del tiempo real (Socket.IO y SSE). El interno solo es
+# alcanzable dentro de la VPC (VPC link de API Gateway).
 # trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "this" {
-  name               = "${var.name_prefix}-alb"
+  name               = local.base_name
   load_balancer_type = "application"
-  internal           = false
+  internal           = var.internal
   security_groups    = [aws_security_group.this.id]
   subnets            = var.subnet_ids
 
@@ -174,9 +202,9 @@ resource "aws_lb" "this" {
     enabled = true
   }
 
-  tags = merge(var.tags, { Name = "${var.name_prefix}-alb" })
+  tags = merge(var.tags, { Name = local.base_name })
 
-  depends_on = [aws_s3_bucket_policy.logs]
+  depends_on = [aws_s3_bucket_policy.logs, terraform_data.input_check]
 }
 
 resource "aws_lb_target_group" "this" {
@@ -210,18 +238,40 @@ resource "aws_lb_target_group" "this" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-${each.key}" })
 }
 
+# Con certificado, el listener HTTP solo redirige a HTTPS. Sin certificado (ALB interno detrás
+# del VPC link de API Gateway) atiende en HTTP dentro de la VPC; el TLS termina en CloudFront
+# y en API Gateway.
+# trivy:ignore:AVD-AWS-0054
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
   port              = 80
   protocol          = "HTTP"
 
-  default_action {
-    type = "redirect"
+  dynamic "default_action" {
+    for_each = local.tls ? [1] : []
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
+    content {
+      type = "redirect"
+
+      redirect {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+  }
+
+  dynamic "default_action" {
+    for_each = local.tls ? [] : [1]
+
+    content {
+      type = "fixed-response"
+
+      fixed_response {
+        content_type = "application/json"
+        message_body = "{\"message\":\"not found\"}"
+        status_code  = "404"
+      }
     }
   }
 
@@ -229,6 +279,8 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_lb_listener" "https" {
+  count = local.tls ? 1 : 0
+
   load_balancer_arn = aws_lb.this.arn
   port              = 443
   protocol          = "HTTPS"
@@ -262,8 +314,8 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_listener_certificate" "additional" {
-  for_each = toset(var.additional_certificate_arns)
+  for_each = local.tls ? toset(var.additional_certificate_arns) : toset([])
 
-  listener_arn    = aws_lb_listener.https.arn
+  listener_arn    = aws_lb_listener.https[0].arn
   certificate_arn = each.value
 }

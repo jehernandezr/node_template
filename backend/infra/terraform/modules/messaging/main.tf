@@ -32,6 +32,27 @@ locals {
     for q in local.topology.queues : q.name => distinct([for s in q.subscriptions : s.topic])
     if length(q.subscriptions) > 0
   }
+
+  # Permisos por servicio derivados de la topología exportada: quién publica en cada tópico
+  # (producers), quién envía a cada cola (producers) y quién la consume (consumer). Los
+  # stacks de servicio arman su IAM con esto, sin repetir nombres en los tfvars.
+  topic_producers = { for t in local.topology.topics : t.name => try(tolist(t.producers), []) }
+  queue_producers = { for q in local.topology.queues : q.name => try(tolist(q.producers), []) }
+  queue_consumers = { for q in local.topology.queues : q.name => try(tostring(q.consumer), null) }
+
+  topology_services = sort(distinct(compact(concat(
+    flatten(values(local.topic_producers)),
+    flatten(values(local.queue_producers)),
+    values(local.queue_consumers),
+  ))))
+
+  service_access = {
+    for svc in local.topology_services : svc => {
+      publish_topics = sort([for name, producers in local.topic_producers : name if contains(producers, svc)])
+      send_queues    = sort([for name, producers in local.queue_producers : name if contains(producers, svc)])
+      consume_queues = sort([for name, consumer in local.queue_consumers : name if consumer == svc])
+    }
+  }
 }
 
 # Validaciones de la topología. Un terraform_data con precondiciones falla
@@ -172,7 +193,7 @@ resource "aws_sqs_queue" "this" {
 }
 
 resource "aws_sqs_queue_redrive_allow_policy" "dlq" {
-  for_each = local.queues_by_name
+  for_each = var.redrive_allow_policy_enabled ? local.queues_by_name : {}
 
   queue_url = aws_sqs_queue.dlq[each.key].url
 
@@ -233,7 +254,7 @@ resource "aws_sns_topic_subscription" "this" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
-  for_each = local.queues_by_name
+  for_each = var.alarms_enabled ? local.queues_by_name : {}
 
   alarm_name          = "${local.dlq_names[each.key]}-not-empty"
   namespace           = "AWS/SQS"
@@ -257,7 +278,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
 
 # Mensajes atascados en la DLQ: nadie los reprocesa (redrive) dentro del plazo.
 resource "aws_cloudwatch_metric_alarm" "dlq_old_message" {
-  for_each = local.queues_by_name
+  for_each = var.alarms_enabled ? local.queues_by_name : {}
 
   alarm_name          = "${local.dlq_names[each.key]}-oldest-message-age"
   namespace           = "AWS/SQS"
@@ -281,7 +302,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_old_message" {
 
 # Consumidor detenido o lento: el mensaje más viejo de la cola principal supera el umbral.
 resource "aws_cloudwatch_metric_alarm" "queue_old_message" {
-  for_each = local.queues_by_name
+  for_each = var.alarms_enabled ? local.queues_by_name : {}
 
   alarm_name          = "${local.queue_names[each.key]}-oldest-message-age"
   namespace           = "AWS/SQS"

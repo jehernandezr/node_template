@@ -8,13 +8,30 @@ variable "name_prefix" {
   }
 }
 
+variable "name" {
+  description = "Sufijo del balanceador, para tener varios en la misma raíz (por ejemplo alb y api). Máximo 9 caracteres."
+  type        = string
+  default     = "alb"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{0,8}$", var.name))
+    error_message = "name usa minúsculas, números y guiones, empieza por letra y tiene hasta 9 caracteres."
+  }
+}
+
+variable "internal" {
+  description = "true crea un ALB interno, alcanzable solo dentro de la VPC (por ejemplo detrás del VPC link de API Gateway)."
+  type        = bool
+  default     = false
+}
+
 variable "vpc_id" {
   description = "ID de la VPC del balanceador."
   type        = string
 }
 
 variable "subnet_ids" {
-  description = "Subredes públicas del balanceador internet-facing, en al menos dos zonas."
+  description = "Subredes del balanceador, en al menos dos zonas: públicas si es internet-facing, privadas si es interno."
   type        = list(string)
 
   validation {
@@ -24,8 +41,9 @@ variable "subnet_ids" {
 }
 
 variable "certificate_arn" {
-  description = "ARN del certificado ACM del listener HTTPS, en la región del balanceador."
+  description = "ARN del certificado ACM del listener HTTPS, en la región del balanceador. Null solo en un ALB interno: escucha en HTTP dentro de la VPC."
   type        = string
+  default     = null
 }
 
 variable "additional_certificate_arns" {
@@ -65,6 +83,12 @@ variable "ingress_ipv6_cidr_blocks" {
 
 variable "ingress_prefix_list_ids" {
   description = "Prefix lists que pueden llegar al balanceador, por ejemplo la administrada com.amazonaws.global.cloudfront.origin-facing."
+  type        = list(string)
+  default     = []
+}
+
+variable "ingress_security_group_ids" {
+  description = "Security groups que pueden llegar al listener, por ejemplo el del VPC link de API Gateway."
   type        = list(string)
   default     = []
 }

@@ -12,19 +12,59 @@ locals {
 
   users = { for u in var.service_users : u.name => u }
 
-  # Esquema propio por servicio, salvo que se indique lo contrario.
   bootstrap_users = [
     for u in var.service_users : {
       name            = u.name
       secret_arn      = aws_secretsmanager_secret.service[u.name].arn
-      schema          = u.create_schema ? coalesce(u.schema, u.name) : null
       rds_replication = u.rds_replication
     }
   ]
 
+  # Lo que crea el bootstrap: roles de grupo, bases con su dueño, lectores y extensiones.
+  bootstrap_spec = {
+    users       = local.bootstrap_users
+    group_roles = var.group_roles
+    databases   = var.databases
+  }
+
+  role_names = concat([for u in var.service_users : u.name], [for g in var.group_roles : g.name])
+
   service_secret_arns = [for s in aws_secretsmanager_secret.service : s.arn]
   rotation_enabled    = var.enable_secret_rotation
   alarm_actions       = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
+
+  instance_identifier = "${var.name_prefix}-postgres"
+  replica_identifiers = [for i in range(var.read_replica_count) : "${var.name_prefix}-postgres-replica-${i + 1}"]
+  bootstrap_function  = "${var.name_prefix}-db-bootstrap"
+  rotation_function   = "${var.name_prefix}-db-rotation"
+  log_group_arn_base  = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group"
+}
+
+# Cada base tiene un dueño declarado y cada miembro de un grupo es un usuario de servicio.
+resource "terraform_data" "input_check" {
+  input = local.role_names
+
+  lifecycle {
+    precondition {
+      condition     = alltrue([for d in var.databases : contains(local.role_names, d.owner)])
+      error_message = "El dueño de cada base debe estar en service_users o en group_roles."
+    }
+
+    precondition {
+      condition     = alltrue(flatten([for d in var.databases : [for r in d.readers : contains(local.role_names, r)]]))
+      error_message = "Los lectores de cada base deben estar en service_users o en group_roles."
+    }
+
+    precondition {
+      condition     = alltrue(flatten([for g in var.group_roles : [for m in g.members : contains([for u in var.service_users : u.name], m)]]))
+      error_message = "Los miembros de un rol de grupo deben estar en service_users."
+    }
+
+    precondition {
+      condition     = length(distinct(local.role_names)) == length(local.role_names)
+      error_message = "Un nombre no puede ser a la vez usuario de servicio y rol de grupo."
+    }
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -38,13 +78,30 @@ resource "aws_kms_key" "this" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "EnableIamPolicies"
-      Effect    = "Allow"
-      Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-      Action    = "kms:*"
-      Resource  = "*"
-    }]
+    Statement = [
+      {
+        Sid       = "EnableIamPolicies"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${data.aws_region.current.region}.amazonaws.com" }
+        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
+        Resource  = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = [
+              "${local.log_group_arn_base}:/aws/rds/instance/${local.instance_identifier}*",
+              "${local.log_group_arn_base}:/aws/lambda/${var.name_prefix}-db-*",
+            ]
+          }
+        }
+      },
+    ]
   })
 
   tags = var.tags
@@ -72,6 +129,29 @@ resource "aws_security_group" "rds" {
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds" })
+}
+
+# Las réplicas no pasan por RDS Proxy: fuera de Aurora el proxy solo admite la instancia
+# escritora. Los clientes autorizados leen directo de la réplica, con TLS.
+resource "aws_security_group" "replica" {
+  count = var.read_replica_count > 0 ? 1 : 0
+
+  name        = "${var.name_prefix}-rds-replica"
+  description = "Réplicas de lectura de ${var.name_prefix}, solo desde clientes autorizados"
+  vpc_id      = var.vpc_id
+
+  tags = merge(var.tags, { Name = "${var.name_prefix}-rds-replica" })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "replica_from_clients" {
+  count = var.read_replica_count > 0 ? length(var.allowed_security_group_ids) : 0
+
+  security_group_id            = aws_security_group.replica[0].id
+  referenced_security_group_id = var.allowed_security_group_ids[count.index]
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+  description                  = "PostgreSQL de lectura desde un cliente autorizado"
 }
 
 resource "aws_security_group" "proxy" {
@@ -218,11 +298,44 @@ resource "aws_db_parameter_group" "this" {
 }
 
 # ---------------------------------------------------------------------------
+# Log groups con retención y CMK. Se crean antes que la instancia y las funciones;
+# si no, AWS los crea solos sin expiración ni cifrado propio.
+# ---------------------------------------------------------------------------
+
+resource "aws_cloudwatch_log_group" "postgresql" {
+  for_each = toset(concat([local.instance_identifier], local.replica_identifiers))
+
+  name              = "/aws/rds/instance/${each.value}/postgresql"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.this.arn
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "bootstrap" {
+  name              = "/aws/lambda/${local.bootstrap_function}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.this.arn
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "rotation" {
+  count = local.rotation_enabled ? 1 : 0
+
+  name              = "/aws/lambda/${local.rotation_function}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.this.arn
+
+  tags = var.tags
+}
+
+# ---------------------------------------------------------------------------
 # Instancia primaria y réplicas.
 # ---------------------------------------------------------------------------
 
 resource "aws_db_instance" "this" {
-  identifier = "${var.name_prefix}-postgres"
+  identifier = local.instance_identifier
 
   engine         = "postgres"
   engine_version = var.engine_version
@@ -234,7 +347,7 @@ resource "aws_db_instance" "this" {
   storage_encrypted     = true
   kms_key_id            = aws_kms_key.this.arn
 
-  db_name  = var.db_name
+  # Sin base inicial: el bootstrap crea el catálogo y las bases de cada servicio.
   username = var.db_username
 
   manage_master_user_password   = true
@@ -265,12 +378,14 @@ resource "aws_db_instance" "this" {
   lifecycle {
     ignore_changes = [final_snapshot_identifier]
   }
+
+  depends_on = [aws_cloudwatch_log_group.postgresql]
 }
 
 resource "aws_db_instance" "replica" {
   count = var.read_replica_count
 
-  identifier          = "${var.name_prefix}-postgres-replica-${count.index + 1}"
+  identifier          = local.replica_identifiers[count.index]
   replicate_source_db = aws_db_instance.this.identifier
   instance_class      = var.instance_class
 
@@ -278,7 +393,7 @@ resource "aws_db_instance" "replica" {
   kms_key_id           = aws_kms_key.this.arn
   parameter_group_name = aws_db_parameter_group.this.name
 
-  vpc_security_group_ids = [aws_security_group.rds.id]
+  vpc_security_group_ids = [aws_security_group.replica[0].id]
   publicly_accessible    = false
   multi_az               = false
 
@@ -291,7 +406,9 @@ resource "aws_db_instance" "replica" {
 
   skip_final_snapshot = true
 
-  tags = merge(var.tags, { Name = "${var.name_prefix}-postgres-replica-${count.index + 1}" })
+  tags = merge(var.tags, { Name = local.replica_identifiers[count.index] })
+
+  depends_on = [aws_cloudwatch_log_group.postgresql]
 }
 
 # ---------------------------------------------------------------------------
@@ -318,7 +435,9 @@ resource "aws_secretsmanager_secret" "service" {
 }
 
 # Valor inicial. El campo host apunta a la instancia directa porque la rotación
-# necesita conectarse sin pasar por el proxy. Las apps usan proxy_endpoint y reader_endpoint.
+# necesita conectarse sin pasar por el proxy. Las apps usan proxy_endpoint y reader_endpoints.
+# dbname es la base de mantenimiento: la rotación solo cambia la contraseña del rol. Las
+# bases de cada servicio llegan a la app en un mapa aparte (stack data).
 resource "aws_secretsmanager_secret_version" "service" {
   for_each = local.users
 
@@ -329,7 +448,7 @@ resource "aws_secretsmanager_secret_version" "service" {
     password = ephemeral.random_password.service[each.key].result
     host     = aws_db_instance.this.address
     port     = aws_db_instance.this.port
-    dbname   = var.db_name
+    dbname   = "postgres"
   })
   secret_string_wo_version = 1
 }
@@ -338,7 +457,7 @@ data "archive_file" "bootstrap" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/db_bootstrap"
   output_path = "${path.module}/.build/db_bootstrap.zip"
-  excludes    = ["**/__pycache__/*"]
+  excludes    = ["**/__pycache__/*", "test_*.py", "requirements.txt"]
 }
 
 resource "aws_iam_role" "bootstrap" {
@@ -385,12 +504,12 @@ resource "aws_iam_role_policy" "bootstrap" {
 }
 
 resource "aws_lambda_function" "bootstrap" {
-  function_name = "${var.name_prefix}-db-bootstrap"
+  function_name = local.bootstrap_function
   role          = aws_iam_role.bootstrap.arn
   runtime       = "python3.13"
   architectures = ["arm64"]
   handler       = "handler.handler"
-  timeout       = 120
+  timeout       = 300
 
   filename         = data.archive_file.bootstrap.output_path
   source_code_hash = data.archive_file.bootstrap.output_base64sha256
@@ -402,28 +521,32 @@ resource "aws_lambda_function" "bootstrap" {
 
   tags = var.tags
 
-  depends_on = [aws_iam_role_policy_attachment.bootstrap_vpc, aws_iam_role_policy.bootstrap]
+  depends_on = [
+    aws_iam_role_policy_attachment.bootstrap_vpc,
+    aws_iam_role_policy.bootstrap,
+    aws_cloudwatch_log_group.bootstrap,
+  ]
 }
 
-# Crea (o completa) los roles en la base. Se repite cuando cambia la lista de usuarios.
+# Crea (o completa) roles, bases, extensiones y permisos. Se repite cuando cambia la
+# especificación o el código. Nunca borra bases ni roles.
 resource "aws_lambda_invocation" "bootstrap" {
   function_name = aws_lambda_function.bootstrap.function_name
 
-  input = jsonencode({
+  input = jsonencode(merge(local.bootstrap_spec, {
     master_secret_arn = local.master_secret_arn
     host              = aws_db_instance.this.address
     port              = aws_db_instance.this.port
-    dbname            = var.db_name
     extensions        = ["pg_stat_statements"]
-    users             = local.bootstrap_users
-  })
+  }))
 
   triggers = {
-    users = sha256(jsonencode(local.bootstrap_users))
-    code  = data.archive_file.bootstrap.output_base64sha256
+    spec = sha256(jsonencode(local.bootstrap_spec))
+    code = data.archive_file.bootstrap.output_base64sha256
   }
 
   depends_on = [
+    terraform_data.input_check,
     aws_secretsmanager_secret_version.service,
     aws_vpc_security_group_ingress_rule.rds_from_tooling,
     aws_vpc_security_group_egress_rule.tooling_to_rds,
@@ -449,14 +572,18 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "rotation" {
   semantic_version = data.aws_serverlessapplicationrepository_application.rotation[0].semantic_version
   capabilities     = data.aws_serverlessapplicationrepository_application.rotation[0].required_capabilities
 
+  # kmsKeyArn da al rol de la función permiso para descifrar y cifrar con la CMK de los secretos.
   parameters = {
     endpoint            = "https://secretsmanager.${data.aws_region.current.region}.amazonaws.com"
-    functionName        = "${var.name_prefix}-db-rotation"
+    functionName        = local.rotation_function
+    kmsKeyArn           = aws_kms_key.this.arn
     vpcSubnetIds        = join(",", var.data_subnet_ids)
     vpcSecurityGroupIds = aws_security_group.tooling.id
   }
 
   tags = var.tags
+
+  depends_on = [aws_cloudwatch_log_group.rotation]
 }
 
 resource "aws_secretsmanager_secret_rotation" "service" {
@@ -564,57 +691,6 @@ resource "aws_db_proxy_target" "this" {
   db_proxy_name          = aws_db_proxy.this.name
   target_group_name      = aws_db_proxy_default_target_group.this.name
   db_instance_identifier = aws_db_instance.this.identifier
-}
-
-# Proxy de lectura. RDS Proxy no tiene endpoint lector fuera de Aurora (los endpoints
-# READ_ONLY solo existen sobre clústeres Aurora). Para RDS PostgreSQL se registra cada
-# réplica como único destino de un proxy propio: cada una tiene su endpoint.
-resource "aws_db_proxy" "reader" {
-  count = var.read_replica_count
-
-  name          = "${var.name_prefix}-proxy-reader-${count.index + 1}"
-  engine_family = "POSTGRESQL"
-  debug_logging = false
-  require_tls   = true
-
-  idle_client_timeout    = 1800
-  role_arn               = aws_iam_role.proxy.arn
-  vpc_security_group_ids = [aws_security_group.proxy.id]
-  vpc_subnet_ids         = var.data_subnet_ids
-
-  dynamic "auth" {
-    for_each = local.users
-
-    content {
-      auth_scheme = "SECRETS"
-      iam_auth    = "DISABLED"
-      secret_arn  = aws_secretsmanager_secret.service[auth.key].arn
-    }
-  }
-
-  depends_on = [aws_iam_role_policy.proxy_read_secret, aws_secretsmanager_secret_version.service]
-
-  tags = merge(var.tags, { Name = "${var.name_prefix}-proxy-reader-${count.index + 1}" })
-}
-
-resource "aws_db_proxy_default_target_group" "reader" {
-  count = var.read_replica_count
-
-  db_proxy_name = aws_db_proxy.reader[count.index].name
-
-  connection_pool_config {
-    max_connections_percent      = 100
-    max_idle_connections_percent = 50
-    connection_borrow_timeout    = 120
-  }
-}
-
-resource "aws_db_proxy_target" "reader" {
-  count = var.read_replica_count
-
-  db_proxy_name          = aws_db_proxy.reader[count.index].name
-  target_group_name      = aws_db_proxy_default_target_group.reader[count.index].name
-  db_instance_identifier = aws_db_instance.replica[count.index].identifier
 }
 
 # ---------------------------------------------------------------------------

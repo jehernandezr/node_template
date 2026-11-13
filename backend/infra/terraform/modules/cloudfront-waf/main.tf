@@ -10,6 +10,12 @@ data "aws_cloudfront_cache_policy" "disabled" {
   name = "Managed-CachingDisabled"
 }
 
+# API Gateway enruta por Host: el origen debe recibir su propio dominio, no el del cliente.
+# La política administrada reenvía todo lo demás, incluidos los encabezados de geolocalización.
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
 locals {
   account_id   = data.aws_caller_identity.current.account_id
   partition    = data.aws_partition.current.partition
@@ -221,9 +227,11 @@ resource "aws_cloudfront_response_headers_policy" "security" {
   }
 }
 
-# Reenvía al origen lo necesario para la API: todas las cabeceras del cliente salvo Host,
-# más los encabezados de geolocalización que usa el contexto de MFA.
+# Origen que acepta el Host del cliente (por ejemplo un ALB): reenvía todas las cabeceras
+# del cliente más los encabezados de geolocalización que usa el contexto de MFA.
 resource "aws_cloudfront_origin_request_policy" "api" {
+  count = var.api_origin_forward_host_header ? 1 : 0
+
   name    = "${var.name_prefix}-api"
   comment = "Cabeceras, cookies y query strings hacia la API con geolocalización"
 
@@ -363,7 +371,7 @@ resource "aws_cloudfront_distribution" "api" {
     cached_methods             = ["GET", "HEAD"]
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
-    origin_request_policy_id   = aws_cloudfront_origin_request_policy.api.id
+    origin_request_policy_id   = var.api_origin_forward_host_header ? aws_cloudfront_origin_request_policy.api[0].id : data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
   }
 
