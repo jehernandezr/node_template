@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { ConfigValidationError } from './errors.js';
 import { defineConfig } from './define-config.js';
-import { baseConfigSchema, ConfigLogLevel, NodeEnv } from './base-config.js';
+import {
+  baseConfigSchema,
+  DEFAULT_OTLP_ENDPOINT,
+  NodeEnv,
+} from './base-config.js';
+import { LogLevel } from './log-level.js';
 import { envNumber } from './env.js';
 
 describe('defineConfig with baseConfigSchema', () => {
@@ -13,11 +18,14 @@ describe('defineConfig with baseConfigSchema', () => {
     expect(loaded).toEqual({
       NODE_ENV: NodeEnv.Development,
       SERVICE_NAME: 'orders',
-      LOG_LEVEL: ConfigLogLevel.Info,
+      LOG_LEVEL: LogLevel.Info,
       LOG_SAMPLE_RATE: 0,
       LOG_DEBUG_CONTEXTS: [],
-      AWS_REGION: undefined,
+      DB_LOG_QUERIES: false,
       DB_SLOW_QUERY_MS: 500,
+      OTEL_SDK_DISABLED: false,
+      OTEL_EXPORTER_OTLP_ENDPOINT: DEFAULT_OTLP_ENDPOINT,
+      OTEL_METRIC_EXPORT_INTERVAL: 60_000,
     });
   });
 
@@ -28,17 +36,17 @@ describe('defineConfig with baseConfigSchema', () => {
       LOG_LEVEL: 'warn',
       LOG_SAMPLE_RATE: '0.01',
       LOG_DEBUG_CONTEXTS: 'auth,reports',
-      AWS_REGION: 'us-east-1',
+      DB_LOG_QUERIES: 'true',
       DB_SLOW_QUERY_MS: '250',
     });
 
     expect(loaded).toMatchObject({
       NODE_ENV: NodeEnv.Production,
       SERVICE_NAME: 'orders',
-      LOG_LEVEL: ConfigLogLevel.Warn,
+      LOG_LEVEL: LogLevel.Warn,
       LOG_SAMPLE_RATE: 0.01,
       LOG_DEBUG_CONTEXTS: ['auth', 'reports'],
-      AWS_REGION: 'us-east-1',
+      DB_LOG_QUERIES: true,
       DB_SLOW_QUERY_MS: 250,
     });
   });
@@ -49,7 +57,7 @@ describe('defineConfig with baseConfigSchema', () => {
       LOG_LEVEL: '',
       LOG_DEBUG_CONTEXTS: '',
     });
-    expect(loaded.LOG_LEVEL).toBe(ConfigLogLevel.Info);
+    expect(loaded.LOG_LEVEL).toBe(LogLevel.Info);
     expect(loaded.LOG_DEBUG_CONTEXTS).toEqual([]);
   });
 
@@ -144,7 +152,7 @@ describe('a service extending baseConfigSchema', () => {
     });
 
     expect(loaded.SERVICE_NAME).toBe('billing');
-    expect(loaded.LOG_LEVEL).toBe(ConfigLogLevel.Info);
+    expect(loaded.LOG_LEVEL).toBe(LogLevel.Info);
     expect(loaded.PORT).toBe(3000);
   });
 

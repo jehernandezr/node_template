@@ -1,9 +1,15 @@
-import { isSensitiveKey, JsonLogger, LogLevel, redact } from './logger.js';
-import { RequestContext, type RequestContextData } from './request-context.js';
+import { JsonLogger, LogLevel } from './logger.js';
+import { isSensitiveKey, redact } from './redaction.js';
+import {
+  ActorType,
+  RequestContext,
+  type RequestContextInit,
+} from './request-context.js';
 
 const FIXED_DATE = new Date('2026-01-02T03:04:05.000Z');
 const TRACE_ID = '0af7651916cd43dd8448eb211c80319c';
 const DISPLAY_TRACE_ID = '0af76519-16cd-43dd-8448-eb211c80319c';
+const SPAN_ID = 'b7ad6b7169203331';
 
 function setup(
   options: {
@@ -25,10 +31,10 @@ function setup(
 }
 
 const requestCtx = (
-  overrides: Partial<RequestContextData> = {},
-): RequestContextData => ({
+  overrides: Partial<RequestContextInit> = {},
+): RequestContextInit => ({
   traceId: TRACE_ID,
-  spanId: 'b7ad6b7169203331',
+  spanId: SPAN_ID,
   debugSampled: false,
   ...overrides,
 });
@@ -142,19 +148,33 @@ describe('JsonLogger', () => {
   });
 
   describe('request context fields', () => {
-    it('adds display traceId, spanId, tenantId and userId from RequestContext', () => {
+    it('adds W3C trace_id, span_id and the request fields from RequestContext', () => {
       const { logger, lines } = setup();
 
-      RequestContext.run(requestCtx({ tenantId: 't-1', userId: 'u-1' }), () =>
-        logger.info('in request'),
+      RequestContext.run(
+        requestCtx({
+          tenantId: 't-1',
+          userId: 'u-1',
+          actorId: 'u-1',
+          actorType: ActorType.User,
+          region: 'co',
+          externalTraceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+        }),
+        () => logger.info('in request'),
       );
 
       expect(lines[0]).toMatchObject({
-        traceId: DISPLAY_TRACE_ID,
-        spanId: 'b7ad6b7169203331',
-        tenantId: 't-1',
-        userId: 'u-1',
+        trace_id: TRACE_ID,
+        span_id: SPAN_ID,
+        external_trace_id: '4bf92f3577b34da6a3ce929d0e0e4736',
+        tenant_id: 't-1',
+        user_id: 'u-1',
+        actor_id: 'u-1',
+        actor_type: 'user',
+        region: 'co',
       });
+      expect(lines[0]).not.toHaveProperty('traceId');
+      expect(lines[0]).not.toHaveProperty('trace_id_invalid');
     });
 
     it('omits trace fields outside a request', () => {
@@ -162,10 +182,55 @@ describe('JsonLogger', () => {
 
       logger.info('no request');
 
-      expect(lines[0]).not.toHaveProperty('traceId');
-      expect(lines[0]).not.toHaveProperty('spanId');
-      expect(lines[0]).not.toHaveProperty('tenantId');
-      expect(lines[0]).not.toHaveProperty('userId');
+      for (const field of [
+        'trace_id',
+        'span_id',
+        'tenant_id',
+        'user_id',
+        'actor_id',
+        'region',
+      ]) {
+        expect(lines[0]).not.toHaveProperty(field);
+      }
+    });
+
+    it('accepts a hyphenated UUIDv7 traceId and logs it as 32 hex (PLAT-03)', () => {
+      const { logger, lines } = setup();
+
+      expect(() =>
+        RequestContext.run(requestCtx({ traceId: DISPLAY_TRACE_ID }), () =>
+          logger.info('hyphenated'),
+        ),
+      ).not.toThrow();
+
+      expect(lines[0]).toMatchObject({ trace_id: TRACE_ID });
+    });
+
+    it('never throws on a malformed traceId and never writes the raw value', () => {
+      const { logger, lines } = setup();
+      const raw = 'not-a-trace<script>';
+
+      expect(() =>
+        RequestContext.run(requestCtx({ traceId: raw, spanId: 'zz' }), () =>
+          logger.info('malformed'),
+        ),
+      ).not.toThrow();
+
+      expect(lines[0]).toMatchObject({ trace_id_invalid: true });
+      expect(lines[0]).not.toHaveProperty('trace_id');
+      expect(lines[0]).not.toHaveProperty('span_id');
+      expect(JSON.stringify(lines[0])).not.toContain('script');
+    });
+
+    it('does not let caller fields overwrite the reserved fields', () => {
+      const { logger, lines } = setup();
+
+      RequestContext.run(requestCtx(), () =>
+        logger.info('spoof', { trace_id: 'x', level: 'error', tenant_id: 'y' }),
+      );
+
+      expect(lines[0]).toMatchObject({ trace_id: TRACE_ID, level: 'info' });
+      expect(lines[0]).not.toHaveProperty('tenant_id');
     });
 
     it('keeps context across awaits inside the request', async () => {
@@ -176,7 +241,7 @@ describe('JsonLogger', () => {
         logger.info('after await');
       });
 
-      expect(lines[0]).toMatchObject({ traceId: DISPLAY_TRACE_ID });
+      expect(lines[0]).toMatchObject({ trace_id: TRACE_ID });
     });
   });
 
@@ -287,7 +352,7 @@ describe('JsonLogger', () => {
       expect(lines[0]).toMatchObject({ token: '[REDACTED]' });
     });
 
-    it('serializes errors to name, message and stack', () => {
+    it('serializes plain errors to name, message and stack', () => {
       const { logger, lines } = setup();
       const err = new TypeError('bad input');
 

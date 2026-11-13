@@ -1,11 +1,40 @@
-import { RequestContext } from './request-context.js';
-import { toDisplayTraceId } from './trace.js';
+import {
+  logs,
+  SeverityNumber,
+  type AttributeValue,
+  type Attributes,
+  type Logger as OtelLogger,
+} from '@opentelemetry/api';
+import { LogLevel } from '@platform/config';
+import { redact, redactString } from './redaction.js';
+import { activeSpanIds, RequestContext } from './request-context.js';
 
-export enum LogLevel {
-  Debug = 'debug',
-  Info = 'info',
-  Warn = 'warn',
-  Error = 'error',
+export { LogLevel } from '@platform/config';
+
+/** Nombre del instrumentation scope con el que el logger emite logs OTel. */
+export const OTEL_LOGGER_SCOPE = '@platform/observability';
+
+/**
+ * Campos fijos de cada línea. `trace_id` y `span_id` usan los nombres y el
+ * formato (32/16 hex) de OpenTelemetry, así OpenObserve abre la traza desde
+ * el log. Un campo del llamador con el mismo nombre se descarta.
+ */
+export enum LogField {
+  Timestamp = 'timestamp',
+  Level = 'level',
+  Service = 'service',
+  Context = 'context',
+  Message = 'message',
+  TraceId = 'trace_id',
+  SpanId = 'span_id',
+  /** El contexto traía un `traceId` malformado; nunca se escribe el valor. */
+  TraceIdInvalid = 'trace_id_invalid',
+  ExternalTraceId = 'external_trace_id',
+  TenantId = 'tenant_id',
+  ActorId = 'actor_id',
+  ActorType = 'actor_type',
+  UserId = 'user_id',
+  Region = 'region',
 }
 
 export interface LoggerPort {
@@ -19,12 +48,18 @@ export interface LoggerPort {
 export interface JsonLoggerOptions {
   service: string;
   level: LogLevel;
-  /** Modules (logger `context` values) that emit debug lines regardless of level. */
+  /** Módulos (valores de `context`) que emiten debug sin importar el nivel. */
   debugContexts?: string[];
   context?: string;
-  /** Receives each JSON line without a trailing newline. Defaults to process.stdout. */
+  /** Recibe cada línea JSON sin salto de línea final. Por defecto, process.stdout. */
   sink?: (line: string) => void;
   clock?: () => Date;
+  /**
+   * Además de la línea JSON, emite cada log como log OTel con el contexto del
+   * span activo, para exportarlo por OTLP. Sin SDK registrado es un no-op.
+   * Por defecto `true`.
+   */
+  otelLogs?: boolean;
 }
 
 const LEVEL_RANK: Record<LogLevel, number> = {
@@ -34,161 +69,63 @@ const LEVEL_RANK: Record<LogLevel, number> = {
   [LogLevel.Error]: 3,
 };
 
-const REDACTED = '[REDACTED]';
-const SENSITIVE_LAST_WORDS = new Set([
-  'token',
-  'password',
-  'passwd',
-  'secret',
-  'authorization',
-  'cookie',
-  'cookies',
-  'credential',
-  'credentials',
-  'signature',
-  'jwt',
-  'bearer',
-  'otp',
-  'session',
-  'sessions',
-  'passphrase',
-]);
-const SENSITIVE_FIRST_WORDS = new Set([
-  'password',
-  'passwd',
-  'passphrase',
-  'secret',
-  'authorization',
-  'cookie',
-  'cookies',
-  'session',
-  'sessions',
-  'jwt',
-  'bearer',
-  'otp',
-]);
-/** Compound names that only make sense joined (`privateKey`, `signing_key`). */
-const SENSITIVE_COMPOUNDS = [
-  'apikey',
-  'privatekey',
-  'secretkey',
-  'signingkey',
-  'accesskey',
-  'encryptionkey',
-];
+const SEVERITY: Record<LogLevel, SeverityNumber> = {
+  [LogLevel.Debug]: SeverityNumber.DEBUG,
+  [LogLevel.Info]: SeverityNumber.INFO,
+  [LogLevel.Warn]: SeverityNumber.WARN,
+  [LogLevel.Error]: SeverityNumber.ERROR,
+};
 
-const USERINFO_IN_URL = /([a-z][a-z0-9+.-]*:\/\/)[^\s/?#@]*@/gi;
-const QUERY_PARAM = /([?&;])([^=&#\s;]+)=([^&#\s;]*)/g;
-const BEARER_VALUE = /\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{4,}/gi;
-const JWT_VALUE = /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/g;
-const PRIVATE_KEY_BLOCK =
-  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g;
+const RESERVED_FIELDS = new Set<string>(Object.values(LogField));
 
-function isSensitiveParam(name: string): boolean {
-  let decoded = name;
-  try {
-    decoded = decodeURIComponent(name);
-  } catch {
-    // keep the raw name
-  }
-  return decoded.toLowerCase() === 'code' || isSensitiveKey(decoded);
+/** Campos de traza y contexto de la línea, ya validados. */
+function contextFields(): Record<string, unknown> {
+  const ctx = RequestContext.current();
+  const span = activeSpanIds();
+  const traceId = span?.traceId ?? ctx?.traceId;
+  const spanId = span?.spanId ?? ctx?.spanId;
+  return {
+    [LogField.TraceId]: traceId,
+    [LogField.SpanId]: spanId,
+    [LogField.TraceIdInvalid]:
+      traceId === undefined && ctx?.traceIdInvalid === true ? true : undefined,
+    [LogField.ExternalTraceId]: ctx?.externalTraceId,
+    [LogField.TenantId]: ctx?.tenantId,
+    [LogField.ActorId]: ctx?.actorId,
+    [LogField.ActorType]: ctx?.actorType,
+    [LogField.UserId]: ctx?.userId,
+    [LogField.Region]: ctx?.region,
+  };
 }
 
-/**
- * Masks secrets that travel inside free text: credentials in URLs
- * (`https://user:pass@host`), sensitive query params (`token=`, `code=`, ...),
- * `Bearer`/`Basic` values, JWT-shaped strings and PEM private keys.
- */
-export function redactString(text: string): string {
-  return text
-    .replace(PRIVATE_KEY_BLOCK, REDACTED)
-    .replace(USERINFO_IN_URL, `$1${REDACTED}@`)
-    .replace(QUERY_PARAM, (match, sep: string, name: string) =>
-      isSensitiveParam(name) ? `${sep}${name}=${REDACTED}` : match,
-    )
-    .replace(BEARER_VALUE, (_m, scheme: string) => `${scheme} ${REDACTED}`)
-    .replace(JWT_VALUE, REDACTED);
-}
-
-/**
- * Splits a key into lowercase words (camelCase, snake_case, kebab-case) and
- * decides by word position, so `accessToken` or `passwordHash` are sensitive
- * while metrics such as `tokenCount` or `inputTokens` are kept.
- */
-export function isSensitiveKey(key: string): boolean {
-  const words = key
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean);
-  if (words.length === 0) {
-    return false;
+function toAttributeValue(value: unknown): AttributeValue | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
   }
-  const first = words[0] as string;
-  const last = words[words.length - 1] as string;
-  return (
-    SENSITIVE_LAST_WORDS.has(last) ||
-    SENSITIVE_FIRST_WORDS.has(first) ||
-    SENSITIVE_COMPOUNDS.some((compound) => words.join('').includes(compound))
-  );
-}
-
-/**
- * Returns a redacted deep copy of `value`. Sensitive keys become
- * '[REDACTED]' at any depth; Errors become { name, message, stack };
- * the input is never mutated.
- */
-export function redact(value: unknown): unknown {
-  return sanitize(value, new Set<object>());
-}
-
-function sanitize(value: unknown, ancestors: Set<object>): unknown {
-  if (value instanceof Error) {
-    return {
-      name: value.name,
-      message: redactString(value.message),
-      stack: value.stack === undefined ? undefined : redactString(value.stack),
-    };
-  }
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-  if (typeof value === 'string') {
-    return redactString(value);
-  }
-  if (value === null || typeof value !== 'object') {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
     return value;
   }
-  if (ancestors.has(value)) {
-    return '[Circular]';
-  }
-  ancestors.add(value);
-  try {
-    if (Array.isArray(value)) {
-      return value.map((item) => sanitize(item, ancestors));
-    }
-    const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value)) {
-      out[key] = isSensitiveKey(key) ? REDACTED : sanitize(item, ancestors);
-    }
-    return out;
-  } finally {
-    ancestors.delete(value);
-  }
+  return JSON.stringify(value);
 }
 
-/** Writes one JSON object per line with trace context and automatic redaction. */
+/** Escribe un objeto JSON por línea con contexto de traza y redacción automática. */
 export class JsonLogger implements LoggerPort {
   private readonly bindings: Record<string, unknown>;
+  private readonly otel: OtelLogger | undefined;
 
   constructor(
     private readonly options: JsonLoggerOptions,
     bindings: Record<string, unknown> = {},
   ) {
     this.bindings = { ...bindings };
+    this.otel =
+      options.otelLogs === false
+        ? undefined
+        : logs.getLogger(OTEL_LOGGER_SCOPE);
   }
 
   debug(message: string, fields?: Record<string, unknown>): void {
@@ -219,26 +156,63 @@ export class JsonLogger implements LoggerPort {
     if (!this.shouldEmit(level)) {
       return;
     }
-    const ctx = RequestContext.current();
     const sanitized = redact({ ...this.bindings, ...fields }) as Record<
       string,
       unknown
     >;
+    for (const key of Object.keys(sanitized)) {
+      if (RESERVED_FIELDS.has(key)) {
+        delete sanitized[key];
+      }
+    }
+    const timestamp = (this.options.clock ?? (() => new Date()))();
+    const safeMessage = redactString(message);
+    const context = contextFields();
 
     const line = JSON.stringify({
       ...sanitized,
-      timestamp: (this.options.clock ?? (() => new Date()))().toISOString(),
-      level,
-      service: this.options.service,
-      context: this.options.context,
-      message: redactString(message),
-      traceId: ctx ? toDisplayTraceId(ctx.traceId) : undefined,
-      spanId: ctx?.spanId,
-      tenantId: ctx?.tenantId,
-      userId: ctx?.userId,
+      [LogField.Timestamp]: timestamp.toISOString(),
+      [LogField.Level]: level,
+      [LogField.Service]: this.options.service,
+      [LogField.Context]: this.options.context,
+      [LogField.Message]: safeMessage,
+      ...context,
     });
-
     (this.options.sink ?? defaultSink)(line);
+
+    this.emitOtel(level, safeMessage, timestamp, { ...sanitized, ...context });
+  }
+
+  private emitOtel(
+    level: LogLevel,
+    message: string,
+    timestamp: Date,
+    fields: Record<string, unknown>,
+  ): void {
+    if (this.otel === undefined) {
+      return;
+    }
+    const attributes: Attributes = {};
+    for (const [key, value] of Object.entries(fields)) {
+      // trace_id y span_id viajan en el contexto del registro OTel, no como atributos.
+      if (key === LogField.TraceId || key === LogField.SpanId) {
+        continue;
+      }
+      const attribute = toAttributeValue(value);
+      if (attribute !== undefined) {
+        attributes[key] = attribute;
+      }
+    }
+    if (this.options.context !== undefined) {
+      attributes[LogField.Context] = this.options.context;
+    }
+    this.otel.emit({
+      timestamp,
+      severityNumber: SEVERITY[level],
+      severityText: level,
+      body: message,
+      attributes,
+    });
   }
 
   private shouldEmit(level: LogLevel): boolean {

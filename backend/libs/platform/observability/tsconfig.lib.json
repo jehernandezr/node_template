@@ -12,6 +12,9 @@
   "references": [
     {
       "path": "../kernel/tsconfig.lib.json"
+    },
+    {
+      "path": "../config/tsconfig.lib.json"
     }
   ],
   "exclude": [

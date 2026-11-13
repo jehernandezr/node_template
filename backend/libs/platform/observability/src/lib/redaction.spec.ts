@@ -1,11 +1,6 @@
 import { SequentialIdGenerator } from '@platform/kernel/testing';
-import {
-  isSensitiveKey,
-  JsonLogger,
-  LogLevel,
-  redact,
-  redactString,
-} from './logger.js';
+import { JsonLogger, LogLevel } from './logger.js';
+import { isSensitiveKey, redact, redactString } from './redaction.js';
 import { newTraceId } from './trace.js';
 
 const R = '[REDACTED]';
