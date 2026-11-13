@@ -5,7 +5,7 @@
 
 ## Contexto
 
-El ADR 0015 fija que los contratos se escriben en TypeScript con zod en `backend/libs/contracts` y que el front los recibe generados. Faltaba decidir el formato intermedio, qué se genera en Dart, cómo valida el cliente antes de llamar por HTTP y cómo detecta CI que alguien cambió un lado sin regenerar el otro.
+El ADR 0015 fija que los contratos se escriben en TypeScript con zod en `backend/libs/contracts` y que el front los recibe generados. Este ADR decide el formato intermedio, qué se genera en Dart, cómo valida el cliente antes de llamar por HTTP y cómo detecta CI que alguien cambió un lado sin regenerar el otro.
 
 Además, la auditoría del 12 de noviembre encontró que los enums de acceso solo existían en Dart y que `messageKey` del catálogo (`errors.platform.x.y`) no coincidía con las llaves ARB del front (`error_platform_x_y`).
 
@@ -16,7 +16,7 @@ Además, la auditoría del 12 de noviembre encontró que los enums de acceso sol
 `backend/libs/contracts/platform/src` tiene las carpetas `enums`, `constants`, `types`, `schemas`, `errors` y `kit`:
 
 - `defineRoute`: método, path con parámetros entre llaves, esquema de petición (siempre un objeto), esquema de respuesta o `null` (204), códigos de error declarados y requisito de acceso (`Access.public()` o `Access.authenticated({ permissions, platformRoles, mfaMaxAgeMinutes })`). Los campos que no van en el path viajan en la query en GET y DELETE, y en el cuerpo JSON en los demás métodos.
-- `defineOperation`: operación interna con `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` o `Compensation.None` con `compensationReason` obligatorio, `errors`, `timeoutMs` y `retry`. Los campos coinciden con `OperationOptions` de `@platform/internal-api`, así la definición se pasa tal cual a `@Operation`.
+- `defineOperation`: operación interna con `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` o `Compensation.None` con `compensationReason` obligatorio, `errors`, `timeoutMs`, `retry` y `description`. Devuelve un descriptor congelado que `@platform/internal-api` acepta directamente: `ContractRegistry.register`, `InternalClient.call` e `InternalRouter.register` reciben el descriptor sin clases ni decoradores. El decorador `@Operation` y la clase `OperationContract` siguen funcionando, marcados `@deprecated`.
 - `defineEvent`: tipo CloudEvents con la versión al final (`identity.session.revoked.v1`) y esquema del payload.
 - `defineErrorCatalog`: una entrada por valor del enum de códigos, con `httpStatus`, `retryable`, `audience` (`public` o `internal`) y `messageKey`. `messageKey` se deriva del código con la misma regla del front: `PLATFORM.AUTH.FORBIDDEN` → `error_platform_auth_forbidden`.
 - `defineServiceContract`: reúne enums, constantes, esquemas con nombre, rutas, operaciones, eventos y catálogos de un servicio, y valida nombres e identificadores únicos.
@@ -59,7 +59,18 @@ Cada `contract.json` tiene `formatVersion`, `jsonSchemaDialect` (2020-12), `enum
 
 ### CI
 
-CI ejecuta `pnpm --dir backend nx run contracts-export:check` y `cd front && dart run contracts_gen --check`. Un cambio en un contrato obliga a confirmar en el mismo cambio el JSON exportado y el Dart generado.
+El job `contracts` de `.github/workflows/ci.yml` corre cuando cambian `backend/libs/contracts`, `front/packages/contracts`, `front/tools` o el propio workflow. Ejecuta dos comandos:
+
+- `pnpm nx run contracts-export:check` desde la raíz.
+- `flutter pub get` y `dart run contracts_gen --check` dentro de `front/`.
+
+Un cambio en un contrato obliga a confirmar en el mismo cambio el JSON exportado y el Dart generado.
+
+### Estado del pipeline
+
+Hoy existen los contratos `platform` e `identity`, cada uno con su `export/contract.json`, y el Dart generado en `front/packages/contracts/lib/src/{platform,identity}`. Los dos comandos de CI pasan en local sobre la rama de integración: el export coincide con el TypeScript y el Dart está al día.
+
+El siguiente paso es ver el job `contracts` en verde en GitHub Actions al integrar esta rama en `main`. Con esa corrida, el estado de este ADR pasa a `Aceptada`.
 
 ## Consecuencias
 
@@ -75,7 +86,7 @@ CI ejecuta `pnpm --dir backend nx run contracts-export:check` y `cd front && dar
 - El generador soporta un subconjunto de JSON Schema: objetos, arrays, texto con longitud, patrón y formato (`uuid`, `email`, `date-time`), números con límites, enums, `const` y `X | null`. Un esquema con `oneOf`, `allOf` o `additionalProperties` como esquema falla al generar y hay que modelarlo de otra forma.
 - Los patrones de zod se usan tal cual en `RegExp` de Dart; un patrón que dependa de una bandera de JavaScript habría que declararlo explícito.
 - Los nombres de tipos son globales en Dart: dos servicios no pueden exportar el mismo nombre, y un nombre del contrato no debe chocar con clases de los microfrontends (por eso el monto se llama `MoneyAmount`).
-- Cada servicio nuevo se registra a mano en `tools/contracts-export/src/registry.ts`; `check` lo recuerda.
+- Cada servicio nuevo se registra a mano en `backend/tools/contracts-export/src/registry.ts`; `check` lo recuerda.
 
 ## Alternativas consideradas
 

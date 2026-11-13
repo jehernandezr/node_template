@@ -36,135 +36,154 @@ Estos hallazgos se corrigen como parte del paso inicial:
 
 ## Monorepo con Nx
 
-El repositorio es un workspace de Nx con pnpm. Cada microservicio es una app con su código de dominio, su base de datos, sus migraciones y su despliegue. Lo único que los servicios comparten son las librerías de plataforma y los contratos.
+La raíz del repositorio es mínima ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md)). Contiene dos aplicaciones, `backend/` y `front/`, Nx como orquestador y las herramientas del repositorio. Cada aplicación es dueña de sus librerías: nada compartido entre backend y front vive en la raíz, y el front recibe los contratos generados desde el backend.
 
 ```text
-apps/                servicios del backend
-  identity/          usuarios, tenants, grupos, sesiones, dispositivos, MFA, API keys
-  tasks/             CRUD de ejemplo
-  reports/           API + worker en Fargate para tareas pesadas
-  notifications/     email, push, bandeja, preferencias
-  realtime/          gateway Socket.IO y SSE en Fargate
-  billing/           planes, medición, facturas
-  files/             metadatos de archivos y subida firmada
-  agreements/        términos, consentimientos y documentos firmados
-  assistant/         ejemplo del módulo de IA
-  backoffice-api/    API de administración (BFF)
-libs/                librerías del backend
-  platform/
-    kernel/          Entity, AggregateRoot, DomainError, Id (UUIDv7), UseCase
-    config/          configuración validada con zod
-    observability/   logger, traceId, métricas
-    http/            @Endpoint, guards, interceptores, filtros, versionamiento
-    auth/            verificación de JWT y API keys, Actor, políticas
-    persistence/     capa propia sobre TypeORM
-    messaging/       bus, topología, consumidores, outbox
-    saga/            motor de sagas
-    resilience/      políticas de resiliencia y Bloom filters
-    ai/              puertos de LLM y embeddings, prompts, herramientas
-    search/          búsqueda híbrida con pgvector
-    capabilities/    puertos de archivos, scheduler, flags, email, push, firmas
-    adapters/aws/    único lugar donde se importa @aws-sdk
-    adapters/local/  adaptadores para desarrollo y pruebas
-  contracts/
-    identity/  tasks/  reports/  notifications/  billing/  files/  agreements/
-  testing/           fakes, factories, Testcontainers
-front/               todo el cliente, en Flutter
-  apps/
-    web/             shell Flutter web
-    mobile/          shell Flutter para iOS y Android
-  microfrontends/
-    account/  tasks/  notifications/  assistant/  billing/  backoffice/  verifier/
-  packages/
-    shell_core/      contrato Microfrontend, registro, rutas, bus de eventos, acceso
-    sdk/  contracts/ generados desde libs/contracts
-    auth/  realtime/  ui/  tokens/  i18n/
-    sdk_ts/          SDK TypeScript para integraciones de terceros
-tools/generators/    microservice, hexagonal-module, microfrontend
-infra/terraform/
+backend/                       workspace pnpm del backend (Jest, ESLint y TypeScript en backend/package.json)
+  libs/
+    contracts/platform/        @contracts/platform: kit de contratos y piezas transversales
+    contracts/identity/        @contracts/identity: contrato del servicio identity
+    platform/                  kernel, primitives, config, observability, internal-api, saga,
+                               messaging, resilience, cache, bloom, sharding, criteria
+    shared/utils/              @shared/utils: funciones puras sobre los tipos de los contratos
+  tools/contracts-export/      exporta los contratos a JSON (proyecto Nx contracts-export)
+  infra/terraform/             raíz platform y módulos de AWS
+  infra/local/                 scripts de arranque de PostgreSQL y LocalStack
+  docker-compose.yml           stack local
+front/                         pub workspace de Flutter
+  apps/{web,mobile}/           shells
+  microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
+  packages/                    api, auth, contracts, i18n, realtime, shell_core, tokens, ui, utils
+  tools/                       contracts_gen, nx-plugin y check_deferred_chunks.dart
+nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.json
+.github/  .husky/  commitlint.config.mjs  lint-staged.config.mjs  .prettierrc  renovate.json  docs/
 ```
+
+**Un solo grafo para backend y front**
+
+- `nx.json` registra los plugins `@nx/js/typescript` (`typecheck` y `build`), `@nx/jest/plugin` (`test`) y `@nx/eslint/plugin` (`lint`), limitados a `backend/**`. Cada proyecto del backend toma el nombre de su `package.json`: `platform-saga`, `contracts-identity`, `shared-utils`.
+- `front/tools/nx-plugin/index.cjs` lee la lista `workspace:` de `front/pubspec.yaml` y registra cada miembro como proyecto `front-<nombre del pubspec>`: `front-shell_core`, `front-mf_tasks`, `front-web_shell`. Cada uno tiene `analyze`, `format-check` y, si tiene carpeta `test/`, `test`, todas con caché. Las dependencias entre paquetes Dart salen de sus `pubspec.yaml`.
+- `front-contracts` depende de los proyectos de `backend/libs/contracts`. Un cambio de contrato marca como afectados los paquetes y microfrontends del front que lo usan.
+- `test` depende de `^build`, así las librerías se compilan antes de probar a quien las usa.
+- `pnpm nx affected -t lint test typecheck build analyze format-check` es el comando de uso diario y el de CI.
+
+**Servicios**
+
+Cada microservicio será una app en `backend/apps/<servicio>` con su dominio, su base de datos, sus migraciones y su despliegue. Los servicios previstos son `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` y `backoffice-api`. El siguiente paso es crear `backend/apps/` con el primer servicio, sobre las librerías de plataforma que ya existen.
 
 **Estructura interna de cada módulo**
 
 ```text
-modules/tasks/
-  domain/          entidades puras, value objects, puertos, errores
-  application/     casos de uso
-  infrastructure/  persistence/entities (*.orm-entity.ts), repositorios, mappers, clientes
-  presentation/    controllers, gateways, handlers de mensajes, DTOs
+backend/apps/<servicio>/src/
+  modules/<módulo>/
+    domain/          entidades puras, value objects, puertos, errores
+    application/     casos de uso
+    infrastructure/  persistence/entities (*.orm-entity.ts), repositorios, mappers, clientes
+    presentation/    controllers, gateways, handlers de mensajes, DTOs
+  shared/{enums,constants,types,utils}/   compartido entre los módulos del servicio
 ```
 
-**Reglas de dependencia, verificadas en CI**
+**Reglas de dependencia**
 
-- Una app solo depende de librerías `scope:shared`. Importar código de otro servicio rompe el lint (`@nx/enforce-module-boundaries`).
-- Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. Lo verifica `dependency-cruiser`.
-- `@aws-sdk/*` solo aparece en `libs/platform/adapters/aws`.
-- CI corre `nx affected`: prueba, construye y despliega solo lo que cambió.
+- Entre proyectos manda la regla `@nx/enforce-module-boundaries` de `backend/eslint.config.mjs`, por tags: `type:contracts` depende solo de `type:contracts`; `type:util` de `type:util` y `type:contracts`; `type:platform` de `type:platform`, `type:util` y `type:contracts`; `type:tool` de contratos, utilidades y plataforma. `pnpm nx affected -t lint` la verifica.
+- Una app de servicio (`type:app`) importa de otro servicio solo su paquete `@contracts/<servicio>`, nunca su código interno.
+- Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. El siguiente paso es verificar estas capas en CI cuando exista el primer servicio.
+- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws`, la librería de adaptadores de AWS que se crea con el primer adaptador.
 
 ## Front: shells y microfrontends
 
-`front/` reúne todo el cliente. Dos shells de Flutter, `web` y `mobile`, componen los mismos microfrontends, así un dominio se escribe una vez y aparece en las dos plataformas. Todo está en Dart, con pub workspaces de Dart, y Nx lo orquesta con el plugin comunitario `@nxrocks/nx-flutter`.
+`front/` reúne todo el cliente en un pub workspace de Flutter ([ADR 0012](adr/0012-front-flutter-shells-microfrontends.md)). Dos shells, `web` y `mobile`, componen los mismos microfrontends: un dominio se escribe una vez y aparece en las dos plataformas. Nx orquesta el workspace con el plugin propio `front/tools/nx-plugin/index.cjs`.
 
-| Pieza                    | Qué es                                                                                                                              |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `front/apps/web`         | Shell Flutter web: navegación por URL, carga diferida por perfil, `admin.<dominio>` para el backoffice, push web con Service Worker |
-| `front/apps/mobile`      | Shell Flutter para iOS y Android: deep links, push con APNs y FCM, almacenamiento seguro, biometría y claves del dispositivo        |
-| `front/microfrontends/*` | Un paquete por dominio con rutas, estado, pantallas y pruebas; declara en qué plataformas corre                                     |
-| `front/packages/*`       | Piezas compartidas por los shells y los microfrontends                                                                              |
+| Pieza                    | Qué es                                                                                                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `front/apps/web`         | Shell web (`web_shell`). `WebShell` registra los microfrontends, crea el `ShellRuntime` y arma el router con `buildShellRouter`, con página de step-up en `/step-up` |
+| `front/apps/mobile`      | Shell para iOS y Android (`mobile_shell`), con su registro, su router y deep links                                                                                   |
+| `front/microfrontends/*` | Un paquete por dominio (`mf_<dominio>`) con su manifiesto, pantallas, datos y textos                                                                                 |
+| `front/packages/*`       | Piezas compartidas por los shells y los microfrontends                                                                                                               |
 
-**Contrato de un microfrontend**
+| Microfrontend   | Web | Móvil | Contenido                                             |
+| --------------- | --- | ----- | ----------------------------------------------------- |
+| `account`       | Sí  | Sí    | Resumen, sesiones, dispositivos, seguridad y acuerdos |
+| `tasks`         | Sí  | Sí    | CRUD de ejemplo                                       |
+| `notifications` | Sí  | Sí    | Bandeja y preferencias                                |
+| `assistant`     | Sí  | Sí    | Lista de conversaciones y chat con el asistente de IA |
+| `billing`       | Sí  | No    | Plan, facturas y detalle de factura                   |
+| `backoffice`    | Sí  | No    | Tenants, sagas y DLQ                                  |
+| `verifier`      | No  | Sí    | Verificación en el dispositivo registrado             |
+
+Cada shell registra solo los microfrontends que declaran su plataforma en el manifiesto (`platforms`).
+
+**Contrato de microfrontend**
+
+Cada microfrontend exporta un `MicrofrontendManifest` de `shell_core` y cumple el contrato del [ADR 0018](adr/0018-contrato-de-microfrontend.md). Un manifiesto con el contrato completo se ve así:
 
 ```dart
-class TasksMicrofrontend extends Microfrontend {
-  @override MicrofrontendId get id => MicrofrontendId.tasks;
-  @override Set<AppPlatform> get platforms => {AppPlatform.web, AppPlatform.mobile};
-  @override List<RouteBase> get routes => tasksRoutes;
-  @override List<MenuEntry> get menu => [MenuEntry(AppText.tasks, TasksRoute.list)];
-  @override AccessRule get access => AccessRule.permissions([Permission.tasksRead]);
-  @override Flag? get flag => null;
-}
+final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
+  id: MicrofrontendId.tasks,
+  platforms: {AppPlatform.web, AppPlatform.mobile},
+  access: AccessRule.authenticated(),
+  menu: const [MenuEntry(labelKey: 'menuTasks', path: '/tasks', order: 20)],
+  screens: [
+    ScreenRoute(
+      path: '/tasks',
+      loadLibrary: screens.loadLibrary,
+      builder: (scope, {params = const {}}) => screens.buildTasksList(scope),
+    ),
+  ],
+  lifecycleFactory: () => MiLifecycle(),
+);
 ```
 
-| Microfrontend   | Web | Móvil | Contenido                                                                     |
-| --------------- | --- | ----- | ----------------------------------------------------------------------------- |
-| `account`       | Sí  | Sí    | Perfil, sesiones, dispositivos, MFA y acuerdos                                |
-| `tasks`         | Sí  | Sí    | CRUD de ejemplo                                                               |
-| `notifications` | Sí  | Sí    | Bandeja y preferencias                                                        |
-| `assistant`     | Sí  | Sí    | Asistente de IA del tenant                                                    |
-| `billing`       | Sí  | No    | Planes, uso y facturas                                                        |
-| `backoffice`    | Sí  | No    | Perfiles de plataforma; consume `backoffice-api`                              |
-| `verifier`      | No  | Sí    | Códigos de MFA y aprobación de inicios de sesión en el dispositivo registrado |
+- **Pantallas:** `screens: [ScreenRoute(...)]` con `path`, el `loadLibrary` del import diferido y un builder `(scope, {params})` sin `BuildContext`. `params` une query y path; gana el path. Las subrutas se protegen con `ScreenRoute(access: ...)`.
+- **Identidad:** `ShellRuntime.identityEpoch` sube con cada cambio de usuario o tenant. `buildShellRouter` envuelve cada página en un `KeyedSubtree` con ese valor y la pantalla se reconstruye desde cero para la nueva identidad.
+- **Ciclo de vida:** `lifecycleFactory` crea una instancia por activación. Los eventos salen con `ShellContext.emit` y se escuchan con `ShellContext.listen`; al rotar la identidad el contexto se cancela.
+- **Recursos:** los repositorios implementan `ScopedResource` y el scope los cierra.
+- **Acceso:** `AccessRule.mfa(maxAge)` exige un segundo factor reciente. Las acciones se protegen con `AccessGate` o `context.can(regla)`.
+- **Layout:** cada pantalla es dueña de su única barra superior con `AppPage` de `ui`. El shell usa `ShellChrome`.
+- **Estados y errores:** `AsyncValueView` para carga, error y datos; `showActionError` para el error de una acción.
+
+Las API anteriores (`routes:`, `lifecycle:`, `ShellContext.eventBus`, `AdaptiveScaffold.compactActions`) siguen funcionando con `@Deprecated`. Hoy los siete manifiestos usan `routes:` y `notifications` usa `lifecycle:`. El siguiente paso es migrar cada microfrontend a `screens:` y `lifecycleFactory`.
+
+**Carga diferida**
+
+El manifiesto se importa de forma inmediata: el shell lo lee al arrancar para armar rutas, menú y visibilidad. Las pantallas, los datos y los textos viven detrás de `deferred as` y se descargan cuando alguien navega a ellas. Así la web de un cliente sin acceso al backoffice nunca ejecuta su código.
+
+`front/tools/check_deferred_chunks.dart` lo comprueba después de `flutter build web --release --source-maps`, desde `front/apps/web`. Falla si:
+
+1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`.
+2. Algún texto ARB del backoffice de 12 caracteres o más aparece en `main.dart.js`.
+
+Hoy la comprobación falla por un hallazgo conocido: `mf_notifications.dart` exporta sus archivos de `src/data` y su ciclo de vida, que es inmediato, importa `notifications_scope.dart`. Por eso tres archivos de `src/data` viajan en el bundle inicial. El siguiente paso es dejarlos solo detrás del import diferido; con eso el job `web-deferred` de CI pasa.
 
 **Reglas**
 
-- Cada shell incluye solo los microfrontends que declaran su plataforma. La web los carga diferidos con `deferred as` según el perfil, así un cliente nunca descarga el backoffice; la app móvil los compila en su build.
-- Los microfrontends dependen solo de `front/packages` y nunca entre sí. Se comunican por el bus de eventos del shell y por rutas.
-- Pantallas adaptativas: los widgets de `ui` se ajustan a pantalla grande y pequeña. Una pantalla que necesita versión propia por plataforma la declara con `PlatformScreen`.
-- Visibilidad por permisos, plan y feature flag con los mismos enums del backend. La interfaz oculta lo que el usuario no puede usar; la seguridad real vive en la API.
-- Nada en `front/` importa librerías del backend; solo usa lo generado desde `libs/contracts`.
-- `nx g @tools:microfrontend <nombre> --platforms=web,mobile` crea un microfrontend con su estructura, rutas y pruebas.
+- Los microfrontends dependen solo de `front/packages` y nunca entre sí. Se comunican por eventos del shell y por rutas.
+- Pantallas adaptativas: los widgets de `ui` se ajustan a pantalla grande y pequeña. Una pantalla con versión propia por plataforma se declara con `PlatformScreen`.
+- Visibilidad por permisos, plan y feature flag con los enums generados desde el backend. La interfaz oculta lo que el usuario no puede usar; la autoridad es la API.
+- Nada en `front/` importa librerías del backend; solo usa lo generado en `front/packages/contracts`.
+- Lo compartido entre pantallas de un microfrontend vive en su `lib/src/shared/{enums,constants,types,utils}`.
 
 **Paquetes compartidos** (`front/packages`)
 
-| Paquete      | Qué contiene                                                                                                                      |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `shell_core` | Contrato `Microfrontend`, registro, composición de rutas con go\_router, bus de eventos y reglas de acceso                        |
-| `sdk`        | Cliente generado desde OpenAPI (`dart-dio`): refresh de sesión, URL regional, `x-trace-id`, reintentos y códigos de error tipados |
-| `contracts`  | Enums de errores, eventos y permisos generados desde `libs/contracts`                                                             |
-| `auth`       | Login, MFA, passkeys, registro de dispositivo y acuerdos pendientes                                                               |
-| `realtime`   | Socket.IO y SSE con reconexión y recuperación de mensajes                                                                         |
-| `ui`         | Widgets adaptativos del sistema de diseño                                                                                         |
-| `tokens`     | Tokens de diseño exportados a Dart con Style Dictionary                                                                           |
-| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores                                                  |
-| `sdk_ts`     | SDK TypeScript publicable para integraciones de terceros                                                                          |
+| Paquete      | Qué contiene                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell_core` | `MicrofrontendManifest`, `ScreenRoute`, registro, `ShellRuntime`, `ShellContext`, router (`buildShellRouter`) y reglas de acceso       |
+| `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores |
+| `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                       |
+| `utils`      | Funciones puras sobre los tipos de `contracts`: montos, fechas, identificadores y errores de campo                                     |
+| `auth`       | Puertos, modelos y `SessionManager` de la sesión, con fakes para pruebas                                                               |
+| `realtime`   | Cliente de tiempo real con reconexión con backoff, reanudación por `lastEventId` y deduplicación por id                                |
+| `ui`         | Widgets adaptativos, layout (`AppPage`, `ShellChrome`, `PlatformScreen`) y tema                                                        |
+| `tokens`     | Colores y escalas de diseño en Dart                                                                                                    |
+| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores                                                       |
 
-**Generación de código.** `nx run contracts:export` produce OpenAPI, AsyncAPI y JSON Schema desde `libs/contracts`, y de ahí salen `sdk`, `contracts` y `sdk_ts`. CI falla si lo generado quedó desactualizado, así un cambio de contrato en el backend llega a web y móvil en el mismo PR.
+El siguiente paso en `realtime` son los adaptadores SSE y Socket.IO que implementan `RealtimeTransport`.
 
-**Despliegue.** La web se publica en S3 con CloudFront y la app móvil por su pipeline de tiendas; `nx affected` prueba solo los microfrontends que cambiaron. Si un dominio necesita desplegarse aparte en web, se publica como app Flutter embebida en el shell con el mismo contrato. Si la web pública necesita posicionamiento en buscadores, las páginas de marketing se publican como un sitio estático aparte.
+**Despliegue.** El módulo `cloudfront-waf` crea el bucket S3 y la distribución de CloudFront de la web. El siguiente paso es el pipeline que publica la web y la app móvil.
 
 ## Agnóstico a la plataforma
 
-Cada capacidad externa es un puerto en `libs/platform/capabilities` con un adaptador por proveedor. El negocio habla con el puerto; el módulo de cada servicio elige el adaptador por configuración. Cambiar de nube significa escribir adaptadores nuevos y otro Terraform.
+Cada capacidad externa es un puerto en `backend/libs/platform/capabilities` con un adaptador por proveedor. El negocio habla con el puerto; el módulo de cada servicio elige el adaptador por configuración. Cambiar de nube significa escribir adaptadores nuevos y otro Terraform.
 
 | Capacidad                   | Puerto                              | Adaptador AWS                               | Adaptador local y alternativas                                      |
 | --------------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------------- |
@@ -245,26 +264,52 @@ El muestreo de trazas se configura en el Collector (todas las trazas con error y
 
 ## Errores
 
-Cada error tiene un código único y legible con la forma `SERVICIO.SUBMÓDULO.ERROR`. El frontend reacciona al código; el mensaje es solo para personas.
+Cada error tiene un código único y legible con la forma `SERVICIO.SUBMÓDULO.ERROR`. El cliente reacciona al código; el mensaje es solo para personas y no incluye valores de entrada.
 
-```ts
-// libs/contracts/identity/errors/mfa.errors.ts
-export enum MfaErrorCode {
-  CodeExpired = 'IDENTITY.MFA.CODE_EXPIRED',
-  CodeInvalid = 'IDENTITY.MFA.CODE_INVALID',
-  TooManyAttempts = 'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
-  StepUpRequired = 'IDENTITY.MFA.STEP_UP_REQUIRED',
-}
+**Códigos como enums**
 
-// apps/identity/src/modules/mfa/domain/errors/mfa-code-expired.error.ts
-export class MfaCodeExpiredError extends DomainError {
-  readonly code = MfaErrorCode.CodeExpired;
-}
-```
+Los códigos se declaran como enums, nunca como literales sueltos:
 
-**Catálogo.** Cada código tiene una entrada con estado HTTP, si se puede reintentar, clave de mensaje i18n (es y en) y descripción. El catálogo vive en `libs/contracts`, así el frontend importa los mismos enums.
+- Cada librería de `backend/libs/platform` declara los suyos con prefijo `PLATFORM.` (por ejemplo `SagaErrorCode.UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME'`).
+- `@contracts/platform` reúne todos los códigos de plataforma en `PlatformErrorCode`.
+- Cada servicio declara los suyos en su paquete de contratos, como `IdentityErrorCode` en `backend/libs/contracts/identity/src/enums`.
 
-**Respuesta** en formato RFC 9457 (Problem Details):
+`PlatformError` de `@platform/kernel` es la base de todos los errores: lleva `code`, `retryable` y `details`. `DomainError` la extiende para las reglas de negocio y por defecto no es reintentable. `ERROR_CODE_PATTERN` e `isErrorCode` validan el formato del código.
+
+**Catálogos**
+
+`defineErrorCatalog` de `@contracts/platform` crea una entrada por cada valor del enum, con `httpStatus`, `retryable`, `audience` (`public` o `internal`), `description` y `messageKey`. `messageKey` se deriva del código con la misma regla del front: `PLATFORM.AUTH.FORBIDDEN` da `error_platform_auth_forbidden`.
+
+- `platformErrorCatalog` cubre los códigos de plataforma. Su prueba falla si un código se repite, si no cumple el formato o si aparece un código `PLATFORM.*` en `backend/libs/platform` sin entrada.
+- `identityErrorCatalog` cubre los códigos de identity.
+- Los códigos públicos llegan al front generados, con su `messageKey`. Una prueba de `front/packages/contracts` exige el mensaje en español y en inglés de cada uno en los ARB de `front/packages/i18n`. Los internos nunca llegan al cliente.
+
+**Clasificación de fallas**
+
+`@platform/primitives` define `FailureKind` y `classifyFailure`, que comparten resilience, cache, messaging, sharding, internal-api y saga:
+
+| `FailureKind`       | Significado                                                         |
+| ------------------- | ------------------------------------------------------------------- |
+| `Transient`         | Reintentar la misma llamada puede funcionar                         |
+| `Permanent`         | Repetirla da el mismo resultado: regla de negocio, 4xx, inexistente |
+| `ProtocolViolation` | Contrato roto o fallo de implementación; nunca se reintenta         |
+| `Timeout`           | Se agotó el tiempo; el efecto pudo aplicarse o no                   |
+| `Cancelled`         | Quien llama abortó; el efecto pudo aplicarse o no                   |
+
+`classifyFailure` recorre el error y hasta tres niveles de `cause`, y usa la primera señal explícita, en este orden:
+
+1. Una propiedad `failureKind`.
+2. `name` igual a `AbortError` (cancelado) o `TimeoutError` (tiempo agotado).
+3. El booleano `retryable` de `PlatformError`.
+4. Un error del SDK de AWS v3 con `$retryable` o con nombre de limitación de tasa o tiempo agotado (`ThrottlingException`, `SlowDown`, `RequestTimeout`): pasajero.
+5. Un código de red de Node o undici, o un SQLSTATE pasajero de Postgres.
+6. Un estado HTTP: 408, 425, 429, 502, 503 y 504 son pasajeros; el resto de 4xx y 5xx, permanentes.
+
+Sin señal, un `TypeError`, `ReferenceError`, `SyntaxError`, `RangeError` o `ZodError` es una violación de protocolo, y cualquier otra cosa es permanente. Lo desconocido no se reintenta.
+
+`CallOutcome.fromError` traduce esa clase al resultado de una llamada entre procesos: un `DomainError` es `business-error`; `Transient`, `transient-failure`; `Timeout` y `Cancelled`, `uncertain`; el resto, `protocol-violation`.
+
+**Respuesta HTTP** en formato RFC 9457 (Problem Details). `toProblemDetails` de `@contracts/platform` arma la respuesta desde una entrada del catálogo:
 
 ```json
 {
@@ -278,12 +323,13 @@ export class MfaCodeExpiredError extends DomainError {
 }
 ```
 
+Los errores de campo usan los códigos `PLATFORM.VALIDATION.*` y rutas con punto (`items.0.name`), los mismos en el servidor y en el cliente.
+
 **Reglas**
 
-- Los errores de dominio se traducen a HTTP en un filtro global; los casos de uso solo lanzan errores de dominio.
-- Un error inesperado responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId` y sin detalles internos.
-- Los errores viajan tipados entre servicios: cada operación interna declara qué códigos puede devolver y el cliente los reconstruye como clases.
-- Una prueba en CI verifica que ningún código se repita y que todos tengan entrada en el catálogo. El catálogo se publica en el portal de documentación.
+- Los casos de uso solo lanzan errores de dominio.
+- Cada operación interna declara los códigos que puede devolver. El cliente trata un código no declarado como violación de protocolo.
+- El siguiente paso es el filtro global de HTTP de la primera app: traduce los errores de dominio con el catálogo y responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId` y sin detalles internos ante un error inesperado.
 
 ## Endpoints
 
@@ -339,7 +385,7 @@ La conexión a base de datos se define en el módulo y queda fuera del endpoint:
 
 ## Persistencia
 
-`libs/platform/persistence` es nuestra capa sobre TypeORM. El dominio ve solo puertos de repositorio; TypeORM queda como motor interno y se puede reemplazar sin tocar el negocio.
+`backend/libs/platform/persistence` es nuestra capa sobre TypeORM. El dominio ve solo puertos de repositorio; TypeORM queda como motor interno y se puede reemplazar sin tocar el negocio.
 
 ```ts
 export class TypeOrmTaskRepository
@@ -536,7 +582,7 @@ const results = await this.taskSearch.search({
 
 ## Módulo de IA
 
-`libs/platform/ai` le da a cualquier servicio capacidades de IA con las mismas reglas del resto de la plataforma: puertos, tenant, permisos, auditoría, costos y trazas. El servicio de ejemplo `apps/assistant` es un asistente con búsqueda sobre los datos del tenant y herramientas que ejecutan casos de uso.
+`backend/libs/platform/ai` le da a cualquier servicio capacidades de IA con las mismas reglas del resto de la plataforma: puertos, tenant, permisos, auditoría, costos y trazas. El servicio de ejemplo `backend/apps/assistant` es un asistente con búsqueda sobre los datos del tenant y herramientas que ejecutan casos de uso.
 
 **Proveedores**
 
@@ -596,7 +642,7 @@ export class CreateTaskTool extends UseCaseTool<CreateTaskUseCase> {}
 
 ## Resiliencia y Bloom filters
 
-`libs/platform/resilience` aplica políticas declaradas a cada adaptador de salida: base de datos, Valkey, colas, APIs externas, proveedores de IA y email. Usa la librería cockatiel.
+`backend/libs/platform/resilience` aplica políticas declaradas a cada adaptador de salida: base de datos, Valkey, colas, APIs externas, proveedores de IA y email. Usa la librería cockatiel.
 
 ```ts
 export class VoyageEmbeddingAdapter implements EmbeddingProvider {
@@ -752,14 +798,14 @@ El MFA protege dos momentos: el registro de cada dispositivo nuevo, obligatorio 
 **Backoffice con perfiles**
 
 - Los roles de plataforma son independientes de los roles de tenant: `PlatformRole.SuperAdmin`, `Support`, `Finance`, `ReadOnly`, extensible.
-- `apps/backoffice`-api es un BFF con audiencia propia (`aud: backoffice`) que llama a la API interna de cada servicio.
+- `backend/apps/backoffice-api` es un BFF con audiencia propia (`aud: backoffice`) que llama a la API interna de cada servicio.
 - Acceso con MFA obligatorio (passkey recomendada) y lista de IPs opcional.
 - Suplantación ("ver como") con motivo, duración limitada, auditoría completa y aviso al usuario.
 - Vistas iniciales: tenants y usuarios, sesiones y dispositivos, historial de auditoría, sagas y DLQs, facturación y uso, feature flags, deprecaciones.
 
 ## Acuerdos: términos, consentimientos y documentos firmados
 
-El servicio `apps/agreements` es genérico: maneja cualquier documento que un usuario o un tenant deba aceptar o firmar, con versiones, audiencias, evidencia y efectos sobre permisos.
+El servicio `backend/apps/agreements` es genérico: maneja cualquier documento que un usuario o un tenant deba aceptar o firmar, con versiones, audiencias, evidencia y efectos sobre permisos.
 
 | Concepto        | Qué es                                                                                                                                      |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -797,82 +843,101 @@ Si falta una aceptación, la respuesta es `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRED` 
 
 ## Contratos y API interna
 
-Cada servicio publica en `libs/contracts/<servicio>` todo lo que expone: operaciones internas, eventos, errores y DTOs públicos. Es la única forma en que un servicio conoce a otro. Los contratos son clases y enums, con esquemas zod que validan en tiempo de ejecución.
+Los contratos son la única forma en que un servicio conoce a otro y en que el front conoce al backend. Se escriben una vez, en TypeScript con zod, y de ahí salen el JSON intermedio y el Dart del front ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md) y [ADR 0017](adr/0017-export-de-contratos.md)).
+
+**Dónde viven**
 
 ```text
-libs/contracts/billing/
-  billing.operations.ts   enum BillingOperation + clases de contrato
-  billing.events.ts       enum BillingEvent + esquemas
-  errors/                 enums de códigos por submódulo
-  dto/                    esquemas de entrada y salida
-  index.ts
+backend/libs/contracts/
+  platform/              @contracts/platform: kit, esquemas transversales y catálogo PLATFORM.*
+  <servicio>/            @contracts/<servicio>: lo que el servicio expone
+    src/
+      enums/             solo enums (accesos, códigos de error, rutas, operaciones, eventos)
+      constants/         valores constantes y objetos `as const`
+      types/             interfaces
+      schemas/           esquemas zod con `satisfies z.ZodType<Tipo>`
+      http/              rutas públicas que consume el front
+      internal/          operaciones internas entre servicios
+      events/            eventos publicados
+      errors/            catálogo de errores del servicio
+      contract.ts        ServiceContract del servicio
+    export/contract.json generado, se confirma en git
 ```
 
-**Una operación y su reversa**
+Hoy existen `platform` e `identity`. Los proyectos llevan los tags `type:contracts` y `scope:<servicio>`.
+
+**Kit de `@contracts/platform`**
+
+- `defineRoute`: método, path, esquema de petición y de respuesta, códigos de error y requisito de acceso (`Access.public()` o `Access.authenticated(...)`).
+- `defineOperation`: operación interna con `id`, `input`, `output`, `idempotent`, `mutating`, `compensatedBy` (o `Compensation.None` con `compensationReason`), `errors`, `timeoutMs`, `retry` y `description`.
+- `defineEvent`: tipo CloudEvents con la versión al final y esquema del payload.
+- `defineErrorCatalog`: catálogo de errores (ver [Errores](#errores)).
+- `defineServiceContract`: reúne todo lo anterior y valida nombres e identificadores únicos.
+- `validateContract` y `fieldErrorsFromZod`: traducen los issues de zod a `FieldError` con códigos `PLATFORM.VALIDATION.*`.
+
+**Una operación con su compensación declarada**
 
 ```ts
-export enum BillingOperation {
-  ReserveCredits = 'billing.reserve-credits.v1',
-  ReleaseCredits = 'billing.release-credits.v1',
-}
-
-@Operation({
-  id: BillingOperation.ReserveCredits,
-  compensatedBy: BillingOperation.ReleaseCredits,
+export const RevokeUserSessionsOperation = defineOperation({
+  id: IdentityOperation.RevokeUserSessions,
+  input: RevokeUserSessionsInputSchema,
+  output: RevokedSessionsSchema,
   idempotent: true,
-  errors: [CreditsErrorCode.InsufficientBalance],
-})
-export class ReserveCredits extends OperationContract<
-  ReserveCreditsInput,
-  ReserveCreditsOutput
-> {
-  readonly input = ReserveCreditsInputSchema;
-  readonly output = ReserveCreditsOutputSchema;
-}
+  compensatedBy: Compensation.None,
+  compensationReason:
+    'Revocar sesiones no se deshace por seguridad: el usuario vuelve a iniciar sesión.',
+  errors: [IdentityErrorCode.UserNotFound],
+  timeoutMs: 3000,
+  description: 'Revoca todas las sesiones de un usuario y publica el evento.',
+});
 ```
+
+`defineOperation` rechaza una operación que modifica datos sin `compensatedBy`, un `Compensation.None` sin motivo, una operación que se compensa a sí misma y códigos de error con formato inválido o repetidos.
+
+**Del TypeScript al Dart**
+
+1. `pnpm nx run contracts-export:export` escribe `backend/libs/contracts/<servicio>/export/contract.json`: JSON Schema 2020-12 con enums, constantes, esquemas, rutas, operaciones, eventos y errores.
+2. `dart run contracts_gen` (dentro de `front/`) lee esos JSON y escribe `front/packages/contracts/lib/src/<servicio>/{enums,constants,types,schemas,http}` con la cabecera `// GENERATED, do not edit.`.
+3. `pnpm nx run contracts-export:check` y `dart run contracts_gen --check` fallan si lo confirmado difiere de lo que produce el TypeScript. CI los corre en el job `contracts`.
+
+Un cambio en `backend/libs/contracts` incluye en el mismo commit el JSON exportado y el Dart regenerado. Un servicio nuevo se registra en `backend/tools/contracts-export/src/registry.ts`.
+
+**Validar antes de llamar**
+
+Todo cliente valida la petición contra el contrato antes de salir por la red. El servidor vuelve a validar siempre: la autoridad es el servidor.
+
+- Backend: `InternalClient.call(operación, entrada, opciones)` valida la entrada con el esquema de la operación. Si es inválida, devuelve `protocol-violation` con los `FieldError` y no llama al transporte. También valida la salida y los códigos de error al recibirlos.
+- Front: `ApiClient` de `front/packages/api` valida la petición con el validador generado. Si falla, lanza `ContractViolationException` con los mismos `FieldError` del servidor y no llama al `HttpTransport`. Las respuestas de error se leen como `ProblemDetails` y se lanzan como `ApiErrorException`.
+
+**API interna** (`@platform/internal-api`)
+
+El descriptor de `defineOperation` se pasa directamente a las piezas de la API interna, sin clases ni decoradores:
+
+```ts
+registry.register(RevokeUserSessionsOperation);
+router.register(RevokeUserSessionsOperation, handler);
+const outcome = await client.call(RevokeUserSessionsOperation, input, {
+  idempotencyKey,
+});
+```
+
+- `ContractRegistry` registra las operaciones y valida que cada `compensatedBy` exista.
+- `InternalRouter` es el lado servidor: valida la entrada, aplica idempotencia por tenant, operación y llave con un claim de tres estados, revisa plazos y resultados contra el contrato y despacha al handler.
+- `InternalClient` es el lado cliente: aplica reintentos, backoff y presupuesto de tiempo. Solo reintenta operaciones `idempotent: true`, y solo ante `transient-failure` o `uncertain`.
+- El resultado es siempre un `CallOutcome`: `success`, `business-error` (código declarado en el contrato), `transient-failure`, `uncertain` o `protocol-violation`. Quien llama decide qué hacer con cada caso.
+- `@Operation` y `OperationContract` siguen funcionando, marcados `@deprecated`.
+
+Hoy existen el transporte en proceso (`InProcessTransport`) y el almacén de idempotencia en memoria (`InMemoryProcessedOperationStore`). El siguiente paso es el transporte HTTP interno y un almacén persistente que guarde el resultado en la misma transacción que los efectos del handler.
 
 **Reglas del contrato**
 
-- Toda operación que modifica datos declara su `compensatedBy`, o `Compensation.None` con un motivo (por ejemplo, enviar un email). Al arrancar y en CI se verifica que la reversa exista en el mismo contrato.
-- Toda operación es idempotente por llave: el servidor guarda la llave y el resultado en `processed_operations` dentro de la misma transacción y devuelve el resultado guardado si la llamada se repite.
-- El cliente valida la entrada antes de llamar y la salida al recibirla. El servidor valida la entrada otra vez al recibirla.
-- Un cambio incompatible crea una versión nueva (`.v2`). La anterior convive mientras alguien la use.
-
-**Lado servidor: el router interno**
-
-```ts
-@InternalController(Service.Billing)
-export class CreditsInternalController {
-  @InternalOperation(ReserveCredits)
-  reserve(input: ReserveCreditsInput, ctx: OperationContext) {
-    return this.runner.run(ReserveCreditsUseCase, input, ctx);
-  }
-}
-```
-
-Al arrancar, el router verifica que cada operación del contrato tenga su handler.
-
-**Lado cliente**
-
-```ts
-const result = await this.billing.call(
-  ReserveCredits,
-  { tenantId, amount },
-  { idempotencyKey },
-);
-```
-
-- El cliente tipado sale del contrato y se inyecta detrás de un puerto del dominio del consumidor.
-- Transporte intercambiable por configuración: HTTP interno (`/internal/*` con autenticación IAM SigV4), cola con respuesta, o en proceso cuando dos módulos corren en el mismo servicio. Separar un módulo en su propio servicio cambia solo la configuración del transporte.
-- **Reintentos, backoff, timeout y circuit breaker son responsabilidad del cliente**, con una política por operación. Solo reintenta operaciones `idempotent: true`.
-- El resultado llega como `Success`, `BusinessError` (código del contrato) o `TransientFailure` (se agotaron los reintentos). Quien llama decide qué hacer con cada caso.
-- Siempre se propagan `traceparent`, tenant y actor. Si se actúa en nombre de un usuario, viaja su JWT original.
-
-**Pruebas de contrato.** Los esquemas se validan en las pruebas del servicio que expone y del que consume. Romper un contrato rompe CI.
+- Toda operación que modifica datos declara su `compensatedBy`, o `Compensation.None` con un motivo.
+- Toda operación es idempotente por llave: el servidor devuelve el resultado guardado si la llamada se repite.
+- Un cambio incompatible crea una versión nueva de la operación o del evento. La anterior convive mientras alguien la use.
 
 ## Bus de mensajería
 
-`libs/platform/messaging` despacha eventos y comandos sin que el negocio sepa si van a un tópico o a una cola. Una topología tipada es la única fuente de verdad: de ella salen el despacho en ejecución, la infraestructura, el entorno local, los tests y la documentación.
+`backend/libs/platform/messaging` despacha eventos y comandos sin que el negocio sepa si van a un tópico o a una cola. Una topología tipada es la única fuente de verdad: de ella salen el despacho en ejecución, la infraestructura, el entorno local, los tests y la documentación.
 
 | Tipo     | Cuándo                                   | Mecanismo                          | Ejemplo                                        |
 | -------- | ---------------------------------------- | ---------------------------------- | ---------------------------------------------- |
@@ -961,7 +1026,7 @@ Los mensajes siguen CloudEvents 1.0, la especificación de la CNCF para eventos 
 
 ## Sagas
 
-`libs/platform/saga` coordina operaciones entre servicios con una bitácora persistente de cada paso. Si el nodo que ejecuta una saga se cae, otro la retoma exactamente donde quedó, incluidas las compensaciones a medio camino. La saga orquesta; los reintentos y timeouts de cada llamada son del cliente de la API interna.
+`backend/libs/platform/saga` coordina operaciones entre servicios con una bitácora persistente de cada paso. Si el nodo que ejecuta una saga se cae, otro la retoma exactamente donde quedó, incluidas las compensaciones a medio camino. La saga orquesta; los reintentos y timeouts de cada llamada son del cliente de la API interna.
 
 **Definición con clases y contratos**
 
@@ -1022,13 +1087,16 @@ Si el proceso muere entre el paso 1 y el 3, el registro queda en `Dispatched`. A
 
 **Cómo reacciona a cada resultado**
 
-| Resultado del cliente | En avance                                                                                     | En compensación                                             |
-| --------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `Success`             | Siguiente paso                                                                                | Siguiente compensación                                      |
-| `BusinessError`       | Inicia compensación en orden inverso                                                          | Estado `CompensationFailed`, alerta e intervención manual   |
-| `TransientFailure`    | Estado `Suspended`; la recuperación la retoma más tarde. Al cumplirse `deadline_at`, compensa | Estado `Suspended`; la recuperación insiste hasta completar |
+| Resultado del cliente | En avance                                                                                                                                      | En compensación                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `Success`             | Siguiente paso                                                                                                                                 | Siguiente compensación                                      |
+| `BusinessError`       | Inicia compensación en orden inverso                                                                                                           | Estado `CompensationFailed`, alerta e intervención manual   |
+| `TransientFailure`    | Estado `Suspended`; la recuperación la retoma más tarde. Al cumplirse `deadline_at`, compensa                                                  | Estado `Suspended`; la recuperación insiste hasta completar |
+| `Uncertain`           | Estado `Suspended` con `PLATFORM.SAGA.UNCERTAIN_OUTCOME`; se reintenta con la misma llave. Al cumplirse `deadline_at`, compensa desde ese paso | Estado `Suspended`; la recuperación insiste hasta completar |
 
 Las compensaciones son idempotentes y toleran el caso en que la operación original nunca se aplicó (responden éxito sin hacer nada). Por eso un paso con resultado incierto se compensa con seguridad.
+
+Un paso tiene resultado incierto cuando la llamada supera `maxStepDurationMs` o termina por tiempo agotado o cancelación. Si la suspensión se agota (por defecto, más de 20 intentos o 24 horas), la saga pasa a `RequiresIntervention`. El detalle está en el [ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md#resultado-incierto).
 
 **Aislamiento.** Mientras la saga corre, los recursos involucrados quedan en un estado intermedio del dominio (por ejemplo, tenant `Provisioning`) para que nadie los use a medias.
 
@@ -1117,7 +1185,7 @@ Cada registro guarda tenant, usuario, plantilla y versión, destinatario, id del
 
 **Tiempo real: Socket.IO y SSE**
 
-`apps/realtime` es un gateway de NestJS en Fargate, detrás de un ALB, con dos canales alimentados por el mismo origen de mensajes:
+`backend/apps/realtime` es un gateway de NestJS en Fargate, detrás de un ALB, con dos canales alimentados por el mismo origen de mensajes:
 
 | Canal                           | Dirección               | Uso                                                                                               |
 | ------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
@@ -1161,79 +1229,123 @@ El servicio `billing` calcula qué debe pagar cada tenant y lleva el estado de c
 
 ## Infraestructura AWS y CI/CD
 
-Terraform se divide en una raíz `platform` con los recursos compartidos y una raíz por servicio con estado propio, así cada servicio se despliega por separado.
+La infraestructura vive en `backend/infra/terraform`: una raíz `platform` por región que compone módulos reutilizables. El detalle de variables y salidas está en el [README de Terraform](../backend/infra/terraform/README.md).
 
-| Raíz                | Recursos                                                                                                                                                                                                                                                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `platform`          | VPC con subredes privadas y endpoints de VPC; RDS PostgreSQL con RDS Proxy y réplica de lectura; ElastiCache for Valkey; tópicos, colas y DLQs leídos de la topología; API Gateway HTTP API detrás de CloudFront con WAF; ALB para el servicio de tiempo real; bucket de archivos; SES; KMS; Secrets Manager; clúster ECS |
-| `services/<nombre>` | Lambda de la API (bundle esbuild) y sus rutas; worker Fargate con autoescalado por profundidad de cola (mínimo 0); Lambdas consumidoras; schedules del servicio; IAM de mínimo privilegio; log groups con retención; alarmas                                                                                              |
+| Módulo            | Recursos                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `network`         | VPC con subredes públicas, privadas y de datos en dos zonas, NAT opcional, endpoints de VPC y flow logs              |
+| `rds-postgres`    | RDS PostgreSQL 17 con CMK, parámetros propios, usuarios por servicio con rotación y RDS Proxy de escritura y lectura |
+| `valkey`          | ElastiCache for Valkey serverless con CMK, TLS y autenticación IAM                                                   |
+| `messaging`       | Tópicos SNS, colas SQS, DLQ, suscripciones, KMS y alarmas, leídos del JSON de la topología                           |
+| `ecs-cluster`     | Clúster ECS Fargate con Container Insights                                                                           |
+| `alb`             | ALB público para la API y para Socket.IO y SSE                                                                       |
+| `observability`   | OpenObserve en Fargate con ALB interno                                                                               |
+| `cloudfront-waf`  | CloudFront con WAFv2 para la web Flutter y la API                                                                    |
+| `files-bucket`    | Bucket S3 de archivos de usuarios                                                                                    |
+| `ses`             | Identidad SES, configuration sets y tópico de eventos                                                                |
+| `service-fargate` | Microservicio en Fargate: API detrás del ALB o worker que escala por cola                                            |
+| `service-lambda`  | Lambda consumidora de una cola SQS                                                                                   |
 
-**Regiones.** Cada región tiene su propia raíz `platform` y sus raíces de servicios, desplegadas con los mismos módulos. El catálogo global vive en la región principal con réplicas de lectura en las demás.
+**Raíz `platform`**
 
-- Cada servicio tiene su base y su usuario dentro de la instancia RDS compartida.
-- Estado en S3 con `use_lockfile`. Entornos `dev`, `staging` y `prod` con `tfvars` por entorno.
-- WAF va en CloudFront porque el HTTP API de API Gateway se integra con WAF a través de CloudFront. CloudFront también aporta los headers de geolocalización que usa el contexto de MFA.
-- Presupuestos y alertas de costo con AWS Budgets; etiquetas por servicio, entorno y tenant cuando aplica.
-- Backups con PITR en RDS y política de snapshots.
+- Una raíz por región, con el mismo código y otro `tfvars`. `environments/dev.tfvars` y `environments/prod.tfvars` traen los valores de cada entorno; la variable `environment` acepta `dev`, `staging` y `prod`.
+- Estado en S3 con `encrypt` y `use_lockfile`. El bucket, la clave y la región llegan con `-backend-config`: un estado por región y entorno.
+- Los servicios se declaran en la variable `services`, un mapa por nombre. `kind = "fargate"` crea una API o un worker; `kind = "lambda"`, un consumidor de cola. Agregar un microservicio es agregar una entrada en el `tfvars`.
+- El módulo `messaging` lee la topología que exporta `Topology.toJSON()` de `@platform/messaging`. `examples/topology.example.json` sirve para validar y para dev.
+- Terraform `>= 1.11` y provider de AWS `>= 6.0, < 7.0`. La versión fijada para CI está en `backend/infra/terraform/.terraform-version`.
 
-**Pipeline (GitHub Actions con OIDC hacia AWS)**
+**Red y salida a Internet**
 
-1. `nx affected -t lint test build` en cada PR, con `terraform plan` de las raíces afectadas como comentario.
-2. Al hacer merge: por cada servicio afectado, migraciones en todos los shards como tarea única en Fargate.
-3. `terraform apply` de la raíz del servicio y publicación de la Lambda o la imagen.
+La variable `egress` del módulo `network` decide la salida de las subredes privadas ([ADR 0016](adr/0016-egress-de-red.md)): `none`, `single_nat` (dev) o `per_az_nat` (prod). Las subredes de datos (RDS, RDS Proxy, Valkey) no tienen ruta a Internet y llegan a AWS solo por endpoints de VPC. El tráfico a AWS no pasa por el NAT.
+
+**Datos**
+
+- Las apps nunca usan el usuario maestro de RDS. Cada servicio tiene su rol, su esquema y un secreto con rotación; una Lambda de bootstrap dentro de la VPC crea los roles.
+- Las apps escriben por `rds_proxy_endpoint` y leen por `reader_endpoint`.
+- El grupo de parámetros activa `rds.logical_replication`, que habilita los traslados de shard sin corte.
+- Valkey autentica por IAM con un usuario por servicio.
+
+**Validación en CI**
+
+El job `terraform` de `ci.yml` corre cuando cambia `backend/infra/terraform/**`: `terraform fmt -check -recursive`, `terraform init -backend=false` y `terraform validate` de `platform` y de cada ejemplo en `examples/`, y `tflint`. `security.yml` revisa la configuración con Trivy (ver [Calidad y seguridad](#calidad-y-seguridad)).
+
+**Siguiente paso: despliegue**
+
+El siguiente paso es el pipeline de despliegue en GitHub Actions con OIDC hacia AWS:
+
+1. `terraform plan` de las raíces afectadas como comentario en el PR.
+2. Al hacer merge, migraciones de cada servicio afectado en todos sus shards, como tarea única en Fargate.
+3. `terraform apply` y publicación de la imagen o la Lambda del servicio.
 4. Smoke tests contra el entorno y promoción de `staging` a `prod` con aprobación manual.
 
-**Desarrollo local** en dos modos, posibles gracias a los puertos:
+**Desarrollo local**
 
-| Modo         | Adaptadores                                                                                                              | Para qué                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `local`      | En memoria, Postgres, Valkey, MinIO, Mailpit, `node-cron`, `ws`                                                          | Desarrollo diario rápido, sin AWS                |
-| `localstack` | Adaptadores AWS contra LocalStack, el simulador local de AWS (SQS, SNS, S3, EventBridge Scheduler, SES, Secrets Manager) | Probar la integración con AWS antes de desplegar |
+`backend/docker-compose.yml` levanta PostgreSQL con pgvector (bases `catalog`, `identity_shard_0`, `identity_shard_1` y `tasks_shard_0`), Valkey, LocalStack, Mailpit y OpenObserve. La guía está en [Desarrollo local](local-development.md).
 
-`docker-compose` levanta Postgres con el catálogo y dos shards, Valkey, LocalStack, Mailpit y `OpenObserve`. `nx run-many -t serve` levanta todos los servicios. Los servicios de LocalStack que se usen se validan contra su plan vigente, porque algunos requieren licencia.
+Con los adaptadores de cada capacidad, el siguiente paso son dos modos de ejecución:
+
+| Modo         | Adaptadores                                                  | Para qué                                         |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------ |
+| `local`      | En memoria, Postgres, Valkey y Mailpit                       | Desarrollo diario rápido, sin AWS                |
+| `localstack` | Adaptadores AWS contra LocalStack, el simulador local de AWS | Probar la integración con AWS antes de desplegar |
 
 ## Calidad y seguridad
 
-**Pruebas** (Jest con tres proyectos por servicio)
+Las decisiones de CI, seguridad y versiones de herramientas están en el [ADR 0019](adr/0019-ci-y-toolchain.md). Los workflows son `.github/workflows/ci.yml` y `.github/workflows/security.yml`.
 
-| Tipo        | Qué cubre                                                        | Cómo                                                                 |
-| ----------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Unitarias   | Dominio y casos de uso                                           | Fakes en memoria de cada puerto; `IdGenerator` y reloj deterministas |
-| Integración | Repositorios, migraciones, particiones, RLS, caché, consumidores | Postgres y Valkey reales con Testcontainers                          |
-| E2E         | Endpoints completos, flujos de auth y MFA, sagas                 | Supertest contra la app con bus en memoria                           |
-| Contrato    | Operaciones y eventos entre servicios                            | Validación de esquemas en productor y consumidor                     |
+**CI (`ci.yml`)**
 
-- Umbral mínimo de cobertura por proyecto validado en CI (propuesta: 80 % en dominio y casos de uso).
-- Pruebas de recuperación de sagas: se interrumpe el proceso en cada punto del protocolo y se verifica que la saga termine con un solo efecto.
+Corre en cada PR y en cada push a `main`. Un job `changes` (`dorny/paths-filter`) decide qué jobs condicionales corren. Cada job tiene `timeout-minutes` y permisos mínimos.
 
-**Configuración de Jest**
+| Job            | Corre cuando cambia                                                 | Qué hace                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nx`           | siempre                                                             | `pnpm install --frozen-lockfile`, `flutter pub get` en `front/`, `pnpm nx affected -t lint test typecheck build analyze format-check` y `pnpm nx format:check` |
+| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `pnpm nx run contracts-export:check` y `dart run contracts_gen --check`                                                                                        |
+| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                                         |
+| `terraform`    | `backend/infra/terraform/**`                                        | `terraform fmt`, `init -backend=false` y `validate` de `platform` y de los ejemplos, y `tflint`                                                                |
+| `ci-ok`        | siempre                                                             | Agrega el resultado de todos los jobs                                                                                                                          |
 
-- `jest.preset.js` en la raíz y un `jest.config.ts` por servicio con tres proyectos: `unit` (`*.spec.ts` junto al código), `integration` (`test/integration/**/*.int-spec.ts`) y `e2e` (`test/e2e/**/*.e2e-spec.ts`).
-- Transformación con `@swc/jest` para velocidad; el chequeo de tipos corre aparte con `tsc --noEmit`.
-- Targets de Nx `test`, `test:integration` y `test:e2e`, con caché y ejecución solo de lo afectado.
-- El `globalSetup` de integración levanta una vez por corrida Postgres con dos shards, Valkey y LocalStack con Testcontainers.
-- `libs/testing` trae factories por entidad, builders de contexto (tenant, actor, `traceId`), reloj e `IdGenerator` deterministas, bus y scheduler en memoria, y un cliente HTTP autenticado para e2e.
+Un cambio en `ci.yml` activa todos los filtros. `ci-ok` falla si algún job terminó en `failure` o `cancelled`; un job omitido por el filtro cuenta como válido. `ci-ok` es el único check requerido para `main`, así los jobs condicionales no bloquean los PR que no los tocan.
 
-**Pruebas de carga con k6**
+El job `nx` guarda la caché de `.nx/cache` y usa `nrwl/nx-set-shas` para calcular lo afectado contra `main`.
 
-- Scripts en `tests/load/` por flujo: login con código automático del dispositivo, refresh de sesión, CRUD de tasks, subida de archivos y procesamiento de eventos.
-- Escenarios de carga constante, picos y resistencia, con umbrales (p95 de latencia, tasa de error) que hacen fallar la corrida.
-- Los resultados se envían al backend de OpenTelemetry para verlos junto a las trazas.
-- Corren cada noche contra staging y antes de cada release mayor.
+**Seguridad (`security.yml`)**
+
+Corre en cada PR, en cada push a `main` y los lunes a las 06:00 UTC:
+
+- **gitleaks** 8.30.1, instalado desde la release con verificación SHA-256, sobre todo el historial.
+- **dependency-review-action** en los PR, con severidad alta o crítica.
+- **OSV-Scanner** sobre `pnpm-lock.yaml` y `front/pubspec.lock`.
+- **Trivy** en modo configuración sobre `backend/infra/terraform`, con severidad `HIGH` y `CRITICAL`.
+- **CodeQL** para `javascript-typescript`.
+
+**Versiones fijadas**
+
+- Node: `.nvmrc` en la raíz (24). pnpm: campo `packageManager` del `package.json` de la raíz.
+- Flutter: `front/.flutter-version`. CI la lee y la pasa a `subosito/flutter-action`.
+- Terraform: `backend/infra/terraform/.terraform-version`.
+- Toda acción de terceros se referencia por el SHA completo del commit, con la versión en un comentario. Renovate (`renovate.json`, con `helpers:pinGitHubActionDigests`) mantiene los SHA, las dependencias y las versiones de Node, Flutter y Terraform.
+
+**Hooks de git**
+
+- `commit-msg`: commitlint con `@commitlint/config-conventional`.
+- `pre-commit`: lint-staged. Prettier formatea JS, TS, JSON, Markdown y YAML; ESLint corrige el TypeScript de `backend/`; `dart format` formatea el Dart de `front/`.
 
 **Estándares de código**
 
-- TypeScript con `strict: true`, ESLint (flat config) y Prettier.
-- Husky con lint-staged y commitlint.
-- Límites de dependencias con Nx y `dependency-cruiser`.
-- Generadores `nx g @tools:microservice` y `nx g @tools:hexagonal-module` para que todo servicio y módulo nazca con la misma estructura.
+- TypeScript con `strict: true` y ESM con `module: nodenext` (`backend/tsconfig.base.json`). Las importaciones relativas terminan en `.js`.
+- ESLint con flat config (`backend/eslint.config.mjs`) y la regla `@nx/enforce-module-boundaries`.
+- Prettier con la configuración de `.prettierrc` en la raíz. El Dart se formatea con `dart format` y se analiza con `flutter analyze`.
 
-**Seguridad en CI**
+**Pruebas**
 
-- gitleaks para secretos, Renovate para dependencias, Trivy para imágenes, Checkov para Terraform y CodeQL para el código.
-- Revisión obligatoria de la matriz de acceso cuando un PR agrega un endpoint público.
+- Cada librería del backend tiene su `jest.config.cjs` con `@swc/jest` y las pruebas `*.spec.ts` junto al código. El chequeo de tipos corre aparte, en el target `typecheck`.
+- Cada miembro del pub workspace con carpeta `test/` tiene el target `test` (`flutter test`).
+- Las pruebas de `@platform/saga` simulan la caída del proceso justo después de registrar un paso (`crashAfterDispatch`) y verifican que la saga retomada repita la llamada con la misma llave y produzca un solo efecto.
 
-**Documentación del repositorio**: README por servicio, ADRs para cada decisión de arquitectura, runbooks para DLQs, sagas detenidas y rotación de claves, y una guía para crear un servicio nuevo.
+El siguiente paso, con los primeros servicios, son las pruebas de integración con Postgres y Valkey reales (Testcontainers), las e2e contra la app y las de carga con k6 contra staging.
+
+**Documentación del repositorio**: README, ADRs para cada decisión de arquitectura, [guía de contribución](../CONTRIBUTING.md) y [desarrollo local](local-development.md).
 
 ## Fases de construcción
 
@@ -1277,7 +1389,7 @@ La infraestructura de cada pieza se agrega en su propia fase; F12 completa el Te
 | Tema                         | Decisión                                                                                                                                                                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stack                        | NestJS, TypeORM, PostgreSQL, Node 24 LTS, TypeScript estricto                                                                                                                                                             |
-| Repositorio                  | Reescritura completa de `node_template` como monorepo Nx con pnpm, una app por microservicio                                                                                                                              |
+| Repositorio                  | Reescritura completa de `node_template` como monorepo Nx con raíz mínima, `backend/` (pnpm) y `front/` (pub workspace)                                                                                                    |
 | Identificadores              | UUIDv7 en todo, incluido el `traceId`                                                                                                                                                                                     |
 | Observabilidad               | OpenTelemetry con OpenObserve como única herramienta de logs, métricas y trazas                                                                                                                                           |
 | Autenticación                | Propia: JWT ES256 de 10 a 15 min y session token opaco rotativo; argon2id                                                                                                                                                 |
@@ -1288,7 +1400,7 @@ La infraestructura de cada pieza se agrega en su propia fase; F12 completa el Te
 | Caché y datos de vida corta  | Valkey                                                                                                                                                                                                                    |
 | Mensajería                   | Tópicos y colas abstractos con topología tipada y formato CloudEvents; SNS y SQS como adaptador AWS                                                                                                                       |
 | Consistencia entre servicios | Sagas orquestadas con bitácora persistente y recuperación; reintentos y timeouts en el cliente                                                                                                                            |
-| Contratos                    | Clases y enums por servicio, validación en ejecución, reversa declarada por operación                                                                                                                                     |
+| Contratos                    | TypeScript con zod por servicio, exportados a JSON y generados en Dart; validación antes de llamar y reversa declarada por operación                                                                                      |
 | Plataforma                   | Agnóstica: endpoints, eventos, jobs y tiempo real con un adaptador de entrada por runtime                                                                                                                                 |
 | Sharding                     | Shards lógicos en grupos por tenant, llave elegida por servicio o entidad, traslados sin interrupción con replicación lógica, operaciones como código. Se estrena en identity                                             |
 | Errores                      | Códigos `SERVICIO.SUBMÓDULO.ERROR` y RFC 9457                                                                                                                                                                             |
@@ -1308,7 +1420,7 @@ La infraestructura de cada pieza se agrega en su propia fase; F12 completa el Te
 | Tenants                      | Todo usuario pertenece a un tenant; los clientes finales pueden compartir uno                                                                                                                                             |
 | Base de datos                | RDS PostgreSQL con sharding propio                                                                                                                                                                                        |
 | Apps cliente                 | Carpeta front/ con dos shells Flutter (web y mobile) que componen microfrontends por dominio compartidos entre ambos                                                                                                      |
-| Framework de clientes        | Flutter para móvil, web y backoffice, con SDK, contratos, autenticación y widgets compartidos en Dart                                                                                                                     |
+| Framework de clientes        | Flutter para móvil, web y backoffice, con cliente HTTP (`api`), contratos, autenticación y widgets compartidos en Dart                                                                                                    |
 
 **Por tomar**
 
@@ -1318,7 +1430,7 @@ Todas las decisiones del plan están tomadas. Las que surjan durante la construc
 
 El plan cubre el backend completo. Estas piezas se construyen sobre él en fases posteriores:
 
-- **Clientes**: las pantallas de negocio de cada microfrontend, construidas sobre el esqueleto, el SDK y la autenticación que ya trae el monorepo.
+- **Clientes**: las pantallas de negocio de cada microfrontend, construidas sobre el esqueleto, el `ApiClient` y la autenticación que ya trae el monorepo.
 - **Cobro real y facturación electrónica**: integración con la pasarela de pagos y con un proveedor autorizado por la DIAN, conectados al puerto `PaymentProvider`.
 - **DPoP en todos los tokens**: ligar el access token y el session token a la clave del dispositivo registrado.
 - **Analítica**: exportación de eventos a un data lake para reportes de negocio.
