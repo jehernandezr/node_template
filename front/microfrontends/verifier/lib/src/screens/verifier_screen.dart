@@ -221,12 +221,16 @@ class _VerifierViewState extends State<_VerifierView> {
   @override
   Widget build(BuildContext context) {
     final l10n = VerifierLocalizations.of(context);
+    final shared = AppLocalizations.of(context);
     return AppPage(
       title: l10n.title,
       body: AsyncValueView<LoginChallenge?>(
         value: _pending,
         errorMessage: l10n.loadError,
         onRetry: _retry,
+        retryLabel: shared.actionRetry,
+        codeLabel: shared.errorCodeLabel,
+        traceIdLabel: shared.errorTraceIdLabel,
         data: (challenge) => _content(l10n, challenge),
       ),
     );
