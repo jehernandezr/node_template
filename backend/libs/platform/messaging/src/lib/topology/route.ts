@@ -1,8 +1,8 @@
 import {
-  type CommandContract,
-  type EventContract,
+  type CommandDefinition,
+  type EventDefinition,
+  type MessageDefinition,
   MessageKind,
-  type MessageContract,
 } from '../contracts/message-contract.js';
 import type { QueueDef } from './queue-def.js';
 import type { TopicDef } from './topic-def.js';
@@ -19,15 +19,19 @@ export class RouteDef {
   readonly type: string;
   readonly target: TopicDef | QueueDef;
   readonly targetKind: TargetKind;
-  /** Contract the route was declared with, when a contract instance was given. */
-  readonly contract: MessageContract<unknown> | null;
+  /**
+   * Contract the route was declared with. Topology validation requires one
+   * (here or in `ValidateOptions.contracts`), because the outbox relay and the
+   * dispatcher validate payloads with it.
+   */
+  readonly contract: MessageDefinition | null;
 
   constructor(
     kind: MessageKind,
     type: string,
     target: TopicDef | QueueDef,
     targetKind: TargetKind,
-    contract: MessageContract<unknown> | null = null,
+    contract: MessageDefinition | null = null,
   ) {
     this.kind = kind;
     this.type = type;
@@ -35,21 +39,30 @@ export class RouteDef {
     this.targetKind = targetKind;
     this.contract = contract;
   }
+
+  /** Whether the target is a FIFO topic or queue (it then needs a group id). */
+  get fifo(): boolean {
+    return 'isFifo' in this.target ? this.target.isFifo : this.target.fifo;
+  }
+}
+
+function split<M extends MessageDefinition>(
+  source: string | M,
+): { type: string; contract: M | null } {
+  return typeof source === 'string'
+    ? { type: source, contract: null }
+    : { type: source.type, contract: source };
 }
 
 /** Second step of `Route.event(...)`. */
 export class EventRouteBuilder {
   private readonly type: string;
-  private readonly contract: MessageContract<unknown> | null;
+  private readonly contract: EventDefinition | null;
 
-  constructor(source: string | EventContract<unknown>) {
-    if (typeof source === 'string') {
-      this.type = source;
-      this.contract = null;
-    } else {
-      this.type = source.type;
-      this.contract = source;
-    }
+  constructor(source: string | EventDefinition) {
+    const parts = split(source);
+    this.type = parts.type;
+    this.contract = parts.contract;
   }
 
   /** Publishes this event type to a topic. */
@@ -67,16 +80,12 @@ export class EventRouteBuilder {
 /** Second step of `Route.command(...)`. */
 export class CommandRouteBuilder {
   private readonly type: string;
-  private readonly contract: MessageContract<unknown> | null;
+  private readonly contract: CommandDefinition | null;
 
-  constructor(source: string | CommandContract<unknown>) {
-    if (typeof source === 'string') {
-      this.type = source;
-      this.contract = null;
-    } else {
-      this.type = source.type;
-      this.contract = source;
-    }
+  constructor(source: string | CommandDefinition) {
+    const parts = split(source);
+    this.type = parts.type;
+    this.contract = parts.contract;
   }
 
   /** Sends this command type to a queue. */
@@ -91,17 +100,22 @@ export class CommandRouteBuilder {
   }
 }
 
-/** Entry point of the routing DSL. Accepts a type string or a contract instance. */
+/**
+ * Entry point of the routing DSL. Prefer `Topology.fromContracts`, which
+ * builds every route from the `topics` and `queues` of the service contracts.
+ */
 export class Route {
-  /** Starts a route for an event type or contract. */
-  static event(source: string | EventContract<unknown>): EventRouteBuilder {
+  /**
+   * Starts a route for an event of the contracts kit (`defineEvent`). A bare
+   * type string is still accepted, but validation then needs its contract in
+   * `ValidateOptions.contracts`.
+   */
+  static event(source: string | EventDefinition): EventRouteBuilder {
     return new EventRouteBuilder(source);
   }
 
-  /** Starts a route for a command type or contract. */
-  static command(
-    source: string | CommandContract<unknown>,
-  ): CommandRouteBuilder {
+  /** Starts a route for a command of the contracts kit (`defineCommand`). */
+  static command(source: string | CommandDefinition): CommandRouteBuilder {
     return new CommandRouteBuilder(source);
   }
 }

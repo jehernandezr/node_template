@@ -1,7 +1,7 @@
+import { defineEvent } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { type ClaimRequest, ClaimState, Deadline } from '@platform/primitives';
 import { z } from 'zod';
-import { EventContract } from '../contracts/message-contract.js';
 import { createEnvelope } from '../envelope/message-envelope.js';
 import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { QueueDef } from '../topology/queue-def.js';
@@ -20,10 +20,11 @@ import {
   processedMessageKey,
 } from './processed-message-store.js';
 
-class TaskUpdated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.updated.v1';
-  readonly schema = z.object({ id: z.string().min(1) });
-}
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: z.object({ id: z.string().min(1) }),
+  description: 'Mensaje de prueba.',
+});
 
 const policy = RetryPolicy.exponential({
   maxAttempts: 5,
@@ -71,7 +72,7 @@ describe('MessageDispatcher three-state claims', () => {
     const { dispatcher } = setup();
     const running = gate();
     const handler = jest.fn(() => running.promise);
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
     const raw = envelopeFor({ id: 't1' });
 
     const first = dispatcher.dispatch(raw, {
@@ -106,7 +107,7 @@ describe('MessageDispatcher three-state claims', () => {
 
   it('never dead-letters an in-progress redelivery, even past maxAttempts', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () => gate().promise);
+    dispatcher.register(TaskUpdated, () => gate().promise);
     const raw = envelopeFor({ id: 't1' });
     void dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy });
     await flush();
@@ -118,7 +119,7 @@ describe('MessageDispatcher three-state claims', () => {
 
   it('dead-letters a delivery whose claim is held with different content', async () => {
     const { dispatcher, store, clock } = setup();
-    dispatcher.register(new TaskUpdated(), jest.fn());
+    dispatcher.register(TaskUpdated, jest.fn());
     await store.claim(processedMessageKey('notifications', 'msg-1'), {
       fingerprint: 'other-delivery',
       deadline: Deadline.after(60_000, clock),
@@ -143,7 +144,7 @@ describe('MessageDispatcher three-state claims', () => {
     class WithQueue extends Topology {
       readonly topics = [topic];
       readonly queues = [queue];
-      readonly routes = [Route.event('tasks.task.updated.v1').to(topic)];
+      readonly routes = [Route.event(TaskUpdated).to(topic)];
     }
     const clock = new FixedClock();
     const store = new InMemoryProcessedMessageStore(
@@ -157,7 +158,7 @@ describe('MessageDispatcher three-state claims', () => {
       topology: new WithQueue(),
       clock,
     });
-    dispatcher.register(new TaskUpdated(), () => undefined);
+    dispatcher.register(TaskUpdated, () => undefined);
 
     await dispatcher.dispatch(envelopeFor({ id: 't1' }, 'a'), {
       receiveCount: 1,
@@ -180,7 +181,7 @@ describe('MessageDispatcher three-state claims', () => {
   it('defaults the lease to the SQS default visibility timeout and rejects invalid leases', async () => {
     const { dispatcher, store } = setup();
     const claim = jest.spyOn(store, 'claim');
-    dispatcher.register(new TaskUpdated(), () => undefined);
+    dispatcher.register(TaskUpdated, () => undefined);
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
     expect((claim.mock.calls[0]?.[1] as ClaimRequest).minLeaseMs).toBe(
       DEFAULT_CLAIM_LEASE_MS,
@@ -201,7 +202,7 @@ describe('MessageDispatcher three-state claims', () => {
   it('takes over a claim whose lease expired (the first consumer crashed)', async () => {
     const { dispatcher, store, clock } = setup(30_000);
     const handler = jest.fn();
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
     const raw = envelopeFor({ id: 't1' });
 
     // A consumer claimed with the same content and died without completing.
@@ -211,7 +212,7 @@ describe('MessageDispatcher three-state claims', () => {
       processed: store,
       clock,
       minLeaseMs: 30_000,
-    }).register(new TaskUpdated(), crashed);
+    }).register(TaskUpdated, crashed);
     void other.dispatch(raw, { receiveCount: 1 });
     await flush();
 
@@ -231,7 +232,7 @@ describe('MessageDispatcher three-state claims', () => {
     const { dispatcher, clock } = setup(1_000);
     const slow = gate();
     let calls = 0;
-    dispatcher.register(new TaskUpdated(), async () => {
+    dispatcher.register(TaskUpdated, async () => {
       calls++;
       if (calls === 1) await slow.promise;
     });
@@ -266,7 +267,7 @@ describe('MessageDispatcher three-state claims', () => {
   it('releases the claim with its token when the handler fails', async () => {
     const { dispatcher, store, clock } = setup();
     const release = jest.spyOn(store, 'release');
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw Object.assign(new Error('busy'), { retryable: true });
     });
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), {
@@ -287,7 +288,7 @@ describe('MessageDispatcher three-state claims', () => {
   it('dead-letters a message id reused with different content', async () => {
     const { dispatcher } = setup();
     const handler = jest.fn();
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
 
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
     expect(
@@ -308,7 +309,7 @@ describe('MessageDispatcher three-state claims', () => {
       .mockRejectedValueOnce(new Error('connection reset'));
     const release = jest.spyOn(store, 'release');
     const handler = jest.fn();
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
     const raw = envelopeFor({ id: 't1' });
 
     expect(

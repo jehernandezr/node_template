@@ -1,3 +1,4 @@
+import type { UnitOfWork } from '@platform/persistence';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import type { TargetKind } from '../topology/route.js';
 
@@ -27,6 +28,11 @@ export interface OutboxRecord {
    * in `createdAt` order, and FIFO targets receive it as the message group id.
    */
   readonly groupId?: string;
+  /**
+   * Delivery delay of a command, counted from `createdAt`. The relay passes
+   * what is left of it to the transport.
+   */
+  readonly delayMs?: number;
   readonly lastError?: string;
   readonly leaseOwner?: string;
   /** Fencing token of the current lease; changes on every claim. */
@@ -56,11 +62,33 @@ export interface ClaimOutboxRequest {
 export interface OutboundTarget {
   readonly kind: TargetKind;
   readonly name: string;
+  /** FIFO topic or queue: the transport sends `groupId` as `MessageGroupId`. */
+  readonly fifo?: boolean;
 }
 
 /** Extra publishing hints. */
 export interface PublishOutboxOptions {
   readonly groupId?: string;
+  /** Delay before a command becomes visible in its queue. */
+  readonly delayMs?: number;
+}
+
+/** A record to append to the outbox with the business change. */
+export interface OutboxAppend {
+  readonly envelope: MessageEnvelope;
+  readonly groupId?: string;
+  readonly delayMs?: number;
+  /** Creation time and first due time. */
+  readonly createdAt: Date;
+}
+
+/**
+ * Write side of the outbox. `append` stores the record with the session of the
+ * given unit of work (`@platform/persistence`), so it commits or rolls back
+ * with the business change. Use it through `OutboxMessageBus`.
+ */
+export interface OutboxWriter {
+  append(record: OutboxAppend, uow: UnitOfWork): Promise<void>;
 }
 
 /**

@@ -1,8 +1,5 @@
+import { defineCommand, defineEvent } from '@contracts/platform';
 import { z, ZodError } from 'zod';
-import {
-  CommandContract,
-  EventContract,
-} from '../contracts/message-contract.js';
 import { createEnvelope } from '../envelope/message-envelope.js';
 import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { QueueDef } from '../topology/queue-def.js';
@@ -17,15 +14,17 @@ import {
   type ProcessedMessageStore,
 } from './processed-message-store.js';
 
-class TaskUpdated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.updated.v1';
-  readonly schema = z.object({ id: z.string().min(1) });
-}
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: z.object({ id: z.string().min(1) }),
+  description: 'Mensaje de prueba.',
+});
 
-class GenerateReport extends CommandContract<{ reportId: string }> {
-  readonly type = 'reports.generate.v1';
-  readonly schema = z.object({ reportId: z.string() });
-}
+const GenerateReport = defineCommand({
+  type: 'reports.report.generate.v1',
+  payload: z.object({ reportId: z.string() }),
+  description: 'Mensaje de prueba.',
+});
 
 const policy = RetryPolicy.exponential({
   maxAttempts: 3,
@@ -59,7 +58,7 @@ describe('MessageDispatcher', () => {
   it('processes a valid delivery once and reports duplicates afterwards', async () => {
     const { dispatcher } = setup();
     const handler = jest.fn();
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
 
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
     expect(await dispatcher.dispatch(raw, { receiveCount: 1 })).toEqual({
@@ -76,7 +75,7 @@ describe('MessageDispatcher', () => {
 
   it('asks for a retry with backoff delay while attempts remain', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw transient('database unavailable');
     });
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
@@ -103,7 +102,7 @@ describe('MessageDispatcher', () => {
     const handler = jest.fn(() => {
       if (fail) throw transient('transient');
     });
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
 
     expect(
@@ -122,7 +121,7 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters once the max attempts are reached', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () =>
+    dispatcher.register(TaskUpdated, () =>
       Promise.reject(new Error('still failing')),
     );
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
@@ -138,7 +137,7 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters immediately without a retry policy', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw new Error('boom');
     });
     const result = await dispatcher.dispatch(
@@ -150,7 +149,7 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters PermanentMessageError without retrying', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw new PermanentMessageError('task no longer exists');
     });
     expect(
@@ -178,7 +177,7 @@ describe('MessageDispatcher', () => {
       });
     const timeout = Object.assign(new Error('slow'), { name: 'TimeoutError' });
     let next: unknown;
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw next;
     });
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
@@ -219,7 +218,7 @@ describe('MessageDispatcher', () => {
       isPermanent: (error) =>
         error instanceof Error && error.message === 'bad input',
     });
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw new Error('bad input');
     });
     expect(
@@ -237,7 +236,7 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters a ZodError thrown inside the handler (a protocol violation)', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw new ZodError([]);
     });
     expect(
@@ -256,7 +255,7 @@ describe('MessageDispatcher', () => {
   it('dead-letters payloads that fail the contract schema and does not run the handler', async () => {
     const { dispatcher } = setup();
     const handler = jest.fn();
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
 
     const result = await dispatcher.dispatch(
       envelopeFor('tasks.task.updated.v1', { id: '' }),
@@ -328,15 +327,19 @@ describe('MessageDispatcher', () => {
         calls.push('exit');
       },
     });
-    dispatcher.register(new GenerateReport(), () => {
+    dispatcher.register(GenerateReport, () => {
       calls.push('handler');
     });
 
     await dispatcher.dispatch(
-      envelopeFor('reports.generate.v1', { reportId: 'r1' }),
+      envelopeFor('reports.report.generate.v1', { reportId: 'r1' }),
       { receiveCount: 1 },
     );
-    expect(calls).toEqual(['enter:reports.generate.v1', 'handler', 'exit']);
+    expect(calls).toEqual([
+      'enter:reports.report.generate.v1',
+      'handler',
+      'exit',
+    ]);
   });
 
   it('turns a claim failure into RetryLater instead of throwing', async () => {
@@ -347,7 +350,7 @@ describe('MessageDispatcher', () => {
     };
     const { dispatcher } = setup({ processed: failingStore });
     const handler = jest.fn();
-    dispatcher.register(new TaskUpdated(), handler);
+    dispatcher.register(TaskUpdated, handler);
 
     const result = await dispatcher.dispatch(
       envelopeFor('tasks.task.updated.v1', { id: 't1' }),
@@ -376,8 +379,8 @@ describe('MessageDispatcher', () => {
       processed: shared,
     });
     const handler = jest.fn();
-    first.register(new TaskUpdated(), handler);
-    second.register(new TaskUpdated(), handler);
+    first.register(TaskUpdated, handler);
+    second.register(TaskUpdated, handler);
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
 
     expect((await first.dispatch(raw, { receiveCount: 1 })).outcome).toBe(
@@ -394,10 +397,8 @@ describe('MessageDispatcher', () => {
 
   it('rejects a second handler for the same type', () => {
     const { dispatcher } = setup();
-    dispatcher.register(new TaskUpdated(), () => undefined);
-    expect(() =>
-      dispatcher.register(new TaskUpdated(), () => undefined),
-    ).toThrow(
+    dispatcher.register(TaskUpdated, () => undefined);
+    expect(() => dispatcher.register(TaskUpdated, () => undefined)).toThrow(
       expect.objectContaining({ code: MessagingErrorCode.DuplicateHandler }),
     );
   });

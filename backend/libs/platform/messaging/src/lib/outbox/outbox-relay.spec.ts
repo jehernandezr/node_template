@@ -1,3 +1,5 @@
+import { defineEvent } from '@contracts/platform';
+import { z } from 'zod';
 import {
   createEnvelope,
   MAX_ENVELOPE_BYTES,
@@ -18,6 +20,12 @@ import { OutboxRelay } from './outbox-relay.js';
 
 const events = new TopicDef('tasks-events');
 
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: z.object({ id: z.string() }),
+  description: 'Evento de prueba.',
+});
+
 class TestTopology extends Topology {
   readonly topics = [events];
   readonly queues = [
@@ -25,7 +33,7 @@ class TestTopology extends Topology {
       .subscribesTo(events)
       .deadLetter({ maxReceiveCount: 5 }),
   ];
-  readonly routes = [Route.event('tasks.task.updated.v1').to(events)];
+  readonly routes = [Route.event(TaskUpdated).to(events)];
 }
 
 const t0 = new Date('2026-01-01T00:00:00.000Z');
@@ -95,12 +103,12 @@ describe('OutboxRelay', () => {
     expect(published).toEqual([
       {
         id: 'm1',
-        target: { kind: 'topic', name: 'tasks-events' },
+        target: { kind: 'topic', name: 'tasks-events', fifo: false },
         options: { groupId: 'order-1' },
       },
       {
         id: 'm2',
-        target: { kind: 'topic', name: 'tasks-events' },
+        target: { kind: 'topic', name: 'tasks-events', fifo: false },
         options: { groupId: undefined },
       },
     ]);

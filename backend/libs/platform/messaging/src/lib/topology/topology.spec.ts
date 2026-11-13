@@ -1,9 +1,6 @@
+import { defineCommand, defineEvent } from '@contracts/platform';
 import { z } from 'zod';
-import {
-  CommandContract,
-  EventContract,
-  MessageKind,
-} from '../contracts/message-contract.js';
+import { MessageKind } from '../contracts/message-contract.js';
 import { QueueDef } from './queue-def.js';
 import { RetryPolicy } from './retry-policy.js';
 import { Route, TargetKind } from './route.js';
@@ -15,10 +12,36 @@ import {
   TopologySeverity,
 } from './topology.js';
 
-class TaskUpdated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.updated.v1';
-  readonly schema = z.object({ id: z.string() });
-}
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: z.object({ id: z.string() }),
+  description: 'Mensaje de prueba.',
+});
+
+const LedgerPosted = defineEvent({
+  type: 'ledger.entry.posted.v1',
+  payload: z.object({ amount: z.number() }),
+  description: 'Mensaje de prueba.',
+});
+
+const GenerateReport = defineCommand({
+  type: 'reports.report.generate.v1',
+  payload: z.object({ reportId: z.string() }),
+  description: 'Mensaje de prueba.',
+});
+
+/** Generic contracts for the targeted validation tests. */
+const RunJob = defineCommand({
+  type: 'tests.job.run.v1',
+  payload: z.object({}),
+  description: 'Mensaje de prueba.',
+});
+
+const ThingHappened = defineEvent({
+  type: 'tests.thing.happened.v1',
+  payload: z.object({}),
+  description: 'Mensaje de prueba.',
+});
 
 /** The canonical test topology. Its toJSON() export is asserted in the JSON test below. */
 class PlatformTopology extends Topology {
@@ -54,9 +77,9 @@ class PlatformTopology extends Topology {
   ];
 
   readonly routes = [
-    Route.event(new TaskUpdated()).to(this.topics[0]),
-    Route.event('ledger.entry.posted.v1').to(this.topics[1]),
-    Route.command('reports.generate.v1').to(this.queues[2]),
+    Route.event(TaskUpdated).to(this.topics[0]),
+    Route.event(LedgerPosted).to(this.topics[1]),
+    Route.command(GenerateReport).to(this.queues[2]),
   ];
 }
 
@@ -65,7 +88,7 @@ function singleQueue(queue: QueueDef, topics: TopicDef[] = []): Topology {
   class Single extends Topology {
     readonly topics = topics;
     readonly queues = [queue];
-    readonly routes = [Route.command('cmd.v1').to(queue)];
+    readonly routes = [Route.command(RunJob).to(queue)];
   }
   return new Single();
 }
@@ -90,8 +113,8 @@ describe('Topology.validate', () => {
         new QueueDef('q').deadLetter({ maxReceiveCount: 5 }),
       ];
       readonly routes = [
-        Route.event('x').to(new TopicDef('a')),
-        Route.event('x').to(new TopicDef('a')),
+        Route.event(ThingHappened).to(new TopicDef('a')),
+        Route.event(ThingHappened).to(new TopicDef('a')),
       ];
     }
     expect(kindsOf(new Broken())).toEqual(
@@ -112,8 +135,8 @@ describe('Topology.validate', () => {
           .deadLetter({ maxReceiveCount: 5 }),
       ];
       readonly routes = [
-        Route.event('e').to(new TopicDef('missing')),
-        Route.command('c').to(new QueueDef('nope')),
+        Route.event(ThingHappened).to(new TopicDef('missing')),
+        Route.command(RunJob).to(new QueueDef('nope')),
       ];
     }
     expect(kindsOf(new Broken())).toEqual([
@@ -271,7 +294,7 @@ describe('Topology.validate', () => {
           .subscribesTo(topic, { types: ['never.produced.v1'] })
           .deadLetter({ maxReceiveCount: 5 }),
       ];
-      readonly routes = [Route.event('produced.v1').to(topic)];
+      readonly routes = [Route.event(ThingHappened).to(topic)];
     }
     expect(kindsOf(new Broken())).toEqual([
       TopologyIssueKind.UnproducedFilterType,
@@ -283,7 +306,7 @@ describe('Topology.validate', () => {
     class Lonely extends Topology {
       readonly topics = [topic];
       readonly queues: QueueDef[] = [];
-      readonly routes = [Route.event('nobody.listens.v1').to(topic)];
+      readonly routes = [Route.event(ThingHappened).to(topic)];
     }
     const topology = new Lonely();
     expect(topology.validate()).toEqual([
@@ -295,31 +318,64 @@ describe('Topology.validate', () => {
     expect(() => topology.assertValid()).not.toThrow();
   });
 
-  it('reports routes without a registered contract when contracts are provided', () => {
-    const topology = new PlatformTopology();
-    const issues = topology.validate({ contracts: [] });
-    expect(issues.map((issue) => issue.kind)).toEqual(
-      expect.arrayContaining([TopologyIssueKind.RouteWithoutContract]),
-    );
-    class LedgerPosted extends EventContract<{ amount: number }> {
-      readonly type = 'ledger.entry.posted.v1';
-      readonly schema = z.object({ amount: z.number() });
+  it('requires a contract on every route, its own or one given in the options', () => {
+    const topic = new TopicDef('tasks-events');
+    class Untyped extends Topology {
+      readonly topics = [topic];
+      readonly queues = [
+        new QueueDef('audit')
+          .subscribesTo(topic)
+          .deadLetter({ maxReceiveCount: 5 }),
+      ];
+      readonly routes = [Route.event('tasks.task.updated.v1').to(topic)];
     }
-    class GenerateReport extends CommandContract<{ reportId: string }> {
-      readonly type = 'reports.generate.v1';
-      readonly schema = z.object({ reportId: z.string() });
+    const topology = new Untyped();
+    expect(kindsOf(topology)).toEqual([TopologyIssueKind.RouteWithoutContract]);
+    expect(() => topology.assertValid()).toThrow(TopologyError);
+    expect(topology.validate({ contracts: [TaskUpdated] })).toEqual([]);
+  });
+
+  it('rejects a contract of the other kind', () => {
+    const queue = new QueueDef('reports').deadLetter({ maxReceiveCount: 5 });
+    class Mixed extends Topology {
+      readonly topics: TopicDef[] = [];
+      readonly queues = [queue];
+      readonly routes = [Route.command('reports.report.generate.v1').to(queue)];
     }
-    const all = [new TaskUpdated(), new LedgerPosted(), new GenerateReport()];
-    expect(topology.validate({ contracts: all })).toEqual([]);
-    // Without the ledger and report contracts, only those two routes are reported.
     expect(
-      topology
-        .validate({ contracts: [new TaskUpdated()] })
-        .map((issue) => issue.message),
-    ).toEqual([
-      expect.stringContaining('"ledger.entry.posted.v1"'),
-      expect.stringContaining('"reports.generate.v1"'),
-    ]);
+      new Mixed()
+        .validate({ contracts: [GenerateReport] })
+        .map((issue) => issue.kind),
+    ).toEqual([]);
+    class Wrong extends Topology {
+      readonly topics: TopicDef[] = [];
+      readonly queues = [queue];
+      readonly routes = [Route.command('tasks.task.updated.v1').to(queue)];
+    }
+    expect(
+      new Wrong()
+        .validate({ contracts: [TaskUpdated] })
+        .map((issue) => issue.kind),
+    ).toEqual([TopologyIssueKind.ContractKindMismatch]);
+  });
+
+  it('rejects topic and queue names that SNS or SQS would refuse', () => {
+    const topic = new TopicDef('tasks.events');
+    expect(
+      kindsOf(
+        singleQueue(
+          new QueueDef('jobs queue').deadLetter({ maxReceiveCount: 5 }),
+          [topic],
+        ),
+      ),
+    ).toEqual([TopologyIssueKind.InvalidName, TopologyIssueKind.InvalidName]);
+    expect(
+      kindsOf(
+        singleQueue(
+          new QueueDef('Jobs_1-a').deadLetter({ maxReceiveCount: 5 }),
+        ),
+      ),
+    ).toEqual([]);
   });
 
   it('assertValid throws a TopologyError carrying every error issue', () => {
@@ -338,9 +394,13 @@ describe('Topology routing and export', () => {
     expect(topology.routeFor('tasks.task.updated.v1')).toMatchObject({
       kind: MessageKind.Event,
       targetKind: TargetKind.Topic,
-      contract: expect.any(TaskUpdated),
+      contract: TaskUpdated,
     });
-    expect(topology.routeFor('ledger.entry.posted.v1')?.contract).toBeNull();
+    expect(topology.routeFor('ledger.entry.posted.v1')?.contract).toBe(
+      LedgerPosted,
+    );
+    expect(topology.queueFor('reports')?.name).toBe('reports');
+    expect(topology.queueFor('nope')).toBeUndefined();
     expect(topology.routeFor('unknown')).toBeUndefined();
   });
 
@@ -410,7 +470,7 @@ describe('Topology routing and export', () => {
           targetKind: TargetKind.Topic,
         },
         {
-          type: 'reports.generate.v1',
+          type: 'reports.report.generate.v1',
           kind: MessageKind.Command,
           target: 'reports',
           targetKind: TargetKind.Queue,

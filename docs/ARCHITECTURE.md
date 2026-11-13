@@ -88,7 +88,7 @@ backend/apps/<servicio>/src/
 - Entre proyectos manda la regla `@nx/enforce-module-boundaries` de `backend/eslint.config.mjs`, por tags: `type:contracts` depende solo de `type:contracts`; `type:util` de `type:util` y `type:contracts`; `type:platform` de `type:platform`, `type:util` y `type:contracts`; `type:tool` de contratos, utilidades y plataforma. `pnpm nx affected -t lint` la verifica.
 - Una app de servicio (`type:app`) importa de otro servicio solo su paquete `@contracts/<servicio>`, nunca su código interno.
 - Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. El siguiente paso es verificar estas capas en CI cuando exista el primer servicio.
-- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws`, la librería de adaptadores de AWS que se crea con el primer adaptador.
+- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); una regla `no-restricted-imports` lo impide en el resto. Trae `SnsSqsEnvelopePublisher` (lo usa el relay del outbox), `SnsSqsMessageBus` y `SqsDeliveryRunner` (Lambda con fallos parciales por lote o long polling), que aplica `ChangeMessageVisibility` y envía a la DLQ los fallos permanentes. La topología de ejecución sale de los contratos con `topologyFromContracts`.
 
 ## Front: shells y microfrontends
 

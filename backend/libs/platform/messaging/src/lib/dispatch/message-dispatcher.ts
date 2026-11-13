@@ -1,4 +1,6 @@
+import { context, ROOT_CONTEXT, SpanKind } from '@opentelemetry/api';
 import { type Clock, isErrorCode, SystemClock } from '@platform/kernel';
+import { contextFromTraceparent, withSpan } from '@platform/observability';
 import {
   ClaimState,
   Deadline,
@@ -7,7 +9,8 @@ import {
 } from '@platform/primitives';
 import type { z } from 'zod';
 import {
-  type MessageContract,
+  type MessageDefinition,
+  type MessageOutput,
   MessageKind,
 } from '../contracts/message-contract.js';
 import { describeError } from '../errors/describe-error.js';
@@ -111,7 +114,10 @@ export type TenantVerifier = (
 export interface DispatchOptions {
   /** Deliveries so far, counting this one (1 on the first delivery). */
   readonly receiveCount: number;
-  /** Retry policy of the queue. Without one, the first failure dead-letters. */
+  /**
+   * Retry policy of the queue. Defaults to the policy of the consumer queue in
+   * the dispatcher topology. Without either, the first failure dead-letters.
+   */
   readonly retryPolicy?: RetryPolicy;
   /**
    * Current visibility timeout of this delivery, in milliseconds. The claim
@@ -225,6 +231,7 @@ export class MessageDispatcher {
   private readonly isPermanent: PermanenceCheck;
   private readonly clock: Clock;
   private readonly baseLeaseMs: number;
+  private readonly queueRetryPolicy: RetryPolicy | undefined;
 
   constructor(options: MessageDispatcherOptions) {
     assertLease('minLeaseMs', options.minLeaseMs);
@@ -244,10 +251,17 @@ export class MessageDispatcher {
     this.baseLeaseMs =
       options.minLeaseMs ??
       (queue ? queue.visibilityTimeoutSeconds * 1000 : DEFAULT_CLAIM_LEASE_MS);
+    this.queueRetryPolicy = queue?.retryPolicy;
   }
 
-  /** Registers the handler for a contract. One handler per message type. */
-  register<T>(contract: MessageContract<T>, handler: MessageHandler<T>): this {
+  /**
+   * Registers the handler for an event or command of the contracts kit
+   * (`defineEvent`, `defineCommand`). One handler per message type.
+   */
+  register<M extends MessageDefinition>(
+    contract: M,
+    handler: MessageHandler<MessageOutput<M>>,
+  ): this {
     if (this.registrations.has(contract.type)) {
       throw new MessagingError(
         MessagingErrorCode.DuplicateHandler,
@@ -255,7 +269,7 @@ export class MessageDispatcher {
       );
     }
     this.registrations.set(contract.type, {
-      schema: contract.schema as z.ZodType<unknown>,
+      schema: contract.schema as z.ZodType,
       handler: handler as Registration['handler'],
     });
     return this;
@@ -263,9 +277,21 @@ export class MessageDispatcher {
 
   /**
    * Handles one raw delivery (a JSON string or a decoded value) and reports what
-   * the transport should do with it.
+   * the transport should do with it. The handler runs in a consumer span that
+   * continues the envelope `traceparent`.
    */
   async dispatch(
+    raw: unknown,
+    options: DispatchOptions,
+  ): Promise<DispatchResult> {
+    const effective: DispatchOptions =
+      options.retryPolicy === undefined && this.queueRetryPolicy !== undefined
+        ? { ...options, retryPolicy: this.queueRetryPolicy }
+        : options;
+    return this.dispatchWith(raw, effective);
+  }
+
+  private async dispatchWith(
     raw: unknown,
     options: DispatchOptions,
   ): Promise<DispatchResult> {
@@ -376,12 +402,26 @@ export class MessageDispatcher {
       state.stage = Stage.Done;
     };
 
+    const runInContext = this.options.runInContext;
+    const processDelivery = (): Promise<void> =>
+      withSpan(
+        `${envelope.type} process`,
+        () => (runInContext ? runInContext(validated, run) : run()),
+        {
+          kind: SpanKind.CONSUMER,
+          attributes: {
+            'messaging.operation.type': 'process',
+            'messaging.destination.name': this.options.consumer,
+            'messaging.message.id': envelope.id,
+            'cloudevents.event_type': envelope.type,
+          },
+        },
+      );
     try {
-      if (this.options.runInContext) {
-        await this.options.runInContext(validated, run);
-      } else {
-        await run();
-      }
+      await context.with(
+        contextFromTraceparent(envelope.traceparent, ROOT_CONTEXT),
+        processDelivery,
+      );
     } catch (err) {
       switch (state.stage) {
         case Stage.Handler:

@@ -1,28 +1,35 @@
-import { z } from 'zod';
 import {
-  CommandContract,
-  EventContract,
-  MessageKind,
-} from './message-contract.js';
+  MessageKind as KitMessageKind,
+  defineCommand,
+  defineEvent,
+} from '@contracts/platform';
+import { z } from 'zod';
+import { MessageKind } from './message-contract.js';
 
-class TaskUpdated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.updated.v1';
-  readonly schema = z.object({ id: z.string() });
-}
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: z.object({ id: z.string() }),
+  description: 'Una tarea cambió.',
+});
 
-class GenerateReport extends CommandContract<{ reportId: string }> {
-  readonly type = 'reports.generate.v1';
-  readonly schema = z.object({ reportId: z.string() });
-}
+const GenerateReport = defineCommand({
+  type: 'reports.report.generate.v1',
+  payload: z.object({ reportId: z.string() }),
+  description: 'Genera un reporte.',
+});
 
 describe('message contracts', () => {
+  it('re-exports the kit MessageKind, so both packages share one enum', () => {
+    expect(MessageKind).toBe(KitMessageKind);
+  });
+
   it('marks events and commands with their kind', () => {
-    expect(new TaskUpdated().kind).toBe(MessageKind.Event);
-    expect(new GenerateReport().kind).toBe(MessageKind.Command);
+    expect(TaskUpdated.kind).toBe(MessageKind.Event);
+    expect(GenerateReport.kind).toBe(MessageKind.Command);
   });
 
   it('validates payloads with the contract schema', () => {
-    expect(new TaskUpdated().schema.safeParse({ id: 't1' }).success).toBe(true);
-    expect(new TaskUpdated().schema.safeParse({ id: 1 }).success).toBe(false);
+    expect(TaskUpdated.schema.safeParse({ id: 't1' }).success).toBe(true);
+    expect(TaskUpdated.schema.safeParse({ id: 1 }).success).toBe(false);
   });
 });

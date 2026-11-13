@@ -1,3 +1,5 @@
+import { defineEvent } from '@contracts/platform';
+import { z } from 'zod';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { BackoffStrategy } from '@platform/primitives';
 import { createEnvelope } from '../envelope/message-envelope.js';
@@ -13,6 +15,12 @@ import { OutboxRelay, type OutboxRelayOptions } from './outbox-relay.js';
 
 const events = new TopicDef('orders-events');
 
+const OrderChanged = defineEvent({
+  type: 'orders.order.changed.v1',
+  payload: z.object({ id: z.string() }),
+  description: 'Evento de prueba.',
+});
+
 class TestTopology extends Topology {
   readonly topics = [events];
   readonly queues = [
@@ -20,7 +28,7 @@ class TestTopology extends Topology {
       .subscribesTo(events)
       .deadLetter({ maxReceiveCount: 5 }),
   ];
-  readonly routes = [Route.event('orders.order.changed.v1').to(events)];
+  readonly routes = [Route.event(OrderChanged).to(events)];
 }
 
 const t0 = new Date('2026-01-01T00:00:00.000Z');

@@ -1,8 +1,5 @@
+import { defineCommand, defineEvent } from '@contracts/platform';
 import { z } from 'zod';
-import {
-  CommandContract,
-  EventContract,
-} from '../contracts/message-contract.js';
 import { MAX_ENVELOPE_BYTES } from '../envelope/message-envelope.js';
 import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { MessageDispatcher } from '../dispatch/message-dispatcher.js';
@@ -14,25 +11,29 @@ import { TopicDef } from '../topology/topic-def.js';
 import { Topology } from '../topology/topology.js';
 import { InMemoryBus } from './in-memory-bus.js';
 
-class TaskCreated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.created.v1';
-  readonly schema = z.object({ id: z.string() });
-}
+const TaskCreated = defineEvent({
+  type: 'tasks.task.created.v1',
+  payload: z.object({ id: z.string() }),
+  description: 'Mensaje de prueba.',
+});
 
-class TaskUpdated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.updated.v1';
-  readonly schema = z.object({ id: z.string() });
-}
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: z.object({ id: z.string() }),
+  description: 'Mensaje de prueba.',
+});
 
-class GenerateReport extends CommandContract<{ reportId: string }> {
-  readonly type = 'reports.generate.v1';
-  readonly schema = z.object({ reportId: z.string() });
-}
+const GenerateReport = defineCommand({
+  type: 'reports.report.generate.v1',
+  payload: z.object({ reportId: z.string() }),
+  description: 'Mensaje de prueba.',
+});
 
-class Blob extends CommandContract<{ body: string }> {
-  readonly type = 'blobs.store.v1';
-  readonly schema = z.object({ body: z.string() });
-}
+const Blob = defineCommand({
+  type: 'blobs.blob.store.v1',
+  payload: z.object({ body: z.string() }),
+  description: 'Mensaje de prueba.',
+});
 
 const tasksEvents = new TopicDef('tasks-events');
 
@@ -57,10 +58,10 @@ class TestTopology extends Topology {
     new QueueDef('blobs').deadLetter({ maxReceiveCount: 5 }),
   ];
   readonly routes = [
-    Route.event('tasks.task.created.v1').to(tasksEvents),
-    Route.event('tasks.task.updated.v1').to(tasksEvents),
-    Route.command('reports.generate.v1').to(this.queues[2]),
-    Route.command('blobs.store.v1').to(this.queues[3]),
+    Route.event(TaskCreated).to(tasksEvents),
+    Route.event(TaskUpdated).to(tasksEvents),
+    Route.command(GenerateReport).to(this.queues[2]),
+    Route.command(Blob).to(this.queues[3]),
   ];
 }
 
@@ -88,8 +89,8 @@ function setup() {
 describe('InMemoryBus', () => {
   it('fans events out to every subscribed queue, honouring type filters', async () => {
     const { bus } = setup();
-    await bus.publish(new TaskUpdated(), { id: 't1' });
-    await bus.publish(new TaskCreated(), { id: 't2' });
+    await bus.publish(TaskUpdated, { id: 't1' });
+    await bus.publish(TaskCreated, { id: 't2' });
 
     expect(bus.pendingCount('notifications')).toBe(1);
     expect(bus.pendingCount('audit')).toBe(2);
@@ -98,9 +99,9 @@ describe('InMemoryBus', () => {
 
   it('sends commands to the single queue of their route', async () => {
     const { bus } = setup();
-    const envelope = await bus.send(new GenerateReport(), { reportId: 'r1' });
+    const envelope = await bus.send(GenerateReport, { reportId: 'r1' });
     expect(envelope).toMatchObject({
-      type: 'reports.generate.v1',
+      type: 'reports.report.generate.v1',
       source: '/services/tasks',
       data: { reportId: 'r1' },
     });
@@ -110,11 +111,12 @@ describe('InMemoryBus', () => {
 
   it('rejects an unrouted type', async () => {
     const { bus } = setup();
-    class Unrouted extends EventContract<{ x: number }> {
-      readonly type = 'nobody.listens.v1';
-      readonly schema = z.object({ x: z.number() });
-    }
-    await expect(bus.publish(new Unrouted(), { x: 1 })).rejects.toMatchObject({
+    const Unrouted = defineEvent({
+      type: 'nobody.listens.here.v1',
+      payload: z.object({ x: z.number() }),
+      description: 'Mensaje de prueba.',
+    });
+    await expect(bus.publish(Unrouted, { x: 1 })).rejects.toMatchObject({
       code: MessagingErrorCode.UnknownRoute,
     });
   });
@@ -122,12 +124,12 @@ describe('InMemoryBus', () => {
   it('validates the payload against the contract before enqueueing', async () => {
     const { bus } = setup();
     await expect(
-      bus.publish(new TaskCreated(), { id: 42 as unknown as string }),
+      bus.publish(TaskCreated, { id: 42 as unknown as string }),
     ).rejects.toMatchObject({
       code: MessagingErrorCode.InvalidPayload,
     });
     await expect(
-      bus.send(new GenerateReport(), { reportId: 1 as unknown as string }),
+      bus.send(GenerateReport, { reportId: 1 as unknown as string }),
     ).rejects.toMatchObject({
       code: MessagingErrorCode.InvalidPayload,
     });
@@ -137,7 +139,7 @@ describe('InMemoryBus', () => {
   it('rejects envelopes over 256 KB with PayloadTooLarge', async () => {
     const { bus } = setup();
     await expect(
-      bus.send(new Blob(), { body: 'x'.repeat(MAX_ENVELOPE_BYTES) }),
+      bus.send(Blob, { body: 'x'.repeat(MAX_ENVELOPE_BYTES) }),
     ).rejects.toMatchObject({
       code: MessagingErrorCode.PayloadTooLarge,
     });
@@ -147,7 +149,7 @@ describe('InMemoryBus', () => {
   it('returns the JSON round-trip of the envelope it enqueued', async () => {
     const { bus } = setup();
     const envelope = await bus.publish(
-      new TaskCreated(),
+      TaskCreated,
       { id: 't1' },
       { traceparent: undefined, subject: 'task/1' },
     );
@@ -158,11 +160,11 @@ describe('InMemoryBus', () => {
   it('drains due messages, processes them and keeps dead letters', async () => {
     const { bus, dispatcher } = setup();
     const handled: string[] = [];
-    dispatcher.register(new TaskUpdated(), (data) => {
+    dispatcher.register(TaskUpdated, (data) => {
       handled.push(data.id);
     });
-    await bus.publish(new TaskUpdated(), { id: 't1' });
-    await bus.publish(new TaskCreated(), { id: 't2' });
+    await bus.publish(TaskUpdated, { id: 't1' });
+    await bus.publish(TaskCreated, { id: 't2' });
 
     const report = await bus.drain('notifications', dispatcher);
     expect(report).toEqual({
@@ -179,10 +181,10 @@ describe('InMemoryBus', () => {
 
   it('re-enqueues retries after their backoff delay and dead-letters at max attempts', async () => {
     const { bus, dispatcher, setClock } = setup();
-    dispatcher.register(new TaskUpdated(), () => {
+    dispatcher.register(TaskUpdated, () => {
       throw Object.assign(new Error('downstream down'), { retryable: true });
     });
-    await bus.publish(new TaskUpdated(), { id: 't1' });
+    await bus.publish(TaskUpdated, { id: 't1' });
 
     setClock(0);
     expect(await bus.drain('notifications', dispatcher)).toMatchObject({
@@ -216,12 +218,8 @@ describe('InMemoryBus', () => {
       consumer: 'reports',
       processed: new InMemoryProcessedMessageStore(),
     });
-    reportDispatcher.register(new GenerateReport(), () => undefined);
-    await bus.send(
-      new GenerateReport(),
-      { reportId: 'r1' },
-      { delayMs: 5_000 },
-    );
+    reportDispatcher.register(GenerateReport, () => undefined);
+    await bus.send(GenerateReport, { reportId: 'r1' }, { delayMs: 5_000 });
 
     setClock(4_999);
     expect(await bus.drain('reports', reportDispatcher)).toMatchObject({

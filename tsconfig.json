@@ -56,6 +56,9 @@
     },
     {
       "path": "./backend/libs/platform/adapters/valkey"
+    },
+    {
+      "path": "./backend/libs/platform/adapters/aws"
     }
   ],
   "compilerOptions": {}

@@ -1,10 +1,13 @@
 import { type Clock, SystemClock } from '@platform/kernel';
+import type { UnitOfWork } from '@platform/persistence';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import {
   type ClaimOutboxRequest,
+  type OutboxAppend,
   type OutboxLease,
   type OutboxRecord,
   type OutboxStore,
+  type OutboxWriter,
   OutboxStatus,
 } from './outbox.js';
 
@@ -13,6 +16,7 @@ export interface AddOutboxOptions {
   /** Creation time and first due time. Defaults to the store clock. */
   readonly now?: Date;
   readonly groupId?: string;
+  readonly delayMs?: number;
 }
 
 /** Options of {@link InMemoryOutboxStore}. */
@@ -33,7 +37,7 @@ function isOpen(record: OutboxRecord): boolean {
 }
 
 /** In-memory outbox adapter, suitable for tests and local runs. */
-export class InMemoryOutboxStore implements OutboxStore {
+export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
   private readonly records = new Map<string, OutboxRecord>();
   private readonly clock: Clock;
 
@@ -52,9 +56,26 @@ export class InMemoryOutboxStore implements OutboxStore {
       nextAttemptAt: now,
       createdAt: now,
       groupId: options.groupId,
+      ...(options.delayMs === undefined ? {} : { delayMs: options.delayMs }),
     };
     this.records.set(record.id, record);
     return record;
+  }
+
+  /**
+   * Appends a record inside a unit of work. A rollback removes it, as a real
+   * store would never have written it.
+   */
+  append(record: OutboxAppend, uow: UnitOfWork): Promise<void> {
+    const added = this.add(record.envelope, {
+      now: record.createdAt,
+      groupId: record.groupId,
+      delayMs: record.delayMs,
+    });
+    uow.afterRollback(() => {
+      this.records.delete(added.id);
+    });
+    return Promise.resolve();
   }
 
   /** Current state of a record, if it exists. */

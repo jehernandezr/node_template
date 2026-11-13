@@ -394,6 +394,14 @@
         {
           "name": "ValkeyUnexpectedReply",
           "value": "PLATFORM.VALKEY.UNEXPECTED_REPLY"
+        },
+        {
+          "name": "MessagingTransactionRequired",
+          "value": "PLATFORM.MESSAGING.TRANSACTION_REQUIRED"
+        },
+        {
+          "name": "MessagingTransportFailed",
+          "value": "PLATFORM.MESSAGING.TRANSPORT_FAILED"
         }
       ]
     },
@@ -1499,6 +1507,24 @@
         "audience": "internal",
         "messageKey": "error_platform_valkey_unexpected_reply",
         "description": "Valkey respondió con una forma inesperada."
+      },
+      {
+        "name": "MessagingTransactionRequired",
+        "code": "PLATFORM.MESSAGING.TRANSACTION_REQUIRED",
+        "httpStatus": 500,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_transaction_required",
+        "description": "El outbox exige una transacción abierta para guardar el mensaje."
+      },
+      {
+        "name": "MessagingTransportFailed",
+        "code": "PLATFORM.MESSAGING.TRANSPORT_FAILED",
+        "httpStatus": 503,
+        "retryable": true,
+        "audience": "internal",
+        "messageKey": "error_platform_messaging_transport_failed",
+        "description": "El transporte de mensajería (SNS o SQS) no respondió o rechazó la llamada."
       }
     ]
   }

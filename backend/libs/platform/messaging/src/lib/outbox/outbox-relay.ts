@@ -182,9 +182,11 @@ export class OutboxRelay {
         continue;
       }
 
+      const delayMs = this.remainingDelay(record, current());
       try {
         await publisher.publish(record.envelope, target, {
           groupId: record.groupId,
+          ...(delayMs > 0 ? { delayMs } : {}),
         });
       } catch (err) {
         const message = describeError(err);
@@ -229,13 +231,37 @@ export class OutboxRelay {
     };
   }
 
-  /** Resolves the destination, or returns the reason the record is permanently undeliverable. */
+  /** What is left of a command delay, counted from the record creation. */
+  private remainingDelay(record: OutboxRecord, now: number): number {
+    if (!record.delayMs) return 0;
+    return Math.max(0, record.createdAt.getTime() + record.delayMs - now);
+  }
+
+  /**
+   * Resolves the destination, or returns the reason the record is permanently
+   * undeliverable: no route, an envelope over the size limit, a payload that
+   * breaks the route contract (it would die in the DLQ of every consumer) or a
+   * FIFO target without group id.
+   */
   private targetFor(record: OutboxRecord): OutboundTarget | string {
-    const route = this.options.topology.routeFor(record.envelope.type);
-    if (!route) return `no route for type "${record.envelope.type}"`;
+    const { type } = record.envelope;
+    const route = this.options.topology.routeFor(type);
+    if (!route) return `no route for type "${type}"`;
     const size = envelopeSizeBytes(record.envelope);
     if (size > MAX_ENVELOPE_BYTES)
       return `payload is ${size} bytes, limit is ${MAX_ENVELOPE_BYTES}`;
-    return { kind: route.targetKind, name: route.target.name };
+    if (!route.contract) return `route "${type}" has no contract`;
+    const parsed = route.contract.schema.safeParse(record.envelope.data);
+    if (!parsed.success) {
+      return `invalid payload for "${type}": ${parsed.error.message}`;
+    }
+    if (route.fifo && record.groupId === undefined) {
+      return `"${type}" goes to a FIFO ${route.targetKind} and the record has no groupId`;
+    }
+    return {
+      kind: route.targetKind,
+      name: route.target.name,
+      fifo: route.fifo,
+    };
   }
 }

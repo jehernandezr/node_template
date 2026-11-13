@@ -4,25 +4,22 @@ import {
   SystemClock,
   UuidV7IdGenerator,
 } from '@platform/kernel';
-import type { MessageContract } from '../contracts/message-contract.js';
-import {
-  type CommandContract,
-  type EventContract,
-  MessageKind,
+import type {
+  CommandDefinition,
+  EventDefinition,
+  MessageInput,
+  MessageOutput,
 } from '../contracts/message-contract.js';
 import type { MessageDispatcher } from '../dispatch/message-dispatcher.js';
 import { DispatchOutcome } from '../dispatch/message-dispatcher.js';
-import {
-  type MessageEnvelope,
-  createEnvelope,
-  toWireEnvelope,
-} from '../envelope/message-envelope.js';
+import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import {
   MessagingError,
   MessagingErrorCode,
 } from '../errors/messaging-error.js';
 import type { Topology } from '../topology/topology.js';
 import type { MessageBus, PublishOptions, SendOptions } from './message-bus.js';
+import { OutboundMessageFactory } from './outbound-message.js';
 
 /** Options of the in-memory bus. */
 export interface InMemoryBusOptions {
@@ -36,6 +33,8 @@ export interface InMemoryBusOptions {
   readonly now?: () => Date;
   /** @deprecated Use `ids`. Takes precedence over `ids` when given. */
   readonly newId?: () => string;
+  /** Source of the default `traceparent`. Defaults to `currentTraceparent()`. */
+  readonly traceparent?: () => string | undefined;
 }
 
 /** A message waiting in a queue. */
@@ -69,33 +68,35 @@ export interface DrainReport {
  */
 export class InMemoryBus implements MessageBus {
   private readonly topology: Topology;
-  private readonly options: InMemoryBusOptions;
   private readonly queues = new Map<string, QueuedMessage[]>();
   private readonly deadLetterQueues = new Map<string, DeadLetterEntry[]>();
   private readonly clockSource: Clock;
-  private readonly newId: () => string;
+  private readonly factory: OutboundMessageFactory;
 
   constructor(topology: Topology, options: InMemoryBusOptions) {
     topology.assertValid();
     this.topology = topology;
-    this.options = options;
     const now = options.now;
     this.clockSource = now ? { now } : (options.clock ?? new SystemClock());
     const ids = options.ids ?? new UuidV7IdGenerator();
-    this.newId = options.newId ?? (() => ids.next().toString());
+    this.factory = new OutboundMessageFactory(topology, {
+      source: options.source,
+      clock: this.clockSource,
+      newId: options.newId ?? (() => ids.next().toString()),
+      ...(options.traceparent ? { traceparent: options.traceparent } : {}),
+    });
     for (const queue of topology.queues) {
       this.queues.set(queue.name, []);
       this.deadLetterQueues.set(queue.name, []);
     }
   }
 
-  async publish<T>(
-    contract: EventContract<T>,
-    data: T,
+  async publish<M extends EventDefinition>(
+    event: M,
+    data: MessageInput<M>,
     options: PublishOptions = {},
-  ): Promise<MessageEnvelope<T>> {
-    const route = this.resolve(contract.type, MessageKind.Event);
-    const envelope = this.build(contract, data, options);
+  ): Promise<MessageEnvelope<MessageOutput<M>>> {
+    const { envelope, route } = this.factory.event(event, data, options);
     const now = this.clock();
 
     for (const queue of this.topology.queues) {
@@ -103,7 +104,7 @@ export class InMemoryBus implements MessageBus {
         (subscription) =>
           subscription.topic.name === route.target.name &&
           (subscription.filterTypes.length === 0 ||
-            subscription.filterTypes.includes(contract.type)),
+            subscription.filterTypes.includes(event.type)),
       );
       if (subscribed)
         this.push(queue.name, { envelope, receiveCount: 0, availableAt: now });
@@ -111,24 +112,20 @@ export class InMemoryBus implements MessageBus {
     return envelope;
   }
 
-  async send<T>(
-    contract: CommandContract<T>,
-    data: T,
+  async send<M extends CommandDefinition>(
+    command: M,
+    data: MessageInput<M>,
     options: SendOptions = {},
-  ): Promise<MessageEnvelope<T>> {
-    const route = this.resolve(contract.type, MessageKind.Command);
-    const delayMs = options.delayMs ?? 0;
-    if (!(delayMs >= 0) || !Number.isFinite(delayMs)) {
-      throw new MessagingError(
-        MessagingErrorCode.InvalidPayload,
-        `delayMs must be >= 0, got ${delayMs}`,
-      );
-    }
-    const envelope = this.build(contract, data, options);
+  ): Promise<MessageEnvelope<MessageOutput<M>>> {
+    const { envelope, route, delayMs } = this.factory.command(
+      command,
+      data,
+      options,
+    );
     this.push(route.target.name, {
       envelope,
       receiveCount: 0,
-      availableAt: this.clock() + delayMs,
+      availableAt: this.clock() + (delayMs ?? 0),
     });
     return envelope;
   }
@@ -221,46 +218,6 @@ export class InMemoryBus implements MessageBus {
   deadLetters(queueName: string): readonly DeadLetterEntry[] {
     this.requireQueue(queueName);
     return [...(this.deadLetterQueues.get(queueName) ?? [])];
-  }
-
-  private resolve(type: string, kind: MessageKind) {
-    const route = this.topology.routeFor(type);
-    if (!route || route.kind !== kind) {
-      throw new MessagingError(
-        MessagingErrorCode.UnknownRoute,
-        `no ${kind} route for type "${type}"`,
-      );
-    }
-    return route;
-  }
-
-  /** Validates the payload with the contract, then builds and round-trips the envelope. */
-  private build<T>(
-    contract: MessageContract<T>,
-    data: T,
-    options: PublishOptions,
-  ): MessageEnvelope<T> {
-    const parsed = contract.schema.safeParse(data);
-    if (!parsed.success) {
-      throw new MessagingError(
-        MessagingErrorCode.InvalidPayload,
-        `invalid payload for "${contract.type}": ${parsed.error.message}`,
-      );
-    }
-    return toWireEnvelope(
-      createEnvelope(
-        {
-          type: contract.type,
-          source: this.options.source,
-          data: parsed.data,
-          subject: options.subject,
-          traceparent: options.traceparent,
-          tenantId: options.tenantId,
-          actorId: options.actorId,
-        },
-        { clock: this.clockSource, newId: this.newId },
-      ),
-    );
   }
 
   private clock(): number {

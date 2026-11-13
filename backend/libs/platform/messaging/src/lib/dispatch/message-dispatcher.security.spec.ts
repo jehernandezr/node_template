@@ -1,5 +1,5 @@
+import { defineEvent } from '@contracts/platform';
 import { z } from 'zod';
-import { EventContract } from '../contracts/message-contract.js';
 import {
   createEnvelope,
   MAX_ENVELOPE_BYTES,
@@ -19,10 +19,11 @@ import { InMemoryProcessedMessageStore } from './processed-message-store.js';
 
 const dataSchema = z.object({ id: z.string() });
 
-class TaskUpdated extends EventContract<{ id: string }> {
-  readonly type = 'tasks.task.updated.v1';
-  readonly schema = dataSchema;
-}
+const TaskUpdated = defineEvent({
+  type: 'tasks.task.updated.v1',
+  payload: dataSchema,
+  description: 'Mensaje de prueba.',
+});
 
 const policy = RetryPolicy.exponential({
   maxAttempts: 3,
@@ -48,7 +49,7 @@ function setup(extra: Partial<MessageDispatcherOptions> = {}) {
     processed: new InMemoryProcessedMessageStore(),
     ...extra,
   });
-  dispatcher.register(new TaskUpdated(), handler);
+  dispatcher.register(TaskUpdated, handler);
   return { dispatcher, handler };
 }
 

@@ -106,6 +106,14 @@ export default [
     },
   },
   {
+    // Cuando ESLint corre desde backend/ (hooks de git), las rutas son relativas a esta
+    // carpeta y la excepción del adaptador de AWS se declara aquí.
+    files: ['libs/platform/adapters/aws/**/*.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
     files: ['**/domain/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: domainPatterns }],

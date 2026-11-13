@@ -543,4 +543,14 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'Valkey respondió con una forma inesperada.',
   ),
+  [C.MessagingTransactionRequired]: internal(
+    500,
+    false,
+    'El outbox exige una transacción abierta para guardar el mensaje.',
+  ),
+  [C.MessagingTransportFailed]: internal(
+    503,
+    true,
+    'El transporte de mensajería (SNS o SQS) no respondió o rechazó la llamada.',
+  ),
 });

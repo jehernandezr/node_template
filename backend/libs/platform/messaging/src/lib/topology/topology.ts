@@ -1,5 +1,5 @@
 import {
-  type MessageContract,
+  type MessageDefinition,
   MessageKind,
 } from '../contracts/message-contract.js';
 import {
@@ -20,6 +20,8 @@ export const MIN_RETENTION_DAYS = 1;
 export const MAX_RETENTION_DAYS = 14;
 /** Longest queue name including the `-dlq` and `.fifo` suffixes. */
 export const MAX_QUEUE_NAME_LENGTH = 80;
+/** Characters SNS and SQS accept in a name (the `.fifo` suffix is added by the transport). */
+export const MESSAGING_RESOURCE_NAME = /^[A-Za-z0-9_-]+$/;
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -45,6 +47,10 @@ export enum TopologyIssueKind {
   NameTooLong = 'name-too-long',
   UnproducedFilterType = 'unproduced-filter-type',
   RouteWithoutContract = 'route-without-contract',
+  /** The route contract is an event routed as a command, or the reverse. */
+  ContractKindMismatch = 'contract-kind-mismatch',
+  /** A topic or queue name has characters SNS or SQS reject. */
+  InvalidName = 'invalid-name',
   NoSubscribers = 'no-subscribers',
 }
 
@@ -57,8 +63,11 @@ export interface TopologyIssue {
 
 /** Options for {@link Topology.validate}. */
 export interface ValidateOptions {
-  /** When given, every route type must be produced by one of these contracts. */
-  readonly contracts?: readonly MessageContract<unknown>[];
+  /**
+   * Contracts for routes declared with a bare type string. Every route needs a
+   * contract, either its own or one of these.
+   */
+  readonly contracts?: readonly MessageDefinition[];
 }
 
 /** Thrown by {@link Topology.assertValid} with every error issue found. */
@@ -164,15 +173,30 @@ export abstract class Topology {
       }
     }
 
-    if (options.contracts) {
-      const known = new Set(options.contracts.map((contract) => contract.type));
-      for (const route of this.routes) {
-        if (!known.has(route.type)) {
-          error(
-            TopologyIssueKind.RouteWithoutContract,
-            `route "${route.type}" has no registered contract`,
-          );
-        }
+    const known = new Map(
+      (options.contracts ?? []).map((contract) => [contract.type, contract]),
+    );
+    for (const route of this.routes) {
+      const contract = route.contract ?? known.get(route.type);
+      if (!contract) {
+        error(
+          TopologyIssueKind.RouteWithoutContract,
+          `route "${route.type}" has no contract`,
+        );
+      } else if (contract.kind !== route.kind) {
+        error(
+          TopologyIssueKind.ContractKindMismatch,
+          `route "${route.type}" is a ${route.kind} route but its contract is a ${contract.kind}`,
+        );
+      }
+    }
+
+    for (const def of [...this.topics, ...this.queues]) {
+      if (!MESSAGING_RESOURCE_NAME.test(def.name)) {
+        error(
+          TopologyIssueKind.InvalidName,
+          `"${def.name}" is not a valid SNS/SQS name (letters, digits, "-" and "_")`,
+        );
       }
     }
 
@@ -288,6 +312,11 @@ export abstract class Topology {
   /** Returns the route for a message type, if any. */
   routeFor(type: string): RouteDef | undefined {
     return this.routes.find((route) => route.type === type);
+  }
+
+  /** Returns a queue by name, if declared. */
+  queueFor(name: string): QueueDef | undefined {
+    return this.queues.find((queue) => queue.name === name);
   }
 
   /** Exports the topology with stable ordering. Validates first. */
