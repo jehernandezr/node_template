@@ -334,6 +334,8 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
   description                  = "ALB hacia ${local.full_name}"
 }
 
+# HTTPS saliente por NAT o endpoints de VPC (ADR 0016).
+# trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "https" {
   security_group_id = aws_security_group.this.id
   cidr_ipv4         = "0.0.0.0/0"

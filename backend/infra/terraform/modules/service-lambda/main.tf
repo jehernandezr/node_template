@@ -244,6 +244,8 @@ resource "aws_security_group" "this" {
   tags = merge(var.tags, { Name = local.full_name })
 }
 
+# HTTPS saliente por NAT o endpoints de VPC (ADR 0016).
+# trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "https" {
   count = var.vpc_enabled ? 1 : 0
 

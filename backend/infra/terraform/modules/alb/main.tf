@@ -31,6 +31,8 @@ resource "aws_s3_bucket_ownership_controls" "logs" {
   }
 }
 
+# Los access logs del ALB solo admiten SSE-S3, no KMS.
+# trivy:ignore:AVD-AWS-0132
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
   bucket = aws_s3_bucket.logs.id
 
@@ -151,6 +153,8 @@ resource "aws_vpc_security_group_ingress_rule" "https_prefix_list" {
   description       = "HTTPS desde una prefix list"
 }
 
+# El ALB es la entrada pública de la plataforma.
+# trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "this" {
   name               = "${var.name_prefix}-alb"
   load_balancer_type = "application"

@@ -172,6 +172,8 @@ resource "aws_vpc_security_group_egress_rule" "clients_to_endpoints" {
 
 # Salida a Internet (Claude API, APNs, FCM, pagos) por el NAT de las subredes privadas.
 # Solo HTTPS. Las subredes de datos no tienen ruta a Internet (ADR 0016).
+# Salida HTTPS a Internet por NAT, decidida en el ADR 0016.
+# trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "clients_to_internet" {
   count = var.egress == "none" ? 0 : 1
 
