@@ -203,6 +203,67 @@ describe('classifyFailure', () => {
     expect(classifyFailure({})).toBe(FailureKind.Permanent);
   });
 
+  describe('AWS SDK v3 errors', () => {
+    function awsError(
+      name: string,
+      httpStatusCode: number,
+      extra: Record<string, unknown> = {},
+    ): Error {
+      return Object.assign(new Error(name), {
+        name,
+        $fault: httpStatusCode >= 500 ? 'server' : 'client',
+        $metadata: { httpStatusCode },
+        ...extra,
+      });
+    }
+
+    it('treats throttling as transient even with a 400 status', () => {
+      expect(classifyFailure(awsError('ThrottlingException', 400))).toBe(
+        FailureKind.Transient,
+      );
+      expect(
+        classifyFailure(
+          awsError('ProvisionedThroughputExceededException', 400),
+        ),
+      ).toBe(FailureKind.Transient);
+      expect(classifyFailure(awsError('SlowDown', 503))).toBe(
+        FailureKind.Transient,
+      );
+      expect(classifyFailure(awsError('RequestTimeout', 400))).toBe(
+        FailureKind.Transient,
+      );
+    });
+
+    it('trusts the $retryable marker the SDK sets', () => {
+      expect(
+        classifyFailure(
+          awsError('SomeServiceException', 400, {
+            $retryable: { throttling: true },
+          }),
+        ),
+      ).toBe(FailureKind.Transient);
+    });
+
+    it('falls back to $metadata.httpStatusCode', () => {
+      expect(classifyFailure(awsError('ServiceUnavailable', 503))).toBe(
+        FailureKind.Transient,
+      );
+      expect(classifyFailure(awsError('ValidationException', 400))).toBe(
+        FailureKind.Permanent,
+      );
+      expect(classifyFailure(awsError('ResourceNotFoundException', 404))).toBe(
+        FailureKind.Permanent,
+      );
+    });
+
+    it('finds the AWS error in the cause chain', () => {
+      const wrapped = new Error('send failed', {
+        cause: awsError('ThrottlingException', 400),
+      });
+      expect(classifyFailure(wrapped)).toBe(FailureKind.Transient);
+    });
+  });
+
   it('survives a self-referencing cause', () => {
     const error = new Error('loop') as Error & { cause?: unknown };
     error.cause = error;
