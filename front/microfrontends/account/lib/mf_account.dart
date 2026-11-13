@@ -27,38 +27,28 @@ List<RouteBase> _routes(
 ) => [
   GoRoute(
     path: '/account',
-    builder: (context, state) => _page(
-      load,
-      () => screens.buildAccountOverviewScreen(scope()),
-    ),
+    builder: (context, state) =>
+        _page(load, () => screens.buildAccountOverviewScreen(scope())),
     routes: [
       GoRoute(
         path: 'sessions',
-        builder: (context, state) => _page(
-          load,
-          () => screens.buildAccountSessionsScreen(scope()),
-        ),
+        builder: (context, state) =>
+            _page(load, () => screens.buildAccountSessionsScreen(scope())),
       ),
       GoRoute(
         path: 'devices',
-        builder: (context, state) => _page(
-          load,
-          () => screens.buildAccountDevicesScreen(scope()),
-        ),
+        builder: (context, state) =>
+            _page(load, () => screens.buildAccountDevicesScreen(scope())),
       ),
       GoRoute(
         path: 'security',
-        builder: (context, state) => _page(
-          load,
-          () => screens.buildAccountSecurityScreen(scope()),
-        ),
+        builder: (context, state) =>
+            _page(load, () => screens.buildAccountSecurityScreen(scope())),
       ),
       GoRoute(
         path: 'agreements',
-        builder: (context, state) => _page(
-          load,
-          () => screens.buildAccountAgreementsScreen(scope()),
-        ),
+        builder: (context, state) =>
+            _page(load, () => screens.buildAccountAgreementsScreen(scope())),
       ),
     ],
   ),

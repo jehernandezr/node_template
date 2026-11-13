@@ -6,7 +6,8 @@ import 'package:mf_account/mf_account.dart' show accountManifest;
 import 'package:mf_assistant/mf_assistant.dart' show assistantManifest;
 import 'package:mf_backoffice/mf_backoffice.dart' show backofficeManifest;
 import 'package:mf_billing/mf_billing.dart' show billingManifest;
-import 'package:mf_notifications/mf_notifications.dart' show notificationsManifest;
+import 'package:mf_notifications/mf_notifications.dart'
+    show notificationsManifest;
 import 'package:mf_tasks/mf_tasks.dart' show tasksManifest;
 import 'package:shell_core/shell_core.dart';
 
@@ -54,11 +55,8 @@ final class WebShell {
       routes: _shellRoutes(),
       load: loadScreen,
       stepUpPath: stepUpPath,
-      shellBuilder: (context, state, child) => WebShellScaffold(
-        shell: this,
-        location: state.uri.path,
-        child: child,
-      ),
+      shellBuilder: (context, state, child) =>
+          WebShellScaffold(shell: this, location: state.uri.path, child: child),
     );
   }
 
@@ -68,7 +66,9 @@ final class WebShell {
   final MicrofrontendRegistry registry;
 
   /// Current user. Anonymous until a demo sign-in or sign-out.
-  final ValueNotifier<UserSession> session = ValueNotifier(UserSession.anonymous());
+  final ValueNotifier<UserSession> session = ValueNotifier(
+    UserSession.anonymous(),
+  );
 
   /// Unread notifications, fed by `UnreadCountChanged` events.
   final ValueNotifier<int> unreadCount = ValueNotifier(0);
@@ -82,7 +82,8 @@ final class WebShell {
   late final StreamSubscription<UnreadCountChanged> _unreadSubscription;
 
   /// Ends the session and goes to `/login` without `from`.
-  Future<void> signOut() => signOutAndGoToLogin(router: router, session: session);
+  Future<void> signOut() =>
+      signOutAndGoToLogin(router: router, session: session);
 
   /// Starts following the session and the lifecycles of the visible microfrontends.
   Future<void> start() => runtime.start();
@@ -109,16 +110,11 @@ final class WebShell {
 
   /// Shell pages. The microfrontend routes are added by [buildShellRouter].
   List<RouteBase> _shellRoutes() => [
-    GoRoute(
-      path: '/',
-      redirect: (context, state) => _homePath(),
-    ),
+    GoRoute(path: '/', redirect: (context, state) => _homePath()),
     GoRoute(
       path: '/login',
-      builder: (context, state) => LoginPage(
-        session: session,
-        from: state.uri.queryParameters['from'],
-      ),
+      builder: (context, state) =>
+          LoginPage(session: session, from: state.uri.queryParameters['from']),
     ),
     GoRoute(
       path: '/forbidden',
@@ -126,7 +122,8 @@ final class WebShell {
     ),
     GoRoute(
       path: stepUpPath,
-      redirect: (context, state) => session.value.isAuthenticated ? null : '/login',
+      redirect: (context, state) =>
+          session.value.isAuthenticated ? null : '/login',
       builder: (context, state) => StepUpPage(
         session: session,
         from: state.uri.queryParameters['from'],

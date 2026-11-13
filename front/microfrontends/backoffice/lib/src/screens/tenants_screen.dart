@@ -175,7 +175,10 @@ class _TenantTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(tenant.name, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    tenant.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   Text(
                     '${tenant.id} · ${regionLabel(l10n, tenant.region)} · ${tenant.plan}',
                     style: Theme.of(context).textTheme.bodySmall,

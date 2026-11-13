@@ -15,7 +15,9 @@ void showActionError(BuildContext context, ApiErrorException error) {
   final code = error.problem.code;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text('${errorMessage(shared, code)} (${shared.errorCodeLabel}: $code)'),
+      content: Text(
+        '${errorMessage(shared, code)} (${shared.errorCodeLabel}: $code)',
+      ),
     ),
   );
 }

@@ -6,8 +6,9 @@ import 'package:mf_account/src/screens/screen_builders.dart';
 import 'support/test_app.dart';
 
 void main() {
-  testWidgets('revocar una sesión en un scope no afecta a un scope nuevo',
-      (tester) async {
+  testWidgets('revocar una sesión en un scope no afecta a un scope nuevo', (
+    tester,
+  ) async {
     final es = await loadEs();
     final scopeA = testScope();
     await tester.pumpWidget(testApp(buildAccountSessionsScreen(scopeA)));
@@ -24,8 +25,9 @@ void main() {
     expect(find.text('Safari en iPhone'), findsOneWidget);
   });
 
-  testWidgets('la pantalla reusa el repositorio del mismo scope',
-      (tester) async {
+  testWidgets('la pantalla reusa el repositorio del mismo scope', (
+    tester,
+  ) async {
     final es = await loadEs();
     final scope = testScope();
     await tester.pumpWidget(testApp(buildAccountSessionsScreen(scope)));
@@ -39,8 +41,9 @@ void main() {
     expect(find.text('Safari en iPhone'), findsNothing);
   });
 
-  testWidgets('cerrar sesión de la cuenta llama a services.signOut',
-      (tester) async {
+  testWidgets('cerrar sesión de la cuenta llama a services.signOut', (
+    tester,
+  ) async {
     final shared = await loadSharedEs();
     var signOuts = 0;
     final scope = testScope(onSignOut: () async => signOuts++);

@@ -37,18 +37,14 @@ Widget buildAccountOverviewScreen(MicrofrontendScope scope) => _localized(
   ),
 );
 
-Widget buildAccountSessionsScreen(MicrofrontendScope scope) => _localized(
-  (_) => SessionsScreen(repository: _repository(scope)),
-);
+Widget buildAccountSessionsScreen(MicrofrontendScope scope) =>
+    _localized((_) => SessionsScreen(repository: _repository(scope)));
 
-Widget buildAccountDevicesScreen(MicrofrontendScope scope) => _localized(
-  (_) => DevicesScreen(repository: _repository(scope)),
-);
+Widget buildAccountDevicesScreen(MicrofrontendScope scope) =>
+    _localized((_) => DevicesScreen(repository: _repository(scope)));
 
-Widget buildAccountSecurityScreen(MicrofrontendScope scope) => _localized(
-  (_) => SecurityScreen(repository: _repository(scope)),
-);
+Widget buildAccountSecurityScreen(MicrofrontendScope scope) =>
+    _localized((_) => SecurityScreen(repository: _repository(scope)));
 
-Widget buildAccountAgreementsScreen(MicrofrontendScope scope) => _localized(
-  (_) => AgreementsScreen(repository: _repository(scope)),
-);
+Widget buildAccountAgreementsScreen(MicrofrontendScope scope) =>
+    _localized((_) => AgreementsScreen(repository: _repository(scope)));

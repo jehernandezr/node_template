@@ -32,15 +32,14 @@ void main() {
     expect(find.text(es.passkeysEmpty), findsOneWidget);
   });
 
-  testWidgets('agregar passkey pide MFA y la muestra en la lista',
-      (tester) async {
+  testWidgets('agregar passkey pide MFA y la muestra en la lista', (
+    tester,
+  ) async {
     final es = await loadEs();
     final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
-        SecurityScreen(
-          repository: FakeAccountRepository(delay: Duration.zero),
-        ),
+        SecurityScreen(repository: FakeAccountRepository(delay: Duration.zero)),
       ),
     );
     await tester.pumpAndSettle();
@@ -55,14 +54,14 @@ void main() {
     expect(find.text('Nueva passkey 2'), findsOneWidget);
   });
 
-  testWidgets('regenerar códigos pide MFA y muestra los nuevos', (tester) async {
+  testWidgets('regenerar códigos pide MFA y muestra los nuevos', (
+    tester,
+  ) async {
     final es = await loadEs();
     final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
-        SecurityScreen(
-          repository: FakeAccountRepository(delay: Duration.zero),
-        ),
+        SecurityScreen(repository: FakeAccountRepository(delay: Duration.zero)),
       ),
     );
     await tester.pumpAndSettle();

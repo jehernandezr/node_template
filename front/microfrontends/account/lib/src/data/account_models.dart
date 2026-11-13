@@ -58,7 +58,11 @@ final class MfaStatus {
 
 /// Passkey registrada por el usuario.
 final class Passkey {
-  const Passkey({required this.id, required this.name, required this.createdAt});
+  const Passkey({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+  });
 
   final String id;
   final String name;

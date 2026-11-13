@@ -7,10 +7,10 @@ import 'package:auth/auth.dart';
 final t0 = DateTime.utc(2026, 11, 11, 12);
 
 AuthTokens tokens(String access, DateTime expiresAt) => AuthTokens(
-      accessToken: access,
-      accessExpiresAt: expiresAt,
-      sessionToken: 'session-$access',
-    );
+  accessToken: access,
+  accessExpiresAt: expiresAt,
+  sessionToken: 'session-$access',
+);
 
 void main() {
   late FakeAuthRepository repo;
@@ -102,7 +102,10 @@ void main() {
   test('refreshes only when the access token is near expiry', () async {
     await store.write(tokens('access-1', t0.add(const Duration(minutes: 15))));
     await manager.restore();
-    repo.refreshResult = tokens('access-2', t0.add(const Duration(minutes: 30)));
+    repo.refreshResult = tokens(
+      'access-2',
+      t0.add(const Duration(minutes: 30)),
+    );
 
     expect(await manager.accessToken(), 'access-1');
 
@@ -126,10 +129,7 @@ void main() {
     expect(repo.logoutCount, 1);
     expect(await store.read(), isNull);
     expect(manager.state, AuthState.signedOut);
-    await expectLater(
-      manager.accessToken(),
-      throwsA(isA<AuthException>()),
-    );
+    await expectLater(manager.accessToken(), throwsA(isA<AuthException>()));
   });
 
   test('invalidated refresh signs out and clears the store', () async {

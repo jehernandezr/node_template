@@ -37,9 +37,7 @@ void main() {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(
-          repository: FakeAccountRepository(delay: Duration.zero),
-        ),
+        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
       ),
     );
     await tester.pumpAndSettle();
@@ -50,15 +48,14 @@ void main() {
     expect(find.text(es.sessionClose), findsOneWidget);
   });
 
-  testWidgets('cerrar todas las demás pide MFA y deja solo la actual',
-      (tester) async {
+  testWidgets('cerrar todas las demás pide MFA y deja solo la actual', (
+    tester,
+  ) async {
     final es = await loadEs();
     final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
-        SessionsScreen(
-          repository: FakeAccountRepository(delay: Duration.zero),
-        ),
+        SessionsScreen(repository: FakeAccountRepository(delay: Duration.zero)),
       ),
     );
     await tester.pumpAndSettle();

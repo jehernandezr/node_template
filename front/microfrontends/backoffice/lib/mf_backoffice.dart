@@ -16,7 +16,9 @@ final MicrofrontendManifest backofficeManifest = MicrofrontendManifest(
   id: MicrofrontendId.backoffice,
   platforms: {AppPlatform.web},
   access: AccessRule.platformRoles(PlatformRole.values),
-  menu: const [MenuEntry(labelKey: 'menuBackoffice', path: '/backoffice', order: 90)],
+  menu: const [
+    MenuEntry(labelKey: 'menuBackoffice', path: '/backoffice', order: 90),
+  ],
   // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
   // ignore: deprecated_member_use
   routes: _routes,
@@ -24,7 +26,10 @@ final MicrofrontendManifest backofficeManifest = MicrofrontendManifest(
 
 const Widget _loading = Center(child: CircularProgressIndicator());
 
-List<RouteBase> _routes(ScreenLoader load, MicrofrontendScope Function() scope) {
+List<RouteBase> _routes(
+  ScreenLoader load,
+  MicrofrontendScope Function() scope,
+) {
   // The entry point is referenced inside the builder, so it is only touched after the library loads.
   Widget page(
     BuildContext context,
@@ -38,11 +43,13 @@ List<RouteBase> _routes(ScreenLoader load, MicrofrontendScope Function() scope) 
   return [
     GoRoute(
       path: '/backoffice',
-      builder: (context, state) => page(context, (c, s) => screens.overviewPage(c, s)),
+      builder: (context, state) =>
+          page(context, (c, s) => screens.overviewPage(c, s)),
       routes: [
         GoRoute(
           path: 'tenants',
-          builder: (context, state) => page(context, (c, s) => screens.tenantsPage(c, s)),
+          builder: (context, state) =>
+              page(context, (c, s) => screens.tenantsPage(c, s)),
         ),
         GoRoute(
           path: 'tenants/:id',
@@ -53,7 +60,8 @@ List<RouteBase> _routes(ScreenLoader load, MicrofrontendScope Function() scope) 
         ),
         GoRoute(
           path: 'sagas',
-          builder: (context, state) => page(context, (c, s) => screens.sagasPage(c, s)),
+          builder: (context, state) =>
+              page(context, (c, s) => screens.sagasPage(c, s)),
         ),
         GoRoute(
           path: 'sagas/:id',
@@ -64,7 +72,8 @@ List<RouteBase> _routes(ScreenLoader load, MicrofrontendScope Function() scope) 
         ),
         GoRoute(
           path: 'dlq',
-          builder: (context, state) => page(context, (c, s) => screens.dlqPage(c, s)),
+          builder: (context, state) =>
+              page(context, (c, s) => screens.dlqPage(c, s)),
         ),
         GoRoute(
           path: 'dlq/:queue',

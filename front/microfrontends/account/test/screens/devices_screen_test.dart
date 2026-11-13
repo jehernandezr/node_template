@@ -7,8 +7,9 @@ import 'package:ui/ui.dart';
 import '../support/test_app.dart';
 
 void main() {
-  testWidgets('muestra cargando y luego dispositivos con verificador',
-      (tester) async {
+  testWidgets('muestra cargando y luego dispositivos con verificador', (
+    tester,
+  ) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(DevicesScreen(repository: FakeAccountRepository())),
@@ -33,15 +34,14 @@ void main() {
     expect(find.text(es.devicesEmptyTitle), findsOneWidget);
   });
 
-  testWidgets('quitar confianza pide MFA y quita el dispositivo',
-      (tester) async {
+  testWidgets('quitar confianza pide MFA y quita el dispositivo', (
+    tester,
+  ) async {
     final es = await loadEs();
     final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
-        DevicesScreen(
-          repository: FakeAccountRepository(delay: Duration.zero),
-        ),
+        DevicesScreen(repository: FakeAccountRepository(delay: Duration.zero)),
       ),
     );
     await tester.pumpAndSettle();

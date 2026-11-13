@@ -18,7 +18,8 @@ final class _ManualRepository implements AssistantRepository {
   Future<Conversation> createConversation() => throw UnimplementedError();
 
   @override
-  Future<List<ChatMessage>> loadMessages(String conversationId) async => const [];
+  Future<List<ChatMessage>> loadMessages(String conversationId) async =>
+      const [];
 
   @override
   Stream<AssistantChunk> ask(String conversationId, String message) => answer;
@@ -43,19 +44,25 @@ void main() {
     await source.close();
   });
 
-  test('dispose rejects a tool confirmation nobody can answer anymore', () async {
-    final source = StreamController<AssistantChunk>();
-    final request = ToolConfirmationRequest(toolName: 'crear_tarea', summary: 'Tarea');
-    final controller = AssistantChatController(
-      repository: _ManualRepository(source.stream),
-      conversationId: 'c1',
-    )..send('crear una tarea');
+  test(
+    'dispose rejects a tool confirmation nobody can answer anymore',
+    () async {
+      final source = StreamController<AssistantChunk>();
+      final request = ToolConfirmationRequest(
+        toolName: 'crear_tarea',
+        summary: 'Tarea',
+      );
+      final controller = AssistantChatController(
+        repository: _ManualRepository(source.stream),
+        conversationId: 'c1',
+      )..send('crear una tarea');
 
-    source.add(request);
-    await Future<void>.delayed(Duration.zero);
-    controller.dispose();
+      source.add(request);
+      await Future<void>.delayed(Duration.zero);
+      controller.dispose();
 
-    expect(await request.decision, isFalse);
-    await source.close();
-  });
+      expect(await request.decision, isFalse);
+      await source.close();
+    },
+  );
 }

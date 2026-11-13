@@ -12,7 +12,9 @@ final MicrofrontendManifest assistantManifest = MicrofrontendManifest(
   id: MicrofrontendId.assistant,
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.planFeature(PlanFeature.aiAssistant),
-  menu: const [MenuEntry(labelKey: 'menuAssistant', path: '/assistant', order: 40)],
+  menu: const [
+    MenuEntry(labelKey: 'menuAssistant', path: '/assistant', order: 40),
+  ],
   // TODO(WP0): API anterior al contrato de ADR 0018; migrar y quitar el ignore.
   // ignore: deprecated_member_use
   routes: (load, scope) => [
@@ -30,7 +32,8 @@ final MicrofrontendManifest assistantManifest = MicrofrontendManifest(
             final conversationId = state.pathParameters['conversationId']!;
             return load(
               loadLibrary: screens.loadLibrary,
-              builder: () => screens.buildConversationScreen(scope(), conversationId),
+              builder: () =>
+                  screens.buildConversationScreen(scope(), conversationId),
               loading: const Center(child: CircularProgressIndicator()),
             );
           },

@@ -8,7 +8,8 @@ import 'package:i18n/i18n.dart';
 
 /// Keys of an ARB file, without the `@@locale` and `@key` metadata entries.
 Set<String> _messageKeys(String path) {
-  final json = jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
+  final json =
+      jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
   return json.keys.where((key) => !key.startsWith('@')).toSet();
 }
 
@@ -53,14 +54,26 @@ void main() {
     ];
     final es = _messageKeys('lib/l10n/app_es.arb');
     final en = _messageKeys('lib/l10n/app_en.arb');
-    final esJson = jsonDecode(File('lib/l10n/app_es.arb').readAsStringSync()) as Map<String, dynamic>;
-    final enJson = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync()) as Map<String, dynamic>;
+    final esJson = jsonDecode(
+      File('lib/l10n/app_es.arb').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final enJson = jsonDecode(
+      File('lib/l10n/app_en.arb').readAsStringSync(),
+    ) as Map<String, dynamic>;
 
     for (final key in keys) {
       expect(es, contains(key), reason: 'missing in app_es.arb: $key');
       expect(en, contains(key), reason: 'missing in app_en.arb: $key');
-      expect((esJson[key] as String).trim(), isNotEmpty, reason: 'empty es: $key');
-      expect((enJson[key] as String).trim(), isNotEmpty, reason: 'empty en: $key');
+      expect(
+        (esJson[key] as String).trim(),
+        isNotEmpty,
+        reason: 'empty es: $key',
+      );
+      expect(
+        (enJson[key] as String).trim(),
+        isNotEmpty,
+        reason: 'empty en: $key',
+      );
     }
   });
 

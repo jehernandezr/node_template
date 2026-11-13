@@ -18,7 +18,8 @@ class AssistantListScreen extends StatefulWidget {
 }
 
 class _AssistantListScreenState extends State<AssistantListScreen> {
-  late Future<List<Conversation>> _conversations = widget.repository.listConversations();
+  late Future<List<Conversation>> _conversations = widget.repository
+      .listConversations();
 
   Future<void> _createConversation() async {
     final conversation = await widget.repository.createConversation();
@@ -66,8 +67,10 @@ class _AssistantListScreenState extends State<AssistantListScreen> {
           return ListView.separated(
             padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: items.length,
-            separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) => _ConversationTile(conversation: items[index]),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppSpacing.sm),
+            itemBuilder: (context, index) =>
+                _ConversationTile(conversation: items[index]),
           );
         },
       ),

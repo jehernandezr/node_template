@@ -59,7 +59,9 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
       _data = _load();
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(BackofficeLocalizations.of(context).sagaActionDone)),
+      SnackBar(
+        content: Text(BackofficeLocalizations.of(context).sagaActionDone),
+      ),
     );
   }
 
@@ -92,13 +94,19 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
                     const SizedBox(height: AppSpacing.xs),
                     Chip(
                       label: Text(sagaStatusLabel(l10n, saga.status)),
-                      backgroundColor: saga.needsIntervention ? scheme.errorContainer : null,
+                      backgroundColor: saga.needsIntervention
+                          ? scheme.errorContainer
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text('${l10n.sagaType}: ${saga.type}'),
                     Text('${l10n.sagaTenant}: ${saga.tenantId}'),
-                    Text('${l10n.sagaCurrentStep}: ${saga.currentOperation ?? '-'}'),
-                    Text('${l10n.sagaUpdated}: ${formatTimestamp(saga.updatedAt)}'),
+                    Text(
+                      '${l10n.sagaCurrentStep}: ${saga.currentOperation ?? '-'}',
+                    ),
+                    Text(
+                      '${l10n.sagaUpdated}: ${formatTimestamp(saga.updatedAt)}',
+                    ),
                     SelectableText(
                       '${l10n.traceId}: ${saga.traceId}',
                       style: theme.textTheme.labelSmall,
@@ -110,10 +118,7 @@ class _SagaDetailScreenState extends State<SagaDetailScreen> {
               Text(l10n.sagaSteps, style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               if (saga.steps.isEmpty)
-                EmptyState(
-                  icon: Icons.timeline,
-                  title: l10n.sagaStepsEmpty,
-                )
+                EmptyState(icon: Icons.timeline, title: l10n.sagaStepsEmpty)
               else
                 for (final step in saga.steps) _StepTile(step: step),
               const SizedBox(height: AppSpacing.lg),

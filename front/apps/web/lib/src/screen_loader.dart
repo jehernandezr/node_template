@@ -2,6 +2,7 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
+
 /// Loads deferred screens for the web shell with its loading and error views.
 ///
 /// Passed to `buildShellRouter` as `load`, so every microfrontend screen shows

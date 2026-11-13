@@ -22,7 +22,9 @@ class LoginPage extends StatelessWidget {
 
   /// Only in-app paths are accepted, so `from` cannot send the user elsewhere.
   static String safeDestination(String? from) {
-    if (from == null || !from.startsWith('/') || from.startsWith('//')) return '/';
+    if (from == null || !from.startsWith('/') || from.startsWith('//')) {
+      return '/';
+    }
     if (from.contains(r'\')) return '/';
     return from;
   }

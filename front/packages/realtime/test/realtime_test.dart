@@ -3,21 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:realtime/realtime.dart';
 
 RealtimeEvent event(String id, [String type = 'message']) => RealtimeEvent(
-      id: id,
-      type: type,
-      data: {'id': id},
-      receivedAt: DateTime.utc(2026, 11, 11),
-    );
+  id: id,
+  type: type,
+  data: {'id': id},
+  receivedAt: DateTime.utc(2026, 11, 11),
+);
 
 /// Espera lo suficiente para que pasen los backoff de prueba (1 a 4 ms).
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 50));
 
 RealtimeBackoff fastBackoff() => RealtimeBackoff(
-      initial: const Duration(milliseconds: 1),
-      max: const Duration(milliseconds: 4),
-      jitter: 0,
-      random: () => 0,
-    );
+  initial: const Duration(milliseconds: 1),
+  max: const Duration(milliseconds: 4),
+  jitter: 0,
+  random: () => 0,
+);
 
 void main() {
   test('reconnects after a drop passing the last event id', () async {

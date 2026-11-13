@@ -88,29 +88,46 @@ class _ActionFailingRepository extends FakeBackofficeRepository {
 }
 
 void main() {
-  testWidgets('overview shows tenants, sagas needing intervention and DLQ messages', (
-    tester,
-  ) async {
-    await _pump(tester, _single(OverviewScreen(repository: FakeBackofficeRepository())));
+  testWidgets(
+    'overview shows tenants, sagas needing intervention and DLQ messages',
+    (tester) async {
+      await _pump(
+        tester,
+        _single(OverviewScreen(repository: FakeBackofficeRepository())),
+      );
 
-    expect(tester.widget<Text>(find.byKey(const Key('overview-tenants'))).data, '5');
-    // s-102 (RequiresIntervention) and s-104 (CompensationFailed).
-    expect(tester.widget<Text>(find.byKey(const Key('overview-sagas'))).data, '2');
-    // 3 notifications + 0 reports + 12 billing.
-    expect(tester.widget<Text>(find.byKey(const Key('overview-dlq'))).data, '15');
-    expect(find.text(_es.overviewTitle), findsWidgets);
-    expect(find.text(_es.cardSagas), findsOneWidget);
-  });
+      expect(
+        tester.widget<Text>(find.byKey(const Key('overview-tenants'))).data,
+        '5',
+      );
+      // s-102 (RequiresIntervention) and s-104 (CompensationFailed).
+      expect(
+        tester.widget<Text>(find.byKey(const Key('overview-sagas'))).data,
+        '2',
+      );
+      // 3 notifications + 0 reports + 12 billing.
+      expect(
+        tester.widget<Text>(find.byKey(const Key('overview-dlq'))).data,
+        '15',
+      );
+      expect(find.text(_es.overviewTitle), findsWidgets);
+      expect(find.text(_es.cardSagas), findsOneWidget);
+    },
+  );
 
-  testWidgets('a failed load shows the API code and trace id through ErrorView', (
-    tester,
-  ) async {
-    await _pump(tester, _single(OverviewScreen(repository: _FailingRepository())));
+  testWidgets(
+    'a failed load shows the API code and trace id through ErrorView',
+    (tester) async {
+      await _pump(
+        tester,
+        _single(OverviewScreen(repository: _FailingRepository())),
+      );
 
-    expect(find.text(_es.loadError), findsOneWidget);
-    expect(find.text('Código: PLATFORM.INTERNAL.UNEXPECTED'), findsOneWidget);
-    expect(find.text('ID de traza: trace-123'), findsOneWidget);
-  });
+      expect(find.text(_es.loadError), findsOneWidget);
+      expect(find.text('Código: PLATFORM.INTERNAL.UNEXPECTED'), findsOneWidget);
+      expect(find.text('ID de traza: trace-123'), findsOneWidget);
+    },
+  );
 
   testWidgets('the error view uses English labels in English', (tester) async {
     final en = lookupBackofficeLocalizations(const Locale('en'));
@@ -127,98 +144,120 @@ void main() {
     expect(_enShared.errorCodeLabel, 'Code');
   });
 
-  testWidgets('a saga manual action that throws an API error shows a SnackBar', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      _single(
-        SagaDetailScreen(sagaId: 's-102', repository: _ActionFailingRepository()),
-        path: '/s',
-      ),
-    );
-
-    await tester.tap(find.byKey(const Key('saga-action-forceCompensation')));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('saga-reason-field')), 'Motivo');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('saga-reason-confirm')));
-    await tester.pumpAndSettle();
-
-    final code = _ActionFailingRepository.code;
-    expect(tester.takeException(), isNull);
-    expect(find.byType(SnackBar), findsOneWidget);
-    expect(
-      find.text('${errorMessage(_shared, code)} (${_shared.errorCodeLabel}: $code)'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('saga-reason-field')), findsNothing);
-  });
-
-  testWidgets('a DLQ redrive that throws an API error shows a SnackBar and keeps messages', (
-    tester,
-  ) async {
-    const queue = 'notifications-tasks-events';
-    await _pump(
-      tester,
-      GoRouter(
-        initialLocation: '/backoffice/dlq/$queue',
-        routes: [
-          GoRoute(
-            path: '/backoffice/dlq/:queue',
-            builder: (context, state) => DlqScreen(
-              repository: _ActionFailingRepository(),
-              queue: state.pathParameters['queue'],
-            ),
+  testWidgets(
+    'a saga manual action that throws an API error shows a SnackBar',
+    (tester) async {
+      await _pump(
+        tester,
+        _single(
+          SagaDetailScreen(
+            sagaId: 's-102',
+            repository: _ActionFailingRepository(),
           ),
-        ],
-      ),
-    );
+          path: '/s',
+        ),
+      );
 
-    await tester.tap(find.byKey(const Key('dlq-redrive')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('dlq-redrive-confirm')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('saga-action-forceCompensation')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('saga-reason-field')),
+        'Motivo',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('saga-reason-confirm')));
+      await tester.pumpAndSettle();
 
-    final code = _ActionFailingRepository.code;
-    expect(tester.takeException(), isNull);
-    expect(find.byType(SnackBar), findsOneWidget);
-    expect(
-      find.text('${errorMessage(_shared, code)} (${_shared.errorCodeLabel}: $code)'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('SMTP timeout tras 30 s'), findsNWidgets(3));
-  });
+      final code = _ActionFailingRepository.code;
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.text(
+          '${errorMessage(_shared, code)} (${_shared.errorCodeLabel}: $code)',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('saga-reason-field')), findsNothing);
+    },
+  );
 
-  testWidgets('a saga manual action failure with English locale is shown in English', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      _single(
-        SagaDetailScreen(sagaId: 's-102', repository: _ActionFailingRepository()),
-        path: '/s',
-      ),
-      locale: const Locale('en'),
-    );
+  testWidgets(
+    'a DLQ redrive that throws an API error shows a SnackBar and keeps messages',
+    (tester) async {
+      const queue = 'notifications-tasks-events';
+      await _pump(
+        tester,
+        GoRouter(
+          initialLocation: '/backoffice/dlq/$queue',
+          routes: [
+            GoRoute(
+              path: '/backoffice/dlq/:queue',
+              builder: (context, state) => DlqScreen(
+                repository: _ActionFailingRepository(),
+                queue: state.pathParameters['queue'],
+              ),
+            ),
+          ],
+        ),
+      );
 
-    await tester.tap(find.byKey(const Key('saga-action-forceCompensation')));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('saga-reason-field')), 'Reason');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('saga-reason-confirm')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dlq-redrive')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dlq-redrive-confirm')));
+      await tester.pumpAndSettle();
 
-    final code = _ActionFailingRepository.code;
-    final en = lookupAppLocalizations(const Locale('en'));
-    expect(
-      find.text('${errorMessage(en, code)} (${en.errorCodeLabel}: $code)'),
-      findsOneWidget,
-    );
-  });
+      final code = _ActionFailingRepository.code;
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.text(
+          '${errorMessage(_shared, code)} (${_shared.errorCodeLabel}: $code)',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('SMTP timeout tras 30 s'), findsNWidgets(3));
+    },
+  );
+
+  testWidgets(
+    'a saga manual action failure with English locale is shown in English',
+    (tester) async {
+      await _pump(
+        tester,
+        _single(
+          SagaDetailScreen(
+            sagaId: 's-102',
+            repository: _ActionFailingRepository(),
+          ),
+          path: '/s',
+        ),
+        locale: const Locale('en'),
+      );
+
+      await tester.tap(find.byKey(const Key('saga-action-forceCompensation')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('saga-reason-field')),
+        'Reason',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('saga-reason-confirm')));
+      await tester.pumpAndSettle();
+
+      final code = _ActionFailingRepository.code;
+      final en = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.text('${errorMessage(en, code)} (${en.errorCodeLabel}: $code)'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('tenant search filters by name', (tester) async {
-    await _pump(tester, _single(TenantsScreen(repository: FakeBackofficeRepository())));
+    await _pump(
+      tester,
+      _single(TenantsScreen(repository: FakeBackofficeRepository())),
+    );
 
     expect(find.text('Panadería Luna'), findsOneWidget);
     expect(find.text('Acme Logística'), findsOneWidget);
@@ -230,8 +269,13 @@ void main() {
     expect(find.text('Panadería Luna'), findsNothing);
   });
 
-  testWidgets('saga list highlights sagas that need intervention', (tester) async {
-    await _pump(tester, _single(SagasScreen(repository: FakeBackofficeRepository())));
+  testWidgets('saga list highlights sagas that need intervention', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _single(SagasScreen(repository: FakeBackofficeRepository())),
+    );
 
     expect(find.byKey(const ValueKey('saga-highlight-s-102')), findsOneWidget);
     expect(find.byKey(const ValueKey('saga-highlight-s-104')), findsOneWidget);
@@ -239,11 +283,16 @@ void main() {
     expect(find.byKey(const ValueKey('saga-s-101')), findsOneWidget);
   });
 
-  testWidgets('manual saga action needs a reason before it is applied', (tester) async {
+  testWidgets('manual saga action needs a reason before it is applied', (
+    tester,
+  ) async {
     final repository = FakeBackofficeRepository();
     await _pump(
       tester,
-      _single(SagaDetailScreen(sagaId: 's-102', repository: repository), path: '/s'),
+      _single(
+        SagaDetailScreen(sagaId: 's-102', repository: repository),
+        path: '/s',
+      ),
     );
 
     await tester.tap(find.byKey(const Key('saga-action-forceCompensation')));
@@ -274,7 +323,9 @@ void main() {
     expect(find.text('Cliente confirmó por correo'), findsOneWidget);
   });
 
-  testWidgets('DLQ queue opens its route and redrive asks for confirmation', (tester) async {
+  testWidgets('DLQ queue opens its route and redrive asks for confirmation', (
+    tester,
+  ) async {
     final repository = FakeBackofficeRepository();
     const queue = 'notifications-tasks-events';
     await _pump(

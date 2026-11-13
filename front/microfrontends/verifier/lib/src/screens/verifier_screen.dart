@@ -22,8 +22,7 @@ export '../l10n/generated/verifier_localizations.dart';
 /// closed when the identity changes. The device key comes from the shell
 /// extras when present, otherwise a [FakeDeviceKeyPort] is used.
 Widget buildVerifierScreen(MicrofrontendScope scope) {
-  final keyPort =
-      scope.services.extra<DeviceKeyPort>() ?? FakeDeviceKeyPort();
+  final keyPort = scope.services.extra<DeviceKeyPort>() ?? FakeDeviceKeyPort();
   final repository = scope.get<VerifierRepository>(
     (_) => FakeVerifierRepository(keyPort),
     dispose: (repository) => repository.close(),

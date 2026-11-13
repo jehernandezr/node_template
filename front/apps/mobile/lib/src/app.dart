@@ -12,7 +12,11 @@ import 'router.dart';
 /// Root widget of the mobile shell. Owns the [ShellRuntime] and the router.
 class MobileShellApp extends StatefulWidget {
   /// Creates the shell for [registry], following [session].
-  const MobileShellApp({super.key, required this.registry, required this.session});
+  const MobileShellApp({
+    super.key,
+    required this.registry,
+    required this.session,
+  });
 
   /// Microfrontends composed by this shell.
   final MicrofrontendRegistry registry;
@@ -73,7 +77,8 @@ class _MobileShellAppState extends State<MobileShellApp> {
     super.dispose();
   }
 
-  Future<void> _signOut() => signOutAndGoToLogin(router: _router, session: widget.session);
+  Future<void> _signOut() =>
+      signOutAndGoToLogin(router: _router, session: widget.session);
 
   /// A new identity must not show the previous user's badge or messages.
   void _onIdentityChanged() {

@@ -31,7 +31,10 @@ class WebShellScaffold extends StatelessWidget {
       listenable: Listenable.merge([shell.session, shell.unreadCount]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
-        final entries = shell.registry.menuFor(shell.session.value, AppPlatform.web);
+        final entries = shell.registry.menuFor(
+          shell.session.value,
+          AppPlatform.web,
+        );
         final signOutButton = IconButton(
           tooltip: l10n.actionSignOut,
           icon: const Icon(Icons.logout),
@@ -64,7 +67,9 @@ class WebShellScaffold extends StatelessWidget {
       label: menuLabel(l10n, entry.labelKey),
       icon: icons.outlined,
       selectedIcon: icons.filled,
-      badgeCount: id == MicrofrontendId.notifications ? shell.unreadCount.value : null,
+      badgeCount: id == MicrofrontendId.notifications
+          ? shell.unreadCount.value
+          : null,
     );
   }
 }

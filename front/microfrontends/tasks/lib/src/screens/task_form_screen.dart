@@ -164,7 +164,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                     error,
                     fallbackMessage: l10n.detailError,
                     codeLabel: AppLocalizations.of(context).errorCodeLabel,
-                    traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
+                    traceIdLabel: AppLocalizations.of(context)
+                        .errorTraceIdLabel,
                     retryLabel: AppLocalizations.of(context).actionRetry,
                     onRetry: _retry,
                   );

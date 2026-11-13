@@ -95,7 +95,10 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
       itemCount: messages.length + (error == null ? 0 : 1),
       itemBuilder: (context, index) {
         if (index < messages.length) {
-          return _MessageBubble(message: messages[index], controller: _controller);
+          return _MessageBubble(
+            message: messages[index],
+            controller: _controller,
+          );
         }
         return ErrorView.fromException(
           error!,
@@ -125,15 +128,9 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
           ),
           const SizedBox(width: AppSpacing.sm),
           if (_controller.isStreaming)
-            FilledButton(
-              onPressed: _controller.stop,
-              child: Text(l10n.stop),
-            )
+            FilledButton(onPressed: _controller.stop, child: Text(l10n.stop))
           else
-            FilledButton(
-              onPressed: _send,
-              child: Text(l10n.send),
-            ),
+            FilledButton(onPressed: _send, child: Text(l10n.send)),
         ],
       ),
     );
@@ -142,7 +139,8 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   /// Quota errors get their own sentence; any other failure gets the generic one.
   String _errorMessage(AssistantLocalizations l10n, Object error) {
     final isQuota =
-        error is ApiErrorException && error.problem.code == 'BILLING.QUOTA.EXCEEDED';
+        error is ApiErrorException &&
+        error.problem.code == 'BILLING.QUOTA.EXCEEDED';
     return isQuota ? l10n.quotaExceeded : l10n.genericError;
   }
 }
@@ -219,8 +217,12 @@ class _MessageBubble extends StatelessWidget {
           _ToolConfirmationCard(
             request: request,
             approved: message.toolApproved,
-            onConfirm: () => controller.respondToTool(messageId: message.id, approved: true),
-            onReject: () => controller.respondToTool(messageId: message.id, approved: false),
+            onConfirm: () =>
+                controller.respondToTool(messageId: message.id, approved: true),
+            onReject: () => controller.respondToTool(
+              messageId: message.id,
+              approved: false,
+            ),
           ),
         ),
       );

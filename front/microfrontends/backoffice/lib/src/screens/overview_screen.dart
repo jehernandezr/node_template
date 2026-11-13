@@ -19,7 +19,8 @@ class OverviewScreen extends StatefulWidget {
 }
 
 class _OverviewScreenState extends State<OverviewScreen> {
-  late final Future<BackofficeOverview> _overview = widget.repository.overview();
+  late final Future<BackofficeOverview> _overview = widget.repository
+      .overview();
 
   @override
   Widget build(BuildContext context) {

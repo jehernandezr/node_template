@@ -36,10 +36,10 @@ class SessionManager {
     Clock? clock,
     this.refreshLead = const Duration(minutes: 2),
     this.invalidationCodes = defaultInvalidationCodes,
-  })  : _repository = repository,
-        _store = tokenStore,
-        _deviceKeys = deviceKeys,
-        _clock = clock ?? DateTime.now;
+  }) : _repository = repository,
+       _store = tokenStore,
+       _deviceKeys = deviceKeys,
+       _clock = clock ?? DateTime.now;
 
   final AuthRepository _repository;
   final TokenStore _store;

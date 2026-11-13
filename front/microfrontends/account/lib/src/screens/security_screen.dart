@@ -43,13 +43,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final verified = await confirmStepUp(context, widget.repository);
     if (!verified || !mounted) return;
     List<String>? codes;
-    final done = await runAccountAction(
-      context,
-      () async {
-        codes = await widget.repository.regenerateRecoveryCodes();
-      },
-      success: AccountLocalizations.of(context).recoveryRegenerated,
-    );
+    final done = await runAccountAction(context, () async {
+      codes = await widget.repository.regenerateRecoveryCodes();
+    }, success: AccountLocalizations.of(context).recoveryRegenerated);
     final created = codes;
     if (done && created != null && mounted) {
       _reload();

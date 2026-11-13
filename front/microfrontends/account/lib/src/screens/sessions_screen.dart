@@ -44,7 +44,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final closed = await widget.repository.revokeOtherSessions();
-      messenger.showSnackBar(SnackBar(content: Text(l10n.othersClosed(closed))));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.othersClosed(closed))),
+      );
       if (mounted) _reload();
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.actionFailed)));

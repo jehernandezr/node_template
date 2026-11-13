@@ -6,7 +6,9 @@ import 'package:ui/ui.dart';
 import '../support/test_app.dart';
 
 void main() {
-  testWidgets('muestra cargando y luego pendientes y aceptados', (tester) async {
+  testWidgets('muestra cargando y luego pendientes y aceptados', (
+    tester,
+  ) async {
     final es = await loadEs();
     await tester.pumpWidget(
       testApp(AgreementsScreen(repository: FakeAccountRepository())),

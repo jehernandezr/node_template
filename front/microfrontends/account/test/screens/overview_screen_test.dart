@@ -38,8 +38,9 @@ void main() {
     expect(find.text(es.agreementsLinkTitle), findsOneWidget);
   });
 
-  testWidgets('muestra error genérico con reintento si falla la carga',
-      (tester) async {
+  testWidgets('muestra error genérico con reintento si falla la carga', (
+    tester,
+  ) async {
     final es = await loadEs();
     final shared = await loadSharedEs();
     await tester.pumpWidget(
@@ -56,8 +57,9 @@ void main() {
     expect(find.text(shared.actionRetry), findsOneWidget);
   });
 
-  testWidgets('un ApiErrorException muestra el código y la traza',
-      (tester) async {
+  testWidgets('un ApiErrorException muestra el código y la traza', (
+    tester,
+  ) async {
     final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
@@ -69,10 +71,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(ErrorView), findsOneWidget);
-    expect(
-      find.text(shared.error_platform_auth_forbidden),
-      findsOneWidget,
-    );
+    expect(find.text(shared.error_platform_auth_forbidden), findsOneWidget);
     expect(
       find.textContaining('${shared.errorCodeLabel}: PLATFORM.AUTH.FORBIDDEN'),
       findsOneWidget,

@@ -23,9 +23,14 @@ Future<ValueNotifier<UserSession>> _pumpShell(
   tester.platformDispatcher.localesTestValue = const [Locale('es')];
   addTearDown(tester.platformDispatcher.clearLocaleTestValue);
 
-  final notifier = ValueNotifier<UserSession>(session ?? UserSession.anonymous());
+  final notifier = ValueNotifier<UserSession>(
+    session ?? UserSession.anonymous(),
+  );
   await tester.pumpWidget(
-    MobileShellApp(registry: registry ?? buildMobileRegistry(), session: notifier),
+    MobileShellApp(
+      registry: registry ?? buildMobileRegistry(),
+      session: notifier,
+    ),
   );
   await tester.pump();
   return notifier;
@@ -47,8 +52,7 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
-String _location(WidgetTester tester) =>
-    _router(tester).state.uri.toString();
+String _location(WidgetTester tester) => _router(tester).state.uri.toString();
 
 final UserSession _client = UserSession(
   userId: 'u1',
@@ -112,7 +116,10 @@ class _ProbeScreenState extends State<_ProbeScreen> {
 }
 
 /// Runtime over [registry] that follows [session], with its own event bus.
-ShellRuntime _runtimeFor(MicrofrontendRegistry registry, ValueNotifier<UserSession> session) {
+ShellRuntime _runtimeFor(
+  MicrofrontendRegistry registry,
+  ValueNotifier<UserSession> session,
+) {
   late final ShellRuntime runtime;
   runtime = ShellRuntime(
     registry: registry,
@@ -149,7 +156,9 @@ Iterable<String> _absolutePaths(List<RouteBase> routes) sync* {
 }
 
 void main() {
-  testWidgets('anonymous visitor on a protected page goes to login with from', (tester) async {
+  testWidgets('anonymous visitor on a protected page goes to login with from', (
+    tester,
+  ) async {
     await _pumpShell(tester);
     await _go(tester, '/tasks');
 
@@ -178,62 +187,92 @@ void main() {
     expect(find.text('Verificador'), findsOneWidget);
   });
 
-  testWidgets('assistant tab is hidden for a client without the assistant plan', (tester) async {
-    await _pumpShell(tester, session: _clientNoAssistant);
-    await tester.pump();
+  testWidgets(
+    'assistant tab is hidden for a client without the assistant plan',
+    (tester) async {
+      await _pumpShell(tester, session: _clientNoAssistant);
+      await tester.pump();
 
-    expect(find.text('Asistente'), findsNothing);
-    expect(find.text('Verificador'), findsOneWidget);
-    expect(find.text('Tareas'), findsOneWidget);
-  });
+      expect(find.text('Asistente'), findsNothing);
+      expect(find.text('Verificador'), findsOneWidget);
+      expect(find.text('Tareas'), findsOneWidget);
+    },
+  );
 
-  testWidgets('a session without the plan is sent to forbidden from the assistant route', (tester) async {
-    await _pumpShell(tester, session: _clientNoAssistant);
-    await _go(tester, '/assistant');
+  testWidgets(
+    'a session without the plan is sent to forbidden from the assistant route',
+    (tester) async {
+      await _pumpShell(tester, session: _clientNoAssistant);
+      await _go(tester, '/assistant');
 
-    expect(_location(tester), '/forbidden?from=%2Fassistant');
-  });
+      expect(_location(tester), '/forbidden?from=%2Fassistant');
+    },
+  );
 
   testWidgets('menu labels are in Spanish', (tester) async {
     await _pumpShell(tester, session: _client);
     await tester.pump();
 
-    for (final label in ['Cuenta', 'Tareas', 'Notificaciones', 'Asistente', 'Verificador']) {
+    for (final label in [
+      'Cuenta',
+      'Tareas',
+      'Notificaciones',
+      'Asistente',
+      'Verificador',
+    ]) {
       expect(find.text(label), findsOneWidget, reason: label);
     }
   });
 
-  testWidgets('on compact widths the screen owns the only top bar and shows sign-out', (
+  testWidgets(
+    'on compact widths the screen owns the only top bar and shows sign-out',
+    (tester) async {
+      await _pumpShell(
+        tester,
+        session: _client,
+        registry: _registryWithProbe(),
+      );
+      await _go(tester, '/billing');
+      // Let the page transition finish so the top bar is on screen.
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Probe'), findsOneWidget);
+      expect(
+        find.byType(AppBar),
+        findsOneWidget,
+        reason: 'the shell draws no bar',
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppPage),
+          matching: find.byIcon(Icons.logout),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(NavigationBar), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the shell no longer draws its own compact bar over legacy screens',
+    (tester) async {
+      await _pumpShell(tester, session: _client);
+      await _go(tester, '/tasks');
+
+      expect(
+        find.ancestor(
+          of: find.byType(Navigator).last,
+          matching: find.byType(AppBar),
+        ),
+        findsNothing,
+      );
+      expect(find.byType(NavigationBar), findsOneWidget);
+    },
+  );
+
+  testWidgets('notifications entry shows the unread badge on mobile', (
     tester,
   ) async {
-    await _pumpShell(tester, session: _client, registry: _registryWithProbe());
-    await _go(tester, '/billing');
-    // Let the page transition finish so the top bar is on screen.
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(find.text('Probe'), findsOneWidget);
-    expect(find.byType(AppBar), findsOneWidget, reason: 'the shell draws no bar');
-    expect(
-      find.descendant(of: find.byType(AppPage), matching: find.byIcon(Icons.logout)),
-      findsOneWidget,
-    );
-    expect(find.byType(NavigationBar), findsOneWidget);
-  });
-
-  testWidgets('the shell no longer draws its own compact bar over legacy screens', (
-    tester,
-  ) async {
-    await _pumpShell(tester, session: _client);
-    await _go(tester, '/tasks');
-
-    expect(
-      find.ancestor(of: find.byType(Navigator).last, matching: find.byType(AppBar)),
-      findsNothing,
-    );
-    expect(find.byType(NavigationBar), findsOneWidget);
-  });
-
-  testWidgets('notifications entry shows the unread badge on mobile', (tester) async {
     await _pumpShell(tester, session: _client);
     await _settle(tester);
 
@@ -271,59 +310,85 @@ void main() {
     final router = _routerFor(registry, runtime, session);
 
     final paths = _absolutePaths(router.configuration.routes).toList();
-    expect(paths.toSet(), hasLength(paths.length), reason: 'duplicated: $paths');
-    expect(paths, containsAll(['/login', '/forbidden', '/tasks', '/notifications', '/verifier']));
+    expect(
+      paths.toSet(),
+      hasLength(paths.length),
+      reason: 'duplicated: $paths',
+    );
+    expect(
+      paths,
+      containsAll([
+        '/login',
+        '/forbidden',
+        '/tasks',
+        '/notifications',
+        '/verifier',
+      ]),
+    );
 
     router.dispose();
     runtime.dispose();
     session.dispose();
   });
 
-  test('a route outside its microfrontend prefix fails router construction', () {
-    final session = ValueNotifier<UserSession>(UserSession.anonymous());
-    final registry = MicrofrontendRegistry()
-      ..register(
-        MicrofrontendManifest(
-          id: MicrofrontendId.tasks,
-          platforms: {AppPlatform.mobile},
-          access: AccessRule.public(),
-          menu: const [],
-          screens: [
-            ScreenRoute(
-              path: '/billing',
-              loadLibrary: () async {},
-              builder: (scope, {params = const {}}) => const SizedBox.shrink(),
-            ),
-          ],
-        ),
-      );
-    final runtime = _runtimeFor(registry, session);
+  test(
+    'a route outside its microfrontend prefix fails router construction',
+    () {
+      final session = ValueNotifier<UserSession>(UserSession.anonymous());
+      final registry = MicrofrontendRegistry()
+        ..register(
+          MicrofrontendManifest(
+            id: MicrofrontendId.tasks,
+            platforms: {AppPlatform.mobile},
+            access: AccessRule.public(),
+            menu: const [],
+            screens: [
+              ScreenRoute(
+                path: '/billing',
+                loadLibrary: () async {},
+                builder: (scope, {params = const {}}) =>
+                    const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        );
+      final runtime = _runtimeFor(registry, session);
 
-    expect(() => _routerFor(registry, runtime, session), throwsStateError);
+      expect(() => _routerFor(registry, runtime, session), throwsStateError);
 
-    runtime.dispose();
-    session.dispose();
-  });
+      runtime.dispose();
+      session.dispose();
+    },
+  );
 
-  test('a new identity gets fresh scopes and the previous scope is disposed', () {
-    final session = ValueNotifier<UserSession>(_client);
-    final registry = buildMobileRegistry();
-    final runtime = _runtimeFor(registry, session);
+  test(
+    'a new identity gets fresh scopes and the previous scope is disposed',
+    () {
+      final session = ValueNotifier<UserSession>(_client);
+      final registry = buildMobileRegistry();
+      final runtime = _runtimeFor(registry, session);
 
-    final before = runtime.scopeFor(MicrofrontendId.tasks);
-    session.value = _clientNoAssistant;
-    final after = runtime.scopeFor(MicrofrontendId.tasks);
+      final before = runtime.scopeFor(MicrofrontendId.tasks);
+      session.value = _clientNoAssistant;
+      final after = runtime.scopeFor(MicrofrontendId.tasks);
 
-    expect(identical(before, after), isFalse);
-    expect(after.services.session.userId, 'u2');
-    expect(() => before.get<Object>((_) => Object()), throwsStateError);
+      expect(identical(before, after), isFalse);
+      expect(after.services.session.userId, 'u2');
+      expect(() => before.get<Object>((_) => Object()), throwsStateError);
 
-    runtime.dispose();
-    session.dispose();
-  });
+      runtime.dispose();
+      session.dispose();
+    },
+  );
 
-  testWidgets('identity switch: a mounted route shows the new user\'s data', (tester) async {
-    final session = await _pumpShell(tester, session: _client, registry: _registryWithProbe());
+  testWidgets('identity switch: a mounted route shows the new user\'s data', (
+    tester,
+  ) async {
+    final session = await _pumpShell(
+      tester,
+      session: _client,
+      registry: _registryWithProbe(),
+    );
     await _go(tester, '/billing');
     await _settle(tester);
     expect(find.text('usuario u1'), findsOneWidget);
@@ -336,22 +401,29 @@ void main() {
     expect(find.text('usuario u1'), findsNothing);
   });
 
-  testWidgets('an MFA sub-route sends to /step-up and returns after verifying', (tester) async {
-    final session = await _pumpShell(tester, session: _client, registry: _registryWithProbe());
-    await _go(tester, '/billing/secure');
-    await tester.pump(const Duration(seconds: 1));
+  testWidgets(
+    'an MFA sub-route sends to /step-up and returns after verifying',
+    (tester) async {
+      final session = await _pumpShell(
+        tester,
+        session: _client,
+        registry: _registryWithProbe(),
+      );
+      await _go(tester, '/billing/secure');
+      await tester.pump(const Duration(seconds: 1));
 
-    expect(_location(tester), '/step-up?from=%2Fbilling%2Fsecure');
-    expect(find.text('Verificación adicional'), findsOneWidget);
+      expect(_location(tester), '/step-up?from=%2Fbilling%2Fsecure');
+      expect(find.text('Verificación adicional'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('step-up-verify')));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byKey(const ValueKey('step-up-verify')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
-    expect(_location(tester), '/billing/secure');
-    expect(find.text('zona segura'), findsOneWidget);
-    expect(session.value.mfaVerifiedAt, isNotNull);
-  });
+      expect(_location(tester), '/billing/secure');
+      expect(find.text('zona segura'), findsOneWidget);
+      expect(session.value.mfaVerifiedAt, isNotNull);
+    },
+  );
 
   test('safeReturnLocation rejects external targets', () {
     expect(safeReturnLocation(null), '/');

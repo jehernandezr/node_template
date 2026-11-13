@@ -260,7 +260,9 @@ void main() {
     final remaining = (await tester.runAsync(() => repository.list()))!;
     expect(remaining.items.map((task) => task.id), isNot(contains(id)));
   });
-  testWidgets('list error labels come from AppLocalizations in en', (tester) async {
+  testWidgets('list error labels come from AppLocalizations in en', (
+    tester,
+  ) async {
     final repository = FakeTasksRepository(delay: Duration.zero, seed: _seed);
     repository.failNext(const ApiErrorException(unavailableProblem));
     await pumpTasks(tester, repository, locale: const Locale('en'));

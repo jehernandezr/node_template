@@ -69,8 +69,14 @@ class _TenantDetailScreenState extends State<TenantDetailScreen> {
                       label: l10n.tenantRegion,
                       value: regionLabel(l10n, tenant.region),
                     ),
-                    _Fact(label: l10n.tenantShardGroup, value: tenant.shardGroup),
-                    _Fact(label: l10n.tenantUsers, value: '${tenant.usersCount}'),
+                    _Fact(
+                      label: l10n.tenantShardGroup,
+                      value: tenant.shardGroup,
+                    ),
+                    _Fact(
+                      label: l10n.tenantUsers,
+                      value: '${tenant.usersCount}',
+                    ),
                   ],
                 ),
               ),

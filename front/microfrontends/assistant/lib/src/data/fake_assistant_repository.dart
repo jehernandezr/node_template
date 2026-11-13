@@ -48,7 +48,8 @@ final class FakeAssistantRepository implements AssistantRepository {
 
   // Scripted server content, kept here because it simulates what the API sends.
   static const String _toolLead = 'Voy a preparar la tarea para ti. ';
-  static const String _toolSummary = 'Crear una tarea nueva en tu lista de pendientes.';
+  static const String _toolSummary =
+      'Crear una tarea nueva en tu lista de pendientes.';
   static const String _toolDone = 'Listo, la tarea quedó creada.';
   static const String _toolSkipped = 'Entendido, no creé la tarea.';
   static const List<String> _answer = [

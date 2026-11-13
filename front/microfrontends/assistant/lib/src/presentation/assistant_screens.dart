@@ -16,21 +16,24 @@ AssistantRepository createAssistantRepository(ShellServices services) =>
     FakeAssistantRepository();
 
 /// Conversation list of the identity that owns [scope].
-Widget buildAssistantListScreen(MicrofrontendScope scope) => _AssistantLocalized(
-  child: AssistantListScreen(
-    repository: scope.get<AssistantRepository>(createAssistantRepository),
-  ),
-);
-
-/// Chat of [conversationId] for the identity that owns [scope].
-Widget buildConversationScreen(MicrofrontendScope scope, String conversationId) =>
+Widget buildAssistantListScreen(MicrofrontendScope scope) =>
     _AssistantLocalized(
-      child: AssistantChatScreen(
-        key: ValueKey(conversationId),
-        conversationId: conversationId,
+      child: AssistantListScreen(
         repository: scope.get<AssistantRepository>(createAssistantRepository),
       ),
     );
+
+/// Chat of [conversationId] for the identity that owns [scope].
+Widget buildConversationScreen(
+  MicrofrontendScope scope,
+  String conversationId,
+) => _AssistantLocalized(
+  child: AssistantChatScreen(
+    key: ValueKey(conversationId),
+    conversationId: conversationId,
+    repository: scope.get<AssistantRepository>(createAssistantRepository),
+  ),
+);
 
 /// Adds the assistant's strings under the screens, so they resolve even when the
 /// app does not register this delegate itself.

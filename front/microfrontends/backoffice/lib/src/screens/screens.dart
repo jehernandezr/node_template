@@ -32,22 +32,32 @@ Widget overviewPage(BuildContext context, MicrofrontendScope scope) =>
 Widget tenantsPage(BuildContext context, MicrofrontendScope scope) =>
     _localized(context, TenantsScreen(repository: _repository(scope)));
 
-Widget tenantDetailPage(BuildContext context, MicrofrontendScope scope, String tenantId) =>
-    _localized(
-      context,
-      TenantDetailScreen(tenantId: tenantId, repository: _repository(scope)),
-    );
+Widget tenantDetailPage(
+  BuildContext context,
+  MicrofrontendScope scope,
+  String tenantId,
+) => _localized(
+  context,
+  TenantDetailScreen(tenantId: tenantId, repository: _repository(scope)),
+);
 
 Widget sagasPage(BuildContext context, MicrofrontendScope scope) =>
     _localized(context, SagasScreen(repository: _repository(scope)));
 
-Widget sagaDetailPage(BuildContext context, MicrofrontendScope scope, String sagaId) =>
-    _localized(
-      context,
-      SagaDetailScreen(sagaId: sagaId, repository: _repository(scope)),
-    );
+Widget sagaDetailPage(
+  BuildContext context,
+  MicrofrontendScope scope,
+  String sagaId,
+) => _localized(
+  context,
+  SagaDetailScreen(sagaId: sagaId, repository: _repository(scope)),
+);
 
-Widget dlqPage(BuildContext context, MicrofrontendScope scope, {String? queue}) => _localized(
+Widget dlqPage(
+  BuildContext context,
+  MicrofrontendScope scope, {
+  String? queue,
+}) => _localized(
   context,
   DlqScreen(
     key: ValueKey('dlq:${queue ?? ''}'),

@@ -83,7 +83,9 @@ List<String> routePaths(List<RouteBase> routes, [String parent = '']) {
   final paths = <String>[];
   for (final route in routes) {
     if (route is GoRoute) {
-      final full = route.path.startsWith('/') ? route.path : '$parent/${route.path}';
+      final full = route.path.startsWith('/')
+          ? route.path
+          : '$parent/${route.path}';
       paths.add(full);
       paths.addAll(routePaths(route.routes, full));
     } else if (route is ShellRoute) {
@@ -96,7 +98,9 @@ List<String> routePaths(List<RouteBase> routes, [String parent = '']) {
 void main() {
   setUp(resetDeferredPageCache);
 
-  testWidgets('anonymous visitor to /tasks lands on login with from', (tester) async {
+  testWidgets('anonymous visitor to /tasks lands on login with from', (
+    tester,
+  ) async {
     final shell = await pumpShell(tester, location: '/tasks');
 
     expect(shell.router.state.uri.path, '/login');
@@ -114,7 +118,9 @@ void main() {
     expect(find.byType(WebShellScaffold), findsOneWidget);
   });
 
-  testWidgets('customer sees the menu without backoffice or billing', (tester) async {
+  testWidgets('customer sees the menu without backoffice or billing', (
+    tester,
+  ) async {
     await pumpShell(tester, location: '/login');
     await demoSignIn(tester, 'Entrar como cliente');
 
@@ -132,7 +138,9 @@ void main() {
     expect(find.text('Tareas'), findsNothing);
   });
 
-  testWidgets('customer visiting /backoffice goes to forbidden', (tester) async {
+  testWidgets('customer visiting /backoffice goes to forbidden', (
+    tester,
+  ) async {
     final shell = await pumpShell(tester, location: '/login');
     await demoSignIn(tester, 'Entrar como cliente');
 
@@ -180,30 +188,33 @@ void main() {
     expect(find.text('Notificaciones'), findsWidgets);
   });
 
-  testWidgets('unread badge shows the count from UnreadCountChanged and updates', (
+  testWidgets(
+    'unread badge shows the count from UnreadCountChanged and updates',
+    (tester) async {
+      final shell = await pumpShell(tester, location: '/login');
+      await demoSignIn(tester, 'Entrar como administrador del tenant');
+
+      Finder badgeText(String text) =>
+          find.descendant(of: find.byType(Badge), matching: find.text(text));
+
+      shell.runtime.eventBus.emit(const UnreadCountChanged(4));
+      await settle(tester);
+      expect(badgeText('4'), findsOneWidget);
+
+      shell.runtime.eventBus.emit(const UnreadCountChanged(12));
+      await settle(tester);
+      expect(badgeText('12'), findsOneWidget);
+      expect(badgeText('4'), findsNothing);
+
+      shell.runtime.eventBus.emit(const UnreadCountChanged(0));
+      await settle(tester);
+      expect(find.byType(Badge), findsNothing);
+    },
+  );
+
+  testWidgets('no duplicate routes: each route path appears once', (
     tester,
   ) async {
-    final shell = await pumpShell(tester, location: '/login');
-    await demoSignIn(tester, 'Entrar como administrador del tenant');
-
-    Finder badgeText(String text) =>
-        find.descendant(of: find.byType(Badge), matching: find.text(text));
-
-    shell.runtime.eventBus.emit(const UnreadCountChanged(4));
-    await settle(tester);
-    expect(badgeText('4'), findsOneWidget);
-
-    shell.runtime.eventBus.emit(const UnreadCountChanged(12));
-    await settle(tester);
-    expect(badgeText('12'), findsOneWidget);
-    expect(badgeText('4'), findsNothing);
-
-    shell.runtime.eventBus.emit(const UnreadCountChanged(0));
-    await settle(tester);
-    expect(find.byType(Badge), findsNothing);
-  });
-
-  testWidgets('no duplicate routes: each route path appears once', (tester) async {
     final shell = await pumpShell(tester);
 
     final paths = routePaths(shell.router.configuration.routes);
@@ -218,7 +229,9 @@ void main() {
     expect(paths.where((path) => path == '/forbidden'), hasLength(1));
   });
 
-  testWidgets('a failed deferred load shows the localized error and retries', (tester) async {
+  testWidgets('a failed deferred load shows the localized error and retries', (
+    tester,
+  ) async {
     tester.platformDispatcher.localesTestValue = const [Locale('es')];
     addTearDown(tester.platformDispatcher.clearLocalesTestValue);
     ignoreAhemOverflow();
@@ -256,41 +269,46 @@ void main() {
     expect(attempts, 2);
   });
 
-  testWidgets('user isolation: a task created by the tenant admin is not seen by a customer', (
+  testWidgets(
+    'user isolation: a task created by the tenant admin is not seen by a customer',
+    (tester) async {
+      const adminTask = 'Tarea solo del admin';
+      final shell = await pumpShell(tester, location: '/login');
+
+      await demoSignIn(tester, 'Entrar como administrador del tenant');
+      // Open the list once so its deferred library and seed data are ready.
+      shell.router.go('/tasks');
+      await waitFor(tester, find.text('Revisar facturas de proveedores'));
+
+      // The admin's repository lives in the tasks scope of this identity. Create the
+      // task through that same scope, then check the admin's list shows it.
+      final adminRepository = shell.runtime
+          .scopeFor(MicrofrontendId.tasks)
+          .get<TasksRepository>((services) => FakeTasksRepository());
+      // The fake repository waits on a real delay, so run it outside the fake clock.
+      await tester.runAsync(
+        () => adminRepository.create(const TaskDraft(title: adminTask)),
+      );
+
+      shell.router.go('/account');
+      await settle(tester);
+      shell.router.go('/tasks');
+      await waitFor(tester, find.text(adminTask));
+      expect(find.text(adminTask), findsOneWidget);
+
+      await signOutFromShell(tester);
+      await demoSignIn(tester, 'Entrar como cliente');
+      shell.router.go('/tasks');
+      await waitFor(tester, find.text('Revisar facturas de proveedores'));
+
+      expect(find.text('Revisar facturas de proveedores'), findsOneWidget);
+      expect(find.text(adminTask), findsNothing);
+    },
+  );
+
+  testWidgets('identity switch: a mounted route shows the new user\'s data', (
     tester,
   ) async {
-    const adminTask = 'Tarea solo del admin';
-    final shell = await pumpShell(tester, location: '/login');
-
-    await demoSignIn(tester, 'Entrar como administrador del tenant');
-    // Open the list once so its deferred library and seed data are ready.
-    shell.router.go('/tasks');
-    await waitFor(tester, find.text('Revisar facturas de proveedores'));
-
-    // The admin's repository lives in the tasks scope of this identity. Create the
-    // task through that same scope, then check the admin's list shows it.
-    final adminRepository = shell.runtime
-        .scopeFor(MicrofrontendId.tasks)
-        .get<TasksRepository>((services) => FakeTasksRepository());
-    // The fake repository waits on a real delay, so run it outside the fake clock.
-    await tester.runAsync(() => adminRepository.create(const TaskDraft(title: adminTask)));
-
-    shell.router.go('/account');
-    await settle(tester);
-    shell.router.go('/tasks');
-    await waitFor(tester, find.text(adminTask));
-    expect(find.text(adminTask), findsOneWidget);
-
-    await signOutFromShell(tester);
-    await demoSignIn(tester, 'Entrar como cliente');
-    shell.router.go('/tasks');
-    await waitFor(tester, find.text('Revisar facturas de proveedores'));
-
-    expect(find.text('Revisar facturas de proveedores'), findsOneWidget);
-    expect(find.text(adminTask), findsNothing);
-  });
-
-  testWidgets('identity switch: a mounted route shows the new user\'s data', (tester) async {
     final shell = await pumpShell(tester, registry: registryWithProbe());
     shell.session.value = probeUser('u1');
     shell.router.go('/verifier');
@@ -305,7 +323,9 @@ void main() {
     expect(find.text('usuario u1'), findsNothing);
   });
 
-  testWidgets('identity switch clears the previous user\'s snack bars', (tester) async {
+  testWidgets('identity switch clears the previous user\'s snack bars', (
+    tester,
+  ) async {
     final shell = await pumpShell(tester, registry: registryWithProbe());
     shell.session.value = probeUser('u1');
     shell.router.go('/verifier');
@@ -324,23 +344,29 @@ void main() {
     expect(find.text('Error de u1'), findsNothing);
   });
 
-  testWidgets('an MFA sub-route sends to /step-up and returns after verifying', (tester) async {
-    final shell = await pumpShell(tester, registry: registryWithProbe());
-    shell.session.value = probeUser('u1');
-    shell.router.go('/verifier/secure');
-    await settle(tester);
+  testWidgets(
+    'an MFA sub-route sends to /step-up and returns after verifying',
+    (tester) async {
+      final shell = await pumpShell(tester, registry: registryWithProbe());
+      shell.session.value = probeUser('u1');
+      shell.router.go('/verifier/secure');
+      await settle(tester);
 
-    expect(shell.router.state.uri.path, WebShell.stepUpPath);
-    expect(shell.router.state.uri.queryParameters['from'], '/verifier/secure');
-    expect(find.text('Verificación adicional'), findsOneWidget);
+      expect(shell.router.state.uri.path, WebShell.stepUpPath);
+      expect(
+        shell.router.state.uri.queryParameters['from'],
+        '/verifier/secure',
+      );
+      expect(find.text('Verificación adicional'), findsOneWidget);
 
-    await tester.tap(find.text('Verificar (demostración)'));
-    await settle(tester);
+      await tester.tap(find.text('Verificar (demostración)'));
+      await settle(tester);
 
-    expect(location(shell), '/verifier/secure');
-    expect(find.text('zona segura'), findsOneWidget);
-    expect(shell.session.value.mfaVerifiedAt, isNotNull);
-  });
+      expect(location(shell), '/verifier/secure');
+      expect(find.text('zona segura'), findsOneWidget);
+      expect(shell.session.value.mfaVerifiedAt, isNotNull);
+    },
+  );
 
   testWidgets('/step-up sends an anonymous visitor to login', (tester) async {
     final shell = await pumpShell(tester, location: WebShell.stepUpPath);
@@ -349,7 +375,8 @@ void main() {
 }
 
 /// Signed-in user of the probe tests.
-UserSession probeUser(String id) => UserSession(userId: id, tenantId: 'demo-tenant');
+UserSession probeUser(String id) =>
+    UserSession(userId: id, tenantId: 'demo-tenant');
 
 /// Real web registry plus a probe at `/verifier` (not composed by the web
 /// shell) that follows the WP0 contract: `screens`, scope data and `AppPage`.

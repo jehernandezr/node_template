@@ -9,7 +9,10 @@ import 'package:ui/ui.dart';
 const _answer = 'Puedo ayudarte con tus tareas pendientes.';
 const _chunkDelay = Duration(milliseconds: 50);
 
-Future<void> _pumpChat(WidgetTester tester, {Locale locale = const Locale('es')}) async {
+Future<void> _pumpChat(
+  WidgetTester tester, {
+  Locale locale = const Locale('es'),
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: locale,
@@ -44,7 +47,10 @@ void main() {
     expect(find.text(_answer), findsNothing);
 
     await tester.pump(_chunkDelay);
-    expect(find.textContaining('Puedo ayudarte con tus tareas'), findsOneWidget);
+    expect(
+      find.textContaining('Puedo ayudarte con tus tareas'),
+      findsOneWidget,
+    );
     expect(find.text(_answer), findsNothing);
 
     await tester.pumpAndSettle();
@@ -52,7 +58,9 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Enviar'), findsOneWidget);
   });
 
-  testWidgets('stop cancels the answer and keeps the text received', (tester) async {
+  testWidgets('stop cancels the answer and keeps the text received', (
+    tester,
+  ) async {
     await _pumpChat(tester);
     await _send(tester, 'Hola');
     await tester.pump(_chunkDelay);
@@ -77,12 +85,17 @@ void main() {
     expect(find.textContaining('Tokens: 412'), findsOneWidget);
   });
 
-  testWidgets('tool confirmation continues the answer when confirmed', (tester) async {
+  testWidgets('tool confirmation continues the answer when confirmed', (
+    tester,
+  ) async {
     await _pumpChat(tester);
     await _send(tester, 'crear una tarea');
     await tester.pumpAndSettle();
 
-    expect(find.text('El asistente quiere ejecutar una acción'), findsOneWidget);
+    expect(
+      find.text('El asistente quiere ejecutar una acción'),
+      findsOneWidget,
+    );
     expect(
       find.text('Crear una tarea nueva en tu lista de pendientes.'),
       findsOneWidget,
@@ -93,11 +106,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Acción confirmada'), findsOneWidget);
-    expect(find.textContaining('Listo, la tarea quedó creada.'), findsOneWidget);
+    expect(
+      find.textContaining('Listo, la tarea quedó creada.'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(FilledButton, 'Confirmar'), findsNothing);
   });
 
-  testWidgets('tool confirmation continues the answer when rejected', (tester) async {
+  testWidgets('tool confirmation continues the answer when rejected', (
+    tester,
+  ) async {
     await _pumpChat(tester);
     await _send(tester, 'crear una tarea');
     await tester.pumpAndSettle();
@@ -111,7 +129,9 @@ void main() {
     expect(find.widgetWithText(OutlinedButton, 'Cancelar'), findsNothing);
   });
 
-  testWidgets('quota error shows the code and trace id via ErrorView', (tester) async {
+  testWidgets('quota error shows the code and trace id via ErrorView', (
+    tester,
+  ) async {
     await _pumpChat(tester);
     await _send(tester, 'cuota');
     await tester.pumpAndSettle();
@@ -134,14 +154,18 @@ void main() {
     expect(find.text(l10n.inputHint), findsOneWidget);
   });
 
-  testWidgets('the same screen shows English strings when the locale is en', (tester) async {
+  testWidgets('the same screen shows English strings when the locale is en', (
+    tester,
+  ) async {
     await _pumpChat(tester, locale: const Locale('en'));
 
     expect(find.text('Conversation'), findsOneWidget);
     expect(find.text('Send'), findsOneWidget);
     expect(find.text('Type your question'), findsOneWidget);
   });
-  testWidgets('quota error labels come from AppLocalizations in en', (tester) async {
+  testWidgets('quota error labels come from AppLocalizations in en', (
+    tester,
+  ) async {
     await _pumpChat(tester, locale: const Locale('en'));
     await tester.enterText(find.byType(TextField), 'cuota');
     await tester.tap(find.widgetWithText(FilledButton, 'Send'));

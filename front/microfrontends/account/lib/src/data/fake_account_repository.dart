@@ -15,7 +15,9 @@ class FakeAccountRepository implements AccountRepository {
   }) : _profile = profile ?? _sampleProfile(),
        _sessions = List.of(sessions ?? _sampleSessions()),
        _devices = List.of(devices ?? _sampleDevices()),
-       _mfa = mfa ?? const MfaStatus(enabled: true, method: 'App de autenticación'),
+       _mfa =
+           mfa ??
+           const MfaStatus(enabled: true, method: 'App de autenticación'),
        _passkeys = List.of(passkeys ?? _samplePasskeys()),
        _pending = List.of(pendingAgreements ?? _samplePending()),
        _accepted = List.of(acceptedAgreements ?? _sampleAccepted());
@@ -41,8 +43,7 @@ class FakeAccountRepository implements AccountRepository {
   Future<AccountProfile> loadProfile() => _respond(() => _profile);
 
   @override
-  Future<List<AppSession>> listSessions() =>
-      _respond(() => List.of(_sessions));
+  Future<List<AppSession>> listSessions() => _respond(() => List.of(_sessions));
 
   @override
   Future<void> revokeSession(String sessionId) => _respond<void>(
@@ -66,9 +67,8 @@ class FakeAccountRepository implements AccountRepository {
   );
 
   @override
-  Future<SecurityOverview> loadSecurity() => _respond(
-    () => SecurityOverview(mfa: _mfa, passkeys: List.of(_passkeys)),
-  );
+  Future<SecurityOverview> loadSecurity() =>
+      _respond(() => SecurityOverview(mfa: _mfa, passkeys: List.of(_passkeys)));
 
   @override
   Future<void> addPasskey() => _respond<void>(() {
@@ -101,7 +101,9 @@ class FakeAccountRepository implements AccountRepository {
 
   @override
   Future<void> acceptAgreement(String agreementId) => _respond<void>(() {
-    final index = _pending.indexWhere((agreement) => agreement.id == agreementId);
+    final index = _pending.indexWhere(
+      (agreement) => agreement.id == agreementId,
+    );
     if (index == -1) {
       throw StateError('El acuerdo $agreementId no está pendiente.');
     }

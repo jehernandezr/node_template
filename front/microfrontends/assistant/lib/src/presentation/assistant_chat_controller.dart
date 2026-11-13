@@ -7,7 +7,10 @@ import '../data/assistant_repository.dart';
 
 /// Holds the messages of one conversation and the state of the current answer.
 final class AssistantChatController extends ChangeNotifier {
-  AssistantChatController({required this.repository, required this.conversationId});
+  AssistantChatController({
+    required this.repository,
+    required this.conversationId,
+  });
 
   final AssistantRepository repository;
   final String conversationId;
@@ -23,6 +26,7 @@ final class AssistantChatController extends ChangeNotifier {
   List<ChatMessage> get messages => _messages;
   bool get isLoading => _loading;
   bool get isStreaming => _subscription != null;
+
   /// Error of the last answer: an `ApiErrorException` or any other object.
   Object? get error => _error;
 
@@ -50,12 +54,14 @@ final class AssistantChatController extends ChangeNotifier {
         isStreaming: true,
       ),
     ];
-    _subscription = repository.ask(conversationId, trimmed).listen(
-      (chunk) => _onChunk(assistantId, chunk),
-      onError: (Object error) => _fail(assistantId, error),
-      onDone: () => _finish(assistantId),
-      cancelOnError: true,
-    );
+    _subscription = repository
+        .ask(conversationId, trimmed)
+        .listen(
+          (chunk) => _onChunk(assistantId, chunk),
+          onError: (Object error) => _fail(assistantId, error),
+          onDone: () => _finish(assistantId),
+          cancelOnError: true,
+        );
     _notify();
   }
 
@@ -104,7 +110,10 @@ final class AssistantChatController extends ChangeNotifier {
   void _onChunk(String assistantId, AssistantChunk chunk) {
     switch (chunk) {
       case AssistantTextChunk(:final text):
-        _update(assistantId, (message) => message.copyWith(text: message.text + text));
+        _update(
+          assistantId,
+          (message) => message.copyWith(text: message.text + text),
+        );
       case AssistantFinalChunk(:final citations, :final usage):
         _update(
           assistantId,
@@ -138,7 +147,8 @@ final class AssistantChatController extends ChangeNotifier {
 
   void _update(String id, ChatMessage Function(ChatMessage) change) {
     _messages = [
-      for (final message in _messages) message.id == id ? change(message) : message,
+      for (final message in _messages)
+        message.id == id ? change(message) : message,
     ];
     _notify();
   }
@@ -159,7 +169,10 @@ final class AssistantChatController extends ChangeNotifier {
     // Unblock a producer that waits for a tool answer nobody will give now.
     final pending = id == null
         ? null
-        : _messages.where((message) => message.id == id).firstOrNull?.toolRequest;
+        : _messages
+              .where((message) => message.id == id)
+              .firstOrNull
+              ?.toolRequest;
     if (pending != null && !pending.isResolved) pending.reject();
     subscription?.cancel();
     super.dispose();

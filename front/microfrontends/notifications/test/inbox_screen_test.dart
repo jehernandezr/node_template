@@ -147,12 +147,18 @@ void main() {
     addTearDown(repo.close);
 
     await tester.pumpWidget(
-      testApp(NotificationsInboxScreen(repository: repo), locale: const Locale('en')),
+      testApp(
+        NotificationsInboxScreen(repository: repo),
+        locale: const Locale('en'),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text(en.loadError), findsOneWidget);
-    expect(find.textContaining('Code: PLATFORM.INTERNAL.UNEXPECTED'), findsOneWidget);
+    expect(
+      find.textContaining('Code: PLATFORM.INTERNAL.UNEXPECTED'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Trace ID: trace-1'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });

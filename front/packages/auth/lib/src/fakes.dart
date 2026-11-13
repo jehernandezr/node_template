@@ -8,7 +8,9 @@ import 'ports.dart';
 /// Repositorio en memoria. Cada prueba configura los resultados y lee los contadores.
 class FakeAuthRepository implements AuthRepository {
   /// Resultado de [login].
-  LoginResult loginResult = const LoginFailed('IDENTITY.AUTH.INVALID_CREDENTIALS');
+  LoginResult loginResult = const LoginFailed(
+    'IDENTITY.AUTH.INVALID_CREDENTIALS',
+  );
 
   /// Resultado de [verifyMfa].
   LoginResult mfaResult = const LoginFailed('IDENTITY.MFA.INVALID_CODE');
@@ -97,7 +99,7 @@ class InMemoryTokenStore implements TokenStore {
 /// Clave de dispositivo falsa. [sign] invierte los bytes para que sea determinista.
 class FakeDeviceKeyPort implements DeviceKeyPort {
   FakeDeviceKeyPort({List<int> publicKey = const [1, 2, 3, 4]})
-      : _publicKey = publicKey;
+    : _publicKey = publicKey;
 
   final List<int> _publicKey;
   int signCount = 0;

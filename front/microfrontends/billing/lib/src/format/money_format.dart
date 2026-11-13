@@ -28,7 +28,8 @@ NumberFormat _moneyFormat(Currency currency) => switch (currency) {
 };
 
 /// Groups an integer count with the es_CO separators, for example `12.345`.
-String formatCount(int value) => NumberFormat.decimalPattern('es_CO').format(value);
+String formatCount(int value) =>
+    NumberFormat.decimalPattern('es_CO').format(value);
 
 int _pow10(int exponent) {
   var result = 1;

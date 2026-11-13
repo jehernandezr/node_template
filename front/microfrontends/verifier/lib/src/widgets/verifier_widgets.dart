@@ -84,9 +84,7 @@ class VerifierCodeCard extends StatelessWidget {
             child: TextButton.icon(
               onPressed: value == null || failed ? null : onCopy,
               icon: Icon(copied ? Icons.check : Icons.copy),
-              label: Text(
-                copied ? l10n.codeCopied : l10n.copyCode,
-              ),
+              label: Text(copied ? l10n.codeCopied : l10n.copyCode),
             ),
           ),
         ],
@@ -120,9 +118,8 @@ class VerifierCountdown extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          VerifierLocalizations.of(
-            context,
-          ).expiresIn(formatCountdown(secondsLeft)),
+          VerifierLocalizations.of(context)
+              .expiresIn(formatCountdown(secondsLeft)),
           style: theme.textTheme.labelLarge,
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -205,10 +202,7 @@ class VerifierBlockedNotice extends StatelessWidget {
               children: [
                 Text(l10n.blockedTitle, style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  l10n.blockedBody,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text(l10n.blockedBody, style: theme.textTheme.bodyMedium),
               ],
             ),
           ),

@@ -67,9 +67,7 @@ class _SagasScreenState extends State<SagasScreen> {
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final saga in sagas) _SagaTile(saga: saga),
-                ],
+                children: [for (final saga in sagas) _SagaTile(saga: saga)],
               );
             },
           ),
@@ -94,8 +92,12 @@ class _SagaTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
-        key: highlight ? ValueKey('saga-highlight-${saga.id}') : ValueKey('saga-${saga.id}'),
-        color: highlight ? scheme.errorContainer : scheme.surfaceContainerHighest,
+        key: highlight
+            ? ValueKey('saga-highlight-${saga.id}')
+            : ValueKey('saga-${saga.id}'),
+        color: highlight
+            ? scheme.errorContainer
+            : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -114,7 +116,9 @@ class _SagaTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${saga.type} · ${saga.id}',
-                        style: textTheme.titleMedium?.copyWith(color: foreground),
+                        style: textTheme.titleMedium?.copyWith(
+                          color: foreground,
+                        ),
                       ),
                     ),
                   ],

@@ -65,10 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(_es.loadError), findsOneWidget);
-    expect(
-      find.textContaining('PLATFORM.INTERNAL.UNEXPECTED'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('PLATFORM.INTERNAL.UNEXPECTED'), findsOneWidget);
     expect(find.textContaining('trace-1'), findsOneWidget);
   });
 
@@ -76,7 +73,9 @@ void main() {
     Future<Color> colorAt(int used, int limit) async {
       await tester.pumpWidget(
         testApp(
-          UsageMeter(usage: QuotaUsage(quota: _quota(limit), used: used)),
+          UsageMeter(
+            usage: QuotaUsage(quota: _quota(limit), used: used),
+          ),
         ),
       );
       return _meterColor(tester);
@@ -163,14 +162,19 @@ void main() {
     final en = lookupBillingLocalizations(const Locale('en'));
     await tester.pumpWidget(
       testApp(
-        InvoicesScreen(repository: FakeBillingRepository(failure: _serverError())),
+        InvoicesScreen(
+          repository: FakeBillingRepository(failure: _serverError()),
+        ),
         locale: const Locale('en'),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text(en.loadError), findsOneWidget);
-    expect(find.textContaining('Code: PLATFORM.INTERNAL.UNEXPECTED'), findsOneWidget);
+    expect(
+      find.textContaining('Code: PLATFORM.INTERNAL.UNEXPECTED'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Trace ID: trace-1'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });

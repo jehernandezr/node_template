@@ -7,9 +7,13 @@ import 'backoffice_repository.dart';
 class FakeBackofficeRepository implements BackofficeRepository {
   FakeBackofficeRepository()
     : _tenants = List.of(_seedTenants),
-      _tenantAudit = {for (final e in _seedTenantAudit.entries) e.key: List.of(e.value)},
+      _tenantAudit = {
+        for (final e in _seedTenantAudit.entries) e.key: List.of(e.value),
+      },
       _sagas = List.of(_seedSagas),
-      _sagaAudit = {for (final e in _seedSagaAudit.entries) e.key: List.of(e.value)},
+      _sagaAudit = {
+        for (final e in _seedSagaAudit.entries) e.key: List.of(e.value),
+      },
       _queues = {for (final e in _seedQueues.entries) e.key: List.of(e.value)};
 
   final List<Tenant> _tenants;
@@ -20,7 +24,10 @@ class FakeBackofficeRepository implements BackofficeRepository {
 
   @override
   Future<BackofficeOverview> overview() async {
-    final queued = _queues.values.fold<int>(0, (sum, list) => sum + list.length);
+    final queued = _queues.values.fold<int>(
+      0,
+      (sum, list) => sum + list.length,
+    );
     return BackofficeOverview(
       tenantCount: _tenants.length,
       sagasNeedingIntervention: _sagas.where((s) => s.needsIntervention).length,
@@ -60,8 +67,9 @@ class FakeBackofficeRepository implements BackofficeRepository {
 
   @override
   Future<List<Saga>> listSagas({SagaStatus? status}) async {
-    final list = _sagas.where((s) => status == null || s.status == status).toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final list =
+        _sagas.where((s) => status == null || s.status == status).toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return list;
   }
 
@@ -85,16 +93,26 @@ class FakeBackofficeRepository implements BackofficeRepository {
   }) async {
     final trimmed = reason.trim();
     if (trimmed.isEmpty) {
-      throw _problem(400, 'PLATFORM.VALIDATION.REQUIRED', 'A reason is required');
+      throw _problem(
+        400,
+        'PLATFORM.VALIDATION.REQUIRED',
+        'A reason is required',
+      );
     }
     final index = _sagas.indexWhere((s) => s.id == sagaId);
-    if (index == -1) throw _problem(404, 'PLATFORM.RESOURCE.NOT_FOUND', 'Saga not found');
+    if (index == -1) {
+      throw _problem(404, 'PLATFORM.RESOURCE.NOT_FOUND', 'Saga not found');
+    }
 
     final saga = _sagas[index];
     final next = switch (action) {
       SagaManualAction.retryStep => saga.copyWith(status: SagaStatus.running),
-      SagaManualAction.forceCompensation => saga.copyWith(status: SagaStatus.compensating),
-      SagaManualAction.markResolved => saga.copyWith(status: SagaStatus.completed),
+      SagaManualAction.forceCompensation => saga.copyWith(
+        status: SagaStatus.compensating,
+      ),
+      SagaManualAction.markResolved => saga.copyWith(
+        status: SagaStatus.completed,
+      ),
     };
     _sagas[index] = next.copyWith(updatedAt: _now);
     _sagaAudit
@@ -124,7 +142,9 @@ class FakeBackofficeRepository implements BackofficeRepository {
   @override
   Future<int> redrive(String queue) async {
     final messages = _queues[queue];
-    if (messages == null) throw _problem(404, 'PLATFORM.RESOURCE.NOT_FOUND', 'Queue not found');
+    if (messages == null) {
+      throw _problem(404, 'PLATFORM.RESOURCE.NOT_FOUND', 'Queue not found');
+    }
     final moved = messages.length;
     messages.clear();
     return moved;
@@ -132,7 +152,12 @@ class FakeBackofficeRepository implements BackofficeRepository {
 
   static ApiErrorException _problem(int status, String code, String title) =>
       ApiErrorException(
-        ProblemDetails(type: 'about:blank', title: title, status: status, code: code),
+        ProblemDetails(
+          type: 'about:blank',
+          title: title,
+          status: status,
+          code: code,
+        ),
       );
 
   static List<AuditEntry> _newestFirst(List<AuditEntry> entries) =>
@@ -231,10 +256,30 @@ final List<Saga> _seedSagas = [
     traceId: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
     updatedAt: DateTime(2026, 11, 9, 11, 20),
     steps: const [
-      SagaStep(order: 1, operation: 'CreateTenant', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 2, operation: 'OpenBillingAccount', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 3, operation: 'AssignShard', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 4, operation: 'SendWelcomeEmail', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
+      SagaStep(
+        order: 1,
+        operation: 'CreateTenant',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 2,
+        operation: 'OpenBillingAccount',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 3,
+        operation: 'AssignShard',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 4,
+        operation: 'SendWelcomeEmail',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
     ],
   ),
   Saga(
@@ -245,9 +290,26 @@ final List<Saga> _seedSagas = [
     traceId: 'b2c3d4e5f60718293a4b5c6d7e8f9012',
     updatedAt: DateTime(2026, 11, 10, 8, 12),
     steps: const [
-      SagaStep(order: 1, operation: 'CreateTenant', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 2, operation: 'OpenBillingAccount', direction: SagaDirection.forward, status: SagaStepStatus.failed, errorCode: 'BILLING.ACCOUNT.DUPLICATED'),
-      SagaStep(order: 3, operation: 'OpenBillingAccount', direction: SagaDirection.compensation, status: SagaStepStatus.failed, errorCode: 'BILLING.ACCOUNT.LOCKED'),
+      SagaStep(
+        order: 1,
+        operation: 'CreateTenant',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 2,
+        operation: 'OpenBillingAccount',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.failed,
+        errorCode: 'BILLING.ACCOUNT.DUPLICATED',
+      ),
+      SagaStep(
+        order: 3,
+        operation: 'OpenBillingAccount',
+        direction: SagaDirection.compensation,
+        status: SagaStepStatus.failed,
+        errorCode: 'BILLING.ACCOUNT.LOCKED',
+      ),
     ],
   ),
   Saga(
@@ -258,8 +320,19 @@ final List<Saga> _seedSagas = [
     traceId: 'c3d4e5f60718293a4b5c6d7e8f901234',
     updatedAt: DateTime(2026, 11, 10, 22, 40),
     steps: const [
-      SagaStep(order: 1, operation: 'FreezeTenantWrites', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 2, operation: 'CopyTenantData', direction: SagaDirection.forward, status: SagaStepStatus.failed, errorCode: 'PLATFORM.SHARDING.TENANT_MIGRATING'),
+      SagaStep(
+        order: 1,
+        operation: 'FreezeTenantWrites',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 2,
+        operation: 'CopyTenantData',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.failed,
+        errorCode: 'PLATFORM.SHARDING.TENANT_MIGRATING',
+      ),
     ],
   ),
   Saga(
@@ -270,9 +343,26 @@ final List<Saga> _seedSagas = [
     traceId: 'd4e5f60718293a4b5c6d7e8f9012345a',
     updatedAt: DateTime(2026, 11, 11, 3, 15),
     steps: const [
-      SagaStep(order: 1, operation: 'DeleteUsers', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 2, operation: 'DeleteFiles', direction: SagaDirection.forward, status: SagaStepStatus.failed, errorCode: 'STORAGE.TIMEOUT'),
-      SagaStep(order: 3, operation: 'RestoreUsers', direction: SagaDirection.compensation, status: SagaStepStatus.failed, errorCode: 'PLATFORM.INTERNAL.UNEXPECTED'),
+      SagaStep(
+        order: 1,
+        operation: 'DeleteUsers',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 2,
+        operation: 'DeleteFiles',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.failed,
+        errorCode: 'STORAGE.TIMEOUT',
+      ),
+      SagaStep(
+        order: 3,
+        operation: 'RestoreUsers',
+        direction: SagaDirection.compensation,
+        status: SagaStepStatus.failed,
+        errorCode: 'PLATFORM.INTERNAL.UNEXPECTED',
+      ),
     ],
   ),
   Saga(
@@ -283,8 +373,18 @@ final List<Saga> _seedSagas = [
     traceId: 'e5f60718293a4b5c6d7e8f90123456ab',
     updatedAt: DateTime(2026, 11, 11, 7, 58),
     steps: const [
-      SagaStep(order: 1, operation: 'CreateTenant', direction: SagaDirection.forward, status: SagaStepStatus.succeeded),
-      SagaStep(order: 2, operation: 'OpenBillingAccount', direction: SagaDirection.forward, status: SagaStepStatus.dispatched),
+      SagaStep(
+        order: 1,
+        operation: 'CreateTenant',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.succeeded,
+      ),
+      SagaStep(
+        order: 2,
+        operation: 'OpenBillingAccount',
+        direction: SagaDirection.forward,
+        status: SagaStepStatus.dispatched,
+      ),
     ],
   ),
 ];

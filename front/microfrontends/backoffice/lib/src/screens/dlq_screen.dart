@@ -27,7 +27,8 @@ class DlqScreen extends StatefulWidget {
 }
 
 class _DlqScreenState extends State<DlqScreen> {
-  late Future<List<DeadLetterQueue>> _queues = widget.repository.deadLetterQueues();
+  late Future<List<DeadLetterQueue>> _queues = widget.repository
+      .deadLetterQueues();
   Future<List<DeadLetterMessage>>? _messages;
 
   @override
@@ -81,9 +82,8 @@ class _DlqScreenState extends State<DlqScreen> {
       _queues = widget.repository.deadLetterQueues();
       _messages = _loadMessages(queue);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.dlqRedriveDone(moved))),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l10n.dlqRedriveDone(moved))));
   }
 
   @override
@@ -122,11 +122,12 @@ class _DlqScreenState extends State<DlqScreen> {
                             Expanded(
                               child: Text(
                                 queue.name,
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: queue.name == selected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: queue.name == selected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
                               ),
                             ),
                             Text(l10n.dlqMessagesCount(queue.messageCount)),

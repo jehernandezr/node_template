@@ -4,9 +4,14 @@ import 'package:mf_account/mf_account.dart';
 import 'package:shell_core/shell_core.dart';
 
 /// Rutas completas de un árbol de GoRoute, con los hijos relativos resueltos.
-Iterable<String> _fullPaths(List<RouteBase> routes, [String parent = '']) sync* {
+Iterable<String> _fullPaths(
+  List<RouteBase> routes, [
+  String parent = '',
+]) sync* {
   for (final route in routes.whereType<GoRoute>()) {
-    final path = route.path.startsWith('/') ? route.path : '$parent/${route.path}';
+    final path = route.path.startsWith('/')
+        ? route.path
+        : '$parent/${route.path}';
     yield path;
     yield* _fullPaths(route.routes, path);
   }

@@ -101,7 +101,11 @@ class MobileShellScaffold extends StatelessWidget {
   static MicrofrontendId? _idOf(MenuEntry entry) =>
       MicrofrontendIdPath.fromPath(entry.path);
 
-  void _showOverflow(BuildContext context, List<MenuEntry> overflow, AppLocalizations l10n) {
+  void _showOverflow(
+    BuildContext context,
+    List<MenuEntry> overflow,
+    AppLocalizations l10n,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(

@@ -34,9 +34,8 @@ class InvoiceDetailScreen extends StatefulWidget {
 class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   late Future<Invoice?> _future = widget.repository.invoice(widget.invoiceId);
 
-  void _reload() => setState(
-    () => _future = widget.repository.invoice(widget.invoiceId),
-  );
+  void _reload() =>
+      setState(() => _future = widget.repository.invoice(widget.invoiceId));
 
   @override
   Widget build(BuildContext context) {
@@ -157,9 +156,9 @@ class _InvoiceContent extends StatelessWidget {
         AppButton(
           label: l10n.download,
           variant: AppButtonVariant.secondary,
-          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.downloadPending)),
-          ),
+          onPressed: () =>
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(l10n.downloadPending))),
         ),
       ],
     );

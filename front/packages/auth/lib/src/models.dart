@@ -64,5 +64,6 @@ final class AuthException implements Exception {
   final String? message;
 
   @override
-  String toString() => 'AuthException($code${message == null ? '' : ': $message'})';
+  String toString() =>
+      'AuthException($code${message == null ? '' : ': $message'})';
 }
