@@ -15,7 +15,7 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 
 ## Código
 
-- Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Backend: `backend-codigo-enterprise`, `backend-estructura`, `backend-pruebas` y `backend-persistencia-typeorm`. Front: `front-codigo`, `front-estructura` y `front-pruebas`.
+- Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Se cargan solas según la carpeta que toques (`paths`); la puerta de entrada es `backend-codigo-enterprise` en el backend y `front-codigo` en el front, y cada una enlaza a las demás.
 - Clases, composición e inyección de dependencias por constructor. Nada de módulos de funciones sueltas tipo script.
 - Persistencia con TypeORM: entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.
 - Backend: las pruebas van en una carpeta `__tests__/` dentro de la carpeta del código que prueban, nunca un `.spec.ts` junto al archivo fuente. Front: en el `test/` de cada paquete, con las carpetas de `lib/src`.

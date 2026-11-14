@@ -1,6 +1,6 @@
 ---
 name: backend-estructura
-description: Cómo se organizan carpetas, dependencias y compilado del backend de node_template. Un solo node_modules con pnpm, librerías por alias de TypeScript, código directo en src/, pruebas en __tests__ y compilado de cada app en backend/dist. Úsala al crear o mover librerías, apps, módulos o pruebas del backend.
+description: Cómo se organizan carpetas, capas, dependencias y compilado del backend de node_template. Un solo node_modules con pnpm, librerías por alias de TypeScript, límites entre proyectos con tags de Nx, código directo en src/, pruebas en __tests__ y compilado de cada app en backend/dist. Úsala al crear o mover librerías, apps, módulos, carpetas o pruebas del backend.
 ---
 
 # Estructura del backend
@@ -14,7 +14,28 @@ description: Cómo se organizan carpetas, dependencias y compilado del backend d
 
 - Un pnpm workspace con un único `node_modules` en la raíz. Las dependencias externas se declaran en un solo `package.json` del backend (o de la raíz para herramientas), con versiones exactas.
 - Las librerías del backend no son paquetes: no tienen `package.json` ni `node_modules` propios. Son proyectos de Nx (`project.json` con sus tags) y se importan por alias de TypeScript (`@platform/kernel`, `@contracts/identity`) declarados en `tsconfig.base.json`.
-- Los límites entre proyectos los aplica `@nx/enforce-module-boundaries` con los tags.
+- Los límites los aplica `@nx/enforce-module-boundaries` con tags. Una importación que cruza un límite prohibido rompe el lint, no se arregla con un alias nuevo.
+- Se importa por el alias público del proyecto (`@platform/kernel`), nunca por ruta profunda a otro proyecto (`@platform/kernel/src/errors/...`).
+- Dependencia nueva: antes de agregarla, ver si reimplementarla es razonable. Se acepta solo si hacerlo en casa es imprudente (criptografía, protocolos) o caro. Se aísla detrás de un puerto.
+- Sin dependencias circulares entre proyectos ni entre carpetas de un servicio.
+
+## Capas dentro de un servicio
+
+```
+backend/libs/services/users/src/
+├── index.ts                      # API pública: fachada, enums, tokens
+├── shared/{enums,constants,types,utils}/
+└── modules/
+    └── sign-in/
+        ├── domain/               # agregados, objetos de valor, eventos, errores, puertos
+        ├── application/          # casos de uso, comandos, consultas, fachada
+        ├── infrastructure/       # repositorios TypeORM, entidades, mappers, clientes
+        └── presentation/         # controllers, consumidores, esquemas zod, *.module.ts
+```
+
+- Se agrupa por módulo de negocio, no por tipo técnico. Dentro del módulo, por capa.
+- Un módulo expone al resto solo lo que exporta su `index.ts`. Lo demás es privado.
+- Dirección de dependencias: `presentation` y `infrastructure` hacia `application`, `application` hacia `domain`, `domain` hacia `@platform/kernel`. Una prueba de arquitectura (regla de lint o `dependency-cruiser`) lo verifica en CI.
 
 ## Carpetas de código
 
@@ -40,18 +61,33 @@ backend/libs/platform/kernel/
 
 ## Pruebas
 
-- Cada carpeta de código tiene su carpeta `__tests__/` con las pruebas de esa carpeta. Ejemplo: `users/src/login/__tests__/`.
-- Nunca un `.spec.ts` junto al archivo fuente, ni una única carpeta de pruebas en la raíz del módulo.
-- Los dobles de prueba compartidos (fakes) van en `src/testing/` del proyecto y se exportan por un alias `.../testing`.
+- Cada carpeta de código tiene su carpeta `__tests__/` con las pruebas de esa carpeta. Ejemplo: `users/src/modules/sign-in/application/__tests__/`.
+- Nunca un `.spec.ts` junto al archivo fuente, ni una única carpeta de pruebas en la raíz del módulo. Esto reemplaza la convención por defecto de NestJS.
+- Los dobles compartidos (fakes) van en `src/testing/` del proyecto y se exportan por un alias `.../testing`. Código de producción nunca importa `testing`.
 - Las pruebas end to end de una app viven en `backend/apps/<app>/e2e/`.
+- Detalle en `backend-pruebas`.
 
 ## Compilado
 
 - Las librerías no se compilan por separado: su target es `typecheck`.
 - Cada app se empaqueta con esbuild en `backend/dist/<app>/`. No hay `dist/` dentro de librerías ni de apps.
 - `backend/dist/` está en `.gitignore`.
+- Los migradores (`migrate`) se empaquetan como binario de la misma app. Las migraciones TypeORM se compilan junto con la app, porque la CLI de `run` y `revert` solo carga JavaScript.
 
 ## Nombres de archivo
 
 - kebab-case con sufijo de rol: `sign-in.use-case.ts`, `user.repository.ts`, `typeorm-user.repository.ts`, `user.entity.ts`, `users.module.ts`, `users.facade.ts`.
-- Un archivo, una clase pública.
+- Un archivo, una clase pública. Tabla completa de roles en `backend-codigo-enterprise/references/nombres.md`.
+- Sin archivos `utils.ts` ni `helpers.ts` genéricos. Si hay lógica, tiene nombre de negocio y es una clase.
+- Los `index.ts` solo reexportan la API pública. Sin lógica y sin barriles internos que mezclen capas.
+
+## Cómo crear una librería nueva
+
+```
+- [ ] project.json con tags de tipo y de alcance
+- [ ] Alias en tsconfig.base.json
+- [ ] tsconfig.json y jest.config.cjs
+- [ ] src/index.ts con la API pública
+- [ ] Target typecheck y test
+- [ ] pnpm nx lint <proyecto> pasa sin romper límites
+```
