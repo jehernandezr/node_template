@@ -3,16 +3,17 @@ import 'package:auth/auth.dart';
 
 /// Base URL of the API, from `--dart-define=API_BASE_URL=https://...`.
 ///
-/// Empty means demo mode: demo sessions and the microfrontends' fakes.
+/// Empty means demo mode: demo sessions and the microfrontends' in-memory
+/// data.
 const String apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
 /// Real identity connection when [baseUrl] is set, or null in demo mode.
 ///
-/// Pending for the identity phase: the session token lives in memory
-/// ([InMemoryTokenStore]) until the Keychain/Keystore adapter exists, so a
-/// restart asks for the sign-in again; and there is no [DeviceKeyPort] of the
-/// Secure Enclave or Keystore yet, so the sign-in does not register the device
-/// (the demo key is never sent to a real server).
+/// The session token lives in memory ([InMemoryTokenStore]) until the
+/// Keychain and Keystore adapter exists, so a restart asks for the sign-in
+/// again. There is no device key either: without a Secure Enclave or Keystore
+/// adapter the sign-in does not register the device, and no fake key ever
+/// reaches a real server.
 IdentityConnection? mobileIdentityConnection([String baseUrl = apiBaseUrl]) {
   if (baseUrl.isEmpty) return null;
   return IdentityConnection(

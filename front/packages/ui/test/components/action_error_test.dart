@@ -37,7 +37,9 @@ void main() {
     expect(find.textContaining('raw'), findsNothing);
   });
 
-  testWidgets('an API error shows its detail and code', (tester) async {
+  testWidgets('an API error shows the catalog message and its code', (
+    tester,
+  ) async {
     await _pumpButton(
       tester,
       (context) => showActionError(
@@ -46,9 +48,9 @@ void main() {
           ProblemDetails(
             type: 'about:blank',
             title: 'Conflict',
-            detail: 'La tarea cambió',
-            status: 409,
-            code: 'TASKS.TASK.CONFLICT',
+            detail: 'Server text, never shown',
+            status: 403,
+            code: 'PLATFORM.AUTH.FORBIDDEN',
           ),
         ),
       ),
@@ -56,7 +58,15 @@ void main() {
     await tester.tap(find.text('go'));
     await tester.pump();
 
-    expect(find.text('La tarea cambió (TASKS.TASK.CONFLICT)'), findsOneWidget);
+    final l10n = lookupAppLocalizations(const Locale('es'));
+    expect(
+      find.text(
+        '${errorMessage(l10n, 'PLATFORM.AUTH.FORBIDDEN')} '
+        '(PLATFORM.AUTH.FORBIDDEN)',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Server text'), findsNothing);
   });
 
   testWidgets('an unknown error uses the default message', (tester) async {

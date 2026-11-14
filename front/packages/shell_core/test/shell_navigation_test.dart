@@ -6,38 +6,19 @@ import 'package:shell_core/shell_core.dart';
 import 'support/fakes.dart';
 
 void main() {
-  group('MicrofrontendIdPath.fromPath', () {
-    test('returns the owner of the first segment', () {
-      expect(
-        MicrofrontendIdPath.fromPath('/tasks/detail/1'),
-        MicrofrontendId.tasks,
-      );
-      expect(
-        MicrofrontendIdPath.fromPath('/billing?x=1'),
-        MicrofrontendId.billing,
-      );
-    });
-
-    test('is null for unknown segments, the root and prefixes of an id', () {
-      expect(MicrofrontendIdPath.fromPath('/nope'), isNull);
-      expect(MicrofrontendIdPath.fromPath('/'), isNull);
-      expect(MicrofrontendIdPath.fromPath('/tasksheet'), isNull);
-    });
-  });
-
   group('homeLocation', () {
     final registry = MicrofrontendRegistry()
-      ..register(fakeManifest(id: MicrofrontendId.account, order: 3))
+      ..register(fakeManifest(id: TestIds.account, order: 3))
       ..register(
         fakeManifest(
-          id: MicrofrontendId.tasks,
+          id: TestIds.tasks,
           order: 1,
           access: AccessRule.permissions([Permission.tasksRead]),
         ),
       )
       ..register(
         fakeManifest(
-          id: MicrofrontendId.billing,
+          id: TestIds.billing,
           order: 2,
           platforms: {AppPlatform.web},
         ),
@@ -64,7 +45,7 @@ void main() {
       final empty = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.tasks,
+            id: TestIds.tasks,
             access: AccessRule.permissions([Permission.tasksRead]),
           ),
         );
@@ -88,7 +69,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.tasks,
+            id: TestIds.tasks,
             access: AccessRule.permissions([Permission.tasksRead]),
           ),
         );
@@ -104,6 +85,7 @@ void main() {
             builder: (_, _) => const Text('forbidden'),
           ),
         ],
+        shellBuilder: passThroughShell,
       );
       await tester.pumpWidget(
         WidgetsApp.router(color: const Color(0xFF000000), routerConfig: router),

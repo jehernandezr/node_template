@@ -4,23 +4,17 @@ import 'package:material_ui/material_ui.dart';
 import 'access_rule.dart';
 import 'deferred_page.dart';
 import 'enums.dart';
-import 'microfrontend.dart';
 import 'microfrontend_manifest.dart';
 import 'microfrontend_registry.dart';
 import 'screen_route.dart';
 import 'shell_access.dart';
-import 'shell_navigation.dart';
 import 'shell_runtime.dart';
 
 /// Builds the shell's [GoRouter] with the manifest routes and path guards.
 ///
 /// [routes] are shell pages such as home, login, forbidden and step-up. They
 /// stay at the top level. The routes of the manifests for [platform] are built
-/// once, with [load], and placed according to the first matching option:
-/// - [wrapRoutes]: called with those routes; its result is added at the top
-///   level. Use it for full control of the route tree.
-/// - [shellBuilder]: the routes go into one `ShellRoute` with [shellNavigatorKey].
-/// - otherwise they are added at the top level.
+/// once, with [load], and go into one `ShellRoute` drawn by [shellBuilder].
 ///
 /// Each manifest receives `() => runtime.scopeFor(id)` as its scope accessor.
 /// The session comes from [runtime].
@@ -37,51 +31,43 @@ import 'shell_runtime.dart';
 /// [accessRedirect] works in them.
 ///
 /// The top-level redirect works by path, not by route tree. It takes the first
-/// segment of the location, finds the manifest with that
+/// segment of the location, finds the registered manifest with that
 /// [MicrofrontendId.pathSegment] and checks its access rule at [clock]:
 /// - an anonymous session that the rule rejects goes to
-///   `loginPath?from=<original location>`;
+///   `paths.login?from=<original location>`;
 /// - a session that cannot see the manifest on [platform] (platform or flag)
-///   goes to `forbiddenPath?from=<original location>`;
+///   goes to `paths.forbidden?from=<original location>`;
 /// - a signed-in session that only lacks a recent second factor
-///   (`AccessRule.mfa`) goes to `stepUpPath?from=<original location>`, or to
-///   the forbidden page when [stepUpPath] is null;
+///   (`AccessRule.mfa`) goes to `paths.stepUp?from=<original location>`, or
+///   to the forbidden page when the shell has no step-up page;
 /// - any other rejected session goes to the forbidden page.
 /// Locations already on the login, forbidden or step-up path are never
 /// redirected.
 ///
 /// Throws [StateError] at startup if a manifest has an absolute route path
-/// outside `/${id.pathSegment}`, or if [loginPath], [forbiddenPath] or
-/// [stepUpPath] belongs to a microfrontend segment. [clock] defaults to
-/// [ShellRuntime.clock].
+/// outside `/${id.pathSegment}`, or if a path of [paths] belongs to a
+/// microfrontend segment. [clock] defaults to [ShellRuntime.clock].
 GoRouter buildShellRouter({
   required MicrofrontendRegistry registry,
   required AppPlatform platform,
   required ShellRuntime runtime,
   required List<RouteBase> routes,
-  ShellRouteBuilder? shellBuilder,
-  GlobalKey<NavigatorState>? shellNavigatorKey,
-  RouteBase Function(List<RouteBase> microfrontendRoutes)? wrapRoutes,
+  required ShellRouteBuilder shellBuilder,
   ScreenLoader load = deferredPage,
-  String loginPath = '/login',
-  String forbiddenPath = '/forbidden',
-  String? stepUpPath,
+  ShellPaths paths = const ShellPaths(),
   DateTime Function()? clock,
 }) {
-  assert(
-    wrapRoutes == null || shellBuilder == null,
-    'Pass wrapRoutes or shellBuilder, not both',
-  );
-  _assertNotMicrofrontendPath(loginPath, 'loginPath');
-  _assertNotMicrofrontendPath(forbiddenPath, 'forbiddenPath');
-  if (stepUpPath != null) _assertNotMicrofrontendPath(stepUpPath, 'stepUpPath');
+  for (final (name, path) in [
+    ('login', paths.login),
+    ('forbidden', paths.forbidden),
+    ('stepUp', paths.stepUp),
+  ]) {
+    if (path != null && registry.manifestForPath(path) != null) {
+      throw StateError('$name path "$path" belongs to a microfrontend segment');
+    }
+  }
 
   final now = clock ?? runtime.clock;
-  final paths = ShellPaths(
-    login: loginPath,
-    forbidden: forbiddenPath,
-    stepUp: stepUpPath,
-  );
   final environment = ShellAccessEnvironment(
     session: runtime.session,
     clock: now,
@@ -113,31 +99,19 @@ GoRouter buildShellRouter({
     }
   }
 
-  final List<RouteBase> topLevel;
-  if (wrapRoutes != null) {
-    topLevel = [...routes, wrapRoutes(microfrontendRoutes)];
-  } else if (shellBuilder != null) {
-    topLevel = [
-      ...routes,
-      ShellRoute(
-        navigatorKey: shellNavigatorKey,
-        builder: shellBuilder,
-        routes: microfrontendRoutes,
-      ),
-    ];
-  } else {
-    topLevel = [...routes, ...microfrontendRoutes];
-  }
-
   final session = runtime.session;
   return GoRouter(
-    routes: topLevel,
+    routes: [
+      ...routes,
+      // go_router rejects an empty ShellRoute: a shell may register no screens.
+      if (microfrontendRoutes.isNotEmpty)
+        ShellRoute(builder: shellBuilder, routes: microfrontendRoutes),
+    ],
     refreshListenable: session,
     redirect: (context, state) {
       if (paths.contains(state.uri.path)) return null;
 
-      final id = MicrofrontendIdPath.fromPath(state.uri.toString());
-      final manifest = id == null ? null : registry.manifestFor(id);
+      final manifest = registry.manifestForPath(state.uri.path);
       if (manifest == null) return null;
 
       final current = session.value;
@@ -213,12 +187,6 @@ final class _PageWrapper {
       },
     ),
   );
-}
-
-void _assertNotMicrofrontendPath(String path, String name) {
-  if (MicrofrontendIdPath.fromPath(path) != null) {
-    throw StateError('$name "$path" belongs to a microfrontend segment');
-  }
 }
 
 /// Absolute paths of every route in [routes], searching nested routes too.

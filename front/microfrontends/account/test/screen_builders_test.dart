@@ -1,3 +1,4 @@
+import 'package:api/api.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -85,4 +86,55 @@ void main() {
     expect(stepUp.calls, 1);
     expect(find.text('Safari en iPhone'), findsOneWidget);
   });
+
+  group('en modo vivo', () {
+    ApiClient client() => ApiClient(
+      transport: _NoNetwork(),
+      baseUri: Uri.parse('https://api.example.com'),
+      accessToken: () async => 'token',
+    );
+
+    testWidgets('seguridad, sin contrato, se muestra como no disponible', (
+      tester,
+    ) async {
+      final es = await loadEs();
+      final scope = liveScope(client());
+      addTearDown(scope.dispose);
+      await tester.pumpWidget(
+        testApp(buildAccountSecurityScreen(scope), session: testSession()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('account-security-unavailable')),
+        findsOneWidget,
+      );
+      expect(find.text(es.sectionUnavailableMessage), findsOneWidget);
+    });
+
+    testWidgets('la cuenta no ofrece perfil ni secciones sin contrato', (
+      tester,
+    ) async {
+      final es = await loadEs();
+      final scope = liveScope(client());
+      addTearDown(scope.dispose);
+      await tester.pumpWidget(testApp(buildAccountOverviewScreen(scope)));
+      await tester.pumpAndSettle();
+
+      expect(find.text(es.sessionsTitle), findsWidgets);
+      expect(find.text(es.securityLinkTitle), findsNothing);
+      expect(find.text(es.agreementsLinkTitle), findsNothing);
+      expect(find.text('Ana Pérez'), findsNothing);
+    });
+  });
+}
+
+/// Transporte que nunca debería usarse en estas pruebas.
+class _NoNetwork implements HttpTransport {
+  @override
+  Future<TransportResponse> send(TransportRequest request) =>
+      throw StateError('sin red en esta prueba');
+
+  @override
+  void close() {}
 }

@@ -1,7 +1,8 @@
 # ui
 
 Shared Flutter widgets for the web and mobile shells and every microfrontend.
-Depends only on Flutter and `tokens`.
+Depends on Flutter, `tokens`, `i18n` (shared texts such as the error labels)
+and `contracts` (to show the code and trace id of an API error).
 
 ## Theme
 
@@ -23,8 +24,13 @@ Depends only on Flutter and `tokens`.
 - `AppButton(label, onPressed, variant: AppButtonVariant.primary | secondary | danger, loading)`
 - `AppCard(child, padding?, onTap?)`
 - `EmptyState(icon, title, message?, actionLabel?, onAction?)`
-- `ErrorView(message, code?, traceId?, onRetry?, retryLabel?)`: shows the
-  error code and trace id as selectable text.
+- `ErrorView(message, code?, traceId?, onRetry?)`: shows the error code and
+  trace id as selectable text. Its labels come from `AppLocalizations`.
+- `AsyncValueView(value, data, errorMessage, onRetry?)`: loading, error and
+  data of an `AsyncValue`.
+- `showActionError(context, error, message?)` and
+  `actionErrorMessage(l10n, error)`: the snack bar and the localized text of
+  a failed user action.
 - `LoadingView(message?)`
 
-Labels default to English (`Retry`). Pass localized text from the caller.
+The app must provide `AppLocalizations` from `i18n`.

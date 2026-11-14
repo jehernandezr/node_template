@@ -10,29 +10,28 @@ final class UserSession {
     this.tenantId,
     Set<Permission> permissions = const {},
     Set<PlatformRole> platformRoles = const {},
-    Set<PlanFeature> planFeatures = const {},
-    Set<FeatureFlag> featureFlags = const {},
+    Set<PlanFeature> features = const {},
+    Set<FeatureFlag> flags = const {},
     this.mfaVerifiedAt,
   }) : permissions = Set.unmodifiable(permissions),
        platformRoles = Set.unmodifiable(platformRoles),
-       planFeatures = Set.unmodifiable(planFeatures),
-       featureFlags = Set.unmodifiable(featureFlags);
+       features = Set.unmodifiable(features),
+       flags = Set.unmodifiable(flags);
 
   /// A session without a signed-in user.
   factory UserSession.anonymous() => UserSession();
 
-  /// Session of a real sign-in, from `GET /v1/me/access`.
+  /// Session of a real sign-in, from `GET /v1/me/access`. Field names are
+  /// the contract's.
   ///
-  /// Copies the user, the tenant, the permissions, the platform roles, the
-  /// plan features, the feature flags and the last second factor. Values
-  /// this client does not know were already dropped when decoding.
+  /// Values this client does not know were already dropped when decoding.
   factory UserSession.fromAccess(SessionAccess access) => UserSession(
     userId: access.userId,
     tenantId: access.tenantId,
     permissions: access.permissions.toSet(),
     platformRoles: access.platformRoles.toSet(),
-    planFeatures: access.features.toSet(),
-    featureFlags: access.flags.toSet(),
+    features: access.features.toSet(),
+    flags: access.flags.toSet(),
     mfaVerifiedAt: access.mfaVerifiedAt,
   );
 
@@ -49,10 +48,10 @@ final class UserSession {
   final Set<PlatformRole> platformRoles;
 
   /// Features included in the tenant plan.
-  final Set<PlanFeature> planFeatures;
+  final Set<PlanFeature> features;
 
   /// Feature flags enabled for the user.
-  final Set<FeatureFlag> featureFlags;
+  final Set<FeatureFlag> flags;
 
   /// Last time the user completed a second factor, or null when never in this
   /// session. `AccessRule.mfa` compares it with its maximum age.
@@ -70,8 +69,8 @@ final class UserSession {
     tenantId: tenantId,
     permissions: permissions,
     platformRoles: platformRoles,
-    planFeatures: planFeatures,
-    featureFlags: featureFlags,
+    features: features,
+    flags: flags,
     mfaVerifiedAt: at,
   );
 
@@ -84,8 +83,8 @@ final class UserSession {
           other.mfaVerifiedAt == mfaVerifiedAt &&
           _sameSet(other.permissions, permissions) &&
           _sameSet(other.platformRoles, platformRoles) &&
-          _sameSet(other.planFeatures, planFeatures) &&
-          _sameSet(other.featureFlags, featureFlags));
+          _sameSet(other.features, features) &&
+          _sameSet(other.flags, flags));
 
   @override
   int get hashCode => Object.hash(
@@ -93,8 +92,8 @@ final class UserSession {
     tenantId,
     Object.hashAllUnordered(permissions),
     Object.hashAllUnordered(platformRoles),
-    Object.hashAllUnordered(planFeatures),
-    Object.hashAllUnordered(featureFlags),
+    Object.hashAllUnordered(features),
+    Object.hashAllUnordered(flags),
     mfaVerifiedAt,
   );
 

@@ -13,8 +13,9 @@ Widget _loader({
   Widget Function(Object error, VoidCallback retry)? errorBuilder,
 }) => const SizedBox.shrink();
 
-MicrofrontendScope _scope() =>
-    MicrofrontendScope(DefaultShellServices(session: UserSession.anonymous()));
+MicrofrontendScope _scope() => MicrofrontendScope(
+  ShellServices(mode: ShellMode.demo, session: UserSession.anonymous()),
+);
 
 String _join(String prefix, String path) =>
     path.startsWith('/') ? path : '$prefix/$path';
@@ -34,7 +35,7 @@ final _importPattern = RegExp(
 
 void main() {
   test('manifest id matches package', () {
-    expect(billingManifest.id, MicrofrontendId.billing);
+    expect(billingManifest.id, const MicrofrontendId('billing'));
   });
 
   test('routes are nested under /billing', () {

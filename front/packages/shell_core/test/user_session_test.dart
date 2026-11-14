@@ -36,11 +36,8 @@ void main() {
         Permission.billingWrite,
       });
       expect(session.platformRoles, {PlatformRole.support});
-      expect(session.planFeatures, {
-        PlanFeature.billing,
-        PlanFeature.aiAssistant,
-      });
-      expect(session.featureFlags, {FeatureFlag.newReports});
+      expect(session.features, {PlanFeature.billing, PlanFeature.aiAssistant});
+      expect(session.flags, {FeatureFlag.newReports});
       expect(session.mfaVerifiedAt, verifiedAt);
       expect(session.isAuthenticated, isTrue);
     });

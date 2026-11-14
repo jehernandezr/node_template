@@ -1,7 +1,3 @@
-// Los campos privados se inicializan en la lista de inicializadores a propósito:
-// el constructor recibe nombres públicos sin guion bajo.
-// ignore_for_file: prefer_initializing_formals
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -23,8 +19,8 @@ typedef Clock = DateTime Function();
 /// session token, y [restore] obtiene un access token nuevo con un refresh.
 ///
 /// Habla con identity a través de [AuthRepository] con los tipos del
-/// contrato: [signIn], [requestMfaChallenge] y [verifyMfa] siguen el flujo de
-/// tres pasos del plan.
+/// contrato: [signIn], [requestMfaChallenge] y [verifyMfa] son los tres pasos
+/// del login desde un dispositivo nuevo (ADR 0006).
 ///
 /// Un [logout] anula todo lo que esté en curso: un login, una verificación MFA
 /// o un refresh que termine después no reabre la sesión. Las escrituras y
@@ -32,19 +28,16 @@ typedef Clock = DateTime Function();
 /// borrado de un logout siempre gana a una escritura que empezó antes.
 class SessionManager {
   SessionManager({
-    required AuthRepository repository,
-    required TokenStore tokenStore,
-    DeviceKeyPort? deviceKeys,
-    Clock? clock,
+    required this._repository,
+    required this._tokenStore,
+    this._deviceKeys,
+    this._clock = DateTime.now,
     this.refreshLead = const Duration(minutes: 2),
     this.invalidationCodes = defaultInvalidationCodes,
-  }) : _repository = repository,
-       _store = tokenStore,
-       _deviceKeys = deviceKeys,
-       _clock = clock ?? DateTime.now;
+  });
 
   final AuthRepository _repository;
-  final TokenStore _store;
+  final TokenStore _tokenStore;
   final DeviceKeyPort? _deviceKeys;
   final Clock _clock;
 
@@ -68,7 +61,7 @@ class SessionManager {
   /// después de un logout.
   int _generation = 0;
 
-  /// Cola de operaciones sobre [_store], para aplicarlas en orden.
+  /// Cola de operaciones sobre [_tokenStore], para aplicarlas en orden.
   Future<void> _storeQueue = Future<void>.value();
 
   AuthState get state => _state;
@@ -89,9 +82,9 @@ class SessionManager {
   /// de red; el session token se conserva para intentarlo de nuevo.
   Future<bool> restore() async {
     final generation = _generation;
-    final stored = await _serialized(_store.readSessionToken);
+    final stored = await _serialized(_tokenStore.readSessionToken);
     if (generation != _generation) return false;
-    if (stored == null && !_store.sessionInCookie) return false;
+    if (stored == null && !_tokenStore.sessionInCookie) return false;
     _sessionToken = stored;
     try {
       await _refresh();
@@ -194,8 +187,9 @@ class SessionManager {
     try {
       // Se lee fuera de la cola del almacén: esperar detrás de una escritura
       // pendiente dejaría que esa escritura abriera la sesión antes del cierre.
-      final sessionToken = _sessionToken ?? await _store.readSessionToken();
-      if (sessionToken != null || _store.sessionInCookie) {
+      final sessionToken =
+          _sessionToken ?? await _tokenStore.readSessionToken();
+      if (sessionToken != null || _tokenStore.sessionInCookie) {
         await _repository.logout(sessionToken: sessionToken);
       }
     } finally {
@@ -341,7 +335,7 @@ class SessionManager {
     }
     final sessionToken = tokens.sessionToken;
     if (sessionToken != null) {
-      await _serialized(() => _store.writeSessionToken(sessionToken));
+      await _serialized(() => _tokenStore.writeSessionToken(sessionToken));
       if (generation != _generation) {
         throw const SignedOutException();
       }
@@ -356,7 +350,7 @@ class SessionManager {
     _tokens = null;
     _sessionToken = null;
     _setState(AuthState.signedOut);
-    await _serialized(_store.clear);
+    await _serialized(_tokenStore.clear);
   }
 
   /// Ejecuta [operation] sobre el almacén después de las ya pedidas.

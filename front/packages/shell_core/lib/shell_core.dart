@@ -7,7 +7,6 @@ export 'package:contracts/contracts.dart'
 export 'src/access_rule.dart';
 export 'src/deferred_page.dart';
 export 'src/enums.dart';
-export 'src/events.dart';
 export 'src/microfrontend.dart';
 export 'src/microfrontend_manifest.dart';
 export 'src/microfrontend_registry.dart';

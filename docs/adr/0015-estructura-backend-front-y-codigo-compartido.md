@@ -68,7 +68,7 @@ front/
     contracts/         # lib/src/core (a mano) y lib/src/<servicio>/{enums,constants,types,schemas,http} (generado)
     utils/             # funciones puras que usan los tipos de contracts
     api/               # ApiClient: valida la petición contra el contrato antes de llamar por HTTP
-    shell_core/ ui/ tokens/ i18n/ auth/ realtime/
+    shell_core/ shell_host/ ui/ tokens/ i18n/ auth/
   tools/contracts_gen/ # genera Dart desde backend/libs/contracts/*/export/contract.json
 ```
 

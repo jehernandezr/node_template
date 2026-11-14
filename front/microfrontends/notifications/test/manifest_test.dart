@@ -5,7 +5,8 @@ import 'package:shell_core/shell_core.dart';
 
 void main() {
   test('manifest id matches the package', () {
-    expect(notificationsManifest.id, MicrofrontendId.notifications);
+    expect(notificationsManifest.id, const MicrofrontendId('notifications'));
+    expect(notificationsManifest.modes, {ShellMode.demo});
     expect(notificationsManifest.platforms, {
       AppPlatform.web,
       AppPlatform.mobile,
@@ -41,7 +42,11 @@ void main() {
   test('the menu entry points at the inbox', () {
     final entry = notificationsManifest.menu.single;
     expect(entry.path, NotificationsPaths.inbox);
-    expect(entry.labelKey, 'menuNotifications');
+    expect(entry.label.byLanguage, {
+      'es': 'Notificaciones',
+      'en': 'Notifications',
+    });
+    expect(entry.badge, isNotNull);
   });
 
   group('access', () {

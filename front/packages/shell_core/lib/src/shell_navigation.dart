@@ -5,20 +5,6 @@ import 'enums.dart';
 import 'microfrontend_registry.dart';
 import 'user_session.dart';
 
-/// Helpers the shells share for navigation and sign-out.
-extension MicrofrontendIdPath on MicrofrontendId {
-  /// Microfrontend whose [MicrofrontendId.pathSegment] is the first segment of
-  /// [path], or null when no microfrontend owns that segment.
-  static MicrofrontendId? fromPath(String path) {
-    final segment = Uri.parse(path).pathSegments.firstOrNull;
-    if (segment == null) return null;
-    for (final id in MicrofrontendId.values) {
-      if (id.pathSegment == segment) return id;
-    }
-    return null;
-  }
-}
-
 /// Path of the first visible menu entry for [session] on [platform], or null
 /// when the session sees no menu entry.
 String? homeLocation(

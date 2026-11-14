@@ -1,22 +1,37 @@
-import 'package:go_router/go_router.dart';
+import 'package:i18n/i18n.dart';
 
-import 'deferred_page.dart';
 import 'enums.dart';
 import 'microfrontend.dart';
 import 'microfrontend_manifest.dart';
-import 'microfrontend_scope.dart';
 import 'user_session.dart';
 
 /// Holds the manifests of a shell and answers what a session can use.
 final class MicrofrontendRegistry {
   final Map<MicrofrontendId, MicrofrontendManifest> _manifests = {};
 
-  /// Registers [manifest]. Throws [StateError] if its id is already registered.
+  /// Registers [manifest].
+  ///
+  /// Throws [StateError] if its id is already registered or is not a valid
+  /// URL segment, or if a menu label lacks one of the [supportedLocales].
   void register(MicrofrontendManifest manifest) {
-    if (_manifests.containsKey(manifest.id)) {
-      throw StateError('Microfrontend already registered: ${manifest.id.name}');
+    final id = manifest.id;
+    if (!id.isValid) {
+      throw StateError('Microfrontend id is not a URL segment: "${id.name}"');
     }
-    _manifests[manifest.id] = manifest;
+    if (_manifests.containsKey(id)) {
+      throw StateError('Microfrontend already registered: ${id.name}');
+    }
+    for (final entry in manifest.menu) {
+      for (final locale in supportedLocales) {
+        if (!entry.label.byLanguage.containsKey(locale.languageCode)) {
+          throw StateError(
+            'Menu entry ${entry.path} of ${id.name} has no '
+            '"${locale.languageCode}" label',
+          );
+        }
+      }
+    }
+    _manifests[id] = manifest;
   }
 
   /// All registered manifests, in registration order.
@@ -24,6 +39,13 @@ final class MicrofrontendRegistry {
 
   /// Manifest registered for [id], or null.
   MicrofrontendManifest? manifestFor(MicrofrontendId id) => _manifests[id];
+
+  /// Manifest whose segment is the first one of [location], or null when no
+  /// registered microfrontend owns it.
+  MicrofrontendManifest? manifestForPath(String location) {
+    final segment = Uri.parse(location).pathSegments.firstOrNull;
+    return segment == null ? null : _manifests[MicrofrontendId(segment)];
+  }
 
   /// Manifests visible to [session] on [platform] at [now], in registration
   /// order.
@@ -56,18 +78,29 @@ final class MicrofrontendRegistry {
     return entries;
   }
 
-  /// Routes of every manifest registered for [platform], built with [load].
+  /// Router location for an app link whose path is [segments] and whose
+  /// query is [query], or null when no microfrontend registered for
+  /// [platform] accepts it.
   ///
-  /// [scopeFor] supplies the scope of each manifest. Routes are not filtered by
-  /// visibility: the router guards them by path. Prefer `buildShellRouter`,
-  /// which builds each manifest's routes only once.
-  List<RouteBase> routesFor(
+  /// The first segment picks the microfrontend; its `deepLinks` reads the
+  /// rest. A location outside that microfrontend's routes is refused.
+  String? resolveDeepLink(
+    List<String> segments,
+    Map<String, String> query,
     AppPlatform platform,
-    ScreenLoader load,
-    MicrofrontendScope Function(MicrofrontendId id) scopeFor,
-  ) => [
-    for (final manifest in _manifests.values)
-      if (manifest.platforms.contains(platform))
-        ...manifest.buildRoutes(load, () => scopeFor(manifest.id)),
-  ];
+  ) {
+    if (segments.isEmpty) return null;
+    final manifest = _manifests[MicrofrontendId(segments.first)];
+    final resolve = manifest?.deepLinks;
+    if (manifest == null ||
+        resolve == null ||
+        !manifest.platforms.contains(platform)) {
+      return null;
+    }
+    final location = resolve(segments.sublist(1), query);
+    if (location == null) return null;
+    final prefix = '/${manifest.id.pathSegment}';
+    final path = Uri.parse(location).path;
+    return path == prefix || path.startsWith('$prefix/') ? location : null;
+  }
 }

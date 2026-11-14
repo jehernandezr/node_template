@@ -46,7 +46,8 @@ class _LoadedState extends State<_Loaded> {
 
 /// Scope of one identity. Each call is a new identity with no objects yet.
 MicrofrontendScope newScope({String userId = 'user-1'}) => MicrofrontendScope(
-  DefaultShellServices(
+  ShellServices(
+    mode: ShellMode.demo,
     session: UserSession(userId: userId, tenantId: 'tenant-1'),
   ),
 );

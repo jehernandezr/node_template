@@ -94,37 +94,6 @@ void main() {
     }
   });
 
-  group('menuLabel', () {
-    const menuKeys = {
-      'menuAccount': 'Account',
-      'menuTasks': 'Tasks',
-      'menuNotifications': 'Notifications',
-      'menuAssistant': 'Assistant',
-      'menuBilling': 'Billing',
-      'menuBackoffice': 'Administration',
-      'menuVerifier': 'Verifier',
-    };
-
-    test('maps every menu key to its English label', () {
-      final en = lookupAppLocalizations(const Locale('en'));
-      menuKeys.forEach((key, label) {
-        expect(menuLabel(en, key), label, reason: key);
-      });
-    });
-
-    test('maps every menu key to its Spanish label', () {
-      final es = lookupAppLocalizations(const Locale('es'));
-      expect(menuLabel(es, 'menuAccount'), 'Cuenta');
-      expect(menuLabel(es, 'menuBackoffice'), 'Administración');
-    });
-
-    test('returns the key itself for an unknown key', () {
-      final en = lookupAppLocalizations(const Locale('en'));
-      expect(menuLabel(en, 'menuUnknown'), 'menuUnknown');
-      expect(menuLabel(en, ''), '');
-    });
-  });
-
   group('errorMessage', () {
     test('returns the Spanish message for a known code', () {
       final l10n = lookupAppLocalizations(const Locale('es'));

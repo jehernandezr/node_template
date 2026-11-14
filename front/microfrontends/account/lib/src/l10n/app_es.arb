@@ -17,6 +17,9 @@
   "agreementsLinkTitle": "Acuerdos",
   "agreementsLinkMessage": "Términos, consentimientos y documentos firmados.",
 
+  "sectionUnavailableTitle": "Aún no disponible",
+  "sectionUnavailableMessage": "Esta sección todavía no está conectada al servidor.",
+
   "actionFailed": "La acción no se pudo completar. Intenta de nuevo.",
   "loadError": "No pudimos cargar esta información.",
   "versionLabel": "Versión {version}",

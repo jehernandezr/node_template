@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
@@ -137,14 +136,10 @@ class AsyncBody<T> extends StatelessWidget {
   Widget build(BuildContext context) => FutureBuilder<T>(
     future: future,
     builder: (context, snapshot) {
-      final shared = AppLocalizations.of(context);
       return AsyncValueView<T>(
         value: AsyncValue.fromSnapshot(snapshot),
         errorMessage: BackofficeLocalizations.of(context).loadError,
         onRetry: onRetry,
-        retryLabel: shared.actionRetry,
-        codeLabel: shared.errorCodeLabel,
-        traceIdLabel: shared.errorTraceIdLabel,
         data: (data) => builder(context, data),
       );
     },

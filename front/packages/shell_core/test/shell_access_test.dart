@@ -33,14 +33,14 @@ final _backofficeRule = AccessRule.all([
 MicrofrontendRegistry _registry() => MicrofrontendRegistry()
   ..register(
     fakeManifest(
-      id: MicrofrontendId.backoffice,
+      id: TestIds.backoffice,
       access: _backofficeRule,
       routePath: '/backoffice',
     ),
   )
   ..register(
     fakeManifest(
-      id: MicrofrontendId.tasks,
+      id: TestIds.tasks,
       access: AccessRule.permissions([Permission.tasksRead]),
       screens: [
         ScreenRoute(
@@ -61,7 +61,7 @@ MicrofrontendRegistry _registry() => MicrofrontendRegistry()
   )
   ..register(
     fakeManifest(
-      id: MicrofrontendId.billing,
+      id: TestIds.billing,
       access: AccessRule.authenticated(),
       screens: [
         fakeScreen(
@@ -97,7 +97,8 @@ Future<GoRouter> _pump(
     platform: AppPlatform.web,
     runtime: fakeRuntime(registry: registry, session: session),
     routes: _shellPages,
-    stepUpPath: stepUpPath,
+    shellBuilder: passThroughShell,
+    paths: ShellPaths(stepUp: stepUpPath),
     clock: _clock,
   );
   addTearDown(router.dispose);
@@ -193,7 +194,8 @@ void main() {
             session: ValueNotifier(UserSession.anonymous()),
           ),
           routes: _shellPages,
-          stepUpPath: '/backoffice/step-up',
+          shellBuilder: passThroughShell,
+          paths: ShellPaths(stepUp: '/backoffice/step-up'),
         ),
         throwsStateError,
       );
@@ -368,7 +370,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.tasks,
+            id: TestIds.tasks,
             screens: [
               ScreenRoute(
                 path: '/tasks',
@@ -387,6 +389,7 @@ void main() {
         platform: AppPlatform.web,
         runtime: fakeRuntime(registry: registry, session: session),
         routes: _shellPages,
+        shellBuilder: passThroughShell,
       );
       addTearDown(router.dispose);
       await tester.pumpWidget(

@@ -32,10 +32,14 @@ Iterable<String> _goPaths(List<RouteBase> routes, [String parent = '']) sync* {
 
 void main() {
   test('id, platform and menu', () {
-    expect(backofficeManifest.id, MicrofrontendId.backoffice);
+    expect(backofficeManifest.id, const MicrofrontendId('backoffice'));
     expect(backofficeManifest.platforms, {AppPlatform.web});
     expect(backofficeManifest.menu.single.path, '/backoffice');
-    expect(backofficeManifest.menu.single.labelKey, 'menuBackoffice');
+    expect(
+      backofficeManifest.menu.single.label.byLanguage['es'],
+      'Administración',
+    );
+    expect(backofficeManifest.modes, {ShellMode.demo});
     expect(backofficeManifest.hasLifecycle, isFalse);
   });
 

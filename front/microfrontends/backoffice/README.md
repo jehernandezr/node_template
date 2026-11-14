@@ -28,7 +28,7 @@ La interfaz solo oculta; la API vuelve a comprobar cada petición.
 
 ## Carga diferida
 
-`lib/mf_backoffice.dart` es el manifiesto y se carga con el shell. Importa `shell_core`, las constantes de `src/shared/constants` y, como import diferido, `src/screens/screens.dart`. Nada de `src/{data,screens,l10n}` puede alcanzarse sin `deferred as` desde el manifiesto: los clientes lo descargarían y los textos ARB del backoffice aparecerían en `main.dart.js` (lo comprueba `front/tools/check_deferred_chunks.dart`). `test/deferred_boundary_test.dart` recorre el grafo de imports del manifiesto y vigila esta regla.
+`lib/mf_backoffice.dart` es el manifiesto y se carga con el shell. Importa `shell_core`, las constantes de `src/shared/constants` y, como import diferido, `src/screens/screens.dart`. Nada de `src/{data,screens,l10n}` puede alcanzarse sin `deferred as` desde el manifiesto: los clientes lo descargarían y los textos ARB del backoffice aparecerían en `main.dart.js` (lo comprueba `front/tools/check_deferred_chunks.dart`). `front/tools/check_microfrontend_boundaries.dart`, que corre en `analyze`, recorre el grafo de imports del manifiesto y vigila esta regla.
 
 `src/screens/screens.dart` expone un punto de entrada por pantalla (`overviewPage(scope)`, `dlqPage(scope, queue: ...)`, ...), sin `BuildContext`. Cada uno obtiene el repositorio del `MicrofrontendScope` de la identidad actual y envuelve la pantalla en `BackofficeLocalized`, que añade `BackofficeLocalizations.delegate`. Los diálogos se abren con `showBackofficeDialog`, porque viven en el navegador raíz, fuera de la página.
 

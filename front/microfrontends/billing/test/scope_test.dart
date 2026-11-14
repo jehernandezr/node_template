@@ -2,8 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_billing/src/screens/billing_screens.dart';
 import 'package:shell_core/shell_core.dart';
 
-MicrofrontendScope _scope() =>
-    MicrofrontendScope(DefaultShellServices(session: UserSession.anonymous()));
+MicrofrontendScope _scope() => MicrofrontendScope(
+  ShellServices(mode: ShellMode.demo, session: UserSession.anonymous()),
+);
 
 void main() {
   test('one repository per scope', () {

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
@@ -110,7 +109,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
     setState(() => _inbox = AsyncValue.data(next));
     try {
       await save();
-    } catch (error) {
+    } on Exception catch (error) {
       if (!mounted) return;
       setState(() => _inbox = AsyncValue.data(previous));
       showActionError(
@@ -124,7 +123,6 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = NotificationsLocalizations.of(context);
-    final common = AppLocalizations.of(context);
     final hasUnread = _inbox.valueOrNull?.any((n) => !n.read) ?? false;
     return AppPage(
       title: l10n.inboxTitle,
@@ -142,9 +140,6 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
       body: AsyncValueView<List<AppNotification>>(
         value: _inbox,
         errorMessage: l10n.loadError,
-        codeLabel: common.errorCodeLabel,
-        traceIdLabel: common.errorTraceIdLabel,
-        retryLabel: common.actionRetry,
         onRetry: _retry,
         data: (items) => _InboxList(items: items, onOpen: _open),
       ),

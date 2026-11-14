@@ -12,7 +12,7 @@ Microfrontend de la cuenta del usuario, para web y móvil. Todas las rutas viven
 
 - `lib/mf_account.dart`: exporta `accountManifest`. Solo importa `shell_core`, `go_router`, `material_ui` y la librería diferida de pantallas. Las rutas reciben `load` y `scope`; las secciones son hijas de `/account`.
 - `lib/src/screens/screen_builders.dart`: funciones `buildAccount*Screen(MicrofrontendScope)`. Obtienen el `AccountRepository` del scope (`scope.get`), envuelven la pantalla con `Localizations.override` y, en el resumen, pasan `scope.services.signOut`.
-- `lib/src/data/`: `AccountRepository` (abstracto) y `FakeAccountRepository` con datos de ejemplo. Aún no hay llamadas al backend.
+- `lib/src/data/`: `AccountRepository` (abstracto, con sus `capabilities`), `FakeAccountRepository` (modo demo, con datos de ejemplo) y `ApiAccountRepository` (modo vivo). El real solo sirve lo que tiene contrato `identity`, sesiones y dispositivos; el perfil, la confianza de dispositivos, la seguridad y los acuerdos lanzan `UnsupportedError`, y las pantallas no los ofrecen o los muestran como no disponibles.
 - `lib/src/screens/`: pantallas, reunidas en `screens.dart`. Cada pantalla tiene su `AppBar`.
 - `lib/src/screens/widgets/`: componentes compartidos de las pantallas y `step_up.dart`, que pide el step-up al shell cuando `accountStepUpRule` no se cumple.
 - `lib/src/shared/constants/`: ruta base, tamaños y `accountStepUpRule` (ventana de `MfaRules.stepUpMaxAgeMinutes`). Es lo único, junto con `shared/enums`, que el manifiesto carga de entrada.

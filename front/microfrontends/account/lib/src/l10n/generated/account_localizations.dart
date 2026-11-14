@@ -162,6 +162,18 @@ abstract class AccountLocalizations {
   /// **'Términos, consentimientos y documentos firmados.'**
   String get agreementsLinkMessage;
 
+  /// No description provided for @sectionUnavailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no disponible'**
+  String get sectionUnavailableTitle;
+
+  /// No description provided for @sectionUnavailableMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección todavía no está conectada al servidor.'**
+  String get sectionUnavailableMessage;
+
   /// No description provided for @actionFailed.
   ///
   /// In es, this message translates to:

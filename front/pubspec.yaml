@@ -18,8 +18,8 @@ workspace:
   - packages/auth
   - packages/contracts
   - packages/i18n
-  - packages/realtime
   - packages/shell_core
+  - packages/shell_host
   - packages/tokens
   - packages/ui
   - packages/utils

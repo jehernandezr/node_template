@@ -1,22 +1,24 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
+import 'package:auth/testing.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mobile_shell/src/app.dart';
-import 'package:mobile_shell/src/login/login_page.dart';
-import 'package:mobile_shell/src/registry.dart';
-import 'package:mobile_shell/src/router.dart';
+import 'package:mobile_shell/src/mobile_shell.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:shell_core/testing.dart';
+import 'package:shell_host/shell_host.dart';
 import 'package:ui/ui.dart';
 
 const _phoneSize = Size(390, 844);
 
+/// Pumps the shell on a phone in Spanish. Its session starts as [session]
+/// and the test writes it through the returned notifier.
 Future<ValueNotifier<UserSession>> _pumpShell(
   WidgetTester tester, {
   UserSession? session,
-  MicrofrontendRegistry? registry,
+  List<MicrofrontendManifest>? manifests,
   IdentityConnection? connection,
 }) async {
   tester.view.physicalSize = _phoneSize * 3;
@@ -27,18 +29,23 @@ Future<ValueNotifier<UserSession>> _pumpShell(
   tester.platformDispatcher.localesTestValue = const [Locale('es')];
   addTearDown(tester.platformDispatcher.clearLocaleTestValue);
 
-  final notifier = ValueNotifier<UserSession>(
-    session ?? UserSession.anonymous(),
-  );
-  await tester.pumpWidget(
-    MobileShellApp(
-      registry: registry ?? buildMobileRegistry(),
-      session: notifier,
-      connection: connection,
-    ),
-  );
+  final host = buildMobileHost(connection: connection, manifests: manifests);
+  if (session != null) host.session.value = session;
+  await tester.pumpWidget(ShellHostApp(host: host));
+  addTearDown(() async {
+    // Queued identity syncs run on the fake clock: let them finish before
+    // unmounting disposes the host, so no timer is left behind.
+    var idle = false;
+    host.runtime.whenIdle().then((_) => idle = true);
+    for (var i = 0; i < 50 && !idle; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(idle, isTrue, reason: 'the runtime never got idle');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
   await tester.pump();
-  return notifier;
+  return host.session;
 }
 
 GoRouter _router(WidgetTester tester) =>
@@ -50,12 +57,9 @@ Future<void> _go(WidgetTester tester, String location) async {
   await tester.pump();
 }
 
-/// Lets the lifecycles publish their first events (they run after a queue hop).
-Future<void> _settle(WidgetTester tester) async {
-  for (var i = 0; i < 5; i++) {
-    await tester.pump();
-  }
-}
+/// Pumps until nothing is animating: lifecycles have published and the
+/// demo data has arrived.
+Future<void> _settle(WidgetTester tester) => tester.pumpAndSettle();
 
 String _location(WidgetTester tester) => _router(tester).state.uri.toString();
 
@@ -63,7 +67,7 @@ final UserSession _client = UserSession(
   userId: 'u1',
   tenantId: 't1',
   permissions: {Permission.tasksRead},
-  planFeatures: {PlanFeature.aiAssistant},
+  features: {PlanFeature.aiAssistant},
 );
 
 final UserSession _clientNoAssistant = UserSession(
@@ -72,48 +76,48 @@ final UserSession _clientNoAssistant = UserSession(
   permissions: {Permission.tasksRead},
 );
 
-/// Real mobile registry plus a probe screen at `/billing` that uses [AppPage],
-/// as every screen does after the WP0 migration.
-MicrofrontendRegistry _registryWithProbe() => buildMobileRegistry()
-  ..register(
-    MicrofrontendManifest(
-      id: MicrofrontendId.billing,
-      platforms: {AppPlatform.mobile},
-      access: AccessRule.authenticated(),
-      menu: const [],
-      screens: [
-        ScreenRoute(
-          path: '/billing',
-          loadLibrary: () async {},
-          builder: (scope, {params = const {}}) =>
-              _ProbeScreen(userId: scope.services.session.userId!),
-          routes: [
-            ScreenRoute(
-              path: 'secure',
-              access: AccessRule.mfa(const Duration(minutes: 10)),
-              loadLibrary: () async {},
-              builder: (scope, {params = const {}}) =>
-                  const AppPage(title: 'Seguro', body: Text('zona segura')),
+/// Real mobile manifests plus a probe at `/probe` that serves demo and live
+/// shells, with screens drawn with [AppPage].
+List<MicrofrontendManifest> _manifestsWithProbe() => [
+  ...mobileManifests,
+  MicrofrontendManifest(
+    id: const MicrofrontendId('probe'),
+    platforms: {AppPlatform.mobile},
+    access: AccessRule.authenticated(),
+    menu: const [],
+    screens: [
+      ScreenRoute(
+        path: '/probe',
+        loadLibrary: () async {},
+        builder: (scope, {params = const {}}) =>
+            _ProbeScreen(userId: scope.services.session.userId!),
+        routes: [
+          ScreenRoute(
+            path: 'secure',
+            access: AccessRule.mfa(const Duration(minutes: 10)),
+            loadLibrary: () async {},
+            builder: (scope, {params = const {}}) =>
+                const AppPage(title: 'Seguro', body: Text('zona segura')),
+          ),
+          ScreenRoute(
+            path: 'api',
+            loadLibrary: () async {},
+            builder: (scope, {params = const {}}) => AppPage(
+              title: 'Api',
+              body: Text('modo: ${scope.services.mode.name}'),
             ),
-            ScreenRoute(
-              path: 'api',
-              loadLibrary: () async {},
-              builder: (scope, {params = const {}}) => AppPage(
-                title: 'Api',
-                body: Text('api: ${scope.services.extra<ApiClient>() != null}'),
-              ),
-            ),
-            ScreenRoute(
-              path: 'sensitive',
-              loadLibrary: () async {},
-              builder: (scope, {params = const {}}) =>
-                  _StepUpProbe(requestStepUp: scope.services.requestStepUp),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+          ),
+          ScreenRoute(
+            path: 'sensitive',
+            loadLibrary: () async {},
+            builder: (scope, {params = const {}}) =>
+                _StepUpProbe(requestStepUp: scope.services.requestStepUp),
+          ),
+        ],
+      ),
+    ],
+  ),
+];
 
 /// Asks the shell for a step-up, as a sensitive action does, and shows the
 /// answer.
@@ -165,34 +169,6 @@ class _ProbeScreenState extends State<_ProbeScreen> {
       AppPage(title: 'Probe', body: Text('usuario $_loadedFor'));
 }
 
-/// Runtime over [registry] that follows [session], with its own event bus.
-ShellRuntime _runtimeFor(
-  MicrofrontendRegistry registry,
-  ValueNotifier<UserSession> session,
-) {
-  late final ShellRuntime runtime;
-  runtime = ShellRuntime(
-    registry: registry,
-    platform: AppPlatform.mobile,
-    session: session,
-    servicesFactory: (identity) => DefaultShellServices(session: identity),
-  );
-  return runtime;
-}
-
-GoRouter _routerFor(
-  MicrofrontendRegistry registry,
-  ShellRuntime runtime,
-  ValueNotifier<UserSession> session,
-) => buildMobileRouter(
-  registry: registry,
-  runtime: runtime,
-  session: session,
-  unreadCount: ValueNotifier<int>(0),
-  onSignOut: () async {},
-  stepUp: StepUpRequests(path: stepUpPath),
-);
-
 /// Absolute paths of every GoRoute in [routes], nested ones included.
 Iterable<String> _absolutePaths(List<RouteBase> routes) sync* {
   for (final route in routes) {
@@ -206,6 +182,9 @@ Iterable<String> _absolutePaths(List<RouteBase> routes) sync* {
 }
 
 void main() {
+  setUpAll(() => loadDeferredLibraries(_manifestsWithProbe()));
+  setUp(resetDeferredPageCache);
+
   testWidgets('anonymous visitor on a protected page goes to login with from', (
     tester,
   ) async {
@@ -220,7 +199,7 @@ void main() {
     await _pumpShell(tester);
     await _go(tester, '/tasks');
 
-    await tester.tap(find.byKey(const ValueKey('demo-sign-in-client')));
+    await tester.tap(find.byKey(const ValueKey('demo-sign-in-customer')));
     await tester.pumpAndSettle();
 
     expect(_location(tester), '/tasks');
@@ -280,9 +259,9 @@ void main() {
       await _pumpShell(
         tester,
         session: _client,
-        registry: _registryWithProbe(),
+        manifests: _manifestsWithProbe(),
       );
-      await _go(tester, '/billing');
+      await _go(tester, '/probe');
       // Let the page transition finish so the top bar is on screen.
       await tester.pump(const Duration(seconds: 1));
 
@@ -330,8 +309,12 @@ void main() {
   });
 
   testWidgets('sign-out goes to login without from', (tester) async {
-    await _pumpShell(tester, session: _client, registry: _registryWithProbe());
-    await _go(tester, '/billing');
+    await _pumpShell(
+      tester,
+      session: _client,
+      manifests: _manifestsWithProbe(),
+    );
+    await _go(tester, '/probe');
     // Let the page transition finish so the top bar is on screen.
     await tester.pump(const Duration(seconds: 1));
 
@@ -347,19 +330,17 @@ void main() {
     await _go(tester, '/forbidden');
 
     expect(find.text('Acceso denegado'), findsOneWidget);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Cerrar sesión'));
+    await tester.tap(find.widgetWithText(AppButton, 'Cerrar sesión'));
     await _settle(tester);
 
     expect(_location(tester), '/login');
   });
 
-  test('router built from the real registry validates paths and lists each route once', () {
-    final session = ValueNotifier<UserSession>(UserSession.anonymous());
-    final registry = buildMobileRegistry();
-    final runtime = _runtimeFor(registry, session);
-    final router = _routerFor(registry, runtime, session);
+  test('the router of the real manifests lists each route once', () async {
+    final host = buildMobileHost();
+    addTearDown(host.dispose);
 
-    final paths = _absolutePaths(router.configuration.routes).toList();
+    final paths = _absolutePaths(host.router.configuration.routes).toList();
     expect(
       paths.toSet(),
       hasLength(paths.length),
@@ -375,20 +356,14 @@ void main() {
         '/verifier',
       ]),
     );
-
-    router.dispose();
-    runtime.dispose();
-    session.dispose();
   });
 
-  test(
-    'a route outside its microfrontend prefix fails router construction',
-    () {
-      final session = ValueNotifier<UserSession>(UserSession.anonymous());
-      final registry = MicrofrontendRegistry()
-        ..register(
+  test('a route outside its microfrontend prefix fails at startup', () {
+    expect(
+      () => buildMobileHost(
+        manifests: [
           MicrofrontendManifest(
-            id: MicrofrontendId.tasks,
+            id: const MicrofrontendId('tasks'),
             platforms: {AppPlatform.mobile},
             access: AccessRule.public(),
             menu: const [],
@@ -401,35 +376,27 @@ void main() {
               ),
             ],
           ),
-        );
-      final runtime = _runtimeFor(registry, session);
+        ],
+      ),
+      throwsStateError,
+    );
+  });
 
-      expect(() => _routerFor(registry, runtime, session), throwsStateError);
+  test('a new identity gets fresh scopes and the previous scope is '
+      'disposed', () async {
+    final host = buildMobileHost();
+    addTearDown(host.dispose);
+    const tasks = MicrofrontendId('tasks');
+    host.session.value = _client;
 
-      runtime.dispose();
-      session.dispose();
-    },
-  );
+    final before = host.runtime.scopeFor(tasks);
+    host.session.value = _clientNoAssistant;
+    final after = host.runtime.scopeFor(tasks);
 
-  test(
-    'a new identity gets fresh scopes and the previous scope is disposed',
-    () {
-      final session = ValueNotifier<UserSession>(_client);
-      final registry = buildMobileRegistry();
-      final runtime = _runtimeFor(registry, session);
-
-      final before = runtime.scopeFor(MicrofrontendId.tasks);
-      session.value = _clientNoAssistant;
-      final after = runtime.scopeFor(MicrofrontendId.tasks);
-
-      expect(identical(before, after), isFalse);
-      expect(after.services.session.userId, 'u2');
-      expect(() => before.get<Object>((_) => Object()), throwsStateError);
-
-      runtime.dispose();
-      session.dispose();
-    },
-  );
+    expect(identical(before, after), isFalse);
+    expect(after.services.session.userId, 'u2');
+    expect(() => before.get<Object>((_) => Object()), throwsStateError);
+  });
 
   testWidgets('identity switch: a mounted route shows the new user\'s data', (
     tester,
@@ -437,16 +404,16 @@ void main() {
     final session = await _pumpShell(
       tester,
       session: _client,
-      registry: _registryWithProbe(),
+      manifests: _manifestsWithProbe(),
     );
-    await _go(tester, '/billing');
+    await _go(tester, '/probe');
     await _settle(tester);
     expect(find.text('usuario u1'), findsOneWidget);
 
     session.value = _clientNoAssistant;
     await _settle(tester);
 
-    expect(_location(tester), '/billing');
+    expect(_location(tester), '/probe');
     expect(find.text('usuario u2'), findsOneWidget);
     expect(find.text('usuario u1'), findsNothing);
   });
@@ -457,19 +424,19 @@ void main() {
       final session = await _pumpShell(
         tester,
         session: _client,
-        registry: _registryWithProbe(),
+        manifests: _manifestsWithProbe(),
       );
-      await _go(tester, '/billing/secure');
+      await _go(tester, '/probe/secure');
       await tester.pump(const Duration(seconds: 1));
 
-      expect(_location(tester), '/step-up?from=%2Fbilling%2Fsecure');
+      expect(_location(tester), '/step-up?from=%2Fprobe%2Fsecure');
       expect(find.text('Verificación adicional'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('step-up-verify')));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(_location(tester), '/billing/secure');
+      expect(_location(tester), '/probe/secure');
       expect(find.text('zona segura'), findsOneWidget);
       expect(session.value.mfaVerifiedAt, isNotNull);
     },
@@ -481,9 +448,9 @@ void main() {
       final session = await _pumpShell(
         tester,
         session: _client,
-        registry: _registryWithProbe(),
+        manifests: _manifestsWithProbe(),
       );
-      await _go(tester, '/billing/sensitive');
+      await _go(tester, '/probe/sensitive');
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('sin pedir'), findsOneWidget);
 
@@ -505,8 +472,12 @@ void main() {
   testWidgets('requestStepUp answers false when a go replaces the page', (
     tester,
   ) async {
-    await _pumpShell(tester, session: _client, registry: _registryWithProbe());
-    await _go(tester, '/billing/sensitive');
+    await _pumpShell(
+      tester,
+      session: _client,
+      manifests: _manifestsWithProbe(),
+    );
+    await _go(tester, '/probe/sensitive');
     await tester.pump(const Duration(seconds: 1));
 
     await tester.tap(find.text('pedir step-up'));
@@ -515,7 +486,7 @@ void main() {
     expect(find.text('Verificación adicional'), findsOneWidget);
 
     // A tab or a deep link navigates with go, not pop.
-    await _go(tester, '/billing/sensitive');
+    await _go(tester, '/probe/sensitive');
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Verificación adicional'), findsNothing);
@@ -567,12 +538,12 @@ void main() {
       prepare();
       final session = await _pumpShell(
         tester,
-        registry: _registryWithProbe(),
+        manifests: _manifestsWithProbe(),
         connection: connection,
       );
-      await _go(tester, '/billing/api');
+      await _go(tester, '/probe/api');
       expect(_location(tester), startsWith('/login'));
-      expect(find.byKey(const ValueKey('demo-sign-in-client')), findsNothing);
+      expect(find.byKey(const ValueKey('demo-sign-in-customer')), findsNothing);
 
       await tester.enterText(
         find.byKey(const ValueKey('sign-in-email')),
@@ -588,20 +559,24 @@ void main() {
 
       expect(session.value.userId, '0193f1c2-0000-7000-8000-0000000000a1');
       expect(session.value.permissions, {Permission.tasksRead});
-      expect(_location(tester), '/billing/api');
-      expect(find.text('api: true'), findsOneWidget);
+      expect(_location(tester), '/probe/api');
+      expect(find.text('modo: live'), findsOneWidget);
     });
 
     testWidgets('when identity closes the session the shell goes to login', (
       tester,
     ) async {
       prepare();
-      final session = await _pumpShell(tester, connection: connection);
+      final session = await _pumpShell(
+        tester,
+        manifests: _manifestsWithProbe(),
+        connection: connection,
+      );
       await connection.sessionManager.signIn(
         const SignInRequest(email: 'ana@example.com', password: 'secret'),
       );
       await connection.reloadAccess();
-      await _go(tester, '/tasks');
+      await _go(tester, '/account');
       expect(session.value.isAuthenticated, isTrue);
 
       await connection.sessionManager.logout();
@@ -613,17 +588,6 @@ void main() {
 
     testWidgets('an MFA route runs the identity step-up and returns with the '
         'mfaVerifiedAt of the server', (tester) async {
-      // flutter_test draws text with the Ahem font (one em per glyph), so the
-      // long Spanish method label overflows its button here. Real fonts fit.
-      // Only that overflow is ignored.
-      final previous = FlutterError.onError;
-      FlutterError.onError = (details) {
-        if (details.exceptionAsString().contains('RenderFlex overflowed')) {
-          return;
-        }
-        previous?.call(details);
-      };
-      addTearDown(() => FlutterError.onError = previous);
       prepare();
       final verifiedAt = DateTime.now().toUtc();
       repository
@@ -646,14 +610,14 @@ void main() {
         );
       final session = await _pumpShell(
         tester,
-        registry: _registryWithProbe(),
+        manifests: _manifestsWithProbe(),
         connection: connection,
       );
       await connection.sessionManager.signIn(
         const SignInRequest(email: 'ana@example.com', password: 'secret'),
       );
       await connection.reloadAccess();
-      await _go(tester, '/billing/secure');
+      await _go(tester, '/probe/secure');
       await _settle(tester);
       await tester.pump(const Duration(seconds: 1));
       expect(_location(tester), startsWith('/step-up'));
@@ -673,17 +637,9 @@ void main() {
       expect(repository.lastStepUpVerify?.mfaToken, 'step-1');
       expect(session.value.mfaVerifiedAt, verifiedAt);
       expect(await connection.sessionManager.accessToken(), 'access-mfa');
-      expect(_location(tester), '/billing/secure');
+      expect(_location(tester), '/probe/secure');
       expect(find.text('zona segura'), findsOneWidget);
     });
-  });
-
-  test('safeReturnLocation rejects external targets', () {
-    expect(safeReturnLocation(null), '/');
-    expect(safeReturnLocation('/tasks/t1'), '/tasks/t1');
-    expect(safeReturnLocation('https://evil.test/x'), '/');
-    expect(safeReturnLocation('//evil.test/x'), '/');
-    expect(safeReturnLocation(r'/\evil.test'), '/');
   });
 }
 
@@ -691,4 +647,7 @@ class _NoNetwork implements HttpTransport {
   @override
   Future<TransportResponse> send(TransportRequest request) async =>
       const TransportResponse(statusCode: 503);
+
+  @override
+  void close() {}
 }

@@ -124,9 +124,6 @@ class AccountAsyncView<T> extends StatelessWidget {
       data: data,
       errorMessage: message,
       onRetry: onRetry,
-      retryLabel: shared.actionRetry,
-      codeLabel: shared.errorCodeLabel,
-      traceIdLabel: shared.errorTraceIdLabel,
     );
   }
 }

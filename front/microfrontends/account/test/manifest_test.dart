@@ -25,7 +25,8 @@ void main() {
   setUp(resetDeferredPageCache);
 
   test('manifest id, menu and lifecycle', () {
-    expect(accountManifest.id, MicrofrontendId.account);
+    expect(accountManifest.id, const MicrofrontendId('account'));
+    expect(accountManifest.modes, {ShellMode.demo, ShellMode.live});
     expect(accountManifest.menu.single.path, '/account');
     expect(accountManifest.hasLifecycle, isFalse);
   });

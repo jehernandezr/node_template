@@ -83,7 +83,6 @@ final class AsyncError<T> extends AsyncValue<T> {
 /// AsyncValueView<List<Task>>(
 ///   value: _tasks,
 ///   errorMessage: l10n.loadError,
-///   retryLabel: l10n.retry,
 ///   onRetry: _reload,
 ///   data: (tasks) => TaskList(tasks),
 /// )
@@ -97,9 +96,6 @@ class AsyncValueView<T> extends StatelessWidget {
     required this.errorMessage,
     this.onRetry,
     this.loading,
-    this.retryLabel,
-    this.codeLabel,
-    this.traceIdLabel,
   });
 
   /// State to show.
@@ -117,15 +113,6 @@ class AsyncValueView<T> extends StatelessWidget {
   /// Shown while loading. Defaults to [LoadingView].
   final Widget? loading;
 
-  /// Label of the retry button. Defaults to the localized [ErrorView] label.
-  final String? retryLabel;
-
-  /// Prefix of the error code line. Defaults to the localized [ErrorView] label.
-  final String? codeLabel;
-
-  /// Prefix of the trace id line. Defaults to the localized [ErrorView] label.
-  final String? traceIdLabel;
-
   @override
   Widget build(BuildContext context) => switch (value) {
     AsyncLoading<T>() => loading ?? const LoadingView(),
@@ -137,8 +124,5 @@ class AsyncValueView<T> extends StatelessWidget {
     error,
     fallbackMessage: errorMessage,
     onRetry: onRetry,
-    retryLabel: retryLabel,
-    codeLabel: codeLabel,
-    traceIdLabel: traceIdLabel,
   );
 }

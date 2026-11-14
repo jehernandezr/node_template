@@ -30,27 +30,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionSignOut => 'Cerrar sesión';
 
   @override
-  String get menuAccount => 'Cuenta';
-
-  @override
-  String get menuTasks => 'Tareas';
-
-  @override
-  String get menuNotifications => 'Notificaciones';
-
-  @override
-  String get menuAssistant => 'Asistente';
-
-  @override
-  String get menuBilling => 'Facturación';
-
-  @override
-  String get menuBackoffice => 'Administración';
-
-  @override
-  String get menuVerifier => 'Verificador';
-
-  @override
   String get menuMore => 'Más';
 
   @override

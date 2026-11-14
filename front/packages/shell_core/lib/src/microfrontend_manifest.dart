@@ -7,6 +7,18 @@ import 'enums.dart';
 import 'microfrontend.dart';
 import 'microfrontend_scope.dart';
 import 'screen_route.dart';
+import 'user_session.dart';
+
+/// Turns the rest of an app link into a router location of the
+/// microfrontend, or null when the link is not one of its own.
+///
+/// [rest] holds the path segments after the microfrontend's segment and
+/// [query] the query parameters. The result must start with
+/// `/${id.pathSegment}`.
+typedef DeepLinkResolver = String? Function(
+  List<String> rest,
+  Map<String, String> query,
+);
 
 /// Eager description of a microfrontend, exported by its package.
 ///
@@ -16,7 +28,7 @@ import 'screen_route.dart';
 /// Declare screens with [screens] (builders `(scope, {params})`, no
 /// `BuildContext`) and the lifecycle with [lifecycleFactory]. The contract is
 /// described in ADR 0018.
-final class MicrofrontendManifest implements MicrofrontendDescriptor {
+final class MicrofrontendManifest {
   /// Creates a manifest. Every absolute path in [screens] must
   /// start with `/${id.pathSegment}`.
   const MicrofrontendManifest({
@@ -26,20 +38,26 @@ final class MicrofrontendManifest implements MicrofrontendDescriptor {
     required this.menu,
     this.screens = const [],
     this.flag,
+    this.modes = const {ShellMode.demo, ShellMode.live},
     this.lifecycleFactory,
+    this.deepLinks,
   });
 
-  @override
+  /// Unique id of the microfrontend, also its first URL segment.
   final MicrofrontendId id;
 
-  @override
+  /// Platforms where the microfrontend is included.
   final Set<AppPlatform> platforms;
 
-  @override
+  /// Rule that decides who can use the microfrontend.
   final AccessRule access;
 
-  @override
+  /// Feature flag that must be enabled to see the microfrontend, if any.
   final FeatureFlag? flag;
+
+  /// Shell modes the microfrontend can serve. One whose data has no API yet
+  /// declares only [ShellMode.demo], and a live shell does not register it.
+  final Set<ShellMode> modes;
 
   /// Navigation entries this microfrontend contributes.
   final List<MenuEntry> menu;
@@ -50,6 +68,9 @@ final class MicrofrontendManifest implements MicrofrontendDescriptor {
 
   /// Builds a new lifecycle for each activation of the microfrontend.
   final Microfrontend Function()? lifecycleFactory;
+
+  /// App links the microfrontend accepts, or null when it accepts none.
+  final DeepLinkResolver? deepLinks;
 
   /// Whether the microfrontend declares a lifecycle.
   bool get hasLifecycle => lifecycleFactory != null;
@@ -66,4 +87,30 @@ final class MicrofrontendManifest implements MicrofrontendDescriptor {
     ScreenLoader load,
     MicrofrontendScope Function() scope,
   ) => [for (final screen in screens) screen.toGoRoute(load, scope)];
+
+  /// Whether [session] may see this microfrontend on [platform] at [now]
+  /// (default: the current time).
+  ///
+  /// Requires the platform to be supported, [access] to allow the session and,
+  /// when [flag] is set, the session to hold that flag.
+  bool isVisibleTo(
+    UserSession session,
+    AppPlatform platform, {
+    DateTime? now,
+  }) => _isAvailable(session, platform) && access.allows(session, now: now);
+
+  /// Like [isVisibleTo], but an MFA rule counts as passed for a signed-in
+  /// session. Menus use it so the user can open a section and step up there.
+  bool isReachableBy(
+    UserSession session,
+    AppPlatform platform, {
+    DateTime? now,
+  }) =>
+      _isAvailable(session, platform) && access.reachableBy(session, now: now);
+
+  bool _isAvailable(UserSession session, AppPlatform platform) {
+    if (!platforms.contains(platform)) return false;
+    final requiredFlag = flag;
+    return requiredFlag == null || session.flags.contains(requiredFlag);
+  }
 }

@@ -10,7 +10,8 @@ import '../shared/types/account_types.dart';
 import '../shared/utils/account_paths.dart';
 import 'widgets/account_widgets.dart';
 
-/// Resumen del perfil con enlaces a las secciones de la cuenta y cierre de sesión.
+/// Resumen del perfil con enlaces a las secciones de la cuenta y cierre de
+/// sesión. El perfil y las secciones que el repositorio no sirve no aparecen.
 class AccountOverviewScreen extends StatefulWidget {
   const AccountOverviewScreen({
     super.key,
@@ -28,7 +29,10 @@ class AccountOverviewScreen extends StatefulWidget {
 }
 
 class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
-  AsyncValue<AccountProfile> _profile = const AsyncValue.loading();
+  AsyncValue<AccountProfile?> _profile = const AsyncValue.loading();
+
+  bool _can(AccountCapability capability) =>
+      widget.repository.capabilities.contains(capability);
 
   @override
   void initState() {
@@ -37,7 +41,13 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
   }
 
   Future<void> _load() async {
-    final result = await AsyncValue.guard(widget.repository.loadProfile);
+    if (!_can(AccountCapability.profile)) {
+      setState(() => _profile = const AsyncValue.data(null));
+      return;
+    }
+    final result = await AsyncValue.guard<AccountProfile?>(
+      widget.repository.loadProfile,
+    );
     if (!mounted) return;
     setState(() => _profile = result);
   }
@@ -53,31 +63,33 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
     return AppPage(
       title: l10n.overviewTitle,
       body: PlatformScreen(
-        compact: (_) => AccountAsyncView<AccountProfile>(
+        compact: (_) => AccountAsyncView<AccountProfile?>(
           value: _profile,
           onRetry: _reload,
           data: (profile) => ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(profile.email),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      l10n.organizationLine(profile.tenantName),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+              if (profile != null) ...[
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(profile.email),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        l10n.organizationLine(profile.tenantName),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
+              ],
               Text(
                 l10n.manageSection,
                 style: Theme.of(context).textTheme.titleMedium,
@@ -93,16 +105,18 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
                 message: l10n.devicesLinkMessage,
                 section: AccountSection.devices,
               ),
-              _SectionLink(
-                title: l10n.securityLinkTitle,
-                message: l10n.securityLinkMessage,
-                section: AccountSection.security,
-              ),
-              _SectionLink(
-                title: l10n.agreementsLinkTitle,
-                message: l10n.agreementsLinkMessage,
-                section: AccountSection.agreements,
-              ),
+              if (_can(AccountCapability.security))
+                _SectionLink(
+                  title: l10n.securityLinkTitle,
+                  message: l10n.securityLinkMessage,
+                  section: AccountSection.security,
+                ),
+              if (_can(AccountCapability.agreements))
+                _SectionLink(
+                  title: l10n.agreementsLinkTitle,
+                  message: l10n.agreementsLinkMessage,
+                  section: AccountSection.agreements,
+                ),
               const SizedBox(height: AppSpacing.lg),
               AppButton(
                 label: AppLocalizations.of(context).actionSignOut,

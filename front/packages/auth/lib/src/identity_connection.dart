@@ -1,7 +1,3 @@
-// El constructor recibe `loadAccess` sin guion bajo y lo guarda en un campo
-// privado.
-// ignore_for_file: prefer_initializing_formals
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -19,7 +15,7 @@ typedef SessionAccessLoader = Future<SessionAccess> Function();
 /// Conexión real de un shell con identity.
 ///
 /// Reúne el [SessionManager], el [ApiClient] que firma con su access token y
-/// refresca la sesión ante `IDENTITY.TOKEN.STALE_PERMISSIONS`, y el acceso de
+/// refresca la sesión ante un código de [refreshCodes], y el acceso de
 /// la sesión ([access], de `GET /v1/me/access`): permisos, roles de
 /// plataforma, features, flags y último MFA. El shell convierte [access] en
 /// su `UserSession`.
@@ -30,7 +26,8 @@ typedef SessionAccessLoader = Future<SessionAccess> Function();
 /// autenticada que responda un código de invalidación (sesión revocada,
 /// vencida o reutilizada, token revocado, usuario o tenant suspendido).
 final class IdentityConnection {
-  /// Conexión sobre [transport] y [baseUri].
+  /// Conexión sobre [transport] y [baseUri]. La conexión es dueña de
+  /// [transport] y lo cierra en [dispose].
   ///
   /// Las rutas del login, el refresh y el cierre de sesión usan un
   /// [ApiClient] sin token; el resto (también el paso adicional),
@@ -55,7 +52,11 @@ final class IdentityConnection {
       ),
       baseUri: baseUri,
       accessToken: () => sessionManager.accessToken(),
-      onStalePermissions: () => sessionManager.refresh(),
+      sessionRefresh: SessionRefreshPolicy(
+        appliesTo: (problem) =>
+            refreshCodes.contains(IdentityErrorCode.fromCode(problem.code)),
+        refresh: () => sessionManager.refresh(),
+      ),
       defaultHeaders: defaultHeaders,
     );
     sessionManager = SessionManager(
@@ -75,18 +76,26 @@ final class IdentityConnection {
       apiClient: apiClient,
       loadAccess: () =>
           apiClient.send(IdentityRoutes.getSessionAccess, const Empty()),
+      transport: transport,
     );
   }
 
-  /// Conexión con sus piezas, para pruebas.
+  /// Conexión con sus piezas. Cierra [transport] en [dispose] cuando se da.
   IdentityConnection.withParts({
     required this.sessionManager,
     required this.apiClient,
-    required SessionAccessLoader loadAccess,
-  }) : _loadAccess = loadAccess {
+    required this._loadAccess,
+    this._transport,
+  }) {
     _lastState = sessionManager.state;
     _states = sessionManager.states.listen(_onState);
   }
+
+  /// Códigos con los que una ruta autenticada pide refrescar la sesión y
+  /// reintentar una vez: el token es válido pero quedó desactualizado.
+  static const Set<IdentityErrorCode> refreshCodes = {
+    IdentityErrorCode.tokenStalePermissions,
+  };
 
   /// Sesión y tokens.
   final SessionManager sessionManager;
@@ -96,7 +105,9 @@ final class IdentityConnection {
   final ApiClient apiClient;
 
   final SessionAccessLoader _loadAccess;
+  final HttpTransport? _transport;
   late final StreamSubscription<AuthState> _states;
+  bool _disposed = false;
   late AuthState _lastState;
   Future<SessionAccess>? _inFlight;
 
@@ -153,22 +164,22 @@ final class IdentityConnection {
   void markMfaVerified(DateTime at) {
     final current = _access.value;
     if (current == null || sessionManager.state == AuthState.signedOut) return;
-    _access.value = SessionAccess(
-      userId: current.userId,
-      tenantId: current.tenantId,
-      sessionId: current.sessionId,
-      permissions: current.permissions,
-      platformRoles: current.platformRoles,
-      features: current.features,
-      flags: current.flags,
-      mfaVerifiedAt: at,
-    );
+    // Por JSON, para no perder un campo que el contrato agregue después.
+    _access.value = SessionAccess.fromJson({
+      ...current.toJson(),
+      'mfaVerifiedAt': at.toUtc().toIso8601String(),
+    });
   }
 
+  /// Suelta la sesión en memoria y cierra el transporte. Repetirlo no hace
+  /// nada.
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
     await _states.cancel();
     _access.dispose();
     await sessionManager.dispose();
+    _transport?.close();
   }
 
   void _onState(AuthState state) {
@@ -179,9 +190,17 @@ final class IdentityConnection {
       _access.value = null;
     } else if (state == AuthState.signedIn &&
         previous == AuthState.refreshing) {
-      // Un refresh pudo traer permisos nuevos. Si la carga falla se conserva
-      // el acceso anterior; el siguiente refresh lo intenta de nuevo.
-      unawaited(reloadAccess().then<void>((_) {}, onError: (Object _) {}));
+      // Un refresh pudo traer permisos nuevos. Si la carga falla por la red o
+      // la API se conserva el acceso anterior y el siguiente refresh lo
+      // intenta de nuevo; un error de programación sigue hasta la zona.
+      unawaited(
+        reloadAccess().then<void>(
+          (_) {},
+          onError: (Object error, StackTrace stack) {
+            if (error is! Exception) Error.throwWithStackTrace(error, stack);
+          },
+        ),
+      );
     }
   }
 }
@@ -206,6 +225,9 @@ final class SessionInvalidationTransport implements HttpTransport {
   final RejectedTokenHandler onRejected;
 
   static const _bearer = 'Bearer ';
+
+  @override
+  void close() => inner.close();
 
   @override
   Future<TransportResponse> send(TransportRequest request) async {

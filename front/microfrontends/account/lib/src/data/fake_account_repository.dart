@@ -1,5 +1,6 @@
 import 'package:contracts/contracts.dart';
 
+import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 import 'account_repository.dart';
 
@@ -14,7 +15,8 @@ const List<String> _deviceIds = [
   '0193f1c2-0000-7000-8000-0000000000d2',
 ];
 
-/// Repositorio en memoria con datos de ejemplo y una demora artificial.
+/// Repositorio en memoria con datos de ejemplo y una demora artificial: el
+/// del modo demo, que sirve todas las capacidades.
 class FakeAccountRepository implements AccountRepository {
   FakeAccountRepository({
     this.delay = const Duration(milliseconds: 400),
@@ -49,6 +51,9 @@ class FakeAccountRepository implements AccountRepository {
   final List<Agreement> _accepted;
 
   bool _disposed = false;
+
+  @override
+  Set<AccountCapability> get capabilities => AccountCapability.values.toSet();
 
   /// Si el scope ya liberó este repositorio.
   bool get isDisposed => _disposed;

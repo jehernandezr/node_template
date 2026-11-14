@@ -19,23 +19,18 @@ import 'package:material_ui/material_ui.dart';
 /// when there is no [ScaffoldMessenger]. Otherwise it replaces the current
 /// snack bar and returns true.
 ///
-/// The text is [message] when given; otherwise the `detail` (or `title`) of an
-/// `ApiErrorException`; otherwise the localized `errorFallback` of
-/// [AppLocalizations]. The error code
-/// of an `ApiErrorException` is appended for support. Raw exception text is
-/// never shown.
+/// The text is [message] when given; otherwise [actionErrorMessage], the
+/// localized catalog message of the error. The error code of an
+/// `ApiErrorException` is appended for support. Neither the server's own text
+/// nor the raw exception is ever shown.
 bool showActionError(BuildContext context, Object error, {String? message}) {
   if (!context.mounted) return false;
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return false;
 
-  final problem = error is ApiErrorException ? error.problem : null;
   final text =
-      message ??
-      problem?.detail ??
-      problem?.title ??
-      AppLocalizations.of(context).errorFallback;
-  final code = problem?.code;
+      message ?? actionErrorMessage(AppLocalizations.of(context), error);
+  final code = error is ApiErrorException ? error.problem.code : null;
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(

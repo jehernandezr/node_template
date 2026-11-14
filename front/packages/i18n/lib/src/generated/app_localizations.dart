@@ -135,48 +135,6 @@ abstract class AppLocalizations {
   /// **'Cerrar sesión'**
   String get actionSignOut;
 
-  /// No description provided for @menuAccount.
-  ///
-  /// In es, this message translates to:
-  /// **'Cuenta'**
-  String get menuAccount;
-
-  /// No description provided for @menuTasks.
-  ///
-  /// In es, this message translates to:
-  /// **'Tareas'**
-  String get menuTasks;
-
-  /// No description provided for @menuNotifications.
-  ///
-  /// In es, this message translates to:
-  /// **'Notificaciones'**
-  String get menuNotifications;
-
-  /// No description provided for @menuAssistant.
-  ///
-  /// In es, this message translates to:
-  /// **'Asistente'**
-  String get menuAssistant;
-
-  /// No description provided for @menuBilling.
-  ///
-  /// In es, this message translates to:
-  /// **'Facturación'**
-  String get menuBilling;
-
-  /// No description provided for @menuBackoffice.
-  ///
-  /// In es, this message translates to:
-  /// **'Administración'**
-  String get menuBackoffice;
-
-  /// No description provided for @menuVerifier.
-  ///
-  /// In es, this message translates to:
-  /// **'Verificador'**
-  String get menuVerifier;
-
   /// No description provided for @menuMore.
   ///
   /// In es, this message translates to:

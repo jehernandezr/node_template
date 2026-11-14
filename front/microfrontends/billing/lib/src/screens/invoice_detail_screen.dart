@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatMoney;
@@ -10,6 +9,7 @@ import '../data/billing_repository.dart';
 import '../l10n/generated/billing_localizations.dart';
 import 'widgets/billing_colors.dart';
 import 'widgets/status_chip.dart';
+import '../shared/constants/billing_paths.dart';
 
 /// `/billing/invoices/:id`: invoice header, its charges and a download
 /// placeholder.
@@ -58,16 +58,12 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = BillingLocalizations.of(context);
-    final appL10n = AppLocalizations.of(context);
     return AppPage(
       title: l10n.invoiceTitle,
-      onBack: () => context.go('/billing/invoices'),
+      onBack: () => context.go(BillingPaths.invoices),
       body: AsyncValueView<Invoice?>(
         value: _state,
         errorMessage: l10n.loadError,
-        codeLabel: appL10n.errorCodeLabel,
-        traceIdLabel: appL10n.errorTraceIdLabel,
-        retryLabel: appL10n.actionRetry,
         onRetry: _reload,
         data: (invoice) {
           if (invoice == null) {

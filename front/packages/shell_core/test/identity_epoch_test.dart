@@ -85,7 +85,7 @@ void main() {
     final registry = MicrofrontendRegistry()
       ..register(
         fakeManifest(
-          id: MicrofrontendId.tasks,
+          id: TestIds.tasks,
           access: AccessRule.permissions([Permission.tasksRead]),
           screens: [
             ScreenRoute(
@@ -115,7 +115,7 @@ void main() {
     final registry = MicrofrontendRegistry()
       ..register(
         fakeManifest(
-          id: MicrofrontendId.tasks,
+          id: TestIds.tasks,
           screens: [
             ScreenRoute(
               path: '/tasks',
@@ -148,7 +148,7 @@ void main() {
     final registry = MicrofrontendRegistry()
       ..register(
         fakeManifest(
-          id: MicrofrontendId.tasks,
+          id: TestIds.tasks,
           screens: [
             ScreenRoute(
               path: '/tasks',
@@ -178,7 +178,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.tasks,
+            id: TestIds.tasks,
             access: AccessRule.permissions([Permission.tasksRead]),
             screens: [
               ScreenRoute(
@@ -216,7 +216,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.tasks,
+            id: TestIds.tasks,
             access: AccessRule.permissions([Permission.tasksRead]),
             screens: [
               ScreenRoute(

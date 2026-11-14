@@ -8,13 +8,6 @@
   "actionSignIn": "Iniciar sesión",
   "actionSignOut": "Cerrar sesión",
 
-  "menuAccount": "Cuenta",
-  "menuTasks": "Tareas",
-  "menuNotifications": "Notificaciones",
-  "menuAssistant": "Asistente",
-  "menuBilling": "Facturación",
-  "menuBackoffice": "Administración",
-  "menuVerifier": "Verificador",
   "menuMore": "Más",
 
   "demoModeTitle": "Modo demostración",

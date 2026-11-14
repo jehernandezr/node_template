@@ -30,27 +30,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSignOut => 'Sign out';
 
   @override
-  String get menuAccount => 'Account';
-
-  @override
-  String get menuTasks => 'Tasks';
-
-  @override
-  String get menuNotifications => 'Notifications';
-
-  @override
-  String get menuAssistant => 'Assistant';
-
-  @override
-  String get menuBilling => 'Billing';
-
-  @override
-  String get menuBackoffice => 'Administration';
-
-  @override
-  String get menuVerifier => 'Verifier';
-
-  @override
   String get menuMore => 'More';
 
   @override

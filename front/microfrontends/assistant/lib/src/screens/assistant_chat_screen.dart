@@ -1,6 +1,5 @@
 import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
@@ -82,7 +81,6 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AssistantLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
     return AppPage(
       title: l10n.chatTitle,
       onBack: () => context.go(assistantBasePath),
@@ -93,9 +91,6 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
             value: _controller.loadState,
             errorMessage: l10n.loadMessagesError,
             onRetry: _controller.load,
-            retryLabel: shared.actionRetry,
-            codeLabel: shared.errorCodeLabel,
-            traceIdLabel: shared.errorTraceIdLabel,
             data: (_) => Column(
               children: [
                 Expanded(child: _buildMessages()),

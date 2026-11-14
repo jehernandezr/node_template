@@ -53,7 +53,7 @@ backend/                       workspace pnpm del backend (Jest, ESLint y TypeSc
 front/                         pub workspace de Flutter
   apps/{web,mobile}/           shells
   microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
-  packages/                    api, auth, contracts, i18n, realtime, shell_core, tokens, ui, utils
+  packages/                    api, auth, contracts, i18n, shell_core, shell_host, tokens, ui, utils
   tools/                       contracts_gen, nx-plugin y check_deferred_chunks.dart
 nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.json
 .github/  .husky/  commitlint.config.mjs  lint-staged.config.mjs  .prettierrc  renovate.json  docs/
@@ -120,13 +120,17 @@ Cada microfrontend exporta un `MicrofrontendManifest` de `shell_core` y cumple e
 
 ```dart
 final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
-  id: MicrofrontendId.tasks,
+  id: tasksId,
   platforms: {AppPlatform.web, AppPlatform.mobile},
-  access: AccessRule.authenticated(),
-  menu: const [MenuEntry(labelKey: 'menuTasks', path: '/tasks', order: 20)],
+  access: tasksReadRule,
+  modes: const {ShellMode.demo},
+  menu: const [
+    MenuEntry(label: tasksMenuLabel, path: TasksPaths.list, order: 20, icon: Icons.check_circle_outline),
+  ],
+  deepLinks: _deepLink,
   screens: [
     ScreenRoute(
-      path: '/tasks',
+      path: TasksPaths.list,
       loadLibrary: screens.loadLibrary,
       builder: (scope, {params = const {}}) => screens.buildTasksList(scope),
     ),
@@ -154,7 +158,7 @@ El manifiesto se importa de forma inmediata: el shell lo lee al arrancar para ar
 1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`.
 2. Algún texto ARB del backoffice de 12 caracteres o más aparece en `main.dart.js`.
 
-El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto, así que carga `src/data` con `deferred as` a través de un puente (`lifecycle/unread_counts.dart`). En la VM (móvil y pruebas) un import condicional usa la variante directa, porque allí no hay bundle que dividir.
+El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto, así que carga `src/data` con `deferred as` a través de un puente (`lifecycle/unread_counts.dart`). En la VM, las pruebas cargan las librerías diferidas una vez en `setUpAll` con `loadDeferredLibraries` de `package:shell_core/testing.dart`.
 
 **Reglas**
 
@@ -168,17 +172,17 @@ El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto
 
 | Paquete      | Qué contiene                                                                                                                           |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell_host` | Lo común de los dos shells: arranque, sesión, login, step-up, página de acceso denegado y modo demo                                    |
 | `shell_core` | `MicrofrontendManifest`, `ScreenRoute`, registro, `ShellRuntime`, `ShellContext`, router (`buildShellRouter`) y reglas de acceso       |
 | `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores |
 | `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                       |
-| `utils`      | Funciones puras sobre los tipos de `contracts`: montos, fechas, identificadores y errores de campo                                     |
+| `utils`      | Funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                      |
 | `auth`       | Puertos, modelos y `SessionManager` de la sesión, con fakes para pruebas                                                               |
-| `realtime`   | Cliente de tiempo real con reconexión con backoff, reanudación por `lastEventId` y deduplicación por id                                |
 | `ui`         | Widgets adaptativos, layout (`AppPage`, `ShellChrome`, `PlatformScreen`) y tema                                                        |
 | `tokens`     | Colores y escalas de diseño en Dart                                                                                                    |
 | `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores                                                       |
 
-El siguiente paso en `realtime` son los adaptadores SSE y Socket.IO que implementan `RealtimeTransport`.
+El cliente de tiempo real del front llega con el servicio `realtime`, con adaptadores SSE y Socket.IO.
 
 **Despliegue.** El módulo `cloudfront-waf` crea el bucket S3 y la distribución de CloudFront de la web. El siguiente paso es el pipeline que publica la web y la app móvil.
 

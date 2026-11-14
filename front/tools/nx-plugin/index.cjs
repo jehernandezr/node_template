@@ -5,7 +5,9 @@
 //   `analyze`, `format-check` y, si tiene carpeta test/, `test`. Todas usan caché.
 // - En los microfrontends, `analyze` también corre
 //   `tools/check_microfrontend_boundaries.dart`: falla si el microfrontend
-//   declara o importa otro `mf_*`.
+//   declara o importa otro `mf_*`, si su manifiesto carga sin `deferred` algo
+//   que no sea constante, enum o ciclo de vida, o si sus carpetas `shared`
+//   no siguen el orden enums, constants, types, utils.
 // - Las dependencias entre paquetes salen de `dependencies` y `dev_dependencies`.
 // - `front-contracts` depende de los paquetes de contratos del backend
 //   (backend/libs/contracts/*), porque su Dart se genera desde ellos.

@@ -79,7 +79,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeNotificationsRepository()
-      ..saveError = StateError('save failed');
+      ..saveError = Exception('save failed');
     addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);

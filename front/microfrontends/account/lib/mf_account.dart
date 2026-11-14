@@ -4,6 +4,7 @@
 /// screens, repositories and texts live behind `deferred`.
 library;
 
+import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
 import 'src/screens/screens.dart' deferred as screens;
@@ -14,13 +15,20 @@ import 'src/shared/constants/account_access.dart';
 /// Manifest registered by the shells. Routes live under `/account`.
 ///
 /// Security needs a recent second factor: the shell sends a session without
-/// one to its step-up page first.
+/// one to its step-up page first. It serves demo and live shells: in live
+/// mode only what the identity contract covers is offered.
 final MicrofrontendManifest accountManifest = MicrofrontendManifest(
-  id: MicrofrontendId.account,
+  id: accountId,
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.authenticated(),
   menu: const [
-    MenuEntry(labelKey: 'menuAccount', path: accountBasePath, order: 10),
+    MenuEntry(
+      label: accountMenuLabel,
+      path: accountBasePath,
+      order: 10,
+      icon: Icons.person_outline,
+      selectedIcon: Icons.person,
+    ),
   ],
   screens: [
     ScreenRoute(

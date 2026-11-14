@@ -43,7 +43,7 @@ class _Recorder extends Microfrontend {
 
   @override
   Future<void> initialize(ShellContext context) async {
-    log.add('init $name for ${context.scope?.services.session.userId}');
+    log.add('init $name for ${context.scope.services.session.userId}');
     await gate?.future;
   }
 
@@ -79,17 +79,17 @@ void main() {
     );
     tasksProbe = _Probe('tasks', log);
     registry = MicrofrontendRegistry()
-      ..register(fakeManifest(id: MicrofrontendId.account))
+      ..register(fakeManifest(id: TestIds.account))
       ..register(
         fakeManifest(
-          id: MicrofrontendId.tasks,
+          id: TestIds.tasks,
           access: AccessRule.permissions([Permission.tasksRead]),
           lifecycleFactory: () => tasksProbe,
         ),
       )
       ..register(
         fakeManifest(
-          id: MicrofrontendId.backoffice,
+          id: TestIds.backoffice,
           access: AccessRule.permissions([Permission.backofficeAccess]),
           lifecycleFactory: () => _Probe('backoffice', log),
         ),
@@ -119,7 +119,7 @@ void main() {
   test('initializes visible lifecycles on start, not hidden ones', () async {
     await runtime.start();
     expect(log, ['init tasks']);
-    expect(runtime.activeIds, {MicrofrontendId.tasks});
+    expect(runtime.activeIds, {TestIds.tasks});
   });
 
   test(
@@ -177,7 +177,7 @@ void main() {
       userId: 'u1',
       tenantId: 't1',
       permissions: {Permission.tasksRead},
-      featureFlags: {FeatureFlag.newReports},
+      flags: {FeatureFlag.newReports},
     );
     await runtime.whenIdle();
     expect(log, ['init tasks']);
@@ -218,18 +218,18 @@ void main() {
 
   test('scope instance is reused within an identity and recreated after a user change', () async {
     await runtime.start();
-    final scopeA = runtime.scopeFor(MicrofrontendId.tasks);
+    final scopeA = runtime.scopeFor(TestIds.tasks);
     final first = scopeA.get<_Repo>(
       (services) => _Repo(services.session.userId!),
       dispose: (r) => r.disposed = true,
     );
-    expect(runtime.scopeFor(MicrofrontendId.tasks), same(scopeA));
+    expect(runtime.scopeFor(TestIds.tasks), same(scopeA));
     expect(scopeA.get<_Repo>((_) => _Repo('never')), same(first));
     expect(first.owner, 'u1');
 
     session.value = _user('u2', 't1', permissions: {Permission.tasksRead});
     await runtime.whenIdle();
-    final scopeB = runtime.scopeFor(MicrofrontendId.tasks);
+    final scopeB = runtime.scopeFor(TestIds.tasks);
     expect(scopeB, isNot(same(scopeA)));
     expect(first.disposed, isTrue);
 
@@ -243,25 +243,25 @@ void main() {
 
   test('a permission-only change keeps the same scope', () async {
     await runtime.start();
-    final scope = runtime.scopeFor(MicrofrontendId.tasks);
+    final scope = runtime.scopeFor(TestIds.tasks);
     session.value = _user(
       'u1',
       't1',
       permissions: {Permission.tasksRead, Permission.backofficeAccess},
     );
     await runtime.whenIdle();
-    expect(runtime.scopeFor(MicrofrontendId.tasks), same(scope));
+    expect(runtime.scopeFor(TestIds.tasks), same(scope));
   });
 
   test('scopeFor rejects unregistered microfrontends', () {
-    expect(() => runtime.scopeFor(MicrofrontendId.billing), throwsStateError);
+    expect(() => runtime.scopeFor(TestIds.billing), throwsStateError);
   });
 
   test(
     'identity change clears replayable events; a permission change keeps them',
     () async {
       await runtime.start();
-      runtime.eventBus.emit(const UnreadCountChanged(3));
+      runtime.eventBus.emit(const CountChanged(3));
 
       session.value = _user(
         'u1',
@@ -271,7 +271,7 @@ void main() {
       await runtime.whenIdle();
       final kept = <int>[];
       final keptSub = runtime.eventBus
-          .on<UnreadCountChanged>(replay: true)
+          .on<CountChanged>(replay: true)
           .listen((e) => kept.add(e.count));
       await Future<void>.delayed(Duration.zero);
       expect(kept, [3]);
@@ -281,7 +281,7 @@ void main() {
       await runtime.whenIdle();
       final replayed = <int>[];
       final sub = runtime.eventBus
-          .on<UnreadCountChanged>(replay: true)
+          .on<CountChanged>(replay: true)
           .listen((e) => replayed.add(e.count));
       await Future<void>.delayed(Duration.zero);
       expect(replayed, isEmpty);
@@ -292,11 +292,11 @@ void main() {
   test('dispose disposes the scopes', () async {
     await runtime.start();
     final repo = runtime
-        .scopeFor(MicrofrontendId.tasks)
+        .scopeFor(TestIds.tasks)
         .get<_Repo>((s) => _Repo('u1'), dispose: (r) => r.disposed = true);
     await runtime.dispose();
     expect(repo.disposed, isTrue);
-    expect(() => runtime.scopeFor(MicrofrontendId.tasks), throwsStateError);
+    expect(() => runtime.scopeFor(TestIds.tasks), throwsStateError);
   });
 
   test('an identity change during initialize does not start the rest of the '
@@ -306,14 +306,14 @@ void main() {
     final ordered = MicrofrontendRegistry()
       ..register(
         fakeManifest(
-          id: MicrofrontendId.account,
+          id: TestIds.account,
           access: AccessRule.authenticated(),
           lifecycleFactory: () => _Recorder('account', initLog, gate: gate),
         ),
       )
       ..register(
         fakeManifest(
-          id: MicrofrontendId.billing,
+          id: TestIds.billing,
           access: AccessRule.permissions([Permission.billingRead]),
           lifecycleFactory: () => _Recorder('billing', initLog),
         ),
@@ -334,6 +334,6 @@ void main() {
     await other.whenIdle();
 
     expect(initLog, ['init account for a', 'init account for b']);
-    expect(other.activeIds, {MicrofrontendId.account});
+    expect(other.activeIds, {TestIds.account});
   });
 }

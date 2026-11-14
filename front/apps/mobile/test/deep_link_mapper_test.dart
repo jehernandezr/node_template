@@ -1,8 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_shell/src/deep_links/deep_link_mapper.dart';
+import 'package:mobile_shell/src/mobile_shell.dart';
+import 'package:shell_core/shell_core.dart';
+
+/// The links of the mobile shell are those its manifests declare.
+MicrofrontendRegistry _mobileRegistry() {
+  final registry = MicrofrontendRegistry();
+  mobileManifests.forEach(registry.register);
+  return registry;
+}
 
 void main() {
-  const mapper = DeepLinkMapper();
+  final registry = _mobileRegistry();
+  final mapper = DeepLinkMapper(registry);
 
   group('DeepLinkMapper', () {
     test('maps the verifier challenge from the custom scheme', () {
@@ -85,7 +95,7 @@ void main() {
     });
 
     test('uses a custom web host when given', () {
-      const custom = DeepLinkMapper(webHost: 'other.test');
+      final custom = DeepLinkMapper(registry, webHost: 'other.test');
       expect(custom.map(Uri.parse('https://other.test/tasks/t1')), '/tasks/t1');
       expect(mapper.map(Uri.parse('https://other.test/tasks/t1')), isNull);
     });

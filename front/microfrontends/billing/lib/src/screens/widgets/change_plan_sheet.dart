@@ -85,9 +85,6 @@ class _ChangePlanSheetState extends State<ChangePlanSheet> {
         child: AsyncValueView<List<Plan>>(
           value: _plans,
           errorMessage: l10n.loadError,
-          codeLabel: appL10n.errorCodeLabel,
-          traceIdLabel: appL10n.errorTraceIdLabel,
-          retryLabel: appL10n.actionRetry,
           onRetry: _reloadPlans,
           loading: const SizedBox(height: 160, child: LoadingView()),
           data: (plans) {

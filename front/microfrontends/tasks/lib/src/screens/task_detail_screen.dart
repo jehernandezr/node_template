@@ -5,6 +5,7 @@ import 'package:ui/ui.dart';
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
 import 'task_detail_view.dart';
+import '../shared/constants/tasks_paths.dart';
 
 /// Route `/tasks/:id`: a task on its own page, with its own app bar.
 class TaskDetailScreen extends StatelessWidget {
@@ -22,11 +23,11 @@ class TaskDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) => AppPage(
     title: TasksLocalizations.of(context).detailTitle,
     // A deep link has nothing to pop: go to the list.
-    onBack: () => context.go('/tasks'),
+    onBack: () => context.go(TasksPaths.list),
     body: TaskDetailView(
       repository: repository,
       taskId: taskId,
-      onDeleted: () => context.go('/tasks'),
+      onDeleted: () => context.go(TasksPaths.list),
     ),
   );
 }

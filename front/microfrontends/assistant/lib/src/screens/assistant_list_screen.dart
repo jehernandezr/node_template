@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
@@ -54,7 +53,6 @@ class _AssistantListScreenState extends State<AssistantListScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AssistantLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
     return AppPage(
       title: l10n.title,
       floatingActionButton: FloatingActionButton.extended(
@@ -66,9 +64,6 @@ class _AssistantListScreenState extends State<AssistantListScreen> {
         value: _conversations,
         errorMessage: l10n.listError,
         onRetry: _retry,
-        retryLabel: shared.actionRetry,
-        codeLabel: shared.errorCodeLabel,
-        traceIdLabel: shared.errorTraceIdLabel,
         data: (items) {
           if (items.isEmpty) {
             return EmptyState(

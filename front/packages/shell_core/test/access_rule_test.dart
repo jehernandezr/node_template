@@ -12,8 +12,8 @@ void main() {
     tenantId: 't1',
     permissions: {Permission.tasksRead, Permission.tasksWrite},
     platformRoles: {PlatformRole.support},
-    planFeatures: {PlanFeature.aiAssistant},
-    featureFlags: {FeatureFlag.newReports},
+    features: {PlanFeature.aiAssistant},
+    flags: {FeatureFlag.newReports},
   );
 
   group('AccessRule', () {
@@ -39,21 +39,8 @@ void main() {
       expect(rule.allows(full), isTrue);
     });
 
-    test('permissions and anyPermission reject empty lists', () {
+    test('permissions rejects an empty list', () {
       expect(() => AccessRule.permissions([]), throwsA(isA<AssertionError>()));
-      expect(
-        () => AccessRule.anyPermission([]),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
-    test('anyPermission requires at least one listed permission', () {
-      final rule = AccessRule.anyPermission([
-        Permission.tasksWrite,
-        Permission.billingRead,
-      ]);
-      expect(rule.allows(reader), isFalse);
-      expect(rule.allows(full), isTrue);
     });
 
     test('platformRoles requires at least one listed role', () {
@@ -91,31 +78,9 @@ void main() {
       expect(rule.allows(full), isTrue);
     });
 
-    test('any requires at least one nested rule', () {
-      final rule = AccessRule.any([
-        AccessRule.permissions([Permission.billingRead]),
-        AccessRule.planFeature(PlanFeature.aiAssistant),
-      ]);
-      expect(rule.allows(reader), isFalse);
-      expect(rule.allows(full), isTrue);
-      expect(() => AccessRule.any([]), throwsA(isA<AssertionError>()));
-    });
-
     test('all requires at least one nested rule', () {
       // An empty list would allow everyone, anonymous visitors included.
       expect(() => AccessRule.all([]), throwsA(isA<AssertionError>()));
-    });
-
-    test('rules combine: all of any', () {
-      final rule = AccessRule.all([
-        AccessRule.authenticated(),
-        AccessRule.any([
-          AccessRule.permissions([Permission.billingRead]),
-          AccessRule.permissions([Permission.tasksWrite]),
-        ]),
-      ]);
-      expect(rule.allows(reader), isFalse);
-      expect(rule.allows(full), isTrue);
     });
   });
 

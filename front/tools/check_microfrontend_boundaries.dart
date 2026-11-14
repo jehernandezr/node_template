@@ -1,8 +1,15 @@
-// Verifica que un microfrontend no dependa de otro.
+// Verifica las fronteras de import de un microfrontend (ADR 0015 y 0018).
 //
-// Los microfrontends dependen solo de `front/packages` y nunca entre sí. Con
-// pub workspaces un `import 'package:mf_x/...'` compila aunque no esté
-// declarado, así que este script lo revisa en el código y en el pubspec.
+// - No depende de otro microfrontend: dependen solo de `front/packages`. Con
+//   pub workspaces un `import 'package:mf_x/...'` compila aunque no esté
+//   declarado, así que se revisa en el código y en el pubspec.
+// - El manifiesto (`lib/<nombre>.dart`) solo alcanza sin `deferred` las
+//   carpetas que pueden ir en el bundle inicial: `src/shared/constants`,
+//   `src/shared/enums` y `src/lifecycle`. Es la misma regla que comprueba
+//   `check_deferred_chunks.dart` sobre la compilación web, aquí sin compilar.
+// - Dentro de `src/shared`, cada carpeta importa solo las anteriores:
+//   `enums` ninguna, `constants` enums, `types` enums y constants, `utils`
+//   las tres.
 //
 // Se ejecuta desde la carpeta de un microfrontend (la tarea `analyze` de Nx de
 // los proyectos `type:front-microfrontends` lo hace):
@@ -14,9 +21,9 @@
 //   dart run tools/check_microfrontend_boundaries.dart --all
 //
 // Es un script independiente (sin pubspec): solo usa `dart:*`. Falla con código
-// 1 cuando el `pubspec.yaml` declara otro `mf_*` o cuando un archivo de `lib/`,
-// `test/` o `bin/` importa o exporta `package:mf_*` de otro microfrontend.
-// Termina con código 2 si no encuentra el pubspec o la carpeta pedida.
+// 1 ante cualquier violación y termina con código 2 si no encuentra el
+// pubspec o la carpeta pedida. Un import condicional se sigue por su URI por
+// defecto, la que compila la web.
 
 import 'dart:io';
 
@@ -26,6 +33,23 @@ final _directive = RegExp(
 );
 final _name = RegExp(r'^name:\s*([A-Za-z0-9_]+)\s*$', multiLine: true);
 final _dependency = RegExp(r'^ {2}(mf_[A-Za-z0-9_]+)\s*:', multiLine: true);
+
+/// `import` o `export` con su URI y lo que sigue hasta el `;`.
+final _edge = RegExp(
+  r'''^\s*(?:import|export)\s+['"]([^'"]+)['"]([^;]*);''',
+  multiLine: true,
+);
+
+/// Carpetas de `lib/src` que el manifiesto puede alcanzar sin `deferred`.
+const _eagerDirs = ['shared/constants/', 'shared/enums/', 'lifecycle/'];
+
+/// Carpetas de `src/shared` que puede importar cada una, además de sí misma.
+const _sharedRules = {
+  'enums': <String>{},
+  'constants': {'enums'},
+  'types': {'enums', 'constants'},
+  'utils': {'enums', 'constants', 'types'},
+};
 
 void main(List<String> args) {
   final all = args.contains('--all');
@@ -38,13 +62,14 @@ void main(List<String> args) {
   ];
   if (violations.isEmpty) {
     stdout.writeln(
-      'OK: ${roots.length} microfrontend(s) sin dependencias entre sí.',
+      'OK: ${roots.length} microfrontend(s) respetan sus fronteras de import.',
     );
     return;
   }
   stderr.writeln(
-    'FALLO: un microfrontend depende de otro. Lo compartido va en '
-    'front/packages o en el shell:',
+    'FALLO: fronteras de import. Lo compartido va en front/packages, y lo '
+    'que no es manifiesto, constante, enum o ciclo de vida se carga con '
+    '`deferred`:',
   );
   for (final violation in violations) {
     stderr.writeln('  - $violation');
@@ -82,7 +107,110 @@ List<String> checkMicrofrontend(Directory root) {
       }
     }
   }
+  final lib = Directory('${root.path}/lib');
+  if (lib.existsSync()) {
+    violations
+      ..addAll(_eagerViolations(lib, own))
+      ..addAll(_sharedViolations(lib, own));
+  }
   return violations;
+}
+
+/// Archivos de `lib/src` que el manifiesto alcanza sin `deferred` fuera de
+/// [_eagerDirs].
+List<String> _eagerViolations(Directory lib, String own) {
+  final manifest = File('${lib.path}/$own.dart');
+  if (!manifest.existsSync()) return ['${manifest.path}: no existe'];
+  final seen = <String>{};
+  final pending = [manifest.absolute.path];
+  final violations = <String>[];
+  while (pending.isNotEmpty) {
+    final path = pending.removeLast();
+    if (!seen.add(path)) continue;
+    final relative = _libRelative(lib, path);
+    if (relative.startsWith('src/') &&
+        !_eagerDirs.any((dir) => relative.startsWith('src/$dir'))) {
+      violations.add(
+        '${lib.path}/$relative: el manifiesto lo carga sin deferred',
+      );
+    }
+    for (final (target, deferred) in _localEdges(lib, own, path)) {
+      if (!deferred) pending.add(target);
+    }
+  }
+  return violations;
+}
+
+/// Imports entre carpetas de `src/shared` que no siguen [_sharedRules].
+List<String> _sharedViolations(Directory lib, String own) {
+  final shared = Directory('${lib.path}/src/shared');
+  if (!shared.existsSync()) return const [];
+  final violations = <String>[];
+  final files =
+      shared
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.dart'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+  for (final file in files) {
+    final relative = _libRelative(lib, file.absolute.path);
+    final folder = relative.split('/')[2];
+    final allowed = _sharedRules[folder];
+    if (allowed == null) {
+      violations.add('${lib.path}/$relative: carpeta compartida desconocida');
+      continue;
+    }
+    for (final (target, _) in _localEdges(lib, own, file.absolute.path)) {
+      final parts = _libRelative(lib, target).split('/');
+      final ok =
+          parts.length > 3 &&
+          parts[1] == 'shared' &&
+          (parts[2] == folder || allowed.contains(parts[2]));
+      if (!ok) {
+        violations.add(
+          '${lib.path}/$relative: importa ${parts.join('/')}, fuera de lo '
+          'que permite shared/$folder',
+        );
+      }
+    }
+  }
+  return violations;
+}
+
+/// Imports y exports de [path] hacia archivos de este paquete, con si son
+/// diferidos.
+Iterable<(String, bool)> _localEdges(
+  Directory lib,
+  String own,
+  String path,
+) sync* {
+  final source = File(path);
+  if (!source.existsSync()) return;
+  for (final match in _edge.allMatches(source.readAsStringSync())) {
+    final uri = match.group(1)!;
+    final String target;
+    if (uri.startsWith('package:$own/')) {
+      target = '${lib.absolute.path}/${uri.substring('package:$own/'.length)}';
+    } else if (uri.contains(':')) {
+      continue;
+    } else {
+      target = source.parent.uri.resolve(uri).toFilePath();
+    }
+    yield (
+      Uri.file(target).normalizePath().toFilePath(),
+      match.group(2)!.contains('deferred as'),
+    );
+  }
+}
+
+/// [path] relativo a [lib], con `/`.
+String _libRelative(Directory lib, String path) {
+  final base = Uri.directory(lib.absolute.path).normalizePath().toFilePath();
+  final normalized = Uri.file(path).normalizePath().toFilePath();
+  return normalized.startsWith(base)
+      ? normalized.substring(base.length)
+      : normalized;
 }
 
 /// Texto de las secciones `dependencies`, `dev_dependencies` y

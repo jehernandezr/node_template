@@ -18,7 +18,7 @@ Ambas rutas exigen sesión iniciada (regla del manifiesto); no hay permisos prop
 - Las pantallas se cargan con `screens.loadLibrary` desde cada `ScreenRoute`.
 - `NotificationsLifecycle.initialize` carga `src/data/notifications_scope.dart` con `deferred as` y obtiene el repositorio del scope.
 
-`test/deferred_boundary_test.dart` recorre el grafo de imports del manifiesto. En CI, `tools/check_deferred_chunks.dart` lo comprueba sobre el `main.dart.js.map` real.
+`front/tools/check_microfrontend_boundaries.dart` (en `analyze`) recorre el grafo de imports del manifiesto. En CI, `tools/check_deferred_chunks.dart` lo comprueba sobre el `main.dart.js.map` real.
 
 ## Datos
 
@@ -28,7 +28,9 @@ Ambas rutas exigen sesión iniciada (regla del manifiesto); no hay permisos prop
 
 ## Eventos
 
-- `UnreadCountChanged` viene de `shell_core`. El runtime crea un `NotificationsLifecycle` por activación (`lifecycleFactory`); escucha `watchUnreadCount()` y publica con `ShellContext.emit`, que descarta lo que llegue después de cambiar de identidad. El shell lo usa para el badge.
+- `UnreadCountChanged` es un evento de este microfrontend (`lib/src/lifecycle/unread_count_changed.dart`, exportado por `mf_notifications.dart`). El runtime crea un `NotificationsLifecycle` por activación (`lifecycleFactory`); escucha `watchUnreadCount()` y publica con `ShellContext.emit`, que descarta lo que llegue después de cambiar de identidad.
+- La entrada de menú lo declara como insignia (`MenuBadge<UnreadCountChanged>`), así el shell dibuja el número sin conocer este microfrontend.
+- Solo modo demo: no hay contrato de notificaciones todavía.
 
 ## Textos
 

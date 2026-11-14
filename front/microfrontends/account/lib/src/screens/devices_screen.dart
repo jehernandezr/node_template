@@ -86,6 +86,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
         message: l10n.devicesEmptyMessage,
       );
     }
+    final canRemoveTrust = widget.repository.capabilities.contains(
+      AccountCapability.deviceTrust,
+    );
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
@@ -99,11 +102,13 @@ class _DevicesScreenState extends State<DevicesScreen> {
               badge: device.verifier
                   ? StatusBadge(label: l10n.verifierBadge)
                   : null,
-              trailing: AppButton(
-                label: l10n.deviceRemove,
-                variant: AppButtonVariant.secondary,
-                onPressed: () => _removeTrust(device),
-              ),
+              trailing: canRemoveTrust
+                  ? AppButton(
+                      label: l10n.deviceRemove,
+                      variant: AppButtonVariant.secondary,
+                      onPressed: () => _removeTrust(device),
+                    )
+                  : null,
             ),
           ),
       ],

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 /// Transport that records requests and answers with [next].
 class FakeTransport implements HttpTransport {
@@ -20,6 +20,9 @@ class FakeTransport implements HttpTransport {
     requests.add(request);
     return queue.isEmpty ? next : queue.removeAt(0);
   }
+
+  @override
+  void close() {}
 }
 
 const _sessionId = '0193f1c2-0000-7000-8000-000000000000';
@@ -223,6 +226,26 @@ void main() {
       },
     );
 
+    test(
+      'a 2xx other than the route\'s success status breaks the contract',
+      () async {
+        transport.next = _json(200, {'revoked': 1});
+        await expectLater(
+          client.send(
+            IdentityRoutes.revokeSession,
+            const RevokeSessionRequest(sessionId: _sessionId),
+          ),
+          throwsA(
+            isA<ContractViolationException>().having(
+              (e) => e.inResponse,
+              'inResponse',
+              isTrue,
+            ),
+          ),
+        );
+      },
+    );
+
     test('a route without body returns normally on 204', () async {
       await client.send(
         IdentityRoutes.revokeSession,
@@ -268,10 +291,10 @@ void main() {
         transport: transport,
         baseUri: Uri.parse('https://api.example.com/'),
         accessToken: () async => token,
-        onStalePermissions: () async {
+        sessionRefresh: _staleRefresh(() async {
           refreshes++;
           token = 'token-2';
-        },
+        }),
       );
       transport.queue.add(_stale());
       transport.next = _json(200, {'revoked': 2});
@@ -295,7 +318,7 @@ void main() {
         transport: transport,
         baseUri: Uri.parse('https://api.example.com/'),
         accessToken: () async => 'token-1',
-        onStalePermissions: () async => refreshes++,
+        sessionRefresh: _staleRefresh(() async => refreshes++),
       );
       transport.next = _stale();
 
@@ -313,7 +336,33 @@ void main() {
       expect(transport.requests, hasLength(2));
     });
 
-    test('without onStalePermissions the error is thrown as is', () async {
+    test(
+      'an error the policy does not accept is thrown without refresh',
+      () async {
+        var refreshes = 0;
+        client = ApiClient(
+          transport: transport,
+          baseUri: Uri.parse('https://api.example.com/'),
+          accessToken: () async => 'token-1',
+          sessionRefresh: _staleRefresh(() async => refreshes++),
+        );
+        transport.next = _json(403, {
+          'type': 'about:blank',
+          'title': 'Forbidden',
+          'status': 403,
+          'code': PlatformErrorCode.authForbidden.code,
+        });
+
+        await expectLater(
+          client.send(IdentityRoutes.revokeOtherSessions, const Empty()),
+          throwsA(isA<ApiErrorException>()),
+        );
+        expect(refreshes, 0);
+        expect(transport.requests, hasLength(1));
+      },
+    );
+
+    test('without a refresh policy the error is thrown as is', () async {
       transport.next = _stale();
       await expectLater(
         client.send(IdentityRoutes.revokeOtherSessions, const Empty()),
@@ -323,6 +372,13 @@ void main() {
     });
   });
 }
+
+SessionRefreshPolicy _staleRefresh(Future<void> Function() refresh) =>
+    SessionRefreshPolicy(
+      appliesTo: (problem) =>
+          problem.code == IdentityErrorCode.tokenStalePermissions.code,
+      refresh: refresh,
+    );
 
 TransportResponse _stale() => _json(401, {
   'type': 'about:blank',

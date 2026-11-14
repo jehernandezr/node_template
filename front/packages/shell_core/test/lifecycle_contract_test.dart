@@ -79,7 +79,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.notifications,
+            id: TestIds.notifications,
             access: AccessRule.authenticated(),
             lifecycleFactory: () => _Holder(created),
           ),
@@ -92,10 +92,10 @@ void main() {
     test('emit publishes while the context is active', () async {
       await runtime.start();
       final received = <int>[];
-      final sub = runtime.eventBus.on<UnreadCountChanged>().listen(
+      final sub = runtime.eventBus.on<CountChanged>().listen(
         (e) => received.add(e.count),
       );
-      created.single.context!.emit(const UnreadCountChanged(2));
+      created.single.context!.emit(const CountChanged(2));
       await Future<void>.delayed(Duration.zero);
       expect(received, [2]);
       await sub.cancel();
@@ -111,13 +111,13 @@ void main() {
         // Cancelled synchronously, before any queued sync runs.
         expect(previous.isDisposed, isTrue);
 
-        previous.emit(const UnreadCountChanged(9));
+        previous.emit(const CountChanged(9));
         await runtime.whenIdle();
-        previous.emit(const UnreadCountChanged(9));
+        previous.emit(const CountChanged(9));
 
         final replayed = <int>[];
         final sub = runtime.eventBus
-            .on<UnreadCountChanged>(replay: true)
+            .on<CountChanged>(replay: true)
             .listen((e) => replayed.add(e.count));
         await Future<void>.delayed(Duration.zero);
         expect(replayed, isEmpty);
@@ -157,7 +157,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.notifications,
+            id: TestIds.notifications,
             access: AccessRule.authenticated(),
             lifecycleFactory: () => _Holder(created),
           ),
@@ -190,7 +190,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.notifications,
+            id: TestIds.notifications,
             access: AccessRule.authenticated(),
             lifecycleFactory: () => _Flaky(attempts, failures: 2),
           ),
@@ -200,7 +200,8 @@ void main() {
         registry: registry,
         platform: AppPlatform.web,
         session: session,
-        servicesFactory: (identity) => DefaultShellServices(session: identity),
+        servicesFactory: (identity) =>
+            ShellServices(mode: ShellMode.demo, session: identity),
         lifecycleRetryDelay: (count) {
           failures.add(count);
           return const Duration(milliseconds: 5);
@@ -219,7 +220,7 @@ void main() {
       }
       expect(attempts, [1, 2, 3]);
       expect(failures, [1, 2], reason: 'the backoff grows with each failure');
-      expect(runtime.activeIds, {MicrofrontendId.notifications});
+      expect(runtime.activeIds, {TestIds.notifications});
     });
 
     test(
@@ -230,7 +231,7 @@ void main() {
         final registry = MicrofrontendRegistry()
           ..register(
             fakeManifest(
-              id: MicrofrontendId.notifications,
+              id: TestIds.notifications,
               access: AccessRule.authenticated(),
               lifecycleFactory: () => _Flaky(attempts, failures: 1),
             ),
@@ -241,7 +242,7 @@ void main() {
           platform: AppPlatform.web,
           session: session,
           servicesFactory: (identity) =>
-              DefaultShellServices(session: identity),
+              ShellServices(mode: ShellMode.demo, session: identity),
           lifecycleRetryDelay: (_) => const Duration(hours: 1),
         );
         addTearDown(runtime.dispose);
@@ -258,7 +259,7 @@ void main() {
         session.value = _user('u2');
         await runtime.whenIdle();
         expect(attempts, [1, 2]);
-        expect(runtime.activeIds, {MicrofrontendId.notifications});
+        expect(runtime.activeIds, {TestIds.notifications});
       },
     );
 
@@ -274,7 +275,7 @@ void main() {
     test('the scope disposes resources it created, in reverse order', () async {
       final log = <String>[];
       final scope = MicrofrontendScope(
-        DefaultShellServices(session: _user('u1')),
+        ShellServices(mode: ShellMode.demo, session: _user('u1')),
       );
       scope.get<_Resource>((_) => _Resource(log, 'first'));
       scope.get<Object>((_) => Object());
@@ -288,7 +289,7 @@ void main() {
     test('an explicit dispose callback wins over ScopedResource', () async {
       final log = <String>[];
       final scope = MicrofrontendScope(
-        DefaultShellServices(session: _user('u1')),
+        ShellServices(mode: ShellMode.demo, session: _user('u1')),
       );
       scope.get<_Resource>(
         (_) => _Resource(log, 'auto'),
@@ -304,12 +305,12 @@ void main() {
         final log = <String>[];
         final session = ValueNotifier(_user('u1'));
         final registry = MicrofrontendRegistry()
-          ..register(fakeManifest(id: MicrofrontendId.notifications));
+          ..register(fakeManifest(id: TestIds.notifications));
         final runtime = fakeRuntime(registry: registry, session: session);
         addTearDown(runtime.dispose);
 
         runtime
-            .scopeFor(MicrofrontendId.notifications)
+            .scopeFor(TestIds.notifications)
             .get<_Resource>(
               (services) => _Resource(log, services.session.userId!),
             );
@@ -326,7 +327,7 @@ void main() {
         final errors = _captureErrors();
         final log = <String>[];
         final scope = MicrofrontendScope(
-          DefaultShellServices(session: _user('u1')),
+          ShellServices(mode: ShellMode.demo, session: _user('u1')),
         );
         scope.get<_Resource>((_) => _Resource(log, 'ok'));
         scope.get<_Broken>((_) => _Broken());

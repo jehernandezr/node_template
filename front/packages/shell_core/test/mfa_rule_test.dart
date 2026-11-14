@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
+
+import 'support/fakes.dart';
 
 void main() {
   final now = DateTime.utc(2026, 11, 12, 10);
@@ -62,23 +65,6 @@ void main() {
         isFalse,
       );
     });
-
-    test(
-      'any() with an MFA branch steps up only if no other branch passes',
-      () {
-        final rule = AccessRule.any([
-          AccessRule.permissions([Permission.tasksWrite]),
-          mfa,
-        ]);
-        final writer = UserSession(
-          userId: 'w',
-          tenantId: 't',
-          permissions: {Permission.tasksWrite},
-        );
-        expect(rule.decide(writer, now: now), AccessDecision.allowed);
-        expect(rule.decide(admin, now: now), AccessDecision.stepUpRequired);
-      },
-    );
   });
 
   group('UserSession.mfaVerifiedAt', () {
@@ -88,8 +74,8 @@ void main() {
         tenantId: 't',
         permissions: {Permission.tasksRead},
         platformRoles: {PlatformRole.support},
-        planFeatures: {PlanFeature.billing},
-        featureFlags: {FeatureFlag.newReports},
+        features: {PlanFeature.billing},
+        flags: {FeatureFlag.newReports},
       );
       final verified = full.withMfaVerifiedAt(now);
       expect(verified.mfaVerifiedAt, now);
@@ -99,8 +85,8 @@ void main() {
           tenantId: 't',
           permissions: {Permission.tasksRead},
           platformRoles: {PlatformRole.support},
-          planFeatures: {PlanFeature.billing},
-          featureFlags: {FeatureFlag.newReports},
+          features: {PlanFeature.billing},
+          flags: {FeatureFlag.newReports},
           mfaVerifiedAt: now,
         ),
         verified,
@@ -121,14 +107,15 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           MicrofrontendManifest(
-            id: MicrofrontendId.backoffice,
+            id: TestIds.backoffice,
             platforms: {AppPlatform.web},
             access: backoffice,
             menu: const [
               MenuEntry(
-                labelKey: 'menuBackoffice',
+                label: MenuLabel({'es': 'Administración', 'en': 'Admin'}),
                 path: '/backoffice',
                 order: 1,
+                icon: Icons.circle_outlined,
               ),
             ],
           ),

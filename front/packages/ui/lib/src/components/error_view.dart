@@ -10,7 +10,7 @@ import 'app_button.dart';
 /// The code and trace id are selectable so users can copy them into a
 /// support request. The retry button appears only when [onRetry] is set.
 ///
-/// Labels left null come from [AppLocalizations] (`errorCodeLabel`,
+/// The labels come from [AppLocalizations] (`errorCodeLabel`,
 /// `errorTraceIdLabel` and `actionRetry`), so the app must provide it.
 class ErrorView extends StatelessWidget {
   /// Creates an error view showing a human [message].
@@ -20,9 +20,6 @@ class ErrorView extends StatelessWidget {
     this.code,
     this.traceId,
     this.onRetry,
-    this.codeLabel,
-    this.traceIdLabel,
-    this.retryLabel,
   });
 
   /// Creates an error view from an API [problem] document. The [message] is
@@ -33,9 +30,6 @@ class ErrorView extends StatelessWidget {
     Key? key,
     required String message,
     VoidCallback? onRetry,
-    String? codeLabel,
-    String? traceIdLabel,
-    String? retryLabel,
   }) {
     return ErrorView(
       key: key,
@@ -43,9 +37,6 @@ class ErrorView extends StatelessWidget {
       code: problem.code,
       traceId: problem.traceId,
       onRetry: onRetry,
-      codeLabel: codeLabel,
-      traceIdLabel: traceIdLabel,
-      retryLabel: retryLabel,
     );
   }
 
@@ -57,9 +48,6 @@ class ErrorView extends StatelessWidget {
     Key? key,
     required String fallbackMessage,
     VoidCallback? onRetry,
-    String? codeLabel,
-    String? traceIdLabel,
-    String? retryLabel,
   }) {
     if (error is ApiErrorException) {
       return ErrorView.fromProblem(
@@ -67,19 +55,9 @@ class ErrorView extends StatelessWidget {
         key: key,
         message: fallbackMessage,
         onRetry: onRetry,
-        codeLabel: codeLabel,
-        traceIdLabel: traceIdLabel,
-        retryLabel: retryLabel,
       );
     }
-    return ErrorView(
-      key: key,
-      message: fallbackMessage,
-      onRetry: onRetry,
-      codeLabel: codeLabel,
-      traceIdLabel: traceIdLabel,
-      retryLabel: retryLabel,
-    );
+    return ErrorView(key: key, message: fallbackMessage, onRetry: onRetry);
   }
 
   /// Human-readable description of the failure.
@@ -94,15 +72,6 @@ class ErrorView extends StatelessWidget {
   /// Called when the retry button is tapped.
   final VoidCallback? onRetry;
 
-  /// Prefix of the error code line. Defaults to `errorCodeLabel`.
-  final String? codeLabel;
-
-  /// Prefix of the trace id line. Defaults to `errorTraceIdLabel`.
-  final String? traceIdLabel;
-
-  /// Label of the retry button. Defaults to `actionRetry`.
-  final String? retryLabel;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -113,11 +82,7 @@ class ErrorView extends StatelessWidget {
     final errorCode = code;
     final errorTraceId = traceId;
     final retry = onRetry;
-    final needsDefaults =
-        (errorCode != null && codeLabel == null) ||
-        (errorTraceId != null && traceIdLabel == null) ||
-        (retry != null && retryLabel == null);
-    final l10n = needsDefaults ? AppLocalizations.of(context) : null;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -134,21 +99,21 @@ class ErrorView extends StatelessWidget {
             if (errorCode != null) ...[
               const SizedBox(height: AppSpacing.sm),
               SelectableText(
-                '${codeLabel ?? l10n!.errorCodeLabel}: $errorCode',
+                '${l10n.errorCodeLabel}: $errorCode',
                 style: small,
               ),
             ],
             if (errorTraceId != null) ...[
               const SizedBox(height: AppSpacing.xs),
               SelectableText(
-                '${traceIdLabel ?? l10n!.errorTraceIdLabel}: $errorTraceId',
+                '${l10n.errorTraceIdLabel}: $errorTraceId',
                 style: small,
               ),
             ],
             if (retry != null) ...[
               const SizedBox(height: AppSpacing.md),
               AppButton(
-                label: retryLabel ?? l10n!.actionRetry,
+                label: l10n.actionRetry,
                 onPressed: retry,
                 variant: AppButtonVariant.secondary,
               ),

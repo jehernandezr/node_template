@@ -47,6 +47,13 @@ class AccountLocalizationsEs extends AccountLocalizations {
       'Términos, consentimientos y documentos firmados.';
 
   @override
+  String get sectionUnavailableTitle => 'Aún no disponible';
+
+  @override
+  String get sectionUnavailableMessage =>
+      'Esta sección todavía no está conectada al servidor.';
+
+  @override
   String get actionFailed =>
       'La acción no se pudo completar. Intenta de nuevo.';
 

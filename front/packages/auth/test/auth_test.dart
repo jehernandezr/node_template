@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auth/auth.dart';
+import 'package:auth/testing.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,14 +24,14 @@ final revoked = FakeAuthRepository.apiError(IdentityErrorCode.sessionRevoked);
 
 void main() {
   late FakeAuthRepository repo;
-  late InMemoryTokenStore store;
+  late FakeTokenStore store;
   late FakeDeviceKeyPort keys;
   late DateTime now;
   late SessionManager manager;
 
   setUp(() {
     repo = FakeAuthRepository();
-    store = InMemoryTokenStore();
+    store = FakeTokenStore();
     keys = FakeDeviceKeyPort();
     now = t0;
     manager = SessionManager(
@@ -254,7 +255,7 @@ void main() {
     expect(repo.refreshCount, 0);
   });
 
-  test('every invalidation code of the plan ends the session on refresh', () {
+  test('every invalidation code of ADR 0005 ends the session on refresh', () {
     expect(defaultInvalidationCodes, {
       IdentityErrorCode.sessionRevoked,
       IdentityErrorCode.sessionExpired,
@@ -466,7 +467,7 @@ void main() {
   group('restore', () {
     test('refreshes with the stored session token; the access token is '
         'never stored', () async {
-      store = InMemoryTokenStore('session-stored');
+      store = FakeTokenStore('session-stored');
       manager = SessionManager(
         repository: repo,
         tokenStore: store,
@@ -507,7 +508,7 @@ void main() {
     });
 
     test('a rejected session returns false and clears the store', () async {
-      store = InMemoryTokenStore('session-stored');
+      store = FakeTokenStore('session-stored');
       manager = SessionManager(
         repository: repo,
         tokenStore: store,
@@ -526,7 +527,7 @@ void main() {
     test(
       'logout during the refresh write does not revive the session',
       () async {
-        store = InMemoryTokenStore('session-old');
+        store = FakeTokenStore('session-old');
         manager = SessionManager(
           repository: repo,
           tokenStore: store,

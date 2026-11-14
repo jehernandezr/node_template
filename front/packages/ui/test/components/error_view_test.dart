@@ -34,19 +34,13 @@ void main() {
     expect(find.byType(AppButton), findsNothing);
   });
 
-  testWidgets('retry button calls onRetry with the custom label', (
-    tester,
-  ) async {
+  testWidgets('retry button calls onRetry', (tester) async {
     var retries = 0;
     await pumpApp(
       tester,
-      ErrorView(
-        message: 'Failed.',
-        onRetry: () => retries++,
-        retryLabel: 'Try again',
-      ),
+      ErrorView(message: 'Failed.', onRetry: () => retries++),
     );
-    await tester.tap(find.text('Try again'));
+    await tester.tap(find.text('Reintentar'));
     expect(retries, 1);
   });
 

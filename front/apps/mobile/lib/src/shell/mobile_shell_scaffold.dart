@@ -1,10 +1,8 @@
-import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:shell_host/shell_host.dart';
 import 'package:ui/ui.dart';
-
-import 'menu_icons.dart';
 
 /// Most destinations shown in the bottom navigation. The rest go under "Más".
 const int maxPrimaryDestinations = 5;
@@ -16,36 +14,27 @@ class MobileShellScaffold extends StatelessWidget {
   /// Creates the scaffold around [child], the page of the matched route.
   const MobileShellScaffold({
     super.key,
-    required this.registry,
-    required this.session,
-    required this.unreadCount,
-    required this.onSignOut,
+    required this.host,
+    required this.location,
     required this.child,
   });
 
-  /// Source of the visible menu entries.
-  final MicrofrontendRegistry registry;
+  final ShellHost host;
 
-  /// Session that decides the menu.
-  final ValueNotifier<UserSession> session;
-
-  /// Unread notifications, shown as a badge on the notifications entry.
-  final ValueNotifier<int> unreadCount;
-
-  /// Ends the session and goes to the login page.
-  final Future<void> Function() onSignOut;
+  /// Current path, used to select the destination.
+  final String location;
 
   /// Page of the matched microfrontend route.
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.path;
     final l10n = AppLocalizations.of(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([session, unreadCount]),
+      listenable: Listenable.merge([host.session, host.badges]),
       builder: (context, _) {
-        final entries = registry.menuFor(session.value, AppPlatform.mobile);
+        final locale = Localizations.localeOf(context);
+        final entries = host.menu;
         final overflowing = entries.length > maxPrimaryDestinations;
         final primary = overflowing
             ? entries.take(maxPrimaryDestinations - 1).toList()
@@ -57,11 +46,10 @@ class MobileShellScaffold extends StatelessWidget {
         final destinations = [
           for (final entry in primary)
             AdaptiveDestination(
-              label: menuLabel(l10n, entry.labelKey),
-              icon: menuIcon(MicrofrontendIdPath.fromPath(entry.path)),
-              badgeCount: _idOf(entry) == MicrofrontendId.notifications
-                  ? unreadCount.value
-                  : null,
+              label: entry.label.resolve(locale),
+              icon: entry.icon,
+              selectedIcon: entry.selectedIcon,
+              badgeCount: host.badgeFor(entry),
             ),
           if (overflow.isNotEmpty)
             AdaptiveDestination(label: l10n.menuMore, icon: Icons.more_horiz),
@@ -78,13 +66,19 @@ class MobileShellScaffold extends StatelessWidget {
         return ShellChrome(
           destinations: destinations,
           selectedIndex: selected,
-          actions: [_signOutButton(l10n)],
+          actions: [
+            IconButton(
+              tooltip: l10n.actionSignOut,
+              icon: const Icon(Icons.logout),
+              onPressed: () => host.signOut(),
+            ),
+          ],
           body: child,
           onSelected: (index) {
             if (index == primary.length && overflow.isNotEmpty) {
-              _showOverflow(context, overflow, l10n);
+              _showOverflow(context, overflow, locale);
             } else {
-              GoRouter.of(context).go(primary[index].path);
+              host.router.go(primary[index].path);
             }
           },
         );
@@ -92,19 +86,10 @@ class MobileShellScaffold extends StatelessWidget {
     );
   }
 
-  IconButton _signOutButton(AppLocalizations l10n) => IconButton(
-    tooltip: l10n.actionSignOut,
-    icon: const Icon(Icons.logout),
-    onPressed: () => onSignOut(),
-  );
-
-  static MicrofrontendId? _idOf(MenuEntry entry) =>
-      MicrofrontendIdPath.fromPath(entry.path);
-
   void _showOverflow(
     BuildContext context,
     List<MenuEntry> overflow,
-    AppLocalizations l10n,
+    Locale locale,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -114,11 +99,11 @@ class MobileShellScaffold extends StatelessWidget {
           children: [
             for (final entry in overflow)
               ListTile(
-                leading: Icon(menuIcon(_idOf(entry))),
-                title: Text(menuLabel(l10n, entry.labelKey)),
+                leading: Icon(entry.icon),
+                title: Text(entry.label.resolve(locale)),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  GoRouter.of(context).go(entry.path);
+                  host.router.go(entry.path);
                 },
               ),
           ],

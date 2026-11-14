@@ -1,4 +1,4 @@
-import 'package:auth/auth.dart';
+import 'package:auth/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_verifier/src/data/fake_verifier_repository.dart';
 import 'package:mf_verifier/src/data/verifier_repository.dart';
@@ -31,19 +31,7 @@ void main() {
     expect(await _repositoryOf(second).pending().first, isNull);
   });
 
-  test('uses the device key port provided by the shell extras', () async {
-    final keyPort = FakeDeviceKeyPort();
-    final scope = MicrofrontendScope(
-      services(extras: {DeviceKeyPort: keyPort}),
-    );
-
-    final code = await _repositoryOf(scope).autoCode('challenge-1');
-
-    expect(keyPort.signCount, 1);
-    expect(code, matches(RegExp(r'^\d{8}$')));
-  });
-
-  test('falls back to FakeDeviceKeyPort when the shell has none', () async {
+  test('demo mode signs with the demo device key', () async {
     final scope = MicrofrontendScope(services());
     final repository = _repositoryOf(scope);
 
@@ -52,6 +40,17 @@ void main() {
       matches(RegExp(r'^\d{8}$')),
     );
     expect(repository, isA<FakeVerifierRepository>());
+  });
+
+  test('the code comes from the device key signature', () async {
+    final keyPort = FakeDeviceKeyPort();
+    final repository = FakeVerifierRepository(keyPort);
+    addTearDown(repository.dispose);
+
+    final code = await repository.autoCode('challenge-1');
+
+    expect(keyPort.signCount, 1);
+    expect(code, matches(RegExp(r'^\d{8}$')));
   });
 
   test('scope disposal disposes the repository without a callback', () async {

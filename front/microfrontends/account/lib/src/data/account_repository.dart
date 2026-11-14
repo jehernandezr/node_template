@@ -1,13 +1,19 @@
 import 'package:contracts/contracts.dart' show DeviceSummary, SessionSummary;
 import 'package:shell_core/shell_core.dart';
 
+import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 
-/// Acceso a los datos de la cuenta. Sesiones y dispositivos tienen contrato
-/// `identity` y los resuelve `ApiAccountRepository`; el resto (perfil,
-/// seguridad, acuerdos) no tiene contrato aún y solo lo cubre
-/// `FakeAccountRepository`.
+/// Acceso a los datos de la cuenta.
+///
+/// Sesiones y dispositivos tienen contrato `identity` y todo repositorio los
+/// sirve. El resto (perfil, confianza de dispositivos, seguridad, acuerdos)
+/// depende de [capabilities]: un repositorio que no tiene una capacidad lanza
+/// [UnsupportedError] en sus operaciones, y las pantallas no las ofrecen.
 abstract interface class AccountRepository implements ScopedResource {
+  /// Capacidades que este repositorio sirve de verdad.
+  Set<AccountCapability> get capabilities;
+
   Future<AccountProfile> loadProfile();
 
   /// Sesiones activas, la actual incluida.

@@ -23,7 +23,7 @@ List<File> _eagerImports(File file) => [
 
 void main() {
   test('manifest id, menu and plan access', () {
-    expect(assistantManifest.id, MicrofrontendId.assistant);
+    expect(assistantManifest.id, const MicrofrontendId('assistant'));
     expect(assistantManifest.menu.single.path, '/assistant');
     expect(assistantManifest.hasLifecycle, isFalse);
     expect(assistantManifest.access.allows(UserSession.anonymous()), isFalse);

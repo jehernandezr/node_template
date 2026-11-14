@@ -1,5 +1,5 @@
 import 'package:contracts/contracts.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 const _sessionId = '0193f1c2-0000-7000-8000-000000000000';
 

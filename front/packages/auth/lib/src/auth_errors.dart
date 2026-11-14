@@ -15,7 +15,7 @@ final class SignedOutException implements Exception {
 /// Códigos de identity que cierran la sesión, sea que los devuelva un
 /// refresh o el guard de cualquier ruta autenticada.
 ///
-/// Son los de la invalidación de tokens del plan: sesión revocada, vencida o
+/// Son los que invalidan tokens según el ADR 0005: sesión revocada, vencida o
 /// reutilizada (reusar un session token ya rotado revoca la sesión completa),
 /// access token revocado por la época del usuario o del tenant, y usuario o
 /// tenant suspendido. `IDENTITY.TOKEN.STALE_PERMISSIONS` no está: con él el

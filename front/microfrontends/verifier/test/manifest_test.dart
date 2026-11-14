@@ -34,7 +34,8 @@ Set<String> _eagerFiles(String entry) {
 
 void main() {
   test('manifest id, platform and menu', () {
-    expect(verifierManifest.id, MicrofrontendId.verifier);
+    expect(verifierManifest.id, const MicrofrontendId('verifier'));
+    expect(verifierManifest.modes, {ShellMode.demo});
     expect(verifierManifest.platforms, {AppPlatform.mobile});
     expect(verifierManifest.menu.single.path, '/verifier');
   });

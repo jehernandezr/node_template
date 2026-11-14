@@ -2,6 +2,7 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-11
+- Actualizada: 2026-11-14 (SDK generado con `contracts_gen`, plugin de Nx propio y `shell_host`)
 
 ## Contexto
 
@@ -11,11 +12,11 @@ La plataforma necesita clientes para móvil, web y backoffice. Escribir cada dom
 
 Flutter para móvil, web y backoffice, con SDK, contratos, autenticación y widgets compartidos en Dart. Todo el cliente vive en `front/`.
 
-- Dos shells: `front/apps/web` y `front/apps/mobile`. Ambos componen los mismos microfrontends por dominio.
-- Cada microfrontend declara sus plataformas, rutas, menú, regla de acceso y flag. Los microfrontends dependen solo de `front/packages` y se comunican por el bus de eventos del shell y por rutas.
+- Dos shells: `front/apps/web` y `front/apps/mobile`. Ambos componen los mismos microfrontends por dominio. Lo que comparten (sesión, login, paso adicional, páginas del shell, router y app raíz) vive en `front/packages/shell_host`; cada shell solo aporta sus manifiestos, su marco de navegación y su conexión.
+- Cada microfrontend declara en su manifiesto su id, plataformas, rutas, menú (etiqueta, icono e insignia), regla de acceso, flag, modos que sirve y enlaces que acepta. Los microfrontends dependen solo de `front/packages`, los paquetes compartidos no conocen ningún microfrontend, y se comunican por el bus de eventos del shell (cada uno declara sus eventos) y por rutas.
 - La web carga los microfrontends de forma diferida según el perfil, así un cliente nunca descarga el backoffice.
-- El SDK se genera desde OpenAPI (`dart-dio`). Los contratos generados desde `libs/contracts` cambian en el mismo PR que el backend.
-- Nx orquesta el workspace con el plugin `@nxrocks/nx-flutter` y pub workspaces de Dart.
+- El Dart de los contratos (tipos, validadores, rutas y códigos) lo genera `front/tools/contracts_gen` desde el `contract.json` que exporta `backend/libs/contracts` (ADR 0017), y cambia en el mismo PR que el backend. El cliente HTTP es `ApiClient` de `front/packages/api`, sobre `package:http`.
+- Nx orquesta el workspace con un plugin propio (`front/tools/nx-plugin`) que registra cada miembro del pub workspace como proyecto, con sus tareas `analyze`, `format-check` y `test`.
 
 ## Consecuencias
 
@@ -27,7 +28,7 @@ Positivas:
 Costos:
 
 - Todo el cliente está en Dart. Un equipo de backend en TypeScript no comparte lenguaje con el front.
-- Nx depende de un plugin comunitario para Flutter.
+- El plugin de Nx para Flutter es propio y hay que mantenerlo.
 - La interfaz oculta lo que el usuario no puede usar, pero la seguridad real vive en la API.
 
 ## Alternativas consideradas

@@ -20,8 +20,8 @@ enum AccessDecision {
 
 /// Condition that decides whether a [UserSession] may use a microfrontend.
 ///
-/// Build rules with the named factories and combine them with [AccessRule.all]
-/// or [AccessRule.any].
+/// Build rules with the named factories and combine them with
+/// [AccessRule.all].
 sealed class AccessRule {
   const AccessRule();
 
@@ -34,10 +34,6 @@ sealed class AccessRule {
   /// Allows sessions that hold every permission in [permissions].
   factory AccessRule.permissions(List<Permission> permissions) =
       _PermissionsRule;
-
-  /// Allows sessions that hold at least one permission in [permissions].
-  factory AccessRule.anyPermission(List<Permission> permissions) =
-      _AnyPermissionRule;
 
   /// Allows sessions that hold at least one role in [roles].
   factory AccessRule.platformRoles(List<PlatformRole> roles) =
@@ -59,10 +55,6 @@ sealed class AccessRule {
   /// [rules] cannot be empty: an empty list would allow everyone, anonymous
   /// visitors included. Use [AccessRule.public] for that.
   factory AccessRule.all(List<AccessRule> rules) = _AllRule;
-
-  /// Allows sessions that satisfy at least one rule in [rules], which cannot
-  /// be empty.
-  factory AccessRule.any(List<AccessRule> rules) = _AnyRule;
 
   /// Whether [session] satisfies this rule at [now] (default: the current time).
   ///
@@ -140,24 +132,6 @@ final class _PermissionsRule extends AccessRule {
   }) => permissions.every(session.permissions.contains);
 }
 
-final class _AnyPermissionRule extends AccessRule {
-  _AnyPermissionRule(List<Permission> permissions)
-    : assert(
-        permissions.isNotEmpty,
-        'anyPermission needs at least one permission',
-      ),
-      permissions = List.unmodifiable(permissions);
-
-  final List<Permission> permissions;
-
-  @override
-  bool _check(
-    UserSession session,
-    DateTime now, {
-    required bool assumeRecentMfa,
-  }) => permissions.any(session.permissions.contains);
-}
-
 final class _PlatformRolesRule extends AccessRule {
   _PlatformRolesRule(List<PlatformRole> roles)
     : assert(roles.isNotEmpty, 'platformRoles needs at least one role'),
@@ -183,7 +157,7 @@ final class _PlanFeatureRule extends AccessRule {
     UserSession session,
     DateTime now, {
     required bool assumeRecentMfa,
-  }) => session.planFeatures.contains(feature);
+  }) => session.features.contains(feature);
 }
 
 final class _MfaRule extends AccessRule {
@@ -219,23 +193,6 @@ final class _AllRule extends AccessRule {
     DateTime now, {
     required bool assumeRecentMfa,
   }) => rules.every(
-    (rule) => rule._check(session, now, assumeRecentMfa: assumeRecentMfa),
-  );
-}
-
-final class _AnyRule extends AccessRule {
-  _AnyRule(List<AccessRule> rules)
-    : assert(rules.isNotEmpty, 'any needs at least one rule'),
-      rules = List.unmodifiable(rules);
-
-  final List<AccessRule> rules;
-
-  @override
-  bool _check(
-    UserSession session,
-    DateTime now, {
-    required bool assumeRecentMfa,
-  }) => rules.any(
     (rule) => rule._check(session, now, assumeRecentMfa: assumeRecentMfa),
   );
 }

@@ -12,21 +12,19 @@ import 'user_session.dart';
 /// made with [listen] are cancelled, so nothing of the previous user reaches
 /// the next one.
 final class ShellContext {
-  /// Creates a context over [eventBus], the session accessor [session] and,
-  /// when the runtime provides it, the microfrontend's [scope].
+  /// Creates a context over [eventBus], the session accessor [session] and
+  /// the microfrontend's [scope].
   ShellContext({
-    required ShellEventBus eventBus,
+    required this._eventBus,
     required this.session,
-    this.scope,
-    // ignore: prefer_initializing_formals
-  }) : _eventBus = eventBus;
+    required this.scope,
+  });
 
   /// Dependency scope of this microfrontend for the current identity.
   ///
   /// The same instances that its screens receive, so a lifecycle and its
-  /// screens share one repository. Null only in tests that build a context
-  /// without a runtime.
-  final MicrofrontendScope? scope;
+  /// screens share one repository.
+  final MicrofrontendScope scope;
 
   final ShellEventBus _eventBus;
 

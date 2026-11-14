@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';
 import 'package:mf_tasks/src/screens/screens.dart';
+import 'package:mf_tasks/src/screens/tasks_list_controller.dart';
 import 'package:mf_tasks/src/shared/constants/tasks_pagination.dart';
 import 'package:mf_tasks/src/shared/enums/task_status.dart';
 import 'package:mf_tasks/src/shared/types/task.dart';
@@ -86,6 +87,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'factura');
+    await tester.pump(TasksListController.searchDebounce);
     await tester.pumpAndSettle();
 
     expect(find.text('Pagar factura de luz'), findsOneWidget);

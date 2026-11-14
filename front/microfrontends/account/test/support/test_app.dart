@@ -1,3 +1,4 @@
+import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
@@ -46,16 +47,23 @@ UserSession testSession({bool mfaFresh = false}) => UserSession(
   mfaVerifiedAt: mfaFresh ? DateTime.now() : null,
 );
 
-/// Scope de una identidad de prueba. Cada llamada crea un scope nuevo.
+/// Scope de una identidad de prueba en modo demo. Cada llamada crea un scope
+/// nuevo.
 MicrofrontendScope testScope({
   Future<void> Function()? onSignOut,
   Future<bool> Function()? onStepUp,
 }) => MicrofrontendScope(
-  DefaultShellServices(
+  ShellServices(
     session: testSession(),
+    mode: ShellMode.demo,
     onSignOut: onSignOut,
     onStepUp: onStepUp,
   ),
+);
+
+/// Scope de una identidad de prueba en modo vivo, con [api].
+MicrofrontendScope liveScope(ApiClient api) => MicrofrontendScope(
+  ShellServices(session: testSession(), mode: ShellMode.live, api: api),
 );
 
 /// Error de API de prueba con código y traza conocidos.

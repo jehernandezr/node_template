@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
@@ -14,6 +13,7 @@ import 'widgets/billing_colors.dart';
 import 'widgets/change_plan_sheet.dart';
 import 'widgets/status_chip.dart';
 import 'widgets/usage_meter.dart';
+import '../shared/constants/billing_paths.dart';
 
 /// `/billing`: current plan, subscription status and usage of each quota.
 class BillingPlanScreen extends StatefulWidget {
@@ -78,15 +78,11 @@ class _BillingPlanScreenState extends State<BillingPlanScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = BillingLocalizations.of(context);
-    final appL10n = AppLocalizations.of(context);
     return AppPage(
       title: l10n.billingPageTitle,
       body: AsyncValueView<_PlanData>(
         value: _state,
         errorMessage: l10n.loadError,
-        codeLabel: appL10n.errorCodeLabel,
-        traceIdLabel: appL10n.errorTraceIdLabel,
-        retryLabel: appL10n.actionRetry,
         onRetry: _reload,
         data: (data) => _PlanContent(
           data: data,
@@ -176,7 +172,7 @@ class _PlanContent extends StatelessWidget {
         AppButton(
           label: l10n.viewInvoices,
           variant: AppButtonVariant.secondary,
-          onPressed: () => context.go('/billing/invoices'),
+          onPressed: () => context.go(BillingPaths.invoices),
         ),
       ],
     );

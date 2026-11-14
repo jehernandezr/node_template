@@ -1,59 +1,45 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
+import 'package:auth/testing.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mf_notifications/mf_notifications.dart' show UnreadCountChanged;
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
-import 'package:mf_tasks/src/shared/types/task.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';
+import 'package:mf_tasks/src/shared/types/task.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:shell_core/testing.dart';
+import 'package:shell_host/shell_host.dart';
 import 'package:ui/ui.dart';
-import 'package:web_shell/src/app.dart';
 import 'package:web_shell/src/pages/web_shell_scaffold.dart';
-import 'package:web_shell/src/screen_loader.dart';
 import 'package:web_shell/src/web_shell.dart';
 
 /// Pumps the shell in Spanish, optionally navigating to [location] first.
-Future<WebShell> pumpShell(
+Future<ShellHost> pumpShell(
   WidgetTester tester, {
   String? location,
-  MicrofrontendRegistry? registry,
+  List<MicrofrontendManifest>? manifests,
   IdentityConnection? connection,
 }) async {
   tester.platformDispatcher.localesTestValue = const [Locale('es')];
   addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-  ignoreAhemOverflow();
 
-  final shell = WebShell(registry: registry, connection: connection);
-  await tester.pumpWidget(WebShellApp(shell: shell));
+  final shell = buildWebHost(connection: connection, manifests: manifests);
+  await tester.pumpWidget(ShellHostApp(host: shell));
   addTearDown(() async {
-    // Let queued identity syncs finish first; otherwise dispose races them.
-    // The pending work waits on timers created in the test's fake time, so
-    // advance fake time instead of waiting in real time (runAsync never ends).
+    // Queued identity syncs run on the fake clock: let them finish before
+    // unmounting disposes the host, so no timer is left behind.
     var idle = false;
     shell.runtime.whenIdle().then((_) => idle = true);
-    for (var i = 0; i < 100 && !idle; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await pumpUntil(tester, () => idle, reason: 'the runtime never got idle');
     await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
   if (location != null) shell.router.go(location);
   await settle(tester);
   return shell;
-}
-
-/// flutter_test draws text with the Ahem font (one em per glyph), so the longer
-/// Spanish labels of `AppButton` overflow its width here. Real fonts fit. Only
-/// that overflow is ignored; every other error still fails the test.
-void ignoreAhemOverflow() {
-  final previous = FlutterError.onError;
-  FlutterError.onError = (details) {
-    if (details.exceptionAsString().contains('RenderFlex overflowed')) return;
-    previous?.call(details);
-  };
-  addTearDown(() => FlutterError.onError = previous);
 }
 
 Future<void> demoSignIn(WidgetTester tester, String label) async {
@@ -66,21 +52,31 @@ Future<void> signOutFromShell(WidgetTester tester) async {
   await settle(tester);
 }
 
-/// Pumps until [finder] matches, up to about five seconds of fake time.
-Future<void> waitFor(WidgetTester tester, Finder finder) async {
-  for (var i = 0; i < 50 && finder.evaluate().isEmpty; i++) {
+/// Pumps until [done] holds, up to five seconds of fake time; fails if it
+/// never does.
+Future<void> pumpUntil(
+  WidgetTester tester,
+  bool Function() done, {
+  required String reason,
+}) async {
+  for (var i = 0; i < 50 && !done(); i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
+  expect(done(), isTrue, reason: reason);
 }
 
-/// Pumps a few frames. Screens may show spinners forever, so pumpAndSettle would time out.
-Future<void> settle(WidgetTester tester) async {
-  for (var i = 0; i < 30; i++) {
-    await tester.pump(const Duration(milliseconds: 100));
-  }
-}
+/// Pumps until [finder] matches; fails if it never does.
+Future<void> waitFor(WidgetTester tester, Finder finder) => pumpUntil(
+  tester,
+  () => finder.evaluate().isNotEmpty,
+  reason: 'never found $finder',
+);
 
-String location(WebShell shell) => shell.router.state.uri.toString();
+/// Pumps until nothing is animating. The fakes answer after a short demo
+/// delay; their spinners keep frames coming until the data arrives.
+Future<void> settle(WidgetTester tester) => tester.pumpAndSettle();
+
+String location(ShellHost shell) => shell.router.state.uri.toString();
 
 /// Full path of every GoRoute in the router tree, nested routes included.
 List<String> routePaths(List<RouteBase> routes, [String parent = '']) {
@@ -100,6 +96,7 @@ List<String> routePaths(List<RouteBase> routes, [String parent = '']) {
 }
 
 void main() {
+  setUpAll(() => loadDeferredLibraries(manifestsWithProbe()));
   setUp(resetDeferredPageCache);
 
   testWidgets('anonymous visitor to /tasks lands on login with from', (
@@ -233,46 +230,6 @@ void main() {
     expect(paths.where((path) => path == '/forbidden'), hasLength(1));
   });
 
-  testWidgets('a failed deferred load shows the localized error and retries', (
-    tester,
-  ) async {
-    tester.platformDispatcher.localesTestValue = const [Locale('es')];
-    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-    ignoreAhemOverflow();
-
-    var attempts = 0;
-    Future<void> failingLoad() async {
-      attempts++;
-      throw StateError('offline');
-    }
-
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          ...GlobalMaterialLocalizations.delegates,
-        ],
-        supportedLocales: supportedLocales,
-        home: Scaffold(
-          body: loadScreen(
-            loadLibrary: failingLoad,
-            builder: () => const Text('pantalla'),
-          ),
-        ),
-      ),
-    );
-    await settle(tester);
-
-    expect(attempts, 1);
-    expect(find.text('Algo salió mal. Intenta de nuevo.'), findsOneWidget);
-    expect(find.text('pantalla'), findsNothing);
-
-    await tester.tap(find.text('Reintentar'));
-    await settle(tester);
-
-    expect(attempts, 2);
-  });
-
   testWidgets(
     'user isolation: a task created by the tenant admin is not seen by a customer',
     (tester) async {
@@ -287,7 +244,7 @@ void main() {
       // The admin's repository lives in the tasks scope of this identity. Create the
       // task through that same scope, then check the admin's list shows it.
       final adminRepository = shell.runtime
-          .scopeFor(MicrofrontendId.tasks)
+          .scopeFor(const MicrofrontendId('tasks'))
           .get<TasksRepository>((services) => FakeTasksRepository());
       // The fake repository waits on a real delay, so run it outside the fake clock.
       await tester.runAsync(
@@ -313,16 +270,16 @@ void main() {
   testWidgets('identity switch: a mounted route shows the new user\'s data', (
     tester,
   ) async {
-    final shell = await pumpShell(tester, registry: registryWithProbe());
+    final shell = await pumpShell(tester, manifests: manifestsWithProbe());
     shell.session.value = probeUser('u1');
-    shell.router.go('/verifier');
+    shell.router.go('/probe');
     await waitFor(tester, find.text('usuario u1'));
     expect(find.text('usuario u1'), findsOneWidget);
 
     shell.session.value = probeUser('u2');
     await settle(tester);
 
-    expect(location(shell), '/verifier');
+    expect(location(shell), '/probe');
     expect(find.text('usuario u2'), findsOneWidget);
     expect(find.text('usuario u1'), findsNothing);
   });
@@ -330,9 +287,9 @@ void main() {
   testWidgets('identity switch clears the previous user\'s snack bars', (
     tester,
   ) async {
-    final shell = await pumpShell(tester, registry: registryWithProbe());
+    final shell = await pumpShell(tester, manifests: manifestsWithProbe());
     shell.session.value = probeUser('u1');
-    shell.router.go('/verifier');
+    shell.router.go('/probe');
     await waitFor(tester, find.text('usuario u1'));
 
     showActionError(
@@ -351,22 +308,19 @@ void main() {
   testWidgets(
     'an MFA sub-route sends to /step-up and returns after verifying',
     (tester) async {
-      final shell = await pumpShell(tester, registry: registryWithProbe());
+      final shell = await pumpShell(tester, manifests: manifestsWithProbe());
       shell.session.value = probeUser('u1');
-      shell.router.go('/verifier/secure');
+      shell.router.go('/probe/secure');
       await settle(tester);
 
-      expect(shell.router.state.uri.path, WebShell.stepUpPath);
-      expect(
-        shell.router.state.uri.queryParameters['from'],
-        '/verifier/secure',
-      );
+      expect(shell.router.state.uri.path, ShellHost.paths.stepUp);
+      expect(shell.router.state.uri.queryParameters['from'], '/probe/secure');
       expect(find.text('Verificación adicional'), findsOneWidget);
 
       await tester.tap(find.text('Verificar (demostración)'));
       await settle(tester);
 
-      expect(location(shell), '/verifier/secure');
+      expect(location(shell), '/probe/secure');
       expect(find.text('zona segura'), findsOneWidget);
       expect(shell.session.value.mfaVerifiedAt, isNotNull);
     },
@@ -376,15 +330,13 @@ void main() {
     'requestStepUp of the services opens /step-up and returns true after '
     'verifying, keeping the page that asked',
     (tester) async {
-      final shell = await pumpShell(tester, registry: registryWithProbe());
+      final shell = await pumpShell(tester, manifests: manifestsWithProbe());
       shell.session.value = probeUser('u1');
-      shell.router.go('/verifier');
+      shell.router.go('/probe');
       await settle(tester);
       expect(find.text('usuario u1'), findsOneWidget);
 
-      final services = shell.runtime
-          .scopeFor(MicrofrontendId.verifier)
-          .services;
+      final services = shell.runtime.scopeFor(_probeId).services;
       bool? verified;
       services.requestStepUp().then((value) => verified = value);
       await settle(tester);
@@ -398,7 +350,7 @@ void main() {
       expect(find.text('Verificación adicional'), findsNothing);
       expect(
         shell.router.routerDelegate.currentConfiguration.uri.path,
-        '/verifier',
+        '/probe',
       );
       expect(find.text('usuario u1'), findsOneWidget);
     },
@@ -407,9 +359,9 @@ void main() {
   testWidgets('requestStepUp returns false when the user goes back', (
     tester,
   ) async {
-    final shell = await pumpShell(tester, registry: registryWithProbe());
+    final shell = await pumpShell(tester, manifests: manifestsWithProbe());
     shell.session.value = probeUser('u1');
-    shell.router.go('/verifier');
+    shell.router.go('/probe');
     await settle(tester);
 
     bool? verified;
@@ -421,18 +373,15 @@ void main() {
     expect(verified, isFalse);
     expect(shell.session.value.mfaVerifiedAt, isNull);
     expect(find.text('usuario u1'), findsOneWidget);
-    expect(
-      shell.router.routerDelegate.currentConfiguration.uri.path,
-      '/verifier',
-    );
+    expect(shell.router.routerDelegate.currentConfiguration.uri.path, '/probe');
   });
 
   testWidgets('requestStepUp returns false when a go replaces the page', (
     tester,
   ) async {
-    final shell = await pumpShell(tester, registry: registryWithProbe());
+    final shell = await pumpShell(tester, manifests: manifestsWithProbe());
     shell.session.value = probeUser('u1');
-    shell.router.go('/verifier');
+    shell.router.go('/probe');
     await settle(tester);
 
     bool? verified;
@@ -457,7 +406,11 @@ void main() {
     // Built inside each test: futures created in setUp live outside the
     // fake async zone of testWidgets and never complete there.
     void prepare() {
-      repository = FakeAuthRepository();
+      // No session cookie yet: the refresh of `restore` is turned down.
+      repository = FakeAuthRepository()
+        ..refreshError = FakeAuthRepository.apiError(
+          IdentityErrorCode.sessionExpired,
+        );
       served = [
         access(const [Permission.tasksRead]),
       ];
@@ -492,7 +445,8 @@ void main() {
       repository.verifyResult = authenticated();
       final shell = await pumpShell(
         tester,
-        location: '/tasks',
+        location: '/probe',
+        manifests: manifestsWithProbe(),
         connection: connection,
       );
       expect(shell.router.state.uri.path, '/login');
@@ -521,14 +475,13 @@ void main() {
       expect(repository.lastVerify?.challengeId, challengeId);
       expect(shell.session.value.userId, userId);
       expect(shell.session.value.permissions, {Permission.tasksRead});
-      expect(shell.router.state.uri.path, '/tasks');
+      expect(shell.router.state.uri.path, '/probe');
       expect(
-        shell.runtime
-            .scopeFor(MicrofrontendId.tasks)
-            .services
-            .extra<ApiClient>(),
+        shell.runtime.scopeFor(_probeId).services.api,
         same(connection.apiClient),
       );
+      // Live mode only offers what has a real adapter.
+      expect(shell.registry.manifestForPath('/tasks'), isNull);
     });
 
     testWidgets('a wrong password shows the contract message', (tester) async {
@@ -557,12 +510,16 @@ void main() {
     ) async {
       prepare();
       repository.signInResult = authenticated();
-      final shell = await pumpShell(tester, connection: connection);
+      final shell = await pumpShell(
+        tester,
+        manifests: manifestsWithProbe(),
+        connection: connection,
+      );
       await connection.sessionManager.signIn(
         const SignInRequest(email: 'ana@example.com', password: 'secret'),
       );
       await connection.reloadAccess();
-      shell.router.go('/tasks');
+      shell.router.go('/probe');
       await settle(tester);
       expect(shell.session.value.isAuthenticated, isTrue);
 
@@ -596,12 +553,16 @@ void main() {
           ),
           mfaVerifiedAt: verifiedAt,
         );
-      final shell = await pumpShell(tester, connection: connection);
+      final shell = await pumpShell(
+        tester,
+        manifests: manifestsWithProbe(),
+        connection: connection,
+      );
       await connection.sessionManager.signIn(
         const SignInRequest(email: 'ana@example.com', password: 'secret'),
       );
       await connection.reloadAccess();
-      shell.router.go('/tasks');
+      shell.router.go('/probe');
       await settle(tester);
       expect(shell.session.value.mfaVerifiedAt, isNull);
 
@@ -628,7 +589,7 @@ void main() {
       expect(connection.access.value?.mfaVerifiedAt, verifiedAt);
       expect(await connection.sessionManager.accessToken(), 'access-mfa');
       expect(find.text('Verificación adicional'), findsNothing);
-      expect(shell.router.state.uri.path, '/tasks');
+      expect(shell.router.state.uri.path, '/probe');
     });
 
     testWidgets('a method the step-up does not offer shows its message and '
@@ -640,12 +601,16 @@ void main() {
           mfaToken: 'step-1',
           methods: [MfaFactor.emailOtp],
         );
-      final shell = await pumpShell(tester, connection: connection);
+      final shell = await pumpShell(
+        tester,
+        manifests: manifestsWithProbe(),
+        connection: connection,
+      );
       await connection.sessionManager.signIn(
         const SignInRequest(email: 'ana@example.com', password: 'secret'),
       );
       await connection.reloadAccess();
-      shell.router.go('/tasks');
+      shell.router.go('/probe');
       await settle(tester);
 
       shell.requestStepUp().ignore();
@@ -663,7 +628,7 @@ void main() {
   });
 
   testWidgets('/step-up sends an anonymous visitor to login', (tester) async {
-    final shell = await pumpShell(tester, location: WebShell.stepUpPath);
+    final shell = await pumpShell(tester, location: ShellHost.paths.stepUp);
     expect(shell.router.state.uri.path, '/login');
   });
 }
@@ -672,34 +637,37 @@ void main() {
 UserSession probeUser(String id) =>
     UserSession(userId: id, tenantId: 'demo-tenant');
 
-/// Real web registry plus a probe at `/verifier` (not composed by the web
-/// shell) that follows the WP0 contract: `screens`, scope data and `AppPage`.
-MicrofrontendRegistry registryWithProbe() => buildWebRegistry()
-  ..register(
-    MicrofrontendManifest(
-      id: MicrofrontendId.verifier,
-      platforms: {AppPlatform.web},
-      access: AccessRule.authenticated(),
-      menu: const [],
-      screens: [
-        ScreenRoute(
-          path: '/verifier',
-          loadLibrary: () async {},
-          builder: (scope, {params = const {}}) =>
-              _ProbeScreen(userId: scope.services.session.userId!),
-          routes: [
-            ScreenRoute(
-              path: 'secure',
-              access: AccessRule.mfa(const Duration(minutes: 10)),
-              loadLibrary: () async {},
-              builder: (scope, {params = const {}}) =>
-                  const AppPage(title: 'Seguro', body: Text('zona segura')),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+const _probeId = MicrofrontendId('probe');
+
+/// Real web manifests plus a probe at `/probe` that serves demo and live
+/// shells: a screen built from the scope's data with `AppPage`, and an MFA
+/// sub-route.
+List<MicrofrontendManifest> manifestsWithProbe() => [
+  ...webManifests,
+  MicrofrontendManifest(
+    id: _probeId,
+    platforms: {AppPlatform.web},
+    access: AccessRule.authenticated(),
+    menu: const [],
+    screens: [
+      ScreenRoute(
+        path: '/probe',
+        loadLibrary: () async {},
+        builder: (scope, {params = const {}}) =>
+            _ProbeScreen(userId: scope.services.session.userId!),
+        routes: [
+          ScreenRoute(
+            path: 'secure',
+            access: AccessRule.mfa(const Duration(minutes: 10)),
+            loadLibrary: () async {},
+            builder: (scope, {params = const {}}) =>
+                const AppPage(title: 'Seguro', body: Text('zona segura')),
+          ),
+        ],
+      ),
+    ],
+  ),
+];
 
 /// Copies the user id into its state once, like a screen that loads data in
 /// `initState`. Only a rebuild from scratch shows another user.
@@ -746,4 +714,7 @@ class _NoNetwork implements HttpTransport {
   @override
   Future<TransportResponse> send(TransportRequest request) async =>
       const TransportResponse(statusCode: 503);
+
+  @override
+  void close() {}
 }

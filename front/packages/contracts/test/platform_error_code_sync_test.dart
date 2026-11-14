@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:contracts/contracts.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 /// Keeps the generated Dart in step with the exported contracts and the i18n
 /// messages. Runs from the package directory, which is where `flutter test` starts.

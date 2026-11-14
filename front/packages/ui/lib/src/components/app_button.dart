@@ -16,6 +16,7 @@ enum AppButtonVariant {
 /// Button with a [variant] and a [loading] state.
 ///
 /// While [loading] is true the button shows a spinner and cannot be tapped.
+/// A label longer than the available width wraps.
 class AppButton extends StatelessWidget {
   /// Creates a button. A null [onPressed] disables it.
   const AppButton({
@@ -57,7 +58,9 @@ class AppButton extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
-        Text(label),
+        // Flexible lets a long label wrap instead of overflowing a narrow
+        // button (small phones, large text scale).
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
       ],
     );
 

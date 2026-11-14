@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
+import 'package:auth/testing.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,6 +39,11 @@ class _Transport implements HttpTransport {
     requests.add(request);
     return answer!(request);
   }
+
+  @override
+  void close() => closed = true;
+
+  bool closed = false;
 }
 
 void main() {
@@ -51,7 +57,7 @@ void main() {
     repo = FakeAuthRepository();
     manager = SessionManager(
       repository: repo,
-      tokenStore: InMemoryTokenStore(),
+      tokenStore: FakeTokenStore(),
       clock: () => t0,
     );
     served = [
@@ -176,7 +182,7 @@ void main() {
     final real = IdentityConnection(
       transport: transport,
       baseUri: Uri.parse('https://api.example.com'),
-      tokenStore: InMemoryTokenStore(),
+      tokenStore: FakeTokenStore(),
     );
     addTearDown(real.dispose);
 
@@ -197,7 +203,7 @@ void main() {
 
   group('the real connection', () {
     late _Transport transport;
-    late InMemoryTokenStore store;
+    late FakeTokenStore store;
     late IdentityConnection real;
 
     String problem(IdentityErrorCode code) => jsonEncode({
@@ -216,7 +222,7 @@ void main() {
 
     setUp(() {
       transport = _Transport();
-      store = InMemoryTokenStore();
+      store = FakeTokenStore();
       real = IdentityConnection(
         transport: transport,
         baseUri: Uri.parse('https://api.example.com'),
@@ -331,6 +337,14 @@ void main() {
         transport.requests.last.headers['authorization'],
         'Bearer real-token',
       );
+    });
+
+    test('dispose closes the transport it owns', () async {
+      transport.answer = base;
+
+      await real.dispose();
+
+      expect(transport.closed, isTrue);
     });
   });
 }

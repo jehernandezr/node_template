@@ -52,7 +52,8 @@ UserSession tenantUser() => UserSession(
 
 /// New scope for [session], as the runtime creates one per identity.
 MicrofrontendScope newScope([UserSession? session]) => MicrofrontendScope(
-  DefaultShellServices(
+  ShellServices(
+    mode: ShellMode.demo,
     session: session ?? platformUser({PlatformRole.superAdmin}),
   ),
 );
@@ -143,16 +144,20 @@ Future<GoRouter> pumpThroughShell(
     platform: AppPlatform.web,
     session: source,
     clock: testClock,
-    servicesFactory: (identity) => DefaultShellServices(session: identity),
+    servicesFactory: (identity) =>
+        ShellServices(mode: ShellMode.demo, session: identity),
   );
   final router = buildShellRouter(
     registry: registry,
     platform: AppPlatform.web,
     runtime: runtime,
     routes: shellPages,
-    loginPath: loginPath,
-    forbiddenPath: forbiddenPath,
-    stepUpPath: stepUpPath,
+    shellBuilder: (context, state, child) => child,
+    paths: const ShellPaths(
+      login: loginPath,
+      forbidden: forbiddenPath,
+      stepUp: stepUpPath,
+    ),
     clock: testClock,
   );
   addTearDown(() {

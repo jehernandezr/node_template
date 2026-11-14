@@ -8,13 +8,6 @@
   "actionSignIn": "Sign in",
   "actionSignOut": "Sign out",
 
-  "menuAccount": "Account",
-  "menuTasks": "Tasks",
-  "menuNotifications": "Notifications",
-  "menuAssistant": "Assistant",
-  "menuBilling": "Billing",
-  "menuBackoffice": "Administration",
-  "menuVerifier": "Verifier",
   "menuMore": "More",
 
   "demoModeTitle": "Demo mode",
