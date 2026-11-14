@@ -1,6 +1,10 @@
 ---
 name: backend-nestjs-composicion
 description: Cómo se compone una app NestJS en node_template. Módulos como raíz de composición, tokens de inyección para puertos, casos de uso, comandos, controllers delgados, validación con zod, fachadas, ciclo de vida y apagado ordenado. Úsala al crear módulos, providers, casos de uso, controllers o consumidores, o al cablear un puerto con su adaptador.
+paths:
+  - 'backend/apps/**'
+  - 'backend/libs/platform/http/**'
+  - 'backend/libs/platform/service/**'
 ---
 
 # Composición con NestJS

@@ -1,6 +1,11 @@
 ---
 name: backend-seguridad
 description: Reglas de seguridad del backend de node_template. Validación de entrada con zod, autenticación JWT y sesiones, autorización por permisos con enums y por tenant, aislamiento entre tenants, secretos, hash de contraseñas, límites de tasa y tamaño, cabeceras, inyección SQL, datos sensibles en logs y dependencias. Úsala al exponer un endpoint, un consumidor, una consulta, o al manejar credenciales, tokens o datos personales.
+paths:
+  - 'backend/apps/**'
+  - 'backend/libs/platform/auth/**'
+  - 'backend/libs/platform/http/**'
+  - 'backend/libs/contracts/**'
 ---
 
 # Seguridad

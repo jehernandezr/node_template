@@ -1,6 +1,9 @@
 ---
 name: backend-dominio
 description: Cómo se modela el dominio del backend de node_template. Agregados con invariantes, entidades, objetos de valor, eventos de dominio, fábricas, puertos y rehidratación, sobre AggregateRoot, ValueObject y DomainEvent de @platform/kernel. Úsala al crear o modificar cualquier cosa dentro de domain/.
+paths:
+  - 'backend/**/domain/**'
+  - 'backend/libs/platform/kernel/**'
 ---
 
 # Dominio

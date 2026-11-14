@@ -1,6 +1,8 @@
 ---
 name: backend-estructura
 description: Cómo se organizan carpetas, capas, dependencias y compilado del backend de node_template. Un solo node_modules con pnpm, librerías por alias de TypeScript, límites entre proyectos con tags de Nx, código directo en src/, pruebas en __tests__ y compilado de cada app en backend/dist. Úsala al crear o mover librerías, apps, módulos, carpetas o pruebas del backend.
+paths:
+  - 'backend/**'
 ---
 
 # Estructura del backend

@@ -1,6 +1,8 @@
 ---
 name: front-codigo
 description: Reglas de diseño del código del front de node_template (Flutter, Dart 3). Clases, composición e inyección por constructor, widgets que solo pintan, controladores y flujos probados sin widgets, estados y errores tipados, async seguro, nombres y contrato de microfrontend. Úsala antes de escribir, revisar o integrar código en front/.
+paths:
+  - 'front/**'
 ---
 
 # Código del front

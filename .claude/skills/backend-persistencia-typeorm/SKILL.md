@@ -1,6 +1,11 @@
 ---
 name: backend-persistencia-typeorm
 description: Cómo se persiste en node_template con TypeORM sobre PostgreSQL con shards. Entidades, mappers, repositorios que implementan puertos del dominio, transacciones y locking optimista, consultas sin N+1, índices, migraciones generadas y aplicadas con la CLI de TypeORM (incluidas las seguras sin downtime) y sharding por DataSource. Úsala al crear tablas, entidades, repositorios, consultas o migraciones.
+paths:
+  - 'backend/**/infrastructure/persistence/**'
+  - 'backend/**/migrations/**'
+  - 'backend/libs/platform/persistence/**'
+  - 'backend/libs/platform/adapters/postgres/**'
 ---
 
 # Persistencia con TypeORM

@@ -1,6 +1,11 @@
 ---
 name: front-navegacion
 description: Navegación y enlaces profundos del front de node_template con go_router. Rutas declaradas por el manifiesto del microfrontend, go contra push, parámetros por ruta y query sin extra, guardias de acceso y retorno tras el login. Úsala al agregar una ruta, un enlace, un redirect o una llamada de navegación desde una pantalla.
+paths:
+  - 'front/packages/shell_core/**'
+  - 'front/packages/shell_host/**'
+  - 'front/microfrontends/*/lib/*.dart'
+  - 'front/microfrontends/**/constants/**'
 ---
 
 # Navegación

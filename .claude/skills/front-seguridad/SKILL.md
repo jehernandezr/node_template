@@ -1,6 +1,10 @@
 ---
 name: front-seguridad
 description: Seguridad del código del front de node_template (Flutter, web y móvil). Secretos, almacenamiento de tokens, HTTPS, validación de entrada, logs, aleatoriedad y dependencias. Úsala al tocar sesión, tokens, ApiClient, almacenamiento local, configuración por entorno, deep links o al agregar una dependencia.
+paths:
+  - 'front/packages/auth/**'
+  - 'front/packages/api/**'
+  - 'front/apps/**'
 ---
 
 # Seguridad del front

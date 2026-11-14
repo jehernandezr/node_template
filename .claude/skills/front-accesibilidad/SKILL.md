@@ -1,6 +1,8 @@
 ---
 name: front-accesibilidad
 description: Accesibilidad de los widgets del front de node_template (Flutter, web y móvil). Semantics, nombres accesibles, tamaños táctiles, contraste, escala de texto, foco y teclado, animaciones y anuncios de cambios async, con las pruebas que lo fijan. Úsala al crear, revisar o auditar pantallas, componentes de ui o formularios.
+paths:
+  - 'front/**/lib/**'
 ---
 
 # Accesibilidad del front

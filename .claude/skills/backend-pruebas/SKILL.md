@@ -1,6 +1,10 @@
 ---
 name: backend-pruebas
 description: Cómo se escriben y ubican las pruebas del backend de node_template, por capas. Unitarias del dominio, de casos de uso con dobles como clases, de integración con Testcontainers (PostgreSQL, Valkey, LocalStack), de contrato zod, de componente y e2e con NestJS Testing. Carpetas __tests__, nombres, datos de prueba, sin esperas fijas y cobertura mínima. Úsala al escribir o revisar pruebas del backend.
+paths:
+  - 'backend/**/__tests__/**'
+  - 'backend/**/e2e/**'
+  - 'backend/**/testing/**'
 ---
 
 # Pruebas del backend

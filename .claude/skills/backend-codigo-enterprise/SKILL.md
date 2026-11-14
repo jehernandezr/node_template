@@ -1,6 +1,8 @@
 ---
 name: backend-codigo-enterprise
 description: Reglas transversales de diseño del código del backend de node_template (TypeScript, NestJS). Clases, composición, inyección por constructor, hexagonal, Clean Code, nombres, TypeScript estricto y checklist de revisión. Úsala antes de escribir, revisar o integrar cualquier código en backend/, y como puerta de entrada a las demás skills backend-*.
+paths:
+  - 'backend/**'
 ---
 
 # Código enterprise del backend

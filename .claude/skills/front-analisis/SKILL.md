@@ -1,6 +1,10 @@
 ---
 name: front-analisis
 description: Análisis estático, lints, formato y documentación del front de node_template (Dart). analysis_options, modo estricto, dart fix, supresiones, comentarios de documentación con /// y comprobación previa a integrar. Úsala al configurar o corregir el analizador, al suprimir un aviso, al documentar API pública o antes de dar por terminado un cambio.
+paths:
+  - 'front/**/analysis_options.yaml'
+  - 'front/**/pubspec.yaml'
+  - 'front/**/lib/**'
 ---
 
 # Análisis estático y documentación

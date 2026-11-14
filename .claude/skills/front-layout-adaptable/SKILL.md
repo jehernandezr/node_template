@@ -1,6 +1,10 @@
 ---
 name: front-layout-adaptable
 description: Layout adaptable y tema del front de node_template (Flutter). Breakpoint, PlatformScreen y AppPage de ui, restricciones de ancho, tokens de espaciado y color, ColorScheme y TextTheme, modo claro y oscuro. Úsala al construir o revisar la presentación de una pantalla, al elegir tamaños, colores o tipografía, o al arreglar un overflow.
+paths:
+  - 'front/packages/ui/**'
+  - 'front/packages/tokens/**'
+  - 'front/**/screens/**'
 ---
 
 # Layout adaptable y tema

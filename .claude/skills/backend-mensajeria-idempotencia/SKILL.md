@@ -1,6 +1,12 @@
 ---
 name: backend-mensajeria-idempotencia
 description: Eventos, colas e idempotencia en el backend de node_template. Outbox transaccional, publicación después del commit, consumidores SNS/SQS con @Subscribe, tabla processed_messages, llaves de idempotencia en la API, versionado de eventos con contratos zod, DLQ y compensaciones de sagas. Úsala al publicar un evento, escribir un consumidor, exponer una operación que modifica datos o definir una operación de saga.
+paths:
+  - 'backend/**/messaging/**'
+  - 'backend/libs/platform/messaging/**'
+  - 'backend/libs/platform/saga/**'
+  - 'backend/libs/platform/internal-api/**'
+  - 'backend/libs/contracts/**/events/**'
 ---
 
 # Mensajería e idempotencia

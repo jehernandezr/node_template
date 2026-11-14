@@ -1,6 +1,9 @@
 ---
 name: front-pruebas
 description: Cómo se escriben y ubican las pruebas del front de node_template (Flutter). Carpeta test/ que replica lib/src, controladores probados sin widgets, dobles como clases, pruebas de widgets con pumpApp, accesibilidad y layout, golden tests, sin esperas fijas y carga de librerías diferidas. Úsala al escribir o revisar pruebas del front.
+paths:
+  - 'front/**/test/**'
+  - 'front/**/testing.dart'
 ---
 
 # Pruebas del front

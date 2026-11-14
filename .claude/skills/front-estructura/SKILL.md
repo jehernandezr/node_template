@@ -1,6 +1,8 @@
 ---
 name: front-estructura
 description: Cómo se organizan carpetas, dependencias y nombres del front de node_template. Un solo pub workspace, apps, paquetes compartidos y microfrontends, capas de lib/src, API pública por paquete y reglas de dependencia. Úsala al crear o mover paquetes, microfrontends, pantallas, archivos o pruebas del front.
+paths:
+  - 'front/**'
 ---
 
 # Estructura del front

@@ -1,6 +1,10 @@
 ---
 name: backend-errores
 description: Cómo se modelan, traducen y registran los errores en el backend de node_template. Errores de dominio con código SERVICIO.SUBMÓDULO.ERROR, errores de infraestructura, clasificación de fallas, catálogo, traducción a Problem Details (RFC 9457) con un filtro global de NestJS y errores en consumidores y jobs. Úsala al lanzar, atrapar o traducir un error, o al crear un código de error nuevo.
+paths:
+  - 'backend/**/errors/**'
+  - 'backend/**/*.error.ts'
+  - 'backend/libs/contracts/**/errors/**'
 ---
 
 # Errores

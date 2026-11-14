@@ -1,6 +1,10 @@
 ---
 name: front-i18n
 description: Internacionalización del front de node_template (Flutter). ARB por microfrontend y los compartidos de i18n, flutter gen-l10n, plurales, textos de errores y enums, direccionalidad y qué no se localiza. Úsala al agregar o cambiar un texto visible, un idioma, una etiqueta de menú o un mensaje de error.
+paths:
+  - 'front/**/*.arb'
+  - 'front/**/l10n/**'
+  - 'front/packages/i18n/**'
 ---
 
 # Internacionalización

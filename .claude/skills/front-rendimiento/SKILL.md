@@ -1,6 +1,8 @@
 ---
 name: front-rendimiento
 description: Rendimiento de la interfaz del front de node_template (Flutter). const, reconstrucciones acotadas, listas con builder, tamaño de los chunks diferidos, trabajo pesado fuera del hilo de UI, imágenes y animaciones. Úsala al escribir o revisar widgets, listas, pantallas con muchos datos o cuando una pantalla se siente lenta.
+paths:
+  - 'front/**/lib/**'
 ---
 
 # Rendimiento del front
