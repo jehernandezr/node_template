@@ -1,11 +1,6 @@
-import {
-  baseConfigSchema,
-  DEFAULT_OTLP_ENDPOINT,
-  NodeEnv,
-} from './base-config.js';
+import { baseConfigSchema, DeployEnvironment, NodeEnv } from './base-config.js';
 import { defineConfig } from './define-config.js';
 import { LogLevel } from './log-level.js';
-import { isSecret } from './secret.js';
 
 describe('baseConfigSchema', () => {
   const config = defineConfig(baseConfigSchema);
@@ -50,35 +45,40 @@ describe('baseConfigSchema', () => {
     expect(loaded).not.toHaveProperty('AWS_REGION');
   });
 
-  it('defaults the telemetry variables to the local Collector', () => {
-    const loaded = config.load({ SERVICE_NAME: 'orders' });
-
-    expect(loaded.OTEL_SDK_DISABLED).toBe(false);
-    expect(loaded.OTEL_EXPORTER_OTLP_ENDPOINT).toBe(DEFAULT_OTLP_ENDPOINT);
-    expect(loaded.OTEL_EXPORTER_OTLP_HEADERS).toBeUndefined();
-    expect(loaded.OTEL_METRIC_EXPORT_INTERVAL).toBe(60_000);
-    expect(loaded.SERVICE_VERSION).toBeUndefined();
-  });
-
-  it('keeps OTLP headers as a secret and validates the endpoint', () => {
+  it('defaults the telemetry variables and leaves OTLP_* to the SDK', () => {
     const loaded = config.load({
       SERVICE_NAME: 'orders',
       OTEL_EXPORTER_OTLP_HEADERS: 'authorization=Basic abc',
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://collector:4318',
+    });
+
+    expect(loaded.OTEL_SDK_DISABLED).toBe(false);
+    expect(loaded.OTEL_METRIC_EXPORT_INTERVAL).toBe(60_000);
+    expect(loaded.SERVICE_VERSION).toBeUndefined();
+    expect(loaded).not.toHaveProperty('OTEL_EXPORTER_OTLP_HEADERS');
+    expect(JSON.stringify(loaded)).not.toContain('Basic abc');
+  });
+
+  it('parses the telemetry switches', () => {
+    const loaded = config.load({
+      SERVICE_NAME: 'orders',
       OTEL_SDK_DISABLED: '1',
       OTEL_METRIC_EXPORT_INTERVAL: '15000',
     });
 
-    expect(isSecret(loaded.OTEL_EXPORTER_OTLP_HEADERS)).toBe(true);
-    expect(JSON.stringify(loaded)).not.toContain('Basic abc');
-    expect(loaded.OTEL_EXPORTER_OTLP_ENDPOINT).toBe('http://collector:4318');
     expect(loaded.OTEL_SDK_DISABLED).toBe(true);
     expect(loaded.OTEL_METRIC_EXPORT_INTERVAL).toBe(15_000);
+  });
+
+  it('reads the deploy environment, local by default', () => {
+    expect(config.load({ SERVICE_NAME: 'orders' }).DEPLOY_ENVIRONMENT).toBe(
+      DeployEnvironment.Local,
+    );
+    expect(
+      config.load({ SERVICE_NAME: 'orders', DEPLOY_ENVIRONMENT: 'staging' })
+        .DEPLOY_ENVIRONMENT,
+    ).toBe(DeployEnvironment.Staging);
     expect(() =>
-      config.load({
-        SERVICE_NAME: 'orders',
-        OTEL_EXPORTER_OTLP_ENDPOINT: 'not a url',
-      }),
+      config.load({ SERVICE_NAME: 'orders', DEPLOY_ENVIRONMENT: 'qa' }),
     ).toThrow();
   });
 });

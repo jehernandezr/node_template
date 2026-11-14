@@ -3,6 +3,11 @@ output "endpoint" {
   value       = aws_elasticache_serverless_cache.this.endpoint[0].address
 }
 
+output "cache_name" {
+  description = "Nombre de la caché serverless. Es el host que firma el token IAM de los clientes."
+  value       = aws_elasticache_serverless_cache.this.name
+}
+
 output "port" {
   description = "Puerto de la caché Valkey serverless."
   value       = aws_elasticache_serverless_cache.this.endpoint[0].port
@@ -20,7 +25,7 @@ output "tls" {
 
 output "kms_key_arn" {
   description = "ARN de la clave KMS que cifra la caché en reposo."
-  value       = aws_kms_key.this.arn
+  value       = module.kms.arn
 }
 
 output "cache_arn" {

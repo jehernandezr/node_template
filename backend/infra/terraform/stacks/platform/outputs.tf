@@ -12,6 +12,11 @@ output "ecs_cluster" {
   } : null
 }
 
+output "compute_logs_kms_key_arn" {
+  description = "CMK de los logs, variables de entorno y DLQ asíncronas de los servicios (Fargate y Lambda). Null sin cómputo."
+  value       = var.compute_enabled ? module.compute_logs_kms[0].arn : null
+}
+
 output "observability" {
   description = "OpenObserve: endpoint OTLP, secreto de autorización, CMK y security group del ALB interno. Null sin observabilidad."
   value = length(module.observability) == 0 ? null : {

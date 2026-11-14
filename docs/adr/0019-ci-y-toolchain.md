@@ -55,7 +55,7 @@ Corre en PR, en `main` y cada lunes:
 
 ### Historial y `.env`
 
-La auditoría anticipó que gitleaks marcaría el `.env` del commit `a076bb9`. Al ejecutar gitleaks 8.30.1 sobre el historial completo no se reportó ningún hallazgo (los valores son de desarrollo local y no coinciden con ninguna regla), y el usuario confirmó que nunca se usaron. Por eso **no se añade `.gitleaksignore`**. Si una versión futura de las reglas lo marcara, se agregará la huella (`gitleaks git --report-format json`, campo `Fingerprint`) de ese hallazgo concreto a `.gitleaksignore`, con un comentario que cite este ADR; no se reescribe el historial.
+La auditoría anticipó que gitleaks marcaría el `.env` del commit `a076bb9`. Al ejecutar gitleaks 8.30.1 sobre el historial completo no se reportó ningún hallazgo (los valores son de desarrollo local y no coinciden con ninguna regla), y el usuario confirmó que nunca se usaron. `.gitleaksignore` solo lleva huellas concretas (`gitleaks git --report-format json`, campo `Fingerprint`), con un comentario que cite este ADR, y nunca se reescribe el historial. Hoy tiene dos, del mismo JWT de prueba de `redaction.spec.ts`: la del commit de `main` (`13f606f`) y la del commit `04a3914`, que sigue en una rama remota que gitleaks recorre con `--all`. La prueba ya arma ese JWT en tiempo de ejecución, así que no aparecerá en commits nuevos.
 
 ### Configuración del repositorio requerida
 

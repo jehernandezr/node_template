@@ -14,28 +14,12 @@ locals {
   }
 }
 
-resource "aws_kms_key" "this" {
-  description             = "Cifrado en reposo de Valkey de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Sid       = "EnableIamPolicies"
-      Effect    = "Allow"
-      Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-      Action    = "kms:*"
-      Resource  = "*"
-    }]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  name          = "alias/${var.name_prefix}-valkey"
-  target_key_id = aws_kms_key.this.key_id
+  alias       = "${var.name_prefix}-valkey"
+  description = "Cifrado en reposo de Valkey de ${var.name_prefix}"
+  tags        = var.tags
 }
 
 resource "aws_security_group" "this" {
@@ -72,6 +56,8 @@ resource "aws_elasticache_user" "default" {
   tags = var.tags
 }
 
+# El token IAM se firma con el user id y el cliente se autentica con el user name: ElastiCache
+# exige que sean iguales, así el cliente recibe un solo valor (VALKEY_USER).
 resource "aws_elasticache_user" "app" {
   for_each = var.users
 
@@ -98,15 +84,18 @@ resource "aws_elasticache_user_group" "this" {
   tags = var.tags
 }
 
+# La plataforma usa los comandos BF.* del módulo de Bloom, que llega con Valkey 8.1. Una
+# caché serverless sigue la última versión menor de su versión mayor.
 resource "aws_elasticache_serverless_cache" "this" {
-  engine      = "valkey"
-  name        = "${var.name_prefix}-valkey"
-  description = "Caché Valkey de ${var.name_prefix}"
+  engine               = "valkey"
+  major_engine_version = "8"
+  name                 = "${var.name_prefix}-valkey"
+  description          = "Caché Valkey de ${var.name_prefix}"
 
   subnet_ids         = var.subnet_ids
   security_group_ids = [aws_security_group.this.id]
 
-  kms_key_id    = aws_kms_key.this.arn
+  kms_key_id    = module.kms.arn
   user_group_id = aws_elasticache_user_group.this.user_group_id
 
   snapshot_retention_limit = var.snapshot_retention_limit
@@ -122,4 +111,14 @@ resource "aws_elasticache_serverless_cache" "this" {
   }
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-valkey" })
+}
+
+moved {
+  from = aws_kms_key.this
+  to   = module.kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.this
+  to   = module.kms.aws_kms_alias.this
 }

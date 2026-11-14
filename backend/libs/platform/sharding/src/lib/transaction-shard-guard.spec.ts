@@ -21,7 +21,7 @@ describe('TransactionShardGuard', () => {
     );
   });
 
-  // Audit PLAT-12: the guard lived per request, so a second legitimate transaction failed.
+  // A guard per request made a second legitimate transaction of the same request fail.
   it('lets one request run successive transactions on different shards', async () => {
     const transaction = (shard: string) =>
       TransactionShardGuard.run(async () => {

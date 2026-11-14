@@ -705,7 +705,7 @@ describe('ShardRouter', () => {
       expect(env.directory.getPlacement).toHaveBeenCalledTimes(2);
     });
 
-    // Reproduces audit finding P1.7: invalidate used to delete the key and the read wrote it back.
+    // invalidate used to delete the key, and a read in flight wrote the old placement back.
     it('does not let a read in flight in another process resurrect an invalidated placement', async () => {
       const env = setup();
       env.store.setPlacement(
@@ -840,7 +840,7 @@ describe('ShardRouter', () => {
     });
   });
 
-  // Audit PLAT-13: other processes kept the old placement for up to localTtlMs after a move.
+  // Without the change channel, other processes kept the old placement for up to localTtlMs after a move.
   describe('directory changes across processes', () => {
     it('drops the placement in every listening process when one of them invalidates', async () => {
       const env = setup();

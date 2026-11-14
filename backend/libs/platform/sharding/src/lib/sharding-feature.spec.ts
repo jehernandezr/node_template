@@ -19,7 +19,7 @@ const byAccount: ShardKeyResolver<Invoice> = {
 const context = { tenantId: 't1', userId: 'u1' };
 
 describe('validateShardingFeature', () => {
-  it('accepts the declarations of the plan', () => {
+  it('accepts the documented declarations', () => {
     const identity = {
       strategy: ShardStrategy.Directory,
       key: ShardKey.User,

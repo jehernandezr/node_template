@@ -115,6 +115,13 @@ function checkRange(name: string, value: number, min: number, max: number) {
   }
 }
 
+/** Código de un error desconocido, sin suponer que es un objeto. */
+function errorCodeOf(err: unknown): unknown {
+  return typeof err === 'object' && err !== null && 'code' in err
+    ? err.code
+    : undefined;
+}
+
 function receiveCountOf(value: string | undefined): number {
   const count = Number(value);
   return Number.isInteger(count) && count > 0 ? count : 1;
@@ -285,9 +292,15 @@ export class SqsDeliveryRunner {
           await this.pollOnce(abort.signal);
         } catch (err) {
           if (abort.signal.aborted) break;
-          this.logger.error('sqs polling failed', {
-            error_code: (err as { code?: unknown }).code,
-          });
+          // Un fallo al registrar no puede terminar el ciclo de consumo.
+          try {
+            this.logger.error('sqs polling failed', {
+              error_code: errorCodeOf(err),
+              error: err,
+            });
+          } catch {
+            // sin log, el ciclo sigue
+          }
           await sleep(errorDelay, abort.signal);
         }
       }
@@ -311,10 +324,11 @@ export class SqsDeliveryRunner {
         visibilityTimeoutMs: this.queue.visibilityTimeoutSeconds * 1000,
       });
     } catch (err) {
-      // The dispatcher reports failures as results; this is a bug or a crash.
+      // El dispatcher informa los fallos como resultados: si lanza, es un bug o una caída.
       this.logger.error('dispatcher threw', {
         message_id: delivery.messageId,
-        error_code: (err as { code?: unknown }).code,
+        error_code: errorCodeOf(err),
+        error: err,
       });
       return {
         messageId: delivery.messageId,
@@ -370,7 +384,7 @@ export class SqsDeliveryRunner {
         }),
       );
     } catch (err) {
-      // The message comes back when its current visibility timeout ends.
+      // El mensaje vuelve cuando vence su visibilidad actual.
       const error = transportError(
         AwsOperation.ChangeMessageVisibility,
         err,
@@ -379,6 +393,7 @@ export class SqsDeliveryRunner {
       this.logger.warn('could not change message visibility', {
         message_id: delivery.messageId,
         error_code: error.code,
+        error,
       });
     }
   }
@@ -438,6 +453,7 @@ export class SqsDeliveryRunner {
       this.logger.error('could not copy the message to the dead-letter queue', {
         message_id: delivery.messageId,
         error_code: error.code,
+        error,
       });
       return false;
     }
@@ -463,10 +479,11 @@ export class SqsDeliveryRunner {
           this.logger.warn('could not delete a processed message', {
             message_id: chunk[Number(failed.Id)]?.messageId,
             error_code: failed.Code,
+            error_message: failed.Message,
           });
         }
       } catch (err) {
-        // Redelivered messages are absorbed by the processed-message claim.
+        // Los mensajes que vuelvan los absorbe el registro de mensajes procesados.
         const error = transportError(
           AwsOperation.DeleteMessageBatch,
           err,
@@ -474,6 +491,7 @@ export class SqsDeliveryRunner {
         );
         this.logger.warn('could not delete processed messages', {
           error_code: error.code,
+          error,
         });
       }
     }

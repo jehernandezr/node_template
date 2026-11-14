@@ -50,8 +50,13 @@ run "local_without_compute" {
   }
 
   assert {
+    condition     = length(module.compute_logs_kms) == 0 && output.compute_logs_kms_key_arn == null
+    error_message = "Sin cómputo no hay CMK de logs de los servicios."
+  }
+
+  assert {
     condition     = length(module.files_bucket) == 1
-    error_message = "El bucket de archivos existe también en local."
+    error_message = "El bucket de archivos existe también en local, sin cómputo."
   }
 }
 
@@ -73,6 +78,11 @@ run "dev_with_fargate_api" {
   assert {
     condition     = length(module.budget) == 1
     error_message = "monthly_budget crea el presupuesto."
+  }
+
+  assert {
+    condition     = length(module.compute_logs_kms) == 1
+    error_message = "Con cómputo hay una CMK de logs por ambiente para todos los servicios."
   }
 }
 

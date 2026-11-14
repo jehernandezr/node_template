@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { UuidV7IdGenerator, type IdGenerator } from '@platform/kernel';
 
 /**
- * Relación entre el `traceId` del plan y el trace id de W3C/OpenTelemetry.
+ * Relación entre el `traceId` de la plataforma y el trace id de W3C/OpenTelemetry.
  *
  * El `traceId` es un UUIDv7 (ADR 0003). Sus 128 bits, escritos como 32
  * caracteres hexadecimales en minúscula y sin guiones, son exactamente el

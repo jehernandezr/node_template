@@ -206,7 +206,7 @@ describe('placeTenant', () => {
     });
   });
 
-  // Audit PLAT-13: two concurrent dedicated sign-ups could take the same empty shard.
+  // Two concurrent dedicated sign-ups must not take the same empty shard.
   it('never gives one empty shard to two concurrent dedicated tenants', async () => {
     const directory = new InMemoryDirectoryStore();
     const [first, second] = await Promise.all([

@@ -31,52 +31,22 @@ locals {
   mx_value  = "10 feedback-smtp.${data.aws_region.current.region}.amazonses.com"
 }
 
-resource "aws_kms_key" "events" {
-  description             = "Cifrado del tópico de eventos de SES de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "events_kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowSesUse"
-        Effect    = "Allow"
-        Principal = { Service = "ses.amazonaws.com" }
-        Action    = ["kms:GenerateDataKey*", "kms:Decrypt"]
-        Resource  = "*"
-        Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id } }
-      },
-      {
-        Sid       = "AllowSnsUse"
-        Effect    = "Allow"
-        Principal = { Service = "sns.amazonaws.com" }
-        Action    = ["kms:GenerateDataKey*", "kms:Decrypt"]
-        Resource  = "*"
-        Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id } }
-      },
-    ]
-  })
-
+  alias       = "${var.name_prefix}-ses-events"
+  description = "Cifrado del tópico de eventos de SES de ${var.name_prefix}"
+  service_principals = [
+    { sid = "AllowSesUse", services = ["ses.amazonaws.com"] },
+    { sid = "AllowSnsUse", services = ["sns.amazonaws.com"] },
+  ]
   tags = var.tags
-}
-
-resource "aws_kms_alias" "events" {
-  name          = "alias/${var.name_prefix}-ses-events"
-  target_key_id = aws_kms_key.events.key_id
 }
 
 resource "aws_sns_topic" "events" {
   name              = "${var.name_prefix}-ses-events"
   display_name      = var.events_topic_display_name
-  kms_master_key_id = aws_kms_key.events.arn
+  kms_master_key_id = module.events_kms.arn
 
   tags = var.tags
 }
@@ -213,4 +183,14 @@ data "aws_iam_policy_document" "send" {
     actions   = ["ses:SendEmail", "ses:SendRawEmail"]
     resources = concat([aws_sesv2_email_identity.this.arn], [for c in aws_sesv2_configuration_set.this : c.arn])
   }
+}
+
+moved {
+  from = aws_kms_key.events
+  to   = module.events_kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.events
+  to   = module.events_kms.aws_kms_alias.this
 }

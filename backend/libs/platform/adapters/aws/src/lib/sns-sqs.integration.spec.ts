@@ -44,9 +44,10 @@ import {
 } from './sqs-delivery-runner.js';
 
 /**
- * Pruebas contra LocalStack (SNS y SQS reales) con Testcontainers. Corren solo
- * si Docker responde; `AWS_INTEGRATION=off` las salta. `LOCALSTACK_IMAGE`
- * cambia la imagen (por defecto la de docker-compose).
+ * Pruebas contra LocalStack (SNS y SQS reales) con Testcontainers. Sin Docker
+ * se saltan, salvo en CI (`CI=true`), donde la falta de Docker no puede dejar
+ * el job en verde. `AWS_INTEGRATION=off` las salta a propósito.
+ * `LOCALSTACK_IMAGE` cambia la imagen (por defecto la de docker-compose).
  */
 const IMAGE = process.env['LOCALSTACK_IMAGE'] ?? 'localstack/localstack:4';
 const REGION = 'us-east-1';
@@ -60,13 +61,15 @@ function dockerAvailable(): boolean {
     stdio: 'ignore',
     timeout: 10_000,
   });
+  if (probe.status !== 0 && process.env['CI'] === 'true') {
+    throw new Error(
+      'Docker no responde en CI; AWS_INTEGRATION=off salta estas pruebas a propósito',
+    );
+  }
   return probe.status === 0;
 }
 
 const describeWithDocker = dockerAvailable() ? describe : describe.skip;
-
-const sleep = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * Crea en LocalStack lo mismo que el módulo `messaging` de Terraform a partir
@@ -289,8 +292,8 @@ describeWithDocker('SNS/SQS adapter against LocalStack', () => {
 
     await bus.send(GenerateReport, { reportId: 'r-2' });
     await pollUntil(runner, () => handled > 0);
-    await sleep(200);
 
+    // El long polling espera la copia en la DLQ; no hace falta una pausa fija.
     const dead = await sqs.send(
       new ReceiveMessageCommand({
         QueueUrl: await names.queueUrl(

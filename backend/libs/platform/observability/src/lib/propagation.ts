@@ -22,7 +22,9 @@ export enum IncomingTraceparentPolicy {
   Continue = 'continue',
   /**
    * Abrir una traza nueva con un `traceId` UUIDv7 propio y guardar el trace id
-   * recibido como `externalTraceId`. Es lo que pide el plan para clientes externos.
+   * recibido como `externalTraceId`. Un cliente externo no puede elegir ni
+   * adivinar el `traceId` de la plataforma, y su id sigue disponible para
+   * cruzar soportes.
    */
   External = 'external',
 }

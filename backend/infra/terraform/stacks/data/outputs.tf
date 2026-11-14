@@ -26,9 +26,10 @@ output "service_databases" {
 }
 
 output "valkey" {
-  description = "Valkey: endpoint, port, kms_key_arn, user_names y connect_resource_arns (por servicio)."
+  description = "Valkey: endpoint, port, cache_name (host del token IAM), kms_key_arn, user_names y connect_resource_arns (por servicio)."
   value = {
     endpoint              = module.valkey.endpoint
+    cache_name            = module.valkey.cache_name
     port                  = module.valkey.port
     kms_key_arn           = module.valkey.kms_key_arn
     user_names            = module.valkey.iam_user_names

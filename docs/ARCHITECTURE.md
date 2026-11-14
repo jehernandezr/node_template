@@ -680,7 +680,7 @@ Los reintentos solo aplican a operaciones marcadas como idempotentes, cada depen
 
 **Bloom filters**
 
-El puerto `BloomFilter` responde "seguro que no" o "quizás sí" en microsegundos y con muy poca memoria. Un "quizás" siempre se confirma en la fuente real, porque el filtro admite falsos positivos y nunca falsos negativos. Adaptadores: Valkey (comandos `BF.*` del módulo de Bloom, o bitmaps propios si la versión desplegada no lo incluye) y en memoria.
+El puerto `BloomFilter` responde "seguro que no" o "quizás sí" en microsegundos y con muy poca memoria. Un "quizás" siempre se confirma en la fuente real, porque el filtro admite falsos positivos y nunca falsos negativos. Adaptadores: Valkey (comandos `BF.*` del módulo de Bloom) y en memoria.
 
 | Uso                   | Para qué                                                                                                                                 |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

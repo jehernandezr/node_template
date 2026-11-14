@@ -25,14 +25,16 @@
   "dependencies": {
     "@platform/bloom": "workspace:*",
     "@platform/cache": "workspace:*",
+    "@platform/config": "workspace:*",
     "@platform/kernel": "workspace:*",
     "@platform/primitives": "workspace:*",
     "@platform/sharding": "workspace:*",
-    "iovalkey": "^0.4.0",
-    "tslib": "^2.3.0"
+    "iovalkey": "0.4.0",
+    "tslib": "^2.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@platform/resilience": "workspace:*",
-    "testcontainers": "^12.2.1"
+    "testcontainers": "12.2.1"
   }
 }

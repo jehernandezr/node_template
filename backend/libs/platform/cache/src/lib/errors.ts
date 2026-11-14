@@ -6,7 +6,6 @@ export enum CacheErrorCode {
   InvalidArgument = 'PLATFORM.CACHE.INVALID_ARGUMENT',
   KeyTooLong = 'PLATFORM.CACHE.KEY_TOO_LONG',
   ValueTooLarge = 'PLATFORM.CACHE.VALUE_TOO_LARGE',
-  NotACounter = 'PLATFORM.CACHE.NOT_A_COUNTER',
   Timeout = 'PLATFORM.CACHE.TIMEOUT',
   CorruptEntry = 'PLATFORM.CACHE.CORRUPT_ENTRY',
 }
@@ -54,16 +53,6 @@ export class CacheValueTooLargeError extends CacheError {
     super(`Cache value has ${bytes} bytes; the limit is ${maxBytes}`, {
       details: { bytes, maxBytes },
     });
-  }
-}
-
-/** `incr` sobre una llave cuyo valor no es un contador entero. */
-export class CacheNotACounterError extends CacheError {
-  override readonly code = CacheErrorCode.NotACounter;
-  readonly failureKind = FailureKind.Permanent;
-
-  constructor() {
-    super('Cached value is not an integer counter');
   }
 }
 

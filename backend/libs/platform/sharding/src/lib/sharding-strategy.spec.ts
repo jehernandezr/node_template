@@ -59,7 +59,7 @@ describe('ConsistentHashStrategy', () => {
     );
   });
 
-  // Audit PLAT-11: two tenants of one group with different versions rebuilt the ring on every call.
+  // Two tenants of one group with different versions used to rebuild the ring on every call.
   it('builds one ring per group, whatever the placement versions of its tenants', () => {
     const add = jest.spyOn(ConsistentHashRing.prototype, 'add');
     const strategy: ShardingStrategy = new ConsistentHashStrategy();

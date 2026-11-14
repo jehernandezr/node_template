@@ -8,7 +8,6 @@ import { UuidV7IdGenerator, type IdGenerator } from '@platform/kernel';
 import {
   batches,
   bloomKey,
-  DEFAULT_BLOOM_KEY_PREFIX,
   REBUILD_KEY_TTL_MS,
   rebuildKey,
   SWAP_REBUILT,
@@ -20,6 +19,7 @@ import {
   type ValkeyArgument,
   type ValkeyCommandRunner,
 } from './valkey-client.js';
+import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
 /** Options of {@link ValkeyBloomFilter}. */
 export interface ValkeyBloomFilterOptions {
@@ -33,8 +33,8 @@ export interface ValkeyBloomFilterOptions {
    * rate. When true, the filter refuses to grow past its capacity.
    */
   readonly nonScaling?: boolean;
-  /** Default {@link DEFAULT_BLOOM_KEY_PREFIX}. */
-  readonly keyPrefix?: string;
+  /** The filter lives at `<prefix>:bloom:{name}`, inside the ACL of the service user. */
+  readonly keyspace: ValkeyKeyspace;
   /** Names the temporary keys of a rebuild. Default UUIDv7. */
   readonly ids?: IdGenerator;
 }
@@ -44,7 +44,7 @@ export interface ValkeyBloomFilterOptions {
  * the first insert with the declared capacity and rate, so every process agrees on its shape.
  *
  * Needs a server with the module (the `valkey/valkey-bundle` image, or ElastiCache for Valkey 8.1 or
- * later). Without it, use {@link ValkeyBitmapBloomFilter}. The module caps each filter's memory
+ * later; Terraform pins major version 8). The module caps each filter's memory
  * (`bf.bloom-memory-usage-limit`, 128 MiB by default): split very large sets with `PartitionedBloomFilter`.
  */
 export class ValkeyBloomFilter implements RebuildableBloomFilter {
@@ -59,10 +59,7 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
     private readonly client: ValkeyCommandRunner,
     options: ValkeyBloomFilterOptions,
   ) {
-    this.key = bloomKey(
-      options.keyPrefix ?? DEFAULT_BLOOM_KEY_PREFIX,
-      options.name,
-    );
+    this.key = bloomKey(options.keyspace, options.name);
     this.capacity = options.expectedItems;
     this.rate = options.falsePositiveRate ?? DEFAULT_FALSE_POSITIVE_RATE;
     // Same validation as the in-memory sizing.

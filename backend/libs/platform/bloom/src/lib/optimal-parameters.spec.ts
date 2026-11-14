@@ -53,7 +53,7 @@ describe('default false positive rate', () => {
     expect(filter.bits).toBe(9_585_059);
   });
 
-  // Audit PLAT-15: one filter of 2^32 bits does not hold the HIBP list at 1 %.
+  // One filter of 2^32 bits does not hold the HIBP list at 1 %.
   it('shows why HIBP needs partitions', () => {
     expect(requiredBits(1_000_000_000)).toBeGreaterThan(MAX_BITS);
     expect(() => optimalParameters(1_000_000_000)).toThrow(InvalidParameters);

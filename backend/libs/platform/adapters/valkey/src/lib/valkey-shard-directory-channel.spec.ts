@@ -5,11 +5,14 @@ import {
   type ShardDirectoryChanged,
 } from '@platform/sharding';
 import type { ValkeyCommandRunner } from './valkey-client.js';
+import { ValkeyKeyspace } from './valkey-keyspace.js';
 import {
-  SHARD_DIRECTORY_CHANNEL,
   ValkeyShardDirectoryChannel,
   type ValkeySubscriberConnection,
 } from './valkey-shard-directory-channel.js';
+
+const keyspace = new ValkeyKeyspace('orders');
+const CHANNEL = 'orders:sharding:directory-changed';
 
 const change: ShardDirectoryChanged = {
   type: ShardingEvent.ShardDirectoryChanged,
@@ -49,12 +52,16 @@ const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 describe('ValkeyShardDirectoryChannel', () => {
   it('delivers published changes to every handler and unsubscribes with the last one', async () => {
     const { subscriber, publisher } = broker();
-    const channel = new ValkeyShardDirectoryChannel({ publisher, subscriber });
+    const channel = new ValkeyShardDirectoryChannel({
+      publisher,
+      subscriber,
+      keyspace,
+    });
     const first = jest.fn();
     const second = jest.fn();
     const stopFirst = await channel.subscribe(first);
     const stopSecond = await channel.subscribe(second);
-    expect(subscriber.subscribed).toEqual(new Set([SHARD_DIRECTORY_CHANNEL]));
+    expect(subscriber.subscribed).toEqual(new Set([CHANNEL]));
 
     await channel.publish(change);
     await flush();
@@ -73,6 +80,7 @@ describe('ValkeyShardDirectoryChannel', () => {
     const channel = new ValkeyShardDirectoryChannel({
       publisher,
       subscriber,
+      keyspace,
       onError,
     });
     const handler = jest.fn(() => {
@@ -80,7 +88,7 @@ describe('ValkeyShardDirectoryChannel', () => {
     });
     await channel.subscribe(handler);
 
-    emitter.emit('message', SHARD_DIRECTORY_CHANNEL, '{bad');
+    emitter.emit('message', CHANNEL, '{bad');
     emitter.emit('message', 'other-channel', '{bad');
     await channel.publish(change);
     await flush();

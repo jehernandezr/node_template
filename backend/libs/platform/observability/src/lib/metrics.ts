@@ -226,7 +226,11 @@ export function errorMetricAttributes(error: unknown): MetricAttributes {
  * absorbida por código de error.
  *
  * ```ts
- * new CacheAside(cache, { onError: cacheErrorMetricsReporter(metrics, 'orders') });
+ * new CacheAside(cache, keyspace, {
+ *   resilience,
+ *   transactions,
+ *   onError: cacheErrorMetricsReporter(metrics, 'orders'),
+ * });
  * ```
  */
 export function cacheErrorMetricsReporter(
@@ -253,7 +257,7 @@ export function recordCacheLookup(
   });
 }
 
-/** Cuenta un error por su código (métrica "errores por código" del plan). */
+/** Cuenta un error por su código, para alertar por código y no solo por tasa. */
 export function recordError(port: MetricsPort, error: unknown): void {
   port.increment(PlatformMetric.Errors, errorMetricAttributes(error));
 }

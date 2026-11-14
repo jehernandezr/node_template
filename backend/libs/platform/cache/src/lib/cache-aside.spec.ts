@@ -15,7 +15,11 @@ import {
   CacheValueTooLargeError,
 } from './errors.js';
 import type { CachePort } from './cache-port.js';
-import { CacheAside } from './cache-aside.js';
+import {
+  CacheAside,
+  type CacheAsideOptions,
+  type CacheTransactionScope,
+} from './cache-aside.js';
 import { InMemoryCache } from './in-memory-cache.js';
 import { SingleFlight } from './single-flight.js';
 import { VersionedKeyspace } from './versioned-keyspace.js';
@@ -23,6 +27,19 @@ import { VersionedKeyspace } from './versioned-keyspace.js';
 interface SetupOptions {
   onError?: (error: unknown) => void;
   timeoutMs?: number;
+  inTransaction?: boolean;
+}
+
+const outsideTransaction: CacheTransactionScope = {
+  isInTransaction: () => false,
+};
+
+/** Required options with a private registry and no surrounding transaction. */
+function required(): Pick<CacheAsideOptions, 'resilience' | 'transactions'> {
+  return {
+    resilience: new ResilienceRegistry(),
+    transactions: outsideTransaction,
+  };
 }
 
 function setup(
@@ -30,16 +47,16 @@ function setup(
   options: SetupOptions = {},
 ) {
   const keyspace = new VersionedKeyspace(cache);
-  const resilience =
+  const resilience = new ResilienceRegistry(
     options.timeoutMs === undefined
-      ? undefined
-      : new ResilienceRegistry({
-          [ResiliencePolicyName.Cache]: { timeoutMs: options.timeoutMs },
-        });
+      ? {}
+      : { [ResiliencePolicyName.Cache]: { timeoutMs: options.timeoutMs } },
+  );
   const aside = new CacheAside(cache, keyspace, {
     random: () => 0,
     onError: options.onError,
     resilience,
+    transactions: { isInTransaction: () => options.inTransaction === true },
   });
   return { cache, keyspace, aside };
 }
@@ -51,7 +68,7 @@ function brokenCache(): CachePort {
   const fail = async (): Promise<never> => {
     throw failure;
   };
-  return { get: fail, set: fail, setIfAbsent: fail, delete: fail, incr: fail };
+  return { get: fail, set: fail, setIfAbsent: fail, delete: fail };
 }
 
 const sleep = (ms: number): Promise<void> =>
@@ -85,6 +102,7 @@ describe('CacheAside', () => {
     const clock = new FixedClock(new Date(0));
     const cache = new InMemoryCache({ clock });
     const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+      ...required(),
       random: () => 0,
     });
     const load = jest.fn(async () => 'v');
@@ -294,23 +312,11 @@ describe('CacheAside', () => {
     const cache = new InMemoryCache();
     const get = jest.spyOn(cache, 'get');
     const set = jest.spyOn(cache, 'set');
-    const { aside } = setup(cache);
+    const { aside } = setup(cache, { inTransaction: true });
     const load = jest.fn(async () => 'fresh');
 
-    await aside.getOrLoad({
-      namespace,
-      params: {},
-      ttlMs: 1000,
-      load,
-      inTransaction: true,
-    });
-    await aside.getOrLoad({
-      namespace,
-      params: {},
-      ttlMs: 1000,
-      load,
-      inTransaction: true,
-    });
+    await aside.getOrLoad({ namespace, params: {}, ttlMs: 1000, load });
+    await aside.getOrLoad({ namespace, params: {}, ttlMs: 1000, load });
 
     expect(load).toHaveBeenCalledTimes(2);
     expect(get).not.toHaveBeenCalled();
@@ -454,7 +460,6 @@ describe('CacheAside', () => {
         set: fail,
         setIfAbsent: fail,
         delete: fail,
-        incr: fail,
         calls: () => calls,
       };
     }
@@ -468,6 +473,7 @@ describe('CacheAside', () => {
       });
       const onError = jest.fn();
       const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        ...required(),
         resilience: registry,
         onError,
       });
@@ -497,7 +503,11 @@ describe('CacheAside', () => {
       const brokenAside = new CacheAside(
         broken,
         new VersionedKeyspace(broken),
-        { resilience: registry, dependencyKey: 'valkey-a' },
+        {
+          ...required(),
+          resilience: registry,
+          dependencyKey: 'valkey-a',
+        },
       );
       for (let i = 0; i < 5; i += 1) {
         await brokenAside.getOrLoad({
@@ -513,7 +523,11 @@ describe('CacheAside', () => {
       const healthyAside = new CacheAside(
         healthy,
         new VersionedKeyspace(healthy),
-        { resilience: registry, dependencyKey: 'valkey-b' },
+        {
+          ...required(),
+          resilience: registry,
+          dependencyKey: 'valkey-b',
+        },
       );
       await healthyAside.getOrLoad({
         namespace,
@@ -529,6 +543,7 @@ describe('CacheAside', () => {
       const execute = jest.spyOn(registry, 'execute');
       const cache = new InMemoryCache();
       const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        ...required(),
         resilience: registry,
         dependencyKey: 'valkey-main',
       });
@@ -553,6 +568,7 @@ describe('CacheAside', () => {
     const singleFlight = new SingleFlight();
     const run = jest.spyOn(singleFlight, 'run');
     const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+      ...required(),
       singleFlight,
     });
 
@@ -629,7 +645,6 @@ describe('CacheAside', () => {
           params: {},
           ttlMs: 1000,
           load,
-          inTransaction: true,
           signal: AbortSignal.abort(new Error('gone')),
         }),
       ).rejects.toThrow('gone');
@@ -669,6 +684,7 @@ describe('CacheAside', () => {
       const set = jest.spyOn(cache, 'set');
       const onError = jest.fn();
       const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        ...required(),
         onError,
         maxValueBytes: 64,
       });
@@ -688,6 +704,7 @@ describe('CacheAside', () => {
       const cache = new InMemoryCache();
       const onError = jest.fn();
       const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
+        ...required(),
         onError,
         maxValueBytes: 40,
       });
@@ -739,7 +756,11 @@ describe('CacheAside', () => {
       const cache = new InMemoryCache();
       const keyspace = new VersionedKeyspace(cache);
       expect(
-        () => new CacheAside(cache, keyspace, { maxValueBytes: 0 }),
+        () =>
+          new CacheAside(cache, keyspace, {
+            ...required(),
+            maxValueBytes: 0,
+          }),
       ).toThrow(CacheInvalidArgumentError);
     });
   });

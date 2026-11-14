@@ -10,7 +10,7 @@ output "web_bucket_arn" {
 
 output "web_kms_key_arn" {
   description = "ARN de la clave KMS del bucket web. El rol de despliegue necesita kms:GenerateDataKey sobre ella."
-  value       = aws_kms_key.web.arn
+  value       = module.web_kms.arn
 }
 
 output "web_distribution_id" {

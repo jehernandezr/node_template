@@ -35,7 +35,7 @@ output "service_secret_arns" {
 
 output "kms_key_arn" {
   description = "ARN de la clave KMS que cifra el almacenamiento, Performance Insights y los secretos."
-  value       = aws_kms_key.this.arn
+  value       = module.kms.arn
 }
 
 output "parameter_group_name" {

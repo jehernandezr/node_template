@@ -20,7 +20,7 @@ output "otlp_authorization_value_from" {
 
 output "kms_key_arn" {
   description = "ARN de la clave KMS del secreto, el bucket, EFS y los logs. Pásalo a secrets_kms_key_arns de service-fargate."
-  value       = aws_kms_key.this.arn
+  value       = module.kms.arn
 }
 
 output "storage_bucket_name" {

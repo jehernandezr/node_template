@@ -20,45 +20,16 @@ locals {
 
 # --- KMS --------------------------------------------------------------------
 
-resource "aws_kms_key" "this" {
-  description             = "Cifrado de logs y del secreto de origen de ${local.name}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${local.region}.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = [
-              "${local.log_group_arn_base}:${local.access_log_group}",
-              "${local.log_group_arn_base}:${local.authorizer_log_group}",
-            ]
-          }
-        }
-      },
-    ]
-  })
-
+  alias       = local.name
+  description = "Cifrado de logs y del secreto de origen de ${local.name}"
+  log_group_arns = [
+    "${local.log_group_arn_base}:${local.access_log_group}",
+    "${local.log_group_arn_base}:${local.authorizer_log_group}",
+  ]
   tags = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  name          = "alias/${local.name}"
-  target_key_id = aws_kms_key.this.key_id
 }
 
 # --- API y stage --------------------------------------------------------------
@@ -74,7 +45,7 @@ resource "aws_apigatewayv2_api" "this" {
 resource "aws_cloudwatch_log_group" "access" {
   name              = local.access_log_group
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.this.arn
+  kms_key_id        = module.kms.arn
 
   tags = var.tags
 }
@@ -133,8 +104,11 @@ resource "aws_apigatewayv2_vpc_link" "this" {
 }
 
 # --- Verificación de origen ----------------------------------------------------
-# El secreto nunca llega al estado de este stack: la contraseña es efímera y se escribe
-# con un atributo de solo escritura. El stack edge lo lee para configurar CloudFront.
+# La contraseña es efímera y se escribe con un atributo de solo escritura, así no queda en
+# el estado de este stack. Sí queda en el de edge: CloudFront la envía como encabezado de
+# origen, que es un atributo normal. Por eso los buckets de estado van cifrados y con acceso
+# restringido. Para rotarla, sube origin_verify_secret_version: el valor anterior pasa a
+# AWSPREVIOUS y el autorizador acepta los dos hasta que edge envía el nuevo.
 
 ephemeral "random_password" "origin_verify" {
   count = var.origin_verify_enabled ? 1 : 0
@@ -148,7 +122,7 @@ resource "aws_secretsmanager_secret" "origin_verify" {
 
   name                    = "${local.name}/origin-verify"
   description             = "Valor de X-Origin-Verify que CloudFront envía a ${local.name}"
-  kms_key_id              = aws_kms_key.this.arn
+  kms_key_id              = module.kms.arn
   recovery_window_in_days = var.secret_recovery_window_days
 
   tags = var.tags
@@ -175,7 +149,7 @@ resource "aws_cloudwatch_log_group" "authorizer" {
 
   name              = local.authorizer_log_group
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.this.arn
+  kms_key_id        = module.kms.arn
 
   tags = var.tags
 }
@@ -223,7 +197,7 @@ resource "aws_iam_role_policy" "authorizer" {
         Sid      = "DecryptSecret"
         Effect   = "Allow"
         Action   = ["kms:Decrypt"]
-        Resource = aws_kms_key.this.arn
+        Resource = module.kms.arn
       },
     ]
   })
@@ -283,4 +257,14 @@ resource "aws_apigatewayv2_authorizer" "origin_verify" {
   enable_simple_responses           = true
   identity_sources                  = ["$request.header.X-Origin-Verify"]
   authorizer_result_ttl_in_seconds  = 300
+}
+
+moved {
+  from = aws_kms_key.this
+  to   = module.kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.this
+  to   = module.kms.aws_kms_alias.this
 }

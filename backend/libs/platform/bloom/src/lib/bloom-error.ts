@@ -5,8 +5,6 @@ export enum BloomErrorCode {
   InvalidParameters = 'PLATFORM.BLOOM.INVALID_PARAMETERS',
   CorruptedData = 'PLATFORM.BLOOM.CORRUPTED_DATA',
   IncompatibleFilters = 'PLATFORM.BLOOM.INCOMPATIBLE_FILTERS',
-  UnknownFilter = 'PLATFORM.BLOOM.UNKNOWN_FILTER',
-  DuplicateFilter = 'PLATFORM.BLOOM.DUPLICATE_FILTER',
 }
 
 /** Base class for every error thrown by this library. */
@@ -37,22 +35,5 @@ export class CorruptedData extends BloomError {
 export class IncompatibleFilters extends BloomError {
   constructor(message: string) {
     super(BloomErrorCode.IncompatibleFilters, message);
-  }
-}
-
-/** Thrown when a registry is asked for a filter name that was never registered. */
-export class UnknownFilter extends BloomError {
-  constructor(name: string) {
-    super(BloomErrorCode.UnknownFilter, `Unknown bloom filter: ${name}`);
-  }
-}
-
-/** Thrown when a registry name is registered twice. */
-export class DuplicateFilter extends BloomError {
-  constructor(name: string) {
-    super(
-      BloomErrorCode.DuplicateFilter,
-      `Bloom filter already registered: ${name}`,
-    );
   }
 }

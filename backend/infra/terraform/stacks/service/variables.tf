@@ -59,6 +59,10 @@ variable "api" {
     health_check_path      = optional(string, "/health")
     spot                   = optional(bool, false)
     listener_rule_priority = optional(number)
+
+    # Permisos propios de la API
+    files_access = optional(bool, false)
+    ses_send     = optional(bool, false)
   })
   default = null
 
@@ -74,7 +78,7 @@ variable "api" {
 }
 
 variable "realtime" {
-  description = "Gateway de tiempo real (Socket.IO y SSE). Siempre en Fargate detrás del ALB público de platform. listener_rule_priority es único entre servicios."
+  description = "Gateway de tiempo real (Socket.IO y SSE). Siempre en Fargate detrás del ALB público de platform. listener_rule_priority es único entre servicios. publish le da los tópicos y colas de producers de la topología."
   type = object({
     listener_rule_priority = number
     path_patterns          = optional(list(string), [])
@@ -88,6 +92,9 @@ variable "realtime" {
     max_capacity           = optional(number, 4)
     cpu_target_percent     = optional(number, 60)
     health_check_path      = optional(string, "/health")
+    publish                = optional(bool, false)
+    files_access           = optional(bool, false)
+    ses_send               = optional(bool, false)
   })
   default = null
 
@@ -111,6 +118,8 @@ variable "workers" {
     messages_per_task   = optional(number, 100)
     steps               = optional(number, 5)
     scale_in_periods    = optional(number, 10)
+    files_access        = optional(bool, false)
+    ses_send            = optional(bool, false)
   }))
   default = {}
 }
@@ -126,6 +135,8 @@ variable "consumers" {
     maximum_batching_window_seconds = optional(number, 0)
     maximum_concurrency             = optional(number, 5)
     filter_patterns                 = optional(list(string), [])
+    files_access                    = optional(bool, false)
+    ses_send                        = optional(bool, false)
   }))
   default = {}
 }
@@ -144,20 +155,8 @@ variable "valkey_access" {
   default     = true
 }
 
-variable "files_access" {
-  description = "Lectura y escritura en el bucket de archivos de usuarios."
-  type        = bool
-  default     = false
-}
-
-variable "ses_send" {
-  description = "Permiso para enviar correo por SES."
-  type        = bool
-  default     = false
-}
-
 variable "environment_variables" {
-  description = "Variables de entorno propias del servicio."
+  description = "Variables de entorno propias del servicio. No reemplazan las de la plataforma (SERVICE_NAME, AWS_*, DB_*, VALKEY_*...)."
   type        = map(string)
   default     = {}
 }
@@ -175,15 +174,15 @@ variable "secrets_kms_key_arns" {
 }
 
 variable "task_policies" {
-  description = "Políticas IAM propias en línea (nombre a JSON) para todos los roles del servicio."
+  description = "Políticas IAM propias en línea (nombre a JSON) para todos los roles del servicio. Lo que use un solo componente va mejor en una opción de ese componente."
   type        = map(string)
   default     = {}
 }
 
 variable "lambda_runtime" {
-  description = "Runtime de las funciones del servicio."
+  description = "Runtime de las funciones del servicio. Debe ser la versión mayor de .nvmrc; service-lambda rechaza otra."
   type        = string
-  default     = "nodejs22.x"
+  default     = "nodejs24.x"
 }
 
 variable "lambda_otel_layer_arn" {

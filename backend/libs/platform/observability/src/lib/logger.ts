@@ -6,6 +6,7 @@ import {
   type Logger as OtelLogger,
 } from '@opentelemetry/api';
 import { LogLevel } from '@platform/config';
+import type { Clock } from '@platform/kernel';
 import { redact, redactString } from './redaction.js';
 import { activeSpanIds, RequestContext } from './request-context.js';
 
@@ -37,6 +38,29 @@ export enum LogField {
   Region = 'region',
 }
 
+/**
+ * A dónde va cada log. Es uno solo para no pagar y guardar cada línea dos
+ * veces (stdout termina en CloudWatch en Lambda y Fargate).
+ */
+export enum LogDestination {
+  /** Una línea JSON por log en `sink` (por defecto stdout). */
+  Stdout = 'stdout',
+  /**
+   * Un log OTel con el contexto del span activo, que el SDK exporta por OTLP
+   * al Collector y este a OpenObserve. Sin SDK registrado se pierde: usarlo
+   * solo con la telemetría encendida.
+   */
+  Otlp = 'otlp',
+}
+
+/**
+ * Destino de los logs según la telemetría: OTLP cuando el SDK exporta y
+ * stdout cuando está apagado (pruebas, scripts o `OTEL_SDK_DISABLED`).
+ */
+export function logDestinationFor(telemetryEnabled: boolean): LogDestination {
+  return telemetryEnabled ? LogDestination.Otlp : LogDestination.Stdout;
+}
+
 export interface LoggerPort {
   debug(message: string, fields?: Record<string, unknown>): void;
   info(message: string, fields?: Record<string, unknown>): void;
@@ -51,15 +75,14 @@ export interface JsonLoggerOptions {
   /** Módulos (valores de `context`) que emiten debug sin importar el nivel. */
   debugContexts?: string[];
   context?: string;
-  /** Recibe cada línea JSON sin salto de línea final. Por defecto, process.stdout. */
-  sink?: (line: string) => void;
-  clock?: () => Date;
+  /** Ver {@link logDestinationFor}. */
+  destination: LogDestination;
   /**
-   * Además de la línea JSON, emite cada log como log OTel con el contexto del
-   * span activo, para exportarlo por OTLP. Sin SDK registrado es un no-op.
-   * Por defecto `true`.
+   * Recibe cada línea JSON sin salto de línea final con
+   * {@link LogDestination.Stdout}. Por defecto, process.stdout.
    */
-  otelLogs?: boolean;
+  sink?: (line: string) => void;
+  clock?: Clock;
 }
 
 const LEVEL_RANK: Record<LogLevel, number> = {
@@ -123,9 +146,9 @@ export class JsonLogger implements LoggerPort {
   ) {
     this.bindings = { ...bindings };
     this.otel =
-      options.otelLogs === false
-        ? undefined
-        : logs.getLogger(OTEL_LOGGER_SCOPE);
+      options.destination === LogDestination.Otlp
+        ? logs.getLogger(OTEL_LOGGER_SCOPE)
+        : undefined;
   }
 
   debug(message: string, fields?: Record<string, unknown>): void {
@@ -165,10 +188,17 @@ export class JsonLogger implements LoggerPort {
         delete sanitized[key];
       }
     }
-    const timestamp = (this.options.clock ?? (() => new Date()))();
+    const timestamp = this.options.clock?.now() ?? new Date();
     const safeMessage = redactString(message);
     const context = contextFields();
 
+    if (this.otel !== undefined) {
+      this.emitOtel(this.otel, level, safeMessage, timestamp, {
+        ...sanitized,
+        ...context,
+      });
+      return;
+    }
     const line = JSON.stringify({
       ...sanitized,
       [LogField.Timestamp]: timestamp.toISOString(),
@@ -179,19 +209,15 @@ export class JsonLogger implements LoggerPort {
       ...context,
     });
     (this.options.sink ?? defaultSink)(line);
-
-    this.emitOtel(level, safeMessage, timestamp, { ...sanitized, ...context });
   }
 
   private emitOtel(
+    otel: OtelLogger,
     level: LogLevel,
     message: string,
     timestamp: Date,
     fields: Record<string, unknown>,
   ): void {
-    if (this.otel === undefined) {
-      return;
-    }
     const attributes: Attributes = {};
     for (const [key, value] of Object.entries(fields)) {
       // trace_id y span_id viajan en el contexto del registro OTel, no como atributos.
@@ -206,7 +232,7 @@ export class JsonLogger implements LoggerPort {
     if (this.options.context !== undefined) {
       attributes[LogField.Context] = this.options.context;
     }
-    this.otel.emit({
+    otel.emit({
       timestamp,
       severityNumber: SEVERITY[level],
       severityText: level,

@@ -2,6 +2,7 @@
 export * from './lib/aws-config.js';
 export * from './lib/aws-clients.js';
 export * from './lib/aws-errors.js';
+export * from './lib/elasticache-iam-auth.js';
 export * from './lib/messaging-names.js';
 export * from './lib/sns-sqs-envelope-publisher.js';
 export * from './lib/sns-sqs-message-bus.js';

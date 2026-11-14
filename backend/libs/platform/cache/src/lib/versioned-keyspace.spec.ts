@@ -158,10 +158,6 @@ describe('VersionedKeyspace', () => {
           await pause();
           return store.delete(key);
         },
-        incr: async (key) => {
-          await pause();
-          return store.incr(key);
-        },
       };
       return { cache, store };
     }

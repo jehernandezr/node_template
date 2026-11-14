@@ -142,6 +142,9 @@ importers:
       '@platform/config':
         specifier: workspace:*
         version: link:../../config
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../../kernel
       '@platform/messaging':
         specifier: workspace:*
         version: link:../../messaging
@@ -155,9 +158,6 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@platform/kernel':
-        specifier: workspace:*
-        version: link:../../kernel
       testcontainers:
         specifier: 12.2.1
         version: 12.2.1(bare-buffer@3.7.2)
@@ -210,6 +210,9 @@ importers:
       '@platform/cache':
         specifier: workspace:*
         version: link:../../cache
+      '@platform/config':
+        specifier: workspace:*
+        version: link:../../config
       '@platform/kernel':
         specifier: workspace:*
         version: link:../../kernel
@@ -220,17 +223,20 @@ importers:
         specifier: workspace:*
         version: link:../../sharding
       iovalkey:
-        specifier: ^0.4.0
+        specifier: 0.4.0
         version: 0.4.0
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@platform/resilience':
         specifier: workspace:*
         version: link:../../resilience
       testcontainers:
-        specifier: ^12.2.1
+        specifier: 12.2.1
         version: 12.2.1(bare-buffer@3.7.2)
 
   backend/libs/platform/bloom:

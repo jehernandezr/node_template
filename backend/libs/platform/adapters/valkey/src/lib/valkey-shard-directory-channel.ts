@@ -12,9 +12,12 @@ import {
   type ValkeyCommandRunner,
 } from './valkey-client.js';
 import { ValkeyUnexpectedReplyError } from './valkey-error.js';
+import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
-/** Default pub/sub channel of directory changes. */
-export const SHARD_DIRECTORY_CHANNEL = 'platform:sharding:directory-changed';
+/** Channel of directory changes inside a keyspace: `<prefix>:sharding:directory-changed`. */
+export function shardDirectoryChannel(keyspace: ValkeyKeyspace): string {
+  return keyspace.key('sharding', 'directory-changed');
+}
 
 /** Listener of a subscriber connection: channel and message. */
 export type ValkeyMessageListener = (channel: string, message: string) => void;
@@ -36,8 +39,11 @@ export interface ValkeyShardDirectoryChannelOptions {
   readonly publisher: ValkeyCommandRunner;
   /** Dedicated connection in subscriber mode. */
   readonly subscriber: ValkeySubscriberConnection;
-  /** Default {@link SHARD_DIRECTORY_CHANNEL}. One channel per service keeps services apart. */
-  readonly channel?: string;
+  /**
+   * The channel is {@link shardDirectoryChannel} of this keyspace: one channel per service keeps services
+   * apart and stays inside the `&<prefix>:*` channel ACL of the service user.
+   */
+  readonly keyspace: ValkeyKeyspace;
   /** Receives malformed messages and handler failures. They never stop the channel. */
   readonly onError?: (error: unknown) => void;
 }
@@ -61,7 +67,7 @@ export class ValkeyShardDirectoryChannel
   constructor(options: ValkeyShardDirectoryChannelOptions) {
     this.publisher = options.publisher;
     this.subscriber = options.subscriber;
-    this.channel = options.channel ?? SHARD_DIRECTORY_CHANNEL;
+    this.channel = shardDirectoryChannel(options.keyspace);
     this.onError = options.onError ?? (() => undefined);
     this.listener = (channel, message) => this.deliver(channel, message);
   }

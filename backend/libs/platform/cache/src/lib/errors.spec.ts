@@ -6,7 +6,6 @@ import {
   CacheErrorCode,
   CacheInvalidArgumentError,
   CacheKeyTooLongError,
-  CacheNotACounterError,
   CacheTimeoutError,
   CacheValueTooLargeError,
 } from './errors.js';
@@ -23,7 +22,6 @@ describe('cache errors', () => {
     [new CacheInvalidArgumentError('x', 'y'), FailureKind.ProtocolViolation],
     [new CacheKeyTooLongError(600, 512), FailureKind.ProtocolViolation],
     [new CacheValueTooLargeError(2, 1), FailureKind.Permanent],
-    [new CacheNotACounterError(), FailureKind.Permanent],
     [new CacheTimeoutError(50), FailureKind.Timeout],
     [
       new CacheCorruptEntryError('not an envelope'),

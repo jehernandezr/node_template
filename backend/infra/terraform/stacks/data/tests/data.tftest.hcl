@@ -91,6 +91,11 @@ run "one_database_per_shard_plus_catalog" {
   }
 
   assert {
+    condition     = output.valkey.cache_name == "nt-dev-valkey" && output.valkey.user_names["tasks"] == "nt-dev-tasks"
+    error_message = "Los servicios reciben la caché y el usuario con los que firman el token IAM."
+  }
+
+  assert {
     condition     = length(aws_vpc_security_group_egress_rule.clients_to_replicas) == 1
     error_message = "Con réplicas, los clientes salen hacia ellas."
   }

@@ -17,7 +17,7 @@ export interface AvailableShard {
 }
 
 /**
- * Decides where a new tenant is placed (`ShardPlacementPolicy` of the plan): the least loaded shard, the
+ * Decides where a new tenant is placed: the least loaded shard, the
  * tenant's region or a dedicated shard. Policies are pure; {@link placeTenant} writes their answer with a
  * conditional write, so two concurrent sign-ups cannot both take the same shard.
  */

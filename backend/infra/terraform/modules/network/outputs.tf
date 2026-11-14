@@ -50,5 +50,5 @@ output "flow_log_group_name" {
 
 output "flow_logs_kms_key_arn" {
   description = "ARN de la clave KMS de los flow logs."
-  value       = aws_kms_key.flow_logs.arn
+  value       = module.flow_logs_kms.arn
 }

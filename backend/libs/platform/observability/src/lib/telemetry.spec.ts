@@ -7,18 +7,22 @@ import {
 } from '@opentelemetry/api';
 import { InMemoryLogRecordExporter } from '@opentelemetry/sdk-logs';
 import { MetricReader } from '@opentelemetry/sdk-metrics';
-import { InMemorySpanExporter } from '@opentelemetry/sdk-trace';
+import {
+  InMemorySpanExporter,
+  SimpleSpanProcessor,
+  TracerProvider,
+} from '@opentelemetry/sdk-trace';
 import { baseConfigSchema, defineConfig } from '@platform/config';
 import { PlatformError } from '@platform/kernel';
 import { SequentialIdGenerator } from '@platform/kernel/testing';
-import { JsonLogger, LogLevel } from './logger.js';
+import { JsonLogger, LogDestination, LogLevel } from './logger.js';
 import { PlatformMetric } from './metrics.js';
 import { RequestContext } from './request-context.js';
 import { platformTracer, SpanAttribute, withSpan } from './spans.js';
 import {
+  IovalkeyInstrumentation,
   OtlpPath,
   otlpUrl,
-  parseOtlpHeaders,
   setupTelemetry,
   telemetryOptionsFromConfig,
   type Telemetry,
@@ -41,7 +45,7 @@ class PaymentDeclinedError extends PlatformError {
 
 const EXTERNAL_TRACE = '4bf92f3577b34da6a3ce929d0e0e4736';
 
-describe('setupTelemetry (PLAT-02, PLAT-04)', () => {
+describe('setupTelemetry', () => {
   const spans = new InMemorySpanExporter();
   const logRecords = new InMemoryLogRecordExporter();
   const reader = new TestReader();
@@ -49,6 +53,13 @@ describe('setupTelemetry (PLAT-02, PLAT-04)', () => {
   const logger = new JsonLogger({
     service: 'orders',
     level: LogLevel.Info,
+    destination: LogDestination.Stdout,
+    sink: (line) => lines.push(JSON.parse(line) as Record<string, unknown>),
+  });
+  const otlpLogger = new JsonLogger({
+    service: 'orders',
+    level: LogLevel.Info,
+    destination: LogDestination.Otlp,
     sink: (line) => lines.push(JSON.parse(line) as Record<string, unknown>),
   });
   let telemetry: Telemetry;
@@ -108,7 +119,17 @@ describe('setupTelemetry (PLAT-02, PLAT-04)', () => {
     });
     expect(lines[0]?.['trace_id']).toMatch(/^[0-9a-f]{32}$/);
     expect(lines[0]?.['span_id']).toMatch(/^[0-9a-f]{16}$/);
+    expect(logRecords.getFinishedLogRecords()).toHaveLength(0);
+  });
 
+  it('an OTLP log goes only to the exporter, with the span context', async () => {
+    await withSpan('orders.create', () => {
+      otlpLogger.info('creating order', { orderId: 'o-1', password: 'p' });
+    });
+
+    const [span] = await finishedSpans();
+    const spanContext = span?.spanContext();
+    expect(lines).toHaveLength(0);
     const [record] = logRecords.getFinishedLogRecords();
     expect(record?.body).toBe('creating order');
     expect(record?.spanContext?.traceId).toBe(spanContext?.traceId);
@@ -209,8 +230,8 @@ describe('telemetryOptionsFromConfig', () => {
       SERVICE_NAME: 'orders',
       SERVICE_VERSION: '2.0.0',
       NODE_ENV: 'production',
+      DEPLOY_ENVIRONMENT: 'staging',
       OTEL_EXPORTER_OTLP_ENDPOINT: 'http://collector:4318',
-      OTEL_EXPORTER_OTLP_HEADERS: 'authorization=Basic%20abc,x-org=default',
       OTEL_METRIC_EXPORT_INTERVAL: '10000',
     });
 
@@ -219,22 +240,63 @@ describe('telemetryOptionsFromConfig', () => {
     ).toEqual({
       serviceName: 'orders',
       serviceVersion: '2.0.0',
-      environment: 'production',
+      environment: 'staging',
       disabled: false,
-      otlpEndpoint: 'http://collector:4318',
-      otlpHeaders: { authorization: 'Basic abc', 'x-org': 'default' },
       metricExportIntervalMs: 10_000,
       instrumentations: [],
     });
   });
+});
 
-  it('parses OTLP headers and skips malformed pairs', () => {
-    expect(parseOtlpHeaders('a=1, b = 2 ,broken,=x,c=%E0%A4%A')).toEqual({
-      a: '1',
-      b: '2',
-      c: '%E0%A4%A',
+describe('IovalkeyInstrumentation', () => {
+  class FakeValkey {
+    readonly options = { host: 'cache.local', port: 6379 };
+
+    sendCommand(command: {
+      name: string;
+      args: unknown[];
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+    }): void {
+      // Like the real client, the reply arrives after sendCommand returns.
+      queueMicrotask(() => command.resolve('OK'));
+    }
+
+    connect(): Promise<void> {
+      return Promise.resolve();
+    }
+  }
+
+  it('hooks the iovalkey module and traces each command by name only', async () => {
+    const spans = new InMemorySpanExporter();
+    const instrumentation = new IovalkeyInstrumentation({
+      requireParentSpan: false,
+      dbStatementSerializer: (command) => command,
     });
-    expect(parseOtlpHeaders(undefined)).toEqual({});
+    instrumentation.setTracerProvider(
+      new TracerProvider({
+        spanProcessors: [new SimpleSpanProcessor({ exporter: spans })],
+      }),
+    );
+    try {
+      const [definition] = instrumentation.getModuleDefinitions();
+      expect(definition?.name).toBe('iovalkey');
+      definition?.patch?.(FakeValkey, '0.4.0');
+
+      new FakeValkey().sendCommand({
+        name: 'get',
+        args: ['identity:secret-key'],
+        resolve: () => undefined,
+        reject: () => undefined,
+      });
+      await Promise.resolve();
+
+      const [command] = spans.getFinishedSpans();
+      expect(command?.name).toBe('get');
+      expect(JSON.stringify(command?.attributes)).not.toContain('secret-key');
+    } finally {
+      instrumentation.disable();
+    }
   });
 });
 

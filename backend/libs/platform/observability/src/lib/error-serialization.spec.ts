@@ -12,7 +12,7 @@ class OrderRejectedError extends PlatformError {
   readonly code = 'ORDERS.CHECKOUT.REJECTED';
 }
 
-describe('isSensitiveKey: one-time codes and card data (PLAT-09)', () => {
+describe('isSensitiveKey: one-time codes and card data', () => {
   it.each([
     'mfaCode',
     'mfa_code',
@@ -58,7 +58,7 @@ describe('isSensitiveKey: one-time codes and card data (PLAT-09)', () => {
   });
 });
 
-describe('redact: errors (PLAT-09)', () => {
+describe('redact: errors', () => {
   it('keeps code, retryable and sanitized details of a PlatformError', () => {
     const error = new OrderRejectedError('order rejected', {
       details: { orderId: 'o-1', verificationCode: '123456', token: 't' },
@@ -134,7 +134,7 @@ describe('redact: errors (PLAT-09)', () => {
   });
 });
 
-describe('redact: special values (PLAT-09)', () => {
+describe('redact: special values', () => {
   it('summarizes binary data instead of one key per byte', () => {
     expect(
       redact({

@@ -35,9 +35,9 @@ variable "handler" {
 }
 
 variable "runtime" {
-  description = "Runtime de Lambda."
+  description = "Runtime de Lambda. Su versión mayor de Node es la de .nvmrc, con la que CI compila y prueba."
   type        = string
-  default     = "nodejs22.x"
+  default     = "nodejs24.x"
 }
 
 variable "filename" {

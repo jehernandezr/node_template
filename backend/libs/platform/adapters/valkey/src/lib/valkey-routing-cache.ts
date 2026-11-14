@@ -11,6 +11,7 @@ import {
   ValkeyCommand,
   type ValkeyCommandRunner,
 } from './valkey-client.js';
+import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
 /** Hash fields of a routing entry. */
 enum RoutingField {
@@ -35,8 +36,8 @@ return 1
 
 /** Options of {@link ValkeyRoutingCache}. */
 export interface ValkeyRoutingCacheOptions {
-  /** Prepended to every key. Default none. */
-  readonly keyPrefix?: string;
+  /** Entries live under `<prefix>:routing:`, inside the ACL of the service user. */
+  readonly keyspace: ValkeyKeyspace;
 }
 
 function invalid(option: string, expectation: string): ShardingError {
@@ -53,13 +54,13 @@ function invalid(option: string, expectation: string): ShardingError {
  * the tombstone an invalidation writes is never overwritten by an older placement read in flight.
  */
 export class ValkeyRoutingCache implements RoutingCache {
-  private readonly prefix: string;
+  private readonly keyspace: ValkeyKeyspace;
 
   constructor(
     private readonly client: ValkeyCommandRunner,
-    options: ValkeyRoutingCacheOptions = {},
+    options: ValkeyRoutingCacheOptions,
   ) {
-    this.prefix = options.keyPrefix ?? '';
+    this.keyspace = options.keyspace;
   }
 
   async get(key: string): Promise<string | undefined> {
@@ -101,6 +102,6 @@ export class ValkeyRoutingCache implements RoutingCache {
   }
 
   private key(key: string): string {
-    return this.prefix + key;
+    return this.keyspace.key('routing', key);
   }
 }

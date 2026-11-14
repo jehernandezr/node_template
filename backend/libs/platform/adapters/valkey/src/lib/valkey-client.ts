@@ -12,7 +12,6 @@ export enum ValkeyCommand {
   Get = 'GET',
   Set = 'SET',
   Del = 'DEL',
-  Incr = 'INCR',
   Hget = 'HGET',
   Pexpire = 'PEXPIRE',
   Eval = 'EVAL',
@@ -103,10 +102,12 @@ export function optionalStringReply(
   return reply;
 }
 
-/** Connection settings for {@link createValkeyClient}. Credentials come from configuration, never code. */
-export interface ValkeyConnectionOptions {
-  /** `redis://` or `rediss://` (TLS) URL, for example `VALKEY_URL`. */
-  readonly url: string;
+/** Supplies the password of each new connection, for example an ElastiCache IAM token. */
+export type ValkeyAuthTokenProvider = () => Promise<string>;
+
+interface ValkeyConnectionCommon {
+  /** ACL user. Without it the connection authenticates as `default`. */
+  readonly username?: string;
   /** Time to establish a connection. Default 2 000 ms. */
   readonly connectTimeoutMs?: number;
   /**
@@ -119,17 +120,90 @@ export interface ValkeyConnectionOptions {
   readonly connectionName?: string;
 }
 
+/** Connection settings for {@link createValkeyClient}: a URL (local) or host, port and TLS (AWS). */
+export type ValkeyConnectionOptions = ValkeyConnectionCommon &
+  (
+    | {
+        /** `redis://` or `rediss://` (TLS) URL, for example `VALKEY_URL`. */
+        readonly url: string;
+      }
+    | {
+        readonly host: string;
+        readonly port: number;
+        /** ElastiCache serverless only accepts TLS. */
+        readonly tls: boolean;
+      }
+  );
+
 /**
  * Creates an iovalkey client tuned for the adapters: connects on the first command, retries a command at
  * most once while reconnecting (so an outage fails fast and the breaker can open), and bounds each command.
- * Pub/sub needs its own connection: use `client.duplicate()` for the subscriber.
+ * Pub/sub needs its own connection: create another client for the subscriber.
  */
 export function createValkeyClient(options: ValkeyConnectionOptions): Valkey {
-  return new Valkey(options.url, {
+  const common = {
     lazyConnect: true,
     maxRetriesPerRequest: 1,
     connectTimeout: options.connectTimeoutMs ?? 2_000,
     commandTimeout: options.commandTimeoutMs ?? 1_000,
     connectionName: options.connectionName,
-  });
+    username: options.username,
+  };
+  return 'url' in options
+    ? new Valkey(options.url, common)
+    : new Valkey({
+        ...common,
+        host: options.host,
+        port: options.port,
+        tls: options.tls ? {} : undefined,
+      });
+}
+
+/**
+ * Creates a client whose every connection authenticates with a fresh token from `authToken`, as ElastiCache
+ * IAM needs: a token lives 15 minutes and is only checked at `AUTH`, so one per connection never presents an
+ * expired token. The first connection starts here, with a token already in hand; failures surface on the
+ * commands and the client keeps reconnecting. Pub/sub needs its own connection: call this again for the
+ * subscriber instead of `client.duplicate()`, which would copy the token but not the provider that renews it.
+ */
+export async function createTokenAuthenticatedValkeyClient(
+  options: ValkeyConnectionOptions,
+  authToken: ValkeyAuthTokenProvider,
+): Promise<Valkey> {
+  const client = createValkeyClient(options);
+  client.options.password = await authToken();
+  // The first connect runs synchronously with this token, so iovalkey sets up its connection state before
+  // any command is queued.
+  client.connect().catch(() => undefined);
+  renewTokenOnReconnect(client, authToken);
+  return client;
+}
+
+/**
+ * Sets a fresh password before every reconnection. iovalkey calls `connect()` again after a dropped
+ * connection and reads `options.password` when it sends `AUTH`.
+ */
+function renewTokenOnReconnect(
+  client: Valkey,
+  authToken: ValkeyAuthTokenProvider,
+): void {
+  const connect = client.connect.bind(client);
+  let refreshing: Promise<void> | undefined;
+  client.connect = (callback) => {
+    refreshing ??= authToken()
+      .then((token) => {
+        client.options.password = token;
+      })
+      .finally(() => {
+        refreshing = undefined;
+      });
+    const connected = refreshing.then(() => connect());
+    if (callback !== undefined) {
+      connected.then(
+        () => callback(null),
+        (error: Error) => callback(error),
+      );
+    }
+    return connected;
+  };
 }

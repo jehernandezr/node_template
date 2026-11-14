@@ -5,7 +5,9 @@ python3 -I -m unittest discover -s backend/infra/terraform/modules/rds-postgres/
 """
 
 import os
+import ssl
 import unittest
+import unittest.mock
 
 import handler
 
@@ -116,6 +118,24 @@ class BootstrapTest(unittest.TestCase):
         _, state = run_bootstrap(roles={"identity", "tasks", "replication"})
 
         self.assertFalse([sql for sql in statements(state) if "PASSWORD" in sql])
+
+
+class TlsTest(unittest.TestCase):
+    def test_refuses_to_connect_without_the_rds_bundle(self):
+        with unittest.mock.patch.object(handler, "CA_BUNDLE", "/no/existe/rds-ca-bundle.pem"):
+            with self.assertRaises(RuntimeError):
+                handler._ssl_context()
+
+    def test_verifies_chain_and_hostname(self):
+        # Cualquier bundle PEM del sistema sirve para comprobar la configuración del contexto.
+        candidates = ["/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt"]
+        bundle = next((p for p in candidates if os.path.isfile(p)), None)
+        if bundle is None:
+            self.skipTest("no hay un bundle PEM en el sistema")
+        with unittest.mock.patch.object(handler, "CA_BUNDLE", bundle):
+            ctx = handler._ssl_context()
+        self.assertTrue(ctx.check_hostname)
+        self.assertEqual(ctx.verify_mode, ssl.CERT_REQUIRED)
 
 
 if __name__ == "__main__":

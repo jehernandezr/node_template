@@ -377,6 +377,10 @@ describe('SqsDeliveryRunner with long polling', () => {
 
   it('keeps polling after an error and stops when asked', async () => {
     let receives = 0;
+    let polledAgain!: () => void;
+    const secondReceive = new Promise<void>((resolve) => {
+      polledAgain = resolve;
+    });
     const { runner, logger } = setup('reports-work', (name, input, options) => {
       if (name === 'GetQueueUrlCommand') {
         return { QueueUrl: `https://sqs.local/${String(input['QueueName'])}` };
@@ -384,6 +388,7 @@ describe('SqsDeliveryRunner with long polling', () => {
       if (name === 'ReceiveMessageCommand') {
         receives++;
         if (receives === 1) throw new Error('network');
+        polledAgain();
         return new Promise((resolve, reject) => {
           options?.abortSignal?.addEventListener('abort', () =>
             reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
@@ -395,15 +400,52 @@ describe('SqsDeliveryRunner with long polling', () => {
     });
 
     runner.start();
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await secondReceive;
     await runner.stop();
 
     expect(receives).toBeGreaterThan(1);
     expect(logger.lines[0]).toMatchObject({
       level: 'error',
       message: 'sqs polling failed',
-      fields: { error_code: MessagingErrorCode.TransportFailed },
+      fields: {
+        error_code: MessagingErrorCode.TransportFailed,
+        error: expect.objectContaining({ message: expect.any(String) }),
+      },
     });
+  });
+
+  it('keeps polling when logging the error throws too', async () => {
+    let receives = 0;
+    let polledAgain!: () => void;
+    const secondReceive = new Promise<void>((resolve) => {
+      polledAgain = resolve;
+    });
+    const { runner, logger } = setup('reports-work', (name, input, options) => {
+      if (name === 'GetQueueUrlCommand') {
+        return { QueueUrl: `https://sqs.local/${String(input['QueueName'])}` };
+      }
+      if (name === 'ReceiveMessageCommand') {
+        receives++;
+        // A non-object rejection, which a cast to { code } would have crashed on.
+        if (receives === 1) throw null;
+        polledAgain();
+        return new Promise((resolve, reject) => {
+          options?.abortSignal?.addEventListener('abort', () =>
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+          );
+        });
+      }
+      return {};
+    });
+    jest.spyOn(logger, 'error').mockImplementation(() => {
+      throw new Error('log sink down');
+    });
+
+    runner.start();
+    await secondReceive;
+    await runner.stop();
+
+    expect(receives).toBe(2);
   });
 
   it('validates its options', () => {

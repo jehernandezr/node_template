@@ -97,12 +97,11 @@ jobs:
 
       - run: pnpm nx affected -t lint typecheck build analyze format-check
 
-      # Umbral mínimo de cobertura por proyecto del backend (plan, Calidad y seguridad; ADR 0020).
+      # El umbral de cobertura vive en backend/jest.preset.js: el mismo comando lo aplica en local.
       - name: Pruebas del backend con cobertura mínima
         run: >-
           pnpm nx affected -t test --exclude='tag:lang:dart' --coverage
           --coverageReporters=text-summary
-          --coverageThreshold='{"global":{"lines":80,"statements":80,"functions":80,"branches":75}}'
 
       - name: Pruebas del front
         run: pnpm nx affected -t test --exclude='*,!tag:lang:dart'
@@ -225,7 +224,11 @@ jobs:
       - name: Pruebas de las Lambdas y scripts en Python
         run: |
           python3 -B -I -m unittest discover -s modules/rds-postgres/lambda/db_bootstrap -v
+          python3 -B -I -m unittest discover -s modules/http-api/authorizer -v
           python3 -B -I -m unittest discover -s ../local/localstack -v
+
+      - name: vendor/ del bootstrap coincide con requirements.txt
+        run: python3 -B -I ../scripts/check_vendor.py modules/rds-postgres/lambda/db_bootstrap
 
       - name: shellcheck de los scripts de infraestructura
         run: shellcheck ../scripts/*.sh ../local/localstack/*.sh

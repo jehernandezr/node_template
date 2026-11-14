@@ -1,11 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { BloomFilter, PartitionedBloomFilter } from '@platform/bloom';
-import {
-  CacheAside,
-  CacheNotACounterError,
-  VersionedKeyspace,
-} from '@platform/cache';
-import { ResilienceRegistry } from '@platform/resilience';
+import { randomUUID } from 'node:crypto';
+import { PartitionedBloomFilter } from '@platform/bloom';
+import { CacheAside, VersionedKeyspace } from '@platform/cache';
+import { ResiliencePolicyName, ResilienceRegistry } from '@platform/resilience';
 import {
   InMemoryDirectoryStore,
   ShardAccess,
@@ -20,16 +17,21 @@ import {
   Wait,
   type StartedTestContainer,
 } from 'testcontainers';
-import { ValkeyBitmapBloomFilter } from './valkey-bitmap-bloom-filter.js';
 import { ValkeyBloomFilter } from './valkey-bloom-filter.js';
 import { ValkeyCache } from './valkey-cache.js';
-import { createValkeyClient } from './valkey-client.js';
+import {
+  createTokenAuthenticatedValkeyClient,
+  createValkeyClient,
+} from './valkey-client.js';
+import { ValkeyKeyspace } from './valkey-keyspace.js';
 import { ValkeyRoutingCache } from './valkey-routing-cache.js';
 import { ValkeyShardDirectoryChannel } from './valkey-shard-directory-channel.js';
 
 /**
- * Integration tests against a real Valkey with the bloom module, started with Testcontainers. They run only
- * when Docker answers, so `nx test` passes on a machine without Docker. `VALKEY_INTEGRATION=off` skips them.
+ * Integration tests against a real Valkey with the bloom module, started with Testcontainers. The adapters
+ * connect as a user with the same ACL Terraform gives each service (`~<prefix>:* &<prefix>:*`), so a key or
+ * channel outside the keyspace fails here as it would in AWS. Without Docker they are skipped, except in CI
+ * (`CI=true`), where a missing Docker must not turn into a green run. `VALKEY_INTEGRATION=off` skips them.
  */
 const IMAGE = 'valkey/valkey-bundle:8.1';
 
@@ -41,10 +43,32 @@ function dockerAvailable(): boolean {
     stdio: 'ignore',
     timeout: 10_000,
   });
+  if (probe.status !== 0 && process.env['CI'] === 'true') {
+    throw new Error(
+      'Docker is not available in CI; set VALKEY_INTEGRATION=off to skip these tests on purpose',
+    );
+  }
   return probe.status === 0;
 }
 
 const describeWithDocker = dockerAvailable() ? describe : describe.skip;
+
+const PREFIX = 'orders';
+const keyspace = new ValkeyKeyspace(PREFIX);
+
+/** Polls until `check` holds, instead of sleeping a fixed time. */
+async function until(
+  check: () => boolean | Promise<boolean>,
+  timeoutMs = 5_000,
+): Promise<void> {
+  const started = Date.now();
+  while (!(await check())) {
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(`condition not met within ${timeoutMs} ms`);
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+}
 
 const T1 = '01941f29-7c00-7000-8000-000000000001';
 const READ = {
@@ -73,17 +97,28 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-const sleep = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
-
 describeWithDocker('Valkey adapters against a real server', () => {
+  // Thousands of round trips per test; the default 5 s is too tight when other suites run in parallel.
+  jest.setTimeout(60_000);
+
   let container: StartedTestContainer;
-  let url: string;
+  let host: string;
+  let port: number;
+  let admin: Valkey;
+  // Generated per run: the test user has a password like any ACL user, but none is written down.
+  const password = randomUUID();
   const clients: Valkey[] = [];
 
-  /** A new connection, as another process would have. */
+  /** A new connection as the service user, as another process would have. */
   function connect(): Valkey {
-    const client = createValkeyClient({ url, commandTimeoutMs: 5_000 });
+    const client = createValkeyClient({
+      host,
+      port,
+      tls: false,
+      username: PREFIX,
+      commandTimeoutMs: 5_000,
+    });
+    client.options.password = password;
     clients.push(client);
     return client;
   }
@@ -93,35 +128,78 @@ describeWithDocker('Valkey adapters against a real server', () => {
       .withExposedPorts(6379)
       .withWaitStrategy(Wait.forLogMessage(/Ready to accept connections/))
       .start();
-    url = `redis://${container.getHost()}:${container.getMappedPort(6379)}`;
+    host = container.getHost();
+    port = container.getMappedPort(6379);
+    admin = createValkeyClient({ url: `redis://${host}:${port}` });
+    await admin.call('ACL', [
+      'SETUSER',
+      PREFIX,
+      'on',
+      `>${password}`,
+      `~${PREFIX}:*`,
+      `&${PREFIX}:*`,
+      '+@all',
+      '-@dangerous',
+    ]);
   }, 300_000);
 
   afterAll(async () => {
     await Promise.all(clients.map((client) => client.quit().catch(() => 0)));
+    await admin?.quit().catch(() => 0);
     await container?.stop();
   });
 
   beforeEach(async () => {
-    await connect().call('FLUSHALL', []);
+    await admin.call('FLUSHALL', []);
+  });
+
+  async function keys(pattern: string): Promise<string[]> {
+    return (await admin.call('KEYS', [pattern])) as string[];
+  }
+
+  it('refuses keys outside the keyspace, as the ACL in AWS does', async () => {
+    await expect(connect().call('SET', ['bloom:x', '1'])).rejects.toThrow(
+      /NOPERM/,
+    );
+  });
+
+  it('authenticates each reconnection with the token of that moment', async () => {
+    let current = password;
+    const client = await createTokenAuthenticatedValkeyClient(
+      { host, port, tls: false, username: PREFIX, commandTimeoutMs: 5_000 },
+      async () => current,
+    );
+    clients.push(client);
+    await expect(client.call('SET', [`${PREFIX}:auth`, '1'])).resolves.toBe(
+      'OK',
+    );
+
+    // Rotate: only the new password is valid, then drop the connection.
+    const rotated = randomUUID();
+    await admin.call('ACL', ['SETUSER', PREFIX, 'resetpass', `>${rotated}`]);
+    current = rotated;
+    await admin.call('CLIENT', ['KILL', 'USER', PREFIX]);
+
+    await until(async () => {
+      try {
+        return (await client.call('GET', [`${PREFIX}:auth`])) === '1';
+      } catch {
+        return false;
+      }
+    });
+    await admin.call('ACL', ['SETUSER', PREFIX, 'resetpass', `>${password}`]);
   });
 
   describe('ValkeyCache', () => {
-    it('stores, expires, sets only when absent and counts', async () => {
-      const cache = new ValkeyCache(connect(), { keyPrefix: 'test:' });
-      await cache.set('a', 'one', 50);
+    it('stores, expires and sets only when absent', async () => {
+      const cache = new ValkeyCache(connect(), { keyspace });
+      await cache.set('a', 'one', 500);
       await expect(cache.get('a')).resolves.toBe('one');
-      await sleep(120);
-      await expect(cache.get('a')).resolves.toBeUndefined();
+      await until(async () => (await cache.get('a')) === undefined);
 
       await expect(cache.setIfAbsent('b', 'first')).resolves.toBe(true);
       await expect(cache.setIfAbsent('b', 'second')).resolves.toBe(false);
       await expect(cache.get('b')).resolves.toBe('first');
-
-      await expect(cache.incr('n')).resolves.toBe(1);
-      await expect(cache.incr('n')).resolves.toBe(2);
-      await expect(cache.incr('b')).rejects.toBeInstanceOf(
-        CacheNotACounterError,
-      );
       await cache.delete('b');
       await expect(cache.get('b')).resolves.toBeUndefined();
     });
@@ -129,7 +207,7 @@ describeWithDocker('Valkey adapters against a real server', () => {
     it('agrees on one version token among concurrent first readers', async () => {
       const keyspaces = Array.from(
         { length: 10 },
-        () => new VersionedKeyspace(new ValkeyCache(connect())),
+        () => new VersionedKeyspace(new ValkeyCache(connect(), { keyspace })),
       );
       const tokens = await Promise.all(
         keyspaces.map((keyspace) => keyspace.version(['t1', 'orders'])),
@@ -138,9 +216,13 @@ describeWithDocker('Valkey adapters against a real server', () => {
     });
 
     it('serves CacheAside reads and invalidations', async () => {
-      const cache = new ValkeyCache(connect());
+      const cache = new ValkeyCache(connect(), { keyspace });
       const aside = new CacheAside(cache, new VersionedKeyspace(cache), {
-        resilience: new ResilienceRegistry(),
+        // A loaded CI runner can exceed the default cache timeout; this test is about the round trip.
+        resilience: new ResilienceRegistry({
+          [ResiliencePolicyName.Cache]: { timeoutMs: 5_000 },
+        }),
+        transactions: { isInTransaction: () => false },
       });
       const load = jest.fn(async () => ({ total: 3 }));
       const read = () =>
@@ -152,7 +234,8 @@ describeWithDocker('Valkey adapters against a real server', () => {
         });
 
       await expect(read()).resolves.toEqual({ total: 3 });
-      await sleep(50); // the write is fire-and-forget
+      // The write is fire-and-forget: wait for the entry next to the version key.
+      await until(async () => (await keys(`${PREFIX}:*`)).length >= 2);
       await expect(read()).resolves.toEqual({ total: 3 });
       expect(load).toHaveBeenCalledTimes(1);
 
@@ -164,7 +247,7 @@ describeWithDocker('Valkey adapters against a real server', () => {
 
   describe('ValkeyRoutingCache.setIfNewer', () => {
     it('writes higher versions only and forgets them at the TTL', async () => {
-      const cache = new ValkeyRoutingCache(connect());
+      const cache = new ValkeyRoutingCache(connect(), { keyspace });
       await expect(cache.setIfNewer('k', 'v2', 2, 10_000)).resolves.toBe(true);
       await expect(cache.setIfNewer('k', 'v1', 1, 10_000)).resolves.toBe(false);
       await expect(cache.setIfNewer('k', 'v2b', 2, 10_000)).resolves.toBe(
@@ -172,15 +255,14 @@ describeWithDocker('Valkey adapters against a real server', () => {
       );
       await expect(cache.get('k')).resolves.toBe('v2');
       await expect(cache.setIfNewer('k', 'v3', 3, 50)).resolves.toBe(true);
-      await sleep(120);
-      await expect(cache.get('k')).resolves.toBeUndefined();
+      await until(async () => (await cache.get('k')) === undefined);
       await expect(cache.setIfNewer('k', 'v1', 1, 10_000)).resolves.toBe(true);
     });
 
     it('keeps the highest version under concurrent writers on separate connections', async () => {
       const writers = Array.from(
         { length: 8 },
-        () => new ValkeyRoutingCache(connect()),
+        () => new ValkeyRoutingCache(connect(), { keyspace }),
       );
       const versions = Array.from({ length: 200 }, (_, i) => (i * 37) % 200);
       const results = await Promise.all(
@@ -198,7 +280,8 @@ describeWithDocker('Valkey adapters against a real server', () => {
       expect(results.filter(Boolean).length).toBeLessThanOrEqual(200);
     });
 
-    // The race of shard-router.spec.ts (audit P1.7), now against Valkey and two connections.
+    // The race of the shard-router spec (a slow read finishing after an invalidation), now against Valkey
+    // and two connections.
     it('does not let a read in flight in another process resurrect an invalidated placement', async () => {
       const store = new InMemoryDirectoryStore();
       store.setInstance('shard-1', 'pg-1');
@@ -213,15 +296,15 @@ describeWithDocker('Valkey adapters against a real server', () => {
       };
       const reader = new ShardRouter({
         directory: slowDirectory,
-        sharedCache: new ValkeyRoutingCache(connect()),
+        sharedCache: new ValkeyRoutingCache(connect(), { keyspace }),
       });
       const mover = new ShardRouter({
         directory: store,
-        sharedCache: new ValkeyRoutingCache(connect()),
+        sharedCache: new ValkeyRoutingCache(connect(), { keyspace }),
       });
 
       const inFlight = reader.resolve(READ);
-      await sleep(20);
+      await until(() => slowDirectory.getPlacement.mock.calls.length > 0);
       store.setPlacement(placement({ shardGroup: ['shard-2'], version: 2 }));
       await mover.invalidate(T1);
       stale.resolve(placement({ shardGroup: ['shard-1'], version: 1 }));
@@ -231,7 +314,7 @@ describeWithDocker('Valkey adapters against a real server', () => {
 
       const fresh = new ShardRouter({
         directory: store,
-        sharedCache: new ValkeyRoutingCache(connect()),
+        sharedCache: new ValkeyRoutingCache(connect(), { keyspace }),
       });
       await expect(fresh.resolve(READ)).resolves.toMatchObject({
         logicalShard: 'shard-2',
@@ -249,19 +332,21 @@ describeWithDocker('Valkey adapters against a real server', () => {
       const channelA = new ValkeyShardDirectoryChannel({
         publisher: connect(),
         subscriber: connect(),
+        keyspace,
       });
       const channelB = new ValkeyShardDirectoryChannel({
         publisher: connect(),
         subscriber: connect(),
+        keyspace,
       });
       const mover = new ShardRouter({
         directory: store,
-        sharedCache: new ValkeyRoutingCache(connect()),
+        sharedCache: new ValkeyRoutingCache(connect(), { keyspace }),
         changes: channelA,
       });
       const other = new ShardRouter({
         directory: store,
-        sharedCache: new ValkeyRoutingCache(connect()),
+        sharedCache: new ValkeyRoutingCache(connect(), { keyspace }),
       });
       const stop = await other.listen(channelB);
       await expect(other.resolve(READ)).resolves.toMatchObject({
@@ -270,41 +355,37 @@ describeWithDocker('Valkey adapters against a real server', () => {
 
       store.setPlacement(placement({ shardGroup: ['shard-2'], version: 2 }));
       await mover.invalidate(T1, { version: 2 });
-      await sleep(100);
 
-      await expect(other.resolve(READ)).resolves.toMatchObject({
-        logicalShard: 'shard-2',
-      });
+      await until(
+        async () => (await other.resolve(READ)).logicalShard === 'shard-2',
+      );
       await stop();
     });
   });
 
-  describe.each([
-    [
-      'BF.* module',
-      (name: string, expectedItems: number) =>
-        new ValkeyBloomFilter(connect(), { name, expectedItems }),
-    ],
-    [
-      'bitmap',
-      (name: string, expectedItems: number) =>
-        new ValkeyBitmapBloomFilter(connect(), { name, expectedItems }),
-    ],
-  ])('bloom filter on %s', (_label, create) => {
+  describe('ValkeyBloomFilter', () => {
+    const create = (name: string, expectedItems: number) =>
+      new ValkeyBloomFilter(connect(), { name, expectedItems, keyspace });
+
     it('has no false negatives and about 1 % false positives', async () => {
       const filter = create('emails', 5_000);
       const members = Array.from({ length: 5_000 }, (_, i) => `member-${i}`);
       await filter.addMany(members);
       await filter.add('one-more');
-      for (const item of [...members.slice(0, 200), 'one-more']) {
-        await expect(filter.mightContain(item)).resolves.toBe(true);
-      }
-      let positives = 0;
-      for (let i = 0; i < 2_000; i += 1) {
-        if (await filter.mightContain(`absent-${i}`)) {
-          positives += 1;
-        }
-      }
+      // Checks go out together: the client pipelines them on one connection instead of paying one round
+      // trip each.
+      const present = await Promise.all(
+        [...members.slice(0, 200), 'one-more'].map((item) =>
+          filter.mightContain(item),
+        ),
+      );
+      expect(present.every(Boolean)).toBe(true);
+      const absent = await Promise.all(
+        Array.from({ length: 2_000 }, (_, i) =>
+          filter.mightContain(`absent-${i}`),
+        ),
+      );
+      const positives = absent.filter(Boolean).length;
       expect(positives / 2_000).toBeLessThan(0.03);
     });
 
@@ -319,8 +400,7 @@ describeWithDocker('Valkey adapters against a real server', () => {
       await expect(filter.mightContain('revoked-long-ago')).resolves.toBe(
         false,
       );
-      const keys = (await connect().call('KEYS', ['*rebuild*'])) as string[];
-      expect(keys).toEqual([]);
+      await expect(keys('*rebuild*')).resolves.toEqual([]);
     });
 
     it('works as partitions of a bigger filter', async () => {
@@ -330,41 +410,10 @@ describeWithDocker('Valkey adapters against a real server', () => {
       ]);
       const hashes = Array.from({ length: 1_500 }, (_, i) => `sha1-${i}`);
       await filter.addMany(hashes);
-      for (const hash of hashes.slice(0, 100)) {
-        await expect(filter.mightContain(hash)).resolves.toBe(true);
-      }
-    });
-  });
-
-  it('loads an in-memory filter into a bitmap bit for bit', async () => {
-    const local = BloomFilter.create({ expectedItems: 500 });
-    const remote = new ValkeyBitmapBloomFilter(connect(), {
-      name: 'offline',
-      expectedItems: 500,
-    });
-    const items = Array.from({ length: 500 }, (_, i) => `item-${i}`);
-    items.forEach((item) => local.add(item));
-    await remote.load(local);
-    for (let i = 0; i < 1_000; i += 1) {
-      const probe = `item-${i}`;
-      await expect(remote.mightContain(probe)).resolves.toBe(
-        local.mightContain(probe),
+      const found = await Promise.all(
+        hashes.slice(0, 100).map((hash) => filter.mightContain(hash)),
       );
-    }
-
-    // And the other way: bits written through Valkey read back as the in-memory layout.
-    const written = new ValkeyBitmapBloomFilter(connect(), {
-      name: 'online',
-      expectedItems: 500,
+      expect(found.every(Boolean)).toBe(true);
     });
-    await written.addMany(items);
-    const raw = (await connect().callBuffer('GET', [written.key])) as Buffer;
-    const bytes = Buffer.alloc(Math.ceil(written.bits / 8));
-    raw.copy(bytes);
-    const copy = BloomFilter.deserialize({
-      ...local.serialize(),
-      data: bytes.toString('base64'),
-    });
-    expect(items.every((item) => copy.mightContain(item))).toBe(true);
   });
 });

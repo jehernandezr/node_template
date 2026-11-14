@@ -276,14 +276,6 @@
           "value": "PLATFORM.BLOOM.INCOMPATIBLE_FILTERS"
         },
         {
-          "name": "BloomUnknownFilter",
-          "value": "PLATFORM.BLOOM.UNKNOWN_FILTER"
-        },
-        {
-          "name": "BloomDuplicateFilter",
-          "value": "PLATFORM.BLOOM.DUPLICATE_FILTER"
-        },
-        {
           "name": "CacheInvalidArgument",
           "value": "PLATFORM.CACHE.INVALID_ARGUMENT"
         },
@@ -292,7 +284,6 @@
           "name": "CacheValueTooLarge",
           "value": "PLATFORM.CACHE.VALUE_TOO_LARGE"
         },
-        { "name": "CacheNotACounter", "value": "PLATFORM.CACHE.NOT_A_COUNTER" },
         { "name": "CacheTimeout", "value": "PLATFORM.CACHE.TIMEOUT" },
         {
           "name": "CacheCorruptEntry",
@@ -1196,24 +1187,6 @@
         "description": "Los filtros de Bloom no tienen los mismos parámetros."
       },
       {
-        "name": "BloomUnknownFilter",
-        "code": "PLATFORM.BLOOM.UNKNOWN_FILTER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_unknown_filter",
-        "description": "El filtro de Bloom no está registrado."
-      },
-      {
-        "name": "BloomDuplicateFilter",
-        "code": "PLATFORM.BLOOM.DUPLICATE_FILTER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_duplicate_filter",
-        "description": "Ya hay un filtro de Bloom registrado con ese nombre."
-      },
-      {
         "name": "CacheInvalidArgument",
         "code": "PLATFORM.CACHE.INVALID_ARGUMENT",
         "httpStatus": 500,
@@ -1239,15 +1212,6 @@
         "audience": "internal",
         "messageKey": "error_platform_cache_value_too_large",
         "description": "El valor supera el tamaño máximo que se guarda en caché."
-      },
-      {
-        "name": "CacheNotACounter",
-        "code": "PLATFORM.CACHE.NOT_A_COUNTER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_not_a_counter",
-        "description": "La entrada de caché no contiene un contador."
       },
       {
         "name": "CacheTimeout",

@@ -1,5 +1,8 @@
 import type { Deadline } from '@platform/primitives';
-import { ResiliencePolicyName, ResilienceRegistry } from '@platform/resilience';
+import {
+  ResiliencePolicyName,
+  type ResilienceRegistry,
+} from '@platform/resilience';
 import type { CachePort } from './cache-port.js';
 import {
   CacheCorruptEntryError,
@@ -20,22 +23,35 @@ export const DEFAULT_MAX_CACHE_VALUE_BYTES = 512 * 1024;
  */
 export type CacheResilience = Pick<ResilienceRegistry, 'execute'>;
 
+/**
+ * Tells whether the current call runs inside a database transaction. The
+ * persistence `TransactionManager` satisfies it.
+ */
+export interface CacheTransactionScope {
+  isInTransaction(): boolean;
+}
+
 /** Options for {@link CacheAside}. */
 export interface CacheAsideOptions {
+  /**
+   * Runs every cache call under `ResiliencePolicyName.Cache` (attempt timeout,
+   * total budget and circuit breaker). Pass the application's shared
+   * `ResilienceRegistry` so all caches of one Valkey share a breaker and its
+   * events.
+   */
+  resilience: CacheResilience;
+  /**
+   * Inside a transaction the cache is bypassed and `load` runs directly: the
+   * transaction may see uncommitted rows that must not reach other readers,
+   * and a cached value would hide its own writes.
+   */
+  transactions: CacheTransactionScope;
   /** Shared deduplicator for loads. A private instance is created when omitted. */
   singleFlight?: SingleFlight;
   /** Randomness for TTL jitter, in [0, 1). Defaults to `Math.random`. */
   random?: () => number;
   /** Called with cache failures that were absorbed by falling back to the loader. */
   onError?: (error: unknown) => void;
-  /**
-   * Runs every cache call under `ResiliencePolicyName.Cache` (attempt timeout,
-   * total budget and circuit breaker). Pass the application's shared
-   * `ResilienceRegistry` so all caches of one Valkey share a breaker and its
-   * events. Defaults to a private registry with the default policies, so the
-   * timeout is `defaultPolicies[ResiliencePolicyName.Cache].timeoutMs`.
-   */
-  resilience?: CacheResilience;
   /**
    * Breaker and bulkhead key inside the cache policy, for example one per
    * Valkey cluster. Defaults to the policy name.
@@ -79,8 +95,6 @@ export interface GetOrLoadOptions<T> {
   ttlMs: number;
   /** Loads the authoritative value, normally from the database. */
   load: () => Promise<T>;
-  /** When true, bypass the cache and call `load` directly, e.g. inside a transaction. */
-  inTransaction?: boolean;
   /** Converts the `{ v }` envelope to a string. Defaults to `JSON.stringify`. */
   serialize?: (envelope: CacheEnvelope<T>) => string;
   /** Converts a stored string back to the `{ v }` envelope. Defaults to `JSON.parse`. */
@@ -107,18 +121,20 @@ export class CacheAside {
   private readonly random: () => number;
   private readonly onError: (error: unknown) => void;
   private readonly resilience: CacheResilience;
+  private readonly transactions: CacheTransactionScope;
   private readonly dependencyKey: string | undefined;
   private readonly maxValueBytes: number;
 
   constructor(
     private readonly cache: CachePort,
     private readonly keyspace: VersionedKeyspace,
-    options: CacheAsideOptions = {},
+    options: CacheAsideOptions,
   ) {
     this.singleFlight = options.singleFlight ?? new SingleFlight();
     this.random = options.random ?? Math.random;
     this.onError = options.onError ?? ((): void => undefined);
-    this.resilience = options.resilience ?? new ResilienceRegistry();
+    this.resilience = options.resilience;
+    this.transactions = options.transactions;
     this.dependencyKey = options.dependencyKey;
     this.maxValueBytes = options.maxValueBytes ?? DEFAULT_MAX_CACHE_VALUE_BYTES;
     if (!Number.isInteger(this.maxValueBytes) || this.maxValueBytes < 1) {
@@ -134,7 +150,7 @@ export class CacheAside {
    * The caller's `signal` and `deadline` only bound its own wait.
    */
   async getOrLoad<T>(options: GetOrLoadOptions<T>): Promise<T> {
-    const { namespace, params, ttlMs, load, inTransaction = false } = options;
+    const { namespace, params, ttlMs, load } = options;
     const wait: WaitOptions = {
       signal: options.signal,
       deadline: options.deadline,
@@ -143,7 +159,7 @@ export class CacheAside {
     if (cancelled !== undefined) {
       throw cancelled;
     }
-    if (inTransaction) {
+    if (this.transactions.isInTransaction()) {
       return waitFor(load(), wait);
     }
     const serialize =

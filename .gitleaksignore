@@ -1,2 +1,6 @@
-# JWT de ejemplo (no es una credencial) en la prueba del redactor de logs.
+# JWT de ejemplo (no es una credencial) en la prueba del redactor de logs; la prueba
+# actual lo arma en tiempo de ejecución. gitleaks recorre todas las ramas (--all), así
+# que se ignora en el commit de main que lo introdujo y en el de la rama
+# chore/opus-audit-2026-11-12, que sigue en origin.
+13f606f69c60a879bc4adac17c9a8e5763c27d7b:backend/libs/platform/observability/src/lib/redaction.spec.ts:jwt:78
 04a391402791a7ea904be6efc7dc854179fc4e65:backend/libs/platform/observability/src/lib/redaction.spec.ts:jwt:83

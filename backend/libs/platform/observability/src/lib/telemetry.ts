@@ -2,7 +2,10 @@ import { trace, type Context } from '@opentelemetry/api';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import type { Instrumentation } from '@opentelemetry/instrumentation';
+import {
+  InstrumentationNodeModuleDefinition,
+  type Instrumentation,
+} from '@opentelemetry/instrumentation';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
@@ -35,7 +38,7 @@ import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import { DEFAULT_OTLP_ENDPOINT, type BaseConfig } from '@platform/config';
+import type { BaseConfig } from '@platform/config';
 import { UuidV7IdGenerator, type IdGenerator } from '@platform/kernel';
 import { NoopMetrics, OtelMetrics, type MetricsPort } from './metrics.js';
 import {
@@ -49,13 +52,13 @@ import { newSpanId, newTraceId } from './trace.js';
 /** Atributo de recurso del ambiente (semconv `deployment.environment.name`). */
 export const ATTR_DEPLOYMENT_ENVIRONMENT_NAME = 'deployment.environment.name';
 
-/** Instrumentaciones automáticas disponibles (plan, "Observabilidad con OpenTelemetry"). */
+/** Instrumentaciones automáticas disponibles. */
 export enum TelemetryInstrumentation {
   Http = 'http',
   /** `fetch` nativo de Node (undici). */
   Fetch = 'fetch',
   Pg = 'pg',
-  /** Cliente de Valkey (protocolo Redis con `ioredis`; también lo usa BullMQ). */
+  /** Cliente de Valkey (`iovalkey`). */
   Valkey = 'valkey',
   AwsSdk = 'aws-sdk',
   NestJs = 'nestjs',
@@ -113,43 +116,45 @@ export class ExternalTraceIdSpanProcessor implements SpanProcessor {
   }
 }
 
+/** Versiones de `iovalkey` que comparten la estructura interna de `ioredis`. */
+export const IOVALKEY_SUPPORTED_VERSIONS = ['>=0.1.0 <1'];
+
 /**
- * Lee `OTEL_EXPORTER_OTLP_HEADERS` (`clave=valor,clave2=valor2`, valores
- * codificados como URL). Ignora los pares mal formados.
+ * Instrumentación de `ioredis` aplicada al paquete `iovalkey`. `iovalkey` es
+ * un fork con otro nombre de paquete: la instrumentación oficial solo engancha
+ * el módulo `ioredis`, así que sin esta definición ningún comando de Valkey
+ * generaría spans. El fork conserva `sendCommand` y `connect` en el
+ * prototipo del cliente, que es lo que la instrumentación envuelve.
  */
-export function parseOtlpHeaders(
-  text: string | undefined,
-): Record<string, string> {
-  const headers: Record<string, string> = {};
-  for (const pair of (text ?? '').split(',')) {
-    const index = pair.indexOf('=');
-    if (index <= 0) {
-      continue;
-    }
-    const key = pair.slice(0, index).trim();
-    const raw = pair.slice(index + 1).trim();
-    if (key.length === 0) {
-      continue;
-    }
-    try {
-      headers[key] = decodeURIComponent(raw);
-    } catch {
-      headers[key] = raw;
-    }
+export class IovalkeyInstrumentation extends IORedisInstrumentation {
+  override init(): InstrumentationNodeModuleDefinition[] {
+    return super
+      .init()
+      .map(
+        (definition) =>
+          new InstrumentationNodeModuleDefinition(
+            'iovalkey',
+            IOVALKEY_SUPPORTED_VERSIONS,
+            definition.patch,
+            definition.unpatch,
+          ),
+      );
   }
-  return headers;
 }
 
 export interface TelemetryOptions {
   readonly serviceName: string;
   readonly serviceVersion?: string;
-  /** Ambiente (`development`, `production`...). */
+  /** Ambiente desplegado (`local`, `dev`, `staging`, `prod`). */
   readonly environment?: string;
   /** Apaga el SDK: no registra proveedores ni instrumentaciones. */
   readonly disabled?: boolean;
-  /** Base OTLP HTTP del Collector. Por defecto el Collector local. */
+  /**
+   * Base OTLP HTTP del Collector. Sin valor, los exportadores leen
+   * `OTEL_EXPORTER_OTLP_ENDPOINT` y `OTEL_EXPORTER_OTLP_HEADERS` del ambiente
+   * (por defecto `http://localhost:4318`).
+   */
   readonly otlpEndpoint?: string;
-  readonly otlpHeaders?: Readonly<Record<string, string>>;
   /** Intervalo de exportación de métricas. Por defecto 60 s. */
   readonly metricExportIntervalMs?: number;
   /** Qué hacer con el `traceparent` entrante. Por defecto se trata como externo. */
@@ -194,7 +199,7 @@ function createInstrumentation(
       return new PgInstrumentation({ enhancedDatabaseReporting: false });
     case TelemetryInstrumentation.Valkey:
       // Solo el nombre del comando: las llaves y valores pueden llevar datos.
-      return new IORedisInstrumentation({
+      return new IovalkeyInstrumentation({
         dbStatementSerializer: (command) => command,
       });
     case TelemetryInstrumentation.AwsSdk:
@@ -220,13 +225,15 @@ export function otlpUrl(endpoint: string, path: OtlpPath): string {
  * hacia el Collector, que los reenvía a OpenObserve.
  *
  * - Trace ids UUIDv7 ({@link UuidV7TraceIdGenerator}).
- * - Muestreo: el SDK envía todas las trazas (`ParentBased(AlwaysOn)`). El
- *   plan decide el muestreo en el Collector: todas las trazas con error y un
- *   porcentaje del resto (tail sampling). Así una traza con error nunca se
- *   pierde por una decisión tomada antes de saber que falló.
+ * - Muestreo: el SDK envía todas las trazas (`ParentBased(AlwaysOn)`) y el
+ *   Collector decide: todas las trazas con error y un porcentaje del resto
+ *   (tail sampling). Así una traza con error nunca se pierde por una decisión
+ *   tomada antes de saber que falló.
  * - `traceparent` entrante: {@link ExternalTraceparentPropagator}.
- * - Instrumentación automática de HTTP, `fetch`, `pg`, Valkey (`ioredis`),
+ * - Instrumentación automática de HTTP, `fetch`, `pg`, Valkey (`iovalkey`),
  *   SDK de AWS y NestJS.
+ * - Endpoint y encabezados OTLP: los del ambiente (`OTEL_EXPORTER_OTLP_*`),
+ *   salvo que se pase `otlpEndpoint`.
  *
  * Se llama una vez, antes de importar los módulos instrumentados. Con ESM el
  * proceso arranca con el hook de carga de OpenTelemetry, por ejemplo
@@ -242,23 +249,20 @@ export function setupTelemetry(options: TelemetryOptions): Telemetry {
       shutdown: () => Promise.resolve(),
     };
   }
-  const endpoint = options.otlpEndpoint ?? DEFAULT_OTLP_ENDPOINT;
-  const headers = { ...options.otlpHeaders };
+  const endpoint = options.otlpEndpoint;
+  const exporterConfig = (path: OtlpPath) =>
+    endpoint === undefined ? {} : { url: otlpUrl(endpoint, path) };
   const immediate = options.exportImmediately === true;
 
   const spanExporter =
     options.spanExporter ??
-    new OTLPTraceExporter({ url: otlpUrl(endpoint, OtlpPath.Traces), headers });
+    new OTLPTraceExporter(exporterConfig(OtlpPath.Traces));
   const logExporter =
-    options.logExporter ??
-    new OTLPLogExporter({ url: otlpUrl(endpoint, OtlpPath.Logs), headers });
+    options.logExporter ?? new OTLPLogExporter(exporterConfig(OtlpPath.Logs));
   const metricReader =
     options.metricReader ??
     new PeriodicExportingMetricReader({
-      exporter: new OTLPMetricExporter({
-        url: otlpUrl(endpoint, OtlpPath.Metrics),
-        headers,
-      }),
+      exporter: new OTLPMetricExporter(exporterConfig(OtlpPath.Metrics)),
       exportIntervalMillis: options.metricExportIntervalMs ?? 60_000,
     });
 
@@ -314,10 +318,8 @@ export function telemetryOptionsFromConfig(
     BaseConfig,
     | 'SERVICE_NAME'
     | 'SERVICE_VERSION'
-    | 'NODE_ENV'
+    | 'DEPLOY_ENVIRONMENT'
     | 'OTEL_SDK_DISABLED'
-    | 'OTEL_EXPORTER_OTLP_ENDPOINT'
-    | 'OTEL_EXPORTER_OTLP_HEADERS'
     | 'OTEL_METRIC_EXPORT_INTERVAL'
   >,
   overrides: Partial<TelemetryOptions> = {},
@@ -327,10 +329,8 @@ export function telemetryOptionsFromConfig(
     ...(config.SERVICE_VERSION !== undefined && {
       serviceVersion: config.SERVICE_VERSION,
     }),
-    environment: config.NODE_ENV,
+    environment: config.DEPLOY_ENVIRONMENT,
     disabled: config.OTEL_SDK_DISABLED,
-    otlpEndpoint: config.OTEL_EXPORTER_OTLP_ENDPOINT,
-    otlpHeaders: parseOtlpHeaders(config.OTEL_EXPORTER_OTLP_HEADERS?.reveal()),
     metricExportIntervalMs: config.OTEL_METRIC_EXPORT_INTERVAL,
     ...overrides,
   };

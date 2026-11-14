@@ -37,39 +37,14 @@ locals {
 
 # --- Bucket de la web -------------------------------------------------------
 
-resource "aws_kms_key" "web" {
-  description             = "Cifrado del bucket web de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "web_kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        # Se limita por cuenta y no por distribución para evitar una dependencia circular.
-        Sid       = "AllowCloudFrontDecrypt"
-        Effect    = "Allow"
-        Principal = { Service = "cloudfront.amazonaws.com" }
-        Action    = ["kms:Decrypt", "kms:GenerateDataKey*"]
-        Resource  = "*"
-        Condition = { StringEquals = { "aws:SourceAccount" = local.account_id } }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "web" {
-  name          = "alias/${var.name_prefix}-web"
-  target_key_id = aws_kms_key.web.key_id
+  alias       = "${var.name_prefix}-web"
+  description = "Cifrado del bucket web de ${var.name_prefix}"
+  # Se limita por cuenta y no por distribución para evitar una dependencia circular.
+  service_principals = [{ sid = "AllowCloudFrontDecrypt", services = ["cloudfront.amazonaws.com"] }]
+  tags               = var.tags
 }
 
 resource "aws_s3_bucket" "web" {
@@ -112,7 +87,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "web" {
 
     apply_server_side_encryption_by_default {
       sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.web.arn
+      kms_master_key_id = module.web_kms.arn
     }
   }
 }
@@ -529,48 +504,16 @@ resource "aws_wafv2_web_acl" "this" {
   tags = var.tags
 }
 
-resource "aws_kms_key" "waf_logs" {
-  provider = aws.us_east_1
-  count    = var.waf_logging_enabled ? 1 : 0
+module "waf_logs_kms" {
+  count  = var.waf_logging_enabled ? 1 : 0
+  source = "../kms-key"
 
-  description             = "Cifrado de logs de WAF de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+  providers = { aws = aws.us_east_1 }
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.us-east-1.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${local.partition}:logs:us-east-1:${local.account_id}:log-group:${local.waf_log_name}"
-          }
-        }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "waf_logs" {
-  provider = aws.us_east_1
-  count    = var.waf_logging_enabled ? 1 : 0
-
-  name          = "alias/${var.name_prefix}-waf-logs"
-  target_key_id = aws_kms_key.waf_logs[0].key_id
+  alias          = "${var.name_prefix}-waf-logs"
+  description    = "Cifrado de logs de WAF de ${var.name_prefix}"
+  log_group_arns = ["arn:${local.partition}:logs:us-east-1:${local.account_id}:log-group:${local.waf_log_name}"]
+  tags           = var.tags
 }
 
 resource "aws_cloudwatch_log_group" "waf" {
@@ -579,7 +522,7 @@ resource "aws_cloudwatch_log_group" "waf" {
 
   name              = local.waf_log_name
   retention_in_days = var.waf_log_retention_days
-  kms_key_id        = aws_kms_key.waf_logs[0].arn
+  kms_key_id        = module.waf_logs_kms[0].arn
 
   tags = var.tags
 }
@@ -602,4 +545,24 @@ resource "aws_wafv2_web_acl_logging_configuration" "this" {
       name = "cookie"
     }
   }
+}
+
+moved {
+  from = aws_kms_key.web
+  to   = module.web_kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.web
+  to   = module.web_kms.aws_kms_alias.this
+}
+
+moved {
+  from = aws_kms_key.waf_logs[0]
+  to   = module.waf_logs_kms[0].aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.waf_logs[0]
+  to   = module.waf_logs_kms[0].aws_kms_alias.this
 }

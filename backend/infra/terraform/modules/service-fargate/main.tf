@@ -11,7 +11,7 @@ locals {
   region      = data.aws_region.current.region
   log_group   = "/ecs/${var.name_prefix}/${var.service_name}"
   create_key  = var.kms_key_arn == null
-  kms_key_arn = local.create_key ? aws_kms_key.logs[0].arn : var.kms_key_arn
+  kms_key_arn = local.create_key ? module.logs_kms[0].arn : var.kms_key_arn
 
   otel_enabled    = var.otlp_endpoint != null
   otel_sidecar    = local.otel_enabled && var.otel_collector_sidecar
@@ -152,46 +152,14 @@ resource "terraform_data" "input_check" {
 
 # --- Logs -------------------------------------------------------------------
 
-resource "aws_kms_key" "logs" {
-  count = local.create_key ? 1 : 0
+module "logs_kms" {
+  count  = local.create_key ? 1 : 0
+  source = "../kms-key"
 
-  description             = "Cifrado de logs de ${local.full_name}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${local.region}.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"
-          }
-        }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "logs" {
-  count = local.create_key ? 1 : 0
-
-  name          = "alias/${local.full_name}-logs"
-  target_key_id = aws_kms_key.logs[0].key_id
+  alias          = "${local.full_name}-logs"
+  description    = "Cifrado de logs de ${local.full_name}"
+  log_group_arns = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
+  tags           = var.tags
 }
 
 resource "aws_cloudwatch_log_group" "this" {
@@ -658,4 +626,14 @@ resource "aws_cloudwatch_metric_alarm" "sqs_backlog_empty" {
   alarm_actions = [aws_appautoscaling_policy.sqs_in[0].arn]
 
   tags = var.tags
+}
+
+moved {
+  from = aws_kms_key.logs[0]
+  to   = module.logs_kms[0].aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.logs[0]
+  to   = module.logs_kms[0].aws_kms_alias.this
 }

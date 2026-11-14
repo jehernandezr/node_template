@@ -2,10 +2,8 @@ import {
   BloomError,
   BloomErrorCode,
   CorruptedData,
-  DuplicateFilter,
   IncompatibleFilters,
   InvalidParameters,
-  UnknownFilter,
 } from './bloom-error.js';
 
 describe('bloom errors', () => {
@@ -24,16 +22,6 @@ describe('bloom errors', () => {
       new IncompatibleFilters('x'),
       BloomErrorCode.IncompatibleFilters,
       'PLATFORM.BLOOM.INCOMPATIBLE_FILTERS',
-    ],
-    [
-      new UnknownFilter('x'),
-      BloomErrorCode.UnknownFilter,
-      'PLATFORM.BLOOM.UNKNOWN_FILTER',
-    ],
-    [
-      new DuplicateFilter('x'),
-      BloomErrorCode.DuplicateFilter,
-      'PLATFORM.BLOOM.DUPLICATE_FILTER',
     ],
   ])('exposes a stable code on %s', (error, code, value) => {
     expect(error).toBeInstanceOf(BloomError);

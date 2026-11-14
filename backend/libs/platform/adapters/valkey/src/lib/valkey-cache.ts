@@ -1,36 +1,31 @@
+import { CacheInvalidArgumentError, type CachePort } from '@platform/cache';
 import {
-  CacheInvalidArgumentError,
-  CacheNotACounterError,
-  type CachePort,
-} from '@platform/cache';
-import {
-  integerReply,
   optionalStringReply,
   runCommand,
   ValkeyCommand,
   type ValkeyCommandRunner,
 } from './valkey-client.js';
-import { isReplyError, ValkeyCommandError } from './valkey-error.js';
+import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
 /** Options of {@link ValkeyCache}. */
 export interface ValkeyCacheOptions {
-  /** Prepended to every key, for example the service name. Default none. */
-  readonly keyPrefix?: string;
+  /** Keys become `<prefix>:<key>`, inside the ACL of the service user. */
+  readonly keyspace: ValkeyKeyspace;
 }
 
 /**
  * {@link CachePort} over Valkey. Every operation is one atomic command:
- * `GET`, `SET ... PX` (TTL), `SET ... NX` (`setIfAbsent`), `DEL` and `INCR`.
+ * `GET`, `SET ... PX` (TTL), `SET ... NX` (`setIfAbsent`) and `DEL`.
  * Failures are `ValkeyCommandError`, classified so the cache breaker opens when Valkey is down.
  */
 export class ValkeyCache implements CachePort {
-  private readonly prefix: string;
+  private readonly keyspace: ValkeyKeyspace;
 
   constructor(
     private readonly client: ValkeyCommandRunner,
-    options: ValkeyCacheOptions = {},
+    options: ValkeyCacheOptions,
   ) {
-    this.prefix = options.keyPrefix ?? '';
+    this.keyspace = options.keyspace;
   }
 
   async get(key: string): Promise<string | undefined> {
@@ -78,26 +73,7 @@ export class ValkeyCache implements CachePort {
     await runCommand(this.client, ValkeyCommand.Del, [this.key(key)]);
   }
 
-  /** @throws CacheNotACounterError when the stored value is not an integer or would overflow. */
-  async incr(key: string): Promise<number> {
-    let reply: unknown;
-    try {
-      reply = await runCommand(this.client, ValkeyCommand.Incr, [
-        this.key(key),
-      ]);
-    } catch (error) {
-      if (error instanceof ValkeyCommandError && isReplyError(error.cause)) {
-        throw new CacheNotACounterError();
-      }
-      throw error;
-    }
-    if (typeof reply === 'number' && !Number.isSafeInteger(reply)) {
-      throw new CacheNotACounterError();
-    }
-    return integerReply(ValkeyCommand.Incr, reply);
-  }
-
   private key(key: string): string {
-    return this.prefix + key;
+    return this.keyspace.key(key);
   }
 }

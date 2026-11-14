@@ -1,6 +1,5 @@
 import { SystemClock, type Clock } from '@platform/kernel';
 import type { CachePort } from './cache-port.js';
-import { CacheNotACounterError } from './errors.js';
 
 /** Options for {@link InMemoryCache}. */
 export interface InMemoryCacheOptions {
@@ -45,20 +44,6 @@ export class InMemoryCache implements CachePort {
 
   async delete(key: string): Promise<void> {
     this.entries.delete(key);
-  }
-
-  /** @throws CacheNotACounterError when the stored value is not an integer. */
-  async incr(key: string): Promise<number> {
-    const current = this.live(key) ?? { value: '0', expiresAt: undefined };
-    const next = Number(current.value) + 1;
-    if (!Number.isSafeInteger(next)) {
-      throw new CacheNotACounterError();
-    }
-    this.entries.set(key, {
-      value: String(next),
-      expiresAt: current.expiresAt,
-    });
-    return next;
   }
 
   /** Returns the entry if it has not expired, dropping it otherwise. */

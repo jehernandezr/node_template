@@ -7,7 +7,7 @@ import {
   assertIntegerInRange,
 } from './limits.js';
 
-/** False positive rate a filter gets when it does not declare one (1 %, as the plan requires). */
+/** False positive rate a filter gets when it does not declare one (1 %). */
 export const DEFAULT_FALSE_POSITIVE_RATE = 0.01;
 
 /** Bit array size and hash count of a bloom filter. */

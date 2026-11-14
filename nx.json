@@ -6,7 +6,8 @@
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/jest.config.[jt]s",
+      "!{projectRoot}/jest.config.?(c|m)[jt]s",
+      "!{projectRoot}/.spec.swcrc",
       "!{projectRoot}/src/test-setup.[jt]s",
       "!{projectRoot}/test-setup.[jt]s",
       "!{projectRoot}/.eslintrc.json",
@@ -63,7 +64,7 @@
     },
     "typecheck": {
       "options": {
-        "command": "tsc -p tsconfig.lib.json --noEmit && tsc -p tsconfig.spec.json --noEmit"
+        "command": "tsc -p tsconfig.spec.json --noEmit"
       },
       "inputs": [
         "default",

@@ -13,6 +13,12 @@ const MAX_AGGREGATED_ERRORS = 10;
 const TRUNCATED = '[Truncated]';
 const CIRCULAR = '[Circular]';
 
+/**
+ * Palabras que, como última palabra de la llave, nombran el secreto mismo
+ * (`accessToken`, `setCookie`, `userOtp`). `sessions` no está: una lista de
+ * sesiones lleva ids y fechas, y el token de cada una se oculta por su propia
+ * llave.
+ */
 const SENSITIVE_LAST_WORDS = new Set([
   'token',
   'password',
@@ -30,7 +36,6 @@ const SENSITIVE_LAST_WORDS = new Set([
   'bearer',
   'otp',
   'session',
-  'sessions',
   'passphrase',
   'pin',
   'pins',
@@ -38,6 +43,11 @@ const SENSITIVE_LAST_WORDS = new Set([
   'cvc',
   'pan',
 ]);
+/**
+ * Palabras que, al inicio de la llave, anuncian un valor secreto
+ * (`passwordConfirmation`, `secretValue`). `session` y `cookie` no están:
+ * `sessionCount` o `cookieConsent` describen el secreto, no lo contienen.
+ */
 const SENSITIVE_FIRST_WORDS = new Set([
   'password',
   'passwd',
@@ -45,16 +55,34 @@ const SENSITIVE_FIRST_WORDS = new Set([
   'passphrase',
   'secret',
   'authorization',
-  'cookie',
-  'cookies',
-  'session',
-  'sessions',
   'jwt',
   'bearer',
   'otp',
   'pin',
   'cvv',
   'cvc',
+]);
+/**
+ * Últimas palabras que nunca llevan un secreto: ids, instantes y conteos.
+ * Con ellas `sessionId`, `apiKeyId`, `passwordChangedAt` o `tokenCount` quedan
+ * visibles, que es con lo que se diagnostica una revocación o un cambio de
+ * contraseña.
+ */
+const PUBLIC_LAST_WORDS = new Set(['id', 'ids', 'at', 'count', 'counts']);
+/**
+ * Un hash o digest es tan sensible como lo que resume cuando este es un
+ * secreto (`tokenHash`, `codeHmac`): con él se prueba un valor adivinado.
+ */
+const DIGEST_WORDS = new Set(['hash', 'hashes', 'hmac', 'digest']);
+const DIGESTED_SECRETS = new Set([
+  'token',
+  'password',
+  'passcode',
+  'secret',
+  'otp',
+  'pin',
+  'code',
+  'key',
 ]);
 /** Nombres compuestos que solo tienen sentido juntos (`privateKey`, `signing_key`). */
 const SENSITIVE_COMPOUNDS = [
@@ -138,8 +166,8 @@ export function redactString(text: string): string {
 /**
  * Parte la llave en palabras en minúscula (camelCase, snake_case, kebab-case)
  * y decide por la posición de cada palabra. Así `accessToken`, `passwordHash`
- * o `mfaCode` son sensibles, mientras `tokenCount`, `inputTokens` o
- * `errorCode` se mantienen.
+ * o `mfaCode` son sensibles, mientras `tokenCount`, `inputTokens`,
+ * `sessionId` o `errorCode` se mantienen.
  */
 export function isSensitiveKey(key: string): boolean {
   const words = key
@@ -152,12 +180,22 @@ export function isSensitiveKey(key: string): boolean {
   }
   const first = words[0] as string;
   const last = words[words.length - 1] as string;
+  const qualifiers = words.slice(0, -1);
+  if (PUBLIC_LAST_WORDS.has(last)) {
+    return false;
+  }
   if (SENSITIVE_LAST_WORDS.has(last) || SENSITIVE_FIRST_WORDS.has(first)) {
     return true;
   }
   if (
     CODE_WORDS.has(last) &&
-    words.slice(0, -1).some((word) => SECRET_CODE_QUALIFIERS.has(word))
+    qualifiers.some((word) => SECRET_CODE_QUALIFIERS.has(word))
+  ) {
+    return true;
+  }
+  if (
+    DIGEST_WORDS.has(last) &&
+    qualifiers.some((word) => DIGESTED_SECRETS.has(word))
   ) {
     return true;
   }

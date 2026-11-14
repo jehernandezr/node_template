@@ -1,11 +1,7 @@
 import { z } from 'zod';
 import { ConfigValidationError } from './errors.js';
 import { defineConfig } from './define-config.js';
-import {
-  baseConfigSchema,
-  DEFAULT_OTLP_ENDPOINT,
-  NodeEnv,
-} from './base-config.js';
+import { baseConfigSchema, DeployEnvironment, NodeEnv } from './base-config.js';
 import { LogLevel } from './log-level.js';
 import { envNumber } from './env.js';
 
@@ -18,13 +14,13 @@ describe('defineConfig with baseConfigSchema', () => {
     expect(loaded).toEqual({
       NODE_ENV: NodeEnv.Development,
       SERVICE_NAME: 'orders',
+      DEPLOY_ENVIRONMENT: DeployEnvironment.Local,
       LOG_LEVEL: LogLevel.Info,
       LOG_SAMPLE_RATE: 0,
       LOG_DEBUG_CONTEXTS: [],
       DB_LOG_QUERIES: false,
       DB_SLOW_QUERY_MS: 500,
       OTEL_SDK_DISABLED: false,
-      OTEL_EXPORTER_OTLP_ENDPOINT: DEFAULT_OTLP_ENDPOINT,
       OTEL_METRIC_EXPORT_INTERVAL: 60_000,
     });
   });

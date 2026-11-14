@@ -1,5 +1,4 @@
 import { FixedClock } from '@platform/kernel/testing';
-import { CacheNotACounterError } from './errors.js';
 import { InMemoryCache } from './in-memory-cache.js';
 
 describe('InMemoryCache', () => {
@@ -43,32 +42,6 @@ describe('InMemoryCache', () => {
     clock.set(new Date(10));
     expect(await cache.setIfAbsent('t', 'new')).toBe(true);
     expect(await cache.get('t')).toBe('new');
-  });
-
-  it('creates counters at 0 and increments them without a TTL', async () => {
-    const clock = new FixedClock(new Date(0));
-    const cache = new InMemoryCache({ clock });
-    expect(await cache.incr('c')).toBe(1);
-    expect(await cache.incr('c')).toBe(2);
-
-    clock.set(new Date(Number.MAX_SAFE_INTEGER / 2));
-    expect(await cache.get('c')).toBe('2');
-  });
-
-  it('keeps the existing TTL when incrementing a live key', async () => {
-    const clock = new FixedClock(new Date(0));
-    const cache = new InMemoryCache({ clock });
-    await cache.set('c', '5', 100);
-    expect(await cache.incr('c')).toBe(6);
-
-    clock.set(new Date(100));
-    expect(await cache.get('c')).toBeUndefined();
-  });
-
-  it('rejects incrementing a non-integer value', async () => {
-    const cache = new InMemoryCache();
-    await cache.set('s', 'text', 1000);
-    await expect(cache.incr('s')).rejects.toThrow(CacheNotACounterError);
   });
 
   it('reads time from a kernel Clock', async () => {

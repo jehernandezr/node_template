@@ -2,7 +2,6 @@ export * from './lib/async-bloom-filter.js';
 export * from './lib/bloom-error.js';
 export * from './lib/bloom-filter.js';
 export * from './lib/bloom-filter-definition.js';
-export * from './lib/bloom-filter-registry.js';
 export * from './lib/hashing.js';
 export * from './lib/limits.js';
 export * from './lib/optimal-parameters.js';

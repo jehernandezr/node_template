@@ -18,6 +18,10 @@ import pg8000.native as pg  # noqa: E402
 
 MAINTENANCE_DB = "postgres"
 
+# Bundle público de las CA de RDS. El runtime de Lambda no lo trae;
+# backend/infra/scripts/fetch-rds-ca-bundle.sh lo deja junto al handler.
+CA_BUNDLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rds-ca-bundle.pem")
+
 _secrets_client = None
 
 
@@ -31,12 +35,14 @@ def _secret(arn):
 
 
 def _ssl_context():
-    # rds.force_ssl=1 obliga a TLS. La conexión es interna a la VPC, así que se cifra sin
-    # verificar la cadena (el bundle de RDS no viene en el runtime de Lambda).
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    return ctx
+    # Por esta conexión viajan la contraseña del usuario maestro y las de los roles nuevos:
+    # se verifican la cadena y el nombre del servidor aunque la red sea interna.
+    if not os.path.isfile(CA_BUNDLE):
+        raise RuntimeError(
+            "Falta rds-ca-bundle.pem junto al handler: corre "
+            "backend/infra/scripts/fetch-rds-ca-bundle.sh antes de empaquetar."
+        )
+    return ssl.create_default_context(cafile=CA_BUNDLE)
 
 
 def _connector(host, port, master):

@@ -8,6 +8,4 @@ export interface CachePort {
   setIfAbsent(key: string, value: string): Promise<boolean>;
   /** Removes a key if present. */
   delete(key: string): Promise<void>;
-  /** Increments a counter, creating it at 0 first when missing. The new key has no TTL. */
-  incr(key: string): Promise<number>;
 }

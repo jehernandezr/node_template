@@ -34,7 +34,7 @@ export class Secret {
   }
 }
 
-/** Indica si `value` es un `Secret`. */
+/** Tells whether `value` is a `Secret`. */
 export function isSecret(value: unknown): value is Secret {
   return value instanceof Secret;
 }

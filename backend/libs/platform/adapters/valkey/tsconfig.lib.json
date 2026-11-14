@@ -20,6 +20,9 @@
       "path": "../../kernel/tsconfig.lib.json"
     },
     {
+      "path": "../../config/tsconfig.lib.json"
+    },
+    {
       "path": "../../cache/tsconfig.lib.json"
     },
     {

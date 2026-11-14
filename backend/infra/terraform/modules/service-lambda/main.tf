@@ -11,7 +11,10 @@ locals {
   region      = data.aws_region.current.region
   log_group   = "/aws/lambda/${local.full_name}"
   create_key  = var.kms_key_arn == null
-  kms_key_arn = local.create_key ? aws_kms_key.this[0].arn : var.kms_key_arn
+  kms_key_arn = local.create_key ? module.kms[0].arn : var.kms_key_arn
+
+  # Versión mayor de Node con la que se compila y prueba el código (.nvmrc de la raíz).
+  node_major = split(".", trimspace(file("${path.module}/../../../../../.nvmrc")))[0]
 
   otel_env = var.otel_layer_arn == null ? {} : merge(
     {
@@ -46,59 +49,26 @@ resource "terraform_data" "input_check" {
       condition     = !var.vpc_enabled || (var.vpc_id != null && length(var.subnet_ids) > 0)
       error_message = "vpc_enabled requiere vpc_id y subnet_ids."
     }
+
+    # Un runtime de otra versión mayor puede romper en Lambda código que pasó tipos y pruebas.
+    precondition {
+      condition     = var.runtime == "nodejs${local.node_major}.x"
+      error_message = "runtime debe ser nodejs${local.node_major}.x, la versión mayor de .nvmrc."
+    }
   }
 }
 
 # --- KMS, logs y DLQ --------------------------------------------------------
 
-resource "aws_kms_key" "this" {
-  count = local.create_key ? 1 : 0
+module "kms" {
+  count  = local.create_key ? 1 : 0
+  source = "../kms-key"
 
-  description             = "Cifrado de ${local.full_name}: variables de entorno, logs y DLQ"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${local.region}.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"
-          }
-        }
-      },
-      {
-        Sid       = "AllowSqsUse"
-        Effect    = "Allow"
-        Principal = { Service = "sqs.amazonaws.com" }
-        Action    = ["kms:GenerateDataKey*", "kms:Decrypt"]
-        Resource  = "*"
-        Condition = { StringEquals = { "aws:SourceAccount" = local.account_id } }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  count = local.create_key ? 1 : 0
-
-  name          = "alias/${local.full_name}"
-  target_key_id = aws_kms_key.this[0].key_id
+  alias              = local.full_name
+  description        = "Cifrado de ${local.full_name}: variables de entorno, logs y DLQ"
+  log_group_arns     = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
+  service_principals = [{ sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] }]
+  tags               = var.tags
 }
 
 resource "aws_cloudwatch_log_group" "this" {
@@ -395,4 +365,14 @@ resource "aws_cloudwatch_metric_alarm" "async_dlq_not_empty" {
   alarm_actions = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
 
   tags = var.tags
+}
+
+moved {
+  from = aws_kms_key.this[0]
+  to   = module.kms[0].aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.this[0]
+  to   = module.kms[0].aws_kms_alias.this
 }

@@ -1,4 +1,4 @@
-import { JsonLogger, LogLevel } from './logger.js';
+import { JsonLogger, LogDestination, LogLevel } from './logger.js';
 import { isSensitiveKey, redact } from './redaction.js';
 import {
   ActorType,
@@ -24,8 +24,9 @@ function setup(
     level: options.level ?? LogLevel.Info,
     debugContexts: options.debugContexts,
     context: options.context,
+    destination: LogDestination.Stdout,
     sink: (line) => lines.push(JSON.parse(line) as Record<string, unknown>),
-    clock: () => FIXED_DATE,
+    clock: { now: () => FIXED_DATE },
   });
   return { logger, lines };
 }
@@ -60,7 +61,11 @@ describe('JsonLogger', () => {
   it('uses the default stdout sink with a trailing newline', () => {
     const spy = jest.spyOn(process.stdout, 'write').mockReturnValue(true);
     try {
-      new JsonLogger({ service: 'svc', level: LogLevel.Info }).info('hi');
+      new JsonLogger({
+        service: 'svc',
+        level: LogLevel.Info,
+        destination: LogDestination.Stdout,
+      }).info('hi');
 
       expect(spy).toHaveBeenCalledTimes(1);
       const written = spy.mock.calls[0][0] as string;
@@ -194,7 +199,7 @@ describe('JsonLogger', () => {
       }
     });
 
-    it('accepts a hyphenated UUIDv7 traceId and logs it as 32 hex (PLAT-03)', () => {
+    it('accepts a hyphenated UUIDv7 traceId and logs it as 32 hex', () => {
       const { logger, lines } = setup();
 
       expect(() =>

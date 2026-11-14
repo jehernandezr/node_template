@@ -6,49 +6,17 @@ data "aws_region" "current" {}
 
 locals {
   create_key  = var.kms_key_arn == null
-  kms_key_arn = local.create_key ? aws_kms_key.this[0].arn : var.kms_key_arn
+  kms_key_arn = local.create_key ? module.kms[0].arn : var.kms_key_arn
 }
 
-resource "aws_kms_key" "this" {
-  count = local.create_key ? 1 : 0
+module "kms" {
+  count  = local.create_key ? 1 : 0
+  source = "../kms-key"
 
-  description             = "Cifrado de logs de ECS Exec de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${data.aws_region.current.region}.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.name_prefix}/*"
-          }
-        }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  count = local.create_key ? 1 : 0
-
-  name          = "alias/${var.name_prefix}-ecs"
-  target_key_id = aws_kms_key.this[0].key_id
+  alias          = "${var.name_prefix}-ecs"
+  description    = "Cifrado de logs de ECS Exec de ${var.name_prefix}"
+  log_group_arns = ["arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.name_prefix}/*"]
+  tags           = var.tags
 }
 
 resource "aws_cloudwatch_log_group" "exec" {
@@ -95,4 +63,14 @@ resource "aws_ecs_cluster_capacity_providers" "this" {
       base              = default_capacity_provider_strategy.value.base
     }
   }
+}
+
+moved {
+  from = aws_kms_key.this[0]
+  to   = module.kms[0].aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.this[0]
+  to   = module.kms[0].aws_kms_alias.this
 }

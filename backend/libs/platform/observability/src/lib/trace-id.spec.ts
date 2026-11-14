@@ -51,7 +51,7 @@ describe('UUIDv7 to W3C trace id mapping', () => {
   });
 });
 
-describe('RangeError messages do not echo the input (PLAT-03)', () => {
+describe('RangeError messages do not echo the input', () => {
   const hostile = 'attacker-controlled-value';
 
   it('toDisplayTraceId', () => {
