@@ -71,7 +71,8 @@
         {
           "externalDependencies": ["typescript"]
         }
-      ]
+      ],
+      "dependsOn": ["build"]
     }
   }
 }
