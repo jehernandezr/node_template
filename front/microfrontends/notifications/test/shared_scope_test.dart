@@ -4,7 +4,7 @@ import 'package:mf_notifications/src/data/notifications_scope.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 void main() {
   testWidgets(

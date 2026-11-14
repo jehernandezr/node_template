@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/fakes.dart';
+import 'utils/fakes.dart';
 
 final _now = DateTime.utc(2026, 11, 12, 10);
 DateTime _clock() => _now;

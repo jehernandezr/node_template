@@ -3,8 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_account/mf_account.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/manifest_app.dart';
-import 'support/test_app.dart';
+import 'utils/manifest_app.dart';
+import 'utils/test_app.dart';
 
 /// Rutas completas de un árbol de [ScreenRoute], con los hijos relativos
 /// resueltos, y su regla de acceso propia.

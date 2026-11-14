@@ -12,7 +12,7 @@
 
 ## `pumpApp` y superficie
 
-Cada paquete con pruebas de widgets tiene un `test/support/pump.dart` como el de `ui` (tema, locale y delegados). Ninguna prueba arma su propio `MaterialApp`.
+Cada paquete con pruebas de widgets tiene un `test/utils/pump.dart` como el de `ui` (tema, locale y delegados). Ninguna prueba arma su propio `MaterialApp`.
 
 ```dart
 Future<void> pumpApp(

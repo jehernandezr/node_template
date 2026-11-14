@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 Set<String> _keys(String locale) => (jsonDecode(
   File('lib/src/l10n/app_$locale.arb').readAsStringSync(),

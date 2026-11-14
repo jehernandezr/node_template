@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 Set<String> _keysOf(String path) =>
     (jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>).keys

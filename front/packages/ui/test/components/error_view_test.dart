@@ -4,7 +4,7 @@ import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart';
 import 'package:ui/ui.dart';
 
-import '../support/pump.dart';
+import '../utils/pump.dart';
 
 void main() {
   testWidgets('shows message, selectable code and trace id', (tester) async {

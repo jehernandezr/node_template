@@ -13,7 +13,7 @@ paths:
 - Las pruebas van en el `test/` de cada paquete, con las mismas subcarpetas que `lib/src`. Ejemplo: `lib/src/flows/sign_in_flow.dart` se prueba en `test/flows/sign_in_flow_test.dart`.
 - No van dentro de `lib/`: Dart publicaría el código de prueba con el paquete, y `flutter_test` es una dependencia de desarrollo que `lib/` no puede importar.
 - Los dobles compartidos se exportan desde `lib/testing.dart` del paquete dueño del puerto (por ejemplo `package:auth/testing.dart`).
-- Utilidades de prueba de un paquete (`pumpApp`, `setSurface`) viven en `test/support/`, como en `packages/ui/test/support/pump.dart`.
+- Utilidades de prueba de un paquete (`pumpApp`, `setSurface`) viven en `test/utils/`, como en `packages/ui/test/utils/pump.dart`.
 
 ## Qué probar y dónde
 

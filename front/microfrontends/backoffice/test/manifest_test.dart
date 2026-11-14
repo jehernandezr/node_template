@@ -5,7 +5,7 @@ import 'package:mf_backoffice/mf_backoffice.dart';
 import 'package:mf_backoffice/src/shared/constants/backoffice_access.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/harness.dart';
+import 'utils/harness.dart';
 
 /// Full path and access rule of every screen, including nested children.
 Map<String, AccessRule?> _screens(

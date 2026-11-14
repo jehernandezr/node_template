@@ -38,6 +38,12 @@ class PathGuard {
         'El compilado de cada app va en backend/dist/<app>, nunca dentro de un proyecto (skill backend-estructura).',
     },
     {
+      test: (p) =>
+        /^front\/.+\/test\/(.+\/)?(support|testing|helpers)\//.test(p),
+      reason:
+        'Lo compartido por las pruebas de un paquete del front va en test/utils/ (skill front-pruebas).',
+    },
+    {
       test: (p) => /^front\/.+\/lib\/.+_test\.dart$/.test(p),
       reason:
         'Las pruebas del front van en el test/ del paquete, con las carpetas de lib/src (skill front-pruebas).',

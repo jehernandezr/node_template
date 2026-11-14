@@ -3,7 +3,7 @@ import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/screens.dart';
 import 'package:ui/ui.dart';
 
-import '../support/test_app.dart';
+import '../utils/test_app.dart';
 
 void main() {
   testWidgets('muestra cargando y luego pendientes y aceptados', (

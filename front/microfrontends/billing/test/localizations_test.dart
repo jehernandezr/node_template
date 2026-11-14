@@ -4,7 +4,7 @@ import 'package:mf_billing/src/data/fake_billing_repository.dart';
 import 'package:mf_billing/src/l10n/generated/billing_localizations.dart';
 import 'package:mf_billing/src/screens/invoices_screen.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 void main() {
   test('Spanish is the template and English is available', () {

@@ -64,6 +64,12 @@ class FrontStructureCheck {
   }
 
   checkFile(file) {
+    if (/^front\/.+\/test\/(.+\/)?(support|testing|helpers)\//.test(file)) {
+      this.add(
+        file,
+        'lo compartido por las pruebas de un paquete va en test/utils/',
+      );
+    }
     if (!file.endsWith('.dart')) return;
     const inLib = /\/lib\//.test(file);
     if (inLib && file.endsWith('_test.dart')) {

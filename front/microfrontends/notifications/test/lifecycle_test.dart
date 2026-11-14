@@ -6,7 +6,7 @@ import 'package:mf_notifications/mf_notifications.dart';
 import 'package:mf_notifications/src/data/notifications_scope.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 /// Scope con un repositorio sembrado. El lifecycle obtiene la misma instancia.
 FakeNotificationsRepository _seededRepo(

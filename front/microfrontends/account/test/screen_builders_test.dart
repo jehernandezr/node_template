@@ -6,7 +6,7 @@ import 'package:mf_account/src/data/account_repository.dart';
 import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/screen_builders.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 void main() {
   testWidgets('revocar una sesión en un scope no afecta a un scope nuevo', (

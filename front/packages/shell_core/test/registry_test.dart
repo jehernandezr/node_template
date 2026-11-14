@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/fakes.dart';
+import 'utils/fakes.dart';
 
 void main() {
   final anonymous = UserSession.anonymous();

@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_notifications/src/l10n/generated/notifications_localizations.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 AppNotification _item(String id, {bool read = false}) => AppNotification(
   id: id,

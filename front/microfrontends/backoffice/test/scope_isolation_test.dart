@@ -6,7 +6,7 @@ import 'package:mf_backoffice/src/shared/enums/backoffice_enums.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/harness.dart';
+import 'utils/harness.dart';
 
 final _es = lookupBackofficeLocalizations(const Locale('es'));
 

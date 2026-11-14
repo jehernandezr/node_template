@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/fakes.dart';
+import 'utils/fakes.dart';
 
 final class _Ping extends ShellEvent {
   const _Ping();

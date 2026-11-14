@@ -11,7 +11,7 @@ import 'package:mf_backoffice/src/shared/types/backoffice_types.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import 'support/harness.dart';
+import 'utils/harness.dart';
 
 final _es = lookupBackofficeLocalizations(const Locale('es'));
 final _en = lookupBackofficeLocalizations(const Locale('en'));
