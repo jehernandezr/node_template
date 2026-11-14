@@ -1,0 +1,121 @@
+# Stack de desarrollo local.
+#
+# Imágenes fijadas por tag y digest; Renovate (gestor docker-compose) propone las subidas.
+# Los puertos se publican solo en 127.0.0.1: nada queda expuesto a la red local.
+#
+# Uso: docker compose up -d --wait  (o backend/infra/scripts/local.sh up)
+# Guía completa: docs/local-development.md
+
+name: node-template-local
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/local/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U platform -d platform']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    # El bundle trae los módulos de Valkey (Bloom con BF.*, JSON, búsqueda) que usa la plataforma.
+    image: valkey/valkey-bundle:8.1.11@sha256:3f57cc71a102e0e66991ae203b069038d8c3f6214ca887ff32f9a381091af8de
+    ports:
+      - '127.0.0.1:6379:6379'
+    command: ['valkey-server', '--appendonly', 'yes']
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  localstack:
+    # 4.14.0 es la última versión 4.x. Las versiones con fecha (2026.x) pueden exigir
+    # LOCALSTACK_AUTH_TOKEN: valida el plan vigente antes de subir (docs/local-development.md).
+    image: localstack/localstack:4.14.0@sha256:3ebc37595918b8accb852f8048fef2aff047d465167edd655528065b07bc364a
+    environment:
+      SERVICES: sqs,sns,s3,s3control,kms,scheduler,ses,secretsmanager,sts,iam,cloudwatch,logs
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:-}
+      MESSAGING_NAME_PREFIX: ${MESSAGING_NAME_PREFIX:-local}
+    ports:
+      - '127.0.0.1:4566:4566'
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - ./infra/local/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+      - ./infra/local/localstack/topology.py:/etc/localstack/topology.py:ro
+      - ./infra/terraform/topology.json:/etc/localstack/topology.json:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fs http://localhost:4566/_localstack/init/ready | grep -q ''"completed": true'' || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -q -O /dev/null http://localhost:8025/readyz || exit 1',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  openobserve:
+    image: openobserve/openobserve:v1.1.2@sha256:4a154849432f75c4fb024de32fe34163c02406c905dab22bf8d213d2e3386392
+    environment:
+      # Solo para desarrollo local. No reutilizar en ningún otro entorno.
+      ZO_ROOT_USER_EMAIL: admin@local.test
+      ZO_ROOT_USER_PASSWORD: localdev123
+    ports:
+      - '127.0.0.1:5080:5080'
+    volumes:
+      - openobserve-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fs http://localhost:5080/healthz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # Collector entre los servicios y OpenObserve: tail sampling de trazas (todas las que
+  # tienen error y OTEL_SAMPLING_PERCENT del resto). Los servicios envían OTLP a :4318.
+  # La imagen no trae shell: compose solo espera a que el contenedor esté en ejecución.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.164.0@sha256:340c9ca6a36617084c6661bdc4f0fe92b7cda5a805d61673ec8db375fddc522b
+    command: ['--config=/etc/otelcol/config.yaml']
+    environment:
+      OPENOBSERVE_USER: admin@local.test
+      OPENOBSERVE_PASSWORD: localdev123
+      OTEL_SAMPLING_PERCENT: ${OTEL_SAMPLING_PERCENT:-10}
+    ports:
+      - '127.0.0.1:4317:4317'
+      - '127.0.0.1:4318:4318'
+    volumes:
+      - ./infra/local/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    depends_on:
+      openobserve:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  valkey-data:
+  localstack-data:
+  openobserve-data:

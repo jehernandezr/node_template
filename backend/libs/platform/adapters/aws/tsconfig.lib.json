@@ -1,0 +1,36 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../observability/tsconfig.lib.json"
+    },
+    {
+      "path": "../../messaging/tsconfig.lib.json"
+    },
+    {
+      "path": "../../config/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../contracts/platform/tsconfig.lib.json"
+    },
+    {
+      "path": "../../kernel/tsconfig.lib.json"
+    }
+  ],
+  "exclude": [
+    "jest.config.ts",
+    "jest.config.cjs",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/test/**"
+  ]
+}

@@ -13,7 +13,7 @@ Contracts and composition shared by the web and mobile Flutter shells.
 - `MicrofrontendRegistry`: holds manifests; answers visibility, menu and routes per platform.
 - `ShellRuntime`: follows the session. For each identity (userId + tenantId) it builds `ShellServices`, owns one `MicrofrontendScope` per microfrontend, clears replayable events and disposes lifecycles. Tears all of it down when the identity changes.
 - `MicrofrontendScope`: per-identity container of a microfrontend's objects. One instance per type.
-- `ShellServices` / `DefaultShellServices`: session, event bus, sign-out and shell extras for one identity.
+- `ShellServices` / `DefaultShellServices`: session, sign-out, step-up (`requestStepUp`) and shell extras for one identity. There is no event bus here: lifecycles emit with `ShellContext.emit` and screens with `MicrofrontendScope.emit`, which drop events once the identity rotates.
 - `buildShellRouter`: one `GoRouter` for all manifests, guarded by the first path segment.
 - `ShellEventBus` / `ShellContext` / `UnreadCountChanged`: typed events between microfrontends, which never import each other.
 - Navigation helpers: `MicrofrontendIdPath.fromPath`, `homeLocation`, `signOutAndGoToLogin`.
@@ -75,16 +75,16 @@ final registry = MicrofrontendRegistry()
 
 final session = ValueNotifier(UserSession.anonymous());
 
-// The factory runs once per identity. It reads the event bus from the runtime.
-late final ShellRuntime runtime;
-runtime = ShellRuntime(
+// The factory runs once per identity.
+final runtime = ShellRuntime(
   registry: registry,
   platform: AppPlatform.web,
   session: session,
   servicesFactory: (identity) => DefaultShellServices(
     session: identity,
-    eventBus: runtime.eventBus,
     onSignOut: () => authClient.signOut(),
+    // Opens the shell's /step-up page and completes with the answer.
+    onStepUp: () async => await router.push<bool>('/step-up') ?? false,
     extras: {AuthClient: authClient},
   ),
 );

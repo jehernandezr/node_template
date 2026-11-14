@@ -132,6 +132,18 @@ abstract class AssistantLocalizations {
   /// **'No pudimos cargar tus conversaciones.'**
   String get listError;
 
+  /// No description provided for @createError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos crear la conversación.'**
+  String get createError;
+
+  /// No description provided for @loadMessagesError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar la conversación.'**
+  String get loadMessagesError;
+
   /// No description provided for @genericError.
   ///
   /// In es, this message translates to:

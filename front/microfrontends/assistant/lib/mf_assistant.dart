@@ -1,37 +1,33 @@
 /// Microfrontend `assistant`: manifest consumed by the web and mobile shells.
 library;
 
-import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'src/presentation/assistant_screens.dart' deferred as screens;
+import 'src/screens/assistant_screens.dart' deferred as screens;
 
 /// Manifest registered by the shells. Routes live under `/assistant`.
+///
+/// This file imports nothing from `data/`, `screens/` or `l10n/` except
+/// through the deferred import, so the shell bundle stays small.
 final MicrofrontendManifest assistantManifest = MicrofrontendManifest(
   id: MicrofrontendId.assistant,
   platforms: {AppPlatform.web, AppPlatform.mobile},
   access: AccessRule.planFeature(PlanFeature.aiAssistant),
-  menu: const [MenuEntry(labelKey: 'menuAssistant', path: '/assistant', order: 40)],
-  routes: (load, scope) => [
-    GoRoute(
+  menu: const [
+    MenuEntry(labelKey: 'menuAssistant', path: '/assistant', order: 40),
+  ],
+  screens: [
+    ScreenRoute(
       path: '/assistant',
-      builder: (context, state) => load(
-        loadLibrary: screens.loadLibrary,
-        builder: () => screens.buildAssistantListScreen(scope()),
-        loading: const Center(child: CircularProgressIndicator()),
-      ),
+      loadLibrary: screens.loadLibrary,
+      builder: (scope, {params = const {}}) =>
+          screens.buildAssistantListScreen(scope),
       routes: [
-        GoRoute(
+        ScreenRoute(
           path: ':conversationId',
-          builder: (context, state) {
-            final conversationId = state.pathParameters['conversationId']!;
-            return load(
-              loadLibrary: screens.loadLibrary,
-              builder: () => screens.buildConversationScreen(scope(), conversationId),
-              loading: const Center(child: CircularProgressIndicator()),
-            );
-          },
+          loadLibrary: screens.loadLibrary,
+          builder: (scope, {params = const {}}) => screens
+              .buildConversationScreen(scope, params['conversationId'] ?? ''),
         ),
       ],
     ),

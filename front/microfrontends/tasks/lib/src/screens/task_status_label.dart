@@ -1,4 +1,4 @@
-import '../data/task.dart';
+import '../shared/enums/task_status.dart';
 import '../l10n/generated/tasks_localizations.dart';
 
 /// Label of a [TaskStatus] in the language of [l10n].

@@ -1,13 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mf_account/src/data/account_repository.dart';
+import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/screen_builders.dart';
 
 import 'support/test_app.dart';
 
 void main() {
-  testWidgets('revocar una sesión en un scope no afecta a un scope nuevo',
-      (tester) async {
+  testWidgets('revocar una sesión en un scope no afecta a un scope nuevo', (
+    tester,
+  ) async {
     final es = await loadEs();
     final scopeA = testScope();
     await tester.pumpWidget(testApp(buildAccountSessionsScreen(scopeA)));
@@ -24,8 +27,9 @@ void main() {
     expect(find.text('Safari en iPhone'), findsOneWidget);
   });
 
-  testWidgets('la pantalla reusa el repositorio del mismo scope',
-      (tester) async {
+  testWidgets('la pantalla reusa el repositorio del mismo scope', (
+    tester,
+  ) async {
     final es = await loadEs();
     final scope = testScope();
     await tester.pumpWidget(testApp(buildAccountSessionsScreen(scope)));
@@ -39,8 +43,9 @@ void main() {
     expect(find.text('Safari en iPhone'), findsNothing);
   });
 
-  testWidgets('cerrar sesión de la cuenta llama a services.signOut',
-      (tester) async {
+  testWidgets('cerrar sesión de la cuenta llama a services.signOut', (
+    tester,
+  ) async {
     final shared = await loadSharedEs();
     var signOuts = 0;
     final scope = testScope(onSignOut: () async => signOuts++);
@@ -50,5 +55,34 @@ void main() {
     await tester.tap(find.text(shared.actionSignOut));
     await tester.pumpAndSettle();
     expect(signOuts, 1);
+  });
+
+  testWidgets('cerrar el scope libera el repositorio', (tester) async {
+    final scope = testScope();
+    await tester.pumpWidget(testApp(buildAccountSessionsScreen(scope)));
+    await tester.pumpAndSettle();
+    final repository = scope.get<AccountRepository>(
+      (_) => throw StateError('el repositorio ya debería existir'),
+    );
+    expect((repository as FakeAccountRepository).isDisposed, isFalse);
+    await scope.dispose();
+    expect(repository.isDisposed, isTrue);
+  });
+
+  testWidgets('las acciones sensibles piden el step-up de los servicios', (
+    tester,
+  ) async {
+    final es = await loadEs();
+    final stepUp = RecordingStepUp(answer: false);
+    final scope = testScope(onStepUp: stepUp.call);
+    addTearDown(scope.dispose);
+    await tester.pumpWidget(testApp(buildAccountSessionsScreen(scope)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(es.sessionsCloseOthers));
+    await tester.pumpAndSettle();
+
+    expect(stepUp.calls, 1);
+    expect(find.text('Safari en iPhone'), findsOneWidget);
   });
 }

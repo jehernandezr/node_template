@@ -3,18 +3,9 @@ import 'dart:convert';
 
 import 'package:auth/auth.dart';
 
-import 'login_challenge.dart';
+import '../shared/types/login_challenge.dart';
+import '../shared/utils/verifier_codes.dart';
 import 'verifier_repository.dart';
-
-/// Turns a signature into an 8-digit code: the first four bytes as a big-endian
-/// number, modulo 10^8, left-padded with zeros.
-String codeFromSignature(List<int> signature) {
-  var value = 0;
-  for (final byte in signature.take(4)) {
-    value = (value << 8) | (byte & 0xff);
-  }
-  return (value % 100000000).toString().padLeft(8, '0');
-}
 
 /// In-memory [VerifierRepository] for development and tests.
 ///
@@ -62,7 +53,7 @@ final class FakeVerifierRepository implements VerifierRepository {
   }
 
   @override
-  void close() {
+  void dispose() {
     unawaited(_changes.close());
   }
 }

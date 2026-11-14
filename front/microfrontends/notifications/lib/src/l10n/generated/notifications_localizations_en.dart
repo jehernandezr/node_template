@@ -42,6 +42,9 @@ class NotificationsLocalizationsEn extends NotificationsLocalizations {
   String get saveError => 'We couldn\'t save your preferences.';
 
   @override
+  String get markReadError => 'We couldn\'t mark your notifications as read.';
+
+  @override
   String get typeHeader => 'Type';
 
   @override

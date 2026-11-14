@@ -1,43 +1,67 @@
 {
-  "extends": "./tsconfig.base.json",
+  "extends": "./backend/tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
   "references": [
     {
-      "path": "./libs/platform/kernel"
+      "path": "./backend/libs/platform/kernel"
     },
     {
-      "path": "./libs/platform/config"
+      "path": "./backend/libs/platform/config"
     },
     {
-      "path": "./libs/platform/observability"
+      "path": "./backend/libs/platform/observability"
     },
     {
-      "path": "./libs/contracts/platform"
+      "path": "./backend/libs/contracts/platform"
     },
     {
-      "path": "./libs/platform/sharding"
+      "path": "./backend/libs/platform/sharding"
     },
     {
-      "path": "./libs/platform/cache"
+      "path": "./backend/libs/platform/cache"
     },
     {
-      "path": "./libs/platform/bloom"
+      "path": "./backend/libs/platform/bloom"
     },
     {
-      "path": "./libs/platform/resilience"
+      "path": "./backend/libs/platform/resilience"
     },
     {
-      "path": "./libs/platform/criteria"
+      "path": "./backend/libs/platform/criteria"
     },
     {
-      "path": "./libs/platform/messaging"
+      "path": "./backend/libs/platform/messaging"
     },
     {
-      "path": "./libs/platform/internal-api"
+      "path": "./backend/libs/platform/internal-api"
     },
     {
-      "path": "./libs/platform/saga"
+      "path": "./backend/libs/platform/saga"
+    },
+    {
+      "path": "./backend/libs/platform/primitives"
+    },
+    {
+      "path": "./backend/libs/contracts/identity"
+    },
+    {
+      "path": "./backend/tools/contracts-export"
+    },
+    {
+      "path": "./backend/libs/shared/utils"
+    },
+    {
+      "path": "./backend/libs/platform/persistence"
+    },
+    {
+      "path": "./backend/libs/platform/adapters/valkey"
+    },
+    {
+      "path": "./backend/libs/platform/adapters/aws"
+    },
+    {
+      "path": "./backend/libs/platform/adapters/postgres"
     }
   ],
   "compilerOptions": {}

@@ -162,6 +162,12 @@ abstract class NotificationsLocalizations {
   /// **'No pudimos guardar tus preferencias.'**
   String get saveError;
 
+  /// No description provided for @markReadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos marcar tus notificaciones como leídas.'**
+  String get markReadError;
+
   /// No description provided for @typeHeader.
   ///
   /// In es, this message translates to:

@@ -13,7 +13,12 @@ abstract final class DemoSessions {
   static UserSession tenantAdmin() => UserSession(
     userId: 'demo-admin',
     tenantId: 'demo-tenant',
-    permissions: {Permission.tasksRead, Permission.tasksWrite, Permission.billingRead},
+    permissions: {
+      Permission.tasksRead,
+      Permission.tasksWrite,
+      Permission.billingRead,
+      Permission.billingWrite,
+    },
     planFeatures: {PlanFeature.aiAssistant, PlanFeature.billing},
   );
 

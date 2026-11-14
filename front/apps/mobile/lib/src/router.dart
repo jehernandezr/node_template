@@ -1,11 +1,16 @@
+import 'package:auth/auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
 import 'login/forbidden_page.dart';
 import 'login/login_page.dart';
+import 'login/step_up_page.dart';
 import 'screen_loader.dart';
 import 'shell/mobile_shell_scaffold.dart';
+
+/// Path of the page that asks for a recent second factor.
+const String stepUpPath = '/step-up';
 
 /// Builds the mobile router from the real [registry].
 ///
@@ -18,12 +23,15 @@ GoRouter buildMobileRouter({
   required ValueNotifier<UserSession> session,
   required ValueNotifier<int> unreadCount,
   required Future<void> Function() onSignOut,
+  required StepUpRequests stepUp,
+  IdentityConnection? connection,
 }) {
   return buildShellRouter(
     registry: registry,
     platform: AppPlatform.mobile,
     runtime: runtime,
     load: mobileScreenLoader,
+    stepUpPath: stepUpPath,
     routes: [
       GoRoute(
         path: '/',
@@ -37,11 +45,24 @@ GoRouter buildMobileRouter({
         builder: (context, state) => LoginPage(
           session: session,
           from: state.uri.queryParameters['from'],
+          connection: connection,
         ),
       ),
       GoRoute(
         path: '/forbidden',
         builder: (context, state) => ForbiddenPage(onSignOut: onSignOut),
+      ),
+      GoRoute(
+        path: stepUpPath,
+        redirect: (context, state) =>
+            session.value.isAuthenticated ? null : '/login',
+        builder: (context, state) => StepUpPage(
+          session: session,
+          from: state.uri.queryParameters['from'],
+          clock: runtime.clock,
+          onResult: stepUp.isRequest(state.extra) ? stepUp.complete : null,
+          connection: connection,
+        ),
       ),
     ],
     shellBuilder: (context, state, child) => MobileShellScaffold(

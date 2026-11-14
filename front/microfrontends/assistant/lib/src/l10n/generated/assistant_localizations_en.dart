@@ -27,6 +27,12 @@ class AssistantLocalizationsEn extends AssistantLocalizations {
   String get listError => 'We could not load your conversations.';
 
   @override
+  String get createError => 'We could not create the conversation.';
+
+  @override
+  String get loadMessagesError => 'We could not load the conversation.';
+
+  @override
   String get genericError => 'An unexpected error occurred.';
 
   @override

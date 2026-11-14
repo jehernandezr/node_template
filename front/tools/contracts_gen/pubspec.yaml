@@ -1,0 +1,20 @@
+name: contracts_gen
+description: Genera el Dart de packages/contracts desde backend/libs/contracts/*/export/contract.json.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+
+executables:
+  contracts_gen: contracts_gen
+
+dependencies:
+  dart_style: ^3.1.14
+  pub_semver: ^2.2.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.32.0
+
+resolution: workspace

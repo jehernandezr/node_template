@@ -1,0 +1,22 @@
+name: utils
+description: "Funciones puras del front que usan los tipos de contracts: montos, fechas e identificadores."
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  contracts:
+    path: ../contracts
+  flutter:
+    sdk: flutter
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+resolution: workspace

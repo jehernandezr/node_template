@@ -3,21 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:realtime/realtime.dart';
 
 RealtimeEvent event(String id, [String type = 'message']) => RealtimeEvent(
-      id: id,
-      type: type,
-      data: {'id': id},
-      receivedAt: DateTime.utc(2026, 11, 11),
-    );
+  id: id,
+  type: type,
+  data: {'id': id},
+  receivedAt: DateTime.utc(2026, 11, 11),
+);
 
 /// Espera lo suficiente para que pasen los backoff de prueba (1 a 4 ms).
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 50));
 
 RealtimeBackoff fastBackoff() => RealtimeBackoff(
-      initial: const Duration(milliseconds: 1),
-      max: const Duration(milliseconds: 4),
-      jitter: 0,
-      random: () => 0,
-    );
+  initial: const Duration(milliseconds: 1),
+  max: const Duration(milliseconds: 4),
+  jitter: 0,
+  random: () => 0,
+);
 
 void main() {
   test('reconnects after a drop passing the last event id', () async {
@@ -127,4 +127,66 @@ void main() {
     expect(chats, ['1', '3']);
     await client.dispose();
   });
+
+  test('a connect that throws is published on errors and retried', () async {
+    final transport = FakeRealtimeTransport()
+      ..connectError = StateError('handshake failed');
+    final client = RealtimeClient(transport, backoff: fastBackoff());
+    final errors = <RealtimeError>[];
+    client.errors.listen(errors.add);
+
+    client.start();
+    await settle();
+
+    expect(errors, isNotEmpty);
+    expect(errors.first.error, isA<StateError>());
+    expect(client.status, RealtimeStatus.reconnecting);
+    expect(transport.connectCount, greaterThan(1));
+
+    transport.connectError = null;
+    await settle();
+    expect(client.status, RealtimeStatus.connected);
+    await client.dispose();
+  });
+
+  test('a stream error is published on errors before reconnecting', () async {
+    final transport = FakeRealtimeTransport();
+    final client = RealtimeClient(transport, backoff: fastBackoff());
+    final errors = <Object>[];
+    client.errors.listen((e) => errors.add(e.error));
+
+    client.start();
+    await settle();
+    transport.failConnection(const FormatException('bad frame'));
+    await settle();
+
+    expect(errors, [isA<FormatException>()]);
+    expect(transport.connectCount, 2);
+    expect(client.status, RealtimeStatus.connected);
+    await client.dispose();
+  });
+
+  test(
+    'stays connecting until the transport opens or an event arrives',
+    () async {
+      final transport = FakeRealtimeTransport()..autoOpen = false;
+      final client = RealtimeClient(transport, backoff: fastBackoff());
+
+      client.start();
+      await settle();
+      expect(client.status, RealtimeStatus.connecting);
+
+      transport.open();
+      expect(client.status, RealtimeStatus.connected);
+
+      transport.dropConnection();
+      await settle();
+      expect(client.status, RealtimeStatus.reconnecting);
+
+      transport.emit(event('1'));
+      await settle();
+      expect(client.status, RealtimeStatus.connected);
+      await client.dispose();
+    },
+  );
 }

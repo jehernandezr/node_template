@@ -2,54 +2,74 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatDate;
 
-import '../account_format.dart';
-import '../data/account_models.dart';
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
-import '../widgets/account_widgets.dart';
-import '../widgets/step_up_dialog.dart';
+import '../shared/enums/account_enums.dart';
+import '../shared/types/account_types.dart';
+import '../shared/utils/account_paths.dart';
+import '../l10n/account_labels.dart';
+import 'widgets/account_widgets.dart';
+import 'widgets/step_up.dart';
 
 /// MFA, passkeys y códigos de recuperación. Las acciones sensibles piden MFA.
 class SecurityScreen extends StatefulWidget {
-  const SecurityScreen({super.key, required this.repository});
+  const SecurityScreen({
+    super.key,
+    required this.repository,
+    required this.requestStepUp,
+  });
 
   final AccountRepository repository;
+
+  /// Step-up del shell (`ShellServices.requestStepUp`) para las acciones
+  /// sensibles.
+  final StepUpRequest requestStepUp;
 
   @override
   State<SecurityScreen> createState() => _SecurityScreenState();
 }
 
 class _SecurityScreenState extends State<SecurityScreen> {
-  late Future<SecurityOverview> _overview = widget.repository.loadSecurity();
+  AsyncValue<SecurityOverview> _overview = const AsyncValue.loading();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final result = await AsyncValue.guard(widget.repository.loadSecurity);
+    if (!mounted) return;
+    setState(() => _overview = result);
+  }
 
   void _reload() {
-    setState(() {
-      _overview = widget.repository.loadSecurity();
-    });
+    setState(() => _overview = const AsyncValue.loading());
+    _load();
   }
 
   Future<void> _addPasskey() async {
+    final l10n = AccountLocalizations.of(context);
     final done = await runSensitiveAction(
       context,
-      widget.repository,
+      widget.requestStepUp,
       widget.repository.addPasskey,
-      success: AccountLocalizations.of(context).passkeyAdded,
+      success: () => l10n.passkeyAdded,
     );
     if (done && mounted) _reload();
   }
 
   Future<void> _regenerateCodes() async {
-    final verified = await confirmStepUp(context, widget.repository);
+    final l10n = AccountLocalizations.of(context);
+    final verified = await confirmStepUp(context, widget.requestStepUp);
     if (!verified || !mounted) return;
     List<String>? codes;
-    final done = await runAccountAction(
-      context,
-      () async {
-        codes = await widget.repository.regenerateRecoveryCodes();
-      },
-      success: AccountLocalizations.of(context).recoveryRegenerated,
-    );
+    final done = await runAccountAction(context, () async {
+      codes = await widget.repository.regenerateRecoveryCodes();
+    }, success: () => l10n.recoveryRegenerated);
     final created = codes;
     if (done && created != null && mounted) {
       _reload();
@@ -89,16 +109,14 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/account')),
-        title: Text(AccountLocalizations.of(context).securityTitle),
-      ),
+    return AppPage(
+      title: AccountLocalizations.of(context).securityTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
       body: PlatformScreen(
-        compact: (_) => AsyncView<SecurityOverview>(
-          future: _overview,
+        compact: (_) => AccountAsyncView<SecurityOverview>(
+          value: _overview,
           onRetry: _reload,
-          builder: (context, overview) => _buildBody(context, overview),
+          data: (overview) => _buildBody(context, overview),
         ),
       ),
     );
@@ -108,6 +126,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final theme = Theme.of(context);
     final l10n = AccountLocalizations.of(context);
     final mfa = overview.mfa;
+    final method = mfa.method;
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
@@ -119,7 +138,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 mfa.enabled
-                    ? l10n.mfaEnabled(mfa.method ?? '')
+                    ? l10n.mfaEnabled(
+                        method == null ? '' : mfaFactorLabel(l10n, method),
+                      )
                     : l10n.mfaDisabled,
               ),
             ],
@@ -155,7 +176,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(passkey.name),
                   subtitle: Text(
-                    l10n.createdOnLabel(formatDate(passkey.createdAt)),
+                    l10n.createdOnLabel(
+                      formatDate(passkey.createdAt, locale: localeTag(context)),
+                    ),
                   ),
                 ),
             ],

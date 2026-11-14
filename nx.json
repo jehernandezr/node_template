@@ -12,7 +12,10 @@
       "!{projectRoot}/.eslintrc.json",
       "!{projectRoot}/eslint.config.mjs"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": [
+      "{workspaceRoot}/.nvmrc",
+      "{workspaceRoot}/pnpm-lock.yaml"
+    ]
   },
   "plugins": [
     {
@@ -27,25 +30,49 @@
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
         }
-      }
+      },
+      "include": ["backend/**/*"]
     },
     {
       "plugin": "@nx/jest/plugin",
       "options": {
         "targetName": "test"
-      }
+      },
+      "include": ["backend/**/*"]
     },
     {
       "plugin": "@nx/eslint/plugin",
       "options": {
         "targetName": "lint"
-      }
-    }
+      },
+      "include": ["backend/**/*"],
+      "exclude": ["backend/eslint.config.mjs"]
+    },
+    "./front/tools/nx-plugin/index.cjs"
   ],
   "analytics": false,
   "targetDefaults": {
     "test": {
       "dependsOn": ["^build"]
+    },
+    "analyze": {
+      "cache": true
+    },
+    "format-check": {
+      "cache": true
+    },
+    "typecheck": {
+      "options": {
+        "command": "tsc -p tsconfig.lib.json --noEmit && tsc -p tsconfig.spec.json --noEmit"
+      },
+      "inputs": [
+        "default",
+        "^production",
+        {
+          "externalDependencies": ["typescript"]
+        }
+      ],
+      "dependsOn": ["build"]
     }
   }
 }

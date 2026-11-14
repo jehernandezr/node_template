@@ -2,12 +2,14 @@ import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatDate;
 
-import '../account_format.dart';
-import '../data/account_models.dart';
 import '../data/account_repository.dart';
 import '../l10n/generated/account_localizations.dart';
-import '../widgets/account_widgets.dart';
+import '../shared/enums/account_enums.dart';
+import '../shared/types/account_types.dart';
+import '../shared/utils/account_paths.dart';
+import 'widgets/account_widgets.dart';
 
 typedef _Agreements = ({List<Agreement> pending, List<Agreement> accepted});
 
@@ -22,18 +24,29 @@ class AgreementsScreen extends StatefulWidget {
 }
 
 class _AgreementsScreenState extends State<AgreementsScreen> {
-  late Future<_Agreements> _agreements = _load();
+  AsyncValue<_Agreements> _agreements = const AsyncValue.loading();
 
-  Future<_Agreements> _load() async {
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<_Agreements> _fetch() async {
     final pending = await widget.repository.listPendingAgreements();
     final accepted = await widget.repository.listAcceptedAgreements();
     return (pending: pending, accepted: accepted);
   }
 
+  Future<void> _load() async {
+    final result = await AsyncValue.guard(_fetch);
+    if (!mounted) return;
+    setState(() => _agreements = result);
+  }
+
   void _reload() {
-    setState(() {
-      _agreements = _load();
-    });
+    setState(() => _agreements = const AsyncValue.loading());
+    _load();
   }
 
   Future<void> _review(Agreement agreement) async {
@@ -62,23 +75,21 @@ class _AgreementsScreenState extends State<AgreementsScreen> {
     final done = await runAccountAction(
       context,
       () => widget.repository.acceptAgreement(agreement.id),
-      success: l10n.agreementAccepted,
+      success: () => l10n.agreementAccepted,
     );
     if (done && mounted) _reload();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/account')),
-        title: Text(AccountLocalizations.of(context).agreementsTitle),
-      ),
+    return AppPage(
+      title: AccountLocalizations.of(context).agreementsTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
       body: PlatformScreen(
-        compact: (_) => AsyncView<_Agreements>(
-          future: _agreements,
+        compact: (_) => AccountAsyncView<_Agreements>(
+          value: _agreements,
           onRetry: _reload,
-          builder: (context, data) => _buildBody(context, data),
+          data: (data) => _buildBody(context, data),
         ),
       ),
     );
@@ -136,7 +147,7 @@ class _AgreementsScreenState extends State<AgreementsScreen> {
     final grace = agreement.graceUntil;
     final base = '${l10n.versionLabel(agreement.version)} · $kind';
     if (grace == null) return base;
-    return '$base · ${l10n.deadlineLabel(formatDate(grace))}';
+    return '$base · ${l10n.deadlineLabel(formatDate(grace, locale: localeTag(context)))}';
   }
 
   String _acceptedDetail(BuildContext context, Agreement agreement) {
@@ -144,6 +155,6 @@ class _AgreementsScreenState extends State<AgreementsScreen> {
     final at = agreement.acceptedAt;
     final base = l10n.versionLabel(agreement.version);
     if (at == null) return base;
-    return '$base · ${l10n.acceptedOnLabel(formatDate(at))}';
+    return '$base · ${l10n.acceptedOnLabel(formatDate(at, locale: localeTag(context)))}';
   }
 }

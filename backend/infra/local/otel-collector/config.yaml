@@ -1,0 +1,61 @@
+# OpenTelemetry Collector local: recibe OTLP de los servicios y exporta a OpenObserve.
+# Las trazas pasan por tail sampling: se guardan todas las que tienen un error y un
+# porcentaje del resto (OTEL_SAMPLING_PERCENT). Logs y métricas pasan completos.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  basicauth/openobserve:
+    client_auth:
+      username: ${env:OPENOBSERVE_USER}
+      password: ${env:OPENOBSERVE_PASSWORD}
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    policies:
+      - name: errores
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: muestra
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: ${env:OTEL_SAMPLING_PERCENT:-10}
+  batch:
+    timeout: 5s
+
+exporters:
+  otlphttp/openobserve:
+    endpoint: http://openobserve:5080/api/default
+    auth:
+      authenticator: basicauth/openobserve
+
+service:
+  extensions: [health_check, basicauth/openobserve]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, tail_sampling, batch]
+      exporters: [otlphttp/openobserve]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/openobserve]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/openobserve]

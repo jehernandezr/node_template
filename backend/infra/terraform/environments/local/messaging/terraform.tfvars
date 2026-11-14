@@ -1,0 +1,5 @@
+region           = "us-east-1"
+environment      = "local"
+name_prefix      = "node-template-local"
+state_bucket     = "node-template-local-tfstate"
+aws_endpoint_url = "http://localhost:4566"

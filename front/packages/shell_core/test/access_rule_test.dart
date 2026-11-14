@@ -81,7 +81,7 @@ void main() {
       );
     });
 
-    test('all requires every nested rule and accepts an empty list', () {
+    test('all requires every nested rule', () {
       final rule = AccessRule.all([
         AccessRule.authenticated(),
         AccessRule.permissions([Permission.tasksRead]),
@@ -89,7 +89,6 @@ void main() {
       ]);
       expect(rule.allows(reader), isFalse);
       expect(rule.allows(full), isTrue);
-      expect(AccessRule.all([]).allows(UserSession.anonymous()), isTrue);
     });
 
     test('any requires at least one nested rule', () {
@@ -100,6 +99,11 @@ void main() {
       expect(rule.allows(reader), isFalse);
       expect(rule.allows(full), isTrue);
       expect(() => AccessRule.any([]), throwsA(isA<AssertionError>()));
+    });
+
+    test('all requires at least one nested rule', () {
+      // An empty list would allow everyone, anonymous visitors included.
+      expect(() => AccessRule.all([]), throwsA(isA<AssertionError>()));
     });
 
     test('rules combine: all of any', () {

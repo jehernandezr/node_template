@@ -2,11 +2,13 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';
+import '../l10n/backoffice_labels.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import '../labels.dart';
-import 'backoffice_page.dart';
+import '../shared/constants/backoffice_paths.dart';
+import '../shared/enums/backoffice_enums.dart';
+import '../shared/types/backoffice_types.dart';
+import 'widgets.dart';
 
 /// Saga list with a status filter. Sagas that need a person are highlighted.
 class SagasScreen extends StatefulWidget {
@@ -27,6 +29,8 @@ class _SagasScreenState extends State<SagasScreen> {
     _status = value;
     _sagas = widget.repository.listSagas(status: _status);
   });
+
+  void _reload() => _onStatusChanged(_status);
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +62,7 @@ class _SagasScreenState extends State<SagasScreen> {
           const SizedBox(height: AppSpacing.md),
           AsyncBody<List<Saga>>(
             future: _sagas,
+            onRetry: _reload,
             builder: (context, sagas) {
               if (sagas.isEmpty) {
                 return EmptyState(
@@ -67,9 +72,7 @@ class _SagasScreenState extends State<SagasScreen> {
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final saga in sagas) _SagaTile(saga: saga),
-                ],
+                children: [for (final saga in sagas) _SagaTile(saga: saga)],
               );
             },
           ),
@@ -94,12 +97,16 @@ class _SagaTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
-        key: highlight ? ValueKey('saga-highlight-${saga.id}') : ValueKey('saga-${saga.id}'),
-        color: highlight ? scheme.errorContainer : scheme.surfaceContainerHighest,
+        key: highlight
+            ? ValueKey('saga-highlight-${saga.id}')
+            : ValueKey('saga-${saga.id}'),
+        color: highlight
+            ? scheme.errorContainer
+            : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => context.go('/backoffice/sagas/${saga.id}'),
+          onTap: () => context.go(BackofficePaths.saga(saga.id)),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -114,7 +121,9 @@ class _SagaTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${saga.type} · ${saga.id}',
-                        style: textTheme.titleMedium?.copyWith(color: foreground),
+                        style: textTheme.titleMedium?.copyWith(
+                          color: foreground,
+                        ),
                       ),
                     ),
                   ],

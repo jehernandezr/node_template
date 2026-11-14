@@ -11,6 +11,7 @@
   "emptyMessage": "Aquí aparecerán los avisos de tu cuenta.",
   "loadError": "No pudimos cargar tus notificaciones.",
   "saveError": "No pudimos guardar tus preferencias.",
+  "markReadError": "No pudimos marcar tus notificaciones como leídas.",
 
   "typeHeader": "Tipo",
   "typeSecurityAlert": "Alertas de seguridad",

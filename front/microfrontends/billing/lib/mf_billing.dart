@@ -1,55 +1,44 @@
 /// Microfrontend `billing`: manifest consumed by the web and mobile shells.
 library;
 
-import 'package:go_router/go_router.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
+import 'src/shared/constants/billing_access.dart';
 import 'src/screens/billing_screens.dart' deferred as screens;
 
 /// Manifest registered by the shells. Routes live under `/billing`.
+///
+/// Everything in `src/data`, `src/screens` and `src/l10n` loads through the
+/// deferred `screens` import on the first visit.
 final MicrofrontendManifest billingManifest = MicrofrontendManifest(
   id: MicrofrontendId.billing,
   platforms: {AppPlatform.web},
-  access: AccessRule.permissions([Permission.billingRead]),
+  access: billingAccessRule,
   menu: const [MenuEntry(labelKey: 'menuBilling', path: '/billing', order: 50)],
-  routes: _routes,
-);
-
-List<RouteBase> _routes(
-  ScreenLoader load,
-  MicrofrontendScope Function() scope,
-) => [
-  GoRoute(
-    path: '/billing',
-    builder: (context, state) => load(
+  screens: [
+    ScreenRoute(
+      path: '/billing',
       loadLibrary: screens.loadLibrary,
-      builder: () => screens.buildBillingPlanPage(context, scope()),
-      loading: const Center(child: CircularProgressIndicator()),
-    ),
-    routes: [
-      GoRoute(
-        path: 'invoices',
-        builder: (context, state) => load(
+      builder: (scope, {params = const {}}) =>
+          screens.buildBillingPlanPage(scope),
+      routes: [
+        ScreenRoute(
+          path: 'invoices',
+          access: billingAccessRule,
           loadLibrary: screens.loadLibrary,
-          builder: () => screens.buildInvoicesPage(context, scope()),
-          loading: const Center(child: CircularProgressIndicator()),
-        ),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) => load(
+          builder: (scope, {params = const {}}) =>
+              screens.buildInvoicesPage(scope),
+          routes: [
+            ScreenRoute(
+              path: ':id',
+              access: billingAccessRule,
               loadLibrary: screens.loadLibrary,
-              builder: () => screens.buildInvoicePage(
-                context,
-                scope(),
-                state.pathParameters['id'] ?? '',
-              ),
-              loading: const Center(child: CircularProgressIndicator()),
+              builder: (scope, {params = const {}}) =>
+                  screens.buildInvoicePage(scope, params['id'] ?? ''),
             ),
-          ),
-        ],
-      ),
-    ],
-  ),
-];
+          ],
+        ),
+      ],
+    ),
+  ],
+);

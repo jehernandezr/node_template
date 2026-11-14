@@ -7,7 +7,9 @@ import 'package:shell_core/shell_core.dart';
 void main() {
   setUp(resetDeferredPageCache);
 
-  testWidgets('a failing load shows the localized error and retry recovers', (tester) async {
+  testWidgets('a failing load shows the localized error and retry recovers', (
+    tester,
+  ) async {
     var attempts = 0;
     Future<void> loadLibrary() async {
       attempts++;

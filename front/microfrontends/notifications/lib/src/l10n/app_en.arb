@@ -11,6 +11,7 @@
   "emptyMessage": "Account notices will appear here.",
   "loadError": "We couldn't load your notifications.",
   "saveError": "We couldn't save your preferences.",
+  "markReadError": "We couldn't mark your notifications as read.",
 
   "typeHeader": "Type",
   "typeSecurityAlert": "Security alerts",

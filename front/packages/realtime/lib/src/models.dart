@@ -19,3 +19,16 @@ final class RealtimeEvent {
   @override
   String toString() => 'RealtimeEvent($id, $type)';
 }
+
+/// Error del transporte que hizo caer o impidió abrir una conexión.
+///
+/// El cliente reconecta igual; este valor deja rastro para registrarlo.
+final class RealtimeError {
+  const RealtimeError(this.error, this.stackTrace);
+
+  final Object error;
+  final StackTrace stackTrace;
+
+  @override
+  String toString() => 'RealtimeError($error)';
+}

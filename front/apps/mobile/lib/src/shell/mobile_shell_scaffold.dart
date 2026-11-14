@@ -9,8 +9,9 @@ import 'menu_icons.dart';
 /// Most destinations shown in the bottom navigation. The rest go under "Más".
 const int maxPrimaryDestinations = 5;
 
-/// Shell around the microfrontend pages. Screens own their app bars; this
-/// scaffold only adds the navigation and the sign-out actions.
+/// Shell around the microfrontend pages. Screens own the only top bar
+/// ([AppPage]); this scaffold only adds the navigation and publishes the
+/// sign-out action through [ShellChrome].
 class MobileShellScaffold extends StatelessWidget {
   /// Creates the scaffold around [child], the page of the matched route.
   const MobileShellScaffold({
@@ -66,31 +67,18 @@ class MobileShellScaffold extends StatelessWidget {
             AdaptiveDestination(label: l10n.menuMore, icon: Icons.more_horiz),
         ];
 
-        if (destinations.length < 2) {
-          // The navigation needs two entries; with fewer, keep sign-out reachable.
-          return Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              actions: [_signOutButton(l10n)],
-            ),
-            body: child,
-          );
-        }
-
         var selected = primary.indexWhere((e) => location.startsWith(e.path));
         if (selected < 0 && overflow.any((e) => location.startsWith(e.path))) {
           selected = primary.length;
         }
         if (selected < 0) selected = 0;
 
-        return AdaptiveScaffold(
+        // No top bar here: each screen draws its own with AppPage, which shows
+        // the sign-out action that ShellChrome publishes on compact widths.
+        return ShellChrome(
           destinations: destinations,
           selectedIndex: selected,
-          compactActions: [_signOutButton(l10n)],
-          railTrailing: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _signOutButton(l10n),
-          ),
+          actions: [_signOutButton(l10n)],
           body: child,
           onSelected: (index) {
             if (index == primary.length && overflow.isNotEmpty) {
@@ -113,7 +101,11 @@ class MobileShellScaffold extends StatelessWidget {
   static MicrofrontendId? _idOf(MenuEntry entry) =>
       MicrofrontendIdPath.fromPath(entry.path);
 
-  void _showOverflow(BuildContext context, List<MenuEntry> overflow, AppLocalizations l10n) {
+  void _showOverflow(
+    BuildContext context,
+    List<MenuEntry> overflow,
+    AppLocalizations l10n,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(

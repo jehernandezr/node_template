@@ -1,0 +1,2 @@
+# JWT de ejemplo (no es una credencial) en la prueba del redactor de logs.
+04a391402791a7ea904be6efc7dc854179fc4e65:backend/libs/platform/observability/src/lib/redaction.spec.ts:jwt:83

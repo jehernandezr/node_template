@@ -14,7 +14,6 @@ void main() {
   setUp(() {
     services = DefaultShellServices(
       session: UserSession(userId: 'u1', tenantId: 't1'),
-      eventBus: ShellEventBus(),
     );
     scope = MicrofrontendScope(services);
   });
@@ -67,7 +66,6 @@ void main() {
       var signedOut = 0;
       final shell = DefaultShellServices(
         session: UserSession.anonymous(),
-        eventBus: ShellEventBus(),
         onSignOut: () async => signedOut++,
         extras: {_Client: _Client('extra')},
       );
@@ -77,4 +75,46 @@ void main() {
       expect(signedOut, 1);
     },
   );
+
+  test('emit publishes on the bus until the scope is disposed', () async {
+    final bus = ShellEventBus();
+    addTearDown(bus.dispose);
+    final scoped = MicrofrontendScope(services, eventBus: bus);
+    final received = <int>[];
+    final subscription = bus.on<UnreadCountChanged>().listen(
+      (event) => received.add(event.count),
+    );
+    addTearDown(subscription.cancel);
+
+    scoped.emit(const UnreadCountChanged(1));
+    await pumpEventQueue();
+    final disposing = scoped.dispose();
+    scoped.emit(const UnreadCountChanged(2));
+    await disposing;
+    await pumpEventQueue();
+
+    expect(received, [1]);
+  });
+
+  test('emit without a bus drops the event', () {
+    expect(() => scope.emit(const UnreadCountChanged(1)), returnsNormally);
+  });
+
+  test('requestStepUp runs onStepUp and is false without it', () async {
+    var asked = 0;
+    final shell = DefaultShellServices(
+      session: UserSession.anonymous(),
+      onStepUp: () async {
+        asked++;
+        return true;
+      },
+    );
+    expect(await shell.requestStepUp(), isTrue);
+    expect(asked, 1);
+    expect(
+      await DefaultShellServices(session: UserSession.anonymous())
+          .requestStepUp(),
+      isFalse,
+    );
+  });
 }

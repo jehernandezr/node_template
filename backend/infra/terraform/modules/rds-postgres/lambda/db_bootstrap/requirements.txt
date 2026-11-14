@@ -1,0 +1,10 @@
+# Dependencias de la Lambda de bootstrap, copiadas en vendor/ (Lambda solo carga /var/task).
+# boto3 viene en el runtime de Lambda y no se empaqueta.
+# tzdata (que pide python-dateutil 4) no se empaqueta: el handler no usa zonas horarias.
+# Para regenerar vendor/ desde esta carpeta, con Python 3.13 como el runtime:
+#   rm -rf vendor && pip install --no-deps --only-binary=:all: --target vendor -r requirements.txt
+# OSV-Scanner lee este archivo y Renovate (pip_requirements) propone las subidas.
+pg8000==1.31.6
+scramp==1.5.0
+asn1crypto==1.5.1
+python-dateutil==4.0.0

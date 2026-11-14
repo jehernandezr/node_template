@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mf_assistant/src/data/assistant_models.dart';
+import 'package:mf_assistant/src/shared/types/assistant_types.dart';
 import 'package:mf_assistant/src/data/assistant_repository.dart';
-import 'package:mf_assistant/src/presentation/assistant_chat_controller.dart';
+import 'package:mf_assistant/src/screens/assistant_chat_controller.dart';
 
 /// Repository whose answer stream is driven by the test.
 final class _ManualRepository implements AssistantRepository {
@@ -18,10 +18,14 @@ final class _ManualRepository implements AssistantRepository {
   Future<Conversation> createConversation() => throw UnimplementedError();
 
   @override
-  Future<List<ChatMessage>> loadMessages(String conversationId) async => const [];
+  Future<List<ChatMessage>> loadMessages(String conversationId) async =>
+      const [];
 
   @override
   Stream<AssistantChunk> ask(String conversationId, String message) => answer;
+
+  @override
+  void dispose() {}
 }
 
 void main() {
@@ -43,19 +47,25 @@ void main() {
     await source.close();
   });
 
-  test('dispose rejects a tool confirmation nobody can answer anymore', () async {
-    final source = StreamController<AssistantChunk>();
-    final request = ToolConfirmationRequest(toolName: 'crear_tarea', summary: 'Tarea');
-    final controller = AssistantChatController(
-      repository: _ManualRepository(source.stream),
-      conversationId: 'c1',
-    )..send('crear una tarea');
+  test(
+    'dispose rejects a tool confirmation nobody can answer anymore',
+    () async {
+      final source = StreamController<AssistantChunk>();
+      final request = ToolConfirmationRequest(
+        toolName: 'crear_tarea',
+        summary: 'Tarea',
+      );
+      final controller = AssistantChatController(
+        repository: _ManualRepository(source.stream),
+        conversationId: 'c1',
+      )..send('crear una tarea');
 
-    source.add(request);
-    await Future<void>.delayed(Duration.zero);
-    controller.dispose();
+      source.add(request);
+      await Future<void>.delayed(Duration.zero);
+      controller.dispose();
 
-    expect(await request.decision, isFalse);
-    await source.close();
-  });
+      expect(await request.decision, isFalse);
+      await source.close();
+    },
+  );
 }

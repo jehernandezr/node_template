@@ -14,6 +14,7 @@ workspace:
   - microfrontends/notifications
   - microfrontends/tasks
   - microfrontends/verifier
+  - packages/api
   - packages/auth
   - packages/contracts
   - packages/i18n
@@ -21,6 +22,10 @@ workspace:
   - packages/shell_core
   - packages/tokens
   - packages/ui
+  - packages/utils
+  - tools/contracts_gen
 
 dev_dependencies:
+  contracts_gen:
+    path: tools/contracts_gen
   flutter_lints: ^6.0.0

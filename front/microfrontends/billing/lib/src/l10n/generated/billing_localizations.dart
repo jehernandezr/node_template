@@ -144,6 +144,24 @@ abstract class BillingLocalizations {
   /// **'Uso del periodo'**
   String get usageTitle;
 
+  /// No description provided for @quotaUsers.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuarios'**
+  String get quotaUsers;
+
+  /// No description provided for @quotaApiCalls.
+  ///
+  /// In es, this message translates to:
+  /// **'Llamadas API'**
+  String get quotaApiCalls;
+
+  /// No description provided for @quotaStorageGb.
+  ///
+  /// In es, this message translates to:
+  /// **'Almacenamiento (GB)'**
+  String get quotaStorageGb;
+
   /// No description provided for @noQuotas.
   ///
   /// In es, this message translates to:
@@ -341,78 +359,6 @@ abstract class BillingLocalizations {
   /// In es, this message translates to:
   /// **'{start} a {end}'**
   String periodRange(String start, String end);
-
-  /// No description provided for @monthJan.
-  ///
-  /// In es, this message translates to:
-  /// **'ene'**
-  String get monthJan;
-
-  /// No description provided for @monthFeb.
-  ///
-  /// In es, this message translates to:
-  /// **'feb'**
-  String get monthFeb;
-
-  /// No description provided for @monthMar.
-  ///
-  /// In es, this message translates to:
-  /// **'mar'**
-  String get monthMar;
-
-  /// No description provided for @monthApr.
-  ///
-  /// In es, this message translates to:
-  /// **'abr'**
-  String get monthApr;
-
-  /// No description provided for @monthMay.
-  ///
-  /// In es, this message translates to:
-  /// **'may'**
-  String get monthMay;
-
-  /// No description provided for @monthJun.
-  ///
-  /// In es, this message translates to:
-  /// **'jun'**
-  String get monthJun;
-
-  /// No description provided for @monthJul.
-  ///
-  /// In es, this message translates to:
-  /// **'jul'**
-  String get monthJul;
-
-  /// No description provided for @monthAug.
-  ///
-  /// In es, this message translates to:
-  /// **'ago'**
-  String get monthAug;
-
-  /// No description provided for @monthSep.
-  ///
-  /// In es, this message translates to:
-  /// **'sep'**
-  String get monthSep;
-
-  /// No description provided for @monthOct.
-  ///
-  /// In es, this message translates to:
-  /// **'oct'**
-  String get monthOct;
-
-  /// No description provided for @monthNov.
-  ///
-  /// In es, this message translates to:
-  /// **'nov'**
-  String get monthNov;
-
-  /// No description provided for @monthDec.
-  ///
-  /// In es, this message translates to:
-  /// **'dic'**
-  String get monthDec;
 }
 
 class _BillingLocalizationsDelegate

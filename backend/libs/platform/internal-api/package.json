@@ -1,0 +1,38 @@
+{
+  "name": "@platform/internal-api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@node-template/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "name": "platform-internal-api",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
+  },
+  "dependencies": {
+    "@contracts/platform": "workspace:*",
+    "@opentelemetry/api": "1.10.0",
+    "@platform/kernel": "workspace:*",
+    "@platform/observability": "workspace:*",
+    "@platform/persistence": "workspace:*",
+    "@platform/primitives": "workspace:*",
+    "tslib": "^2.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@opentelemetry/context-async-hooks": "3.0.0"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@platform/adapters-postgres",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@node-template/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "name": "platform-adapters-postgres",
+    "tags": [
+      "type:platform",
+      "scope:platform"
+    ]
+  },
+  "dependencies": {
+    "@contracts/platform": "workspace:*",
+    "@platform/kernel": "workspace:*",
+    "@platform/messaging": "workspace:*",
+    "@platform/persistence": "workspace:*",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@platform/primitives": "workspace:*",
+    "@testcontainers/postgresql": "12.2.1",
+    "@types/pg": "^8.23.1",
+    "pg": "8.23.1",
+    "pg-mem": "3.0.14",
+    "testcontainers": "12.2.1"
+  }
+}

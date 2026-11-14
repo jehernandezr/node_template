@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mf_notifications/mf_notifications.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 
 import 'support/test_app.dart';
@@ -28,7 +27,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeNotificationsRepository();
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);
 
@@ -55,7 +54,7 @@ void main() {
 
   testWidgets('toggling a switch saves the new preference', (tester) async {
     final repo = FakeNotificationsRepository();
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);
     await tester.tap(find.byKey(const ValueKey('pref-taskUpdated-email')));
@@ -81,7 +80,7 @@ void main() {
   ) async {
     final repo = FakeNotificationsRepository()
       ..saveError = StateError('save failed');
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);
     await tester.tap(find.byKey(const ValueKey('pref-taskUpdated-email')));
@@ -103,7 +102,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeNotificationsRepository();
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);
 
@@ -117,7 +116,7 @@ void main() {
 
   testWidgets('shows quiet hours start and end', (tester) async {
     final repo = FakeNotificationsRepository();
-    addTearDown(repo.close);
+    addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);
 

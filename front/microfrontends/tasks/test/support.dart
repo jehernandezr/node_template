@@ -48,7 +48,6 @@ class _LoadedState extends State<_Loaded> {
 MicrofrontendScope newScope({String userId = 'user-1'}) => MicrofrontendScope(
   DefaultShellServices(
     session: UserSession(userId: userId, tenantId: 'tenant-1'),
-    eventBus: ShellEventBus(),
   ),
 );
 
@@ -59,24 +58,51 @@ MicrofrontendScope scopeWith(TasksRepository repository) {
   return scope;
 }
 
-/// App that runs the real manifest routes, starting at [location].
+/// Permissions of a user who can read and write tasks.
+const Set<Permission> readWrite = {Permission.tasksRead, Permission.tasksWrite};
+
+/// Permissions of a user who can only read tasks.
+const Set<Permission> readOnly = {Permission.tasksRead};
+
+/// Text of the stand-in for the shell's forbidden page.
+const String forbiddenText = 'forbidden-page';
+
+/// App that runs the real manifest routes, starting at [location], for a
+/// session holding [permissions]. Rejected requests land on a forbidden page.
 Widget tasksApp({
   required MicrofrontendScope scope,
   String location = '/tasks',
   Locale locale = const Locale('es'),
+  Set<Permission> permissions = readWrite,
 }) {
+  final session = ValueNotifier(
+    UserSession(
+      userId: 'user-1',
+      tenantId: 'tenant-1',
+      permissions: permissions,
+    ),
+  );
   final router = GoRouter(
     initialLocation: location,
-    routes: tasksManifest.routes(loadNow, () => scope),
-  );
-  return MaterialApp.router(
-    routerConfig: router,
-    locale: locale,
-    supportedLocales: supportedLocales,
-    localizationsDelegates: [
-      AppLocalizations.delegate,
-      ...GlobalMaterialLocalizations.delegates,
+    routes: [
+      ...tasksManifest.buildRoutes(loadNow, () => scope),
+      GoRoute(
+        path: '/forbidden',
+        builder: (context, state) => const Text(forbiddenText),
+      ),
     ],
+  );
+  return ShellAccessScope(
+    session: session,
+    child: MaterialApp.router(
+      routerConfig: router,
+      locale: locale,
+      supportedLocales: supportedLocales,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+    ),
   );
 }
 

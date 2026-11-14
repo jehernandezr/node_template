@@ -7,7 +7,8 @@ import '../navigation/shell_navigation.dart';
 import '../web_shell.dart';
 
 /// Frame around every microfrontend route: navigation built from the menu the
-/// session can see, with sign-out and the unread badge. Screens own their app bars.
+/// session can see, with sign-out and the unread badge. Screens own the only
+/// top bar ([AppPage]); the shell never draws one.
 class WebShellScaffold extends StatelessWidget {
   const WebShellScaffold({
     super.key,
@@ -30,37 +31,29 @@ class WebShellScaffold extends StatelessWidget {
       listenable: Listenable.merge([shell.session, shell.unreadCount]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
-        final entries = shell.registry.menuFor(shell.session.value, AppPlatform.web);
+        final entries = shell.registry.menuFor(
+          shell.session.value,
+          AppPlatform.web,
+        );
         final signOutButton = IconButton(
           tooltip: l10n.actionSignOut,
           icon: const Icon(Icons.logout),
           onPressed: () => shell.signOut(),
         );
 
-        if (entries.length < 2) {
-          // Every signed-in user sees at least account and notifications, so this
-          // only guards against an empty menu: it keeps sign-out reachable.
-          return Scaffold(
-            appBar: AppBar(automaticallyImplyLeading: false, actions: [signOutButton]),
-            body: child,
-          );
-        }
-
         final current = MicrofrontendIdPath.fromPath(location);
         final selected = entries.indexWhere(
           (entry) => MicrofrontendIdPath.fromPath(entry.path) == current,
         );
-        return AdaptiveScaffold(
+        // No top bar here: each screen draws its own with AppPage, and gets
+        // the sign-out action from ShellChrome where the rail is not shown.
+        return ShellChrome(
           selectedIndex: selected < 0 ? 0 : selected,
           onSelected: (index) => shell.router.go(entries[index].path),
           destinations: [
             for (final entry in entries) _destination(l10n, entry),
           ],
-          railTrailing: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: signOutButton,
-          ),
-          compactActions: [signOutButton],
+          actions: [signOutButton],
           body: child,
         );
       },
@@ -74,7 +67,9 @@ class WebShellScaffold extends StatelessWidget {
       label: menuLabel(l10n, entry.labelKey),
       icon: icons.outlined,
       selectedIcon: icons.filled,
-      badgeCount: id == MicrofrontendId.notifications ? shell.unreadCount.value : null,
+      badgeCount: id == MicrofrontendId.notifications
+          ? shell.unreadCount.value
+          : null,
     );
   }
 }

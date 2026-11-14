@@ -11,9 +11,9 @@ class RealtimeBackoff {
     this.multiplier = 2,
     this.jitter = 0.2,
     double Function()? random,
-  })  : assert(multiplier >= 1),
-        assert(jitter >= 0 && jitter <= 1),
-        _random = random ?? math.Random().nextDouble;
+  }) : assert(multiplier >= 1),
+       assert(jitter >= 0 && jitter <= 1),
+       _random = random ?? math.Random().nextDouble;
 
   final Duration initial;
   final Duration max;

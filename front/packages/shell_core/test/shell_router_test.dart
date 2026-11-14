@@ -22,13 +22,11 @@ List<MicrofrontendManifest> _manifests() => [
   fakeManifest(
     id: MicrofrontendId.tasks,
     access: AccessRule.permissions([Permission.tasksRead]),
-    routes: (_, _) => [
-      GoRoute(
-        path: '/tasks',
-        builder: (_, _) => const Text('tasks'),
-        routes: [
-          GoRoute(path: 'detail/:id', builder: (_, _) => const Text('detail')),
-        ],
+    screens: [
+      fakeScreen(
+        '/tasks',
+        'tasks',
+        routes: [fakeScreen('detail/:id', 'detail')],
       ),
     ],
   ),
@@ -45,36 +43,12 @@ List<MicrofrontendManifest> _manifests() => [
   fakeManifest(
     id: MicrofrontendId.notifications,
     access: AccessRule.authenticated(),
-    routes: (_, _) => [
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => shell,
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/notifications',
-                builder: (_, _) => const Text('inbox'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
+    screens: [fakeScreen('/notifications', 'inbox')],
   ),
   fakeManifest(
     id: MicrofrontendId.assistant,
     flag: FeatureFlag.newReports,
-    routes: (_, _) => [
-      ShellRoute(
-        builder: (context, state, child) => child,
-        routes: [
-          GoRoute(
-            path: '/assistant',
-            builder: (_, _) => const Text('assistant'),
-          ),
-        ],
-      ),
-    ],
+    screens: [fakeScreen('/assistant', 'assistant')],
   ),
 ];
 
@@ -166,7 +140,9 @@ void main() {
     expect(find.text('detail'), findsOneWidget);
   });
 
-  testWidgets('StatefulShellRoute is guarded by path', (tester) async {
+  testWidgets('a screen with an authenticated rule is guarded by path', (
+    tester,
+  ) async {
     final router = await _pump(
       tester,
       session: ValueNotifier(UserSession.anonymous()),
@@ -176,7 +152,7 @@ void main() {
     expect(_uri(router).queryParameters['from'], '/notifications');
   });
 
-  testWidgets('route inside a ShellRoute is guarded and needs the flag', (
+  testWidgets('a screen behind a feature flag is guarded and needs the flag', (
     tester,
   ) async {
     final session = ValueNotifier(_reader);

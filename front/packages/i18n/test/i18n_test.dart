@@ -6,9 +6,27 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:i18n/i18n.dart';
 
+/// Public error codes of every generated catalog in `packages/contracts`.
+///
+/// Reads the generated enums as text, so a new service is covered without
+/// this package depending on `contracts`.
+Set<String> _publicErrorCodes() {
+  final codes = <String>{};
+  final pattern = RegExp(r"'([A-Z0-9_.]+)',\s*httpStatus:");
+  final src = Directory('../contracts/lib/src');
+  for (final entity in src.listSync(recursive: true)) {
+    if (entity is! File || !entity.path.endsWith('_enums.dart')) continue;
+    for (final match in pattern.allMatches(entity.readAsStringSync())) {
+      codes.add(match.group(1)!);
+    }
+  }
+  return codes;
+}
+
 /// Keys of an ARB file, without the `@@locale` and `@key` metadata entries.
 Set<String> _messageKeys(String path) {
-  final json = jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
+  final json =
+      jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
   return json.keys.where((key) => !key.startsWith('@')).toSet();
 }
 
@@ -53,14 +71,26 @@ void main() {
     ];
     final es = _messageKeys('lib/l10n/app_es.arb');
     final en = _messageKeys('lib/l10n/app_en.arb');
-    final esJson = jsonDecode(File('lib/l10n/app_es.arb').readAsStringSync()) as Map<String, dynamic>;
-    final enJson = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync()) as Map<String, dynamic>;
+    final esJson = jsonDecode(
+      File('lib/l10n/app_es.arb').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final enJson = jsonDecode(
+      File('lib/l10n/app_en.arb').readAsStringSync(),
+    ) as Map<String, dynamic>;
 
     for (final key in keys) {
       expect(es, contains(key), reason: 'missing in app_es.arb: $key');
       expect(en, contains(key), reason: 'missing in app_en.arb: $key');
-      expect((esJson[key] as String).trim(), isNotEmpty, reason: 'empty es: $key');
-      expect((enJson[key] as String).trim(), isNotEmpty, reason: 'empty en: $key');
+      expect(
+        (esJson[key] as String).trim(),
+        isNotEmpty,
+        reason: 'empty es: $key',
+      );
+      expect(
+        (enJson[key] as String).trim(),
+        isNotEmpty,
+        reason: 'empty en: $key',
+      );
     }
   });
 
@@ -118,5 +148,25 @@ void main() {
       expect(errorMessage(es, 'TASKS.ITEM.LOCKED'), es.errorFallback);
       expect(errorMessage(en, ''), en.errorFallback);
     });
+  });
+
+  group('generated error catalogs', () {
+    final codes = _publicErrorCodes();
+
+    test('include the platform and identity services', () {
+      expect(codes, contains('PLATFORM.AUTH.FORBIDDEN'));
+      expect(codes, contains('IDENTITY.AUTH.INVALID_CREDENTIALS'));
+    });
+
+    for (final locale in const ['es', 'en']) {
+      test('every public code has its own message in $locale', () {
+        final l10n = lookupAppLocalizations(Locale(locale));
+        for (final code in codes) {
+          final message = errorMessage(l10n, code);
+          expect(message, isNotEmpty, reason: code);
+          expect(message, isNot(l10n.errorFallback), reason: code);
+        }
+      });
+    }
   });
 }

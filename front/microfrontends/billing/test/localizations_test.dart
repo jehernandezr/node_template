@@ -13,7 +13,10 @@ void main() {
 
     expect(es.billingPageTitle, 'Facturación');
     expect(en.billingPageTitle, 'Billing');
-    expect(es.periodRange('1 oct 2026', '31 oct 2026'), '1 oct 2026 a 31 oct 2026');
+    expect(
+      es.periodRange('1 oct 2026', '31 oct 2026'),
+      '1 oct 2026 a 31 oct 2026',
+    );
   });
 
   testWidgets('screen copy and dates come from BillingLocalizations (es)', (

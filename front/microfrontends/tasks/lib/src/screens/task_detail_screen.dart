@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:ui/ui.dart';
 
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
@@ -18,8 +19,10 @@ class TaskDetailScreen extends StatelessWidget {
   final String taskId;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(TasksLocalizations.of(context).detailTitle)),
+  Widget build(BuildContext context) => AppPage(
+    title: TasksLocalizations.of(context).detailTitle,
+    // A deep link has nothing to pop: go to the list.
+    onBack: () => context.go('/tasks'),
     body: TaskDetailView(
       repository: repository,
       taskId: taskId,

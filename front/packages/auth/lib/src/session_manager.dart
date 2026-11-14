@@ -3,8 +3,11 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:convert';
 
-import 'models.dart';
+import 'package:contracts/contracts.dart';
+
+import 'auth_errors.dart';
 import 'ports.dart';
 
 /// Estado observable de la sesión.
@@ -13,21 +16,20 @@ enum AuthState { signedOut, signedIn, refreshing }
 /// Fuente de tiempo inyectable para pruebas.
 typedef Clock = DateTime Function();
 
-/// Códigos que invalidan la sesión de forma definitiva cuando el refresh los devuelve.
-/// Son supuestos a partir de la sección "Identidad"; pueden sobreescribirse en el constructor.
-const defaultInvalidationCodes = <String>{
-  'IDENTITY.SESSION.REVOKED',
-  'IDENTITY.SESSION.REUSED',
-  'IDENTITY.TOKEN.REVOKED',
-  'IDENTITY.USER.SUSPENDED',
-  'IDENTITY.TENANT.SUSPENDED',
-};
-
-/// Código de [AuthException] cuando no hay sesión activa.
-const signedOutErrorCode = 'AUTH.SIGNED_OUT';
-
-/// Guarda los tokens, refresca el access token antes de que venza y cierra la
-/// sesión cuando el servidor la invalida.
+/// Mantiene la sesión: guarda el session token, refresca el access token antes
+/// de que venza y cierra la sesión cuando el servidor la invalida.
+///
+/// El access token vive solo en memoria. El [TokenStore] guarda únicamente el
+/// session token, y [restore] obtiene un access token nuevo con un refresh.
+///
+/// Habla con identity a través de [AuthRepository] con los tipos del
+/// contrato: [signIn], [requestMfaChallenge] y [verifyMfa] siguen el flujo de
+/// tres pasos del plan.
+///
+/// Un [logout] anula todo lo que esté en curso: un login, una verificación MFA
+/// o un refresh que termine después no reabre la sesión. Las escrituras y
+/// borrados del almacén se aplican en el orden en que se piden, así que el
+/// borrado de un logout siempre gana a una escritura que empezó antes.
 class SessionManager {
   SessionManager({
     required AuthRepository repository,
@@ -36,104 +38,245 @@ class SessionManager {
     Clock? clock,
     this.refreshLead = const Duration(minutes: 2),
     this.invalidationCodes = defaultInvalidationCodes,
-  })  : _repository = repository,
-        _store = tokenStore,
-        _deviceKeys = deviceKeys,
-        _clock = clock ?? DateTime.now;
+  }) : _repository = repository,
+       _store = tokenStore,
+       _deviceKeys = deviceKeys,
+       _clock = clock ?? DateTime.now;
 
   final AuthRepository _repository;
   final TokenStore _store;
   final DeviceKeyPort? _deviceKeys;
   final Clock _clock;
 
-  /// Antelación con la que se refresca el access token antes de [AuthTokens.accessExpiresAt].
+  /// Antelación con la que se refresca el access token antes de
+  /// [SessionTokens.accessExpiresAt].
   final Duration refreshLead;
 
-  /// Códigos de error del refresh que cierran la sesión.
-  final Set<String> invalidationCodes;
+  /// Códigos de identity que cierran la sesión cuando los devuelve el refresh
+  /// o, con [handleRejectedToken], cualquier ruta autenticada.
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` la cierra siempre que lo devuelve el
+  /// refresh.
+  final Set<IdentityErrorCode> invalidationCodes;
 
   final _states = StreamController<AuthState>.broadcast();
   AuthState _state = AuthState.signedOut;
-  AuthTokens? _tokens;
-  Future<AuthTokens>? _inFlightRefresh;
+  SessionTokens? _tokens;
+  String? _sessionToken;
+  Future<SessionTokens>? _inFlightRefresh;
 
-  /// Incrementa en cada cierre local para descartar refresh que terminen después de un logout.
+  /// Incrementa en cada cierre local para descartar operaciones que terminen
+  /// después de un logout.
   int _generation = 0;
 
+  /// Cola de operaciones sobre [_store], para aplicarlas en orden.
+  Future<void> _storeQueue = Future<void>.value();
+
   AuthState get state => _state;
+
+  /// Si [verifyMfa] puede registrar este dispositivo, porque hay un
+  /// [DeviceKeyPort].
+  bool get canRegisterDevice => _deviceKeys != null;
 
   /// Cambios de estado. Solo emite cuando el estado cambia.
   Stream<AuthState> get states => _states.stream;
 
-  /// Carga los tokens guardados al arrancar la app.
-  Future<void> restore() async {
-    final stored = await _store.read();
-    if (stored == null) return;
-    _tokens = stored;
-    _setState(AuthState.signedIn);
+  /// Recupera la sesión al arrancar la app con un refresh.
+  ///
+  /// Lee el session token guardado (en web, la cookie viaja sola) y pide un
+  /// access token nuevo. Devuelve true si la sesión quedó abierta y false si no
+  /// había sesión o el servidor la rechazó (un código de [invalidationCodes] o
+  /// `PLATFORM.AUTH.UNAUTHENTICATED`). Lanza los demás errores, como un fallo
+  /// de red; el session token se conserva para intentarlo de nuevo.
+  Future<bool> restore() async {
+    final generation = _generation;
+    final stored = await _serialized(_store.readSessionToken);
+    if (generation != _generation) return false;
+    if (stored == null && !_store.sessionInCookie) return false;
+    _sessionToken = stored;
+    try {
+      await _refresh();
+      return true;
+    } on SignedOutException {
+      return false;
+    } on ApiErrorException catch (error) {
+      if (_endsSession(error)) return false;
+      rethrow;
+    }
   }
 
-  /// Login con email y contraseña. Si el resultado es [LoginSucceeded], guarda la sesión.
-  Future<LoginResult> login(
-    String email,
-    String password, {
-    String? deviceId,
-  }) async {
-    final result = await _repository.login(email, password, deviceId: deviceId);
-    if (result is LoginSucceeded) await _adopt(result.tokens);
-    return result;
+  /// Primer paso del login: email y contraseña.
+  ///
+  /// Si la respuesta trae tokens, guarda la sesión. Si trae `PendingMfa`, el
+  /// siguiente paso es [requestMfaChallenge]. Lanza [SignedOutException] si
+  /// hubo un [logout] mientras tanto.
+  Future<SignInResponse> signIn(SignInRequest request) async {
+    final generation = _generation;
+    final response = await _repository.signIn(request);
+    await _adoptResponse(response, generation: generation);
+    return response;
   }
 
-  /// Verifica el desafío MFA. Con [registerDevice] envía la clave pública del dispositivo.
-  Future<LoginResult> verifyMfa(
-    String mfaToken,
-    MfaMethod method,
-    String code, {
+  /// Segundo paso: crea el desafío MFA de [mfaToken] con [method] y envía el
+  /// código. No cambia la sesión.
+  Future<MfaChallenge> requestMfaChallenge({
+    required String mfaToken,
+    required MfaFactor method,
+  }) => _repository.requestMfaChallenge(
+    MfaChallengeRequest(mfaToken: mfaToken, method: method),
+  );
+
+  /// Tercer paso: verifica [code] para el desafío [challengeId] y guarda la
+  /// sesión. Con [registerDevice] envía la clave pública del dispositivo en
+  /// base64url, como pide el contrato.
+  ///
+  /// Lanza [SignedOutException] si hubo un [logout] mientras tanto.
+  Future<SignInResponse> verifyMfa({
+    required String mfaToken,
+    required String challengeId,
+    required String code,
     bool registerDevice = false,
   }) async {
-    List<int>? publicKey;
+    final generation = _generation;
+    String? publicKey;
     if (registerDevice) {
       final keys = _deviceKeys;
       if (keys == null) {
         throw StateError('registerDevice requiere un DeviceKeyPort');
       }
-      publicKey = await keys.publicKey();
+      publicKey = base64Url.encode(await keys.publicKey()).replaceAll('=', '');
     }
-    final result = await _repository.verifyMfa(
-      mfaToken,
-      method,
-      code,
-      devicePublicKey: publicKey,
+    final response = await _repository.verifyMfa(
+      MfaVerifyRequest(
+        mfaToken: mfaToken,
+        challengeId: challengeId,
+        code: code,
+        devicePublicKey: publicKey,
+      ),
     );
-    if (result is LoginSucceeded) await _adopt(result.tokens);
-    return result;
+    await _adoptResponse(response, generation: generation);
+    return response;
   }
 
-  /// Devuelve un access token vigente. Refresca si vence dentro de [refreshLead].
+  /// Devuelve un access token vigente, o null si no hay sesión. Refresca si
+  /// vence dentro de [refreshLead].
   ///
-  /// Lanza [AuthException] si no hay sesión o si el refresh la invalida.
-  Future<String> accessToken() async {
+  /// Es el `accessToken` de `ApiClient`: sin sesión, el cliente responde
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` sin llamar a la red. Lanza
+  /// [ApiErrorException] si el refresh falla en el servidor (y cierra la
+  /// sesión si el código la invalida) y [SignedOutException] si un [logout]
+  /// llegó durante el refresh.
+  Future<String?> accessToken() async {
     final current = _tokens;
-    if (current == null) throw const AuthException(signedOutErrorCode);
+    if (current == null) return null;
     if (_clock().isBefore(current.accessExpiresAt.subtract(refreshLead))) {
       return current.accessToken;
     }
     return (await _refresh()).accessToken;
   }
 
-  /// Revoca la sesión en el servidor y borra los tokens locales, aunque el servidor falle.
+  /// Fuerza un refresh aunque el access token siga vigente, por ejemplo cuando
+  /// la API responde `IDENTITY.TOKEN.STALE_PERMISSIONS` (es el
+  /// `onStalePermissions` de `ApiClient`). Comparte el refresh en vuelo.
+  ///
+  /// Lanza [SignedOutException] si no hay sesión y [ApiErrorException] si el
+  /// refresh falla en el servidor.
+  Future<void> refresh() async {
+    if (_tokens == null) throw const SignedOutException();
+    await _refresh();
+  }
+
+  /// Revoca la sesión en el servidor y borra los tokens locales, aunque el
+  /// servidor falle.
+  ///
+  /// Envía el session token guardado (en web viaja la cookie). Sin session
+  /// token ni cookie no hay nada que revocar y solo se cierra la sesión local.
   Future<void> logout() async {
     try {
-      await _repository.logout();
+      // Se lee fuera de la cola del almacén: esperar detrás de una escritura
+      // pendiente dejaría que esa escritura abriera la sesión antes del cierre.
+      final sessionToken = _sessionToken ?? await _store.readSessionToken();
+      if (sessionToken != null || _store.sessionInCookie) {
+        await _repository.logout(sessionToken: sessionToken);
+      }
     } finally {
       await _clearLocal();
     }
   }
 
+  /// Primer paso del paso adicional (step-up) de la sesión abierta: devuelve
+  /// el `mfaToken` y los métodos que ofrece el servidor.
+  ///
+  /// Lanza [SignedOutException] sin sesión.
+  Future<PendingMfa> startStepUp() {
+    if (_tokens == null) throw const SignedOutException();
+    return _repository.startStepUp();
+  }
+
+  /// Segundo paso: crea el desafío del paso adicional con [method] y envía
+  /// el código. No cambia la sesión.
+  Future<MfaChallenge> requestStepUpChallenge({
+    required String mfaToken,
+    required MfaFactor method,
+  }) {
+    if (_tokens == null) throw const SignedOutException();
+    return _repository.requestStepUpChallenge(
+      MfaChallengeRequest(mfaToken: mfaToken, method: method),
+    );
+  }
+
+  /// Tercer paso: verifica [code] y adopta el access token nuevo, que lleva
+  /// el segundo factor recién verificado. Devuelve el resultado con el nuevo
+  /// `mfaVerifiedAt` de la sesión; el session token no cambia.
+  ///
+  /// Espera antes un refresh en vuelo, para que su token no reemplace después
+  /// al del paso adicional. Lanza [SignedOutException] sin sesión o si hubo un
+  /// [logout] mientras tanto.
+  Future<StepUpResult> verifyStepUp({
+    required String mfaToken,
+    required String challengeId,
+    required String code,
+  }) async {
+    if (_tokens == null) throw const SignedOutException();
+    final inFlight = _inFlightRefresh;
+    if (inFlight != null) {
+      await inFlight.then<void>((_) {}, onError: (Object _) {});
+    }
+    final generation = _generation;
+    if (_tokens == null) throw const SignedOutException();
+    final result = await _repository.verifyStepUp(
+      StepUpVerifyRequest(
+        mfaToken: mfaToken,
+        challengeId: challengeId,
+        code: code,
+      ),
+    );
+    await _adopt(result.tokens, generation: generation);
+    return result;
+  }
+
+  /// Cierra la sesión local cuando la API rechazó [accessToken] con un código
+  /// de [invalidationCodes] (sesión revocada, token revocado, usuario o tenant
+  /// suspendido) en cualquier ruta autenticada. Devuelve si la cerró.
+  ///
+  /// Solo actúa si [accessToken] sigue siendo el de la sesión: una respuesta
+  /// tardía a un token viejo no cierra una sesión nueva ni una ya refrescada.
+  Future<bool> handleRejectedToken({
+    required String accessToken,
+    required String code,
+  }) async {
+    final identity = IdentityErrorCode.fromCode(code);
+    if (identity == null || !invalidationCodes.contains(identity)) {
+      return false;
+    }
+    if (_tokens?.accessToken != accessToken) return false;
+    await _clearLocal();
+    return true;
+  }
+
   Future<void> dispose() => _states.close();
 
   /// Un solo refresh en vuelo: los llamados concurrentes reciben el mismo resultado.
-  Future<AuthTokens> _refresh() {
+  Future<SessionTokens> _refresh() {
     final inFlight = _inFlightRefresh;
     if (inFlight != null) return inFlight;
     final future = _doRefresh();
@@ -145,29 +288,65 @@ class SessionManager {
     return future;
   }
 
-  Future<AuthTokens> _doRefresh() async {
+  Future<SessionTokens> _doRefresh() async {
     final generation = _generation;
     _setState(AuthState.refreshing);
     try {
-      final fresh = await _repository.refresh();
-      if (generation != _generation) {
-        // Hubo logout mientras se refrescaba: no se reanima la sesión.
-        throw const AuthException(signedOutErrorCode);
-      }
-      await _adopt(fresh);
+      final fresh = await _repository.refresh(sessionToken: _sessionToken);
+      await _adopt(fresh, generation: generation);
       return fresh;
     } catch (error) {
-      if (error is AuthException && invalidationCodes.contains(error.code)) {
-        await _clearLocal();
-      } else {
-        _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
+      // Tras un logout el estado ya es signedOut y no se toca.
+      if (generation == _generation) {
+        if (error is ApiErrorException && _endsSession(error)) {
+          await _clearLocal();
+        } else {
+          _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
+        }
       }
       rethrow;
     }
   }
 
-  Future<void> _adopt(AuthTokens tokens) async {
-    await _store.write(tokens);
+  /// Si el servidor dice que la sesión ya no existe.
+  bool _endsSession(ApiErrorException error) {
+    final code = error.problem.code;
+    final identity = IdentityErrorCode.fromCode(code);
+    return (identity != null && invalidationCodes.contains(identity)) ||
+        PlatformErrorCode.fromCode(code) ==
+            PlatformErrorCode.authUnauthenticated;
+  }
+
+  /// Adopta los tokens de [response] cuando el login quedó completo.
+  Future<void> _adoptResponse(
+    SignInResponse response, {
+    required int generation,
+  }) async {
+    final tokens = response.tokens;
+    if (response.status == SignInStatus.authenticated && tokens != null) {
+      await _adopt(tokens, generation: generation);
+    }
+  }
+
+  /// Guarda el session token de [tokens] y abre la sesión, salvo que un
+  /// logout haya cambiado [_generation] desde [generation].
+  ///
+  /// La comprobación se repite después de escribir: si el logout llegó
+  /// mientras la escritura estaba pendiente, su borrado está detrás en la cola
+  /// del almacén y deja el almacén vacío, y aquí no se toca ni la memoria ni el
+  /// estado.
+  Future<void> _adopt(SessionTokens tokens, {required int generation}) async {
+    if (generation != _generation) {
+      throw const SignedOutException();
+    }
+    final sessionToken = tokens.sessionToken;
+    if (sessionToken != null) {
+      await _serialized(() => _store.writeSessionToken(sessionToken));
+      if (generation != _generation) {
+        throw const SignedOutException();
+      }
+      _sessionToken = sessionToken;
+    }
     _tokens = tokens;
     _setState(AuthState.signedIn);
   }
@@ -175,8 +354,17 @@ class SessionManager {
   Future<void> _clearLocal() async {
     _generation++;
     _tokens = null;
-    await _store.clear();
+    _sessionToken = null;
     _setState(AuthState.signedOut);
+    await _serialized(_store.clear);
+  }
+
+  /// Ejecuta [operation] sobre el almacén después de las ya pedidas.
+  Future<T> _serialized<T>(Future<T> Function() operation) {
+    final result = _storeQueue.then((_) => operation());
+    // La cola sigue aunque una operación falle; el error le llega a quien la pidió.
+    _storeQueue = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
   }
 
   void _setState(AuthState next) {

@@ -231,6 +231,78 @@ abstract class AppLocalizations {
   /// **'No tienes permiso para ver esta página.'**
   String get forbiddenMessage;
 
+  /// No description provided for @stepUpTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificación adicional'**
+  String get stepUpTitle;
+
+  /// No description provided for @stepUpMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección exige que confirmes tu identidad con un segundo factor.'**
+  String get stepUpMessage;
+
+  /// No description provided for @stepUpDemoVerify.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificar (demostración)'**
+  String get stepUpDemoVerify;
+
+  /// No description provided for @signInEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Email'**
+  String get signInEmail;
+
+  /// No description provided for @signInPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get signInPassword;
+
+  /// No description provided for @mfaChooseMethod.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige cómo quieres recibir el código de verificación.'**
+  String get mfaChooseMethod;
+
+  /// No description provided for @mfaMethodDeviceOtp.
+  ///
+  /// In es, this message translates to:
+  /// **'Código en tu dispositivo de confianza'**
+  String get mfaMethodDeviceOtp;
+
+  /// No description provided for @mfaMethodEmailOtp.
+  ///
+  /// In es, this message translates to:
+  /// **'Código por email'**
+  String get mfaMethodEmailOtp;
+
+  /// No description provided for @mfaMethodTotp.
+  ///
+  /// In es, this message translates to:
+  /// **'App de autenticación'**
+  String get mfaMethodTotp;
+
+  /// No description provided for @mfaMethodRecoveryCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de recuperación'**
+  String get mfaMethodRecoveryCode;
+
+  /// No description provided for @mfaCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de verificación'**
+  String get mfaCode;
+
+  /// No description provided for @mfaVerify.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificar'**
+  String get mfaVerify;
+
   /// No description provided for @goHome.
   ///
   /// In es, this message translates to:
@@ -386,6 +458,186 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Estamos actualizando tus datos. Intenta de nuevo en unos minutos.'**
   String get error_platform_sharding_tenant_migrating;
+
+  /// No description provided for @error_platform_validation_invalid_type.
+  ///
+  /// In es, this message translates to:
+  /// **'Un campo tiene un tipo de dato no válido.'**
+  String get error_platform_validation_invalid_type;
+
+  /// No description provided for @error_platform_validation_invalid_format.
+  ///
+  /// In es, this message translates to:
+  /// **'Un campo no tiene el formato esperado.'**
+  String get error_platform_validation_invalid_format;
+
+  /// No description provided for @error_platform_validation_invalid_enum.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige una de las opciones permitidas.'**
+  String get error_platform_validation_invalid_enum;
+
+  /// No description provided for @error_platform_validation_too_short.
+  ///
+  /// In es, this message translates to:
+  /// **'El valor es demasiado corto.'**
+  String get error_platform_validation_too_short;
+
+  /// No description provided for @error_platform_validation_too_long.
+  ///
+  /// In es, this message translates to:
+  /// **'El valor es demasiado largo.'**
+  String get error_platform_validation_too_long;
+
+  /// No description provided for @error_platform_validation_too_small.
+  ///
+  /// In es, this message translates to:
+  /// **'El valor es menor que el mínimo permitido.'**
+  String get error_platform_validation_too_small;
+
+  /// No description provided for @error_platform_validation_too_large.
+  ///
+  /// In es, this message translates to:
+  /// **'El valor es mayor que el máximo permitido.'**
+  String get error_platform_validation_too_large;
+
+  /// No description provided for @error_platform_validation_unknown_field.
+  ///
+  /// In es, this message translates to:
+  /// **'La solicitud incluye un dato que no se esperaba.'**
+  String get error_platform_validation_unknown_field;
+
+  /// No description provided for @error_platform_sharding_tenant_not_writable.
+  ///
+  /// In es, this message translates to:
+  /// **'Estamos haciendo mantenimiento. Por ahora solo puedes consultar.'**
+  String get error_platform_sharding_tenant_not_writable;
+
+  /// No description provided for @error_platform_criteria_unknown_field.
+  ///
+  /// In es, this message translates to:
+  /// **'No se puede filtrar ni ordenar por ese campo.'**
+  String get error_platform_criteria_unknown_field;
+
+  /// No description provided for @error_platform_criteria_invalid_value.
+  ///
+  /// In es, this message translates to:
+  /// **'La búsqueda tiene un valor no válido.'**
+  String get error_platform_criteria_invalid_value;
+
+  /// No description provided for @error_platform_criteria_invalid_limit.
+  ///
+  /// In es, this message translates to:
+  /// **'La cantidad de resultados por página no es válida.'**
+  String get error_platform_criteria_invalid_limit;
+
+  /// No description provided for @error_platform_resilience_circuit_open.
+  ///
+  /// In es, this message translates to:
+  /// **'Un servicio no está disponible por ahora. Intenta en unos minutos.'**
+  String get error_platform_resilience_circuit_open;
+
+  /// No description provided for @error_platform_resilience_timeout.
+  ///
+  /// In es, this message translates to:
+  /// **'La operación tardó demasiado. Intenta de nuevo.'**
+  String get error_platform_resilience_timeout;
+
+  /// No description provided for @error_platform_resilience_bulkhead_full.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay muchas operaciones en curso. Intenta en unos instantes.'**
+  String get error_platform_resilience_bulkhead_full;
+
+  /// No description provided for @error_platform_resilience_overloaded.
+  ///
+  /// In es, this message translates to:
+  /// **'El servicio está ocupado. Intenta en unos instantes.'**
+  String get error_platform_resilience_overloaded;
+
+  /// No description provided for @error_identity_auth_invalid_credentials.
+  ///
+  /// In es, this message translates to:
+  /// **'El email o la contraseña no son correctos.'**
+  String get error_identity_auth_invalid_credentials;
+
+  /// No description provided for @error_identity_mfa_token_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La verificación venció. Inicia sesión de nuevo.'**
+  String get error_identity_mfa_token_invalid;
+
+  /// No description provided for @error_identity_mfa_code_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'El código no es correcto.'**
+  String get error_identity_mfa_code_invalid;
+
+  /// No description provided for @error_identity_mfa_code_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'El código expiró. Solicita uno nuevo.'**
+  String get error_identity_mfa_code_expired;
+
+  /// No description provided for @error_identity_mfa_too_many_attempts.
+  ///
+  /// In es, this message translates to:
+  /// **'Agotaste los intentos. Solicita un código nuevo.'**
+  String get error_identity_mfa_too_many_attempts;
+
+  /// No description provided for @error_identity_mfa_step_up_required.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirma tu identidad para continuar.'**
+  String get error_identity_mfa_step_up_required;
+
+  /// No description provided for @error_identity_session_revoked.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu sesión se cerró. Inicia sesión de nuevo.'**
+  String get error_identity_session_revoked;
+
+  /// No description provided for @error_identity_token_stale_permissions.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus permisos cambiaron. Actualizando la sesión.'**
+  String get error_identity_token_stale_permissions;
+
+  /// No description provided for @error_identity_mfa_method_unavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese método de verificación no está disponible. Elige otro.'**
+  String get error_identity_mfa_method_unavailable;
+
+  /// No description provided for @error_identity_session_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu sesión venció. Inicia sesión de nuevo.'**
+  String get error_identity_session_expired;
+
+  /// No description provided for @error_identity_session_reused.
+  ///
+  /// In es, this message translates to:
+  /// **'Por seguridad cerramos tu sesión. Inicia sesión de nuevo.'**
+  String get error_identity_session_reused;
+
+  /// No description provided for @error_identity_token_revoked.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu acceso fue revocado. Inicia sesión de nuevo.'**
+  String get error_identity_token_revoked;
+
+  /// No description provided for @error_identity_user_suspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está suspendida. Contacta al soporte.'**
+  String get error_identity_user_suspended;
+
+  /// No description provided for @error_identity_tenant_suspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu organización está suspendida. Contacta al soporte.'**
+  String get error_identity_tenant_suspended;
 
   /// No description provided for @errorFallback.
   ///

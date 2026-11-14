@@ -188,39 +188,4 @@ void main() {
     await pump(400);
     expect(find.byKey(const Key('trailing')), findsNothing);
   });
-
-  testWidgets('compactActions show in a top bar on compact only', (
-    tester,
-  ) async {
-    final actions = [
-      IconButton(
-        key: const Key('sign-out'),
-        icon: const Icon(Icons.logout),
-        onPressed: () {},
-      ),
-    ];
-    Future<void> pump(double width) async {
-      setSurface(tester, width);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(),
-          home: AdaptiveScaffold(
-            destinations: _destinations,
-            selectedIndex: 0,
-            onSelected: (_) {},
-            body: const Text('BODY'),
-            compactActions: actions,
-          ),
-        ),
-      );
-    }
-
-    await pump(400);
-    expect(find.byType(AppBar), findsOneWidget);
-    expect(find.byKey(const Key('sign-out')), findsOneWidget);
-
-    await pump(800);
-    expect(find.byType(AppBar), findsNothing);
-    expect(find.byKey(const Key('sign-out')), findsNothing);
-  });
 }

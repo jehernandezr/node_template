@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
@@ -68,17 +69,46 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('network down'), findsOneWidget);
+      // The raw error never reaches the screen.
+      expect(find.textContaining('network down'), findsNothing);
       expect(find.text('screen'), findsNothing);
 
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.byIcon(Icons.refresh));
       await tester.pumpAndSettle();
 
       expect(attempts, 2);
       expect(find.text('screen'), findsOneWidget);
-      expect(find.textContaining('network down'), findsNothing);
     },
   );
+
+  testWidgets('the default error view uses the localized texts', (
+    tester,
+  ) async {
+    Future<void> loadLibrary() async => throw StateError('network down');
+
+    await tester.pumpWidget(
+      Localizations(
+        locale: const Locale('en'),
+        delegates: const [
+          AppLocalizations.delegate,
+          DefaultWidgetsLocalizations.delegate,
+        ],
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: deferredPage(
+            loadLibrary: loadLibrary,
+            builder: () => const Text('screen'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.text(l10n.errorFallback), findsOneWidget);
+    expect(find.text(l10n.actionRetry), findsOneWidget);
+    expect(find.textContaining('network down'), findsNothing);
+  });
 
   testWidgets('after a failed load and a reset, a new load runs', (
     tester,
@@ -100,7 +130,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(attempts, 1);
-    expect(find.textContaining('first try fails'), findsOneWidget);
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
 
     resetDeferredPageCache();
     await tester.pumpWidget(const SizedBox.shrink());

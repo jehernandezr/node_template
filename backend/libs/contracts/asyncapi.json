@@ -1,0 +1,68 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export desde los contratos. No editar: ejecuta pnpm nx run contracts-export:export.",
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Mensajería de la plataforma",
+    "version": "1.0.0",
+    "description": "Eventos y comandos entre servicios. Cada mensaje viaja en un sobre CloudEvents 1.0; el payload descrito aquí es el campo data. Los tópicos son SNS y las colas SQS."
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "identity-events": {
+      "address": "identity-events",
+      "description": "Tópico de identity. Eventos de identity: sesiones y tokens revocados. Cada servicio suscribe su propia cola.",
+      "messages": {
+        "identity.session.revoked.v1": {
+          "$ref": "#/components/messages/identity.session.revoked.v1"
+        },
+        "identity.tokens.revoked.v1": {
+          "$ref": "#/components/messages/identity.tokens.revoked.v1"
+        }
+      }
+    }
+  },
+  "operations": {
+    "identity-events.publish": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/identity-events" },
+      "summary": "identity publica sus eventos.",
+      "messages": [
+        {
+          "$ref": "#/channels/identity-events/messages/identity.session.revoked.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.tokens.revoked.v1"
+        }
+      ],
+      "x-producers": ["identity"]
+    }
+  },
+  "components": {
+    "messages": {
+      "identity.session.revoked.v1": {
+        "name": "identity.session.revoked.v1",
+        "title": "identity.session.revoked.v1",
+        "summary": "Se revocó una sesión. El gateway de tiempo real cierra sus conexiones.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/SessionRevokedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.tokens.revoked.v1": {
+        "name": "identity.tokens.revoked.v1",
+        "title": "identity.tokens.revoked.v1",
+        "summary": "Se revocaron los tokens de una sesión, un usuario o un tenant. Cada servicio actualiza su caché.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/TokensRevokedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      }
+    }
+  }
+}

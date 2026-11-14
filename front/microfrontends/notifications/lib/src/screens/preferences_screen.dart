@@ -1,19 +1,11 @@
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
-import '../data/notification_models.dart';
 import '../data/notifications_repository.dart';
-import '../data/notifications_scope.dart';
 import '../l10n/generated/notifications_localizations.dart';
 import '../l10n/notification_labels.dart';
-
-/// Builder que usa el manifiesto dentro de la página diferida.
-Widget buildPreferencesScreen(MicrofrontendScope scope) =>
-    NotificationsPreferencesScreen(
-      repository: notificationsRepositoryOf(scope),
-    );
+import '../shared/types/types.dart';
 
 /// Preferencias: matriz de tipos por canales y horario de silencio.
 class NotificationsPreferencesScreen extends StatefulWidget {
@@ -28,8 +20,7 @@ class NotificationsPreferencesScreen extends StatefulWidget {
 
 class _NotificationsPreferencesScreenState
     extends State<NotificationsPreferencesScreen> {
-  NotificationPreferences? _preferences;
-  Object? _error;
+  AsyncValue<NotificationPreferences> _preferences = const AsyncValue.loading();
 
   @override
   void initState() {
@@ -38,41 +29,30 @@ class _NotificationsPreferencesScreenState
   }
 
   Future<void> _load() async {
-    try {
-      final loaded = await widget.repository.fetchPreferences();
-      if (!mounted) return;
-      setState(() {
-        _preferences = loaded;
-        _error = null;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error);
-    }
+    final result = await AsyncValue.guard(widget.repository.fetchPreferences);
+    if (!mounted) return;
+    setState(() => _preferences = result);
   }
 
   void _retry() {
-    setState(() {
-      _error = null;
-      _preferences = null;
-    });
+    setState(() => _preferences = const AsyncValue.loading());
     _load();
   }
 
   /// Muestra [next] al instante. Si el guardado falla, vuelve a la versión
-  /// anterior y avisa con un SnackBar.
+  /// anterior y avisa con [showActionError].
   Future<void> _update(NotificationPreferences next) async {
     final previous = _preferences;
-    setState(() => _preferences = next);
+    setState(() => _preferences = AsyncValue.data(next));
     try {
       await widget.repository.savePreferences(next);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       setState(() => _preferences = previous);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(NotificationsLocalizations.of(context).saveError),
-        ),
+      showActionError(
+        context,
+        error,
+        message: NotificationsLocalizations.of(context).saveError,
       );
     }
   }
@@ -82,13 +62,13 @@ class _NotificationsPreferencesScreenState
     NotificationChannel channel,
     bool on,
   ) async {
-    final current = _preferences;
+    final current = _preferences.valueOrNull;
     if (current == null) return;
     await _update(current.withChannel(type, channel, on));
   }
 
   Future<void> _pickQuietTime({required bool start}) async {
-    final current = _preferences;
+    final current = _preferences.valueOrNull;
     if (current == null) return;
     final l10n = NotificationsLocalizations.of(context);
     final initial = start ? current.quietStart : current.quietEnd;
@@ -109,30 +89,26 @@ class _NotificationsPreferencesScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = NotificationsLocalizations.of(context);
-    final preferences = _preferences;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.preferencesTitle)),
-      body: _buildBody(context, l10n, preferences),
+    final common = AppLocalizations.of(context);
+    return AppPage(
+      title: l10n.preferencesTitle,
+      body: AsyncValueView<NotificationPreferences>(
+        value: _preferences,
+        errorMessage: l10n.loadError,
+        codeLabel: common.errorCodeLabel,
+        traceIdLabel: common.errorTraceIdLabel,
+        retryLabel: common.actionRetry,
+        onRetry: _retry,
+        data: (preferences) => _buildForm(context, l10n, preferences),
+      ),
     );
   }
 
-  Widget _buildBody(
+  Widget _buildForm(
     BuildContext context,
     NotificationsLocalizations l10n,
-    NotificationPreferences? preferences,
+    NotificationPreferences preferences,
   ) {
-    final error = _error;
-    if (error != null) {
-      return ErrorView.fromException(
-        error,
-        fallbackMessage: l10n.loadError,
-        codeLabel: AppLocalizations.of(context).errorCodeLabel,
-        traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
-        retryLabel: AppLocalizations.of(context).actionRetry,
-        onRetry: _retry,
-      );
-    }
-    if (preferences == null) return const LoadingView();
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),

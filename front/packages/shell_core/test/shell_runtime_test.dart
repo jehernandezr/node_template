@@ -32,6 +32,25 @@ class _Probe extends Microfrontend {
   }
 }
 
+/// Lifecycle that records the user of its scope and, with [gate], waits in
+/// `initialize` until the test releases it.
+class _Recorder extends Microfrontend {
+  _Recorder(this.name, this.log, {this.gate});
+
+  final String name;
+  final List<String> log;
+  final Completer<void>? gate;
+
+  @override
+  Future<void> initialize(ShellContext context) async {
+    log.add('init $name for ${context.scope?.services.session.userId}');
+    await gate?.future;
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 /// Object held in a scope; records whether its scope disposed it.
 final class _Repo {
   _Repo(this.owner);
@@ -65,14 +84,14 @@ void main() {
         fakeManifest(
           id: MicrofrontendId.tasks,
           access: AccessRule.permissions([Permission.tasksRead]),
-          lifecycle: tasksProbe,
+          lifecycleFactory: () => tasksProbe,
         ),
       )
       ..register(
         fakeManifest(
           id: MicrofrontendId.backoffice,
           access: AccessRule.permissions([Permission.backofficeAccess]),
-          lifecycle: _Probe('backoffice', log),
+          lifecycleFactory: () => _Probe('backoffice', log),
         ),
       );
     runtime = fakeRuntime(registry: registry, session: session);
@@ -278,5 +297,43 @@ void main() {
     await runtime.dispose();
     expect(repo.disposed, isTrue);
     expect(() => runtime.scopeFor(MicrofrontendId.tasks), throwsStateError);
+  });
+
+  test('an identity change during initialize does not start the rest of the '
+      'old list for the new identity', () async {
+    final initLog = <String>[];
+    final gate = Completer<void>();
+    final ordered = MicrofrontendRegistry()
+      ..register(
+        fakeManifest(
+          id: MicrofrontendId.account,
+          access: AccessRule.authenticated(),
+          lifecycleFactory: () => _Recorder('account', initLog, gate: gate),
+        ),
+      )
+      ..register(
+        fakeManifest(
+          id: MicrofrontendId.billing,
+          access: AccessRule.permissions([Permission.billingRead]),
+          lifecycleFactory: () => _Recorder('billing', initLog),
+        ),
+      );
+    final identity = ValueNotifier(
+      _user('a', 't1', permissions: {Permission.billingRead}),
+    );
+    final other = fakeRuntime(registry: ordered, session: identity);
+    addTearDown(other.dispose);
+
+    final starting = other.start();
+    await pumpEventQueue();
+    expect(initLog, ['init account for a']);
+
+    identity.value = _user('b', 't1');
+    gate.complete();
+    await starting;
+    await other.whenIdle();
+
+    expect(initLog, ['init account for a', 'init account for b']);
+    expect(other.activeIds, {MicrofrontendId.account});
   });
 }

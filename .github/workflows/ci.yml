@@ -14,24 +14,250 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  main:
+  changes:
+    name: Cambios
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      contracts: ${{ steps.filter.outputs.contracts }}
+      web: ${{ steps.filter.outputs.web }}
+      terraform: ${{ steps.filter.outputs.terraform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            # Todo lo que cambia el JSON exportado, la topología, AsyncAPI o el Dart generado.
+            contracts:
+              - 'backend/libs/contracts/**'
+              - 'backend/libs/platform/messaging/**'
+              - 'backend/tools/contracts-export/**'
+              - 'backend/infra/terraform/topology.json'
+              - 'pnpm-lock.yaml'
+              - '.prettierrc'
+              - 'front/packages/contracts/**'
+              - 'front/packages/i18n/lib/src/generated/**'
+              - 'front/pubspec.lock'
+              - 'front/tools/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'front/**'
+              - '.github/workflows/ci.yml'
+            terraform:
+              - 'backend/infra/**'
+              - '.github/workflows/ci.yml'
+
+  nx:
+    name: Nx affected (backend y front)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
       - run: pnpm install --frozen-lockfile
 
-      - uses: nrwl/nx-set-shas@v4
+      - run: flutter pub get
+        working-directory: front
 
-      - run: pnpm nx affected -t lint test typecheck build
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'front/pubspec.lock') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'front/pubspec.lock') }}-
+            nx-${{ runner.os }}-
+
+      - uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
+
+      - run: pnpm nx affected -t lint typecheck build analyze format-check
+
+      # Umbral mínimo de cobertura por proyecto del backend (plan, Calidad y seguridad; ADR 0020).
+      - name: Pruebas del backend con cobertura mínima
+        run: >-
+          pnpm nx affected -t test --exclude='tag:lang:dart' --coverage
+          --coverageReporters=text-summary
+          --coverageThreshold='{"global":{"lines":80,"statements":80,"functions":80,"branches":75}}'
+
+      - name: Pruebas del front
+        run: pnpm nx affected -t test --exclude='*,!tag:lang:dart'
 
       - run: pnpm nx format:check
+
+  contracts:
+    name: Contratos
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - run: pnpm install --frozen-lockfile
+
+      # check cubre contract.json, asyncapi.json y backend/infra/terraform/topology.json.
+      - name: Deriva del export de contratos y de la topología
+        run: pnpm nx run contracts-export:check
+
+      - name: Deriva del Dart generado
+        run: |
+          flutter pub get
+          dart run contracts_gen --check
+        working-directory: front
+
+  web-deferred:
+    name: Web diferido
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - run: flutter pub get
+        working-directory: front
+
+      - run: flutter build web --release --source-maps
+        working-directory: front/apps/web
+
+      - name: Comprobar que los microfrontends siguen diferidos
+        run: dart run ../../tools/check_deferred_chunks.dart
+        working-directory: front/apps/web
+
+  terraform:
+    name: Terraform
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend/infra/terraform
+    env:
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-plugin-cache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # setup-terraform no lee archivos de versión: se leen aquí, como con Flutter.
+      - name: Leer las versiones de Terraform y tflint
+        id: versions
+        run: |
+          echo "terraform=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
+          echo "tflint=v$(tr -d '[:space:]' < .tflint-version)" >> "$GITHUB_OUTPUT"
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ steps.versions.outputs.terraform }}
+          terraform_wrapper: false
+
+      - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+        with:
+          tflint_version: ${{ steps.versions.outputs.tflint }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - run: terraform fmt -check -recursive
+
+      - name: init, validate y terraform test (stacks y ejemplos)
+        run: node ../scripts/tf-validate.mjs
+
+      - name: Pruebas de las Lambdas y scripts en Python
+        run: |
+          python3 -B -I -m unittest discover -s modules/rds-postgres/lambda/db_bootstrap -v
+          python3 -B -I -m unittest discover -s ../local/localstack -v
+
+      - name: shellcheck de los scripts de infraestructura
+        run: shellcheck ../scripts/*.sh ../local/localstack/*.sh
+
+      - name: tflint
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          tflint --init --config "$PWD/.tflint.hcl"
+          tflint --recursive --config "$PWD/.tflint.hcl" --minimum-failure-severity=error
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      - changes
+      - nx
+      - contracts
+      - web-deferred
+      - terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Comprobar el resultado de los jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Resultados: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::Hay jobs fallidos o cancelados."
+              exit 1
+            fi
+          done

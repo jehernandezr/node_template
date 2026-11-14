@@ -1,10 +1,17 @@
-import 'backoffice_models.dart';
+import 'package:shell_core/shell_core.dart';
+
+import '../shared/enums/backoffice_enums.dart';
+import '../shared/types/backoffice_types.dart';
 
 /// Read and write access to the platform data the backoffice shows.
 ///
-/// Screens depend only on this contract. The real implementation calls the
-/// internal API of the BFF; [FakeBackofficeRepository] keeps data in memory.
-abstract interface class BackofficeRepository {
+/// Screens depend only on this contract. `FakeBackofficeRepository` keeps the
+/// data in memory. The real implementation will call the internal API with
+/// `ApiClient` once `package:contracts` publishes the backoffice operations.
+///
+/// One instance per identity: the [MicrofrontendScope] creates it and calls
+/// [dispose] when the identity changes.
+abstract interface class BackofficeRepository implements ScopedResource {
   /// Counts for the overview cards.
   Future<BackofficeOverview> overview();
 

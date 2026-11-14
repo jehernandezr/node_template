@@ -1,0 +1,62 @@
+{
+  "formatVersion": 1,
+  "topics": [
+    {
+      "name": "identity-events",
+      "fifo": false,
+      "owner": "identity",
+      "producers": ["identity"]
+    }
+  ],
+  "queues": [
+    {
+      "name": "notifications-identity-events",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 60,
+      "maxAttempts": 6,
+      "consumer": "notifications",
+      "producers": [],
+      "dlq": {
+        "name": "notifications-identity-events-dlq",
+        "maxReceiveCount": 6,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "identity-events",
+          "filterTypes": ["identity.user.registered.v1"]
+        }
+      ]
+    },
+    {
+      "name": "reports-commands",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 300,
+      "maxAttempts": 3,
+      "consumer": "reports",
+      "producers": ["identity", "tasks"],
+      "dlq": {
+        "name": "reports-commands-dlq",
+        "maxReceiveCount": 3,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": []
+    }
+  ],
+  "routes": [
+    {
+      "type": "identity.user.registered.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "reports.report.generate.v1",
+      "kind": "command",
+      "target": "reports-commands",
+      "targetKind": "queue",
+      "owner": "reports"
+    }
+  ]
+}

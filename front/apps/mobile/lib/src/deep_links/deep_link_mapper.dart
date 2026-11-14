@@ -36,7 +36,11 @@ final class DeepLinkMapper {
     if (uri.scheme == 'https' && uri.host == webHost) {
       final segments = uri.pathSegments;
       if (segments.isEmpty) return null;
-      return _route(segments.first, segments.skip(1).toList(), uri.queryParameters);
+      return _route(
+        segments.first,
+        segments.skip(1).toList(),
+        uri.queryParameters,
+      );
     }
     return null;
   }
@@ -47,7 +51,10 @@ final class DeepLinkMapper {
         if (rest.isNotEmpty) return null;
         final challenge = query['challenge'];
         if (challenge == null || !_idPattern.hasMatch(challenge)) return null;
-        return Uri(path: '/verifier', queryParameters: {'challenge': challenge}).toString();
+        return Uri(
+          path: '/verifier',
+          queryParameters: {'challenge': challenge},
+        ).toString();
       case 'tasks':
         if (rest.length != 1) return null;
         final id = rest.first;

@@ -44,11 +44,19 @@ abstract interface class MicrofrontendDescriptor {
 /// [ShellRuntime] calls [initialize] when the microfrontend becomes visible to
 /// the current user, and [dispose] before it stops being visible or the user
 /// or tenant changes.
+///
+/// Declare it in the manifest with `lifecycleFactory`: the runtime then builds
+/// a new instance for every activation, so no state is shared between
+/// identities or between runtimes. Publish events with [ShellContext.emit], so
+/// an event sent after the identity changed is dropped.
 abstract class Microfrontend {
   /// Creates a lifecycle object. Subclasses may be const.
   const Microfrontend();
 
   /// Starts the microfrontend for the current session. Default: no-op.
+  ///
+  /// If it throws, the runtime disposes it and retries on a later sync, after
+  /// a backoff (see `ShellRuntime.lifecycleRetryDelay`).
   Future<void> initialize(ShellContext context) async {}
 
   /// Releases resources. Default: no-op.
@@ -57,13 +65,28 @@ abstract class Microfrontend {
 
 /// Visibility rules shared by the registry and the router.
 extension MicrofrontendVisibility on MicrofrontendDescriptor {
-  /// Whether [session] may see this microfrontend on [platform].
+  /// Whether [session] may see this microfrontend on [platform] at [now]
+  /// (default: the current time).
   ///
   /// Requires the platform to be supported, [access] to allow the session and,
   /// when [flag] is set, the session to hold that flag.
-  bool isVisibleTo(UserSession session, AppPlatform platform) {
+  bool isVisibleTo(
+    UserSession session,
+    AppPlatform platform, {
+    DateTime? now,
+  }) => _isAvailable(session, platform) && access.allows(session, now: now);
+
+  /// Like [isVisibleTo], but an MFA rule counts as passed for a signed-in
+  /// session. Menus use it so the user can open a section and step up there.
+  bool isReachableBy(
+    UserSession session,
+    AppPlatform platform, {
+    DateTime? now,
+  }) =>
+      _isAvailable(session, platform) && access.reachableBy(session, now: now);
+
+  bool _isAvailable(UserSession session, AppPlatform platform) {
     if (!platforms.contains(platform)) return false;
-    if (!access.allows(session)) return false;
     final requiredFlag = flag;
     return requiredFlag == null || session.featureFlags.contains(requiredFlag);
   }

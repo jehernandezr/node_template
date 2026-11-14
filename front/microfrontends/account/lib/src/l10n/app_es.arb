@@ -57,12 +57,6 @@
     }
   },
 
-  "stepUpTitle": "Confirma tu identidad",
-  "stepUpMessage": "Esta acción es sensible. Ingresa el código de tu app de autenticación para continuar.",
-  "stepUpCodeLabel": "Código de 6 dígitos",
-  "stepUpIncomplete": "Ingresa los 6 dígitos del código.",
-  "stepUpInvalid": "El código no es válido. Intenta de nuevo.",
-
   "sessionsTitle": "Sesiones activas",
   "sessionCurrent": "Actual",
   "sessionClose": "Cerrar sesión",
@@ -114,5 +108,18 @@
   "reviewNotice": "Al aceptar confirmas que revisaste este documento.",
   "agreementAccepted": "Acuerdo aceptado.",
   "pendingEmptyTitle": "No tienes acuerdos pendientes",
-  "acceptedEmptyMessage": "Todavía no has aceptado acuerdos."
+  "acceptedEmptyMessage": "Todavía no has aceptado acuerdos.",
+
+  "platformIos": "iOS",
+  "platformAndroid": "Android",
+  "platformWeb": "Web",
+  "platformMacos": "macOS",
+  "platformWindows": "Windows",
+  "platformLinux": "Linux",
+
+  "factorDeviceOtp": "Dispositivo verificador",
+  "factorEmailOtp": "Código por correo",
+  "factorTotp": "App de autenticación",
+  "factorRecoveryCode": "Código de recuperación",
+  "factorPasskey": "Passkey"
 }

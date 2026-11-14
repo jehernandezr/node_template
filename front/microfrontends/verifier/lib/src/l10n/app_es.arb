@@ -2,6 +2,7 @@
   "@@locale": "es",
 
   "title": "Verificador",
+  "loadError": "No pudimos cargar el verificador. Inténtalo de nuevo.",
   "readyTitle": "Este dispositivo está listo",
   "readyMessage": "Cuando alguien intente iniciar sesión con tu cuenta desde otro dispositivo, aquí verás el código para aprobarlo.",
   "codeTitle": "Código de verificación",

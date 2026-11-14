@@ -1,13 +1,26 @@
-import 'account_models.dart';
+import 'package:contracts/contracts.dart';
+
+import '../shared/types/account_types.dart';
 import 'account_repository.dart';
+
+const List<String> _sessionIds = [
+  '0193f1c2-0000-7000-8000-000000000001',
+  '0193f1c2-0000-7000-8000-000000000002',
+  '0193f1c2-0000-7000-8000-000000000003',
+];
+
+const List<String> _deviceIds = [
+  '0193f1c2-0000-7000-8000-0000000000d1',
+  '0193f1c2-0000-7000-8000-0000000000d2',
+];
 
 /// Repositorio en memoria con datos de ejemplo y una demora artificial.
 class FakeAccountRepository implements AccountRepository {
   FakeAccountRepository({
     this.delay = const Duration(milliseconds: 400),
     AccountProfile? profile,
-    List<AppSession>? sessions,
-    List<TrustedDevice>? devices,
+    List<SessionSummary>? sessions,
+    List<DeviceSummary>? devices,
     MfaStatus? mfa,
     List<Passkey>? passkeys,
     List<Agreement>? pendingAgreements,
@@ -15,22 +28,33 @@ class FakeAccountRepository implements AccountRepository {
   }) : _profile = profile ?? _sampleProfile(),
        _sessions = List.of(sessions ?? _sampleSessions()),
        _devices = List.of(devices ?? _sampleDevices()),
-       _mfa = mfa ?? const MfaStatus(enabled: true, method: 'App de autenticación'),
+       _mfa = mfa ?? const MfaStatus(enabled: true, method: MfaFactor.totp),
        _passkeys = List.of(passkeys ?? _samplePasskeys()),
        _pending = List.of(pendingAgreements ?? _samplePending()),
        _accepted = List.of(acceptedAgreements ?? _sampleAccepted());
 
-  /// Código que este repositorio acepta en el paso adicional de MFA.
-  static const String validStepUpCode = '123456';
+  /// Ids de las sesiones de ejemplo: la actual, iPhone y Pixel.
+  static const List<String> sampleSessionIds = _sessionIds;
+
+  /// Ids de los dispositivos de ejemplo: iPhone y Pixel.
+  static const List<String> sampleDeviceIds = _deviceIds;
 
   final Duration delay;
   final AccountProfile _profile;
-  final List<AppSession> _sessions;
-  final List<TrustedDevice> _devices;
+  final List<SessionSummary> _sessions;
+  final List<DeviceSummary> _devices;
   final MfaStatus _mfa;
   final List<Passkey> _passkeys;
   final List<Agreement> _pending;
   final List<Agreement> _accepted;
+
+  bool _disposed = false;
+
+  /// Si el scope ya liberó este repositorio.
+  bool get isDisposed => _disposed;
+
+  @override
+  void dispose() => _disposed = true;
 
   Future<T> _respond<T>(T Function() compute) async {
     await Future<void>.delayed(delay);
@@ -41,7 +65,7 @@ class FakeAccountRepository implements AccountRepository {
   Future<AccountProfile> loadProfile() => _respond(() => _profile);
 
   @override
-  Future<List<AppSession>> listSessions() =>
+  Future<List<SessionSummary>> listSessions() =>
       _respond(() => List.of(_sessions));
 
   @override
@@ -52,12 +76,12 @@ class FakeAccountRepository implements AccountRepository {
   @override
   Future<int> revokeOtherSessions() => _respond<int>(() {
     final before = _sessions.length;
-    _sessions.removeWhere((session) => !session.isCurrent);
+    _sessions.removeWhere((session) => !session.current);
     return before - _sessions.length;
   });
 
   @override
-  Future<List<TrustedDevice>> listDevices() =>
+  Future<List<DeviceSummary>> listDevices() =>
       _respond(() => List.of(_devices));
 
   @override
@@ -66,9 +90,8 @@ class FakeAccountRepository implements AccountRepository {
   );
 
   @override
-  Future<SecurityOverview> loadSecurity() => _respond(
-    () => SecurityOverview(mfa: _mfa, passkeys: List.of(_passkeys)),
-  );
+  Future<SecurityOverview> loadSecurity() =>
+      _respond(() => SecurityOverview(mfa: _mfa, passkeys: List.of(_passkeys)));
 
   @override
   Future<void> addPasskey() => _respond<void>(() {
@@ -88,10 +111,6 @@ class FakeAccountRepository implements AccountRepository {
   );
 
   @override
-  Future<bool> verifyStepUpCode(String code) =>
-      _respond(() => code == validStepUpCode);
-
-  @override
   Future<List<Agreement>> listPendingAgreements() =>
       _respond(() => List.of(_pending));
 
@@ -101,9 +120,11 @@ class FakeAccountRepository implements AccountRepository {
 
   @override
   Future<void> acceptAgreement(String agreementId) => _respond<void>(() {
-    final index = _pending.indexWhere((agreement) => agreement.id == agreementId);
+    final index = _pending.indexWhere(
+      (agreement) => agreement.id == agreementId,
+    );
     if (index == -1) {
-      throw StateError('El acuerdo $agreementId no está pendiente.');
+      throw AgreementNotPendingException(agreementId);
     }
     final agreement = _pending.removeAt(index);
     _accepted.insert(0, agreement.markAccepted(DateTime.now()));
@@ -115,48 +136,51 @@ class FakeAccountRepository implements AccountRepository {
     tenantName: 'Organización demo',
   );
 
-  static List<AppSession> _sampleSessions() {
+  static List<SessionSummary> _sampleSessions() {
     final now = DateTime.now();
     return [
-      AppSession(
-        id: 's-current',
+      SessionSummary(
+        id: _sessionIds[0],
         deviceName: 'Chrome en MacBook',
-        platform: 'Web · macOS',
-        lastSeen: now,
-        isCurrent: true,
+        platform: ClientPlatform.web,
+        lastSeenAt: now,
+        current: true,
       ),
-      AppSession(
-        id: 's-iphone',
+      SessionSummary(
+        id: _sessionIds[1],
         deviceName: 'Safari en iPhone',
-        platform: 'iOS',
-        lastSeen: now.subtract(const Duration(hours: 2)),
+        platform: ClientPlatform.ios,
+        lastSeenAt: now.subtract(const Duration(hours: 2)),
+        current: false,
       ),
-      AppSession(
-        id: 's-pixel',
+      SessionSummary(
+        id: _sessionIds[2],
         deviceName: 'App en Pixel 8',
-        platform: 'Android',
-        lastSeen: now.subtract(const Duration(days: 2)),
+        platform: ClientPlatform.android,
+        lastSeenAt: now.subtract(const Duration(days: 2)),
+        current: false,
       ),
     ];
   }
 
-  static List<TrustedDevice> _sampleDevices() {
+  static List<DeviceSummary> _sampleDevices() {
     final now = DateTime.now();
     return [
-      TrustedDevice(
-        id: 'd-iphone',
+      DeviceSummary(
+        id: _deviceIds[0],
         name: 'Safari en iPhone',
-        platform: 'iOS',
-        lastSeen: now.subtract(const Duration(hours: 2)),
+        platform: ClientPlatform.ios,
+        lastSeenAt: now.subtract(const Duration(hours: 2)),
         trustedUntil: now.add(const Duration(days: 30)),
-        isVerifier: true,
+        verifier: true,
       ),
-      TrustedDevice(
-        id: 'd-pixel',
+      DeviceSummary(
+        id: _deviceIds[1],
         name: 'App en Pixel 8',
-        platform: 'Android',
-        lastSeen: now.subtract(const Duration(days: 2)),
+        platform: ClientPlatform.android,
+        lastSeenAt: now.subtract(const Duration(days: 2)),
         trustedUntil: now.add(const Duration(days: 7)),
+        verifier: false,
       ),
     ];
   }

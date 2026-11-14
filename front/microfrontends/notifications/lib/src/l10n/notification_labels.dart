@@ -1,4 +1,4 @@
-import '../data/notification_models.dart';
+import '../shared/enums/notification_enums.dart';
 import 'generated/notifications_localizations.dart';
 
 /// Etiquetas de tipos y canales traducidas con [NotificationsLocalizations].

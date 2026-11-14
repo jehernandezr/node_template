@@ -87,22 +87,6 @@ class AccountLocalizationsEs extends AccountLocalizations {
   }
 
   @override
-  String get stepUpTitle => 'Confirma tu identidad';
-
-  @override
-  String get stepUpMessage =>
-      'Esta acción es sensible. Ingresa el código de tu app de autenticación para continuar.';
-
-  @override
-  String get stepUpCodeLabel => 'Código de 6 dígitos';
-
-  @override
-  String get stepUpIncomplete => 'Ingresa los 6 dígitos del código.';
-
-  @override
-  String get stepUpInvalid => 'El código no es válido. Intenta de nuevo.';
-
-  @override
   String get sessionsTitle => 'Sesiones activas';
 
   @override
@@ -227,4 +211,37 @@ class AccountLocalizationsEs extends AccountLocalizations {
 
   @override
   String get acceptedEmptyMessage => 'Todavía no has aceptado acuerdos.';
+
+  @override
+  String get platformIos => 'iOS';
+
+  @override
+  String get platformAndroid => 'Android';
+
+  @override
+  String get platformWeb => 'Web';
+
+  @override
+  String get platformMacos => 'macOS';
+
+  @override
+  String get platformWindows => 'Windows';
+
+  @override
+  String get platformLinux => 'Linux';
+
+  @override
+  String get factorDeviceOtp => 'Dispositivo verificador';
+
+  @override
+  String get factorEmailOtp => 'Código por correo';
+
+  @override
+  String get factorTotp => 'App de autenticación';
+
+  @override
+  String get factorRecoveryCode => 'Código de recuperación';
+
+  @override
+  String get factorPasskey => 'Passkey';
 }

@@ -2,10 +2,15 @@
 
 Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) antes de tocar la arquitectura.
 
+## Estructura
+
+- La raíz solo tiene `backend/`, `front/` (pub workspace de Flutter), Nx como orquestador y herramientas del repositorio (CI/CD, hooks, docs). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+- Cada aplicación es dueña de sus librerías: lo compartido del backend vive en `backend/libs`, lo del front en `front/packages`, y lo compartido dentro de un servicio o microfrontend en su carpeta `shared/{enums,constants,types,utils}`.
+
 ## Comandos
 
-- Ejecuta las comprobaciones con Nx: `pnpm nx ...`. Ejemplos: `pnpm nx affected -t lint test typecheck`, `pnpm nx test <proyecto>`.
-- Usa `pnpm nx g @nx/js:library ...` para crear librerías y `tools/generators` para servicios y módulos.
+- Nx corre desde la raíz y cubre backend y front. Prepara con `pnpm install` en la raíz y `flutter pub get` en `front/`. Ejemplos: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
+- Usa `pnpm nx g @nx/js:library ...` para crear librerías. Los generadores de servicios y módulos llegan en la fase F11; mientras tanto, un servicio nuevo sigue la estructura del [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
 - Las configuraciones de Jest son `jest.config.cjs`.
 
 ## Código
@@ -13,11 +18,13 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 - Las importaciones relativas en las librerías terminan en `.js`, porque el proyecto usa ESM con `nodenext`.
 - El dominio (`domain/`) no importa NestJS, TypeORM, AWS ni otras librerías de infraestructura. Solo depende de `kernel`.
 - `application/` depende de `domain/`. `infrastructure/` y `presentation/` dependen de `domain/` y `application/`.
-- `@aws-sdk/*` solo aparece en `libs/platform/adapters/aws`.
+- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws`.
 - Usa enums para eventos, errores, permisos, colas y jobs. No escribas esos identificadores como literales de texto.
 - Todo identificador nuevo es UUIDv7, generado con el puerto `IdGenerator`.
 - Cada operación interna que modifica datos declara su compensación.
-- Un cambio en `libs/contracts` obliga a regenerar los clientes de `front/` en el mismo cambio.
+- Los contratos se escriben en TypeScript con zod en `backend/libs/contracts/<servicio>`, con carpetas `enums`, `constants`, `types`, `schemas`, `http`, `internal` y `events`.
+- Un cambio en `backend/libs/contracts` obliga a regenerar el Dart de `front/packages/contracts` en el mismo cambio.
+- Todo cliente (backend o front) valida la petición contra el contrato antes de llamar por HTTP.
 - Una decisión nueva de arquitectura se registra como ADR en `docs/adr/`.
 - Los errores de dominio extienden `DomainError` y usan un código del formato `SERVICIO.SUBMÓDULO.ERROR`.
 

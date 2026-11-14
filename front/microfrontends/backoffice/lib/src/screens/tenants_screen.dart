@@ -2,11 +2,13 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';
+import '../l10n/backoffice_labels.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import '../labels.dart';
-import 'backoffice_page.dart';
+import '../shared/constants/backoffice_paths.dart';
+import '../shared/enums/backoffice_enums.dart';
+import '../shared/types/backoffice_types.dart';
+import 'widgets.dart';
 
 /// Tenant list with search by name or id, and region and status filters.
 class TenantsScreen extends StatefulWidget {
@@ -80,6 +82,7 @@ class _TenantsScreenState extends State<TenantsScreen> {
           const SizedBox(height: AppSpacing.md),
           AsyncBody<List<Tenant>>(
             future: _tenants,
+            onRetry: _reload,
             builder: (context, tenants) {
               if (tenants.isEmpty) {
                 return EmptyState(
@@ -168,14 +171,17 @@ class _TenantTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        onTap: () => context.go('/backoffice/tenants/${tenant.id}'),
+        onTap: () => context.go(BackofficePaths.tenant(tenant.id)),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(tenant.name, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    tenant.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   Text(
                     '${tenant.id} · ${regionLabel(l10n, tenant.region)} · ${tenant.plan}',
                     style: Theme.of(context).textTheme.bodySmall,

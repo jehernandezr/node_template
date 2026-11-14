@@ -1,0 +1,503 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:contracts_gen/contracts_gen.dart';
+import 'package:contracts_gen/src/naming.dart';
+import 'package:test/test.dart';
+
+Json _doc(String service, {Json schemas = const {}, Json enums = const {}}) => {
+  'formatVersion': 2,
+  'service': service,
+  'enums': enums,
+  'constants': {
+    '${upperCamel(service)}Limits': {'max': 3, 'pattern': r'^a$', 'flag': true},
+  },
+  'schemas': schemas,
+  'routes': <dynamic>[],
+  'errors': <String, dynamic>{},
+};
+
+Json _platform() => {
+  ..._doc(
+    'platform',
+    enums: {
+      'PlatformErrorCode': {
+        'values': [
+          {
+            'name': 'ValidationRequired',
+            'value': 'PLATFORM.VALIDATION.REQUIRED',
+          },
+          {'name': 'SagaLeaseLost', 'value': 'PLATFORM.SAGA.LEASE_LOST'},
+        ],
+      },
+      'HttpMethod': {
+        'values': [
+          {'name': 'Get', 'value': 'GET'},
+        ],
+      },
+    },
+    schemas: {
+      'Id': {'type': 'string', 'format': 'uuid'},
+    },
+  ),
+  'errors': {
+    'PlatformErrorCode': [
+      {
+        'name': 'ValidationRequired',
+        'code': 'PLATFORM.VALIDATION.REQUIRED',
+        'httpStatus': 400,
+        'retryable': false,
+        'audience': 'public',
+        'messageKey': 'error_platform_validation_required',
+        'description': 'Falta un campo.',
+      },
+      {
+        'name': 'SagaLeaseLost',
+        'code': 'PLATFORM.SAGA.LEASE_LOST',
+        'httpStatus': 409,
+        'retryable': true,
+        'audience': 'internal',
+        'messageKey': 'error_platform_saga_lease_lost',
+        'description': 'Interno.',
+      },
+    ],
+  },
+};
+
+Json _sample() => _doc(
+  'sample',
+  schemas: {
+    'Color': {
+      'type': 'string',
+      'enum': ['dark-red', 'blue'],
+    },
+    'Item': {
+      'type': 'object',
+      'properties': {
+        'id': {r'$ref': '../../platform/export/contract.json#/schemas/Id'},
+        'color': {r'$ref': '#/schemas/Color'},
+        'size': {
+          'type': 'object',
+          'properties': {
+            'width': {'type': 'integer', 'minimum': 1},
+          },
+          'required': ['width'],
+        },
+        'tags': {
+          'type': 'array',
+          'items': {'type': 'string', 'minLength': 2},
+          'maxItems': 3,
+        },
+        'note': {
+          'anyOf': [
+            {'type': 'string'},
+            {'type': 'null'},
+          ],
+        },
+      },
+      'required': ['id', 'color', 'size', 'tags', 'note'],
+      'additionalProperties': false,
+    },
+  },
+);
+
+/// Igual que leer `contract.json` del disco: mapas `Map<String, dynamic>`.
+ContractModel _model(Map<String, Json> docs) => ContractModel({
+  for (final entry in docs.entries)
+    entry.key: jsonDecode(jsonEncode(entry.value)) as Json,
+});
+
+void main() {
+  group('naming', () {
+    test('converts contract names to Dart identifiers', () {
+      expect(memberFromKey('TasksRead'), 'tasksRead');
+      expect(memberFromKey('Default'), 'defaultValue');
+      expect(memberFromKey('Name'), 'nameValue');
+      expect(lowerCamel('tasks:read'), 'tasksRead');
+      expect(lowerCamel('dark-red'), 'darkRed');
+      expect(upperCamel('size'), 'Size');
+      expect(snake('file-storage'), 'file_storage');
+      expect(dartString(r"a'b$c\d"), r"'a\'b\$c\\d'");
+    });
+  });
+
+  group('generate', () {
+    final files = generate(
+      _model({'platform': _platform(), 'sample': _sample()}),
+    );
+
+    test(
+      'writes one file per folder, a barrel per service and a global barrel',
+      () {
+        expect(
+          files.keys,
+          containsAll([
+            'platform/enums/platform_enums.dart',
+            'platform/constants/platform_constants.dart',
+            'sample/types/sample_types.dart',
+            'sample/schemas/sample_schemas.dart',
+            'sample/sample.dart',
+            'generated_contracts.dart',
+          ]),
+        );
+        for (final content in files.values) {
+          expect(content, startsWith(generatedHeader));
+        }
+      },
+    );
+
+    test('keeps only public codes in error enums, with their metadata', () {
+      final enums = files['platform/enums/platform_enums.dart']!;
+      expect(enums, contains('validationRequired('));
+      expect(
+        enums,
+        contains("messageKey: 'error_platform_validation_required'"),
+      );
+      expect(enums, isNot(contains('sagaLeaseLost')));
+      expect(
+        enums,
+        contains('static PlatformErrorCode? fromCode(String code)'),
+      );
+    });
+
+    test('generates errorMessageFor with public codes only', () {
+      final source = generateErrorMessages(
+        _model({'platform': _platform(), 'sample': _sample()}),
+      );
+      expect(source, startsWith(generatedHeader));
+      expect(
+        source,
+        contains('String errorMessageFor(AppLocalizations l10n, String code)'),
+      );
+      expect(
+        source,
+        contains(
+          "'PLATFORM.VALIDATION.REQUIRED' => l10n.error_platform_validation_required,",
+        ),
+      );
+      expect(source, contains('_ => l10n.errorFallback,'));
+      expect(source, isNot(contains('SAGA')));
+      expect(source, isNot(contains('saga_lease_lost')));
+    });
+
+    test('rejects an invalid messageKey and a repeated public code', () {
+      List<dynamic> catalog(Json doc) =>
+          (doc['errors'] as Json)['PlatformErrorCode'] as List<dynamic>;
+      final bad = _platform();
+      (catalog(bad).first as Json)['messageKey'] = 'bad-key';
+      expect(
+        () => generateErrorMessages(_model({'platform': bad})),
+        throwsA(isA<GeneratorException>()),
+      );
+      final twice = jsonDecode(jsonEncode(_platform())) as Json;
+      catalog(twice).add({...(catalog(twice).first as Json)});
+      expect(
+        () => generateErrorMessages(_model({'platform': twice})),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+
+    test(
+      'generates enums from schemas, nested classes and cross-service refs',
+      () {
+        expect(files['sample/enums/sample_enums.dart'], contains('darkRed('));
+        final types = files['sample/types/sample_types.dart']!;
+        expect(types, contains('final class Item {'));
+        expect(types, contains('final class ItemSize {'));
+        expect(types, contains('final String? note;'));
+        expect(types, contains('final List<String> tags;'));
+        final schemas = files['sample/schemas/sample_schemas.dart']!;
+        expect(schemas, contains('ItemSizeSchema.check('));
+        expect(schemas, contains('uuidPattern.hasMatch'));
+        expect(schemas, contains("joinPath(path, 'size')"));
+      },
+    );
+
+    test('validators accept unknown enum values in lists only when the '
+        'data comes from the server', () {
+      final sample = _sample();
+      (sample['schemas'] as Json)['Palette'] = {
+        'type': 'object',
+        'properties': {
+          'main': {r'$ref': '#/schemas/Color'},
+          'colors': {
+            'type': 'array',
+            'items': {r'$ref': '#/schemas/Color'},
+          },
+          'item': {r'$ref': '#/schemas/Item'},
+        },
+        'required': ['main', 'colors', 'item'],
+      };
+      final schemas = generate(
+        _model({'platform': _platform(), 'sample': sample}),
+      )['sample/schemas/sample_schemas.dart']!;
+      final start = schemas.indexOf('abstract final class PaletteSchema');
+      final palette = schemas.substring(
+        start,
+        schemas.indexOf('extension PaletteValidation', start),
+      );
+      expect(
+        palette,
+        contains('static List<FieldError> validateIncoming(Object? json'),
+      );
+      expect(
+        palette,
+        contains('check(json, path, errors, acceptUnknownEnums: true);'),
+      );
+      // The list item checks the flag; the single enum ignores it.
+      final listCheck = RegExp(
+        r"\(!acceptUnknownEnums &&\s+!const <String>\{'dark-red', 'blue'\}",
+      );
+      expect(listCheck.allMatches(palette), hasLength(1));
+      final singleCheck = RegExp(
+        r"is! String \|\|\s+!const <String>\{'dark-red', 'blue'\}",
+      );
+      expect(singleCheck.allMatches(palette), hasLength(1));
+      // Nested objects get the same flag.
+      expect(palette, contains('acceptUnknownEnums: acceptUnknownEnums'));
+    });
+
+    test('rejects unsupported schema keywords', () {
+      final doc = _doc(
+        'sample',
+        schemas: {
+          'Bad': {'type': 'object', 'properties': {}, 'patternProperties': {}},
+        },
+      );
+      expect(
+        () => generate(_model({'platform': _platform(), 'sample': doc})),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+
+    test('rejects two services that export the same Dart name', () {
+      final clash = _doc(
+        'sample',
+        schemas: {
+          'PlatformLimits': {'type': 'object'},
+        },
+      );
+      expect(
+        () => _model({'platform': _platform(), 'sample': clash}),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+
+    test('rejects an unknown format version and the reserved core name', () {
+      expect(
+        () => _model({
+          'platform': {..._platform(), 'formatVersion': 1},
+        }),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => _model({'core': _doc('core')}),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+  });
+
+  group('routes and messages', () {
+    const fullAccess = <String, dynamic>{
+      'kind': 'authenticated',
+      'permissions': ['items:write'],
+      'platformRoles': ['support'],
+      'mfaMaxAgeMinutes': 10,
+    };
+    Json routed({
+      Json access = fullAccess,
+      Json deprecated = const {
+        'since': '2026-11-01',
+        'sunset': '2027-05-01',
+        'replacement': 'sample.items.put2',
+      },
+    }) => {
+      ..._sample(),
+      'enums': {
+        'Permission': {
+          'values': [
+            {'name': 'ItemsWrite', 'value': 'items:write'},
+          ],
+        },
+        'PlatformRole': {
+          'values': [
+            {'name': 'Support', 'value': 'support'},
+          ],
+        },
+      },
+      'routes': [
+        {
+          'name': 'putItem',
+          'id': 'sample.items.put',
+          'method': 'PUT',
+          'path': '/v2/items/{id}',
+          'version': 2,
+          'pathParams': ['id'],
+          'requestLocation': 'body',
+          'queryParams': <dynamic>[],
+          'request': {r'$ref': '#/schemas/Item'},
+          'response': null,
+          'successStatus': 204,
+          'errors': <dynamic>[],
+          'access': access,
+          'deprecated': deprecated,
+          'description': 'Guarda un ítem.',
+        },
+      ],
+      'events': [
+        {
+          'name': 'itemSaved',
+          'type': 'sample.item.saved.v1',
+          'kind': 'event',
+          'version': 1,
+          'payload': {r'$ref': '#/schemas/Item'},
+          'description': 'Se guardó un ítem.',
+        },
+      ],
+      'commands': <dynamic>[],
+    };
+    Map<String, String> gen(Json sample) =>
+        generate(_model({'platform': _platform(), 'sample': sample}));
+
+    test('emit the full access, the version and the deprecation', () {
+      final routes = gen(routed())['sample/http/sample_routes.dart']!;
+      expect(routes, contains('version: 2,'));
+      expect(routes, contains("permissions: <String>['items:write'],"));
+      expect(routes, contains("platformRoles: <String>['support'],"));
+      expect(routes, contains('mfaMaxAgeMinutes: 10,'));
+      expect(routes, contains('deprecated: RouteDeprecation('));
+      expect(routes, contains("replacement: 'sample.items.put2',"));
+      // The request is validated strictly before calling.
+      expect(routes, contains('validateRequest: ItemSchema.validate,'));
+    });
+
+    test('generate the events of each service with their payload', () {
+      final messages = gen(routed())['sample/messages/sample_messages.dart']!;
+      expect(messages, contains('abstract final class SampleEvents {'));
+      expect(messages, contains('MessageDescriptor<Item>('));
+      expect(messages, contains('kind: MessageKind.event,'));
+      expect(messages, contains('decodePayload: Item.fromJson,'));
+      expect(
+        messages,
+        contains('validatePayload: ItemSchema.validateIncoming,'),
+      );
+      expect(messages, isNot(contains('SampleCommands')));
+    });
+
+    test('reject unknown access fields and values outside the enums', () {
+      expect(
+        () => gen(routed(access: {...fullAccess, 'audience': 'backoffice'})),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => gen(
+          routed(
+            access: {
+              ...fullAccess,
+              'permissions': ['items:delete'],
+            },
+          ),
+        ),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => gen(routed(access: {...fullAccess, 'kind': 'internal'})),
+        throwsA(isA<GeneratorException>()),
+      );
+      expect(
+        () => gen(routed(deprecated: {'since': '2026-11-01', 'until': 'x'})),
+        throwsA(isA<GeneratorException>()),
+      );
+    });
+  });
+
+  group('run', () {
+    late Directory root;
+    late Directory front;
+    late Directory contracts;
+
+    setUp(() {
+      root = Directory.systemTemp.createTempSync('contracts_gen_test');
+      front = Directory('${root.path}/front')..createSync();
+      File('${front.path}/pubspec.yaml')
+          .writeAsStringSync('name: front_workspace\n');
+      contracts = Directory('${root.path}/backend/libs/contracts');
+      for (final entry in {
+        'platform': _platform(),
+        'sample': _sample(),
+      }.entries) {
+        File('${contracts.path}/${entry.key}/export/contract.json')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entry.value));
+      }
+    });
+
+    tearDown(() => root.deleteSync(recursive: true));
+
+    Future<int> runQuiet(List<String> args) {
+      final sink = IOSink(_NullConsumer());
+      return run(
+        ['--front', front.path, ...args],
+        stdoutSink: sink,
+        stderrSink: sink,
+      );
+    }
+
+    test('--check fails before generating and passes after', () async {
+      expect(await runQuiet(['--check']), 1);
+      expect(await runQuiet([]), 0);
+      expect(await runQuiet(['--check']), 0);
+    });
+
+    test('--check detects edited and stale generated files', () async {
+      await runQuiet([]);
+      final src = '${front.path}/packages/contracts/lib/src';
+      final types = File('$src/sample/types/sample_types.dart');
+      types.writeAsStringSync('${types.readAsStringSync()}\n// edit');
+      expect(await runQuiet(['--check']), 1);
+      await runQuiet([]);
+      File('$src/old/old.dart')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('$generatedHeader\n');
+      expect(await runQuiet(['--check']), 1);
+      await runQuiet([]);
+      expect(File('$src/old/old.dart').existsSync(), isFalse);
+      expect(await runQuiet(['--check']), 0);
+    });
+
+    test('writes error_messages.dart and --check detects its edits', () async {
+      await runQuiet([]);
+      final file = File(
+        '${front.path}/packages/i18n/lib/src/generated/error_messages.dart',
+      );
+      expect(file.existsSync(), isTrue);
+      expect(file.readAsStringSync(), startsWith(generatedHeader));
+      file.writeAsStringSync('${file.readAsStringSync()}\n// edit');
+      expect(await runQuiet(['--check']), 1);
+      await runQuiet([]);
+      expect(await runQuiet(['--check']), 0);
+    });
+
+    test('never touches hand-written core files', () async {
+      final core =
+          File('${front.path}/packages/contracts/lib/src/core/core.dart')
+            ..createSync(recursive: true)
+            ..writeAsStringSync('// hand-written\n');
+      await runQuiet([]);
+      expect(core.readAsStringSync(), '// hand-written\n');
+    });
+
+    test('rejects unknown arguments', () async {
+      expect(await runQuiet(['--nope']), 64);
+    });
+  });
+}
+
+class _NullConsumer implements StreamConsumer<List<int>> {
+  @override
+  Future<void> addStream(Stream<List<int>> stream) => stream.drain<void>();
+
+  @override
+  Future<void> close() async {}
+}

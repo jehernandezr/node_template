@@ -1,15 +1,15 @@
+import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatMoney;
 
-import '../billing_labels.dart';
-import '../data/billing_models.dart';
+import '../l10n/billing_labels.dart';
+import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
-import '../format/money_format.dart';
-import '../format/period_format.dart';
 import '../l10n/generated/billing_localizations.dart';
-import '../widgets/billing_colors.dart';
-import '../widgets/status_chip.dart';
+import 'widgets/billing_colors.dart';
+import 'widgets/status_chip.dart';
 
 /// `/billing/invoices/:id`: invoice header, its charges and a download
 /// placeholder.
@@ -32,34 +32,44 @@ class InvoiceDetailScreen extends StatefulWidget {
 }
 
 class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
-  late Future<Invoice?> _future = widget.repository.invoice(widget.invoiceId);
+  AsyncValue<Invoice?> _state = const AsyncValue.loading();
+  int _generation = 0;
 
-  void _reload() => setState(
-    () => _future = widget.repository.invoice(widget.invoiceId),
-  );
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final generation = ++_generation;
+    final result = await AsyncValue.guard(
+      () => widget.repository.invoice(widget.invoiceId),
+    );
+    if (!mounted || generation != _generation) return;
+    setState(() => _state = result);
+  }
+
+  void _reload() {
+    setState(() => _state = const AsyncValue.loading());
+    _load();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = BillingLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.invoiceTitle)),
-      body: FutureBuilder<Invoice?>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return ErrorView.fromException(
-              snapshot.error!,
-              fallbackMessage: l10n.loadError,
-              codeLabel: AppLocalizations.of(context).errorCodeLabel,
-              traceIdLabel: AppLocalizations.of(context).errorTraceIdLabel,
-              retryLabel: AppLocalizations.of(context).actionRetry,
-              onRetry: _reload,
-            );
-          }
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const LoadingView();
-          }
-          final invoice = snapshot.data;
+    final appL10n = AppLocalizations.of(context);
+    return AppPage(
+      title: l10n.invoiceTitle,
+      onBack: () => context.go('/billing/invoices'),
+      body: AsyncValueView<Invoice?>(
+        value: _state,
+        errorMessage: l10n.loadError,
+        codeLabel: appL10n.errorCodeLabel,
+        traceIdLabel: appL10n.errorTraceIdLabel,
+        retryLabel: appL10n.actionRetry,
+        onRetry: _reload,
+        data: (invoice) {
           if (invoice == null) {
             return EmptyState(
               icon: Icons.search_off,
@@ -105,7 +115,7 @@ class _InvoiceContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '${l10n.invoicePeriod}: ${formatPeriod(l10n, invoice.period)}',
+                '${l10n.invoicePeriod}: ${formatPeriod(l10n, invoice.period, locale: localeTag(context))}',
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -134,7 +144,9 @@ class _InvoiceContent extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Text(formatMoney(line.amount)),
+                      Text(
+                        formatMoney(line.amount, locale: localeTag(context)),
+                      ),
                     ],
                   ),
                 ),
@@ -145,7 +157,7 @@ class _InvoiceContent extends StatelessWidget {
                     child: Text(l10n.total, style: theme.textTheme.titleSmall),
                   ),
                   Text(
-                    formatMoney(invoice.total),
+                    formatMoney(invoice.total, locale: localeTag(context)),
                     style: theme.textTheme.titleSmall,
                   ),
                 ],
@@ -157,9 +169,9 @@ class _InvoiceContent extends StatelessWidget {
         AppButton(
           label: l10n.download,
           variant: AppButtonVariant.secondary,
-          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.downloadPending)),
-          ),
+          onPressed: () =>
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(l10n.downloadPending))),
         ),
       ],
     );

@@ -1,0 +1,23 @@
+name: api
+description: "ApiClient: valida la petición contra el contrato generado antes de llamar por HTTP y decodifica respuestas y errores."
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  contracts:
+    path: ../contracts
+  flutter:
+    sdk: flutter
+  http: 1.6.0
+  meta: ^1.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+resolution: workspace

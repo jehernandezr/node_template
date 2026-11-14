@@ -1,11 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../data/backoffice_models.dart';
 import '../data/backoffice_repository.dart';
+import '../l10n/backoffice_labels.dart';
 import '../l10n/generated/backoffice_localizations.dart';
-import '../labels.dart';
-import 'backoffice_page.dart';
+import '../shared/types/backoffice_types.dart';
+import 'widgets.dart';
 
 /// Tenant detail: plan, shard group, users count and the audit timeline.
 class TenantDetailScreen extends StatefulWidget {
@@ -27,7 +27,11 @@ class TenantDetailScreen extends StatefulWidget {
 typedef _TenantData = ({Tenant? tenant, List<AuditEntry> audit});
 
 class _TenantDetailScreenState extends State<TenantDetailScreen> {
-  late final Future<_TenantData> _data = _load();
+  late Future<_TenantData> _data = _load();
+
+  void _reload() => setState(() {
+    _data = _load();
+  });
 
   Future<_TenantData> _load() async {
     final tenant = await widget.repository.tenant(widget.tenantId);
@@ -40,9 +44,9 @@ class _TenantDetailScreenState extends State<TenantDetailScreen> {
     final l10n = BackofficeLocalizations.of(context);
     return BackofficePage(
       title: l10n.tenantDetailTitle,
-      backPath: '/backoffice/tenants',
       child: AsyncBody<_TenantData>(
         future: _data,
+        onRetry: _reload,
         builder: (context, data) {
           final tenant = data.tenant;
           if (tenant == null) {
@@ -69,8 +73,14 @@ class _TenantDetailScreenState extends State<TenantDetailScreen> {
                       label: l10n.tenantRegion,
                       value: regionLabel(l10n, tenant.region),
                     ),
-                    _Fact(label: l10n.tenantShardGroup, value: tenant.shardGroup),
-                    _Fact(label: l10n.tenantUsers, value: '${tenant.usersCount}'),
+                    _Fact(
+                      label: l10n.tenantShardGroup,
+                      value: tenant.shardGroup,
+                    ),
+                    _Fact(
+                      label: l10n.tenantUsers,
+                      value: '${tenant.usersCount}',
+                    ),
                   ],
                 ),
               ),

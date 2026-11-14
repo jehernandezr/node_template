@@ -6,6 +6,8 @@
   "newConversation": "Nueva conversación",
   "emptyConversations": "Aún no tienes conversaciones",
   "listError": "No pudimos cargar tus conversaciones.",
+  "createError": "No pudimos crear la conversación.",
+  "loadMessagesError": "No pudimos cargar la conversación.",
   "genericError": "Ocurrió un error inesperado.",
   "quotaExceeded": "Alcanzaste el límite de consultas de tu plan.",
 
