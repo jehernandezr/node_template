@@ -2,6 +2,7 @@
 
 - Estado: Propuesta
 - Fecha: 2026-11-12
+- Revisión: 2026-11-14 (`@Operation` y `OperationContract` se retiraron; OpenAPI sale de `contract.json` en F11, sin `@nestjs/swagger`, según la decisión 4 del diseño de F4)
 
 ## Contexto
 

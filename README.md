@@ -6,11 +6,17 @@ El plan completo incluye identidad con MFA, multitenancy, auditoría, mensajerí
 
 ## Estado actual
 
-- **Backend:** librerías de plataforma en `backend/libs/platform` (`kernel`, `primitives`, `config`, `observability`, `internal-api`, `saga`, `messaging`, `resilience`, `cache`, `bloom`, `sharding`, `criteria`), contratos `platform` e `identity` en `backend/libs/contracts` y la herramienta `contracts-export`.
-- **Front:** shells `web` y `mobile`, siete microfrontends y los paquetes compartidos, con el Dart de los contratos generado en `front/packages/contracts`.
-- **Infraestructura:** raíz `platform` de Terraform con sus módulos en `backend/infra/terraform`.
+- **Backend:** librerías de plataforma en `backend/libs/platform` (`kernel`, `primitives`, `config`, `observability`, `persistence`, `criteria`, `sharding`, `cache`, `bloom`, `resilience`, `rate-limit`, `messaging`, `internal-api`, `saga`), adaptadores `aws`, `postgres` y `valkey`, contratos `platform` e `identity` en `backend/libs/contracts` y las herramientas `contracts-export` y `app-bundler`.
+- **Front:** shells `web` y `mobile`, siete microfrontends y los paquetes compartidos, con el Dart de los contratos generado en `front/packages/contracts` y los dobles de prueba compartidos en `front/packages/test_utils`.
+- **Infraestructura:** Terraform por stacks (`network`, `platform`, `data`, `messaging`, `edge` y `service`) con runtime elegible por servicio (Lambda o Fargate), ambientes `local`, `dev`, `staging` y `prod`, y una base por shard de cada servicio más el catálogo.
+- **Herramientas de IA:** skills de backend y front, hooks y agentes en `.claude/`.
 
-El siguiente paso es el primer servicio en `backend/apps/`. El orden completo está en [Fases de construcción](docs/ARCHITECTURE.md#fases-de-construcción).
+La fase que sigue tiene dos líneas con diseño aprobado:
+
+- [Persistencia sobre TypeORM y sagas persistentes](docs/design/persistencia-typeorm-y-sagas.md) ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): TypeORM con una capa propia para el sharding lógico y físico, y la bitácora de sagas en el esquema `saga` del shard.
+- [F4 · Identidad](docs/design/f4-identity.md): el primer servicio, `backend/apps/identity`, con las piezas de plataforma `auth`, `http` y `service`. De su primera ola ya está `@platform/rate-limit`.
+
+El orden completo está en [Fases de construcción](docs/ARCHITECTURE.md#fases-de-construcción).
 
 ## Estructura del repositorio
 
@@ -18,26 +24,27 @@ El siguiente paso es el primer servicio en `backend/apps/`. El orden completo es
 backend/        backend: dependencias externas en backend/package.json, alias en tsconfig.base.json
   libs/         librerías de plataforma, contratos (zod) y utilidades compartidas (proyectos de Nx)
   tools/        contracts-export (exporta los contratos a JSON) y app-bundler (esbuild)
-  dist/         paquete de cada app, generado por el target build (fuera de git)
-  infra/        Terraform (infra/terraform) y scripts del entorno local (infra/local)
+  dist/<app>/   paquete de cada app, generado por el target build (fuera de git)
+  infra/        Terraform por stacks (infra/terraform), scripts (infra/scripts) y entorno local (infra/local)
 front/          pub workspace de Flutter
   apps/         shells web y mobile
   microfrontends/  un paquete por dominio
   packages/     api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
-  tools/        contracts_gen, plugin de Nx y check_deferred_chunks.dart
-docs/           arquitectura, ADRs y guía de desarrollo local
+  tools/        contracts_gen, plugin de Nx, check_deferred_chunks.dart y check_microfrontend_boundaries.dart
+docs/           arquitectura, ADRs, diseños por fase (design/), auditorías (audits/) y desarrollo local
+.claude/        skills, hooks y agentes para las herramientas de IA
 ```
 
 En la raíz solo quedan Nx como orquestador (`nx.json`, `package.json`, `pnpm-workspace.yaml`) y las herramientas del repositorio (`.github/`, `.husky/`, commitlint, lint-staged, Prettier y Renovate). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
 
-`pnpm install` deja un solo `node_modules`, en la raíz. Las librerías del backend no son paquetes: se importan por alias de TypeScript (`@platform/kernel`), no se compilan por separado y guardan sus pruebas en la carpeta `__tests__/` de cada carpeta de código.
+`pnpm install` deja un solo `node_modules`, en la raíz. Las librerías del backend son proyectos de Nx sin `package.json`: se importan por alias de TypeScript (`@platform/kernel`), su código va directo en `src/` y sus pruebas en la carpeta `__tests__/` de cada carpeta de código, con los utilitarios compartidos en `__tests__/utils/`. Solo las apps se compilan, con esbuild, en `backend/dist/<app>`.
 
 ## Requisitos
 
 - Node 24, la versión fijada en [`.nvmrc`](.nvmrc). Con `nvm use` o `fnm use` se activa automáticamente.
 - pnpm 10, habilitado con `corepack enable`. La versión exacta está en el campo `packageManager` de [`package.json`](package.json).
 - Flutter, la versión fijada en [`front/.flutter-version`](front/.flutter-version).
-- Docker con Docker Compose v2, para el stack local.
+- Docker con Docker Compose v2, para el stack local y las pruebas de integración con Testcontainers.
 - Terraform, la versión fijada en [`backend/infra/terraform/.terraform-version`](backend/infra/terraform/.terraform-version), solo si vas a tocar la infraestructura.
 
 ## Comandos principales
@@ -66,6 +73,8 @@ El stack local se levanta desde `backend/`; los pasos están en [Desarrollo loca
 
 - [Arquitectura](docs/ARCHITECTURE.md): principios, estructura, reglas de dependencia y plan por fases.
 - [Decisiones de arquitectura (ADR)](docs/adr/README.md): decisiones registradas durante la construcción.
+- [Diseños](docs/design/): el diseño de F4 (identidad) y el de persistencia sobre TypeORM con sagas persistentes.
+- [Auditorías](docs/audits/): revisiones de calidad del código, con sus hallazgos y planes por paquetes de trabajo.
 - [Desarrollo local](docs/local-development.md): preparación del entorno, stack de Docker, puertos y variables de entorno.
 - [Contribuir](CONTRIBUTING.md): ramas, commits, revisión de PR y reglas del proyecto.
 - [Guía para agentes de IA](CLAUDE.md): reglas que siguen las herramientas de codificación en este repositorio.

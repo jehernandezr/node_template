@@ -2,6 +2,7 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-11
+- Revisión: 2026-11-14 (diseño de F4, sección 11: la cookie se llama `__Host-session`; la app móvil declara su canal con `Authorization: Bearer <session token>` o `X-Session-Transport: bearer` y solo entonces recibe el token en el cuerpo; la contraseña tiene 12 caracteres como mínimo)
 
 ## Contexto
 

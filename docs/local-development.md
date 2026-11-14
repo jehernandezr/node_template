@@ -48,6 +48,15 @@ Todos corren desde la raíz:
 | `pnpm nx show projects`                                              | Lista los proyectos del backend y del front                 |
 | `pnpm nx graph`                                                      | Abre el grafo de proyectos                                  |
 
+Las pruebas de integración (`*.int-spec.ts`) corren con el mismo target `test` contra PostgreSQL y Valkey reales, levantados con Testcontainers. Necesitan Docker en marcha. Por ejemplo, `pnpm nx test platform-persistence` y `pnpm nx test platform-adapters-valkey`.
+
+Los scripts de estructura de las skills revisan los archivos cambiados frente a `HEAD` (o todo el árbol con `--all`):
+
+```bash
+node .claude/skills/backend-estructura/scripts/check-structure.mjs
+node .claude/skills/front-estructura/scripts/check-structure.mjs
+```
+
 El Dart de los contratos se genera dentro de `front/`:
 
 ```bash
@@ -86,7 +95,7 @@ Los puertos se publican solo en `127.0.0.1`: nada queda expuesto a la red local.
 | OpenObserve             | 5080        | http://localhost:5080. Usuario y contraseña de desarrollo en `backend/docker-compose.yml`                                                                                           |
 | OpenTelemetry Collector | 4317 y 4318 | OTLP gRPC y HTTP. Los servicios envían a `http://localhost:4318`. Guarda todas las trazas con error y `OTEL_SAMPLING_PERCENT` (10 % por defecto) del resto, y reenvía a OpenObserve |
 
-Las dos bases `identity_shard_0` e `identity_shard_1` son intencionales. Sirven para probar el enrutamiento por shard en local.
+Las dos bases `identity_shard_0` e `identity_shard_1` son intencionales. Sirven para probar el enrutamiento por shard en local. Con la persistencia sobre TypeORM, la fase que sigue, las migraciones de cada servicio agregan el esquema `saga` de la bitácora de sagas a cada base de shard y la tabla `saga_directory` al catálogo ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)).
 
 Al arrancar, LocalStack corre `backend/infra/local/localstack/init-aws.sh`, que crea el bucket `platform-files-local` y la topología de mensajería desde `backend/infra/terraform/topology.json` (tópicos, colas, DLQ y suscripciones con filtro), con el prefijo `local` de `MESSAGING_NAME_PREFIX`.
 

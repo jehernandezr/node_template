@@ -43,6 +43,17 @@ Los mensajes no incluyen líneas de atribución de IA ni líneas `Co-Authored-By
 
 Los hooks usan `pnpm exec`, así que necesitan `pnpm` en el `PATH` de la terminal o del editor que hace el commit.
 
+### Agentes de IA
+
+Las reglas de código viven como skills en `.claude/skills` (`backend-*` y `front-*`) y se cargan solas según la carpeta que se toca. Los hooks de `.claude/hooks` rechazan rutas prohibidas antes de escribir, formatean cada archivo escrito y, antes de que un agente termine, corren los scripts de estructura. Los mismos scripts se pueden correr a mano sobre los archivos cambiados:
+
+```bash
+node .claude/skills/backend-estructura/scripts/check-structure.mjs
+node .claude/skills/front-estructura/scripts/check-structure.mjs
+```
+
+Para un trabajo grande, los agentes `backend-guia` y `front-guia` lo dividen en paquetes con archivos disjuntos, y `backend-implementador` y `front-implementador` escriben cada paquete.
+
 ## Antes de abrir un PR
 
 Desde la raíz, con `pnpm install` hecho y `flutter pub get` corrido en `front/`:
@@ -66,7 +77,9 @@ Lista de revisión:
 - [ ] La rama tiene prefijo `feat/`, `fix/` o `chore/`.
 - [ ] Los comandos anteriores pasan sin errores.
 - [ ] Los cambios respetan las capas hexagonales: el dominio no importa frameworks.
-- [ ] En el backend, las pruebas están en la carpeta `__tests__/` de la carpeta que prueban, el código está directo en `src/` y no apareció ningún `package.json` ni `node_modules` fuera de la raíz.
+- [ ] En el backend, las pruebas están en la carpeta `__tests__/` de la carpeta que prueban, sus utilitarios en `__tests__/utils/`, el código está directo en `src/` y no apareció ningún `package.json` ni `node_modules` fuera de la raíz.
+- [ ] En el front, las pruebas están en el `test/` del paquete con las carpetas de `lib/src`, lo compartido por un paquete en su `test/utils/` y lo compartido entre paquetes en `front/packages/test_utils`.
+- [ ] Una tabla nueva tiene su entidad y su migración generada con la CLI de TypeORM, con `synchronize` apagado.
 - [ ] Una dependencia externa nueva del backend está solo en `backend/package.json`, con versión exacta.
 - [ ] Los identificadores de evento, error, permiso, cola o job usan enums, no literales de texto.
 - [ ] Los códigos de error nuevos tienen el formato `SERVICIO.SUBMÓDULO.ERROR` y su entrada en el catálogo.
@@ -79,6 +92,8 @@ Lista de revisión:
 ## Reglas de arquitectura
 
 **Raíz mínima.** La raíz solo tiene `backend/`, `front/`, Nx y las herramientas del repositorio. Lo compartido del backend vive en `backend/libs`, lo del front en `front/packages`, y lo compartido dentro de un servicio o microfrontend en su carpeta `shared/{enums,constants,types,utils}`. Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+
+**Persistencia con TypeORM.** Entidades, mappers y repositorios viven en `infrastructure/persistence` de cada módulo, y las migraciones se generan y aplican con la CLI de TypeORM. La llave de shard se declara en `PersistenceModule.forFeature`. La capa `@platform/persistence` sobre TypeORM es la fase que sigue (paquete P1 del [diseño](docs/design/persistencia-typeorm-y-sagas.md), [ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)); hoy corre sobre el driver `pg`.
 
 **Un solo `node_modules`.** Las dependencias externas del backend se declaran solo en `backend/package.json`, con versión exacta, y las de Nx y los hooks en el `package.json` de la raíz. Las librerías, apps y herramientas del backend no tienen `package.json`: son proyectos de Nx (`project.json`) y se importan por los alias de `backend/tsconfig.base.json`. Una librería nueva sigue la skill `backend-estructura`: código directo en `src/`, pruebas en el `__tests__/` de cada carpeta y los utilitarios compartidos de prueba en `__tests__/utils/`. Las librerías no se compilan; solo las apps se empaquetan con esbuild en `backend/dist/<app>/`.
 
@@ -96,7 +111,9 @@ Lista de revisión:
 
 **Validar antes de llamar.** Todo cliente, del backend o del front, valida la petición contra el contrato antes de llamar.
 
-**Decisiones en ADR.** Una decisión nueva de arquitectura, de dependencias o de convenciones se registra como ADR en `docs/adr/`, con el contexto, la decisión y sus consecuencias. Ver [cómo agregar un ADR](docs/adr/README.md).
+**Dependencias externas.** Antes de agregar una librería se revisa si `node:crypto` o la librería estándar lo cubren con poco código propio. Una dependencia entra cuando reimplementarla es imprudente o costoso, y se declara con versión exacta (diseño de F4, sección 9).
+
+**Decisiones en ADR.** Una decisión nueva de arquitectura, de dependencias o de convenciones se registra como ADR en `docs/adr/`, con el contexto, la decisión y sus consecuencias. Un ADR aceptado no se reescribe: se le agrega una línea de revisión o se marca como reemplazado por otro. Ver [cómo agregar un ADR](docs/adr/README.md).
 
 ## CI
 

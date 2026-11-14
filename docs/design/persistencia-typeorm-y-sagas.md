@@ -1,6 +1,6 @@
 # Diseño: persistencia sobre TypeORM con sharding y sagas persistentes
 
-- Estado: Propuesta
+- Estado: Aceptada
 - Fecha: 2026-11-14
 - Reemplaza: la capa propia sobre `pg` del ADR 0009 (revisión del 14 de noviembre) y el motor actual de `@platform/saga`
 - ADR relacionados: [0008](../adr/0008-sagas-orquestadas-bitacora-persistente.md), [0009](../adr/0009-rds-postgresql-capa-persistencia-propia.md), [0010](../adr/0010-sharding-logico-residencia-region.md) y [0023](../adr/0023-enrutamiento-de-datos-de-identity.md)

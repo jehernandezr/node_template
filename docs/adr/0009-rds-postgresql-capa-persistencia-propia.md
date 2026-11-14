@@ -1,6 +1,6 @@
 # 0009. RDS PostgreSQL con capa de persistencia propia
 
-- Estado: Aceptada
+- Estado: Reemplazada por [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)
 - Fecha: 2026-11-11
 - Revisión: 2026-11-14 (un solo camino sobre `pg`, sin TypeORM)
 

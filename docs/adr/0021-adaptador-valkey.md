@@ -2,6 +2,7 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-13
+- Revisión: 2026-11-14 (`ValkeyRateLimiter` implementa el puerto de `@platform/rate-limit`; el espacio compartido `auth:*` del [ADR 0022](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) amplía la regla del prefijo por servicio)
 
 ## Contexto
 

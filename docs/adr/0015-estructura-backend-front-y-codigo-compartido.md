@@ -3,6 +3,7 @@
 - Estado: aceptada
 - Fecha: 2026-11-12
 - Revisada: 2026-11-13 (un solo `node_modules`, librerías por alias, pruebas en `__tests__/` y compilado solo de las apps)
+- Revisada: 2026-11-14 (los utilitarios de prueba del backend van en `__tests__/utils/`, y el ejemplo de `src/ids/` corresponde hoy a `src/id-generator.ts` con su prueba en `src/__tests__/id-generator.spec.ts`; los dobles que comparten varios paquetes del front viven en `front/packages/test_utils`, solo en `dev_dependencies`, y los de un paquete en su `test/utils/`; la raíz incluye `.claude/` con skills, hooks y agentes)
 
 ## Contexto
 

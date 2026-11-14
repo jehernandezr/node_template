@@ -2,6 +2,7 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-11
+- Revisión: 2026-11-14 (la bitácora vive en las tablas `saga.instances` y `saga.step_log` del esquema `saga` del shard, con `TypeOrmSagaStore`, y el catálogo del servicio guarda un directorio de sagas; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md). `OperationRef` se retiró: cada paso recibe el descriptor de `defineOperation`)
 
 ## Contexto
 

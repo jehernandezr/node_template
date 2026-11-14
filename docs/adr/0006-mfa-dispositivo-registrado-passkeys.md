@@ -2,6 +2,7 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-11
+- Revisión: 2026-11-14 (diseño de F4, sección 11: la app verificadora obtiene el código del dispositivo registrado con una petición firmada y lo envía sola; las opciones y respuestas de WebAuthn viajan en base64url dentro del JSON del contrato)
 
 ## Contexto
 
