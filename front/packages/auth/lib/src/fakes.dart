@@ -75,8 +75,50 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({String? sessionToken}) async {
     logoutCount++;
+    lastLogoutSessionToken = sessionToken;
+  }
+
+  /// Resultado de [startStepUp]. Si no hay, lanza
+  /// `IDENTITY.SESSION.REVOKED`.
+  PendingMfa? stepUpResult;
+
+  /// Resultado de [requestStepUpChallenge]. Si no hay, lanza
+  /// `IDENTITY.MFA.METHOD_UNAVAILABLE`.
+  MfaChallenge? stepUpChallengeResult;
+
+  /// Resultado de [verifyStepUp]. Si no hay, lanza
+  /// `IDENTITY.MFA.CODE_INVALID`.
+  StepUpResult? stepUpVerifyResult;
+
+  int startStepUpCount = 0;
+  MfaChallengeRequest? lastStepUpChallengeRequest;
+  StepUpVerifyRequest? lastStepUpVerify;
+
+  /// Session token recibido en el último [logout].
+  String? lastLogoutSessionToken;
+
+  @override
+  Future<PendingMfa> startStepUp() async {
+    startStepUpCount++;
+    return stepUpResult ?? (throw apiError(IdentityErrorCode.sessionRevoked));
+  }
+
+  @override
+  Future<MfaChallenge> requestStepUpChallenge(
+    MfaChallengeRequest request,
+  ) async {
+    lastStepUpChallengeRequest = request;
+    return stepUpChallengeResult ??
+        (throw apiError(IdentityErrorCode.mfaMethodUnavailable));
+  }
+
+  @override
+  Future<StepUpResult> verifyStepUp(StepUpVerifyRequest request) async {
+    lastStepUpVerify = request;
+    return stepUpVerifyResult ??
+        (throw apiError(IdentityErrorCode.mfaCodeInvalid));
   }
 
   /// Error de la API con [code], como lo lanzaría `ApiClient`.

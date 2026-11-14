@@ -551,6 +551,9 @@ String _shorter(String value, int min) =>
 final class _Validators {
   _Validators(this.model, this.service, this.imports);
 
+  /// Argumento que propaga `acceptUnknownEnums` a los objetos anidados.
+  static const _lenient = 'acceptUnknownEnums: acceptUnknownEnums';
+
   final ContractModel model;
   final String service;
   final _Imports imports;
@@ -570,11 +573,23 @@ final class _Validators {
       patterns.putIfAbsent(source, () => '_pattern${patterns.length}');
 
   /// Escribe las comprobaciones de `node` sobre la variable `value`.
-  void node(String from, Json node, String value, String path) {
+  ///
+  /// [arrayItem] indica que `value` es un elemento de una lista. Ahí un valor
+  /// de enum desconocido se acepta cuando el validador corre con
+  /// `acceptUnknownEnums` (lo que llega del servidor), porque `fromJson`
+  /// descarta esos elementos con `tryParse`. Un enum suelto sigue estricto:
+  /// el enum de Dart no tiene cómo representar el valor nuevo.
+  void node(
+    String from,
+    Json node,
+    String value,
+    String path, {
+    bool arrayItem = false,
+  }) {
     final (inner, nullable) = ContractModel.unwrapNullable(node);
     if (nullable) {
       out.writeln('if ($value != null) {');
-      this.node(from, inner, value, path);
+      this.node(from, inner, value, path, arrayItem: arrayItem);
       out.writeln('}');
       return;
     }
@@ -584,9 +599,11 @@ final class _Validators {
       final target = model.schema(id);
       if (ContractModel.isObject(target)) {
         if (id.service != service) imports.of(id.service, Folder.schemas);
-        out.writeln('${id.name}Schema.check($value, $path, errors);');
+        out.writeln(
+          '${id.name}Schema.check($value, $path, errors, $_lenient);',
+        );
       } else {
-        this.node(id.service, target, value, path);
+        this.node(id.service, target, value, path, arrayItem: arrayItem);
       }
       return;
     }
@@ -597,8 +614,10 @@ final class _Validators {
         throw GeneratorException('$service: enum con valores que no son texto');
       }
       final set = values.map((v) => dartString(v as String)).join(', ');
+      final known = '!const <String>{$set}.contains($value)';
       out.writeln(
-        'if ($value is! String || !const <String>{$set}.contains($value)) {',
+        'if ($value is! String || '
+        '${arrayItem ? '(!acceptUnknownEnums && $known)' : known}) {',
       );
       _add(path, 'validationInvalidEnum');
       out.writeln('}');
@@ -610,7 +629,9 @@ final class _Validators {
         if (spec == null) {
           throw GeneratorException('$service: objeto anónimo sin clase');
         }
-        out.writeln('${spec.name}Schema.check($value, $path, errors);');
+        out.writeln(
+          '${spec.name}Schema.check($value, $path, errors, $_lenient);',
+        );
       case 'string':
         out.writeln('if ($value is! String) {');
         _add(path, 'validationInvalidType');
@@ -695,6 +716,7 @@ final class _Validators {
           inner['items'] as Json,
           item,
           "joinPath($path, '\$$index')",
+          arrayItem: true,
         );
         out.writeln('}');
         out.writeln('}');
@@ -729,9 +751,33 @@ final class _Validators {
       ..writeln('    return errors;')
       ..writeln('  }')
       ..writeln()
-      ..writeln('  /// Agrega a [errors] los errores de [json] bajo [path].')
       ..writeln(
-        '  static void check(Object? json, String path, List<FieldError> errors) {',
+        '  /// Errores de [json] recibido del servidor (respuesta o mensaje).',
+      )
+      ..writeln('  ///')
+      ..writeln(
+        '  /// Igual que [validate], pero acepta valores de enum que este cliente',
+      )
+      ..writeln(
+        '  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):',
+      )
+      ..writeln('  /// `fromJson` los descarta en lugar de fallar.')
+      ..writeln(
+        "  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {",
+      )
+      ..writeln('    final errors = <FieldError>[];')
+      ..writeln('    check(json, path, errors, acceptUnknownEnums: true);')
+      ..writeln('    return errors;')
+      ..writeln('  }')
+      ..writeln()
+      ..writeln('  /// Agrega a [errors] los errores de [json] bajo [path].')
+      ..writeln('  ///')
+      ..writeln(
+        '  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de',
+      )
+      ..writeln('  /// una lista no es un error.')
+      ..writeln(
+        '  static void check(Object? json, String path, List<FieldError> errors, {bool acceptUnknownEnums = false}) {',
       )
       ..writeln('    if (json is! Map<String, Object?>) {');
     _add('path', 'validationInvalidType');
@@ -954,7 +1000,9 @@ void _checkKeys(String where, Json json, Set<String> known) {
       ..writeln('    validateRequest: ${request.name}Schema.validate,');
     if (response != null) {
       out
-        ..writeln('    validateResponse: ${response.name}Schema.validate,')
+        ..writeln(
+          '    validateResponse: ${response.name}Schema.validateIncoming,',
+        )
         ..writeln('    decodeResponse: ${response.name}.fromJson,');
     }
     out
@@ -1016,7 +1064,9 @@ void _checkKeys(String where, Json json, Set<String> known) {
         ..writeln('    type: ${dartString(message['type'] as String)},')
         ..writeln('    kind: MessageKind.$kind,')
         ..writeln('    version: ${message['version'] as int},')
-        ..writeln('    validatePayload: ${payload.name}Schema.validate,')
+        ..writeln(
+          '    validatePayload: ${payload.name}Schema.validateIncoming,',
+        )
         ..writeln('    decodePayload: ${payload.name}.fromJson,')
         ..writeln('  );')
         ..writeln();

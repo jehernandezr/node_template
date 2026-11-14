@@ -247,6 +247,125 @@ void main() {
       expect(access.mfaVerifiedAt, isNull);
     });
 
+    test('responses accept unknown enum values in lists; requests do not', () {
+      final json = <String, dynamic>{
+        'userId': _sessionId,
+        'tenantId': _sessionId,
+        'sessionId': _sessionId,
+        'permissions': ['billing:write', 'future:permission'],
+        'platformRoles': ['support', 'future_role'],
+        'features': ['billing', 'future_feature'],
+        'flags': ['future_flag'],
+        'mfaVerifiedAt': null,
+      };
+      const route = IdentityRoutes.getSessionAccess;
+      expect(route.validateResponse!(json), isEmpty);
+      final access = route.decodeResponse!(json);
+      expect(access.permissions, [Permission.billingWrite]);
+      expect(access.platformRoles, [PlatformRole.support]);
+      expect(access.features, [PlanFeature.billing]);
+      expect(access.flags, isEmpty);
+      // The strict validator still flags them.
+      expect(_pairs(SessionAccessSchema.validate(json)), [
+        ('permissions.1', PlatformErrorCode.validationInvalidEnum.code),
+        ('platformRoles.1', PlatformErrorCode.validationInvalidEnum.code),
+        ('features.1', PlatformErrorCode.validationInvalidEnum.code),
+        ('flags.0', PlatformErrorCode.validationInvalidEnum.code),
+      ]);
+    });
+
+    test('incoming validation keeps types and single enums strict', () {
+      final json = <String, dynamic>{
+        'userId': _sessionId,
+        'tenantId': _sessionId,
+        'sessionId': _sessionId,
+        'permissions': [42],
+        'platformRoles': <String>[],
+        'features': <String>[],
+        'flags': <String>[],
+        'mfaVerifiedAt': null,
+      };
+      expect(_pairs(SessionAccessSchema.validateIncoming(json)), [
+        ('permissions.0', PlatformErrorCode.validationInvalidEnum.code),
+      ]);
+      // A single enum has no Dart value for an unknown wire code.
+      expect(
+        _pairs(
+          IdentityRoutes.requestMfaChallenge.validateResponse!({
+            'challengeId': _sessionId,
+            'method': 'retina_scan',
+            'expiresAt': '2026-11-13T10:00:00.000Z',
+          }),
+        ),
+        [('method', PlatformErrorCode.validationInvalidEnum.code)],
+      );
+      // Nested objects inherit the leniency: a page of sessions is fine
+      // with a new MFA method in a nested list.
+      expect(
+        IdentityRoutes.signIn.validateResponse!({
+          'status': 'mfa_required',
+          'mfa': {
+            'mfaToken': 't',
+            'methods': ['retina_scan', 'device_otp'],
+          },
+        }),
+        isEmpty,
+      );
+      expect(
+        _pairs(
+          IdentityRoutes.requestMfaChallenge.validateRequest({
+            'mfaToken': 't',
+            'method': 'retina_scan',
+          }),
+        ),
+        [('method', PlatformErrorCode.validationInvalidEnum.code)],
+      );
+    });
+
+    test('events accept unknown enum values in payload lists as well', () {
+      expect(
+        identical(
+          IdentityEvents.sessionRevoked.validatePayload,
+          SessionRevokedPayloadSchema.validateIncoming,
+        ),
+        isTrue,
+      );
+    });
+
+    test('declare the refresh, sign-out and step-up routes', () {
+      expect(IdentityRoutes.refreshSession.path, '/v1/auth/refresh');
+      expect(IdentityRoutes.refreshSession.requiresAuth, isFalse);
+      expect(
+        IdentityRoutes.refreshSession.errors,
+        containsAll([
+          IdentityErrorCode.sessionReused.code,
+          IdentityErrorCode.sessionExpired.code,
+          IdentityErrorCode.userSuspended.code,
+          IdentityErrorCode.tenantSuspended.code,
+        ]),
+      );
+      expect(
+        IdentityRoutes.refreshSession.validateRequest(<String, Object?>{}),
+        isEmpty,
+      );
+      expect(IdentityRoutes.signOut.path, '/v1/auth/sign-out');
+      expect(IdentityRoutes.signOut.decodeResponse, isNull);
+      for (final route in [
+        IdentityRoutes.startStepUp,
+        IdentityRoutes.requestStepUpChallenge,
+        IdentityRoutes.verifyStepUp,
+      ]) {
+        expect(route.requiresAuth, isTrue);
+        expect(route.path, startsWith('/v1/me/step-up'));
+        expect(route.errors, contains(IdentityErrorCode.tokenRevoked.code));
+      }
+      expect(
+        IdentityRoutes.requestStepUpChallenge.errors,
+        contains(IdentityErrorCode.mfaMethodUnavailable.code),
+      );
+      expect(IdentityErrorCode.mfaMethodUnavailable.httpStatus, 400);
+    });
+
     test('events decode their payload by type', () {
       final descriptor = IdentityEvents.byType('identity.session.revoked.v1');
       expect(descriptor, same(IdentityEvents.sessionRevoked));

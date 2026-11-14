@@ -19,14 +19,27 @@ abstract interface class AuthRepository {
   /// `POST /v1/auth/mfa/verify`.
   Future<SignInResponse> verifyMfa(MfaVerifyRequest request);
 
-  /// Rota el session token y devuelve un access token nuevo.
+  /// `POST /v1/auth/refresh`: rota el session token y devuelve un access
+  /// token nuevo.
   ///
   /// [sessionToken] es el guardado en el [TokenStore]; es null en web, donde
   /// el navegador envía la cookie httpOnly.
   Future<SessionTokens> refresh({String? sessionToken});
 
-  /// Revoca la sesión actual en el servidor.
-  Future<void> logout();
+  /// `POST /v1/auth/sign-out`: revoca en el servidor la sesión de
+  /// [sessionToken] (en web, la de la cookie).
+  Future<void> logout({String? sessionToken});
+
+  /// `POST /v1/me/step-up`: abre el paso adicional de la sesión actual y
+  /// devuelve los métodos que ofrece. Exige sesión.
+  Future<PendingMfa> startStepUp();
+
+  /// `POST /v1/me/step-up/challenges`: crea el desafío del paso adicional.
+  Future<MfaChallenge> requestStepUpChallenge(MfaChallengeRequest request);
+
+  /// `POST /v1/me/step-up/verify`: verifica el paso adicional y devuelve el
+  /// access token nuevo y el nuevo `mfaVerifiedAt` de la sesión.
+  Future<StepUpResult> verifyStepUp(StepUpVerifyRequest request);
 }
 
 /// Almacenamiento persistente del session token.

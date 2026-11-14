@@ -61,6 +61,7 @@ GoRouter buildMobileRouter({
           from: state.uri.queryParameters['from'],
           clock: runtime.clock,
           onResult: stepUp.isRequest(state.extra) ? stepUp.complete : null,
+          connection: connection,
         ),
       ),
     ],

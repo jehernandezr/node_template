@@ -5,7 +5,7 @@ import {
   PageQuerySchema,
   PlatformErrorCode,
 } from '@contracts/platform';
-import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
+import { IdentityRoute } from '../enums/identifiers.enum.js';
 import {
   DevicePageSchema,
   SessionAccessSchema,
@@ -13,6 +13,7 @@ import {
   RevokeSessionRequestSchema,
   SessionPageSchema,
 } from '../schemas/session.schema.js';
+import { SessionGuardErrors } from './session-guard.errors.js';
 
 /** `GET /v1/me/access`: acceso de la sesión actual, para llenar la sesión del front. */
 export const GetSessionAccessRoute = defineRoute({
@@ -20,10 +21,7 @@ export const GetSessionAccessRoute = defineRoute({
   method: HttpMethod.Get,
   path: '/v1/me/access',
   response: SessionAccessSchema,
-  errors: [
-    IdentityErrorCode.SessionRevoked,
-    IdentityErrorCode.TokenStalePermissions,
-  ],
+  errors: SessionGuardErrors,
   access: Access.authenticated(),
   description:
     'Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.',
@@ -36,7 +34,7 @@ export const ListSessionsRoute = defineRoute({
   path: '/v1/me/sessions',
   request: PageQuerySchema,
   response: SessionPageSchema,
-  errors: [IdentityErrorCode.SessionRevoked],
+  errors: SessionGuardErrors,
   access: Access.authenticated(),
   description: 'Lista las sesiones activas del usuario, la actual primero.',
 });
@@ -47,10 +45,7 @@ export const RevokeSessionRoute = defineRoute({
   method: HttpMethod.Delete,
   path: '/v1/me/sessions/{sessionId}',
   request: RevokeSessionRequestSchema,
-  errors: [
-    PlatformErrorCode.ResourceNotFound,
-    IdentityErrorCode.SessionRevoked,
-  ],
+  errors: [...SessionGuardErrors, PlatformErrorCode.ResourceNotFound],
   access: Access.authenticated(),
   description: 'Cierra una sesión del usuario y revoca sus tokens.',
 });
@@ -61,7 +56,7 @@ export const RevokeOtherSessionsRoute = defineRoute({
   method: HttpMethod.Post,
   path: '/v1/me/sessions/revoke-others',
   response: RevokedSessionsSchema,
-  errors: [IdentityErrorCode.SessionRevoked],
+  errors: SessionGuardErrors,
   access: Access.authenticated(),
   description: 'Cierra todas las sesiones del usuario menos la actual.',
 });
@@ -73,7 +68,7 @@ export const ListDevicesRoute = defineRoute({
   path: '/v1/me/devices',
   request: PageQuerySchema,
   response: DevicePageSchema,
-  errors: [IdentityErrorCode.SessionRevoked],
+  errors: SessionGuardErrors,
   access: Access.authenticated(),
   description: 'Lista los dispositivos del usuario con confianza vigente.',
 });

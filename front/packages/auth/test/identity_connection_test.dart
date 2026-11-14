@@ -128,6 +128,25 @@ void main() {
     await slow.dispose();
   });
 
+  test('markMfaVerified publishes the new last MFA in the access', () async {
+    repo.signInResult = _authenticated('a1');
+    await manager.signIn(
+      const SignInRequest(email: 'ana@example.com', password: 'secret'),
+    );
+    await connection.reloadAccess();
+    final at = t0.add(const Duration(minutes: 30));
+
+    connection.markMfaVerified(at);
+
+    expect(connection.access.value?.mfaVerifiedAt, at);
+    expect(connection.access.value?.permissions, [Permission.billingRead]);
+  });
+
+  test('markMfaVerified without a session does nothing', () {
+    connection.markMfaVerified(t0);
+    expect(connection.access.value, isNull);
+  });
+
   test('restore without a stored session leaves the access empty', () async {
     expect(await connection.restore(), isFalse);
     expect(loads, 0);
@@ -174,5 +193,144 @@ void main() {
       transport.requests.first.headers.containsKey('authorization'),
       isFalse,
     );
+  });
+
+  group('the real connection', () {
+    late _Transport transport;
+    late InMemoryTokenStore store;
+    late IdentityConnection real;
+
+    String problem(IdentityErrorCode code) => jsonEncode({
+      'type': 'about:blank',
+      'title': code.code,
+      'status': code.httpStatus,
+      'code': code.code,
+    });
+
+    Future<void> signIn() async {
+      await real.sessionManager.signIn(
+        const SignInRequest(email: 'ana@example.com', password: 'secret'),
+      );
+      await real.reloadAccess();
+    }
+
+    setUp(() {
+      transport = _Transport();
+      store = InMemoryTokenStore();
+      real = IdentityConnection(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com'),
+        tokenStore: store,
+      );
+    });
+
+    tearDown(() => real.dispose());
+
+    TransportResponse base(TransportRequest request) =>
+        switch (request.uri.path) {
+          '/v1/auth/sign-in' => TransportResponse(
+            statusCode: 200,
+            body: jsonEncode(
+              _authenticated(
+                'real-token',
+                expiresAt: DateTime.now().add(const Duration(hours: 1)),
+              ).toJson(),
+            ),
+          ),
+          '/v1/me/access' => TransportResponse(
+            statusCode: 200,
+            body: jsonEncode(_access([Permission.tasksRead]).toJson()),
+          ),
+          '/v1/auth/sign-out' => const TransportResponse(statusCode: 204),
+          _ => const TransportResponse(statusCode: 404),
+        };
+
+    for (final code in [
+      IdentityErrorCode.tokenRevoked,
+      IdentityErrorCode.userSuspended,
+      IdentityErrorCode.tenantSuspended,
+      IdentityErrorCode.sessionRevoked,
+    ]) {
+      test(
+        '${code.code} on any authenticated route closes the session',
+        () async {
+          transport.answer = base;
+          await signIn();
+          expect(real.access.value, isNotNull);
+          transport.answer = (request) => request.uri.path == '/v1/me/sessions'
+              ? TransportResponse(
+                  statusCode: code.httpStatus,
+                  body: problem(code),
+                )
+              : base(request);
+
+          await expectLater(
+            real.apiClient.send(IdentityRoutes.listSessions, const PageQuery()),
+            throwsA(isA<ApiErrorException>()),
+          );
+
+          expect(real.sessionManager.state, AuthState.signedOut);
+          expect(real.access.value, isNull);
+          expect(store.sessionToken, isNull);
+        },
+      );
+    }
+
+    test('a forbidden answer keeps the session', () async {
+      transport.answer = base;
+      await signIn();
+      transport.answer = (request) => request.uri.path == '/v1/me/sessions'
+          ? TransportResponse(
+              statusCode: 403,
+              body: jsonEncode({
+                'type': 'about:blank',
+                'title': 'Forbidden',
+                'status': 403,
+                'code': PlatformErrorCode.authForbidden.code,
+              }),
+            )
+          : base(request);
+
+      await expectLater(
+        real.apiClient.send(IdentityRoutes.listSessions, const PageQuery()),
+        throwsA(isA<ApiErrorException>()),
+      );
+
+      expect(real.sessionManager.state, AuthState.signedIn);
+    });
+
+    test('signOut posts the stored session token to sign-out', () async {
+      transport.answer = base;
+      await signIn();
+
+      await real.signOut();
+
+      final request = transport.requests.last;
+      expect(request.uri.path, '/v1/auth/sign-out');
+      expect(jsonDecode(request.body!), {'sessionToken': 'session-real-token'});
+      expect(request.headers.containsKey('authorization'), isFalse);
+    });
+
+    test('the step-up goes out with the session access token', () async {
+      transport.answer = (request) => switch (request.uri.path) {
+        '/v1/me/step-up' => TransportResponse(
+          statusCode: 201,
+          body: jsonEncode({
+            'mfaToken': 'step-1',
+            'methods': ['device_otp'],
+          }),
+        ),
+        _ => base(request),
+      };
+      await signIn();
+
+      final pending = await real.sessionManager.startStepUp();
+
+      expect(pending.methods, [MfaFactor.deviceOtp]);
+      expect(
+        transport.requests.last.headers['authorization'],
+        'Bearer real-token',
+      );
+    });
   });
 }

@@ -20,8 +20,27 @@ abstract final class PageQuerySchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -114,8 +133,27 @@ abstract final class MoneyAmountSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -197,8 +235,27 @@ abstract final class FieldErrorSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -284,8 +341,27 @@ abstract final class ProblemDetailsSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -439,6 +515,7 @@ abstract final class ProblemDetailsSchema {
             item16,
             joinPath(joinPath(path, 'errors'), '$i15'),
             errors,
+            acceptUnknownEnums: acceptUnknownEnums,
           );
         }
       }
@@ -457,8 +534,27 @@ abstract final class EmptySchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;

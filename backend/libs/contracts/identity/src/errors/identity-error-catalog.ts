@@ -40,11 +40,32 @@ export const identityErrorCatalog = defineErrorCatalog(C, {
     audience: ErrorAudience.Public,
     description: 'La operación exige verificar de nuevo el segundo factor.',
   },
+  [C.MfaMethodUnavailable]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El método pedido no está entre los que ofreció el desafío MFA. Elige otro.',
+  },
   [C.SessionRevoked]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
     description: 'La sesión fue cerrada. Inicia sesión de nuevo.',
+  },
+  [C.SessionExpired]: {
+    httpStatus: 401,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'La sesión venció por inactividad o por el tope absoluto. Inicia sesión de nuevo.',
+  },
+  [C.SessionReused]: {
+    httpStatus: 401,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'Se presentó un session token ya rotado. La sesión completa quedó revocada. Inicia sesión de nuevo.',
   },
   [C.TokenStalePermissions]: {
     httpStatus: 401,
@@ -53,10 +74,31 @@ export const identityErrorCatalog = defineErrorCatalog(C, {
     description:
       'Los permisos cambiaron desde que se emitió el token. El cliente refresca y reintenta.',
   },
+  [C.TokenRevoked]: {
+    httpStatus: 401,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El access token fue revocado por la época del usuario o del tenant. Inicia sesión de nuevo.',
+  },
   [C.UserNotFound]: {
     httpStatus: 404,
     retryable: false,
     audience: ErrorAudience.Internal,
     description: 'El usuario no existe.',
+  },
+  [C.UserSuspended]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El usuario está suspendido. Sus sesiones quedan cerradas hasta que se reactive.',
+  },
+  [C.TenantSuspended]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El tenant está suspendido. Las sesiones en él quedan cerradas hasta que se reactive.',
   },
 });

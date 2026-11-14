@@ -3,6 +3,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
@@ -25,12 +26,16 @@ typedef SessionAccessLoader = Future<SessionAccess> Function();
 ///
 /// [access] se recarga después de cada refresh (los permisos pudieron
 /// cambiar) y vuelve a null cuando la sesión se cierra, sea por un [signOut]
-/// o porque el servidor la invalidó.
+/// o porque el servidor la invalidó: en el refresh o en cualquier ruta
+/// autenticada que responda un código de invalidación (sesión revocada,
+/// vencida o reutilizada, token revocado, usuario o tenant suspendido).
 final class IdentityConnection {
   /// Conexión sobre [transport] y [baseUri].
   ///
-  /// Las rutas del login usan un [ApiClient] sin token; el resto,
-  /// [apiClient], que toma el token de [sessionManager].
+  /// Las rutas del login, el refresh y el cierre de sesión usan un
+  /// [ApiClient] sin token; el resto (también el paso adicional),
+  /// [apiClient], que toma el token de [sessionManager] y le avisa cuando la
+  /// API rechaza ese token con un código de invalidación.
   factory IdentityConnection({
     required HttpTransport transport,
     required Uri baseUri,
@@ -38,23 +43,32 @@ final class IdentityConnection {
     DeviceKeyPort? deviceKeys,
     Map<String, String> defaultHeaders = const {},
   }) {
-    final sessionManager = SessionManager(
+    // El cliente con sesión y el SessionManager se necesitan entre sí.
+    late final SessionManager sessionManager;
+    final apiClient = ApiClient(
+      transport: SessionInvalidationTransport(
+        transport,
+        onRejected: (accessToken, code) => sessionManager.handleRejectedToken(
+          accessToken: accessToken,
+          code: code,
+        ),
+      ),
+      baseUri: baseUri,
+      accessToken: () => sessionManager.accessToken(),
+      onStalePermissions: () => sessionManager.refresh(),
+      defaultHeaders: defaultHeaders,
+    );
+    sessionManager = SessionManager(
       repository: ApiAuthRepository(
         ApiClient(
           transport: transport,
           baseUri: baseUri,
           defaultHeaders: defaultHeaders,
         ),
+        sessionClient: apiClient,
       ),
       tokenStore: tokenStore,
       deviceKeys: deviceKeys,
-    );
-    final apiClient = ApiClient(
-      transport: transport,
-      baseUri: baseUri,
-      accessToken: sessionManager.accessToken,
-      onStalePermissions: sessionManager.refresh,
-      defaultHeaders: defaultHeaders,
     );
     return IdentityConnection.withParts(
       sessionManager: sessionManager,
@@ -130,6 +144,27 @@ final class IdentityConnection {
   /// Cierra la sesión en el servidor y localmente.
   Future<void> signOut() => sessionManager.logout();
 
+  /// Publica en [access] el `mfaVerifiedAt` de un paso adicional verificado
+  /// (el de `SessionManager.verifyStepUp`). Sin sesión no hace nada.
+  ///
+  /// Va aparte de la verificación para que la página del paso adicional
+  /// decida cuándo cambia la sesión del shell: primero cierra la página y
+  /// después publica, porque el router se recalcula con ese cambio.
+  void markMfaVerified(DateTime at) {
+    final current = _access.value;
+    if (current == null || sessionManager.state == AuthState.signedOut) return;
+    _access.value = SessionAccess(
+      userId: current.userId,
+      tenantId: current.tenantId,
+      sessionId: current.sessionId,
+      permissions: current.permissions,
+      platformRoles: current.platformRoles,
+      features: current.features,
+      flags: current.flags,
+      mfaVerifiedAt: at,
+    );
+  }
+
   Future<void> dispose() async {
     await _states.cancel();
     _access.dispose();
@@ -148,5 +183,55 @@ final class IdentityConnection {
       // el acceso anterior; el siguiente refresh lo intenta de nuevo.
       unawaited(reloadAccess().then<void>((_) {}, onError: (Object _) {}));
     }
+  }
+}
+
+/// Avisa el rechazo de un access token.
+typedef RejectedTokenHandler = Future<bool> Function(
+  String accessToken,
+  String code,
+);
+
+/// [HttpTransport] que mira las respuestas de error de las peticiones con
+/// access token y avisa a [onRejected] con el token y el código del problema.
+///
+/// Así `SessionManager.handleRejectedToken` cierra la sesión cuando
+/// cualquier ruta autenticada responde un código de invalidación, aunque la
+/// llamada la haga un microfrontend. La respuesta sigue igual hacia
+/// `ApiClient`, que la convierte en `ApiErrorException`.
+final class SessionInvalidationTransport implements HttpTransport {
+  SessionInvalidationTransport(this.inner, {required this.onRejected});
+
+  final HttpTransport inner;
+  final RejectedTokenHandler onRejected;
+
+  static const _bearer = 'Bearer ';
+
+  @override
+  Future<TransportResponse> send(TransportRequest request) async {
+    final response = await inner.send(request);
+    final authorization = request.headers['authorization'];
+    if (authorization == null ||
+        !authorization.startsWith(_bearer) ||
+        (response.statusCode >= 200 && response.statusCode <= 299)) {
+      return response;
+    }
+    final code = _problemCode(response.body);
+    if (code != null) {
+      await onRejected(authorization.substring(_bearer.length), code);
+    }
+    return response;
+  }
+
+  static String? _problemCode(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic> && decoded['code'] is String) {
+        return decoded['code'] as String;
+      }
+    } on FormatException {
+      // No es un documento de problema: no hay código que mirar.
+    }
+    return null;
   }
 }

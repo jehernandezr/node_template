@@ -3,33 +3,43 @@
 Sesión del front contra el servicio `identity`. Usa los tipos y códigos
 generados de `package:contracts` (`SignInRequest`, `SignInResponse`,
 `PendingMfa`, `MfaFactor`, `MfaChallenge`, `MfaVerifyRequest`,
-`SessionTokens`, `SessionAccess`, `IdentityErrorCode`, `MfaRules`); no define
+`SessionTokens`, `SessionTokenRequest`, `StepUpVerifyRequest`, `StepUpResult`,
+`SessionAccess`, `IdentityErrorCode`, `MfaRules`); no define
 modelos propios. Los adaptadores de almacenamiento seguro y de claves de
 hardware (Keychain/Keystore, Secure Enclave, WebCrypto) se agregan después.
 
 ## API pública (`package:auth/auth.dart`)
 
 - **Puertos**: `AuthRepository` (`signIn`, `requestMfaChallenge`, `verifyMfa`,
-  `refresh`, `logout`), `TokenStore` (`CookieTokenStore` en web),
+  `refresh`, `logout`, `startStepUp`, `requestStepUpChallenge`,
+  `verifyStepUp`), `TokenStore` (`CookieTokenStore` en web),
   `DeviceKeyPort`.
 - **Repositorio real**: `ApiAuthRepository` sobre `ApiClient`, que valida cada
-  petición contra el contrato antes de llamar. El contrato aún no publica
-  refresh ni cierre de sesión: sin ellos, `refresh` responde
-  `PLATFORM.AUTH.UNAUTHENTICATED` sin red y `logout` solo cierra la sesión
-  local.
+  petición contra el contrato antes de llamar. El refresh
+  (`POST /v1/auth/refresh`) y el cierre (`POST /v1/auth/sign-out`) son
+  públicos y llevan el session token en el cuerpo; en web va vacío y viaja la
+  cookie httpOnly. El paso adicional (`/v1/me/step-up`) va por un
+  `sessionClient` con el access token.
 - **Gestor**: `SessionManager` con `restore`, `signIn`, `requestMfaChallenge`,
-  `verifyMfa`, `accessToken`, `refresh`, `logout`, `state` y `states`
-  (`AuthState`: `signedOut`, `signedIn`, `refreshing`).
+  `verifyMfa`, `startStepUp`, `requestStepUpChallenge`, `verifyStepUp`,
+  `accessToken`, `refresh`, `logout`, `handleRejectedToken`, `state` y
+  `states` (`AuthState`: `signedOut`, `signedIn`, `refreshing`).
   - Refresca el access token `refreshLead` antes de que venza.
   - Un solo refresh en vuelo para las llamadas concurrentes.
-  - Cierra la sesión en logout o cuando el refresh devuelve un código de
-    `invalidationCodes` (`Set<IdentityErrorCode>`, por defecto
-    `{IdentityErrorCode.sessionRevoked}`) o `PLATFORM.AUTH.UNAUTHENTICATED`.
+  - Cierra la sesión en logout o cuando el servidor la invalida con un código
+    de `invalidationCodes` (por defecto `defaultInvalidationCodes`: sesión
+    revocada, vencida o reutilizada, token revocado, usuario o tenant
+    suspendido), sea en el refresh o en cualquier ruta autenticada. Un
+    refresh con `PLATFORM.AUTH.UNAUTHENTICATED` también la cierra.
+  - `verifyStepUp` adopta el access token nuevo, con el segundo factor al día.
   - `accessToken` devuelve null sin sesión: es el `accessToken` de
     `ApiClient`.
 - **Conexión**: `IdentityConnection` reúne el `SessionManager`, el `ApiClient`
   con la sesión y el acceso de `GET /v1/me/access` (`access`), que se recarga
-  tras cada refresh y vuelve a null al cerrar la sesión.
+  tras cada refresh y vuelve a null al cerrar la sesión. Su transporte
+  (`SessionInvalidationTransport`) avisa al gestor cuando una ruta
+  autenticada rechaza el token con un código de invalidación, y
+  `markMfaVerified` publica el `mfaVerifiedAt` de un paso adicional.
 - **Errores**: los del servidor son `ApiErrorException` con el código del
   contrato; `SignedOutException` indica que no hay sesión o que un logout
   anuló la operación.

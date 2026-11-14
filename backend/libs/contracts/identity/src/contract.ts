@@ -27,8 +27,10 @@ import {
 } from './events/identity.events.js';
 import { IdentityEventsTopic } from './events/identity.topics.js';
 import {
+  RefreshSessionRoute,
   RequestMfaChallengeRoute,
   SignInRoute,
+  SignOutRoute,
   VerifyMfaRoute,
 } from './http/auth.routes.js';
 import {
@@ -39,6 +41,11 @@ import {
   RevokeSessionRoute,
 } from './http/session.routes.js';
 import {
+  RequestStepUpChallengeRoute,
+  StartStepUpRoute,
+  VerifyStepUpRoute,
+} from './http/step-up.routes.js';
+import {
   GetUserAccessOperation,
   RevokeUserSessionsOperation,
 } from './internal/identity.operations.js';
@@ -48,10 +55,13 @@ import {
   MfaFactorSchema,
   MfaVerifyRequestSchema,
   PendingMfaSchema,
+  SessionTokenRequestSchema,
   SessionTokensSchema,
   SignInRequestSchema,
   SignInResponseSchema,
   SignInStatusSchema,
+  StepUpResultSchema,
+  StepUpVerifyRequestSchema,
 } from './schemas/auth.schema.js';
 import {
   ClientPlatformSchema,
@@ -79,7 +89,7 @@ import {
 export const identityContract = defineServiceContract({
   service: 'identity',
   description:
-    'Identidad: inicio de sesión, MFA, sesiones, dispositivos y enums de acceso.',
+    'Identidad: inicio y cierre de sesión, refresh, MFA, paso adicional, sesiones, dispositivos y enums de acceso.',
   enums: {
     Permission,
     PlatformRole,
@@ -114,6 +124,9 @@ export const identityContract = defineServiceContract({
     MfaChallengeRequest: MfaChallengeRequestSchema,
     MfaChallenge: MfaChallengeSchema,
     MfaVerifyRequest: MfaVerifyRequestSchema,
+    SessionTokenRequest: SessionTokenRequestSchema,
+    StepUpVerifyRequest: StepUpVerifyRequestSchema,
+    StepUpResult: StepUpResultSchema,
     SessionSummary: SessionSummarySchema,
     SessionPage: SessionPageSchema,
     DeviceSummary: DeviceSummarySchema,
@@ -131,6 +144,11 @@ export const identityContract = defineServiceContract({
     signIn: SignInRoute,
     requestMfaChallenge: RequestMfaChallengeRoute,
     verifyMfa: VerifyMfaRoute,
+    refreshSession: RefreshSessionRoute,
+    signOut: SignOutRoute,
+    startStepUp: StartStepUpRoute,
+    requestStepUpChallenge: RequestStepUpChallengeRoute,
+    verifyStepUp: VerifyStepUpRoute,
     getSessionAccess: GetSessionAccessRoute,
     listSessions: ListSessionsRoute,
     revokeSession: RevokeSessionRoute,

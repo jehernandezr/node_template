@@ -254,6 +254,215 @@ void main() {
     expect(repo.refreshCount, 0);
   });
 
+  test('every invalidation code of the plan ends the session on refresh', () {
+    expect(defaultInvalidationCodes, {
+      IdentityErrorCode.sessionRevoked,
+      IdentityErrorCode.sessionExpired,
+      IdentityErrorCode.sessionReused,
+      IdentityErrorCode.tokenRevoked,
+      IdentityErrorCode.userSuspended,
+      IdentityErrorCode.tenantSuspended,
+    });
+  });
+
+  for (final code in [
+    IdentityErrorCode.sessionReused,
+    IdentityErrorCode.sessionExpired,
+    IdentityErrorCode.userSuspended,
+    IdentityErrorCode.tenantSuspended,
+  ]) {
+    test('a refresh answered with ${code.code} signs out', () async {
+      await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
+      repo.refreshError = FakeAuthRepository.apiError(code);
+
+      await expectLater(
+        manager.accessToken(),
+        throwsA(isA<ApiErrorException>()),
+      );
+      expect(store.sessionToken, isNull);
+      expect(manager.state, AuthState.signedOut);
+    });
+  }
+
+  test('logout sends the session token to sign-out', () async {
+    await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
+
+    await manager.logout();
+
+    expect(repo.lastLogoutSessionToken, 'session-access-1');
+  });
+
+  test('logout without a session token or cookie stays local', () async {
+    await manager.logout();
+
+    expect(repo.logoutCount, 0);
+    expect(manager.state, AuthState.signedOut);
+  });
+
+  test('logout with a cookie store calls sign-out without a token', () async {
+    manager = SessionManager(
+      repository: repo,
+      tokenStore: const CookieTokenStore(),
+      clock: () => now,
+    );
+
+    await manager.logout();
+
+    expect(repo.logoutCount, 1);
+    expect(repo.lastLogoutSessionToken, isNull);
+  });
+
+  test('a server failure on logout still clears the local session', () async {
+    final failing = _FailingLogoutRepository();
+    manager = SessionManager(
+      repository: failing,
+      tokenStore: store,
+      clock: () => now,
+    );
+    failing.signInResult = authenticated(
+      tokens('access-1', t0.add(const Duration(minutes: 15))),
+    );
+    await manager.signIn(credentials);
+
+    await expectLater(manager.logout(), throwsException);
+
+    expect(manager.state, AuthState.signedOut);
+    expect(store.sessionToken, isNull);
+  });
+
+  group('rejected access tokens', () {
+    test('an invalidation code on the current token signs out', () async {
+      await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
+
+      final closed = await manager.handleRejectedToken(
+        accessToken: 'access-1',
+        code: IdentityErrorCode.tokenRevoked.code,
+      );
+
+      expect(closed, isTrue);
+      expect(manager.state, AuthState.signedOut);
+      expect(store.sessionToken, isNull);
+    });
+
+    test('other codes and old tokens keep the session', () async {
+      await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
+
+      expect(
+        await manager.handleRejectedToken(
+          accessToken: 'access-1',
+          code: IdentityErrorCode.tokenStalePermissions.code,
+        ),
+        isFalse,
+      );
+      expect(
+        await manager.handleRejectedToken(
+          accessToken: 'access-1',
+          code: PlatformErrorCode.authForbidden.code,
+        ),
+        isFalse,
+      );
+      expect(
+        await manager.handleRejectedToken(
+          accessToken: 'access-0',
+          code: IdentityErrorCode.sessionRevoked.code,
+        ),
+        isFalse,
+      );
+      expect(manager.state, AuthState.signedIn);
+    });
+  });
+
+  group('step-up', () {
+    final verifiedAt = t0.add(const Duration(minutes: 5));
+
+    test('runs the three steps and adopts the new access token', () async {
+      await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
+      repo
+        ..stepUpResult = const PendingMfa(
+          mfaToken: 'step-1',
+          methods: [MfaFactor.deviceOtp],
+        )
+        ..stepUpChallengeResult = MfaChallenge(
+          challengeId: challengeId,
+          method: MfaFactor.deviceOtp,
+          expiresAt: t0.add(const Duration(minutes: 3)),
+          codeLength: MfaRules.deviceCodeLength,
+        )
+        ..stepUpVerifyResult = StepUpResult(
+          tokens: SessionTokens(
+            accessToken: 'access-mfa',
+            accessExpiresAt: t0.add(const Duration(minutes: 20)),
+          ),
+          mfaVerifiedAt: verifiedAt,
+        );
+
+      final pending = await manager.startStepUp();
+      final challenge = await manager.requestStepUpChallenge(
+        mfaToken: pending.mfaToken,
+        method: MfaFactor.deviceOtp,
+      );
+      final result = await manager.verifyStepUp(
+        mfaToken: pending.mfaToken,
+        challengeId: challenge.challengeId,
+        code: '12345678',
+      );
+
+      expect(result.mfaVerifiedAt, verifiedAt);
+      expect(repo.lastStepUpChallengeRequest?.mfaToken, 'step-1');
+      expect(repo.lastStepUpVerify?.challengeId, challengeId);
+      expect(await manager.accessToken(), 'access-mfa');
+      // The session token did not change.
+      expect(store.sessionToken, 'session-access-1');
+      expect(manager.state, AuthState.signedIn);
+    });
+
+    test('without a session every step throws SignedOutException', () {
+      expect(manager.startStepUp, throwsA(isA<SignedOutException>()));
+      expect(
+        () => manager.requestStepUpChallenge(
+          mfaToken: 't',
+          method: MfaFactor.deviceOtp,
+        ),
+        throwsA(isA<SignedOutException>()),
+      );
+      expect(repo.startStepUpCount, 0);
+    });
+
+    test('a logout during the verification drops the new token', () async {
+      await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
+      final gate = Completer<void>();
+      final gated = _GatedStepUpRepository(gate)
+        ..signInResult = authenticated(
+          tokens('access-1', t0.add(const Duration(minutes: 15))),
+        )
+        ..stepUpVerifyResult = StepUpResult(
+          tokens: SessionTokens(
+            accessToken: 'access-mfa',
+            accessExpiresAt: t0.add(const Duration(minutes: 20)),
+          ),
+          mfaVerifiedAt: verifiedAt,
+        );
+      manager = SessionManager(
+        repository: gated,
+        tokenStore: store,
+        clock: () => now,
+      );
+      await manager.signIn(credentials);
+
+      final verifying = manager.verifyStepUp(
+        mfaToken: 'step-1',
+        challengeId: challengeId,
+        code: '12345678',
+      );
+      await manager.logout();
+      gate.complete();
+
+      await expectLater(verifying, throwsA(isA<SignedOutException>()));
+      expect(manager.state, AuthState.signedOut);
+      expect(await manager.accessToken(), isNull);
+    });
+  });
+
   group('restore', () {
     test('refreshes with the stored session token; the access token is '
         'never stored', () async {
@@ -377,4 +586,25 @@ void main() {
       expect(store.sessionToken, isNull);
     });
   });
+}
+
+/// Repositorio cuyo cierre de sesión falla en el servidor.
+class _FailingLogoutRepository extends FakeAuthRepository {
+  @override
+  Future<void> logout({String? sessionToken}) async {
+    throw Exception('offline');
+  }
+}
+
+/// Repositorio cuya verificación del paso adicional espera a [gate].
+class _GatedStepUpRepository extends FakeAuthRepository {
+  _GatedStepUpRepository(this.gate);
+
+  final Completer<void> gate;
+
+  @override
+  Future<StepUpResult> verifyStepUp(StepUpVerifyRequest request) async {
+    await gate.future;
+    return super.verifyStepUp(request);
+  }
 }

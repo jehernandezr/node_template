@@ -364,6 +364,133 @@ final class MfaVerifyRequest {
       contractHash([mfaToken, challengeId, code, devicePublicKey]);
 }
 
+/// Session token a rotar o cerrar. En web se omite y viaja en la cookie httpOnly.
+@immutable
+final class SessionTokenRequest {
+  const SessionTokenRequest({this.sessionToken});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory SessionTokenRequest.fromJson(Map<String, dynamic> json) {
+    try {
+      return SessionTokenRequest(sessionToken: json['sessionToken'] as String?);
+    } on TypeError catch (error) {
+      throw FormatException('Invalid SessionTokenRequest: $error', json);
+    }
+  }
+
+  final String? sessionToken;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'sessionToken': ?sessionToken,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(SessionTokenRequest value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SessionTokenRequest &&
+          contractEquals(sessionToken, other.sessionToken);
+
+  @override
+  int get hashCode => contractHash([sessionToken]);
+}
+
+/// Verificación del paso adicional de una sesión abierta.
+@immutable
+final class StepUpVerifyRequest {
+  const StepUpVerifyRequest({
+    required this.mfaToken,
+    required this.challengeId,
+    required this.code,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory StepUpVerifyRequest.fromJson(Map<String, dynamic> json) {
+    try {
+      return StepUpVerifyRequest(
+        mfaToken: json['mfaToken'] as String,
+        challengeId: json['challengeId'] as String,
+        code: json['code'] as String,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid StepUpVerifyRequest: $error', json);
+    }
+  }
+
+  final String mfaToken;
+
+  final String challengeId;
+
+  final String code;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'mfaToken': mfaToken,
+    'challengeId': challengeId,
+    'code': code,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(StepUpVerifyRequest value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StepUpVerifyRequest &&
+          contractEquals(mfaToken, other.mfaToken) &&
+          contractEquals(challengeId, other.challengeId) &&
+          contractEquals(code, other.code);
+
+  @override
+  int get hashCode => contractHash([mfaToken, challengeId, code]);
+}
+
+/// Paso adicional verificado: access token nuevo y último MFA de la sesión.
+@immutable
+final class StepUpResult {
+  const StepUpResult({required this.tokens, required this.mfaVerifiedAt});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory StepUpResult.fromJson(Map<String, dynamic> json) {
+    try {
+      return StepUpResult(
+        tokens: SessionTokens.fromJson(json['tokens'] as Map<String, dynamic>),
+        mfaVerifiedAt: DateTime.parse(json['mfaVerifiedAt'] as String),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid StepUpResult: $error', json);
+    }
+  }
+
+  final SessionTokens tokens;
+
+  final DateTime mfaVerifiedAt;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'tokens': tokens.toJson(),
+    'mfaVerifiedAt': mfaVerifiedAt.toUtc().toIso8601String(),
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(StepUpResult value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StepUpResult &&
+          contractEquals(tokens, other.tokens) &&
+          contractEquals(mfaVerifiedAt, other.mfaVerifiedAt);
+
+  @override
+  int get hashCode => contractHash([tokens, mfaVerifiedAt]);
+}
+
 /// Sesión activa en un dispositivo.
 @immutable
 final class SessionSummary {

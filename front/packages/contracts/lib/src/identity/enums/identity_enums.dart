@@ -269,6 +269,14 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_step_up_required',
   ),
 
+  /// El método pedido no está entre los que ofreció el desafío MFA. Elige otro.
+  mfaMethodUnavailable(
+    'IDENTITY.MFA.METHOD_UNAVAILABLE',
+    httpStatus: 400,
+    retryable: false,
+    messageKey: 'error_identity_mfa_method_unavailable',
+  ),
+
   /// La sesión fue cerrada. Inicia sesión de nuevo.
   sessionRevoked(
     'IDENTITY.SESSION.REVOKED',
@@ -277,12 +285,52 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_session_revoked',
   ),
 
+  /// La sesión venció por inactividad o por el tope absoluto. Inicia sesión de nuevo.
+  sessionExpired(
+    'IDENTITY.SESSION.EXPIRED',
+    httpStatus: 401,
+    retryable: false,
+    messageKey: 'error_identity_session_expired',
+  ),
+
+  /// Se presentó un session token ya rotado. La sesión completa quedó revocada. Inicia sesión de nuevo.
+  sessionReused(
+    'IDENTITY.SESSION.REUSED',
+    httpStatus: 401,
+    retryable: false,
+    messageKey: 'error_identity_session_reused',
+  ),
+
   /// Los permisos cambiaron desde que se emitió el token. El cliente refresca y reintenta.
   tokenStalePermissions(
     'IDENTITY.TOKEN.STALE_PERMISSIONS',
     httpStatus: 401,
     retryable: true,
     messageKey: 'error_identity_token_stale_permissions',
+  ),
+
+  /// El access token fue revocado por la época del usuario o del tenant. Inicia sesión de nuevo.
+  tokenRevoked(
+    'IDENTITY.TOKEN.REVOKED',
+    httpStatus: 401,
+    retryable: false,
+    messageKey: 'error_identity_token_revoked',
+  ),
+
+  /// El usuario está suspendido. Sus sesiones quedan cerradas hasta que se reactive.
+  userSuspended(
+    'IDENTITY.USER.SUSPENDED',
+    httpStatus: 403,
+    retryable: false,
+    messageKey: 'error_identity_user_suspended',
+  ),
+
+  /// El tenant está suspendido. Las sesiones en él quedan cerradas hasta que se reactive.
+  tenantSuspended(
+    'IDENTITY.TENANT.SUSPENDED',
+    httpStatus: 403,
+    retryable: false,
+    messageKey: 'error_identity_tenant_suspended',
   );
 
   const IdentityErrorCode(
@@ -327,6 +375,11 @@ enum IdentityRoute {
   signIn('identity.auth.sign-in'),
   requestMfaChallenge('identity.auth.mfa-challenge'),
   verifyMfa('identity.auth.mfa-verify'),
+  refreshSession('identity.auth.refresh'),
+  signOut('identity.auth.sign-out'),
+  startStepUp('identity.step-up.start'),
+  requestStepUpChallenge('identity.step-up.challenge'),
+  verifyStepUp('identity.step-up.verify'),
   getSessionAccess('identity.me.access'),
   listSessions('identity.sessions.list'),
   revokeSession('identity.sessions.revoke'),

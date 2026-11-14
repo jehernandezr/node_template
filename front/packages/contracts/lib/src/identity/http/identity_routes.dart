@@ -31,7 +31,7 @@ abstract final class IdentityRoutes {
     platformRoles: <String>[],
     encodeRequest: SignInRequest.encode,
     validateRequest: SignInRequestSchema.validate,
-    validateResponse: SignInResponseSchema.validate,
+    validateResponse: SignInResponseSchema.validateIncoming,
     decodeResponse: SignInResponse.fromJson,
   );
 
@@ -49,6 +49,7 @@ abstract final class IdentityRoutes {
         successStatus: 201,
         errors: <String>[
           'IDENTITY.MFA.TOKEN_INVALID',
+          'IDENTITY.MFA.METHOD_UNAVAILABLE',
           'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
           'PLATFORM.RATE_LIMIT.EXCEEDED',
         ],
@@ -57,7 +58,7 @@ abstract final class IdentityRoutes {
         platformRoles: <String>[],
         encodeRequest: MfaChallengeRequest.encode,
         validateRequest: MfaChallengeRequestSchema.validate,
-        validateResponse: MfaChallengeSchema.validate,
+        validateResponse: MfaChallengeSchema.validateIncoming,
         decodeResponse: MfaChallenge.fromJson,
       );
 
@@ -84,9 +85,154 @@ abstract final class IdentityRoutes {
     platformRoles: <String>[],
     encodeRequest: MfaVerifyRequest.encode,
     validateRequest: MfaVerifyRequestSchema.validate,
-    validateResponse: SignInResponseSchema.validate,
+    validateResponse: SignInResponseSchema.validateIncoming,
     decodeResponse: SignInResponse.fromJson,
   );
+
+  /// Rota el session token (cuerpo en móvil, cookie httpOnly en web) y emite un access token nuevo.
+  ///
+  /// `POST /v1/auth/refresh`
+  static const refreshSession =
+      RouteDescriptor<SessionTokenRequest, SessionTokens>(
+        id: 'identity.auth.refresh',
+        method: HttpMethod.post,
+        path: '/v1/auth/refresh',
+        version: 1,
+        pathParams: <String>[],
+        requestLocation: RequestLocation.body,
+        successStatus: 200,
+        errors: <String>[
+          'PLATFORM.AUTH.UNAUTHENTICATED',
+          'IDENTITY.SESSION.REVOKED',
+          'IDENTITY.SESSION.EXPIRED',
+          'IDENTITY.SESSION.REUSED',
+          'IDENTITY.USER.SUSPENDED',
+          'IDENTITY.TENANT.SUSPENDED',
+          'PLATFORM.RATE_LIMIT.EXCEEDED',
+        ],
+        requiresAuth: false,
+        permissions: <String>[],
+        platformRoles: <String>[],
+        encodeRequest: SessionTokenRequest.encode,
+        validateRequest: SessionTokenRequestSchema.validate,
+        validateResponse: SessionTokensSchema.validateIncoming,
+        decodeResponse: SessionTokens.fromJson,
+      );
+
+  /// Cierra la sesión del session token, revoca sus tokens y borra la cookie en web.
+  ///
+  /// `POST /v1/auth/sign-out`
+  static const signOut = RouteDescriptor<SessionTokenRequest, void>(
+    id: 'identity.auth.sign-out',
+    method: HttpMethod.post,
+    path: '/v1/auth/sign-out',
+    version: 1,
+    pathParams: <String>[],
+    requestLocation: RequestLocation.body,
+    successStatus: 204,
+    errors: <String>['PLATFORM.RATE_LIMIT.EXCEEDED'],
+    requiresAuth: false,
+    permissions: <String>[],
+    platformRoles: <String>[],
+    encodeRequest: SessionTokenRequest.encode,
+    validateRequest: SessionTokenRequestSchema.validate,
+  );
+
+  /// Abre el paso adicional (step-up) de la sesión actual y devuelve los métodos que ofrece.
+  ///
+  /// `POST /v1/me/step-up`
+  static const startStepUp = RouteDescriptor<Empty, PendingMfa>(
+    id: 'identity.step-up.start',
+    method: HttpMethod.post,
+    path: '/v1/me/step-up',
+    version: 1,
+    pathParams: <String>[],
+    requestLocation: RequestLocation.body,
+    successStatus: 201,
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+      'PLATFORM.RATE_LIMIT.EXCEEDED',
+    ],
+    requiresAuth: true,
+    permissions: <String>[],
+    platformRoles: <String>[],
+    encodeRequest: Empty.encode,
+    validateRequest: EmptySchema.validate,
+    validateResponse: PendingMfaSchema.validateIncoming,
+    decodeResponse: PendingMfa.fromJson,
+  );
+
+  /// Crea el desafío del paso adicional y envía el código por el método elegido.
+  ///
+  /// `POST /v1/me/step-up/challenges`
+  static const requestStepUpChallenge =
+      RouteDescriptor<MfaChallengeRequest, MfaChallenge>(
+        id: 'identity.step-up.challenge',
+        method: HttpMethod.post,
+        path: '/v1/me/step-up/challenges',
+        version: 1,
+        pathParams: <String>[],
+        requestLocation: RequestLocation.body,
+        successStatus: 201,
+        errors: <String>[
+          'IDENTITY.SESSION.REVOKED',
+          'IDENTITY.SESSION.EXPIRED',
+          'IDENTITY.TOKEN.REVOKED',
+          'IDENTITY.USER.SUSPENDED',
+          'IDENTITY.TENANT.SUSPENDED',
+          'IDENTITY.TOKEN.STALE_PERMISSIONS',
+          'IDENTITY.MFA.TOKEN_INVALID',
+          'IDENTITY.MFA.METHOD_UNAVAILABLE',
+          'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
+          'PLATFORM.RATE_LIMIT.EXCEEDED',
+        ],
+        requiresAuth: true,
+        permissions: <String>[],
+        platformRoles: <String>[],
+        encodeRequest: MfaChallengeRequest.encode,
+        validateRequest: MfaChallengeRequestSchema.validate,
+        validateResponse: MfaChallengeSchema.validateIncoming,
+        decodeResponse: MfaChallenge.fromJson,
+      );
+
+  /// Verifica el paso adicional, actualiza el último MFA de la sesión y emite un access token nuevo.
+  ///
+  /// `POST /v1/me/step-up/verify`
+  static const verifyStepUp =
+      RouteDescriptor<StepUpVerifyRequest, StepUpResult>(
+        id: 'identity.step-up.verify',
+        method: HttpMethod.post,
+        path: '/v1/me/step-up/verify',
+        version: 1,
+        pathParams: <String>[],
+        requestLocation: RequestLocation.body,
+        successStatus: 200,
+        errors: <String>[
+          'IDENTITY.SESSION.REVOKED',
+          'IDENTITY.SESSION.EXPIRED',
+          'IDENTITY.TOKEN.REVOKED',
+          'IDENTITY.USER.SUSPENDED',
+          'IDENTITY.TENANT.SUSPENDED',
+          'IDENTITY.TOKEN.STALE_PERMISSIONS',
+          'IDENTITY.MFA.TOKEN_INVALID',
+          'IDENTITY.MFA.CODE_INVALID',
+          'IDENTITY.MFA.CODE_EXPIRED',
+          'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
+          'PLATFORM.RATE_LIMIT.EXCEEDED',
+        ],
+        requiresAuth: true,
+        permissions: <String>[],
+        platformRoles: <String>[],
+        encodeRequest: StepUpVerifyRequest.encode,
+        validateRequest: StepUpVerifyRequestSchema.validate,
+        validateResponse: StepUpResultSchema.validateIncoming,
+        decodeResponse: StepUpResult.fromJson,
+      );
 
   /// Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.
   ///
@@ -101,6 +247,10 @@ abstract final class IdentityRoutes {
     successStatus: 200,
     errors: <String>[
       'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
       'IDENTITY.TOKEN.STALE_PERMISSIONS',
     ],
     requiresAuth: true,
@@ -108,7 +258,7 @@ abstract final class IdentityRoutes {
     platformRoles: <String>[],
     encodeRequest: Empty.encode,
     validateRequest: EmptySchema.validate,
-    validateResponse: SessionAccessSchema.validate,
+    validateResponse: SessionAccessSchema.validateIncoming,
     decodeResponse: SessionAccess.fromJson,
   );
 
@@ -123,13 +273,20 @@ abstract final class IdentityRoutes {
     pathParams: <String>[],
     requestLocation: RequestLocation.query,
     successStatus: 200,
-    errors: <String>['IDENTITY.SESSION.REVOKED'],
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+    ],
     requiresAuth: true,
     permissions: <String>[],
     platformRoles: <String>[],
     encodeRequest: PageQuery.encode,
     validateRequest: PageQuerySchema.validate,
-    validateResponse: SessionPageSchema.validate,
+    validateResponse: SessionPageSchema.validateIncoming,
     decodeResponse: SessionPage.fromJson,
   );
 
@@ -144,7 +301,15 @@ abstract final class IdentityRoutes {
     pathParams: <String>['sessionId'],
     requestLocation: RequestLocation.query,
     successStatus: 204,
-    errors: <String>['PLATFORM.RESOURCE.NOT_FOUND', 'IDENTITY.SESSION.REVOKED'],
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+      'PLATFORM.RESOURCE.NOT_FOUND',
+    ],
     requiresAuth: true,
     permissions: <String>[],
     platformRoles: <String>[],
@@ -163,13 +328,20 @@ abstract final class IdentityRoutes {
     pathParams: <String>[],
     requestLocation: RequestLocation.body,
     successStatus: 200,
-    errors: <String>['IDENTITY.SESSION.REVOKED'],
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+    ],
     requiresAuth: true,
     permissions: <String>[],
     platformRoles: <String>[],
     encodeRequest: Empty.encode,
     validateRequest: EmptySchema.validate,
-    validateResponse: RevokedSessionsSchema.validate,
+    validateResponse: RevokedSessionsSchema.validateIncoming,
     decodeResponse: RevokedSessions.fromJson,
   );
 
@@ -184,13 +356,20 @@ abstract final class IdentityRoutes {
     pathParams: <String>[],
     requestLocation: RequestLocation.query,
     successStatus: 200,
-    errors: <String>['IDENTITY.SESSION.REVOKED'],
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+    ],
     requiresAuth: true,
     permissions: <String>[],
     platformRoles: <String>[],
     encodeRequest: PageQuery.encode,
     validateRequest: PageQuerySchema.validate,
-    validateResponse: DevicePageSchema.validate,
+    validateResponse: DevicePageSchema.validateIncoming,
     decodeResponse: DevicePage.fromJson,
   );
 }

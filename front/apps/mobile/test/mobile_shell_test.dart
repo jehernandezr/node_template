@@ -610,6 +610,72 @@ void main() {
       expect(session.value.isAuthenticated, isFalse);
       expect(_location(tester), '/login');
     });
+
+    testWidgets('an MFA route runs the identity step-up and returns with the '
+        'mfaVerifiedAt of the server', (tester) async {
+      // flutter_test draws text with the Ahem font (one em per glyph), so the
+      // long Spanish method label overflows its button here. Real fonts fit.
+      // Only that overflow is ignored.
+      final previous = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('RenderFlex overflowed')) {
+          return;
+        }
+        previous?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = previous);
+      prepare();
+      final verifiedAt = DateTime.now().toUtc();
+      repository
+        ..stepUpResult = const PendingMfa(
+          mfaToken: 'step-1',
+          methods: [MfaFactor.deviceOtp],
+        )
+        ..stepUpChallengeResult = MfaChallenge(
+          challengeId: '0193f1c2-0000-7000-8000-000000000001',
+          method: MfaFactor.deviceOtp,
+          expiresAt: DateTime.now().add(const Duration(minutes: 3)),
+          codeLength: MfaRules.deviceCodeLength,
+        )
+        ..stepUpVerifyResult = StepUpResult(
+          tokens: SessionTokens(
+            accessToken: 'access-mfa',
+            accessExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+          ),
+          mfaVerifiedAt: verifiedAt,
+        );
+      final session = await _pumpShell(
+        tester,
+        registry: _registryWithProbe(),
+        connection: connection,
+      );
+      await connection.sessionManager.signIn(
+        const SignInRequest(email: 'ana@example.com', password: 'secret'),
+      );
+      await connection.reloadAccess();
+      await _go(tester, '/billing/secure');
+      await _settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+      expect(_location(tester), startsWith('/step-up'));
+      expect(find.byKey(const ValueKey('step-up-verify')), findsNothing);
+
+      await tester.tap(find.text('Código en tu dispositivo de confianza'));
+      await _settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.enterText(
+        find.byKey(const ValueKey('step-up-code')),
+        '12345678',
+      );
+      await tester.tap(find.text('Verificar'));
+      await _settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(repository.lastStepUpVerify?.mfaToken, 'step-1');
+      expect(session.value.mfaVerifiedAt, verifiedAt);
+      expect(await connection.sessionManager.accessToken(), 'access-mfa');
+      expect(_location(tester), '/billing/secure');
+      expect(find.text('zona segura'), findsOneWidget);
+    });
   });
 
   test('safeReturnLocation rejects external targets', () {

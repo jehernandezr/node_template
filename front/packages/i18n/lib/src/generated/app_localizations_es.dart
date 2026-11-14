@@ -304,5 +304,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tus permisos cambiaron. Actualizando la sesión.';
 
   @override
+  String get error_identity_mfa_method_unavailable =>
+      'Ese método de verificación no está disponible. Elige otro.';
+
+  @override
+  String get error_identity_session_expired =>
+      'Tu sesión venció. Inicia sesión de nuevo.';
+
+  @override
+  String get error_identity_session_reused =>
+      'Por seguridad cerramos tu sesión. Inicia sesión de nuevo.';
+
+  @override
+  String get error_identity_token_revoked =>
+      'Tu acceso fue revocado. Inicia sesión de nuevo.';
+
+  @override
+  String get error_identity_user_suspended =>
+      'Tu cuenta está suspendida. Contacta al soporte.';
+
+  @override
+  String get error_identity_tenant_suspended =>
+      'Tu organización está suspendida. Contacta al soporte.';
+
+  @override
   String get errorFallback => 'Algo salió mal. Intenta de nuevo.';
 }

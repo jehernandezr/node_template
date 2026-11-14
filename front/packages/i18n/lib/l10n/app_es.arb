@@ -91,6 +91,12 @@
   "error_identity_mfa_step_up_required": "Confirma tu identidad para continuar.",
   "error_identity_session_revoked": "Tu sesión se cerró. Inicia sesión de nuevo.",
   "error_identity_token_stale_permissions": "Tus permisos cambiaron. Actualizando la sesión.",
+  "error_identity_mfa_method_unavailable": "Ese método de verificación no está disponible. Elige otro.",
+  "error_identity_session_expired": "Tu sesión venció. Inicia sesión de nuevo.",
+  "error_identity_session_reused": "Por seguridad cerramos tu sesión. Inicia sesión de nuevo.",
+  "error_identity_token_revoked": "Tu acceso fue revocado. Inicia sesión de nuevo.",
+  "error_identity_user_suspended": "Tu cuenta está suspendida. Contacta al soporte.",
+  "error_identity_tenant_suspended": "Tu organización está suspendida. Contacta al soporte.",
 
   "errorFallback": "Algo salió mal. Intenta de nuevo."
 }

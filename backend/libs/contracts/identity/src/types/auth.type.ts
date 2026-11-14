@@ -59,3 +59,28 @@ export interface MfaVerifyRequest {
   /** Clave pública del dispositivo en base64url; solo al registrar uno nuevo. */
   devicePublicKey?: string;
 }
+
+/**
+ * Session token de un refresh o de un cierre de sesión. En web no viaja en el
+ * cuerpo: el navegador envía la cookie `httpOnly` y el servidor la lee de ahí.
+ */
+export interface SessionTokenRequest {
+  sessionToken?: string;
+}
+
+/** Verificación del paso adicional (step-up) de una sesión abierta. */
+export interface StepUpVerifyRequest {
+  /** Token del paso adicional, de `POST /v1/me/step-up`. */
+  mfaToken: string;
+  /** Desafío pedido con `POST /v1/me/step-up/challenges`. */
+  challengeId: string;
+  code: string;
+}
+
+/** Resultado de un paso adicional verificado. */
+export interface StepUpResult {
+  /** Access token nuevo, con `auth_time` y `amr` del segundo factor recién verificado. */
+  tokens: SessionTokens;
+  /** Instante ISO 8601 del segundo factor; es el nuevo `mfaVerifiedAt` de la sesión. */
+  mfaVerifiedAt: string;
+}

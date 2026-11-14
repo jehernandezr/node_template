@@ -3,22 +3,29 @@ import 'package:contracts/contracts.dart';
 
 import 'ports.dart';
 
-/// [AuthRepository] sobre las rutas públicas de identity.
+/// [AuthRepository] sobre las rutas de identity.
 ///
 /// Cada llamada pasa por [ApiClient], que valida la petición contra el
 /// contrato antes de tocar la red y decodifica la respuesta con los tipos
-/// generados. El cliente puede no tener access token: las rutas del login no
-/// exigen sesión.
+/// generados.
 ///
-/// El contrato todavía no publica las rutas de refresh ni de cierre de sesión.
-/// Hasta entonces [refresh] responde sin llamar a la red lo mismo que el
-/// servidor ante una sesión inexistente (`PLATFORM.AUTH.UNAUTHENTICATED`), así
-/// que `SessionManager` cierra la sesión cuando vence el access token y
-/// `restore` devuelve false; y [logout] solo cierra la sesión local.
+/// El login, el refresh y el cierre de sesión son rutas públicas y van por
+/// [client], que no lleva access token: el refresh y el cierre se identifican
+/// con el session token (en el cuerpo en móvil, en la cookie httpOnly en web).
+/// El paso adicional exige la sesión abierta y va por [sessionClient], que
+/// firma con el access token de la sesión.
 final class ApiAuthRepository implements AuthRepository {
-  ApiAuthRepository(this.client);
+  /// Repositorio sobre [client]. Sin [sessionClient], el paso adicional usa
+  /// [client] y, como no tiene token, falla con
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` sin llamar a la red.
+  ApiAuthRepository(this.client, {ApiClient? sessionClient})
+    : sessionClient = sessionClient ?? client;
 
+  /// Cliente sin sesión, para las rutas públicas.
   final ApiClient client;
+
+  /// Cliente con el access token de la sesión, para el paso adicional.
+  final ApiClient sessionClient;
 
   @override
   Future<SignInResponse> signIn(SignInRequest request) =>
@@ -33,18 +40,26 @@ final class ApiAuthRepository implements AuthRepository {
       client.send(IdentityRoutes.verifyMfa, request);
 
   @override
-  Future<SessionTokens> refresh({String? sessionToken}) async {
-    const code = PlatformErrorCode.authUnauthenticated;
-    throw ApiErrorException(
-      ProblemDetails(
-        type: 'about:blank',
-        title: 'Unauthenticated',
-        status: code.httpStatus,
-        code: code.code,
-      ),
-    );
-  }
+  Future<SessionTokens> refresh({String? sessionToken}) => client.send(
+    IdentityRoutes.refreshSession,
+    SessionTokenRequest(sessionToken: sessionToken),
+  );
 
   @override
-  Future<void> logout() async {}
+  Future<void> logout({String? sessionToken}) => client.send(
+    IdentityRoutes.signOut,
+    SessionTokenRequest(sessionToken: sessionToken),
+  );
+
+  @override
+  Future<PendingMfa> startStepUp() =>
+      sessionClient.send(IdentityRoutes.startStepUp, const Empty());
+
+  @override
+  Future<MfaChallenge> requestStepUpChallenge(MfaChallengeRequest request) =>
+      sessionClient.send(IdentityRoutes.requestStepUpChallenge, request);
+
+  @override
+  Future<StepUpResult> verifyStepUp(StepUpVerifyRequest request) =>
+      sessionClient.send(IdentityRoutes.verifyStepUp, request);
 }

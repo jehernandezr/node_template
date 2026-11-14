@@ -572,6 +572,94 @@ void main() {
       expect(shell.session.value.isAuthenticated, isFalse);
       expect(shell.router.state.uri.path, '/login');
     });
+
+    testWidgets('requestStepUp runs the identity step-up and the session '
+        'takes the mfaVerifiedAt of the server', (tester) async {
+      prepare();
+      final verifiedAt = DateTime.utc(2026, 11, 13, 12, 30);
+      repository
+        ..signInResult = authenticated()
+        ..stepUpResult = const PendingMfa(
+          mfaToken: 'step-1',
+          methods: [MfaFactor.deviceOtp, MfaFactor.passkey],
+        )
+        ..stepUpChallengeResult = MfaChallenge(
+          challengeId: challengeId,
+          method: MfaFactor.deviceOtp,
+          expiresAt: DateTime.now().add(const Duration(minutes: 3)),
+          codeLength: MfaRules.deviceCodeLength,
+        )
+        ..stepUpVerifyResult = StepUpResult(
+          tokens: SessionTokens(
+            accessToken: 'access-mfa',
+            accessExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+          ),
+          mfaVerifiedAt: verifiedAt,
+        );
+      final shell = await pumpShell(tester, connection: connection);
+      await connection.sessionManager.signIn(
+        const SignInRequest(email: 'ana@example.com', password: 'secret'),
+      );
+      await connection.reloadAccess();
+      shell.router.go('/tasks');
+      await settle(tester);
+      expect(shell.session.value.mfaVerifiedAt, isNull);
+
+      bool? verified;
+      shell.requestStepUp().then((value) => verified = value);
+      await settle(tester);
+      expect(find.text('Verificación adicional'), findsOneWidget);
+      expect(find.text('Verificar (demostración)'), findsNothing);
+      expect(repository.startStepUpCount, 1);
+
+      await tester.tap(find.text('Código en tu dispositivo de confianza'));
+      await settle(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('step-up-code')),
+        '12345678',
+      );
+      await tester.tap(find.text('Verificar'));
+      await settle(tester);
+
+      expect(verified, isTrue);
+      expect(repository.lastStepUpChallengeRequest?.mfaToken, 'step-1');
+      expect(repository.lastStepUpVerify?.code, '12345678');
+      expect(shell.session.value.mfaVerifiedAt, verifiedAt);
+      expect(connection.access.value?.mfaVerifiedAt, verifiedAt);
+      expect(await connection.sessionManager.accessToken(), 'access-mfa');
+      expect(find.text('Verificación adicional'), findsNothing);
+      expect(shell.router.state.uri.path, '/tasks');
+    });
+
+    testWidgets('a method the step-up does not offer shows its message and '
+        'goes back to the methods', (tester) async {
+      prepare();
+      repository
+        ..signInResult = authenticated()
+        ..stepUpResult = const PendingMfa(
+          mfaToken: 'step-1',
+          methods: [MfaFactor.emailOtp],
+        );
+      final shell = await pumpShell(tester, connection: connection);
+      await connection.sessionManager.signIn(
+        const SignInRequest(email: 'ana@example.com', password: 'secret'),
+      );
+      await connection.reloadAccess();
+      shell.router.go('/tasks');
+      await settle(tester);
+
+      shell.requestStepUp().ignore();
+      await settle(tester);
+      await tester.tap(find.text('Código por email'));
+      await settle(tester);
+
+      expect(
+        find.text('Ese método de verificación no está disponible. Elige otro.'),
+        findsOneWidget,
+      );
+      expect(find.text('Código por email'), findsOneWidget);
+      expect(shell.session.value.mfaVerifiedAt, isNull);
+    });
   });
 
   testWidgets('/step-up sends an anonymous visitor to login', (tester) async {

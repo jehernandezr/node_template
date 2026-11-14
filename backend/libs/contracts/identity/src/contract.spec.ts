@@ -1,4 +1,5 @@
 import {
+  AccessKind,
   decodeQuery,
   ErrorAudience,
   HttpMethod,
@@ -25,10 +26,18 @@ import {
   ListSessionsRoute,
 } from './http/session.routes.js';
 import {
+  RefreshSessionRoute,
   RequestMfaChallengeRoute,
   SignInRoute,
+  SignOutRoute,
   VerifyMfaRoute,
 } from './http/auth.routes.js';
+import { SessionGuardErrors } from './http/session-guard.errors.js';
+import {
+  RequestStepUpChallengeRoute,
+  StartStepUpRoute,
+  VerifyStepUpRoute,
+} from './http/step-up.routes.js';
 import { IdentityEventsTopic } from './events/identity.topics.js';
 import { SessionRevokedEvent } from './events/identity.events.js';
 import { RevokeUserSessionsOperation } from './internal/identity.operations.js';
@@ -161,6 +170,122 @@ describe('identity routes', () => {
         mfaVerifiedAt: null,
       }).ok,
     ).toBe(true);
+  });
+});
+
+describe('session lifecycle routes', () => {
+  const challengeId = '0190f2a4-7b3c-7d4e-8f00-000000000001';
+
+  it('refreshes and signs out with an optional session token', () => {
+    expect(RefreshSessionRoute).toMatchObject({
+      method: HttpMethod.Post,
+      path: '/v1/auth/refresh',
+      successStatus: 200,
+      access: { kind: AccessKind.Public },
+    });
+    expect(SignOutRoute).toMatchObject({
+      method: HttpMethod.Post,
+      path: '/v1/auth/sign-out',
+      successStatus: 204,
+      response: null,
+      access: { kind: AccessKind.Public },
+    });
+    for (const route of [RefreshSessionRoute, SignOutRoute]) {
+      // En web el session token viaja en la cookie y el cuerpo va vacío.
+      expect(validateContract(route.request, {}).ok).toBe(true);
+      expect(validateContract(route.request, { sessionToken: 's1' }).ok).toBe(
+        true,
+      );
+      expect(
+        validateContract(route.request, { sessionToken: '' }),
+      ).toMatchObject({ ok: false });
+      expect(
+        validateContract(route.request, { refreshToken: 's1' }),
+      ).toMatchObject({ ok: false });
+    }
+  });
+
+  it('declares the codes that end a session on refresh', () => {
+    expect(RefreshSessionRoute.errors).toEqual(
+      expect.arrayContaining([
+        IdentityErrorCode.SessionRevoked,
+        IdentityErrorCode.SessionExpired,
+        IdentityErrorCode.SessionReused,
+        IdentityErrorCode.UserSuspended,
+        IdentityErrorCode.TenantSuspended,
+        PlatformErrorCode.AuthUnauthenticated,
+      ]),
+    );
+  });
+
+  it('runs the step-up of an open session with the MFA types', () => {
+    for (const route of [
+      StartStepUpRoute,
+      RequestStepUpChallengeRoute,
+      VerifyStepUpRoute,
+    ]) {
+      expect(route.method).toBe(HttpMethod.Post);
+      expect(route.path.startsWith('/v1/me/step-up')).toBe(true);
+      expect(route.access.kind).toBe(AccessKind.Authenticated);
+      expect(route.errors).toEqual(expect.arrayContaining(SessionGuardErrors));
+    }
+    expect(StartStepUpRoute.successStatus).toBe(201);
+    expect(RequestStepUpChallengeRoute.request).toBe(
+      RequestMfaChallengeRoute.request,
+    );
+    expect(RequestStepUpChallengeRoute.errors).toContain(
+      IdentityErrorCode.MfaMethodUnavailable,
+    );
+    expect(RequestMfaChallengeRoute.errors).toContain(
+      IdentityErrorCode.MfaMethodUnavailable,
+    );
+    expect(
+      validateContract(VerifyStepUpRoute.request, {
+        mfaToken: 't',
+        challengeId,
+        code: '12345678',
+      }).ok,
+    ).toBe(true);
+    // El paso adicional no registra dispositivos.
+    expect(
+      validateContract(VerifyStepUpRoute.request, {
+        mfaToken: 't',
+        challengeId,
+        code: '12345678',
+        devicePublicKey: 'abc',
+      }),
+    ).toMatchObject({ ok: false });
+    expect(
+      validateContract(VerifyStepUpRoute.response, {
+        tokens: {
+          accessToken: 'a',
+          accessExpiresAt: '2026-11-13T12:15:00.000Z',
+        },
+        mfaVerifiedAt: '2026-11-13T12:00:00.000Z',
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('makes the invalidation codes public with a message key', () => {
+    for (const code of [
+      IdentityErrorCode.SessionExpired,
+      IdentityErrorCode.SessionReused,
+      IdentityErrorCode.TokenRevoked,
+      IdentityErrorCode.UserSuspended,
+      IdentityErrorCode.TenantSuspended,
+    ]) {
+      const entry = identityErrorCatalog.find((e) => e.code === code);
+      expect(entry).toMatchObject({
+        audience: ErrorAudience.Public,
+        retryable: false,
+      });
+      expect([401, 403]).toContain(entry?.httpStatus);
+    }
+    expect(
+      identityErrorCatalog.find(
+        (e) => e.code === IdentityErrorCode.MfaMethodUnavailable,
+      ),
+    ).toMatchObject({ httpStatus: 400, audience: ErrorAudience.Public });
   });
 });
 

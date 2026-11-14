@@ -603,6 +603,42 @@ abstract class AppLocalizations {
   /// **'Tus permisos cambiaron. Actualizando la sesión.'**
   String get error_identity_token_stale_permissions;
 
+  /// No description provided for @error_identity_mfa_method_unavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese método de verificación no está disponible. Elige otro.'**
+  String get error_identity_mfa_method_unavailable;
+
+  /// No description provided for @error_identity_session_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu sesión venció. Inicia sesión de nuevo.'**
+  String get error_identity_session_expired;
+
+  /// No description provided for @error_identity_session_reused.
+  ///
+  /// In es, this message translates to:
+  /// **'Por seguridad cerramos tu sesión. Inicia sesión de nuevo.'**
+  String get error_identity_session_reused;
+
+  /// No description provided for @error_identity_token_revoked.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu acceso fue revocado. Inicia sesión de nuevo.'**
+  String get error_identity_token_revoked;
+
+  /// No description provided for @error_identity_user_suspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está suspendida. Contacta al soporte.'**
+  String get error_identity_user_suspended;
+
+  /// No description provided for @error_identity_tenant_suspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu organización está suspendida. Contacta al soporte.'**
+  String get error_identity_tenant_suspended;
+
   /// No description provided for @errorFallback.
   ///
   /// In es, this message translates to:

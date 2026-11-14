@@ -52,8 +52,10 @@ class SessionManager {
   /// [SessionTokens.accessExpiresAt].
   final Duration refreshLead;
 
-  /// Códigos de identity que cierran la sesión cuando el refresh los devuelve.
-  /// `PLATFORM.AUTH.UNAUTHENTICATED` la cierra siempre.
+  /// Códigos de identity que cierran la sesión cuando los devuelve el refresh
+  /// o, con [handleRejectedToken], cualquier ruta autenticada.
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` la cierra siempre que lo devuelve el
+  /// refresh.
   final Set<IdentityErrorCode> invalidationCodes;
 
   final _states = StreamController<AuthState>.broadcast();
@@ -183,13 +185,92 @@ class SessionManager {
     await _refresh();
   }
 
-  /// Revoca la sesión en el servidor y borra los tokens locales, aunque el servidor falle.
+  /// Revoca la sesión en el servidor y borra los tokens locales, aunque el
+  /// servidor falle.
+  ///
+  /// Envía el session token guardado (en web viaja la cookie). Sin session
+  /// token ni cookie no hay nada que revocar y solo se cierra la sesión local.
   Future<void> logout() async {
     try {
-      await _repository.logout();
+      // Se lee fuera de la cola del almacén: esperar detrás de una escritura
+      // pendiente dejaría que esa escritura abriera la sesión antes del cierre.
+      final sessionToken = _sessionToken ?? await _store.readSessionToken();
+      if (sessionToken != null || _store.sessionInCookie) {
+        await _repository.logout(sessionToken: sessionToken);
+      }
     } finally {
       await _clearLocal();
     }
+  }
+
+  /// Primer paso del paso adicional (step-up) de la sesión abierta: devuelve
+  /// el `mfaToken` y los métodos que ofrece el servidor.
+  ///
+  /// Lanza [SignedOutException] sin sesión.
+  Future<PendingMfa> startStepUp() {
+    if (_tokens == null) throw const SignedOutException();
+    return _repository.startStepUp();
+  }
+
+  /// Segundo paso: crea el desafío del paso adicional con [method] y envía
+  /// el código. No cambia la sesión.
+  Future<MfaChallenge> requestStepUpChallenge({
+    required String mfaToken,
+    required MfaFactor method,
+  }) {
+    if (_tokens == null) throw const SignedOutException();
+    return _repository.requestStepUpChallenge(
+      MfaChallengeRequest(mfaToken: mfaToken, method: method),
+    );
+  }
+
+  /// Tercer paso: verifica [code] y adopta el access token nuevo, que lleva
+  /// el segundo factor recién verificado. Devuelve el resultado con el nuevo
+  /// `mfaVerifiedAt` de la sesión; el session token no cambia.
+  ///
+  /// Espera antes un refresh en vuelo, para que su token no reemplace después
+  /// al del paso adicional. Lanza [SignedOutException] sin sesión o si hubo un
+  /// [logout] mientras tanto.
+  Future<StepUpResult> verifyStepUp({
+    required String mfaToken,
+    required String challengeId,
+    required String code,
+  }) async {
+    if (_tokens == null) throw const SignedOutException();
+    final inFlight = _inFlightRefresh;
+    if (inFlight != null) {
+      await inFlight.then<void>((_) {}, onError: (Object _) {});
+    }
+    final generation = _generation;
+    if (_tokens == null) throw const SignedOutException();
+    final result = await _repository.verifyStepUp(
+      StepUpVerifyRequest(
+        mfaToken: mfaToken,
+        challengeId: challengeId,
+        code: code,
+      ),
+    );
+    await _adopt(result.tokens, generation: generation);
+    return result;
+  }
+
+  /// Cierra la sesión local cuando la API rechazó [accessToken] con un código
+  /// de [invalidationCodes] (sesión revocada, token revocado, usuario o tenant
+  /// suspendido) en cualquier ruta autenticada. Devuelve si la cerró.
+  ///
+  /// Solo actúa si [accessToken] sigue siendo el de la sesión: una respuesta
+  /// tardía a un token viejo no cierra una sesión nueva ni una ya refrescada.
+  Future<bool> handleRejectedToken({
+    required String accessToken,
+    required String code,
+  }) async {
+    final identity = IdentityErrorCode.fromCode(code);
+    if (identity == null || !invalidationCodes.contains(identity)) {
+      return false;
+    }
+    if (_tokens?.accessToken != accessToken) return false;
+    await _clearLocal();
+    return true;
   }
 
   Future<void> dispose() => _states.close();

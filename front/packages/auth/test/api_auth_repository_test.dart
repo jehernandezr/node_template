@@ -141,17 +141,150 @@ void main() {
     },
   );
 
-  test('without a refresh route the session ends as unauthenticated', () async {
+  test('refresh posts the session token and decodes the new tokens', () async {
+    transport.queue.add(
+      _json(200, {
+        'accessToken': 'a2',
+        'accessExpiresAt': '2026-11-13T12:15:00.000Z',
+        'sessionToken': 's2',
+      }),
+    );
+
+    final tokens = await repository.refresh(sessionToken: 's1');
+
+    expect(tokens.accessToken, 'a2');
+    expect(tokens.sessionToken, 's2');
+    final request = transport.requests.single;
+    expect(request.method, 'POST');
+    expect(request.uri.path, '/v1/auth/refresh');
+    expect(jsonDecode(request.body!), {'sessionToken': 's1'});
+    expect(request.headers.containsKey('authorization'), isFalse);
+  });
+
+  test('on the web refresh sends an empty body: the cookie travels', () async {
+    transport.queue.add(
+      _json(200, {
+        'accessToken': 'a2',
+        'accessExpiresAt': '2026-11-13T12:15:00.000Z',
+      }),
+    );
+
+    final tokens = await repository.refresh();
+
+    expect(tokens.sessionToken, isNull);
+    expect(jsonDecode(transport.requests.single.body!), <String, dynamic>{});
+  });
+
+  test('a reused session token comes back as its contract code', () async {
+    transport.queue.add(
+      _json(401, {
+        'type': 'about:blank',
+        'title': 'Reused',
+        'status': 401,
+        'code': IdentityErrorCode.sessionReused.code,
+      }),
+    );
+
     await expectLater(
-      repository.refresh(),
+      repository.refresh(sessionToken: 'old'),
       throwsA(
         isA<ApiErrorException>().having(
-          (e) => e.platformCode,
+          (e) => IdentityErrorCode.fromCode(e.problem.code),
           'code',
-          PlatformErrorCode.authUnauthenticated,
+          IdentityErrorCode.sessionReused,
         ),
       ),
     );
-    expect(transport.requests, isEmpty);
+  });
+
+  test('logout posts to sign-out with the session token', () async {
+    transport.queue.add(const TransportResponse(statusCode: 204));
+
+    await repository.logout(sessionToken: 's1');
+
+    final request = transport.requests.single;
+    expect(request.method, 'POST');
+    expect(request.uri.path, '/v1/auth/sign-out');
+    expect(jsonDecode(request.body!), {'sessionToken': 's1'});
+  });
+
+  test(
+    'without a session client the step-up fails before the network',
+    () async {
+      await expectLater(
+        repository.startStepUp(),
+        throwsA(
+          isA<ApiErrorException>().having(
+            (e) => e.platformCode,
+            'code',
+            PlatformErrorCode.authUnauthenticated,
+          ),
+        ),
+      );
+      expect(transport.requests, isEmpty);
+    },
+  );
+
+  test('the step-up uses the session client and its access token', () async {
+    final withSession = ApiAuthRepository(
+      repository.client,
+      sessionClient: ApiClient(
+        transport: transport,
+        baseUri: Uri.parse('https://api.example.com'),
+        accessToken: () async => 'access-1',
+      ),
+    );
+    transport.queue
+      ..add(
+        _json(201, {
+          'mfaToken': 'step-1',
+          'methods': ['device_otp', 'retina_scan'],
+        }),
+      )
+      ..add(
+        _json(201, {
+          'challengeId': _challengeId,
+          'method': 'device_otp',
+          'expiresAt': '2026-11-13T12:03:00.000Z',
+          'codeLength': MfaRules.deviceCodeLength,
+        }),
+      )
+      ..add(
+        _json(200, {
+          'tokens': {
+            'accessToken': 'access-2',
+            'accessExpiresAt': '2026-11-13T12:15:00.000Z',
+          },
+          'mfaVerifiedAt': '2026-11-13T12:01:00.000Z',
+        }),
+      );
+
+    final pending = await withSession.startStepUp();
+    // A method this client does not know yet is dropped, not an error.
+    expect(pending.methods, [MfaFactor.deviceOtp]);
+    final challenge = await withSession.requestStepUpChallenge(
+      MfaChallengeRequest(
+        mfaToken: pending.mfaToken,
+        method: MfaFactor.deviceOtp,
+      ),
+    );
+    final result = await withSession.verifyStepUp(
+      StepUpVerifyRequest(
+        mfaToken: pending.mfaToken,
+        challengeId: challenge.challengeId,
+        code: '12345678',
+      ),
+    );
+
+    expect(result.tokens.accessToken, 'access-2');
+    expect(result.mfaVerifiedAt, DateTime.utc(2026, 11, 13, 12, 1));
+    expect(transport.requests.map((r) => r.uri.path), [
+      '/v1/me/step-up',
+      '/v1/me/step-up/challenges',
+      '/v1/me/step-up/verify',
+    ]);
+    for (final request in transport.requests) {
+      expect(request.headers['authorization'], 'Bearer access-1');
+    }
   });
 }

@@ -16,7 +16,7 @@ abstract final class IdentityEvents {
     type: 'identity.session.revoked.v1',
     kind: MessageKind.event,
     version: 1,
-    validatePayload: SessionRevokedPayloadSchema.validate,
+    validatePayload: SessionRevokedPayloadSchema.validateIncoming,
     decodePayload: SessionRevokedPayload.fromJson,
   );
 
@@ -27,7 +27,7 @@ abstract final class IdentityEvents {
     type: 'identity.tokens.revoked.v1',
     kind: MessageKind.event,
     version: 1,
-    validatePayload: TokensRevokedPayloadSchema.validate,
+    validatePayload: TokensRevokedPayloadSchema.validateIncoming,
     decodePayload: TokensRevokedPayload.fromJson,
   );
 

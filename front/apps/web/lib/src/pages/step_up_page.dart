@@ -1,3 +1,4 @@
+import 'package:auth/auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
@@ -5,15 +6,18 @@ import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
 import 'login_page.dart';
+import 'step_up_form.dart';
 
 /// Asks a signed-in user for a recent second factor, then returns to [from].
 ///
 /// The router sends here the sessions that only fail an `AccessRule.mfa`
 /// rule, and `WebShell.requestStepUp` pushes it (with [onResult]) when a
-/// microfrontend asks for a second factor before a sensitive action. DEMO: the
-/// button marks the factor as verified without a challenge, also with a real
-/// session, because the identity contract has no step-up route yet; the real
-/// page will run that flow and adopt the new tokens.
+/// microfrontend asks for a second factor before a sensitive action.
+///
+/// With a [connection] the page runs the step-up of identity
+/// ([StepUpForm]): the session adopts the new access token and the shell
+/// session gets the `mfaVerifiedAt` the server answered. Without one (demo
+/// mode) a button marks the factor as verified with [clock].
 class StepUpPage extends StatelessWidget {
   const StepUpPage({
     super.key,
@@ -21,6 +25,7 @@ class StepUpPage extends StatelessWidget {
     this.from,
     this.clock = DateTime.now,
     this.onResult,
+    this.connection,
   });
 
   /// Answer of a `requestStepUp`, or null when the router redirected here.
@@ -35,21 +40,34 @@ class StepUpPage extends StatelessWidget {
   /// Location to return to, from the `from` query parameter.
   final String? from;
 
-  /// Time recorded as the verification time.
+  /// Time recorded as the verification time in demo mode.
   final DateTime Function() clock;
 
-  void _verify(BuildContext context) {
-    final verified = session.value.withMfaVerifiedAt(clock());
+  /// Real identity connection, or null in demo mode.
+  final IdentityConnection? connection;
+
+  void _verified(BuildContext context, DateTime at) {
     final onResult = this.onResult;
     if (onResult != null) {
       onResult(true);
       // Pop before the session changes: the router refreshes on that change
       // and would otherwise rebuild the stack with this page still on it.
       context.pop(true);
-      session.value = verified;
+      _publish(at);
     } else {
-      session.value = verified;
+      _publish(at);
       context.go(LoginPage.safeDestination(from));
+    }
+  }
+
+  /// With a connection the shell session follows its access; in demo mode
+  /// the page writes the session itself.
+  void _publish(DateTime at) {
+    final connection = this.connection;
+    if (connection != null) {
+      connection.markMfaVerified(at);
+    } else {
+      session.value = session.value.withMfaVerifiedAt(at);
     }
   }
 
@@ -66,6 +84,7 @@ class StepUpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final connection = this.connection;
     return AppPage(
       title: l10n.stepUpTitle,
       onBack: () => _back(context),
@@ -82,10 +101,16 @@ class StepUpPage extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 Text(l10n.stepUpMessage, textAlign: TextAlign.center),
                 const SizedBox(height: AppSpacing.lg),
-                AppButton(
-                  label: l10n.stepUpDemoVerify,
-                  onPressed: () => _verify(context),
-                ),
+                if (connection != null)
+                  StepUpForm(
+                    connection: connection,
+                    onVerified: (at) => _verified(context, at),
+                  )
+                else
+                  AppButton(
+                    label: l10n.stepUpDemoVerify,
+                    onPressed: () => _verified(context, clock()),
+                  ),
               ],
             ),
           ),

@@ -9,6 +9,8 @@ import {
   MfaChallengeRequestSchema,
   MfaChallengeSchema,
   MfaVerifyRequestSchema,
+  SessionTokenRequestSchema,
+  SessionTokensSchema,
   SignInRequestSchema,
   SignInResponseSchema,
 } from '../schemas/auth.schema.js';
@@ -43,6 +45,7 @@ export const RequestMfaChallengeRoute = defineRoute({
   successStatus: 201,
   errors: [
     IdentityErrorCode.MfaTokenInvalid,
+    IdentityErrorCode.MfaMethodUnavailable,
     IdentityErrorCode.MfaTooManyAttempts,
     PlatformErrorCode.RateLimitExceeded,
   ],
@@ -68,4 +71,47 @@ export const VerifyMfaRoute = defineRoute({
   access: Access.public(),
   description:
     'Verifica un desafío MFA, crea la sesión y registra el dispositivo nuevo.',
+});
+
+/**
+ * `POST /v1/auth/refresh`: rota el session token y emite un access token
+ * nuevo. En móvil el session token viaja en el cuerpo y la respuesta trae el
+ * siguiente; en web viaja en la cookie `httpOnly`, el servidor la reemplaza con
+ * `Set-Cookie` y la respuesta no trae `sessionToken`. Presentar un session
+ * token ya rotado revoca la sesión completa.
+ */
+export const RefreshSessionRoute = defineRoute({
+  id: IdentityRoute.RefreshSession,
+  method: HttpMethod.Post,
+  path: '/v1/auth/refresh',
+  request: SessionTokenRequestSchema,
+  response: SessionTokensSchema,
+  errors: [
+    PlatformErrorCode.AuthUnauthenticated,
+    IdentityErrorCode.SessionRevoked,
+    IdentityErrorCode.SessionExpired,
+    IdentityErrorCode.SessionReused,
+    IdentityErrorCode.UserSuspended,
+    IdentityErrorCode.TenantSuspended,
+    PlatformErrorCode.RateLimitExceeded,
+  ],
+  access: Access.public(),
+  description:
+    'Rota el session token (cuerpo en móvil, cookie httpOnly en web) y emite un access token nuevo.',
+});
+
+/**
+ * `POST /v1/auth/sign-out`: cierra la sesión del session token (cuerpo en
+ * móvil, cookie en web), revoca sus tokens y borra la cookie. Es idempotente:
+ * una sesión que ya no existe responde igual.
+ */
+export const SignOutRoute = defineRoute({
+  id: IdentityRoute.SignOut,
+  method: HttpMethod.Post,
+  path: '/v1/auth/sign-out',
+  request: SessionTokenRequestSchema,
+  errors: [PlatformErrorCode.RateLimitExceeded],
+  access: Access.public(),
+  description:
+    'Cierra la sesión del session token, revoca sus tokens y borra la cookie en web.',
 });

@@ -214,6 +214,50 @@ void main() {
       },
     );
 
+    test('validators accept unknown enum values in lists only when the '
+        'data comes from the server', () {
+      final sample = _sample();
+      (sample['schemas'] as Json)['Palette'] = {
+        'type': 'object',
+        'properties': {
+          'main': {r'$ref': '#/schemas/Color'},
+          'colors': {
+            'type': 'array',
+            'items': {r'$ref': '#/schemas/Color'},
+          },
+          'item': {r'$ref': '#/schemas/Item'},
+        },
+        'required': ['main', 'colors', 'item'],
+      };
+      final schemas = generate(
+        _model({'platform': _platform(), 'sample': sample}),
+      )['sample/schemas/sample_schemas.dart']!;
+      final start = schemas.indexOf('abstract final class PaletteSchema');
+      final palette = schemas.substring(
+        start,
+        schemas.indexOf('extension PaletteValidation', start),
+      );
+      expect(
+        palette,
+        contains('static List<FieldError> validateIncoming(Object? json'),
+      );
+      expect(
+        palette,
+        contains('check(json, path, errors, acceptUnknownEnums: true);'),
+      );
+      // The list item checks the flag; the single enum ignores it.
+      final listCheck = RegExp(
+        r"\(!acceptUnknownEnums &&\s+!const <String>\{'dark-red', 'blue'\}",
+      );
+      expect(listCheck.allMatches(palette), hasLength(1));
+      final singleCheck = RegExp(
+        r"is! String \|\|\s+!const <String>\{'dark-red', 'blue'\}",
+      );
+      expect(singleCheck.allMatches(palette), hasLength(1));
+      // Nested objects get the same flag.
+      expect(palette, contains('acceptUnknownEnums: acceptUnknownEnums'));
+    });
+
     test('rejects unsupported schema keywords', () {
       final doc = _doc(
         'sample',
@@ -324,6 +368,8 @@ void main() {
       expect(routes, contains('mfaMaxAgeMinutes: 10,'));
       expect(routes, contains('deprecated: RouteDeprecation('));
       expect(routes, contains("replacement: 'sample.items.put2',"));
+      // The request is validated strictly before calling.
+      expect(routes, contains('validateRequest: ItemSchema.validate,'));
     });
 
     test('generate the events of each service with their payload', () {
@@ -332,6 +378,10 @@ void main() {
       expect(messages, contains('MessageDescriptor<Item>('));
       expect(messages, contains('kind: MessageKind.event,'));
       expect(messages, contains('decodePayload: Item.fromJson,'));
+      expect(
+        messages,
+        contains('validatePayload: ItemSchema.validateIncoming,'),
+      );
       expect(messages, isNot(contains('SampleCommands')));
     });
 

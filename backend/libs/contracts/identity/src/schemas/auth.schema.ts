@@ -7,12 +7,31 @@ import type {
   MfaChallengeRequest,
   MfaVerifyRequest,
   PendingMfa,
+  SessionTokenRequest,
   SessionTokens,
   SignInRequest,
   SignInResponse,
+  StepUpResult,
+  StepUpVerifyRequest,
 } from '../types/auth.type.js';
 
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+
+const SessionTokenFieldSchema = z
+  .string()
+  .min(1)
+  .max(IdentityLimits.tokenMaxLength);
+
+const MfaTokenFieldSchema = z
+  .string()
+  .min(1)
+  .max(IdentityLimits.mfaTokenMaxLength);
+
+const MfaCodeFieldSchema = z
+  .string()
+  .min(IdentityLimits.mfaCodeMinLength)
+  .max(IdentityLimits.mfaCodeMaxLength)
+  .regex(/^[A-Za-z0-9-]+$/);
 
 export const MfaFactorSchema = z
   .enum(MfaFactor)
@@ -42,17 +61,13 @@ export const SessionTokensSchema = z
   .object({
     accessToken: z.string().min(1).max(IdentityLimits.tokenMaxLength),
     accessExpiresAt: TimestampSchema,
-    sessionToken: z
-      .string()
-      .min(1)
-      .max(IdentityLimits.tokenMaxLength)
-      .optional(),
+    sessionToken: SessionTokenFieldSchema.optional(),
   })
   .describe('Tokens de una sesión.') satisfies z.ZodType<SessionTokens>;
 
 export const PendingMfaSchema = z
   .object({
-    mfaToken: z.string().min(1).max(IdentityLimits.mfaTokenMaxLength),
+    mfaToken: MfaTokenFieldSchema,
     methods: z.array(MfaFactorSchema).min(1),
   })
   .describe('Desafío MFA pendiente.') satisfies z.ZodType<PendingMfa>;
@@ -69,7 +84,7 @@ export const SignInResponseSchema = z
 
 export const MfaChallengeRequestSchema = z
   .strictObject({
-    mfaToken: z.string().min(1).max(IdentityLimits.mfaTokenMaxLength),
+    mfaToken: MfaTokenFieldSchema,
     method: MfaFactorSchema,
   })
   .describe(
@@ -91,13 +106,9 @@ export const MfaChallengeSchema = z
 
 export const MfaVerifyRequestSchema = z
   .strictObject({
-    mfaToken: z.string().min(1).max(IdentityLimits.mfaTokenMaxLength),
+    mfaToken: MfaTokenFieldSchema,
     challengeId: IdSchema,
-    code: z
-      .string()
-      .min(IdentityLimits.mfaCodeMinLength)
-      .max(IdentityLimits.mfaCodeMaxLength)
-      .regex(/^[A-Za-z0-9-]+$/),
+    code: MfaCodeFieldSchema,
     devicePublicKey: z
       .string()
       .min(1)
@@ -108,3 +119,28 @@ export const MfaVerifyRequestSchema = z
   .describe(
     'Verificación de un desafío MFA.',
   ) satisfies z.ZodType<MfaVerifyRequest>;
+
+export const SessionTokenRequestSchema = z
+  .strictObject({ sessionToken: SessionTokenFieldSchema.optional() })
+  .describe(
+    'Session token a rotar o cerrar. En web se omite y viaja en la cookie httpOnly.',
+  ) satisfies z.ZodType<SessionTokenRequest>;
+
+export const StepUpVerifyRequestSchema = z
+  .strictObject({
+    mfaToken: MfaTokenFieldSchema,
+    challengeId: IdSchema,
+    code: MfaCodeFieldSchema,
+  })
+  .describe(
+    'Verificación del paso adicional de una sesión abierta.',
+  ) satisfies z.ZodType<StepUpVerifyRequest>;
+
+export const StepUpResultSchema = z
+  .object({
+    tokens: SessionTokensSchema,
+    mfaVerifiedAt: TimestampSchema,
+  })
+  .describe(
+    'Paso adicional verificado: access token nuevo y último MFA de la sesión.',
+  ) satisfies z.ZodType<StepUpResult>;

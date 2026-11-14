@@ -64,9 +64,16 @@ String errorMessageFor(AppLocalizations l10n, String code) {
     'IDENTITY.MFA.TOO_MANY_ATTEMPTS' =>
       l10n.error_identity_mfa_too_many_attempts,
     'IDENTITY.MFA.STEP_UP_REQUIRED' => l10n.error_identity_mfa_step_up_required,
+    'IDENTITY.MFA.METHOD_UNAVAILABLE' =>
+      l10n.error_identity_mfa_method_unavailable,
     'IDENTITY.SESSION.REVOKED' => l10n.error_identity_session_revoked,
+    'IDENTITY.SESSION.EXPIRED' => l10n.error_identity_session_expired,
+    'IDENTITY.SESSION.REUSED' => l10n.error_identity_session_reused,
     'IDENTITY.TOKEN.STALE_PERMISSIONS' =>
       l10n.error_identity_token_stale_permissions,
+    'IDENTITY.TOKEN.REVOKED' => l10n.error_identity_token_revoked,
+    'IDENTITY.USER.SUSPENDED' => l10n.error_identity_user_suspended,
+    'IDENTITY.TENANT.SUSPENDED' => l10n.error_identity_tenant_suspended,
     _ => l10n.errorFallback,
   };
 }

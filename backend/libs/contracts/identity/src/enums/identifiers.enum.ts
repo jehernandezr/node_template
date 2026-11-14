@@ -6,9 +6,15 @@ export enum IdentityErrorCode {
   MfaCodeExpired = 'IDENTITY.MFA.CODE_EXPIRED',
   MfaTooManyAttempts = 'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
   MfaStepUpRequired = 'IDENTITY.MFA.STEP_UP_REQUIRED',
+  MfaMethodUnavailable = 'IDENTITY.MFA.METHOD_UNAVAILABLE',
   SessionRevoked = 'IDENTITY.SESSION.REVOKED',
+  SessionExpired = 'IDENTITY.SESSION.EXPIRED',
+  SessionReused = 'IDENTITY.SESSION.REUSED',
   TokenStalePermissions = 'IDENTITY.TOKEN.STALE_PERMISSIONS',
+  TokenRevoked = 'IDENTITY.TOKEN.REVOKED',
   UserNotFound = 'IDENTITY.USER.NOT_FOUND',
+  UserSuspended = 'IDENTITY.USER.SUSPENDED',
+  TenantSuspended = 'IDENTITY.TENANT.SUSPENDED',
 }
 
 /** Identificadores de las rutas públicas de identity. */
@@ -16,6 +22,11 @@ export enum IdentityRoute {
   SignIn = 'identity.auth.sign-in',
   RequestMfaChallenge = 'identity.auth.mfa-challenge',
   VerifyMfa = 'identity.auth.mfa-verify',
+  RefreshSession = 'identity.auth.refresh',
+  SignOut = 'identity.auth.sign-out',
+  StartStepUp = 'identity.step-up.start',
+  RequestStepUpChallenge = 'identity.step-up.challenge',
+  VerifyStepUp = 'identity.step-up.verify',
   GetSessionAccess = 'identity.me.access',
   ListSessions = 'identity.sessions.list',
   RevokeSession = 'identity.sessions.revoke',

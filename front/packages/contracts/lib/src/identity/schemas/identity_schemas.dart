@@ -29,8 +29,27 @@ abstract final class SignInRequestSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -151,8 +170,27 @@ abstract final class SessionTokensSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -257,8 +295,27 @@ abstract final class PendingMfaSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -313,13 +370,14 @@ abstract final class PendingMfaSchema {
         for (var i8 = 0; i8 < value7.length; i8++) {
           final item9 = value7[i8];
           if (item9 is! String ||
-              !const <String>{
-                'device_otp',
-                'email_otp',
-                'totp',
-                'recovery_code',
-                'passkey',
-              }.contains(item9)) {
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'device_otp',
+                    'email_otp',
+                    'totp',
+                    'recovery_code',
+                    'passkey',
+                  }.contains(item9))) {
             addFieldError(
               errors,
               joinPath(joinPath(path, 'methods'), '$i8'),
@@ -355,8 +413,27 @@ abstract final class SignInResponseSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -380,11 +457,21 @@ abstract final class SignInResponseSchema {
     }
     if (json.containsKey('tokens')) {
       final value11 = json['tokens'];
-      SessionTokensSchema.check(value11, joinPath(path, 'tokens'), errors);
+      SessionTokensSchema.check(
+        value11,
+        joinPath(path, 'tokens'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
     }
     if (json.containsKey('mfa')) {
       final value12 = json['mfa'];
-      PendingMfaSchema.check(value12, joinPath(path, 'mfa'), errors);
+      PendingMfaSchema.check(
+        value12,
+        joinPath(path, 'mfa'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
     }
   }
 }
@@ -406,8 +493,27 @@ abstract final class MfaChallengeRequestSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -495,8 +601,27 @@ abstract final class MfaChallengeSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -619,8 +744,27 @@ abstract final class MfaVerifyRequestSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
@@ -773,6 +917,316 @@ extension MfaVerifyRequestValidation on MfaVerifyRequest {
   List<FieldError> validate() => MfaVerifyRequestSchema.validate(toJson());
 }
 
+/// Validador de [SessionTokenRequest] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class SessionTokenRequestSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('sessionToken')) {
+      final value23 = json['sessionToken'];
+      if (value23 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'sessionToken'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value23.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'sessionToken'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value23.length > 8192) {
+          addFieldError(
+            errors,
+            joinPath(path, 'sessionToken'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'sessionToken'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [SessionTokenRequest] contra su contrato.
+extension SessionTokenRequestValidation on SessionTokenRequest {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => SessionTokenRequestSchema.validate(toJson());
+}
+
+/// Validador de [StepUpVerifyRequest] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class StepUpVerifyRequestSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('mfaToken')) {
+      final value24 = json['mfaToken'];
+      if (value24 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'mfaToken'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value24.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'mfaToken'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value24.length > 2048) {
+          addFieldError(
+            errors,
+            joinPath(path, 'mfaToken'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'mfaToken'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('challengeId')) {
+      final value25 = json['challengeId'];
+      if (value25 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'challengeId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern2.hasMatch(value25)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'challengeId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'challengeId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('code')) {
+      final value26 = json['code'];
+      if (value26 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'code'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value26.length < 6) {
+          addFieldError(
+            errors,
+            joinPath(path, 'code'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value26.length > 64) {
+          addFieldError(
+            errors,
+            joinPath(path, 'code'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        if (!_pattern3.hasMatch(value26)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'code'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'code'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'mfaToken', 'challengeId', 'code'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [StepUpVerifyRequest] contra su contrato.
+extension StepUpVerifyRequestValidation on StepUpVerifyRequest {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => StepUpVerifyRequestSchema.validate(toJson());
+}
+
+/// Validador de [StepUpResult] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class StepUpResultSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tokens')) {
+      final value27 = json['tokens'];
+      SessionTokensSchema.check(
+        value27,
+        joinPath(path, 'tokens'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tokens'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('mfaVerifiedAt')) {
+      final value28 = json['mfaVerifiedAt'];
+      if (value28 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'mfaVerifiedAt'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern1.hasMatch(value28)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'mfaVerifiedAt'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'mfaVerifiedAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [StepUpResult] contra su contrato.
+extension StepUpResultValidation on StepUpResult {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => StepUpResultSchema.validate(toJson());
+}
+
 /// Validador de [SessionSummary] generado desde el JSON Schema del contrato.
 ///
 /// Devuelve los mismos códigos y rutas de campo que el servidor.
@@ -784,22 +1238,41 @@ abstract final class SessionSummarySchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('id')) {
-      final value23 = json['id'];
-      if (value23 is! String) {
+      final value29 = json['id'];
+      if (value29 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value23)) {
+        if (!_pattern2.hasMatch(value29)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -815,22 +1288,22 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('deviceName')) {
-      final value24 = json['deviceName'];
-      if (value24 is! String) {
+      final value30 = json['deviceName'];
+      if (value30 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceName'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value24.isEmpty) {
+        if (value30.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'deviceName'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value24.length > 120) {
+        if (value30.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'deviceName'),
@@ -846,8 +1319,8 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('platform')) {
-      final value25 = json['platform'];
-      if (value25 is! String ||
+      final value31 = json['platform'];
+      if (value31 is! String ||
           !const <String>{
             'ios',
             'android',
@@ -855,7 +1328,7 @@ abstract final class SessionSummarySchema {
             'macos',
             'windows',
             'linux',
-          }.contains(value25)) {
+          }.contains(value31)) {
         addFieldError(
           errors,
           joinPath(path, 'platform'),
@@ -870,15 +1343,15 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('lastSeenAt')) {
-      final value26 = json['lastSeenAt'];
-      if (value26 is! String) {
+      final value32 = json['lastSeenAt'];
+      if (value32 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'lastSeenAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value26)) {
+        if (!_pattern1.hasMatch(value32)) {
           addFieldError(
             errors,
             joinPath(path, 'lastSeenAt'),
@@ -894,8 +1367,8 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('current')) {
-      final value27 = json['current'];
-      if (value27 is! bool) {
+      final value33 = json['current'];
+      if (value33 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'current'),
@@ -929,34 +1402,54 @@ abstract final class SessionPageSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('items')) {
-      final value28 = json['items'];
-      if (value28 is! List) {
+      final value34 = json['items'];
+      if (value34 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value28.length > 100) {
+        if (value34.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i29 = 0; i29 < value28.length; i29++) {
-          final item30 = value28[i29];
+        for (var i35 = 0; i35 < value34.length; i35++) {
+          final item36 = value34[i35];
           SessionSummarySchema.check(
-            item30,
-            joinPath(joinPath(path, 'items'), '$i29'),
+            item36,
+            joinPath(joinPath(path, 'items'), '$i35'),
             errors,
+            acceptUnknownEnums: acceptUnknownEnums,
           );
         }
       }
@@ -968,30 +1461,30 @@ abstract final class SessionPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value31 = json['nextCursor'];
-      if (value31 != null) {
-        if (value31 is! String) {
+      final value37 = json['nextCursor'];
+      if (value37 != null) {
+        if (value37 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value31.isEmpty) {
+          if (value37.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value31.length > 512) {
+          if (value37.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern4.hasMatch(value31)) {
+          if (!_pattern4.hasMatch(value37)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -1027,22 +1520,41 @@ abstract final class DeviceSummarySchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('id')) {
-      final value32 = json['id'];
-      if (value32 is! String) {
+      final value38 = json['id'];
+      if (value38 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value32)) {
+        if (!_pattern2.hasMatch(value38)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -1058,22 +1570,22 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value33 = json['name'];
-      if (value33 is! String) {
+      final value39 = json['name'];
+      if (value39 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value33.isEmpty) {
+        if (value39.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value33.length > 120) {
+        if (value39.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -1089,8 +1601,8 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('platform')) {
-      final value34 = json['platform'];
-      if (value34 is! String ||
+      final value40 = json['platform'];
+      if (value40 is! String ||
           !const <String>{
             'ios',
             'android',
@@ -1098,7 +1610,7 @@ abstract final class DeviceSummarySchema {
             'macos',
             'windows',
             'linux',
-          }.contains(value34)) {
+          }.contains(value40)) {
         addFieldError(
           errors,
           joinPath(path, 'platform'),
@@ -1113,15 +1625,15 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('lastSeenAt')) {
-      final value35 = json['lastSeenAt'];
-      if (value35 is! String) {
+      final value41 = json['lastSeenAt'];
+      if (value41 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'lastSeenAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value35)) {
+        if (!_pattern1.hasMatch(value41)) {
           addFieldError(
             errors,
             joinPath(path, 'lastSeenAt'),
@@ -1137,15 +1649,15 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('trustedUntil')) {
-      final value36 = json['trustedUntil'];
-      if (value36 is! String) {
+      final value42 = json['trustedUntil'];
+      if (value42 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'trustedUntil'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value36)) {
+        if (!_pattern1.hasMatch(value42)) {
           addFieldError(
             errors,
             joinPath(path, 'trustedUntil'),
@@ -1155,8 +1667,8 @@ abstract final class DeviceSummarySchema {
       }
     }
     if (json.containsKey('verifier')) {
-      final value37 = json['verifier'];
-      if (value37 is! bool) {
+      final value43 = json['verifier'];
+      if (value43 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'verifier'),
@@ -1190,34 +1702,54 @@ abstract final class DevicePageSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('items')) {
-      final value38 = json['items'];
-      if (value38 is! List) {
+      final value44 = json['items'];
+      if (value44 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value38.length > 100) {
+        if (value44.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i39 = 0; i39 < value38.length; i39++) {
-          final item40 = value38[i39];
+        for (var i45 = 0; i45 < value44.length; i45++) {
+          final item46 = value44[i45];
           DeviceSummarySchema.check(
-            item40,
-            joinPath(joinPath(path, 'items'), '$i39'),
+            item46,
+            joinPath(joinPath(path, 'items'), '$i45'),
             errors,
+            acceptUnknownEnums: acceptUnknownEnums,
           );
         }
       }
@@ -1229,30 +1761,30 @@ abstract final class DevicePageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value41 = json['nextCursor'];
-      if (value41 != null) {
-        if (value41 is! String) {
+      final value47 = json['nextCursor'];
+      if (value47 != null) {
+        if (value47 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value41.isEmpty) {
+          if (value47.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value41.length > 512) {
+          if (value47.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern4.hasMatch(value41)) {
+          if (!_pattern4.hasMatch(value47)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -1288,22 +1820,41 @@ abstract final class RevokeSessionRequestSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('sessionId')) {
-      final value42 = json['sessionId'];
-      if (value42 is! String) {
+      final value48 = json['sessionId'];
+      if (value48 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value42)) {
+        if (!_pattern2.hasMatch(value48)) {
           addFieldError(
             errors,
             joinPath(path, 'sessionId'),
@@ -1347,31 +1898,50 @@ abstract final class RevokedSessionsSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('revoked')) {
-      final value43 = json['revoked'];
-      if (value43 is! num ||
-          !value43.isFinite ||
-          value43 != value43.roundToDouble()) {
+      final value49 = json['revoked'];
+      if (value49 is! num ||
+          !value49.isFinite ||
+          value49 != value49.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'revoked'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value43 < 0) {
+        if (value49 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'revoked'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value43 > 9007199254740991) {
+        if (value49 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'revoked'),
@@ -1406,22 +1976,41 @@ abstract final class RevokeUserSessionsInputSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('userId')) {
-      final value44 = json['userId'];
-      if (value44 is! String) {
+      final value50 = json['userId'];
+      if (value50 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value44)) {
+        if (!_pattern2.hasMatch(value50)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -1437,15 +2026,15 @@ abstract final class RevokeUserSessionsInputSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value45 = json['reason'];
-      if (value45 is! String ||
+      final value51 = json['reason'];
+      if (value51 is! String ||
           !const <String>{
             'logout',
             'user_action',
             'password_changed',
             'admin_action',
             'compromised',
-          }.contains(value45)) {
+          }.contains(value51)) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
@@ -1489,22 +2078,41 @@ abstract final class GetUserAccessInputSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('userId')) {
-      final value46 = json['userId'];
-      if (value46 is! String) {
+      final value52 = json['userId'];
+      if (value52 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value46)) {
+        if (!_pattern2.hasMatch(value52)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -1520,15 +2128,15 @@ abstract final class GetUserAccessInputSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value47 = json['tenantId'];
-      if (value47 is! String) {
+      final value53 = json['tenantId'];
+      if (value53 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value47)) {
+        if (!_pattern2.hasMatch(value53)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -1572,34 +2180,54 @@ abstract final class UserAccessSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('permissions')) {
-      final value48 = json['permissions'];
-      if (value48 is! List) {
+      final value54 = json['permissions'];
+      if (value54 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i49 = 0; i49 < value48.length; i49++) {
-          final item50 = value48[i49];
-          if (item50 is! String ||
-              !const <String>{
-                'tasks:read',
-                'tasks:write',
-                'billing:read',
-                'billing:write',
-                'backoffice:access',
-              }.contains(item50)) {
+        for (var i55 = 0; i55 < value54.length; i55++) {
+          final item56 = value54[i55];
+          if (item56 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'tasks:read',
+                    'tasks:write',
+                    'billing:read',
+                    'billing:write',
+                    'backoffice:access',
+                  }.contains(item56))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i49'),
+              joinPath(joinPath(path, 'permissions'), '$i55'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1613,26 +2241,27 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('platformRoles')) {
-      final value51 = json['platformRoles'];
-      if (value51 is! List) {
+      final value57 = json['platformRoles'];
+      if (value57 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'platformRoles'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i52 = 0; i52 < value51.length; i52++) {
-          final item53 = value51[i52];
-          if (item53 is! String ||
-              !const <String>{
-                'super_admin',
-                'support',
-                'finance',
-                'read_only',
-              }.contains(item53)) {
+        for (var i58 = 0; i58 < value57.length; i58++) {
+          final item59 = value57[i58];
+          if (item59 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'super_admin',
+                    'support',
+                    'finance',
+                    'read_only',
+                  }.contains(item59))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'platformRoles'), '$i52'),
+              joinPath(joinPath(path, 'platformRoles'), '$i58'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1646,25 +2275,26 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('features')) {
-      final value54 = json['features'];
-      if (value54 is! List) {
+      final value60 = json['features'];
+      if (value60 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'features'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i55 = 0; i55 < value54.length; i55++) {
-          final item56 = value54[i55];
-          if (item56 is! String ||
-              !const <String>{
-                'ai_assistant',
-                'webhooks',
-                'billing',
-              }.contains(item56)) {
+        for (var i61 = 0; i61 < value60.length; i61++) {
+          final item62 = value60[i61];
+          if (item62 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'ai_assistant',
+                    'webhooks',
+                    'billing',
+                  }.contains(item62))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'features'), '$i55'),
+              joinPath(joinPath(path, 'features'), '$i61'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1678,21 +2308,22 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('flags')) {
-      final value57 = json['flags'];
-      if (value57 is! List) {
+      final value63 = json['flags'];
+      if (value63 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'flags'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i58 = 0; i58 < value57.length; i58++) {
-          final item59 = value57[i58];
-          if (item59 is! String ||
-              !const <String>{'new_reports'}.contains(item59)) {
+        for (var i64 = 0; i64 < value63.length; i64++) {
+          final item65 = value63[i64];
+          if (item65 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{'new_reports'}.contains(item65))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'flags'), '$i58'),
+              joinPath(joinPath(path, 'flags'), '$i64'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1725,22 +2356,41 @@ abstract final class SessionAccessSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('userId')) {
-      final value60 = json['userId'];
-      if (value60 is! String) {
+      final value66 = json['userId'];
+      if (value66 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value60)) {
+        if (!_pattern2.hasMatch(value66)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -1756,15 +2406,15 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value61 = json['tenantId'];
-      if (value61 is! String) {
+      final value67 = json['tenantId'];
+      if (value67 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value61)) {
+        if (!_pattern2.hasMatch(value67)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -1780,15 +2430,15 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('sessionId')) {
-      final value62 = json['sessionId'];
-      if (value62 is! String) {
+      final value68 = json['sessionId'];
+      if (value68 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value62)) {
+        if (!_pattern2.hasMatch(value68)) {
           addFieldError(
             errors,
             joinPath(path, 'sessionId'),
@@ -1804,27 +2454,28 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value63 = json['permissions'];
-      if (value63 is! List) {
+      final value69 = json['permissions'];
+      if (value69 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i64 = 0; i64 < value63.length; i64++) {
-          final item65 = value63[i64];
-          if (item65 is! String ||
-              !const <String>{
-                'tasks:read',
-                'tasks:write',
-                'billing:read',
-                'billing:write',
-                'backoffice:access',
-              }.contains(item65)) {
+        for (var i70 = 0; i70 < value69.length; i70++) {
+          final item71 = value69[i70];
+          if (item71 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'tasks:read',
+                    'tasks:write',
+                    'billing:read',
+                    'billing:write',
+                    'backoffice:access',
+                  }.contains(item71))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i64'),
+              joinPath(joinPath(path, 'permissions'), '$i70'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1838,26 +2489,27 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('platformRoles')) {
-      final value66 = json['platformRoles'];
-      if (value66 is! List) {
+      final value72 = json['platformRoles'];
+      if (value72 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'platformRoles'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i67 = 0; i67 < value66.length; i67++) {
-          final item68 = value66[i67];
-          if (item68 is! String ||
-              !const <String>{
-                'super_admin',
-                'support',
-                'finance',
-                'read_only',
-              }.contains(item68)) {
+        for (var i73 = 0; i73 < value72.length; i73++) {
+          final item74 = value72[i73];
+          if (item74 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'super_admin',
+                    'support',
+                    'finance',
+                    'read_only',
+                  }.contains(item74))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'platformRoles'), '$i67'),
+              joinPath(joinPath(path, 'platformRoles'), '$i73'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1871,25 +2523,26 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('features')) {
-      final value69 = json['features'];
-      if (value69 is! List) {
+      final value75 = json['features'];
+      if (value75 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'features'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i70 = 0; i70 < value69.length; i70++) {
-          final item71 = value69[i70];
-          if (item71 is! String ||
-              !const <String>{
-                'ai_assistant',
-                'webhooks',
-                'billing',
-              }.contains(item71)) {
+        for (var i76 = 0; i76 < value75.length; i76++) {
+          final item77 = value75[i76];
+          if (item77 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{
+                    'ai_assistant',
+                    'webhooks',
+                    'billing',
+                  }.contains(item77))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'features'), '$i70'),
+              joinPath(joinPath(path, 'features'), '$i76'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1903,21 +2556,22 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('flags')) {
-      final value72 = json['flags'];
-      if (value72 is! List) {
+      final value78 = json['flags'];
+      if (value78 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'flags'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i73 = 0; i73 < value72.length; i73++) {
-          final item74 = value72[i73];
-          if (item74 is! String ||
-              !const <String>{'new_reports'}.contains(item74)) {
+        for (var i79 = 0; i79 < value78.length; i79++) {
+          final item80 = value78[i79];
+          if (item80 is! String ||
+              (!acceptUnknownEnums &&
+                  !const <String>{'new_reports'}.contains(item80))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'flags'), '$i73'),
+              joinPath(joinPath(path, 'flags'), '$i79'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -1931,16 +2585,16 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('mfaVerifiedAt')) {
-      final value75 = json['mfaVerifiedAt'];
-      if (value75 != null) {
-        if (value75 is! String) {
+      final value81 = json['mfaVerifiedAt'];
+      if (value81 != null) {
+        if (value81 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'mfaVerifiedAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern1.hasMatch(value75)) {
+          if (!_pattern1.hasMatch(value81)) {
             addFieldError(
               errors,
               joinPath(path, 'mfaVerifiedAt'),
@@ -1976,22 +2630,41 @@ abstract final class SessionRevokedPayloadSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('sessionId')) {
-      final value76 = json['sessionId'];
-      if (value76 is! String) {
+      final value82 = json['sessionId'];
+      if (value82 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value76)) {
+        if (!_pattern2.hasMatch(value82)) {
           addFieldError(
             errors,
             joinPath(path, 'sessionId'),
@@ -2007,15 +2680,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('userId')) {
-      final value77 = json['userId'];
-      if (value77 is! String) {
+      final value83 = json['userId'];
+      if (value83 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value77)) {
+        if (!_pattern2.hasMatch(value83)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -2031,15 +2704,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value78 = json['tenantId'];
-      if (value78 is! String) {
+      final value84 = json['tenantId'];
+      if (value84 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value78)) {
+        if (!_pattern2.hasMatch(value84)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -2055,15 +2728,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value79 = json['reason'];
-      if (value79 is! String ||
+      final value85 = json['reason'];
+      if (value85 is! String ||
           !const <String>{
             'logout',
             'user_action',
             'password_changed',
             'admin_action',
             'compromised',
-          }.contains(value79)) {
+          }.contains(value85)) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
@@ -2078,15 +2751,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('revokedAt')) {
-      final value80 = json['revokedAt'];
-      if (value80 is! String) {
+      final value86 = json['revokedAt'];
+      if (value86 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'revokedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value80)) {
+        if (!_pattern1.hasMatch(value86)) {
           addFieldError(
             errors,
             joinPath(path, 'revokedAt'),
@@ -2121,16 +2794,35 @@ abstract final class TokensRevokedPayloadSchema {
     return errors;
   }
 
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
   /// Agrega a [errors] los errores de [json] bajo [path].
-  static void check(Object? json, String path, List<FieldError> errors) {
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
     if (json is! Map<String, Object?>) {
       addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
       return;
     }
     if (json.containsKey('scope')) {
-      final value81 = json['scope'];
-      if (value81 is! String ||
-          !const <String>{'session', 'user', 'tenant'}.contains(value81)) {
+      final value87 = json['scope'];
+      if (value87 is! String ||
+          !const <String>{'session', 'user', 'tenant'}.contains(value87)) {
         addFieldError(
           errors,
           joinPath(path, 'scope'),
@@ -2145,15 +2837,15 @@ abstract final class TokensRevokedPayloadSchema {
       );
     }
     if (json.containsKey('subjectId')) {
-      final value82 = json['subjectId'];
-      if (value82 is! String) {
+      final value88 = json['subjectId'];
+      if (value88 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'subjectId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value82)) {
+        if (!_pattern2.hasMatch(value88)) {
           addFieldError(
             errors,
             joinPath(path, 'subjectId'),
@@ -2169,15 +2861,15 @@ abstract final class TokensRevokedPayloadSchema {
       );
     }
     if (json.containsKey('revokedBefore')) {
-      final value83 = json['revokedBefore'];
-      if (value83 is! String) {
+      final value89 = json['revokedBefore'];
+      if (value89 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'revokedBefore'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern1.hasMatch(value83)) {
+        if (!_pattern1.hasMatch(value89)) {
           addFieldError(
             errors,
             joinPath(path, 'revokedBefore'),
