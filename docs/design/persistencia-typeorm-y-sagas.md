@@ -140,4 +140,4 @@ Alternativa descartada: AWS Step Functions como orquestador. Resuelve estado y r
 | P2 · tablas de la plataforma | Entidades, migraciones y stores de TypeORM en `@platform/adapters-postgres`: outbox, procesados, idempotencia, directorio y `TypeOrmSagaStore` | Interfaces de P1                      |
 | P3 · motor de sagas          | Rediseño de `@platform/saga` (sección 5) contra el puerto `SagaStore`, más `SagaModule`                                                        | Puerto `SagaStore`; se integra con P2 |
 
-P1 y P3 arrancan juntos. P2 arranca cuando P1 fija sus interfaces. Al cerrar, se actualizan los ADR 0008 y 0009, `docs/ARCHITECTURE.md` y la skill `backend-persistencia-typeorm`.
+El orden de ejecución lo fija el [plan](../plan/README.md#orden-de-ejecución-por-olas): P1 es WP-09, P2 es WP-10 y P3 es WP-12 del [plan del backend](../plan/backend.md#d11-persistencia-con-typeorm-y-sagas-frontera-de-paquetes), que pasa `TypeOrmSagaStore` de P2 a P3. Al cerrar, se actualizan los ADR 0008 y 0009, `docs/ARCHITECTURE.md` y la skill `backend-persistencia-typeorm`.

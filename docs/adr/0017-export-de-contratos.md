@@ -1,8 +1,9 @@
 # 0017. Export de contratos a JSON y generación del Dart
 
-- Estado: Propuesta
+- Estado: Aceptada
 - Fecha: 2026-11-12
 - Revisión: 2026-11-14 (`@Operation` y `OperationContract` se retiraron; OpenAPI sale de `contract.json` en F11, sin `@nestjs/swagger`, según la decisión 4 del diseño de F4)
+- Revisión: 2026-11-14 (pasa a Aceptada: el export, `contracts_gen` y sus chequeos están implementados y corren en el job `contracts` de CI)
 
 ## Contexto
 

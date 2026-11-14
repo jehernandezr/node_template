@@ -1,6 +1,6 @@
-# Plataforma backend: plan de arquitectura
+# Arquitectura de la plataforma
 
-Nov 11, 2026, actualizado el 14 de noviembre de 2026 · Documento vivo: https://claude.ai/artifact/Bn67Z4R16bLoevfodCcHiT
+Este documento describe qué es la plataforma y cómo está construida. Las fases, su estado, el orden de ejecución y el registro de decisiones están en el [plan](plan/README.md).
 
 ## Resumen
 
@@ -16,23 +16,6 @@ Trae resuelto lo que todo backend necesita y casi nunca se hace bien desde el in
 - **Contratos explícitos.** Cada servicio publica lo que expone (operaciones, eventos, errores) con validación en tiempo de ejecución en ambos lados.
 - **Todo deja rastro.** Cada request, mensaje, paso de saga y cambio en una tabla queda asociado a un `traceId` y a un actor.
 - **Seguro por defecto.** Todo endpoint exige autenticación salvo que se declare público, y cada operación que modifica datos declara cómo se revierte.
-
-## Punto de partida
-
-[`jehernandezr/node_template`](https://github.com/jehernandezr/node_template) es un Express con Sequelize de enero de 2022 (9 commits). La plataforma nueva se escribe desde cero y conserva la idea original: auth con JWT, roles y manejo centralizado de errores.
-
-Estos hallazgos se corrigen como parte del paso inicial:
-
-| Hallazgo                                                                                                                   | Archivo                                      | Acción                                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `.env` versionado con `JWT_SECRET` y contraseña de la base                                                                 | `.env`                                       | Retirarlo del historial, rotar esos valores si se usaron en otro lugar y publicar `.env.example` |
-| Credenciales de la base y del login impresas en consola                                                                    | `utils/dbConnection.ts`, `authMiddleware.ts` | Logger con redacción automática de campos sensibles                                              |
-| El signup acepta `role` desde el body (cualquiera se registra como admin)                                                  | `authMiddleware.ts`                          | Roles asignados solo por el sistema o por un admin                                               |
-| El login lee `user.password` antes de validar que el usuario exista                                                        | `authMiddleware.ts`                          | Respuesta 401 uniforme para usuario o clave inválidos                                            |
-| `updatePassword` invierte los argumentos de bcrypt y guarda la clave nueva sin hash                                        | `authMiddleware.ts`                          | Flujo de cambio de clave con argon2id y revocación de sesiones                                   |
-| Import `catchAsync` contra archivo `CatchAsync.ts` (compila en macOS, falla en Linux)                                      | controllers                                  | Lint de rutas sensibles a mayúsculas                                                             |
-| `sync({ alter: true })` en el arranque                                                                                     | `server.ts`                                  | Migraciones versionadas, `synchronize` siempre apagado                                           |
-| El manejador de errores llama `render('error')` sin motor de vistas y deja colgada la petición si `NODE_ENV` es otro valor | `errorController.ts`                         | Filtro global con formato RFC 9457                                                               |
 
 ## Monorepo con Nx
 
@@ -62,7 +45,7 @@ front/                         pub workspace de Flutter
   microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
   packages/                    api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
   tools/                       contracts_gen, nx-plugin, check_deferred_chunks.dart y check_microfrontend_boundaries.dart
-docs/                          arquitectura, ADR, diseños por fase (design/) y auditorías (audits/)
+docs/                          arquitectura, plan (plan/), ADR, diseños por fase (design/) y auditorías (audits/)
 .claude/                       skills de backend y front, hooks y agentes para las herramientas de IA
 nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.json
 .github/  .husky/  commitlint.config.mjs  lint-staged.config.mjs  .prettierrc  renovate.json
@@ -80,7 +63,7 @@ nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.jso
 
 **Servicios**
 
-Cada microservicio será una app en `backend/apps/<servicio>` (proyecto de Nx con `project.json`, sin `package.json`) con su dominio, su base de datos, sus migraciones y su despliegue. Los servicios previstos son `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` y `backoffice-api`. El primero es `identity`, en la fase F4, con su diseño aprobado en [`docs/design/f4-identity.md`](design/f4-identity.md).
+Cada microservicio será una app en `backend/apps/<servicio>` (proyecto de Nx con `project.json`, sin `package.json`) con su dominio, su base de datos, sus migraciones y su despliegue. Los servicios previstos son `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` y `backoffice-api`. El primero es `identity`, con su diseño en [`docs/design/f4-identity.md`](design/f4-identity.md).
 
 **Estructura de cada librería**
 
@@ -122,7 +105,7 @@ backend/apps/<servicio>/migrations/{shard,catalog}/   migraciones de TypeORM
 - Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. Estas capas se verifican en CI con `dependency-cruiser` cuando llega el primer servicio, `identity` (ADR 0020).
 - `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); una regla `no-restricted-imports` lo impide en el resto. Trae `SnsSqsEnvelopePublisher` (lo usa el relay del outbox), `SnsSqsMessageBus` y `SqsDeliveryRunner` (Lambda con fallos parciales por lote o long polling), que aplica `ChangeMessageVisibility` y envía a la DLQ los fallos permanentes. La topología de ejecución sale de los contratos con `topologyFromContracts`.
 - Los puertos de transacción (`TransactionManager`, `UnitOfWork`) viven en `@platform/primitives`, así `messaging` e `internal-api` usan la transacción sin depender de `@platform/persistence`.
-- Los adaptadores PostgreSQL de los puertos de otras librerías viven en `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `PostgresOutboxStore` escribe el outbox en la misma transacción que el cambio de negocio y lo reclama con `FOR UPDATE SKIP LOCKED`, lease con fencing y orden FIFO por grupo; `PostgresProcessedMessageStore` guarda la idempotencia de los consumidores en `processed_messages`; `PostgresIdempotencyStore` guarda la de la API interna y `PostgresDirectoryStore` el directorio de shards. La librería exporta `shardMigrations` y `catalogMigrations` con sus tablas. Con el paquete P2 del [diseño de persistencia](design/persistencia-typeorm-y-sagas.md), estas tablas pasan a entidades y migraciones de TypeORM, junto con la bitácora de sagas.
+- Los adaptadores PostgreSQL de los puertos de otras librerías viven en `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `PostgresOutboxStore` escribe el outbox en la misma transacción que el cambio de negocio y lo reclama con `FOR UPDATE SKIP LOCKED`, lease con fencing y orden FIFO por grupo; `PostgresProcessedMessageStore` guarda la idempotencia de los consumidores en `processed_messages`; `PostgresIdempotencyStore` guarda la de la API interna y `PostgresDirectoryStore` el directorio de shards. La librería exporta `shardMigrations` y `catalogMigrations` con sus tablas. Con el [diseño de persistencia](design/persistencia-typeorm-y-sagas.md), estas tablas pasan a entidades y migraciones de TypeORM, junto con la bitácora de sagas.
 
 ## Front: shells y microfrontends
 
@@ -218,7 +201,7 @@ El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto
 
 El cliente de tiempo real del front llega con el servicio `realtime`, con adaptadores SSE y Socket.IO.
 
-**Despliegue.** El módulo `cloudfront-waf` crea el bucket S3 y la distribución de CloudFront de la web. El siguiente paso es el pipeline que publica la web y la app móvil.
+**Despliegue.** El módulo `cloudfront-waf` crea el bucket S3 y la distribución de CloudFront de la web.
 
 ## Agnóstico a la plataforma
 
@@ -482,7 +465,7 @@ export class TypeOrmUserRepository
 - Cada servicio guarda sus migraciones en `migrations/shard` y `migrations/catalog`. `pnpm nx run <servicio>:migration-generate --name=<Nombre> --target=shard` las genera comparando las entidades con una base temporal; `migration-run` y `migration-revert` usan los mismos `DataSource`. `synchronize` va siempre apagado.
 - Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) traen sus entidades y migraciones desde `@platform/adapters-postgres`.
 
-**Estado y siguiente paso.** Hoy `@platform/persistence` corre sobre el driver `pg`, con `TableDefinition`, `BaseRepository` y migraciones en SQL (ADR 0009, reemplazado). La fase que sigue construye el diseño en tres paquetes: P1, el núcleo de persistencia con pruebas de integración en dos shards de Postgres real y los targets de migración de Nx; P2, las tablas de la plataforma sobre TypeORM; y P3, el motor de sagas. P1 y P3 arrancan juntos, y P2 arranca cuando P1 fija sus interfaces.
+**Código actual.** Hoy `@platform/persistence` corre sobre el driver `pg`, con `TableDefinition`, `BaseRepository` y migraciones en SQL (ADR 0009, reemplazado). Lo descrito arriba es el diseño sobre TypeORM; cuándo se construye está en el [plan](plan/README.md#orden-de-ejecución-por-olas).
 
 **Particionamiento**
 
@@ -750,7 +733,7 @@ Cada filtro declara su tasa de falsos positivos (por defecto 1 %) y su reconstru
 
 ## Identidad
 
-El servicio `identity` emite y controla toda la identidad: usuarios, sesiones, dispositivos, MFA, API keys, tenants y grupos. Los demás servicios solo verifican, con `@platform/auth`. Es la fase F4, y su [diseño](design/f4-identity.md) reparte la construcción en quince paquetes de trabajo con las diez decisiones de la sección 11 aprobadas el 14 de noviembre de 2026.
+El servicio `identity` emite y controla toda la identidad: usuarios, sesiones, dispositivos, MFA, API keys, tenants y grupos. Los demás servicios solo verifican, con `@platform/auth`. El detalle técnico está en su [diseño](design/f4-identity.md).
 
 **Sesiones y JWT**
 
@@ -834,7 +817,7 @@ El MFA protege dos momentos: el registro de cada dispositivo nuevo, obligatorio 
 
 **Recuperación sin dispositivo.** Por email, con alerta inmediata a todos los canales del usuario. La espera crece de forma exponencial con cada recuperación en los últimos 90 días: 24 h, 48 h, 96 h y así sucesivamente (`MFA_RECOVERY_BASE_HOURS = 24`).
 
-**Paso adicional (step-up).** `@Endpoint({ mfa: { maxAgeMinutes: 10 } })` protege operaciones sensibles (cambiar email o clave, desactivar MFA, crear API keys). Si el último MFA es antiguo, responde `IDENTITY.MFA.STEP_UP_REQUIRED` y el dispositivo registrado lo resuelve con su código automático.
+**Paso adicional (step-up).** Una operación sensible (cambiar email o clave, desactivar MFA, crear API keys) lo declara en la ruta de su contrato con `Access.authenticated({ mfaMaxAgeMinutes: 10 })`, y `@Endpoint` lo toma de ahí como el resto del acceso. El guard lo evalúa con `evaluateAccess` ([diseño de F4, 3.2.4](design/f4-identity.md#324-autorización)): si el último MFA es antiguo, responde `IDENTITY.MFA.STEP_UP_REQUIRED` y el dispositivo registrado lo resuelve con su código automático.
 
 **Alertas de seguridad** (siempre por email y push): login desde dispositivo nuevo, registro de verificador, recuperación de clave o de verificador, cambio de email, MFA desactivado, uso de código de recuperación, API key creada o revocada.
 
@@ -994,7 +977,7 @@ const outcome = await client.call(RevokeUserSessionsOperation, input, {
 - El resultado es siempre un `CallOutcome`: `success`, `business-error` (código declarado en el contrato), `transient-failure`, `uncertain` o `protocol-violation`. Quien llama decide qué hacer con cada caso.
 - La idempotencia del servidor tiene dos almacenes: `InMemoryProcessedOperationStore` para pruebas y `PostgresIdempotencyStore` de `@platform/adapters-postgres`. `InternalRouter` recibe el `TransactionManager` del servicio y guarda el resultado en la misma transacción que los efectos del handler.
 
-Hoy existe el transporte en proceso (`InProcessTransport`). El transporte HTTP llega con `@platform/http` en F4: `POST /internal/operations/:operationId` con firma HMAC en local, y SigV4 en AWS con la fase F12.
+Hoy existe el transporte en proceso (`InProcessTransport`). El transporte HTTP, `POST /internal/operations/:operationId`, se suma a `@platform/internal-api` con `HttpTransport` e `InternalApiController` (paquete WP-08 del [plan del backend](plan/backend.md)), con firma HMAC en local y SigV4 en AWS con la fase F12.
 
 **Reglas del contrato**
 
@@ -1182,7 +1165,7 @@ Un paso tiene resultado incierto cuando la llamada supera `maxStepDurationMs` o 
 
 Los flujos simples, sin necesidad de deshacer, siguen como coreografía por eventos.
 
-**Estado y siguiente paso.** Hoy `@platform/saga` trae el protocolo completo (write-ahead, lease, pivote, resultado incierto, recuperación) sobre el puerto `SagaStore`, con `InMemorySagaStore` y el doble `CrashingSagaStore` de sus pruebas. La fase que sigue es el paquete P3 del [diseño](design/persistencia-typeorm-y-sagas.md#5-sagas): `SagaInstance` como agregado con transiciones puras, los colaboradores `StepExecutor`, `CompensationRunner`, `LeaseKeeper`, `SagaRecoveryJob` y `SagaEventPublisher`, un `SagaEngine` pequeño con `start` y `resume`, y `SagaModule`. `TypeOrmSagaStore` llega con P2.
+**Código actual.** Hoy `@platform/saga` trae el protocolo completo (write-ahead, lease, pivote, resultado incierto, recuperación) sobre el puerto `SagaStore`, con `InMemorySagaStore` y el doble `CrashingSagaStore` de sus pruebas. El motor rediseñado está en la [sección 5 del diseño de persistencia](design/persistencia-typeorm-y-sagas.md#5-sagas), y cuándo se construye, en el [plan](plan/README.md#orden-de-ejecución-por-olas).
 
 ## Capacidades compartidas
 
@@ -1349,9 +1332,9 @@ El stack `platform` crea el tópico de alarmas (obligatorio en staging y prod) y
 
 El job `terraform` de `ci.yml` corre cuando cambia `backend/infra/**`: `terraform fmt -check -recursive`, `backend/infra/scripts/tf-validate.mjs` (init sin backend, `validate` y `terraform test` con proveedores simulados en cada stack y ejemplo), las pruebas en Python de la Lambda de bootstrap y del script de LocalStack, `shellcheck` y `tflint` con el ruleset de AWS. `security.yml` revisa la configuración con Trivy y las dependencias de la Lambda con OSV-Scanner (ver [Calidad y seguridad](#calidad-y-seguridad)).
 
-**Siguiente paso: despliegue**
+**Pipeline de despliegue**
 
-El siguiente paso es el pipeline de despliegue en GitHub Actions con OIDC hacia AWS, sobre `deploy-aws.sh`:
+El pipeline de despliegue corre en GitHub Actions con OIDC hacia AWS, sobre `deploy-aws.sh`. Se construye en F12 ([plan](plan/README.md#fases)):
 
 1. `terraform plan` de los stacks y servicios afectados como comentario en el PR.
 2. Al hacer merge, migraciones de cada servicio afectado en todos sus shards, como tarea única en Fargate.
@@ -1436,114 +1419,8 @@ Con los primeros servicios llegan las pruebas e2e contra la app (`fetch` nativo 
 - Hooks: `guard-paths.mjs` rechaza antes de escribir una ruta prohibida (`src/lib/`, una prueba fuera de `__tests__/`, un `package.json` de librería, un `.env`); `format-file.mjs` formatea después de escribir; `verify-on-stop.mjs` corre los scripts de estructura antes de que un agente termine.
 - Agentes de tropa: `backend-guia` y `front-guia` planean y revisan, y `backend-implementador` y `front-implementador` escriben un paquete de trabajo ya planeado.
 
-**Documentación del repositorio**: README, ADRs para cada decisión de arquitectura, diseños por fase en [`docs/design/`](design/), auditorías de calidad en [`docs/audits/`](audits/), [guía de contribución](../CONTRIBUTING.md) y [desarrollo local](local-development.md).
+**Documentación del repositorio**: README, el [plan](plan/README.md), ADRs para cada decisión de arquitectura, diseños por fase en [`docs/design/`](design/), auditorías de calidad en [`docs/audits/`](audits/), [guía de contribución](../CONTRIBUTING.md) y [desarrollo local](local-development.md).
 
-## Fases de construcción
+## Plan
 
-La construcción avanza en seis etapas. Cada etapa depende de la anterior y, dentro de una etapa, las fases avanzan en paralelo.
-
-```mermaid
-flowchart TD
-  subgraph E1["Etapa 1 · Base"]
-    F0["F0 · Limpieza"] --> F1["F1 · Base de plataforma"]
-  end
-  subgraph E2["Etapa 2 · Núcleo técnico"]
-    F2["F2 · Persistencia"]
-    F3["F3 · Contratos y bus"]
-  end
-  subgraph E3["Etapa 3 · Identidad"]
-    F4["F4 · Identidad"]
-  end
-  subgraph E4["Etapa 4 · Servicios de ejemplo"]
-    F5["F5 · Tasks y capacidades"]
-    F6["F6 · Notificaciones"]
-    F7["F7 · Sagas y reports"]
-  end
-  subgraph E5["Etapa 5 · Negocio y operación"]
-    F8["F8 · Facturación"]
-    F9["F9 · Apps cliente"]
-  end
-  subgraph E6["Etapa 6 · Escala y entrega"]
-    F10["F10 · Sharding real"]
-    F11["F11 · Generadores y docs"]
-    F12["F12 · Infra y despliegue"]
-  end
-  E1 --> E2 --> E3 --> E4 --> E5 --> E6
-```
-
-La infraestructura de cada pieza se agrega en su propia fase; F12 completa el Terraform por servicio y el pipeline de despliegue. El sharding real va en la etapa final porque el `ShardRouter` existe desde F2 y agregar shards después mantiene intacto el código de negocio.
-
-**Dónde va la construcción** (14 de noviembre de 2026)
-
-| Fase o línea de trabajo                         | Estado                                                                                                                                                                                            | Referencia                                                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| F0 y F1                                         | Construidas: monorepo Nx, `kernel`, `config`, `observability`, `@contracts/platform`, entorno local y CI                                                                                          | Commit `df81442`                                                                               |
-| F2 y F3                                         | Construidas las librerías: `sharding`, `cache`, `bloom`, `resilience`, `criteria`, `messaging`, `internal-api`, `saga` y la persistencia sobre `pg`, más el front con sus shells y microfrontends | Commit `9afa085`                                                                               |
-| Persistencia sobre TypeORM y sagas persistentes | Diseño aprobado. Fase que sigue: paquetes P1, P2 y P3                                                                                                                                             | [Diseño](design/persistencia-typeorm-y-sagas.md), ADR 0024                                     |
-| F4 · Identidad                                  | Diseño aprobado con quince paquetes de trabajo en tres olas. Construido: `@platform/rate-limit` y `ValkeyRateLimiter` (WP3)                                                                       | [Diseño](design/f4-identity.md), ADR 0022 y 0023                                               |
-| Revisión de calidad del 14 de noviembre         | Aplicada en las librerías, la infraestructura y el front (commits `c9614cb`, `b55d566` y `6cb8ebd`)                                                                                               | [Auditoría](audits/2026-11-14-calidad.md)                                                      |
-| Revisión de librerías del backend y del front   | Planes por paquetes de trabajo: P0 a P6 en el backend y WP1 a WP11 en el front                                                                                                                    | [Backend](audits/2026-11-14-revision-backend.md), [front](audits/2026-11-14-revision-front.md) |
-
-## Decisiones
-
-**Tomadas**
-
-| Tema                         | Decisión                                                                                                                                                                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack                        | NestJS, TypeORM, PostgreSQL, Node 24 (24.22.2 en `.nvmrc`), TypeScript estricto                                                                                                                                           |
-| Repositorio                  | Reescritura completa de `node_template` como monorepo Nx con raíz mínima, `backend/` (pnpm, un solo `node_modules`, librerías por alias sin `package.json`) y `front/` (pub workspace)                                    |
-| Identificadores              | UUIDv7 en todo, incluido el `traceId`                                                                                                                                                                                     |
-| Observabilidad               | OpenTelemetry con OpenObserve como única herramienta de logs, métricas y trazas                                                                                                                                           |
-| Autenticación                | Propia: JWT ES256 de 10 a 15 min con `typ: at+jwt` y session token opaco rotativo; argon2id de `node:crypto`, contraseña de 12 caracteres como mínimo                                                                     |
-| Sesión                       | Vence tras 1 día sin actividad; cada refresh mientras se usa la app extiende la ventana, con un tope absoluto de 30 días                                                                                                  |
-| MFA                          | Obligatorio al registrar cualquier dispositivo; en cada login solo para administradores. El dispositivo registrado genera su código de 8 dígitos automáticamente; el primer dispositivo se valida con 6 dígitos por email |
-| Passkeys                     | Desde la primera versión                                                                                                                                                                                                  |
-| Recuperación sin dispositivo | Por email con alertas y espera exponencial: 24 h, 48 h, 96 h                                                                                                                                                              |
-| Caché y datos de vida corta  | Valkey                                                                                                                                                                                                                    |
-| Mensajería                   | Tópicos y colas abstractos con topología tipada y formato CloudEvents; SNS y SQS como adaptador AWS                                                                                                                       |
-| Consistencia entre servicios | Sagas orquestadas con bitácora persistente en el esquema `saga` del shard del orquestador, directorio en el catálogo y recuperación; reintentos y timeouts en el cliente                                                  |
-| Contratos                    | TypeScript con zod por servicio, exportados a JSON y generados en Dart; validación antes de llamar y reversa declarada por operación                                                                                      |
-| Plataforma                   | Agnóstica: endpoints, eventos, jobs y tiempo real con un adaptador de entrada por runtime                                                                                                                                 |
-| Sharding                     | Shards lógicos en grupos por tenant, llave elegida por servicio o entidad, traslados sin interrupción con replicación lógica, operaciones como código. Se estrena en identity                                             |
-| Errores                      | Códigos `SERVICIO.SUBMÓDULO.ERROR` y RFC 9457                                                                                                                                                                             |
-| Versionamiento               | Mayor en URL, versión por header con transformadores, deprecación con `Sunset`                                                                                                                                            |
-| Auditoría                    | Triggers por entidad con actor, tenant y `traceId` de la sesión                                                                                                                                                           |
-| Facturación                  | Planes, medición y facturas internas; cobro conectado por puerto                                                                                                                                                          |
-| Pruebas                      | Jest (unitarias, integración, e2e) con Testcontainers, k6 para carga, LocalStack para AWS local                                                                                                                           |
-| Tiempo real                  | Socket.IO y SSE en NestJS sobre Fargate, con recuperación de mensajes desde Valkey                                                                                                                                        |
-| Push                         | SSE o Socket.IO con la app abierta; Web Push, APNs o FCM con la app cerrada                                                                                                                                               |
-| Bloqueo de cuenta            | Bloqueo exponencial por origen, modo protegido por cuenta y bloqueo de IP                                                                                                                                                 |
-| Invalidación de tokens       | Sesión revocada, épocas de usuario y tenant, versión de permisos y retiro de claves                                                                                                                                       |
-| Búsqueda                     | Híbrida en PostgreSQL: texto completo y pgvector                                                                                                                                                                          |
-| IA                           | Módulo propio en NestJS con puertos de LLM y embeddings; Claude como proveedor por defecto                                                                                                                                |
-| Resiliencia                  | Políticas propias (circuit breaker y bulkhead sobre `Clock`) y Bloom filters sobre Valkey                                                                                                                                 |
-| Acuerdos                     | Servicio genérico de términos, consentimientos y documentos firmados                                                                                                                                                      |
-| Residencia de datos          | Cada tenant elige país o región; stack completo por región y catálogo global solo con datos de enrutamiento                                                                                                               |
-| Tenants                      | Todo usuario pertenece a un tenant; los clientes finales pueden compartir uno                                                                                                                                             |
-| Base de datos                | RDS PostgreSQL con TypeORM y una capa propia de sharding lógico y físico y ruteo de consultas (ADR 0024)                                                                                                                  |
-| Apps cliente                 | Carpeta front/ con dos shells Flutter (web y mobile) que componen microfrontends por dominio compartidos entre ambos                                                                                                      |
-| Framework de clientes        | Flutter para móvil, web y backoffice, con cliente HTTP (`api`), contratos, autenticación y widgets compartidos en Dart; dobles de prueba compartidos en `test_utils`                                                      |
-| Endpoints                    | `@Endpoint(route)` toma método, path, esquemas, códigos y acceso del contrato; OpenAPI se genera desde `contract.json` en F11, sin `@nestjs/swagger`                                                                      |
-| Canal de sesión              | La app móvil declara su canal por header (`Authorization: Bearer` o `X-Session-Transport: bearer`); sin header el canal es web y el token viaja en la cookie `__Host-session`                                             |
-| Revocación compartida        | Estado de revocación en el espacio `auth:*` de Valkey: identity escribe y los demás servicios leen (ADR 0022)                                                                                                             |
-| Datos de identity            | Datos de usuario en el shard del usuario dentro del grupo de su tenant de origen; datos de tenant en el shard del tenant (ADR 0023)                                                                                       |
-| Dependencias externas        | Se implementa en casa sobre `node:crypto` y la librería estándar; una librería entra solo cuando reimplementarla es imprudente o costoso, como NestJS y `@simplewebauthn/server`                                          |
-| Estructura de pruebas        | Backend: `__tests__/` junto al código y utilitarios en `__tests__/utils/`. Front: `test/` de cada paquete, `test/utils/` y el paquete `test_utils`                                                                        |
-| Infraestructura              | Terraform por stacks con runtime elegible por servicio (Lambda o Fargate), ambientes local, dev, staging y prod, y una base por shard de cada servicio más el catálogo (ADR 0020)                                         |
-| Herramientas de IA           | Skills de backend y front, hooks y agentes de tropa en `.claude/`                                                                                                                                                         |
-
-**Por tomar**
-
-Todas las decisiones del plan están tomadas. Las que surjan durante la construcción se registran como ADRs en el repositorio.
-
-## Alcance de fases siguientes
-
-El plan cubre el backend completo. Estas piezas se construyen sobre él en fases posteriores:
-
-- **Clientes**: las pantallas de negocio de cada microfrontend, construidas sobre el esqueleto, el `ApiClient` y la autenticación que ya trae el monorepo.
-- **Cobro real y facturación electrónica**: integración con la pasarela de pagos y con un proveedor autorizado por la DIAN, conectados al puerto `PaymentProvider`.
-- **DPoP en todos los tokens**: ligar el access token y el session token a la clave del dispositivo registrado.
-- **Analítica**: exportación de eventos a un data lake para reportes de negocio.
-- **Observabilidad avanzada**: SLOs por servicio, alertas sobre esos SLOs y dashboards de negocio.
-- **Resiliencia**: recuperación ante desastres entre regiones y pruebas de caos.
-- **Herramientas de sharding**: rebalanceo automático de shards lógicos según la carga.
+Las fases F0 a F12, su estado, el orden de ejecución por olas, las decisiones tomadas y las abiertas, y el alcance de las fases posteriores están en [`docs/plan/README.md`](plan/README.md).

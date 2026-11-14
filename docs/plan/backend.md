@@ -1,22 +1,25 @@
 # Plan de solución de la revisión del backend
 
-- Estado: Propuesta, pendiente de visto bueno del usuario
+- Estado: Aprobado por el usuario
 - Fecha: 2026-11-14
 - Fuente: [revisión del backend](../audits/2026-11-14-revision-backend.md)
 - Diseños que se integran sin rediseñar: [persistencia TypeORM y sagas](../design/persistencia-typeorm-y-sagas.md) y, como consumidor, [F4 identity](../design/f4-identity.md)
+- Orden de las olas junto al front y a F4, estado de cada paquete y forma de trabajo de las tropas: [plan](README.md)
 - Rutas relativas a la raíz del repositorio salvo que diga lo contrario. Esfuerzo: S (menos de medio día), M (uno a tres días), L (más de tres días).
 
 ## 0. Resumen
 
 El plan cierra los hallazgos en cinco oleadas de tres paquetes, una tropa por paquete. La ola 0 fija las fundaciones, la 1 a la 3 rehacen las librerías por capas de dependencia y la 4 cierra la base y arranca F4 sobre ella.
 
-| Ola | Paquetes                                                                                                | Resultado                                                                       |
-| --- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 0   | WP-01 fundaciones, WP-02 kit de contratos y herramientas, WP-03 skills, ADR y lint                      | Kernel y primitives nuevos, alias y dependencias de todo el plan, reglas nuevas |
-| 1   | WP-04 config y observabilidad, WP-05 resilience, cache, rate-limit y bloom, WP-06 scheduling y sharding | Módulos de NestJS del núcleo, runner de jobs, `ShardRouter` dividido            |
-| 2   | WP-07 messaging, WP-08 internal-api, WP-09 persistence sobre TypeORM                                    | Outbox y consumidores operables, transporte HTTP, capa TypeORM con sharding     |
-| 3   | WP-10 tablas de la plataforma y criteria, WP-11 adaptadores AWS y Valkey, WP-12 sagas                   | Stores TypeORM, adaptadores con módulo, sagas persistentes                      |
-| 4   | WP-13 cierre de la base, F4-WP1 auth, F4-WP4 service                                                    | Catálogo limpio, humo de plataforma, F4 arranca                                 |
+| Ola | Resultado                                                                       |
+| --- | ------------------------------------------------------------------------------- |
+| 0   | Kernel y primitives nuevos, alias y dependencias de todo el plan, reglas nuevas |
+| 1   | Módulos de NestJS del núcleo, runner de jobs, `ShardRouter` dividido            |
+| 2   | Outbox y consumidores operables, transporte HTTP, capa TypeORM con sharding     |
+| 3   | Stores TypeORM, adaptadores con módulo, sagas persistentes                      |
+| 4   | Catálogo limpio, humo de plataforma, F4 arranca                                 |
+
+Los paquetes de cada ola están en el [plan](README.md#orden-de-ejecución-por-olas) y su ficha en la sección 3.
 
 Todo lo que hoy llama a las librerías son pruebas: `backend/apps` todavía no existe. Por eso los cambios que rompen API son baratos ahora y caros después de F4. Ese es el motivo del orden.
 
@@ -747,7 +750,7 @@ Resumen de lo que no necesita firma propia, con su dueño:
 
 ### 3.1 Reglas comunes
 
-**Cómo trabaja una tropa.** La guía (Sonnet) escribe primero los esqueletos: clases abstractas, firmas con cuerpo `throw new NotImplementedError()` y la prueba de contrato del puerto. Luego reparte archivos a los dos Haiku, que siguen instrucciones literales, y revisa cada entrega contra el criterio de cierre. Cada Haiku trabaja en archivos distintos y nunca en el mismo archivo.
+**Cómo trabaja una tropa.** Como dice el [plan](README.md#cómo-se-ejecuta-una-ola). En el backend, los esqueletos son clases abstractas y firmas con cuerpo `throw new NotImplementedError()`.
 
 **Archivos compartidos.** `backend/tsconfig.base.json`, `backend/package.json` (con `pnpm-lock.yaml`) y el catálogo de errores de `@contracts/platform` los toca una sola tropa por oleada:
 
@@ -806,7 +809,7 @@ Nombres de proyecto de Nx: `platform-<lib>` (`platform-kernel`, `platform-primit
 - **Carpetas exclusivas:** `.claude/skills/backend-*/**`, `docs/adr/**`, `docs/ARCHITECTURE.md`, `CLAUDE.md`, `backend/eslint.config.mjs`.
 - **Cierra:** MSG-6 (la skill se ajusta al código), T8 (regla de idioma), la regla de lint de D3 y las excepciones de `check-structure.mjs`.
 - **Produce:**
-  - ADR 0024 de persistencia sobre TypeORM, que supera al 0009 (se marca el 0009 como superado y se actualiza el 0008).
+  - ADR 0024 de persistencia sobre TypeORM, que supera al 0009 (se marca el 0009 como superado y se actualiza el 0008). Ya se registró en `b182447`, después de que partiera la tropa; ver las decisiones abiertas del [plan](README.md#registro-de-decisiones).
   - ADR 0025 de capa NestJS por sub-entrada `@platform/<lib>/nest` y puertos como clases abstractas.
   - ADR 0026 de `ScheduledJob`, `JobLock` y `@platform/scheduling`.
   - La skill `backend-mensajeria-idempotencia` pasa de `OutboxWriter.add` y `processed.tryRegister` a `append` y `claim`, `complete` y `release`; la de composición documenta módulos, `Type<Port>` y apagado; la de pruebas documenta `test-utils` y `ContainerRuntime`.
@@ -819,7 +822,7 @@ Nombres de proyecto de Nx: `platform-<lib>` (`platform-kernel`, `platform-primit
   - `pnpm nx format-check` en verde.
 - **División:** Haiku 1: ADR 0024 a 0026 con la plantilla `0000-plantilla.md` y `CLAUDE.md`. Haiku 2: las skills y la regla de ESLint con su prueba. La guía escribe el cambio de `check-structure.mjs`.
 
-**Cierre de la ola 0:** la integradora corre `pnpm nx run-many -t lint test typecheck` sobre todo el backend y `check-structure.mjs --all .`. Debe bajar el conteo de 97 solo en lo que WP-01 y WP-02 resuelven.
+**Cierre de la ola 0:** el general corre `pnpm nx run-many -t lint test typecheck` sobre todo el backend y `check-structure.mjs --all .`. Debe bajar el conteo de 97 solo en lo que WP-01 y WP-02 resuelven.
 
 ### 3.3 Ola 1: núcleo de la plataforma
 
@@ -923,7 +926,7 @@ Las tres tropas parten de la ola 0 integrada y no comparten carpetas. Los jobs d
   - CCE con `platform-persistence`. Atención: la configuración de SWC de Jest debe emitir metadatos de decoradores para las entidades.
 - **División:** Haiku 1: `ShardDataSources`, `CatalogDataSource`, `ShardResolver`, `TypeOrmTransactionManager`, `EntityManagerProvider`, `ShardScope`, `AcrossShards`. Haiku 2: `ShardedRepository`, `CatalogRepository`, entidades base, `TypeOrmCriteriaTranslator`, `ShardedMigrationRunner`, targets de migración y el arnés de pruebas. La guía escribe `PersistenceModule` y el movimiento a `legacy/`.
 
-**Cierre de la ola 2:** la integradora comprueba que `adapters-postgres` sigue compilando por `legacy/` y que `pnpm nx run-many -t typecheck` pasa en todo.
+**Cierre de la ola 2:** el general comprueba que `adapters-postgres` sigue compilando por `legacy/` y que `pnpm nx run-many -t typecheck` pasa en todo.
 
 ### 3.5 Ola 3: stores, adaptadores y sagas
 
@@ -973,7 +976,7 @@ Las tres tropas parten de la ola 0 integrada y no comparten carpetas. Los jobs d
   - CCE con `platform-saga,platform-adapters-postgres`.
 - **División:** Haiku 1: `SagaInstance`, `StepExecutor`, `CompensationRunner` y sus pruebas. Haiku 2: `TypeOrmSagaStore`, entidades, migraciones, `LeaseKeeper`, jobs y `SagaModule`. La guía escribe `SagaEngine` y el contrato de `SagaStore`.
 
-**Cierre de la ola 3:** typecheck global y la integradora ejecuta las pruebas de integración de los cinco proyectos con Docker (`INTEGRATION_TESTS=require`).
+**Cierre de la ola 3:** typecheck global y el general ejecuta las pruebas de integración de los cinco proyectos con Docker (`INTEGRATION_TESTS=require`).
 
 ### 3.6 Ola 4: cierre de la base y arranque de F4
 
@@ -991,23 +994,11 @@ Las tres tropas parten de la ola 0 integrada y no comparten carpetas. Los jobs d
   - `contracts-export:check` y `contracts_gen --check` en verde.
 - **División:** Haiku 1: limpieza de catálogo, reexportes y la prueba de consistencia de códigos. Haiku 2: `platform-smoke`. La guía revisa documentación y ADR.
 
-## 4. Orden, tropas y arranque de F4
+## 4. Orden y arranque de F4
 
-### 4.1 Asignación
+### 4.1 Por qué este orden
 
-Tres tropas corren a la vez. Cada tropa trabaja en su copia del repositorio con carpetas disjuntas. Una ola empieza cuando la anterior está integrada y en verde.
-
-| Ola | Tropa A                                       | Tropa B                                    | Tropa C                     |
-| --- | --------------------------------------------- | ------------------------------------------ | --------------------------- |
-| 0   | WP-01 fundaciones (toca los tres compartidos) | WP-02 kit y herramientas                   | WP-03 skills, ADR y lint    |
-| 1   | WP-04 config y observabilidad                 | WP-05 resilience, cache, rate-limit, bloom | WP-06 scheduling y sharding |
-| 2   | WP-07 messaging                               | WP-08 internal-api                         | WP-09 persistence           |
-| 3   | WP-10 tablas y criteria                       | WP-11 AWS y Valkey                         | WP-12 sagas                 |
-| 4   | WP-13 cierre (toca los tres compartidos)      | F4-WP1 auth                                | F4-WP4 service              |
-| 5   | F4-WP5 contrato y front                       | F4-WP2 http                                | libre                       |
-| 6   | F4-WP6 esqueleto de identity                  | libre                                      | libre                       |
-
-**Por qué este orden.**
+La tabla de olas y tropas está en el [plan](README.md#orden-de-ejecución-por-olas).
 
 - La ola 0 va primero porque todo lo demás importa `RandomSource`, `Guard`, `Deadline` y los alias. WP-02 y WP-03 no dependen de WP-01 y no comparten archivos con él.
 - La ola 1 agrupa lo que solo depende de fundaciones. Observability va con config por el cambio de `LogLevel`; scheduling va con sharding porque ninguno bloquea al otro y messaging necesita el runner en la ola 2.
@@ -1025,7 +1016,7 @@ La ola 1 de F4 arranca sobre la nueva base en dos tiempos.
 
 ### 4.3 Ajustes que este plan obliga a hacer en el diseño de F4
 
-Se aplican en WP-13, una vez que el usuario apruebe esta sección.
+Se aplican en WP-13.
 
 | Sección de F4                                      | Ajuste                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

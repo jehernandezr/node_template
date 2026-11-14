@@ -11,12 +11,7 @@ El plan completo incluye identidad con MFA, multitenancy, auditoría, mensajerí
 - **Infraestructura:** Terraform por stacks (`network`, `platform`, `data`, `messaging`, `edge` y `service`) con runtime elegible por servicio (Lambda o Fargate), ambientes `local`, `dev`, `staging` y `prod`, y una base por shard de cada servicio más el catálogo.
 - **Herramientas de IA:** skills de backend y front, hooks y agentes en `.claude/`.
 
-La fase que sigue tiene dos líneas con diseño aprobado:
-
-- [Persistencia sobre TypeORM y sagas persistentes](docs/design/persistencia-typeorm-y-sagas.md) ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): TypeORM con una capa propia para el sharding lógico y físico, y la bitácora de sagas en el esquema `saga` del shard.
-- [F4 · Identidad](docs/design/f4-identity.md): el primer servicio, `backend/apps/identity`, con las piezas de plataforma `auth`, `http` y `service`. De su primera ola ya está `@platform/rate-limit`.
-
-El orden completo está en [Fases de construcción](docs/ARCHITECTURE.md#fases-de-construcción).
+Las fases, su estado, el orden de ejecución por olas y el registro de decisiones están en el [plan](docs/plan/README.md), la única fuente del plan del proyecto.
 
 ## Estructura del repositorio
 
@@ -31,7 +26,7 @@ front/          pub workspace de Flutter
   microfrontends/  un paquete por dominio
   packages/     api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
   tools/        contracts_gen, plugin de Nx, check_deferred_chunks.dart y check_microfrontend_boundaries.dart
-docs/           arquitectura, ADRs, diseños por fase (design/), auditorías (audits/) y desarrollo local
+docs/           plan (plan/), arquitectura, ADRs, diseños por fase (design/), auditorías (audits/) y desarrollo local
 .claude/        skills, hooks y agentes para las herramientas de IA
 ```
 
@@ -71,10 +66,11 @@ El stack local se levanta desde `backend/`; los pasos están en [Desarrollo loca
 
 ## Documentación
 
-- [Arquitectura](docs/ARCHITECTURE.md): principios, estructura, reglas de dependencia y plan por fases.
+- [Plan](docs/plan/README.md): fases, estado, orden de ejecución por olas y registro de decisiones, con el detalle del [backend](docs/plan/backend.md) y del [front](docs/plan/front.md).
+- [Arquitectura](docs/ARCHITECTURE.md): principios, estructura, reglas de dependencia y cómo está construida cada pieza.
 - [Decisiones de arquitectura (ADR)](docs/adr/README.md): decisiones registradas durante la construcción.
 - [Diseños](docs/design/): el diseño de F4 (identidad) y el de persistencia sobre TypeORM con sagas persistentes.
-- [Auditorías](docs/audits/): revisiones de calidad del código, con sus hallazgos y planes por paquetes de trabajo.
+- [Auditorías](docs/audits/): revisiones de calidad del código, con sus hallazgos.
 - [Desarrollo local](docs/local-development.md): preparación del entorno, stack de Docker, puertos y variables de entorno.
 - [Contribuir](CONTRIBUTING.md): ramas, commits, revisión de PR y reglas del proyecto.
 - [Guía para agentes de IA](CLAUDE.md): reglas que siguen las herramientas de codificación en este repositorio.

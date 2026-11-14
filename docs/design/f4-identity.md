@@ -22,6 +22,8 @@ Donde el plan y un ADR se contradicen, manda el ADR. Por eso el inicio de sesió
 
 Faltan cuatro piezas de plataforma (entrada HTTP, verificación de tokens, límites de tasa y arranque del servicio), un ajuste a la persistencia (`ShardScope`) y el servicio completo.
 
+La persistencia de esta tabla es la capa sobre `pg`. Antes de que arranque F4 se reemplaza por TypeORM según el [diseño de persistencia y sagas](persistencia-typeorm-y-sagas.md). Los ajustes que eso y el plan del backend traen a las secciones 3.3 a 3.6 están en la [sección 4.3 del plan del backend](../plan/backend.md#43-ajustes-que-este-plan-obliga-a-hacer-en-el-diseño-de-f4), y el orden de los paquetes de F4 junto a los demás, en el [plan](../plan/README.md#orden-de-ejecución-por-olas).
+
 ## 2. Decisiones clave
 
 1. **Rutas guiadas por el contrato.** `@Endpoint(SignInRoute, opciones)` toma método, path, esquema, códigos y acceso del `RouteDefinition`. El controller no repite el path. Así el servidor no puede divergir del contrato que consume el front.
@@ -984,7 +986,7 @@ Antes de proponer cada librería se revisó si `node:crypto` de Node 24 lo cubre
 | `rxjs`                     | `7.8.2`        | 2025-02-22 | ídem                                            | Dependencia par de NestJS (interceptores).                                                                                                                                                   | Ninguna: NestJS la exige.                                                                                                            |
 | `@simplewebauthn/server`   | `14.0.3`       | 2026-09-25 | `modules/passkeys/infrastructure`               | Verificar WebAuthn exige CBOR, claves COSE (EC2, RSA, OKP), datos del autenticador, contadores y formatos de atestación con cadenas X.509. Un error ahí abre la puerta a suplantar passkeys. | Solo atestación `none` y ES256 con un decodificador CBOR propio: sigue siendo criptografía delicada y deja fuera autenticadores RSA. |
 
-Todas las versiones se publicaron al menos dos semanas antes de esta fecha y se fijan exactas, sin `^` ni `~`. Las ya presentes (`testcontainers` y `@testcontainers/postgresql` 12.2.1, `uuid`, `zod`, `iovalkey`, `typeorm`, `pg`) no cambian.
+Todas las versiones se publicaron al menos dos semanas antes de esta fecha y se fijan exactas, sin `^` ni `~`. Las ya presentes (`testcontainers` y `@testcontainers/postgresql` 12.2.1, `zod`, `iovalkey` y `pg`) no cambian. `uuid` no se usa: el UUIDv7 es propio, `UuidV7IdGenerator` sobre `node:crypto` (ADR 0003). `typeorm` entra con el paquete WP-01 del [plan del backend](../plan/backend.md) y la usa la persistencia desde WP-09 ([diseño](persistencia-typeorm-y-sagas.md)).
 
 Respaldo, sin instalar: si al construir WP8 la API `crypto.argon2` de la versión de Node desplegada no está marcada estable, se usa `argon2@0.45.1` (2026-07-21) detrás del mismo puerto `PasswordHasher`. Es una decisión de una línea en el adaptador.
 

@@ -1,6 +1,6 @@
 # Plan de solución de la revisión del front
 
-Fecha: 2026-11-14. Estado: propuesta, pendiente de visto bueno del usuario en las decisiones de la sección 8.
+Fecha: 2026-11-14. Estado: aprobado por el usuario, con las decisiones de la sección 8. El orden de las oleadas junto al backend y a F4, el estado de cada paquete y la forma de trabajo de las tropas están en el [plan](README.md).
 
 Resuelve los hallazgos de [la revisión del front](../audits/2026-11-14-revision-front.md). Contrato de microfrontend: [ADR 0012](../adr/0012-front-flutter-shells-microfrontends.md) y [ADR 0018](../adr/0018-contrato-de-microfrontend.md). Reglas: skills `front-*` y `CLAUDE.md`.
 
@@ -53,10 +53,11 @@ U1, U2, U3, U5, U7, T1, I1, I2, I3, I4, SC1, SC2, SC3, SH1, SH2, A1, TU1, TU2, T
 
 ### 2.1 Reglas de la tropa
 
-- Cada tropa trabaja en su copia del repositorio con una lista de archivos exclusiva. Dos tropas de la misma oleada nunca tocan el mismo archivo.
+La forma de trabajo de una tropa es la del [plan](README.md#cómo-se-ejecuta-una-ola). En el front, además:
+
 - Los archivos barril (`lib/<paquete>.dart`) y los `pubspec.yaml` los edita solo el guía. Los Haiku le piden por escrito la línea de export que necesitan.
-- El guía escribe primero el esqueleto de interfaces de su paquete: archivos con las firmas de este plan y cuerpos `throw UnimplementedError()`. Con eso los dos Haiku trabajan en paralelo sobre archivos distintos. El guía revisa el diff completo y corre los comandos de aceptación antes de entregar.
-- Los Haiku siguen instrucciones literales. Cada instrucción nombra archivo, clase, firma y prueba. Nada de "refactoriza lo que haga falta".
+- Los esqueletos llevan las firmas de este plan con cuerpos `throw UnimplementedError()`. El guía revisa el diff completo y corre los comandos de aceptación antes de entregar.
+- Cada instrucción a un Haiku nombra archivo, clase, firma y prueba, nunca un "refactoriza lo necesario".
 - Los textos de usuario, los comentarios `///` y los comentarios nuevos van como piden `front-i18n` y `front-analisis`: ARB en español e inglés, `///` en inglés.
 
 ### 2.2 Primero lo aditivo, el retiro al final
@@ -1175,15 +1176,9 @@ Como esas reglas marcarían el código que todavía no migró, se agrega una lí
 
 ## 4. Oleadas y paquetes de trabajo
 
-### 4.1 Mapa
+### 4.1 Dependencias entre oleadas
 
-| Oleada | Tropa A                         | Tropa B                           | Tropa C                      |
-| ------ | ------------------------------- | --------------------------------- | ---------------------------- |
-| 0      | P0.1 reloj y versiones          | P0.2 script y línea base          | P0.3 ADR 0024                |
-| 1      | P1.1 ui, tokens, i18n           | P1.2 shell_core y utils           | P1.3 test_utils, auth, api   |
-| 2      | P2.1 shell_host                 | P2.2 account                      | P2.3 backoffice              |
-| 3      | P3.1 billing y notifications    | P3.2 tasks y verifier             | P3.3 assistant               |
-| 4      | P4.1 apps y suite de escenarios | P4.2 retiro de lo legado y script | P4.3 skills, ADR y generador |
+El mapa de oleadas y tropas está en el [plan](README.md#orden-de-ejecución-por-olas).
 
 Dependencias entre oleadas: la 1 necesita la 0 (el `Clock` de `utils`). Las 2 y 3 necesitan la 1 completa (`ui`, `shell_core`, `test_utils`). Los microfrontends no dependen de P2.1, por eso van en la 2 y la 3 sin orden entre sí. P4.1 necesita P2.1 y P1.3. P4.2 necesita que las oleadas 2 y 3 hayan migrado todo. P4.3 necesita la 1 (API) y la 3 (un microfrontend de referencia).
 
@@ -1207,11 +1202,11 @@ Es corta: tres paquetes S que dejan el terreno listo y ya no se tocan.
 - Aceptación: `node --test .claude/skills/front-estructura/scripts/` con un caso verde y uno rojo por regla; `check-structure.mjs --all .` sale en verde con la línea base recién generada; si se agrega una violación nueva, sale en rojo; `--changed` rechaza una violación nueva en un archivo tocado aunque esté en la línea base.
 - Haiku 1: las reglas de microfrontend (colores, `widget.repository.`, direccionalidad, texto). Haiku 2: las reglas de `catch`, `DateTime.now()`, versiones en `pubspec`, la línea base y las pruebas.
 
-**P0.3 ADR 0024.** Esfuerzo S.
+**P0.3 ADR del front.** Esfuerzo S.
 
-- Carpetas: `docs/adr/0024-*.md` y `docs/adr/README.md`.
-- Cierra: nada directo. Registra las decisiones 3.1 a 3.17 como ADR en estado "Propuesta", como exige `CLAUDE.md` para una decisión de arquitectura. Se pasa a "Aceptada" cuando el usuario dé el visto bueno de la sección 8.
-- Aceptación: sigue `docs/adr/0000-plantilla.md`; enlaza ADR 0012, 0015 y 0018; el índice lista el 0024.
+- Carpetas: `docs/adr/<número>-*.md` y `docs/adr/README.md`. El número es el siguiente libre; el 0024 ya es el de persistencia (ver las decisiones abiertas del [plan](README.md#registro-de-decisiones)).
+- Cierra: nada directo. Registra las decisiones 3.1 a 3.17 como ADR en estado "Propuesta", como exige `CLAUDE.md` para una decisión de arquitectura. Pasa a "Aceptada" en P4.3.
+- Aceptación: sigue `docs/adr/0000-plantilla.md`; enlaza ADR 0012, 0015 y 0018; el índice lista el ADR nuevo.
 - Haiku 1: contexto, decisión y consecuencias. Haiku 2: alternativas consideradas (las de la sección 1.2) y el índice.
 
 ### 4.3 Oleada 1: fundamentos
@@ -1344,8 +1339,8 @@ Los tres paquetes son aditivos (salvo `AccessRule`, ver 2.2) y tienen carpetas d
 
 **P4.3 skills, ADR y generador.** Esfuerzo M.
 
-- Carpetas: `.claude/skills/front-*/**` (salvo `front-estructura/scripts/`), `.claude/skills/front-nuevo-microfrontend/**` (nueva), `front/tools/new_microfrontend.dart`, `docs/adr/0018-*.md`, `docs/adr/0024-*.md`, `docs/ARCHITECTURE.md`.
-- Produce: las skills `front-codigo`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable` y `front-i18n` actualizadas con `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors`, `TestApp`, `expectAccessible`, `DeferredLocalizations` y `ScreenRoute.deferred`; el ADR 0018 con la nueva forma de declarar pantallas; el ADR 0024 en "Aceptada"; el generador:
+- Carpetas: `.claude/skills/front-*/**` (salvo `front-estructura/scripts/`), `.claude/skills/front-nuevo-microfrontend/**` (nueva), `front/tools/new_microfrontend.dart`, `docs/adr/0018-*.md`, el ADR del front, `docs/ARCHITECTURE.md`.
+- Produce: las skills `front-codigo`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable` y `front-i18n` actualizadas con `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors`, `TestApp`, `expectAccessible`, `DeferredLocalizations` y `ScreenRoute.deferred`; el ADR 0018 con la nueva forma de declarar pantallas; el ADR del front en "Aceptada"; el generador:
 
   ```dart
   /// `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`
@@ -1363,7 +1358,7 @@ Los tres paquetes son aditivos (salvo `AccessRule`, ver 2.2) y tienen carpetas d
 
 ## 5. Orden y tropas
 
-Una tropa es un guía Sonnet y dos Haiku. Hay tres tropas por oleada como máximo, cada una en su copia del repositorio. Una oleada termina cuando sus tres paquetes están integrados y los comandos de aceptación del conjunto pasan; solo entonces empieza la siguiente.
+Hay tres tropas del front por oleada como máximo. La composición de cada tropa y la regla de avance entre oleadas están en el [plan](README.md#cómo-se-ejecuta-una-ola).
 
 | Oleada | Tropas               | Ruta crítica             | Esfuerzo total |
 | ------ | -------------------- | ------------------------ | -------------- |
@@ -1375,7 +1370,7 @@ Una tropa es un guía Sonnet y dos Haiku. Hay tres tropas por oleada como máxim
 
 Total: 15 paquetes en 5 oleadas. La oleada 4 puede arrancar P4.3 (docs y generador) apenas termine la 3. P4.1 y P4.2 no tocan los mismos archivos: P4.2 no edita `test_utils`, y P4.1 no edita los paquetes de P4.2.
 
-Integración de una oleada: el guía de cada tropa entrega un diff acotado a su lista de carpetas. Un integrador (el usuario o un agente de revisión) junta los tres, corre `flutter pub get` y `pnpm nx run-many -t format-check analyze test --projects=<todo el front>` y `check_deferred_chunks`, antes de lanzar la siguiente oleada.
+Al integrar una oleada, el general corre `flutter pub get`, `pnpm nx run-many -t format-check analyze test --projects=<todo el front>` y `check_deferred_chunks`.
 
 ## 6. Riesgos y lo que se deja fuera
 
@@ -1396,7 +1391,7 @@ Integración de una oleada: el guía de cada tropa entrega un diff acotado a su 
 
 - **Endurecer `analysis_options.yaml`** (`strict-casts`, `unawaited_futures`, `public_member_api_docs`...): la skill `front-analisis` pide un cambio propio con todos los paquetes en verde, y no se sabe cuántos avisos aparecerán. Va después de este plan.
 - **Golden tests:** la skill los marca opcionales. Se cubren con `expectAccessible`, `pumpAtWidths` y `pumpAtTextScale`.
-- **Revisión manual con lector de pantalla** (TalkBack, VoiceOver, Tab en web): no se puede automatizar. Se anota por pantalla en cada paquete como pendiente del usuario.
+- **Revisión manual con lector de pantalla** (TalkBack, VoiceOver, Tab en web): no se puede automatizar. Se anota por pantalla en cada paquete como revisión a cargo del usuario.
 - **TL2, TL3, A3:** ver 1.3.
 - **`packages/contracts`, `packages/api` (salvo la lectura de tipos), `layout/*`, `tokens/lib/src/scales.dart`, cuerpo de `contracts_gen`:** el informe no los revisó y este plan no los toca. No equivale a "sin hallazgos".
 - **Adaptadores reales de `tasks`, `notifications` y demás:** hoy son demo. Este plan no agrega datos reales.
@@ -1475,7 +1470,7 @@ Checklist del microfrontend nuevo, que verifica el revisor:
 - Colores desde `Theme` y `context.statusColors`; textos desde el ARB con placeholders; `AlignmentDirectional` y `EdgeInsetsDirectional`.
 - `check_microfrontend_boundaries` y `check_deferred_chunks` en verde.
 
-## 8. Decisiones que necesitan visto bueno del usuario
+## 8. Decisiones aprobadas por el usuario
 
 1. **Versiones exactas por archivo (M3).** Pub no tiene un catálogo único. Propuesta: fijar el número exacto en cada `pubspec.yaml` y vigilarlo con el script. Alternativa: cambiar la skill `front-estructura` para aceptar `^`.
 2. **Mínimo de 48 en todos los botones y campos (U4/U5).** La skill acepta 24 como piso en web con puntero. Propuesta: 48 en todo el tema, por uniformidad y por móvil. Costo: botones de 48 de alto también en escritorio.

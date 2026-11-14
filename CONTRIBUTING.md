@@ -1,6 +1,6 @@
 # Cómo contribuir
 
-Este documento describe cómo proponer cambios al repositorio. Las reglas de arquitectura completas están en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) y la preparación del entorno en [docs/local-development.md](docs/local-development.md).
+Este documento describe cómo proponer cambios al repositorio. Las reglas de arquitectura completas están en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), el plan en [docs/plan/README.md](docs/plan/README.md) y la preparación del entorno en [docs/local-development.md](docs/local-development.md).
 
 ## Ramas
 
@@ -52,7 +52,7 @@ node .claude/skills/backend-estructura/scripts/check-structure.mjs
 node .claude/skills/front-estructura/scripts/check-structure.mjs
 ```
 
-Para un trabajo grande, los agentes `backend-guia` y `front-guia` lo dividen en paquetes con archivos disjuntos, y `backend-implementador` y `front-implementador` escriben cada paquete.
+Para un trabajo grande, los agentes `backend-guia` y `front-guia` lo dividen en paquetes con archivos disjuntos, y `backend-implementador` y `front-implementador` escriben cada paquete. Cómo se organizan en tropas y olas está en el [plan](docs/plan/README.md#cómo-se-ejecuta-una-ola).
 
 ## Antes de abrir un PR
 
@@ -93,7 +93,7 @@ Lista de revisión:
 
 **Raíz mínima.** La raíz solo tiene `backend/`, `front/`, Nx y las herramientas del repositorio. Lo compartido del backend vive en `backend/libs`, lo del front en `front/packages`, y lo compartido dentro de un servicio o microfrontend en su carpeta `shared/{enums,constants,types,utils}`. Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
 
-**Persistencia con TypeORM.** Entidades, mappers y repositorios viven en `infrastructure/persistence` de cada módulo, y las migraciones se generan y aplican con la CLI de TypeORM. La llave de shard se declara en `PersistenceModule.forFeature`. La capa `@platform/persistence` sobre TypeORM es la fase que sigue (paquete P1 del [diseño](docs/design/persistencia-typeorm-y-sagas.md), [ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)); hoy corre sobre el driver `pg`.
+**Persistencia con TypeORM.** Entidades, mappers y repositorios viven en `infrastructure/persistence` de cada módulo, y las migraciones se generan y aplican con la CLI de TypeORM. La llave de shard se declara en `PersistenceModule.forFeature`. La capa `@platform/persistence` sobre TypeORM sigue el [diseño](docs/design/persistencia-typeorm-y-sagas.md) y el [ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md), y su construcción está en el [plan](docs/plan/README.md); hoy corre sobre el driver `pg`.
 
 **Un solo `node_modules`.** Las dependencias externas del backend se declaran solo en `backend/package.json`, con versión exacta, y las de Nx y los hooks en el `package.json` de la raíz. Las librerías, apps y herramientas del backend no tienen `package.json`: son proyectos de Nx (`project.json`) y se importan por los alias de `backend/tsconfig.base.json`. Una librería nueva sigue la skill `backend-estructura`: código directo en `src/`, pruebas en el `__tests__/` de cada carpeta y los utilitarios compartidos de prueba en `__tests__/utils/`. Las librerías no se compilan; solo las apps se empaquetan con esbuild en `backend/dist/<app>/`.
 
