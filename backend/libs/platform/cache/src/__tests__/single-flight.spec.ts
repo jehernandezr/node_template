@@ -1,5 +1,5 @@
 import { SystemClock } from '@platform/kernel';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import { CacheInvalidArgumentError, CacheKeyTooLongError } from '../errors.js';
 import { SingleFlight } from '../single-flight.js';

@@ -1,5 +1,5 @@
 import { SystemClock } from '@platform/kernel';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import {
   CircuitOpenError,

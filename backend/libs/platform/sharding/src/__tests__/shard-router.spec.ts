@@ -1,4 +1,4 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline, DeadlineExceededError } from '@platform/primitives';
 import { ConsistentHashRing } from '../consistent-hash-ring.js';
 import {

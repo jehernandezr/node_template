@@ -14,7 +14,7 @@ import {
 } from '@opentelemetry/sdk-trace';
 import { baseConfigSchema, defineConfig } from '@platform/config';
 import { PlatformError } from '@platform/kernel';
-import { SequentialIdGenerator } from '@platform/kernel/testing';
+import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { JsonLogger, LogDestination, LogLevel } from '../logger.js';
 import { PlatformMetric } from '../metrics.js';
 import { RequestContext } from '../request-context.js';

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import {
   classifyFailure,
   FailureKind,

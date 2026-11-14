@@ -33,8 +33,8 @@
       "@platform/criteria": ["./libs/platform/criteria/src/index.ts"],
       "@platform/internal-api": ["./libs/platform/internal-api/src/index.ts"],
       "@platform/kernel": ["./libs/platform/kernel/src/index.ts"],
-      "@platform/kernel/testing": [
-        "./libs/platform/kernel/src/testing/index.ts"
+      "@platform/kernel/test-utils": [
+        "./libs/platform/kernel/src/__tests__/utils/index.ts"
       ],
       "@platform/messaging": ["./libs/platform/messaging/src/index.ts"],
       "@platform/observability": ["./libs/platform/observability/src/index.ts"],
@@ -44,8 +44,8 @@
       "@platform/persistence": ["./libs/platform/persistence/src/index.ts"],
       "@platform/primitives": ["./libs/platform/primitives/src/index.ts"],
       "@platform/rate-limit": ["./libs/platform/rate-limit/src/index.ts"],
-      "@platform/rate-limit/testing": [
-        "./libs/platform/rate-limit/src/testing/index.ts"
+      "@platform/rate-limit/test-utils": [
+        "./libs/platform/rate-limit/src/__tests__/utils/index.ts"
       ],
       "@platform/resilience": ["./libs/platform/resilience/src/index.ts"],
       "@platform/saga": ["./libs/platform/saga/src/index.ts"],

@@ -1,9 +1,9 @@
-import { DatabaseRole } from '../enums.js';
+import { DatabaseRole } from '../../enums.js';
 import type {
   DatabaseConnection,
   LeasedSession,
   SqlResult,
-} from '../sql/sql-session.js';
+} from '../../sql/sql-session.js';
 
 /** Sentencia registrada por {@link RecordingConnection}. */
 export interface RecordedStatement {

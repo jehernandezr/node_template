@@ -16,7 +16,7 @@ import {
   LedgerPosted,
   reportsContract,
   tasksContract,
-} from '../testing/fixtures.js';
+} from './utils/fixtures.js';
 import { awsConfig } from '../aws-config.js';
 import { isRetryableAwsError } from '../aws-errors.js';
 import { AwsMessagingNames, partitionOf } from '../messaging-names.js';

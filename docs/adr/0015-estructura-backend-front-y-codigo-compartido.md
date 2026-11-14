@@ -61,7 +61,7 @@ backend/
 ### Dependencias, alias y compilado del backend
 
 - Un pnpm workspace con dos importadores, la raíz y `backend/`, y `nodeLinker: hoisted`: queda un solo `node_modules`, en la raíz. Las versiones exactas evitan copias anidadas dentro de `backend/`, y CI falla si aparece un `node_modules` fuera de la raíz.
-- Las librerías, apps y herramientas del backend no son paquetes: no tienen `package.json`. Son proyectos de Nx (`project.json` con tags) y se importan por los alias de `backend/tsconfig.base.json` (`@platform/kernel`, `@platform/kernel/testing`, `@contracts/identity`). Jest los resuelve con el resolver de Nx, las herramientas con `tsx` y las apps con esbuild.
+- Las librerías, apps y herramientas del backend no son paquetes: no tienen `package.json`. Son proyectos de Nx (`project.json` con tags) y se importan por los alias de `backend/tsconfig.base.json` (`@platform/kernel`, `@platform/kernel/test-utils`, `@contracts/identity`). Jest los resuelve con el resolver de Nx, las herramientas con `tsx` y las apps con esbuild.
 - Las librerías no se compilan por separado: su target es `typecheck` (`tsc` sin emitir sobre `tsconfig.lib.json` y `tsconfig.spec.json`). No hay `dist/` dentro de librerías ni de apps.
 - Cada app se empaqueta con esbuild en `backend/dist/<app>/` con el target `build` de `nx.json` (`backend/tools/app-bundler`). Las librerías entran al paquete; las dependencias de `node_modules` quedan externas. Como esbuild no emite la metadata de decoradores que necesita NestJS, el TypeScript propio pasa antes por SWC con la misma configuración de las pruebas.
 - Las herramientas de `backend/tools` corren con `tsx` y los alias, sin compilado propio.
@@ -70,7 +70,7 @@ backend/
 
 - El código va directo en `src/`, sin `src/lib/`.
 - Las pruebas de cada carpeta van en su carpeta `__tests__/`: unitarias en `*.spec.ts` e integración en `*.int-spec.ts`. Por ejemplo, `src/ids/uuid-v7-id-generator.ts` se prueba en `src/ids/__tests__/uuid-v7-id-generator.spec.ts`.
-- Los dobles y el soporte compartido por las pruebas van en `src/testing/`. Si otra librería los usa, se exportan con un alias `.../testing`.
+- Los dobles y el soporte compartido por las pruebas van en `__tests__/utils/` (de la carpeta o, si los usan varias, de `src/__tests__/utils/`). Si otra librería los usa, se exportan con el alias `@platform/<lib>/test-utils`.
 - El preset de Jest (`backend/jest.preset.js`) solo busca pruebas en `src/**/__tests__/`, y una regla de ESLint de `backend/eslint.config.mjs` rechaza una prueba fuera de esas carpetas y cualquier archivo en `src/lib/`.
 - La skill `backend-estructura` detalla la convención.
 

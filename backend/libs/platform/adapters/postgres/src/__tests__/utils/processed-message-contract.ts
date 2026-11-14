@@ -1,4 +1,4 @@
-import type { FixedClock } from '@platform/kernel/testing';
+import type { FixedClock } from '@platform/kernel/test-utils';
 import {
   type ProcessedMessageStore,
   processedMessageKey,

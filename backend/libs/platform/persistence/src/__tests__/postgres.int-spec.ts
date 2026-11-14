@@ -25,7 +25,7 @@ import {
 import { createPersistence } from '../persistence.js';
 import { BaseRepository } from '../repository/base-repository.js';
 import type { SqlSession } from '../sql/sql-session.js';
-import { describeWithDocker } from '../testing/docker.js';
+import { describeWithDocker } from './utils/docker.js';
 import {
   newTask,
   TASK_MAPPER,
@@ -33,7 +33,7 @@ import {
   taskId,
   type Task,
   type TaskRecord,
-} from '../testing/tasks.js';
+} from './utils/tasks.js';
 
 jest.setTimeout(180_000);
 

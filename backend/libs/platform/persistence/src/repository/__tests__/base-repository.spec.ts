@@ -1,9 +1,9 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { Criteria, SortDirection } from '@platform/criteria';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { ShardingErrorCode } from '@platform/sharding';
-import { memoryDatabase } from '../../testing/pg-mem.js';
-import { RecordingConnection } from '../../testing/recording-connection.js';
+import { memoryDatabase } from '../../__tests__/utils/pg-mem.js';
+import { RecordingConnection } from '../../__tests__/utils/recording-connection.js';
 import {
   newTask,
   TASK_MAPPER,
@@ -12,7 +12,7 @@ import {
   taskId,
   type Task,
   type TaskRecord,
-} from '../../testing/tasks.js';
+} from '../../__tests__/utils/tasks.js';
 import type { PersistenceContext } from '../../context/persistence-context.js';
 import { Database } from '../../database.js';
 import { RowLock } from '../../enums.js';

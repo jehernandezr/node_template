@@ -1,4 +1,4 @@
-import type { Clock } from '../clock.js';
+import type { Clock } from '../../clock.js';
 
 /** Reloj de test con hora fija que se puede cambiar y adelantar. */
 export class FixedClock implements Clock {

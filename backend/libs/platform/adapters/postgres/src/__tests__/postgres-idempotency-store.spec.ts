@@ -1,12 +1,12 @@
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ClaimState, Deadline } from '@platform/primitives';
 import {
   applyMigrations,
   Database,
   EMPTY_PERSISTENCE_CONTEXT,
 } from '@platform/persistence';
-import { idempotencyStoreContract } from '../testing/idempotency-contract.js';
-import { memoryDatabase } from '../testing/pg-mem.js';
+import { idempotencyStoreContract } from './utils/idempotency-contract.js';
+import { memoryDatabase } from './utils/pg-mem.js';
 import { PostgresIdempotencyStore } from '../postgres-idempotency-store.js';
 import { IdempotencyKeysMigration } from '../shard-migrations.js';
 

@@ -1,4 +1,4 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { InMemoryRoutingCache } from '../in-memory-routing-cache.js';
 
 describe('InMemoryRoutingCache', () => {

@@ -1,13 +1,13 @@
 import type { Clock } from '@platform/kernel';
-import { FixedClock } from '@platform/kernel/testing';
-import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
+import { FixedClock } from '@platform/kernel/test-utils';
+import { InMemoryRateLimiter } from '../../in-memory-rate-limiter.js';
 import {
   assertRateLimitCall,
   RateLimitOperation,
   type RateLimitResult,
   type RateLimitRule,
-} from '../rate-limit-rule.js';
-import { RateLimiter } from '../rate-limiter.js';
+} from '../../rate-limit-rule.js';
+import { RateLimiter } from '../../rate-limiter.js';
 
 /** Una llamada que recibió un {@link FakeRateLimiter}. */
 export interface RateLimiterCall {

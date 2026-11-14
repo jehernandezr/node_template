@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { CallOutcome, type FinalOutcome } from '../../call-outcome.js';
 import { Deadline } from '../../deadline.js';
 import {

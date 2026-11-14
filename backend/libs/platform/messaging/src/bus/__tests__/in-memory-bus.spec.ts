@@ -3,7 +3,7 @@ import {
   defineEvent,
   PlatformErrorCode,
 } from '@contracts/platform';
-import { SequentialIdGenerator } from '@platform/kernel/testing';
+import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { z } from 'zod';
 import { MAX_ENVELOPE_BYTES } from '../../envelope/message-envelope.js';
 import { MessageDispatcher } from '../../dispatch/message-dispatcher.js';

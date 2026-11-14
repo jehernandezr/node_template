@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   MAX_ENVELOPE_ACTOR_ID_LENGTH,
   MAX_ENVELOPE_BYTES,

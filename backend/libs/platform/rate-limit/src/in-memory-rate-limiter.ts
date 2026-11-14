@@ -19,7 +19,7 @@ export const DEFAULT_IN_MEMORY_RATE_LIMIT_ENTRIES = 100_000;
 
 /** Opciones de {@link InMemoryRateLimiter}. */
 export interface InMemoryRateLimiterOptions {
-  /** Fuente de tiempo. En pruebas, `FixedClock` de `@platform/kernel/testing`. */
+  /** Fuente de tiempo. En pruebas, `FixedClock` de `@platform/kernel/test-utils`. */
   readonly clock?: Clock;
   /**
    * Llaves que guarda como máximo. Al pasarse olvida la usada hace más tiempo,

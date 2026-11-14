@@ -1,6 +1,6 @@
-import type { SagaInstance } from '../model.js';
-import { InMemorySagaStore } from '../store/in-memory-saga-store.js';
-import type { DispatchWrite, FencedWrite } from '../store/saga-store.js';
+import type { SagaInstance } from '../../model.js';
+import { InMemorySagaStore } from '../../store/in-memory-saga-store.js';
+import type { DispatchWrite, FencedWrite } from '../../store/saga-store.js';
 
 /** Error a crashing store throws in place of the process that died. */
 export class ProcessDied extends Error {

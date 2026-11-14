@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import {
   DirectoryWriteResult,
   ShardAccess,
@@ -10,7 +10,7 @@ import {
   type TenantPlacement,
 } from '@platform/sharding';
 import { applyMigrations, Database } from '@platform/persistence';
-import { memoryDatabase } from '../testing/pg-mem.js';
+import { memoryDatabase } from './utils/pg-mem.js';
 import { catalogMigrations } from '../catalog-migrations.js';
 import { PostgresDirectoryStore } from '../postgres-directory-store.js';
 

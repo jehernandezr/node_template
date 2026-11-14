@@ -1,4 +1,4 @@
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ClaimState, Deadline, StaleClaimError } from '@platform/primitives';
 import {
   InMemoryProcessedMessageStore,

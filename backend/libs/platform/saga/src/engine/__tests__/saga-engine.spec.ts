@@ -5,7 +5,7 @@ import {
   PlatformErrorCode,
 } from '@contracts/platform';
 import { FailureKind, PlatformError } from '@platform/kernel';
-import { SequentialIdGenerator } from '@platform/kernel/testing';
+import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   CallOutcome,
   classifyFailure,
@@ -14,7 +14,7 @@ import {
 import {
   CrashingSagaStore,
   ProcessDied,
-} from '../../testing/crashing-saga-store.js';
+} from '../../__tests__/utils/crashing-saga-store.js';
 import { z } from 'zod';
 import type { LoggerPort } from '@platform/observability';
 import { SagaDefinition } from '../../definition/saga-definition.js';

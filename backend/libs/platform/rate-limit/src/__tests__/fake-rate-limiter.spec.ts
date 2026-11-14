@@ -1,17 +1,14 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
-import * as rateLimit from '../../index.js';
-import {
-  RateLimitOperation,
-  type RateLimitRule,
-} from '../../rate-limit-rule.js';
-import { FakeRateLimiter } from '../fake-rate-limiter.js';
-import * as testing from '../index.js';
+import * as rateLimit from '../index.js';
+import { RateLimitOperation, type RateLimitRule } from '../rate-limit-rule.js';
+import { FakeRateLimiter } from './utils/fake-rate-limiter.js';
+import * as testing from './utils/index.js';
 
 const RULE: RateLimitRule = { name: 'otp', limit: 2, windowMs: 1_000 };
 
 describe('testing entry point', () => {
-  it('exports the fake only from @platform/rate-limit/testing', () => {
+  it('exports the fake only from @platform/rate-limit/test-utils', () => {
     expect(testing.FakeRateLimiter).toBe(FakeRateLimiter);
     expect('FakeRateLimiter' in rateLimit).toBe(false);
   });

@@ -1,6 +1,6 @@
 import { defineEvent, PlatformErrorCode } from '@contracts/platform';
 import { z } from 'zod';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { BackoffStrategy } from '@platform/primitives';
 import { createEnvelope } from '../../envelope/message-envelope.js';
 import { QueueDef } from '../../topology/queue-def.js';

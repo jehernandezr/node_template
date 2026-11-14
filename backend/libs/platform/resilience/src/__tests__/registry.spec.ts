@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { ResilienceError } from '../errors.js';
 import type { ResilienceEvent } from '../events.js';
 import { ResilienceRegistry } from '../registry.js';

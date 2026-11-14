@@ -83,7 +83,7 @@ Se verifican también: 400 con `application/problem+json` y `code` ante entrada 
 
 ## Testcontainers
 
-Un archivo de soporte por tecnología en `src/testing/`:
+Una clase de soporte por tecnología en `src/__tests__/utils/`:
 
 ```ts
 export class PostgresTestDatabase {

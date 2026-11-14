@@ -14,7 +14,7 @@ import {
   InternalRouter,
   type CallMeta,
 } from '@platform/internal-api';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   contextFromTraceparent,
   currentTraceparent,
@@ -34,10 +34,7 @@ import { SagaStatus } from '../model.js';
 import { SagaRecoveryJob } from '../recovery/saga-recovery-job.js';
 import { SagaEngine } from '../engine/saga-engine.js';
 import { InMemorySagaStore } from '../store/in-memory-saga-store.js';
-import {
-  CrashingSagaStore,
-  ProcessDied,
-} from '../testing/crashing-saga-store.js';
+import { CrashingSagaStore, ProcessDied } from './utils/crashing-saga-store.js';
 
 /** Fits the 2 s step budget of these tests: 2 x 500 ms + 100 ms of backoff. */
 const FAST = {

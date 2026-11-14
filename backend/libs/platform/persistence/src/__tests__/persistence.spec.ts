@@ -1,6 +1,6 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { ShardKey } from '@platform/sharding';
-import { RecordingConnection } from '../testing/recording-connection.js';
+import { RecordingConnection } from './utils/recording-connection.js';
 import { Database } from '../database.js';
 import { DataAccess } from '../enums.js';
 import { createPersistence, type ShardDirectory } from '../persistence.js';

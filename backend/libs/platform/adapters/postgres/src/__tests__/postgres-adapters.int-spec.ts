@@ -2,7 +2,7 @@ import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   createEnvelope,
   type MessageEnvelope,
@@ -27,10 +27,10 @@ import { PostgresIdempotencyStore } from '../postgres-idempotency-store.js';
 import { PostgresOutboxStore } from '../postgres-outbox-store.js';
 import { shardMigrations } from '../shard-migrations.js';
 import { PostgresProcessedMessageStore } from '../postgres-processed-message-store.js';
-import { describeWithDocker } from '../testing/docker.js';
-import { idempotencyStoreContract } from '../testing/idempotency-contract.js';
-import { outboxStoreContract } from '../testing/outbox-contract.js';
-import { processedMessageStoreContract } from '../testing/processed-message-contract.js';
+import { describeWithDocker } from './utils/docker.js';
+import { idempotencyStoreContract } from './utils/idempotency-contract.js';
+import { outboxStoreContract } from './utils/outbox-contract.js';
+import { processedMessageStoreContract } from './utils/processed-message-contract.js';
 
 jest.setTimeout(180_000);
 

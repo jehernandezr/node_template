@@ -34,7 +34,7 @@ import {
   TaskClosed,
   TaskReopened,
   tasksContract,
-} from '../testing/fixtures.js';
+} from './utils/fixtures.js';
 import { AwsMessagingNames } from '../messaging-names.js';
 import { SnsSqsEnvelopePublisher } from '../sns-sqs-envelope-publisher.js';
 import { SnsSqsMessageBus } from '../sns-sqs-message-bus.js';

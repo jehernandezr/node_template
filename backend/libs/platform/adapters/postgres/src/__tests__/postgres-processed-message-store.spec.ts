@@ -1,8 +1,8 @@
 import { InMemoryProcessedMessageStore } from '@platform/messaging';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ClaimState, Deadline } from '@platform/primitives';
-import { memoryShard, START } from '../testing/pg-mem.js';
-import { processedMessageStoreContract } from '../testing/processed-message-contract.js';
+import { memoryShard, START } from './utils/pg-mem.js';
+import { processedMessageStoreContract } from './utils/processed-message-contract.js';
 import { PostgresProcessedMessageStore } from '../postgres-processed-message-store.js';
 
 describe('PostgresProcessedMessageStore on pg-mem', () => {

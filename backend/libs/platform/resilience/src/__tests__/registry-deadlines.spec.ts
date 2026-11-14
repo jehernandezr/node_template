@@ -1,5 +1,5 @@
 import { PlatformError } from '@platform/kernel';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import {
   classifyFailure,
   Deadline,

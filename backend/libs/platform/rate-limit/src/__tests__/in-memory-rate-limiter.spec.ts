@@ -1,4 +1,4 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
 import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
 import type { RateLimitRule } from '../rate-limit-rule.js';

@@ -6,7 +6,7 @@ import {
   ShardingErrorCode,
   TransactionShardGuard,
 } from '@platform/sharding';
-import { RecordingConnection } from '../testing/recording-connection.js';
+import { RecordingConnection } from './utils/recording-connection.js';
 import type { PersistenceContext } from '../context/persistence-context.js';
 import { currentUnitOfWork, Database } from '../database.js';
 import { DatabaseRole, SessionSetting } from '../enums.js';

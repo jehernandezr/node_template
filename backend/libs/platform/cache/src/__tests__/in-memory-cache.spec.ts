@@ -1,4 +1,4 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { InMemoryCache } from '../in-memory-cache.js';
 
 describe('InMemoryCache', () => {

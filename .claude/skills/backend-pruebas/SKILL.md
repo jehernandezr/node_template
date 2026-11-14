@@ -4,7 +4,6 @@ description: Cómo se escriben y ubican las pruebas del backend de node_template
 paths:
   - 'backend/**/__tests__/**'
   - 'backend/**/e2e/**'
-  - 'backend/**/testing/**'
 ---
 
 # Pruebas del backend
@@ -16,7 +15,18 @@ Se prueba comportamiento observable por capas, con el costo mínimo que da confi
 - `src/<carpeta>/__tests__/<archivo>.spec.ts` para unitarias y `<archivo>.int-spec.ts` para integración. Ver `backend-estructura`.
 - Contrato: `__tests__/<archivo>.contract-spec.ts`.
 - End to end de una app: `backend/apps/<app>/e2e/<flujo>.e2e-spec.ts`.
-- Dobles compartidos en `src/testing/`.
+- Utilitarios compartidos en `__tests__/utils/` (de la carpeta o, si los usan varias, de `src/__tests__/utils/`). Se exponen a otras librerías con el alias `@platform/<lib>/test-utils`. Nunca una carpeta `testing/` aparte.
+
+## Las pruebas también son código
+
+Las reglas de `backend-codigo-enterprise` aplican a las pruebas y a sus utilitarios:
+
+- Fakes, builders y contenedores son clases con nombre de rol: `InMemoryUserRepository`, `UserBuilder`, `PostgresTestDatabase`. Nada de objetos sueltos copiados en cada prueba.
+- Lo que se repite en dos pruebas sube a `__tests__/utils/`. Si lo usan dos carpetas, sube a `src/__tests__/utils/`.
+- Un builder por agregado con valores por defecto válidos y métodos `with...` para lo que importa en cada prueba.
+- Un fake implementa el puerto real y pasa la misma prueba de contrato que el adaptador real.
+- Sin lógica en las pruebas: nada de `if` ni bucles que decidan qué verificar.
+- Nombres, imports y tipos con el mismo cuidado que el código de producción.
 
 ## Qué probar en cada capa
 

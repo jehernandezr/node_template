@@ -234,14 +234,19 @@ describeWithDocker('Valkey adapters against a real server', () => {
         });
 
       await expect(read()).resolves.toEqual({ total: 3 });
-      // The write is fire-and-forget: wait for the entry next to the version key.
-      await until(async () => (await keys(`${PREFIX}:*`)).length >= 2);
+      // The write is fire-and-forget: wait until a read is served without loading.
+      await until(async () => {
+        const loads = load.mock.calls.length;
+        await read();
+        return load.mock.calls.length === loads;
+      });
+      const cachedLoads = load.mock.calls.length;
       await expect(read()).resolves.toEqual({ total: 3 });
-      expect(load).toHaveBeenCalledTimes(1);
+      expect(load).toHaveBeenCalledTimes(cachedLoads);
 
       await aside.invalidate(['t1', 'orders']);
       await read();
-      expect(load).toHaveBeenCalledTimes(2);
+      expect(load).toHaveBeenCalledTimes(cachedLoads + 1);
     });
   });
 

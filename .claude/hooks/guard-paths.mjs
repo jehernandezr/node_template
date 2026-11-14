@@ -25,6 +25,14 @@ class PathGuard {
         'Las librerías del backend no tienen package.json: se importan por alias de TypeScript (skill backend-estructura).',
     },
     {
+      test: (p) =>
+        /^backend\/(libs|apps|tools)\/.+\/src\/(.+\/)?(testing|test|support)\//.test(
+          p,
+        ) && !/\/__tests__\//.test(p),
+      reason:
+        'Los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte (skill backend-pruebas).',
+    },
+    {
       test: (p) => /^backend\/(libs|apps|tools)\/.+\/dist\//.test(p),
       reason:
         'El compilado de cada app va en backend/dist/<app>, nunca dentro de un proyecto (skill backend-estructura).',

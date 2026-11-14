@@ -1,7 +1,7 @@
 import { AggregateRoot } from '../aggregate-root.js';
 import type { DomainEvent } from '../domain-event.js';
 import type { Id } from '../id.js';
-import { SequentialIdGenerator } from '../testing/sequential-id-generator.js';
+import { SequentialIdGenerator } from './utils/sequential-id-generator.js';
 
 class Order extends AggregateRoot {
   constructor(id: Id) {

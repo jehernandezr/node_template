@@ -1,6 +1,6 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
-import { FakeRateLimiter } from '../testing/fake-rate-limiter.js';
+import { FakeRateLimiter } from './utils/fake-rate-limiter.js';
 import { DegradingRateLimiter } from '../degrading-rate-limiter.js';
 import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
 import { RateLimitOperation, type RateLimitRule } from '../rate-limit-rule.js';

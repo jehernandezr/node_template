@@ -2,7 +2,7 @@ import { defineOperation, PlatformErrorCode } from '@contracts/platform';
 import { context as otelContext } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { DomainError } from '@platform/kernel';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import {
   CallOutcome,
   CallOutcomeKind,

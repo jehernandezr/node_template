@@ -1,7 +1,7 @@
 import { newDb, type IMemoryDb } from 'pg-mem';
 import type { Pool } from 'pg';
-import { PgPoolConnection } from '../connection/pg-pool-connection.js';
-import type { DatabaseConnection } from '../sql/sql-session.js';
+import { PgPoolConnection } from '../../connection/pg-pool-connection.js';
+import type { DatabaseConnection } from '../../sql/sql-session.js';
 
 /** Base `pg-mem` con su conexión de la capa. */
 export interface MemoryDatabase {

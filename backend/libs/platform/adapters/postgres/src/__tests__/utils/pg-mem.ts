@@ -1,4 +1,4 @@
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   applyMigrations,
   type DatabaseConnection,
@@ -11,7 +11,7 @@ import {
 } from '@platform/persistence';
 import type { Pool } from 'pg';
 import { DataType, newDb, type IMemoryDb } from 'pg-mem';
-import { messagingMigrations } from '../shard-migrations.js';
+import { messagingMigrations } from '../../shard-migrations.js';
 
 /**
  * pg-mem no implementa bloqueos de fila (`SKIP LOCKED`): esta conexión los quita.

@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline } from '../deadline.js';
 import { DeadlineExceededError, InvalidArgumentError } from '../errors.js';
 

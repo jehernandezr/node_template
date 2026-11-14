@@ -65,7 +65,11 @@ backend/libs/platform/kernel/
 
 - Cada carpeta de código tiene su carpeta `__tests__/` con las pruebas de esa carpeta. Ejemplo: `users/src/modules/sign-in/application/__tests__/`.
 - Nunca un `.spec.ts` junto al archivo fuente, ni una única carpeta de pruebas en la raíz del módulo. Esto reemplaza la convención por defecto de NestJS.
-- Los dobles compartidos (fakes) van en `src/testing/` del proyecto y se exportan por un alias `.../testing`. Código de producción nunca importa `testing`.
+- Lo que comparten las pruebas (fakes, builders, contenedores, contratos reutilizables) va dentro de la estructura de pruebas, nunca en una carpeta `testing/` aparte:
+  - `__tests__/utils/` de una carpeta, si solo lo usan las pruebas de esa carpeta;
+  - `src/__tests__/utils/` del proyecto, si lo usan varias carpetas. Si otra librería lo necesita, se expone por el alias `@platform/<lib>/test-utils`.
+- Las pruebas de un utilitario van en el `__tests__/` que lo contiene (por ejemplo `src/__tests__/fake-rate-limiter.spec.ts`), no en un `__tests__` anidado dentro de `utils/`.
+- El código de producción nunca importa nada de `__tests__/`.
 - Las pruebas end to end de una app viven en `backend/apps/<app>/e2e/`.
 - Detalle en `backend-pruebas`.
 

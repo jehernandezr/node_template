@@ -3,7 +3,7 @@ import type { CachePort } from './cache-port.js';
 
 /** Options for {@link InMemoryCache}. */
 export interface InMemoryCacheOptions {
-  /** Time source. Defaults to `SystemClock`; in tests use `FixedClock` from `@platform/kernel/testing`. */
+  /** Time source. Defaults to `SystemClock`; in tests use `FixedClock` from `@platform/kernel/test-utils`. */
   clock?: Clock;
 }
 

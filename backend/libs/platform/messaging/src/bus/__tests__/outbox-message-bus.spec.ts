@@ -7,7 +7,7 @@ import {
   defineTopic,
   PlatformErrorCode,
 } from '@contracts/platform';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   BackoffStrategy,
   type TransactionHook,

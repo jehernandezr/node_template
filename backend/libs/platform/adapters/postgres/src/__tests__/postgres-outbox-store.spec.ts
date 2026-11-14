@@ -1,11 +1,11 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { createEnvelope, InMemoryOutboxStore } from '@platform/messaging';
 import type { Database } from '@platform/persistence';
 import {
   type OutboxContractEnv,
   outboxStoreContract,
-} from '../testing/outbox-contract.js';
-import { memoryShard, START } from '../testing/pg-mem.js';
+} from './utils/outbox-contract.js';
+import { memoryShard, START } from './utils/pg-mem.js';
 import { PostgresOutboxStore } from '../postgres-outbox-store.js';
 
 async function setup(): Promise<

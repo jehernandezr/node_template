@@ -1,5 +1,5 @@
 import { defineEvent, PlatformErrorCode } from '@contracts/platform';
-import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { type ClaimRequest, ClaimState, Deadline } from '@platform/primitives';
 import { z } from 'zod';
 import { createEnvelope } from '../../envelope/message-envelope.js';

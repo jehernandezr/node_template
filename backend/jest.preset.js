@@ -8,6 +8,8 @@ export default {
   // Las pruebas viven en la carpeta __tests__ de la carpeta que prueban: un .spec.ts
   // junto al código no se ejecuta. Las de integración terminan en .int-spec.ts.
   testMatch: ['<rootDir>/src/**/__tests__/**/*.?(int-)spec.ts'],
+  // Los utilitarios de prueba (__tests__/utils) no son código de producción y no cuentan en la cobertura.
+  coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
   coverageThreshold: {
     global: { lines: 80, statements: 80, functions: 80, branches: 75 },
   },

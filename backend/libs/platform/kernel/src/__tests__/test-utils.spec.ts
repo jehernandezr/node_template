@@ -1,11 +1,11 @@
-import { Id } from '../../id.js';
-import * as kernel from '../../index.js';
-import { FixedClock } from '../fixed-clock.js';
-import * as testing from '../index.js';
-import { SequentialIdGenerator } from '../sequential-id-generator.js';
+import { Id } from '../id.js';
+import * as kernel from '../index.js';
+import { FixedClock } from './utils/fixed-clock.js';
+import * as testing from './utils/index.js';
+import { SequentialIdGenerator } from './utils/sequential-id-generator.js';
 
 describe('testing entry point', () => {
-  it('exports the helpers only from @platform/kernel/testing', () => {
+  it('exports the helpers only from @platform/kernel/test-utils', () => {
     expect(testing.FixedClock).toBe(FixedClock);
     expect(testing.SequentialIdGenerator).toBe(SequentialIdGenerator);
     expect('FixedClock' in kernel).toBe(false);

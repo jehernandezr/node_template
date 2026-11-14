@@ -1,5 +1,5 @@
-import type { RecordMapper } from '../repository/base-repository.js';
-import type { TableDefinition } from '../repository/table-definition.js';
+import type { RecordMapper } from '../../repository/base-repository.js';
+import type { TableDefinition } from '../../repository/table-definition.js';
 
 /** Agregado de ejemplo para las pruebas del repositorio. */
 export interface Task {

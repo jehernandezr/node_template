@@ -1,5 +1,5 @@
-import { Id } from '../id.js';
-import type { IdGenerator } from '../id-generator.js';
+import { Id } from '../../id.js';
+import type { IdGenerator } from '../../id-generator.js';
 
 /**
  * Generador determinista para tests. Produce UUIDv7 válidos y distintos:

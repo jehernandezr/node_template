@@ -78,6 +78,16 @@ class BackendStructureCheck {
         'las pruebas van en una carpeta __tests__/ junto al código que prueban',
       );
     }
+    if (
+      inCodeProject &&
+      /\/src\/(.+\/)?(testing|test|support)\//.test(file) &&
+      !/\/__tests__\//.test(file)
+    ) {
+      this.add(
+        file,
+        'los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte',
+      );
+    }
     if (/^backend\/libs\/.+\/package\.json$/.test(file)) {
       this.add(
         file,
@@ -166,7 +176,7 @@ class BackendStructureCheck {
       );
     }
     const allowsFunctions =
-      /\/(utils|testing|migrations)\//.test(file) ||
+      /\/(utils|__tests__|migrations)\//.test(file) ||
       /(index|\.config|main|worker|migrate|instrumentation)\.ts$/.test(file);
     if (
       !allowsFunctions &&

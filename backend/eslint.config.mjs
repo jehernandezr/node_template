@@ -39,6 +39,13 @@ const layoutPlugin = {
       (file) =>
         /\.(int-)?spec\.ts$/.test(file) && !file.includes('/__tests__/'),
     ),
+    // Lo que comparten las pruebas (fakes, builders, contenedores) vive en __tests__/utils.
+    'test-utils-in-tests-folder': fileRule(
+      'Los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte.',
+      (file) =>
+        /\/src\/(.+\/)?(testing|test|support)\//.test(file) &&
+        !file.includes('/__tests__/'),
+    ),
     'no-src-lib': fileRule(
       'El código va directo en src/, sin src/lib/.',
       (file) => file.includes('/src/lib/'),
@@ -59,6 +66,7 @@ export default [
     rules: {
       'layout/tests-in-tests-folder': 'error',
       'layout/no-src-lib': 'error',
+      'layout/test-utils-in-tests-folder': 'error',
     },
   },
   {

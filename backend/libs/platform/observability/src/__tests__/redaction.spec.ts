@@ -1,4 +1,4 @@
-import { SequentialIdGenerator } from '@platform/kernel/testing';
+import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { JsonLogger, LogDestination, LogLevel } from '../logger.js';
 import { isSensitiveKey, redact, redactString } from '../redaction.js';
 import { newTraceId } from '../trace.js';

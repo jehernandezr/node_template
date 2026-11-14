@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 /**
  * Contratos y dobles compartidos por las pruebas del adaptador. La carpeta
- * `src/testing` queda fuera del código de producción (`tsconfig.lib.json`).
+ * `src/__tests__/` queda fuera del código de producción (`tsconfig.lib.json`).
  */
 export const TaskClosed = defineEvent({
   type: 'tasks.task.closed.v1',

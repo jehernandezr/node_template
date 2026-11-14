@@ -17,7 +17,7 @@ import {
   reportsContract,
   TaskClosed,
   tasksContract,
-} from '../testing/fixtures.js';
+} from './utils/fixtures.js';
 import { AwsMessagingNames } from '../messaging-names.js';
 import {
   DeadLetterAttribute,

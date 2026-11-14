@@ -8,7 +8,7 @@ import {
   type ShardKeyResolver,
   TenantStatus,
 } from '@platform/sharding';
-import { RecordingConnection } from '../../testing/recording-connection.js';
+import { RecordingConnection } from '../../__tests__/utils/recording-connection.js';
 import type { PersistenceContext } from '../../context/persistence-context.js';
 import { DataAccess } from '../../enums.js';
 import {

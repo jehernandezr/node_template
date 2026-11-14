@@ -83,7 +83,7 @@ Cada microservicio será una app en `backend/apps/<servicio>` (proyecto de Nx co
 backend/libs/platform/kernel/
   project.json        nombre, tags y targets
   tsconfig.json       el que usa el editor (extiende tsconfig.spec.json)
-  tsconfig.lib.json   código de producción: src sin __tests__ ni testing
+  tsconfig.lib.json   código de producción: src sin __tests__
   tsconfig.spec.json  código y pruebas
   jest.config.cjs
   src/
@@ -91,10 +91,11 @@ backend/libs/platform/kernel/
     ids/
       uuid-v7-id-generator.ts
       __tests__/uuid-v7-id-generator.spec.ts
-    testing/          dobles compartidos, alias @platform/kernel/testing
+    __tests__/
+      utils/          dobles compartidos, alias @platform/kernel/test-utils
 ```
 
-El código va directo en `src/`, sin `src/lib/`. Las pruebas de cada carpeta van en su `__tests__/`, unitarias (`*.spec.ts`) y de integración (`*.int-spec.ts`). Los dobles y el soporte de pruebas que comparten varias carpetas van en `src/testing/`; si otra librería los usa, se exportan con un alias `.../testing`.
+El código va directo en `src/`, sin `src/lib/`. Las pruebas de cada carpeta van en su `__tests__/`, unitarias (`*.spec.ts`) y de integración (`*.int-spec.ts`). Los dobles y el soporte que comparten varias carpetas van en `src/__tests__/utils/`; si otra librería los usa, se exportan con el alias `@platform/<lib>/test-utils`.
 
 **Estructura interna de cada módulo**
 

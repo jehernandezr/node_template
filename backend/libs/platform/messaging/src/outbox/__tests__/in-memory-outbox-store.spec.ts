@@ -1,4 +1,4 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { createEnvelope } from '../../envelope/message-envelope.js';
 import { InMemoryOutboxStore } from '../in-memory-outbox-store.js';
 import { type OutboxLease, OutboxStatus } from '../outbox.js';

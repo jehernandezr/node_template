@@ -1,4 +1,4 @@
-import { FixedClock } from '@platform/kernel/testing';
+import { FixedClock } from '@platform/kernel/test-utils';
 import { CircuitState, ConsecutiveCircuitBreaker } from '../circuit-breaker.js';
 
 class Counted extends Error {}
