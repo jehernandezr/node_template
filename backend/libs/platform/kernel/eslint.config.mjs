@@ -1,5 +1,8 @@
 import baseConfig from '../../../eslint.config.mjs';
 
+const literalMessage =
+  'Usa KernelErrorCode (o el enum de la librería) en lugar del código como texto.';
+
 export default [
   ...baseConfig,
   {
@@ -10,15 +13,18 @@ export default [
         'error',
         {
           selector: 'Literal[value=/^PLATFORM\\./]',
-          message:
-            'Usa PlatformErrorCode de @contracts/platform en lugar del código como texto.',
+          message: literalMessage,
         },
         {
           selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
-          message:
-            'Usa PlatformErrorCode de @contracts/platform en lugar del código como texto.',
+          message: literalMessage,
         },
       ],
     },
+  },
+  {
+    // Aquí se declaran los códigos: es el único lugar donde van como texto.
+    files: ['src/errors/kernel-error-code.enum.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
   },
 ];

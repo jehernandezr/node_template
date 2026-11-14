@@ -2,6 +2,7 @@
 /// units, numbers, dates and field errors.
 library;
 
+export 'src/clock.dart';
 export 'src/dates.dart';
 export 'src/field_errors.dart';
 export 'src/money.dart';

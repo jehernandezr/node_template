@@ -18,6 +18,12 @@ La revisión del 14 de noviembre dejó `@platform/persistence` solo sobre el dri
 - Sagas: `TypeOrmSagaStore` guarda `saga.instances` y `saga.step_log` en un esquema `saga` dentro de la base de shard del servicio que orquesta. Cada escritura protegida es un `UPDATE ... WHERE version = :v AND lease_token = :t`. La tabla `saga_directory` del catálogo del servicio dice dónde vive cada saga, sin payloads.
 - `SagaEngine` queda con `start` y `resume`. `SagaModule.forFeature([...])` lo arma con valores por defecto, y un caso de uso llama `sagas.start(Definición, estado, { idempotencyKey })`.
 
+### Puertos, réplica y migraciones
+
+- Los puertos viven en `@platform/kernel`: `TransactionManager`, `UnitOfWork`, `TransactionHook`, `TransactionOptions` e `IsolationLevel` en `kernel/src/ports/transaction/`, y `IdempotencyStore` con `ClaimState` en `kernel/src/ports/idempotency/`. `TypeOrmTransactionManager` implementa el puerto del kernel.
+- Las lecturas van a la réplica, salvo dentro de una transacción o con `readPrimary()`. Una transacción toca un solo shard: `ShardScope` con `requireScope` y el error `CROSS_SHARD_TX` lo hacen cumplir.
+- Las migraciones son por servicio, en `migrations/shard` y `migrations/catalog`. Se generan con la CLI de TypeORM y las aplica el binario `migrate` con `ShardedMigrationRunner` bajo `pg_advisory_lock`. Cada migración tiene `up` y `down`.
+
 ## Consecuencias
 
 ### Positivas

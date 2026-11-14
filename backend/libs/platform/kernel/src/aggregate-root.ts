@@ -1,6 +1,6 @@
 import { Entity } from './entity.js';
 import type { DomainEvent } from './domain-event.js';
-import type { Id } from './id.js';
+import type { Id } from './ids/id.js';
 
 /** Raíz de agregado: acumula eventos de dominio hasta que se recogen. */
 export abstract class AggregateRoot<

@@ -17,7 +17,7 @@ dependencies:
     sdk: flutter
   i18n:
     path: ../../packages/i18n
-  material_ui: ^1.11.0
+  material_ui: 1.11.0
   mf_account:
     path: ../../microfrontends/account
   mf_assistant:
@@ -42,10 +42,10 @@ dev_dependencies:
     path: ../../packages/test_utils
   contracts:
     path: ../../packages/contracts
-  flutter_lints: ^6.0.0
+  flutter_lints: 6.0.0
   flutter_test:
     sdk: flutter
-  go_router: ^18.1.4
+  go_router: 18.1.4
 
 flutter:
   uses-material-design: true

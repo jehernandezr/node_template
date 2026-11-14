@@ -1,73 +1,49 @@
 import type { Deadline } from './deadline.js';
-import { DeadlineExceededError, InvalidArgumentError } from './errors.js';
+import { DeadlineExceededError } from './errors/deadline-exceeded.error.js';
+import { PrimitivesGuard } from './errors/primitives-guard.js';
+import { TimerScheduler } from './waiting/timer-scheduler.js';
 
-/** Mayor espera que acepta `setTimeout`; un valor mayor dispara casi de inmediato. */
-export const MAX_TIMER_MS = 2_147_483_647;
+/** @deprecated Usa `TimerScheduler.MAX_TIMER_MS`. */
+export const MAX_TIMER_MS = TimerScheduler.MAX_TIMER_MS;
 
-/** Opciones de {@link abortableSleep}. */
+/** @deprecated Usa `Deadline.sleep` o `TimerScheduler`. */
 export interface SleepOptions {
   /** Corta la espera y rechaza con el motivo de la señal. */
   readonly signal?: AbortSignal;
-  /**
-   * `true` para que el temporizador no mantenga vivo el proceso. Por defecto
-   * `false`: un script que solo espera terminaría antes de tiempo.
-   */
+  /** `true` para que el temporizador no mantenga vivo el proceso. */
   readonly unref?: boolean;
 }
 
-/** Motivo de aborto como `Error`, para rechazar siempre con un error. */
+/** @deprecated Usa `TimerScheduler.abortReason`. */
 export function abortReason(signal: AbortSignal): Error {
-  return signal.reason instanceof Error
-    ? signal.reason
-    : new Error('Operation aborted', { cause: signal.reason });
+  return TimerScheduler.abortReason(signal);
 }
 
-/**
- * Arma un temporizador de `ms` milisegundos aunque supere el máximo de
- * `setTimeout`, por tramos. Devuelve la función que lo cancela.
- */
+/** @deprecated Usa `TimerScheduler.arm` o `TimerScheduler.armDetached`. */
 export function armTimer(
   ms: number,
   fire: () => void,
   unref = false,
 ): () => void {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const arm = (left: number): void => {
-    const chunk = Math.min(left, MAX_TIMER_MS);
-    timer = setTimeout(() => {
-      if (left > chunk) {
-        arm(left - chunk);
-      } else {
-        fire();
-      }
-    }, chunk);
-    if (unref) {
-      timer.unref();
-    }
-  };
-  arm(Math.max(0, ms));
-  return () => clearTimeout(timer);
+  return unref
+    ? TimerScheduler.armDetached(ms, fire)
+    : TimerScheduler.arm(ms, fire);
 }
 
-/**
- * Espera `ms` milisegundos. Si `signal` aborta antes, rechaza con su motivo y
- * libera el temporizador.
- */
+/** @deprecated Usa `Deadline.sleep`. */
 export function abortableSleep(
   ms: number,
   options: SleepOptions = {},
 ): Promise<void> {
-  if (!Number.isFinite(ms) || ms < 0) {
-    throw new InvalidArgumentError('ms', 'a finite number >= 0');
-  }
+  PrimitivesGuard.instance.nonNegativeFinite('ms', ms);
   const { signal } = options;
   if (signal?.aborted === true) {
-    return Promise.reject(abortReason(signal));
+    return Promise.reject(TimerScheduler.abortReason(signal));
   }
   return new Promise<void>((resolve, reject) => {
     const onAbort = (): void => {
       cancel();
-      reject(abortReason(signal as AbortSignal));
+      reject(TimerScheduler.abortReason(signal as AbortSignal));
     };
     const cancel = armTimer(
       ms,
@@ -81,7 +57,7 @@ export function abortableSleep(
   });
 }
 
-/** Por qué {@link raceDeadline} dejó de esperar el trabajo. */
+/** @deprecated Usa `Deadline.race`. */
 export enum RaceStop {
   /** Se agotó el plazo o `timeoutMs`. */
   Timeout = 'timeout',
@@ -89,12 +65,12 @@ export enum RaceStop {
   Aborted = 'aborted',
 }
 
-/** Resultado de {@link raceDeadline}. */
+/** @deprecated Usa `Deadline.race`. */
 export type RaceResult<T> =
   | { readonly settled: true; readonly value: T }
   | { readonly settled: false; readonly stop: RaceStop };
 
-/** Opciones de {@link raceDeadline}. Sin plazo ni `timeoutMs`, solo corta la señal. */
+/** @deprecated Usa `Deadline.race`. */
 export interface RaceOptions {
   readonly deadline?: Deadline;
   readonly timeoutMs?: number;
@@ -115,26 +91,22 @@ function startWork<T>(
 
 /**
  * Corre `work` con una señal que aborta cuando vence el plazo (el menor entre
- * `deadline` y `timeoutMs`) o cuando aborta `signal`, y deja de esperarlo en ese
- * momento: el trabajo pudo o no aplicar sus efectos, así que quien llama lo
- * trata como incierto. Al vencer el plazo, la señal aborta con
- * `DeadlineExceededError`. Si `work` lanza antes, el error se propaga.
+ * `deadline` y `timeoutMs`) o cuando aborta `signal`, y deja de esperarlo en
+ * ese momento. Si `work` lanza antes, el error se propaga.
+ * @deprecated Usa `Deadline.race`.
  */
 export async function raceDeadline<T>(
   work: (signal: AbortSignal) => Promise<T>,
   options: RaceOptions = {},
 ): Promise<RaceResult<T>> {
   const { deadline, timeoutMs, signal } = options;
-  if (
-    timeoutMs !== undefined &&
-    (!Number.isFinite(timeoutMs) || timeoutMs < 0)
-  ) {
-    throw new InvalidArgumentError('timeoutMs', 'a finite number >= 0');
+  if (timeoutMs !== undefined) {
+    PrimitivesGuard.instance.nonNegativeFinite('timeoutMs', timeoutMs);
   }
   if (signal?.aborted === true) {
     return { settled: false, stop: RaceStop.Aborted };
   }
-  const budgets = [deadline?.remaining(), timeoutMs].filter(
+  const budgets = [deadline?.remainingMs(), timeoutMs].filter(
     (value): value is number => value !== undefined,
   );
   const budget = budgets.length === 0 ? undefined : Math.min(...budgets);
@@ -145,7 +117,7 @@ export async function raceDeadline<T>(
       : AbortSignal.any([controller.signal, signal]);
   const running = startWork(work, workSignal);
   const atMs =
-    deadline !== undefined && budget === deadline.remaining()
+    deadline !== undefined && budget === deadline.remainingMs()
       ? deadline.atMs
       : Date.now() + (budget ?? 0);
 
@@ -153,7 +125,7 @@ export async function raceDeadline<T>(
   let onAbort: (() => void) | undefined;
   const stopped = new Promise<RaceResult<T>>((resolve) => {
     if (budget !== undefined) {
-      cancelTimer = armTimer(budget, () => {
+      cancelTimer = TimerScheduler.arm(budget, () => {
         controller.abort(new DeadlineExceededError(atMs));
         resolve({ settled: false, stop: RaceStop.Timeout });
       });

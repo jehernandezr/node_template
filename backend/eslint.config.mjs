@@ -30,8 +30,43 @@ const fileRule = (message, matches) => ({
   }),
 });
 
+/**
+ * NestJS solo entra por `src/nest/` (ADR 0025): el núcleo de las librerías no importa `@nestjs/*`
+ * ni la sub-entrada `@platform/<lib>/nest` de otra librería.
+ */
+const nestImportSource = /^(@nestjs\/|@platform\/[\w-]+\/nest$)/;
+const nestGuardedFile = /\/libs\/(platform|contracts|shared)\//;
+
+const nestBoundaryRule = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      nestOutsideFolder:
+        'Fuera de src/nest/ no se importa @nestjs/* ni una sub-entrada @platform/<lib>/nest.',
+    },
+  },
+  create: (context) => {
+    const file = context.filename.replaceAll('\\', '/');
+    if (!nestGuardedFile.test(file) || file.includes('/src/nest/')) return {};
+    const check = (node) => {
+      const source = node.source?.value;
+      if (typeof source === 'string' && nestImportSource.test(source)) {
+        context.report({ node, messageId: 'nestOutsideFolder' });
+      }
+    };
+    return {
+      ImportDeclaration: check,
+      ExportAllDeclaration: check,
+      ExportNamedDeclaration: check,
+      ImportExpression: check,
+    };
+  },
+};
+
 const layoutPlugin = {
   rules: {
+    'no-nest-outside-nest-folder': nestBoundaryRule,
     // Jest solo ejecuta las pruebas de las carpetas __tests__ (jest.preset.js): una
     // prueba fuera de ellas no correría nunca.
     'tests-in-tests-folder': fileRule(
@@ -53,6 +88,8 @@ const layoutPlugin = {
   },
 };
 
+export { layoutPlugin };
+
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
@@ -66,6 +103,7 @@ export default [
     rules: {
       'layout/tests-in-tests-folder': 'error',
       'layout/no-src-lib': 'error',
+      'layout/no-nest-outside-nest-folder': 'error',
       'layout/test-utils-in-tests-folder': 'error',
     },
   },

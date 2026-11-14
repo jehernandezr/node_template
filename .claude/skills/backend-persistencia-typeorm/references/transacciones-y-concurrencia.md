@@ -19,11 +19,16 @@ await this.transactions.runInTransaction(async () => {
   const account = await this.accounts.getById(command.accountId);
   account.withdraw(command.amount, this.clock.now());
   await this.accounts.save(account);
-  await this.outbox.add(account.pullDomainEvents());
+  for (const event of account.pullDomainEvents()) {
+    await this.bus.publish(
+      AccountWithdrawnV1,
+      this.integrationEvents.from(event),
+    );
+  }
 });
 ```
 
-Si la función lanza, se deshace todo y el error sale tal cual. Si ya hay una transacción abierta en la misma base, se une a ella.
+`MessageBus.publish` escribe en el outbox dentro de la misma transacción y falla si no hay una abierta. Si la función lanza, se deshace todo y el error sale tal cual. Si ya hay una transacción abierta en la misma base, se une a ella.
 
 ## EntityManager y QueryRunner
 

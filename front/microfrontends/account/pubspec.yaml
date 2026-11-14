@@ -5,7 +5,6 @@ version: 0.0.1
 
 environment:
   sdk: ^3.14.0
-  flutter: ">=1.17.0"
 
 dependencies:
   api:
@@ -16,11 +15,11 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  go_router: ^18.1.4
+  go_router: 18.1.4
   i18n:
     path: ../../packages/i18n
-  intl: ^0.20.3
-  material_ui: ^1.11.0
+  intl: 0.20.3
+  material_ui: 1.11.0
   shell_core:
     path: ../../packages/shell_core
   ui:
@@ -31,7 +30,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: 6.0.0
 
 flutter:
   generate: true

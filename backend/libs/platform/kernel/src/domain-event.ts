@@ -1,4 +1,4 @@
-import type { Id } from './id.js';
+import type { Id } from './ids/id.js';
 
 /** Hecho ocurrido en el dominio, emitido por un agregado. */
 export interface DomainEvent<TType extends string = string> {

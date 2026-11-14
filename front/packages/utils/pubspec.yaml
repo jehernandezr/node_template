@@ -9,10 +9,10 @@ environment:
 dependencies:
   contracts:
     path: ../contracts
-  intl: ^0.20.3
+  intl: 0.20.3
 
 dev_dependencies:
-  lints: ^6.0.0
-  test: ^1.32.0
+  lints: 6.1.0
+  test: 1.32.0
 
 resolution: workspace

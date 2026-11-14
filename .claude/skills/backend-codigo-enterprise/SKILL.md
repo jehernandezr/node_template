@@ -27,10 +27,10 @@ El backend es software enterprise, no scripting. Todo código nuevo, y todo cód
 
 - Cada pieza con comportamiento es una clase con una sola responsabilidad. Nada de archivos con funciones sueltas que se llaman entre sí.
 - Los colaboradores llegan por el constructor como `private readonly`, tipados con el puerto, nunca con la implementación concreta.
-- Composición antes que herencia. La herencia se reserva para jerarquías de errores (`DomainError`), `AggregateRoot`, `ValueObject` y bases muy estables (`BaseRepository`).
+- Composición antes que herencia. La herencia se reserva para jerarquías de errores (`DomainError`), `AggregateRoot`, `ValueObject` y bases muy estables (`ShardedRepository`).
 - Nada de `new` de dependencias dentro de una clase de negocio. Las instancias se arman en la raíz de composición: el módulo de NestJS de cada servicio (ver `backend-nestjs-composicion`).
 - Nada de singletons globales, registros mutables a nivel de módulo ni estado en variables de archivo. Nada de efectos al importar un archivo.
-- Funciones sueltas solo para utilidades puras sin dependencias (una conversión de formato). Si necesita configuración, reloj, logger o I/O, es una clase.
+- Funciones sueltas solo para utilidades puras sin dependencias (una conversión de formato) y para la lista declarada de `check-structure.mjs` (fábricas `define*` de contracts, esquemas de `env.ts` y `secret()`, `main()` de las herramientas). Si necesita configuración, reloj, logger o I/O, es una clase.
 - El tiempo y los ids se inyectan (`Clock`, `IdGenerator`). Nunca `Date.now()`, `new Date()` ni `randomUUID()` dentro del negocio.
 
 ```ts
@@ -73,6 +73,9 @@ export async function signIn(email: string, password: string) {
 - Enums para eventos, errores, permisos, colas, jobs y estados. Nunca literales de texto sueltos.
 - Una constante numérica con significado tiene nombre y un porqué (`MAX_SIGN_IN_ATTEMPTS`), nunca un número mágico.
 - Comentarios solo para el porqué. Nada que narre el código ni referencias al proceso (planes, olas, auditorías, IDs de tareas).
+- Los comentarios del backend van en español, como las skills. Un archivo con comentarios en inglés se pasa a español cuando se toca. Los identificadores (clases, métodos, enums) siguen en inglés.
+- Cada archivo lleva sufijo de rol y contiene una sola clase pública. Nada de `util.ts`, `types.ts`, `limits.ts` ni `model.ts`.
+- Las clases de error terminan en `Error` (`InvalidParametersError`, no `InvalidParameters`).
 - No se atrapa un error para callarlo. Se atrapa para traducirlo, compensar o reintentar (ver `backend-errores`).
 
 ## TypeScript

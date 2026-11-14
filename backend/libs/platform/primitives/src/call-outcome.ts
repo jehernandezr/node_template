@@ -1,5 +1,5 @@
-import { DomainError } from '@platform/kernel';
-import { classifyFailure, FailureKind } from './failure.js';
+import { CallOutcomeFactory } from './call-outcome-factory.js';
+import { FailureClassifier } from './failure/failure-classifier.js';
 
 /** Discriminante de `CallOutcome`. */
 export enum CallOutcomeKind {
@@ -98,55 +98,12 @@ function uncertain(reason: string, cause?: unknown): UncertainOutcome {
     : { kind: CallOutcomeKind.Uncertain, reason, cause };
 }
 
-/** Motivo legible sin copiar el mensaje del error, que puede traer datos de entrada. */
-function reasonOf(error: unknown): string {
-  if (typeof error === 'object' && error !== null) {
-    const { code, name } = error as { code?: unknown; name?: unknown };
-    if (typeof code === 'string' && code !== '') {
-      return code;
-    }
-    if (typeof name === 'string' && name !== '') {
-      return name;
-    }
-  }
-  return typeof error;
-}
-
 /**
- * Convierte un valor lanzado en un `CallOutcome` con `classifyFailure`:
- * - `DomainError` → `business-error` con su código, mensaje y detalles; si es
- *   `retryable`, `transient-failure` (no final, libera el claim de idempotencia).
- * - `Transient` → `transient-failure`.
- * - `Timeout` y `Cancelled` → `uncertain`.
- * - `ProtocolViolation` y el resto de `Permanent` → `protocol-violation`.
+ * Convierte un valor lanzado en un `CallOutcome` con el clasificador por defecto.
+ * @deprecated Usa `CallOutcomeFactory`, que recibe el `FailureClassifier` con las reglas de cada adaptador.
  */
 function fromError(error: unknown): CallOutcome<never> {
-  if (error instanceof DomainError && error.retryable) {
-    // Un conflicto reintentable no es un resultado final: no se guarda para idempotencia.
-    return transientFailure(error.code, { cause: error });
-  }
-  if (error instanceof DomainError) {
-    return businessError(error.code, {
-      message: error.message,
-      ...(error.details === undefined ? {} : { details: error.details }),
-    });
-  }
-  const reason = reasonOf(error);
-  switch (classifyFailure(error)) {
-    case FailureKind.Transient:
-      return transientFailure(reason, { cause: error });
-    case FailureKind.Timeout:
-    case FailureKind.Cancelled:
-      return uncertain(reason, error);
-    case FailureKind.ProtocolViolation:
-    case FailureKind.Permanent: {
-      const code = (error as { code?: unknown } | null)?.code;
-      return protocolViolation(
-        reason,
-        typeof code === 'string' ? code : undefined,
-      );
-    }
-  }
+  return new CallOutcomeFactory(new FailureClassifier()).fromError(error);
 }
 
 /** Constructores de `CallOutcome`. */

@@ -4,7 +4,7 @@ import {
   InvalidArgumentError,
   NonJsonValueError,
   StaleClaimError,
-} from '../errors.js';
+} from '../index.js';
 import {
   classifyFailure,
   DEFAULT_RETRY_AFTER_MAX_MS,
@@ -113,21 +113,20 @@ describe('classifyFailure', () => {
     expect(classifyFailure({ retryable: true })).toBe(FailureKind.Transient);
   });
 
-  it('follows the cause of a PlatformError that is not retryable', () => {
+  it('does not follow the cause of a PlatformError: it carries its own failureKind', () => {
     class PersistenceError extends PlatformError {
       override readonly code = 'PLATFORM.TEST.PERSISTENCE';
-      constructor(cause: unknown, retryable?: boolean) {
-        super('Persistence failed', { cause, retryable });
+      constructor(cause: unknown, failureKind?: FailureKind) {
+        super('Persistence failed', { cause, failureKind });
       }
     }
     expect(classifyFailure(new PersistenceError(withCode('ECONNRESET')))).toBe(
-      FailureKind.Transient,
-    );
-    expect(classifyFailure(new PersistenceError(new Error('boom')))).toBe(
       FailureKind.Permanent,
     );
     expect(
-      classifyFailure(new PersistenceError(withCode('ECONNRESET'), false)),
+      classifyFailure(
+        new PersistenceError(withCode('ECONNRESET'), FailureKind.Transient),
+      ),
     ).toBe(FailureKind.Transient);
   });
 

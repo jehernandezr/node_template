@@ -36,11 +36,11 @@ Se construye con `new` en la prueba. Sin NestJS: el caso de uso no lo necesita.
 
 ```ts
 const users = new InMemoryUserRepository();
-const outbox = new RecordingOutbox();
+const bus = new InMemoryBus();
 const useCase = new RegisterUserUseCase(
   users,
   new InlineTransactionManager(),
-  outbox,
+  bus,
   new SequentialIdGenerator(),
   new FixedClock(new Date('2026-01-01T00:00:00Z')),
 );
@@ -52,9 +52,9 @@ Para verificar el cableado (tokens, exports) y reemplazar un adaptador por un fa
 
 ```ts
 const moduleRef = await Test.createTestingModule({ imports: [UsersModule] })
-  .overrideProvider(PASSWORD_HASHER)
+  .overrideProvider(PasswordHasher)
   .useClass(FastTestHasher)
-  .overrideProvider(CLOCK)
+  .overrideProvider(Clock)
   .useValue(new FixedClock(now))
   .compile();
 
@@ -64,6 +64,7 @@ const useCase = moduleRef.get(SignInUseCase);
 - Guards globales con `APP_GUARD` se registran con `useExisting` para poder reemplazarlos con `overrideProvider`.
 - Un `useMocker` automático oculta dependencias faltantes: se evita en pruebas de cableado.
 - Un `app.close()` en `afterAll`, para liberar pools y conexiones.
+- Los dobles de las librerías de plataforma se toman de `@platform/<lib>/test-utils`.
 
 ## Componente con supertest
 

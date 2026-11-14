@@ -1,7 +1,7 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline } from '../deadline.js';
-import { DeadlineExceededError, InvalidArgumentError } from '../errors.js';
+import { DeadlineExceededError, InvalidArgumentError } from '../index.js';
 
 const START = new Date('2026-11-12T10:00:00.000Z');
 
@@ -170,6 +170,161 @@ describe('Deadline', () => {
       } finally {
         spy.mockRestore();
       }
+    });
+  });
+});
+
+describe('Deadline waiting', () => {
+  const clock = new FixedClock(START);
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('new Deadline(budget, clock) is now plus the budget', () => {
+    expect(new Deadline(500, clock).remainingMs()).toBe(500);
+  });
+
+  describe('wait', () => {
+    it('resolves with the promise value', async () => {
+      await expect(
+        Deadline.after(1_000, clock).wait(Promise.resolve('ok')),
+      ).resolves.toBe('ok');
+    });
+
+    it('propagates the rejection of the promise', async () => {
+      await expect(
+        Deadline.after(1_000, clock).wait(Promise.reject(new Error('boom'))),
+      ).rejects.toThrow('boom');
+    });
+
+    it('rejects with DeadlineExceededError when the time runs out', async () => {
+      const pending = Deadline.after(1_000, clock).wait(
+        new Promise(() => undefined),
+      );
+      const assertion = expect(pending).rejects.toBeInstanceOf(
+        DeadlineExceededError,
+      );
+      jest.advanceTimersByTime(1_000);
+      await assertion;
+    });
+
+    it('rejects at once when the deadline already expired', async () => {
+      const expired = Deadline.at(START.getTime() - 1, clock);
+      await expect(
+        expired.wait(Promise.reject(new Error('ignored'))),
+      ).rejects.toBeInstanceOf(DeadlineExceededError);
+    });
+
+    it('rejects with the reason of the signal', async () => {
+      const controller = new AbortController();
+      const pending = Deadline.after(1_000, clock).wait(
+        new Promise(() => undefined),
+        controller.signal,
+      );
+      controller.abort(new Error('stop'));
+      await expect(pending).rejects.toThrow('stop');
+    });
+
+    it('rejects at once when the signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort(new Error('stop'));
+      await expect(
+        Deadline.after(1_000, clock).wait(
+          Promise.resolve(1),
+          controller.signal,
+        ),
+      ).rejects.toThrow('stop');
+    });
+  });
+
+  describe('race', () => {
+    it('gives the work a live signal and returns its result', async () => {
+      const result = await Deadline.after(1_000, clock).race((signal) =>
+        Promise.resolve(signal.aborted),
+      );
+      expect(result).toBe(false);
+    });
+
+    it('aborts the work signal when the time runs out', async () => {
+      let seen: AbortSignal | undefined;
+      const pending = Deadline.after(1_000, clock).race((signal) => {
+        seen = signal;
+        return new Promise(() => undefined);
+      });
+      const assertion = expect(pending).rejects.toBeInstanceOf(
+        DeadlineExceededError,
+      );
+      await jest.advanceTimersByTimeAsync(1_000);
+      await assertion;
+      expect(seen?.aborted).toBe(true);
+    });
+
+    it('aborts the work signal when the caller aborts', async () => {
+      const controller = new AbortController();
+      let seen: AbortSignal | undefined;
+      const pending = Deadline.after(1_000, clock).race((signal) => {
+        seen = signal;
+        return new Promise(() => undefined);
+      }, controller.signal);
+      await Promise.resolve();
+      controller.abort(new Error('stop'));
+      await expect(pending).rejects.toThrow('stop');
+      expect(seen?.aborted).toBe(true);
+    });
+
+    it('does not start the work when already expired or aborted', async () => {
+      const work = jest.fn(() => Promise.resolve(1));
+      await expect(
+        Deadline.at(START.getTime() - 1, clock).race(work),
+      ).rejects.toBeInstanceOf(DeadlineExceededError);
+      const controller = new AbortController();
+      controller.abort(new Error('stop'));
+      await expect(
+        Deadline.after(1_000, clock).race(work, controller.signal),
+      ).rejects.toThrow('stop');
+      expect(work).not.toHaveBeenCalled();
+    });
+
+    it('propagates a failure of the work', async () => {
+      await expect(
+        Deadline.after(1_000, clock).race(() =>
+          Promise.reject(new Error('boom')),
+        ),
+      ).rejects.toThrow('boom');
+    });
+  });
+
+  describe('sleep', () => {
+    it('resolves after the given time', async () => {
+      const sleeping = Deadline.after(5_000, clock).sleep(100);
+      await jest.advanceTimersByTimeAsync(100);
+      await expect(sleeping).resolves.toBeUndefined();
+    });
+
+    it('rejects when the deadline comes first', async () => {
+      const sleeping = Deadline.after(50, clock).sleep(100);
+      const assertion = expect(sleeping).rejects.toBeInstanceOf(
+        DeadlineExceededError,
+      );
+      await jest.advanceTimersByTimeAsync(50);
+      await assertion;
+    });
+
+    it('rejects when the signal aborts', async () => {
+      const controller = new AbortController();
+      const sleeping = Deadline.after(5_000, clock).sleep(
+        100,
+        controller.signal,
+      );
+      await Promise.resolve();
+      controller.abort(new Error('stop'));
+      await expect(sleeping).rejects.toThrow('stop');
+    });
+
+    it('rejects an invalid duration', () => {
+      expect(() => Deadline.after(5_000, clock).sleep(-1)).toThrow(
+        InvalidArgumentError,
+      );
     });
   });
 });

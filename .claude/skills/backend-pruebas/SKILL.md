@@ -13,9 +13,10 @@ Se prueba comportamiento observable por capas, con el costo mínimo que da confi
 ## Ubicación
 
 - `src/<carpeta>/__tests__/<archivo>.spec.ts` para unitarias y `<archivo>.int-spec.ts` para integración. Ver `backend-estructura`.
-- Contrato: `__tests__/<archivo>.contract-spec.ts`.
+- Contrato de un puerto: la prueba compartida `run<Puerto>Contract(factory)` vive en `src/__tests__/utils/`, sale por `@platform/<lib>/test-utils` y la llaman, desde su propio `.spec.ts` o `.int-spec.ts`, el doble en memoria y el adaptador real. Las pruebas de esquemas zod son `.spec.ts` normales.
+- Las pruebas de integración terminan en `.int-spec.ts`. Un archivo `*.integration.spec.ts` correría como unitaria y lo rechazan `check-structure.mjs` y el lint.
 - End to end de una app: `backend/apps/<app>/e2e/<flujo>.e2e-spec.ts`.
-- Utilitarios compartidos en `__tests__/utils/` (de la carpeta o, si los usan varias, de `src/__tests__/utils/`). Se exponen a otras librerías con el alias `@platform/<lib>/test-utils`. Nunca una carpeta `testing/` aparte.
+- Utilitarios compartidos en `__tests__/utils/` (de la carpeta o, si los usan varias, de `src/__tests__/utils/`). Se exponen a otras librerías con el alias `@platform/<lib>/test-utils`. Nunca una carpeta `testing/` aparte. Los dobles de un puerto no se exportan desde el `index.ts` público: salen solo por `@platform/<lib>/test-utils`.
 
 ## Las pruebas también son código
 
@@ -73,13 +74,32 @@ describe('SignInUseCase', () => {
 });
 ```
 
+- Las tablas de casos van con `it.each`, no con bucles ni `if`.
+- Cada archivo de prueba corresponde a una clase. Si prueba varias, se parte.
+
 ## Dobles
 
-- Son clases que implementan el puerto: `InMemoryUserRepository`, `FixedClock`, `FakeRateLimiter`, `RecordingOutbox`. Se prefiere un fake con comportamiento a un mock.
-- `jest.fn()` solo para verificar una llamada puntual que es un requisito (se envió el correo). No se verifica el orden ni el número de llamadas internas.
+- Son clases que implementan el puerto: `InMemoryUserRepository`, `FixedClock`, `FakeRateLimiter`, `InMemoryBus`. Se prefiere un fake con comportamiento a un mock.
+- Se verifica el resultado externo, no el número ni el orden de las llamadas internas. Si la cantidad es un requisito (la deduplicación de cargas de `PlacementLoader`), se usa un fake con comportamiento y un contador público, no `jest.fn` con `toHaveBeenCalledTimes`.
 - Un fake en memoria debe cumplir la misma prueba de contrato que el adaptador real (`runUserRepositoryContract(factory)`), para que no diverjan.
 - Servicios externos HTTP: interceptor (`nock`, MSW) con respuestas lentas, 503 y timeouts.
 - No se mockea lo que no es tuyo cuando se puede levantar real (PostgreSQL, Valkey, LocalStack).
+- La aleatoriedad, los ids y el tiempo se controlan con dobles de `RandomSource`, `IdGenerator` (`SequentialIdGenerator`) y `Clock` (`FixedClock`). Nada de `Math.random` ni `Date.now` en el código bajo prueba.
+
+## Dobles que se quedan en producción
+
+Son un modo de ejecución y no un doble, así que siguen en el índice público: `InMemoryCache` (único modo sin Valkey), `InMemoryRateLimiter` (lo usa `DegradingRateLimiter`), `NoopMetrics`, `InProcessJobLock`, `NullRoutingCache` e `InProcessDirectoryChannel`. Los demás dobles van a `test-utils`:
+
+| Doble                                                                 | Sale por                             | Contrato                                                     |
+| --------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------ |
+| `InMemoryIdempotencyStore`                                            | `@platform/kernel/test-utils`        | `runIdempotencyStoreContract`                                |
+| `InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore` | `@platform/messaging/test-utils`     | `runOutboxStoreContract`, `runProcessedMessageStoreContract` |
+| `InMemoryProcessedOperationStore`                                     | `@platform/internal-api/test-utils`  | `runIdempotencyStoreContract`                                |
+| `InMemorySagaStore`                                                   | `@platform/saga/test-utils`          | `runSagaStoreContract`                                       |
+| `InMemoryDirectoryStore`                                              | `@platform/sharding/test-utils`      | `runDirectoryStoreContract`                                  |
+| `InMemoryRoutingCache`                                                | `@platform/sharding/test-utils`      | `runRoutingCacheContract`                                    |
+| `InMemoryMetrics`                                                     | `@platform/observability/test-utils` | ninguno                                                      |
+| `FakeSqsClient`, `FakeSnsClient`                                      | `@platform/adapters-aws/test-utils`  | ninguno                                                      |
 
 ## Tiempo y asincronía
 
@@ -89,7 +109,25 @@ describe('SignInUseCase', () => {
 
 ## Integración
 
-- Contra servicios reales con Testcontainers (PostgreSQL, Valkey, LocalStack). Se saltan sin Docker en local y fallan sin Docker con `CI=true`.
+- Contra servicios reales con Testcontainers (PostgreSQL, Valkey, LocalStack). `ContainerRuntime` de `@platform/kernel/test-utils` decide si hay Docker según la variable `INTEGRATION_TESTS`: `skip` (por defecto fuera de CI, la suite se omite sin Docker) o `require` (CI, falla sin Docker). `describeIfAvailable(name, body)` envuelve cada suite de integración. No hay banderas por servicio. `pg-mem` no se usa: la capa TypeORM se prueba con Testcontainers.
+
+```ts
+export enum IntegrationMode {
+  Skip = 'skip',
+  Require = 'require',
+}
+
+const runtime = new ContainerRuntime(process.env);
+
+runtime.describeIfAvailable('TypeOrmOutboxStore', () => {
+  it('appends a message inside the transaction', async () => {
+    /* ... */
+  });
+});
+```
+
+En CI: `INTEGRATION_TESTS=require pnpm nx test <proyecto>`.
+
 - Los contenedores arrancan una vez por suite (`beforeAll`) y las pruebas aíslan sus datos con tenants o ids propios, o con transacciones que se deshacen.
 - Las migraciones de TypeORM corren de verdad en la base de prueba, y una prueba verifica que no quedan cambios pendientes (`migration:generate` sin diferencias).
 - Cada suite crea sus datos y no asume datos previos. Se limpia después de la suite, no entre pruebas.
@@ -109,9 +147,11 @@ En una prueba de componente se piensa en cinco resultados: la respuesta, el esta
 
 ```
 - [ ] Agregado o valor nuevo: invariantes y rechazos
-- [ ] Caso de uso nuevo: camino feliz, cada error de dominio, eventos al outbox
+- [ ] Caso de uso nuevo: camino feliz, cada error de dominio, eventos publicados
 - [ ] Repositorio o migración nueva: integración con PostgreSQL real
 - [ ] Contrato nuevo: válido, inválido y compatibilidad hacia atrás
 - [ ] Consumidor nuevo: duplicado, fuera de orden, mensaje inválido
 - [ ] Endpoint nuevo: sin autenticar, sin permiso, otro tenant, entrada inválida
+- [ ] Puerto nuevo: prueba de contrato run<Puerto>Contract contra el doble y contra el adaptador real
+- [ ] Job nuevo: una prueba que llama a run() directamente
 ```

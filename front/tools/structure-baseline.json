@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "violations": {
+    "front/microfrontends/account/lib/src/data/fake_account_repository.dart": {
+      "datetime-now": 7
+    },
+    "front/microfrontends/account/lib/src/screens/account_overview_screen.dart": {
+      "widget-repository": 2
+    },
+    "front/microfrontends/account/lib/src/screens/agreements_screen.dart": {
+      "l10n-interpolation": 1,
+      "text-literal": 1,
+      "widget-repository": 3
+    },
+    "front/microfrontends/account/lib/src/screens/devices_screen.dart": {
+      "widget-repository": 3
+    },
+    "front/microfrontends/account/lib/src/screens/security_screen.dart": {
+      "widget-repository": 3
+    },
+    "front/microfrontends/account/lib/src/screens/sessions_screen.dart": {
+      "physical-direction": 1,
+      "widget-repository": 3
+    },
+    "front/microfrontends/assistant/lib/src/screens/assistant_list_screen.dart": {
+      "widget-repository": 2
+    },
+    "front/microfrontends/backoffice/lib/src/screens/dlq_screen.dart": {
+      "l10n-interpolation": 4,
+      "text-literal": 4,
+      "widget-repository": 4
+    },
+    "front/microfrontends/backoffice/lib/src/screens/overview_screen.dart": {
+      "widget-repository": 2
+    },
+    "front/microfrontends/backoffice/lib/src/screens/saga_detail_screen.dart": {
+      "l10n-interpolation": 6,
+      "text-literal": 6,
+      "widget-repository": 3
+    },
+    "front/microfrontends/backoffice/lib/src/screens/sagas_screen.dart": {
+      "l10n-interpolation": 1,
+      "physical-direction": 3,
+      "text-literal": 3,
+      "widget-repository": 2
+    },
+    "front/microfrontends/backoffice/lib/src/screens/tenant_detail_screen.dart": {
+      "text-literal": 1,
+      "widget-repository": 2
+    },
+    "front/microfrontends/backoffice/lib/src/screens/tenants_screen.dart": {
+      "l10n-interpolation": 2,
+      "text-literal": 3,
+      "widget-repository": 1
+    },
+    "front/microfrontends/backoffice/lib/src/screens/widgets.dart": {
+      "l10n-interpolation": 3,
+      "text-literal": 3
+    },
+    "front/microfrontends/billing/lib/src/screens/billing_plan_screen.dart": {
+      "l10n-interpolation": 1,
+      "text-literal": 2,
+      "widget-repository": 2
+    },
+    "front/microfrontends/billing/lib/src/screens/invoice_detail_screen.dart": {
+      "l10n-interpolation": 1,
+      "text-literal": 1,
+      "widget-repository": 1
+    },
+    "front/microfrontends/billing/lib/src/screens/invoices_screen.dart": {
+      "widget-repository": 1
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/billing_colors.dart": {
+      "hardcoded-color": 5
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/change_plan_sheet.dart": {
+      "physical-direction": 1,
+      "text-literal": 1,
+      "widget-repository": 2
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/status_chip.dart": {
+      "physical-direction": 1
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/usage_meter.dart": {
+      "physical-direction": 1,
+      "text-literal": 1
+    },
+    "front/microfrontends/notifications/lib/src/screens/inbox_screen.dart": {
+      "widget-repository": 4
+    },
+    "front/microfrontends/notifications/lib/src/screens/preferences_screen.dart": {
+      "widget-repository": 2
+    },
+    "front/microfrontends/tasks/lib/src/data/fake_tasks_repository.dart": {
+      "datetime-now": 1
+    },
+    "front/microfrontends/tasks/lib/src/screens/task_detail_view.dart": {
+      "widget-repository": 3
+    },
+    "front/microfrontends/tasks/lib/src/screens/task_form_screen.dart": {
+      "widget-repository": 3
+    },
+    "front/microfrontends/tasks/lib/src/screens/tasks_list_screen.dart": {
+      "physical-direction": 2
+    },
+    "front/microfrontends/verifier/lib/src/screens/verifier_screen.dart": {
+      "widget-repository": 3
+    },
+    "front/packages/auth/lib/src/session_manager.dart": {
+      "catch-without-on": 1
+    },
+    "front/packages/shell_core/lib/src/access_rule.dart": {
+      "datetime-now": 3
+    },
+    "front/packages/shell_core/lib/src/microfrontend_scope.dart": {
+      "catch-without-on": 1
+    },
+    "front/packages/shell_core/lib/src/shell_runtime.dart": {
+      "catch-without-on": 2
+    },
+    "front/packages/shell_host/lib/src/shell_host.dart": {
+      "catch-without-on": 1
+    },
+    "front/packages/ui/lib/src/components/async_value_view.dart": {
+      "catch-without-on": 1
+    },
+    "front/packages/ui/lib/src/components/error_view.dart": {
+      "l10n-interpolation": 2
+    }
+  }
+}

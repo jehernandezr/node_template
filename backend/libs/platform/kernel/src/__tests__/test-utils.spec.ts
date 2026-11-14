@@ -1,4 +1,4 @@
-import { Id } from '../id.js';
+import { Id } from '../ids/id.js';
 import * as kernel from '../index.js';
 import { FixedClock } from './utils/fixed-clock.js';
 import * as testing from './utils/index.js';

@@ -2,15 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:contracts/contracts.dart';
+import 'package:utils/utils.dart';
 
 import 'auth_errors.dart';
 import 'ports.dart';
 
 /// Estado observable de la sesión.
 enum AuthState { signedOut, signedIn, refreshing }
-
-/// Fuente de tiempo inyectable para pruebas.
-typedef Clock = DateTime Function();
 
 /// Mantiene la sesión: guarda el session token, refresca el access token antes
 /// de que venza y cierra la sesión cuando el servidor la invalida.
@@ -31,7 +29,7 @@ class SessionManager {
     required this._repository,
     required this._tokenStore,
     this._deviceKeys,
-    this._clock = DateTime.now,
+    this._clock = systemClock,
     this.refreshLead = const Duration(minutes: 2),
     this.invalidationCodes = defaultInvalidationCodes,
   });

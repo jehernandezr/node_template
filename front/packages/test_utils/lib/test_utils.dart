@@ -5,4 +5,5 @@ library;
 export 'src/auth/fake_auth_repository.dart';
 export 'src/auth/fake_device_key_port.dart';
 export 'src/auth/fake_token_store.dart';
+export 'src/clock/fake_clock.dart';
 export 'src/shell/deferred_libraries.dart';

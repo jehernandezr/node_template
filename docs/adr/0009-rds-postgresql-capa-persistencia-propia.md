@@ -3,6 +3,9 @@
 - Estado: Reemplazada por [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)
 - Fecha: 2026-11-11
 - Revisión: 2026-11-14 (un solo camino sobre `pg`, sin TypeORM)
+- Reemplazada: 2026-11-14 por el [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) (persistencia sobre TypeORM)
+
+Este ADR se conserva como registro histórico. La capa propia sobre `pg` y las migraciones en SQL a mano quedan reemplazadas por TypeORM y su CLI. Se mantienen de este ADR la base RDS PostgreSQL con RDS Proxy y una réplica de lectura, RLS, particiones por rango sobre el UUIDv7, auditoría con triggers y la búsqueda vectorial en la misma base.
 
 ## Contexto
 

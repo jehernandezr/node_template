@@ -45,3 +45,6 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0022   | [Verificación de tokens y estado de revocación compartido](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) | Aceptada                 |
 | 0023   | [Enrutamiento de los datos de identity entre shards](0023-enrutamiento-de-datos-de-identity.md)                              | Aceptada                 |
 | 0024   | [Persistencia sobre TypeORM con sharding y sagas persistentes](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)   | Aceptada                 |
+| 0025   | [Capa NestJS por sub-entrada y puertos como clases abstractas](0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md)     | Aceptada                 |
+| 0026   | [Jobs programados: ScheduledJob, JobLock y @platform/scheduling](0026-jobs-programados-scheduledjob-y-joblock.md)            | Aceptada                 |
+| 0027   | [Patrones de pantalla y pruebas compartidas del front](0027-patrones-de-pantalla-y-pruebas-del-front.md)                     | Aceptada                 |

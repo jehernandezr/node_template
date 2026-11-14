@@ -20,7 +20,6 @@ import { defineOperation } from '../define-operation.js';
 import { defineRoute, usesQuery } from '../define-route.js';
 import { defineServiceContract } from '../define-service-contract.js';
 import { defineErrorCatalog } from '../error-catalog.js';
-import { decodeQuery } from '../query-params.js';
 
 const ItemRequest = z.strictObject({ itemId: IdSchema, name: z.string() });
 
@@ -190,61 +189,6 @@ describe('defineRoute', () => {
         deprecated: { since: '2027-05-01', sunset: '2027-05-01' },
       }),
     ).toThrow(/posterior/);
-  });
-});
-
-describe('decodeQuery', () => {
-  const route = defineRoute({
-    id: 'sample.items.search',
-    method: HttpMethod.Get,
-    path: '/v1/items',
-    request: z.strictObject({
-      limit: z.int().min(1).max(100).optional(),
-      archived: z.boolean().optional(),
-      ratio: z.number().optional(),
-      tags: z.array(z.string()).optional(),
-      sizes: z.array(z.int()).optional(),
-      name: z.string().optional(),
-    }),
-    access: Access.public(),
-    description: 'Busca.',
-  });
-
-  it('converts the query text to the contract types', () => {
-    const decoded = decodeQuery(route, {
-      limit: '20',
-      archived: 'false',
-      ratio: '-1.5e2',
-      tags: 'a',
-      sizes: ['1', '2'],
-      name: '42',
-      ignored: undefined,
-    });
-    expect(decoded).toEqual({
-      limit: 20,
-      archived: false,
-      ratio: -150,
-      tags: ['a'],
-      sizes: [1, 2],
-      name: '42',
-    });
-    expect(route.request.safeParse(decoded).success).toBe(true);
-  });
-
-  it('keeps what it cannot convert so validation reports the field', () => {
-    const decoded = decodeQuery(route, {
-      limit: '2x',
-      archived: 'yes',
-      name: ['a', 'b'],
-      extra: '1',
-    });
-    expect(decoded).toEqual({
-      limit: '2x',
-      archived: 'yes',
-      name: ['a', 'b'],
-      extra: '1',
-    });
-    expect(route.request.safeParse(decoded).success).toBe(false);
   });
 });
 

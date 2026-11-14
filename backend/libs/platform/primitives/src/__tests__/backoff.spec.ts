@@ -7,7 +7,7 @@ import {
   type BackoffOptions,
 } from '../backoff.js';
 import { PlatformErrorCode } from '@contracts/platform';
-import { InvalidArgumentError } from '../errors.js';
+import { InvalidArgumentError } from '../index.js';
 
 const base = { baseMs: 100, maxMs: 1_000 } as const;
 

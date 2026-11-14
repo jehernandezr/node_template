@@ -6,8 +6,9 @@ import { nxPreset } from '@nx/jest/preset';
 export default {
   ...nxPreset,
   // Las pruebas viven en la carpeta __tests__ de la carpeta que prueban: un .spec.ts
-  // junto al código no se ejecuta. Las de integración terminan en .int-spec.ts.
-  testMatch: ['<rootDir>/src/**/__tests__/**/*.?(int-)spec.ts'],
+  // junto al código no se ejecuta. Las de integración terminan en .int-spec.ts y las de
+  // contrato de un puerto en .contract-spec.ts.
+  testMatch: ['<rootDir>/src/**/__tests__/**/*.?(int-|contract-)spec.ts'],
   // Los utilitarios de prueba (__tests__/utils) no son código de producción y no cuentan en la cobertura.
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
   coverageThreshold: {

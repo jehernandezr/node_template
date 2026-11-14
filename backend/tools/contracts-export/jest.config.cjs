@@ -17,4 +17,13 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
+  // main.ts solo compone, y el cargador de módulos y prettier usan import() dinámico, que jest
+  // no ejecuta sin --experimental-vm-modules. Los cubre contracts-export:check.
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/__tests__/',
+    '/main\\.ts$',
+    '/node-module-loader\\.ts$',
+    '/prettier-artifact-renderer\\.ts$',
+  ],
 };

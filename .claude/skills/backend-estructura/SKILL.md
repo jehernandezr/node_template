@@ -61,6 +61,16 @@ backend/libs/platform/kernel/
             └── domain-error.spec.ts
 ```
 
+## NestJS solo en `src/nest/`
+
+- El núcleo de una librería de `libs/platform`, `libs/contracts` y `libs/shared` no importa `@nestjs/*` ni la sub-entrada de otra librería (`@platform/<lib>/nest`). El cableado vive en `src/nest/`, que expone el alias `@platform/<lib>/nest`.
+- Lo comprueban la regla de ESLint `layout/no-nest-outside-nest-folder` y `check-structure.mjs`. Las apps y los módulos de servicio (`presentation/`) usan NestJS con libertad.
+
+## Funciones exportadas
+
+- El comportamiento va en clases. `check-structure.mjs` solo admite funciones exportadas en `utils/`, en migraciones, en `index.ts`, en archivos de configuración y en su lista declarada de excepciones (`FUNCTION_EXCEPTIONS`): las fábricas `define*` de `contracts/*/src/kit`, los esquemas de `env.ts` y `secret()` de config y el `main()` de las herramientas.
+- Una excepción nueva se agrega a esa lista con su motivo y una prueba en `check-structure.test.mjs`.
+
 ## Pruebas
 
 - Cada carpeta de código tiene su carpeta `__tests__/` con las pruebas de esa carpeta. Ejemplo: `users/src/modules/sign-in/application/__tests__/`.
@@ -69,6 +79,7 @@ backend/libs/platform/kernel/
   - `__tests__/utils/` de una carpeta, si solo lo usan las pruebas de esa carpeta;
   - `src/__tests__/utils/` del proyecto, si lo usan varias carpetas. Si otra librería lo necesita, se expone por el alias `@platform/<lib>/test-utils`.
 - Las pruebas de un utilitario van en el `__tests__/` que lo contiene (por ejemplo `src/__tests__/fake-rate-limiter.spec.ts`), no en un `__tests__` anidado dentro de `utils/`.
+- Las pruebas de integración terminan en `.int-spec.ts`. `check-structure.mjs` rechaza `*.integration.spec.ts`, que correría como unitaria.
 - El código de producción nunca importa nada de `__tests__/`.
 - Las pruebas end to end de una app viven en `backend/apps/<app>/e2e/`.
 - Detalle en `backend-pruebas`.

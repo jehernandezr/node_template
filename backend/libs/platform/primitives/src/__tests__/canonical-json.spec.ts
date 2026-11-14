@@ -6,7 +6,7 @@ import {
   stableDigest,
 } from '../canonical-json.js';
 import { PlatformErrorCode } from '@contracts/platform';
-import { NonJsonValueError } from '../errors.js';
+import { NonJsonValueError } from '../index.js';
 
 describe('canonicalJson', () => {
   it('serializes primitives like JSON', () => {

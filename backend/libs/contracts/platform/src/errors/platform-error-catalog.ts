@@ -1,28 +1,8 @@
-import { ErrorAudience } from '../enums/error-audience.enum.js';
 import { PlatformErrorCode as C } from '../enums/platform-error-code.enum.js';
-import { defineErrorCatalog, type ErrorSpec } from '../kit/error-catalog.js';
+import { defineErrorCatalog, ErrorSpecs } from '../kit/error-catalog.js';
 
-const pub = (
-  httpStatus: number,
-  retryable: boolean,
-  description: string,
-): ErrorSpec => ({
-  httpStatus,
-  retryable,
-  audience: ErrorAudience.Public,
-  description,
-});
-
-const internal = (
-  httpStatus: number,
-  retryable: boolean,
-  description: string,
-): ErrorSpec => ({
-  httpStatus,
-  retryable,
-  audience: ErrorAudience.Internal,
-  description,
-});
+const pub = ErrorSpecs.pub;
+const internal = ErrorSpecs.internal;
 
 /**
  * Catálogo de los códigos de plataforma. Los públicos tienen mensaje en el ARB

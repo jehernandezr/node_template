@@ -1,11 +1,11 @@
 import {
   AccessKind,
-  decodeQuery,
   ErrorAudience,
   HttpMethod,
   MessageKind,
   messageKeyFor,
   PlatformErrorCode,
+  QueryParamsCodec,
   validateContract,
 } from '@contracts/platform';
 import { identityContract } from '../contract.js';
@@ -67,19 +67,23 @@ describe('identity access enums', () => {
 });
 
 describe('identityErrorCatalog', () => {
-  it('has one entry per code with the ARB message key', () => {
+  it('has one entry per code and marks UserNotFound as internal', () => {
     expect(identityErrorCatalog.map((e) => e.code)).toEqual(
       Object.values(IdentityErrorCode),
     );
-    for (const entry of identityErrorCatalog) {
-      expect(entry.messageKey).toBe(messageKeyFor(entry.code));
-      expect(entry.code.startsWith('IDENTITY.')).toBe(true);
-    }
     const userNotFound = identityErrorCatalog.find(
       (e) => e.code === IdentityErrorCode.UserNotFound,
     );
     expect(userNotFound?.audience).toBe(ErrorAudience.Internal);
   });
+
+  it.each(identityErrorCatalog.map((entry) => [entry.code, entry] as const))(
+    'uses the message key and the IDENTITY prefix: %s',
+    (_code, entry) => {
+      expect(entry.messageKey).toBe(messageKeyFor(entry.code));
+      expect(entry.code.startsWith('IDENTITY.')).toBe(true);
+    },
+  );
 });
 
 describe('identity routes', () => {
@@ -132,7 +136,7 @@ describe('identity routes', () => {
     expect(
       validateContract(
         ListSessionsRoute.request,
-        decodeQuery(ListSessionsRoute, { limit: '20' }),
+        new QueryParamsCodec().decode(ListSessionsRoute, { limit: '20' }),
       ),
     ).toEqual({ ok: true, value: { limit: 20 } });
     expect(ListSessionsRoute.queryParams.map((p) => p.name)).toEqual([
@@ -190,7 +194,14 @@ describe('session lifecycle routes', () => {
       response: null,
       access: { kind: AccessKind.Public },
     });
-    for (const route of [RefreshSessionRoute, SignOutRoute]) {
+  });
+
+  it.each([
+    ['refresh', RefreshSessionRoute],
+    ['sign-out', SignOutRoute],
+  ] as const)(
+    'accepts an empty body or a session token on %s',
+    (_name, route) => {
       // En web el session token viaja en la cookie y el cuerpo va vacío.
       expect(validateContract(route.request, {}).ok).toBe(true);
       expect(validateContract(route.request, { sessionToken: 's1' }).ok).toBe(
@@ -202,8 +213,8 @@ describe('session lifecycle routes', () => {
       expect(
         validateContract(route.request, { refreshToken: 's1' }),
       ).toMatchObject({ ok: false });
-    }
-  });
+    },
+  );
 
   it('declares the codes that end a session on refresh', () => {
     expect(RefreshSessionRoute.errors).toEqual(
@@ -218,17 +229,21 @@ describe('session lifecycle routes', () => {
     );
   });
 
-  it('runs the step-up of an open session with the MFA types', () => {
-    for (const route of [
-      StartStepUpRoute,
-      RequestStepUpChallengeRoute,
-      VerifyStepUpRoute,
-    ]) {
+  it.each([
+    ['start', StartStepUpRoute],
+    ['challenge', RequestStepUpChallengeRoute],
+    ['verify', VerifyStepUpRoute],
+  ] as const)(
+    'declares %s as an authenticated step-up POST',
+    (_name, route) => {
       expect(route.method).toBe(HttpMethod.Post);
       expect(route.path.startsWith('/v1/me/step-up')).toBe(true);
       expect(route.access.kind).toBe(AccessKind.Authenticated);
       expect(route.errors).toEqual(expect.arrayContaining(SessionGuardErrors));
-    }
+    },
+  );
+
+  it('runs the step-up of an open session with the MFA types', () => {
     expect(StartStepUpRoute.successStatus).toBe(201);
     expect(RequestStepUpChallengeRoute.request).toBe(
       RequestMfaChallengeRoute.request,
@@ -266,21 +281,22 @@ describe('session lifecycle routes', () => {
     ).toBe(true);
   });
 
-  it('makes the invalidation codes public with a message key', () => {
-    for (const code of [
-      IdentityErrorCode.SessionExpired,
-      IdentityErrorCode.SessionReused,
-      IdentityErrorCode.TokenRevoked,
-      IdentityErrorCode.UserSuspended,
-      IdentityErrorCode.TenantSuspended,
-    ]) {
-      const entry = identityErrorCatalog.find((e) => e.code === code);
-      expect(entry).toMatchObject({
-        audience: ErrorAudience.Public,
-        retryable: false,
-      });
-      expect([401, 403]).toContain(entry?.httpStatus);
-    }
+  it.each([
+    IdentityErrorCode.SessionExpired,
+    IdentityErrorCode.SessionReused,
+    IdentityErrorCode.TokenRevoked,
+    IdentityErrorCode.UserSuspended,
+    IdentityErrorCode.TenantSuspended,
+  ])('makes %s public and not retryable', (code) => {
+    const entry = identityErrorCatalog.find((e) => e.code === code);
+    expect(entry).toMatchObject({
+      audience: ErrorAudience.Public,
+      retryable: false,
+    });
+    expect([401, 403]).toContain(entry?.httpStatus);
+  });
+
+  it('makes MfaMethodUnavailable a public 400 with a message key', () => {
     expect(
       identityErrorCatalog.find(
         (e) => e.code === IdentityErrorCode.MfaMethodUnavailable,
@@ -290,24 +306,35 @@ describe('session lifecycle routes', () => {
 });
 
 describe('identityContract', () => {
-  it('registers every schema used by routes, operations and events', () => {
-    const registered = new Set(Object.values(identityContract.schemas));
-    for (const route of Object.values(identityContract.routes)) {
-      if (route.response) expect(registered.has(route.response)).toBe(true);
-    }
-    for (const op of Object.values(identityContract.operations)) {
-      expect(registered.has(op.input)).toBe(true);
-      expect(registered.has(op.output)).toBe(true);
-    }
-    for (const event of Object.values(identityContract.events)) {
-      expect(registered.has(event.payload)).toBe(true);
-    }
+  const registered = new Set(Object.values(identityContract.schemas));
+
+  it.each(
+    Object.values(identityContract.routes).flatMap((route) =>
+      route.response ? [[route.id, route.response] as const] : [],
+    ),
+  )('registers the response schema of %s', (_id, schema) => {
+    expect(registered.has(schema)).toBe(true);
   });
 
-  it('versions the operation ids', () => {
-    for (const id of Object.values(IdentityOperation)) {
-      expect(id).toMatch(/\.v1$/);
-    }
+  it.each(
+    Object.values(identityContract.operations).map(
+      (op) => [op.id, op] as const,
+    ),
+  )('registers the input and output of %s', (_id, op) => {
+    expect(registered.has(op.input)).toBe(true);
+    expect(registered.has(op.output)).toBe(true);
+  });
+
+  it.each(
+    Object.values(identityContract.events).map(
+      (e) => [e.type, e.payload] as const,
+    ),
+  )('registers the payload of %s', (_type, payload) => {
+    expect(registered.has(payload)).toBe(true);
+  });
+
+  it.each(Object.values(IdentityOperation))('versions %s', (id) => {
+    expect(id).toMatch(/\.v1$/);
   });
 
   it('publishes every event in the identity topic', () => {

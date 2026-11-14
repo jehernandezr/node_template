@@ -15,7 +15,7 @@ Referencias: ADR 0007 (mensajería tipada, CloudEvents), ADR 0008 (sagas). La en
 
 ## Publicar: outbox transaccional
 
-- El caso de uso guarda el cambio y los eventos en la misma transacción (`OutboxWriter`). Un barrido periódico los publica después del commit y los marca como enviados.
+- El caso de uso publica con `MessageBus.publish(event, data)` o `send(command, data)` dentro de `runInTransaction`: `OutboxMessageBus` guarda el mensaje con `OutboxWriter.append` en la misma transacción y, si no hay una abierta, lanza un `MessagingError` con el código `MessagingTransactionRequired`. `OutboxRelayJob` (un `ScheduledJob` de messaging, cada 1 s con jitter) lo publica después del commit y lo marca como enviado.
 - Nunca se publica a SNS dentro del caso de uso, ni antes del commit, ni en `afterCommit` sin outbox si perder el evento es inaceptable.
 - Los eventos salen del agregado con `pullDomainEvents()`. Un mapper de aplicación los traduce a eventos de integración (contrato zod en `@contracts/<servicio>/events`).
 - Tipo y cola salen de enums de la topología (`TopicDef`, `QueueDef`, `Route`). Sin literales.
@@ -24,9 +24,13 @@ Referencias: ADR 0007 (mensajería tipada, CloudEvents), ADR 0008 (sagas). La en
 ```ts
 await this.transactions.runInTransaction(async () => {
   await this.users.save(user);
-  await this.outbox.add(
-    user.pullDomainEvents().map((event) => this.integrationEvents.from(event)),
-  );
+  // MessageBus.publish escribe en el outbox con OutboxWriter.append, en esta misma transacción
+  for (const event of user.pullDomainEvents()) {
+    await this.bus.publish(
+      UserRegisteredV1,
+      this.integrationEvents.from(event),
+    );
+  }
 });
 ```
 
@@ -40,15 +44,24 @@ await this.transactions.runInTransaction(async () => {
 
 ## Consumir
 
-- `@Subscribe` en un consumidor de `presentation/`. Valida el sobre y el esquema zod antes de hacer nada. Un mensaje inválido es permanente: va a la DLQ, no se reintenta.
-- Idempotencia con `processed_messages`: el consumidor verifica y registra el id del mensaje en la misma transacción que sus efectos. Si ya existe, confirma el mensaje y no hace nada.
+- Un consumidor es una clase de `presentation/` con un método decorado con `@Subscribe(Contrato)`. `MessagingExplorer` lo descubre y lo registra en `MessageDispatcher`. El dispatcher valida el sobre y el esquema zod antes de llamar al método; un mensaje inválido es permanente: va a la DLQ, no se reintenta.
+- La idempotencia la hace el `MessageDispatcher`, no el consumidor: toma un claim de tres estados del `IdempotencyStore` (`ProcessedMessageStore`) con la llave `(consumidor, id del mensaje)`. `claim` responde `ClaimState.Acquired`, `ClaimState.InProgress` o `ClaimState.Completed`: si otro reparto está en curso deja el mensaje para reentrega y si ya está completado lo confirma sin ejecutar. `complete` corre en la misma transacción que los efectos del manejador (`runInContext`) y `release` si el manejador falla. El consumidor no registra ids a mano.
 
 ```ts
-async handle(message: UserRegisteredV1): Promise<void> {
-  await this.transactions.runInTransaction(async () => {
-    if (!(await this.processed.tryRegister(message.id, ConsumerName.WelcomeEmail))) return;
-    await this.sendWelcome.execute({ userId: message.data.userId });
-  });
+@Injectable()
+export class WelcomeEmailConsumer {
+  constructor(private readonly sendWelcome: SendWelcomeEmail) {}
+
+  @Subscribe(UserRegisteredV1)
+  async onUserRegistered(
+    data: UserRegisteredV1Data,
+    envelope: MessageEnvelope<UserRegisteredV1Data>,
+  ): Promise<void> {
+    await this.sendWelcome.execute({
+      userId: data.userId,
+      tenantId: envelope.tenantId,
+    });
+  }
 }
 ```
 
@@ -56,13 +69,27 @@ async handle(message: UserRegisteredV1): Promise<void> {
 - Errores: `Permanent` a la DLQ; `Transient` se reintenta con `base * 2^intento + jitter` (lo calcula la plataforma). Todo lo que cae a DLQ tiene alerta y procedimiento de reproceso.
 - Concurrencia acotada por consumidor. El tiempo de visibilidad supera el tiempo máximo de procesamiento.
 - Un consumidor nunca llama a un caso de uso que vuelva a escribir en la misma cola de forma cíclica sin condición de parada.
+- Un handler de operación interna es una clase con un método `@InternalHandler(Operacion)` que `InternalApiModule` registra en el router; un servicio con una operación sin handler no arranca (`assertComplete`).
+
+```ts
+@Injectable()
+export class CreateTenantHandler {
+  @InternalHandler(CreateTenantOperation)
+  handle(
+    input: CreateTenantInput,
+    call: CallContext,
+  ): Promise<CreateTenantOutput> {
+    /* ... */
+  }
+}
+```
 
 ## Idempotencia en la API
 
 - Una operación que modifica datos y puede reintentarse (pagos, altas, sagas) recibe una llave de idempotencia (`Idempotency-Key` en HTTP, `sagaId:paso:dirección` en la API interna).
-- El resultado se guarda con la misma transacción que los efectos. Una repetición con la misma llave y la misma entrada devuelve el resultado guardado. Con la misma llave y distinta entrada responde 409 o 422.
+- El resultado se guarda con `IdempotencyGate`, que hace `claim`, `complete` y `release` sobre `ProcessedOperationStore`, y `UnitOfWorkRunner` confirma el manejador y el `complete` en una sola transacción. Una repetición con la misma llave y la misma entrada devuelve el resultado guardado. Con la misma llave y distinta entrada responde 409 o 422.
 - Operaciones naturalmente idempotentes (`PUT` de un estado, borrar si existe) no necesitan llave, pero su caso de uso se escribe para que repetirlo sea inocuo.
-- Las llaves caducan (por ejemplo, 24 horas) y la limpieza es un job.
+- Las llaves caducan (por ejemplo, 24 horas) y la limpieza es `ProcessedOperationRetentionJob`, un `ScheduledJob` que corre cada hora.
 
 ## Sagas
 
@@ -71,9 +98,25 @@ async handle(message: UserRegisteredV1): Promise<void> {
 - Un paso se reintenta con la misma llave y la misma entrada registrada. Nunca con una reconstruida.
 - Un `BusinessError` antes del pivote inicia compensación. Un `TransientFailure` suspende y reintenta.
 - La compensación también es idempotente y tolera que el paso nunca se haya aplicado.
+- La bitácora la guarda `TypeOrmSagaStore` en la base del servicio que orquesta y `SagaRecoveryJob` retoma cada 5 segundos las sagas con lease vencido.
+
+## Jobs
+
+- Toda tarea periódica es una clase que extiende `ScheduledJob` del kernel: `name` (valor de un enum de la librería dueña), `schedule`, `exclusive`, `timeoutMs` y `run(context)`. La corre `JobRunner` de `@platform/scheduling`, que la descubre entre los providers, y se prueba llamando a `run()` directamente.
+- `exclusive: true` exige un `JobLock` compartido (`ValkeyJobLock`) para que un solo proceso la corra a la vez.
+
+| Job                              | Dueño        | Calendario          |
+| -------------------------------- | ------------ | ------------------- |
+| `OutboxRelayJob`                 | messaging    | cada 1 s con jitter |
+| `OutboxRetentionJob`             | messaging    | cada hora           |
+| `ProcessedMessageRetentionJob`   | messaging    | cada hora           |
+| `ProcessedOperationRetentionJob` | internal-api | cada hora           |
+| `SagaRecoveryJob`                | saga         | cada 5 s            |
+| `SagaRetentionJob`               | saga         | cada hora           |
 
 ## Pruebas
 
 - Dominio y mapper de eventos: unitarias.
 - Outbox y consumidor: integración con PostgreSQL y LocalStack. Casos obligatorios: evento duplicado, evento fuera de orden, mensaje inválido a DLQ, falla de la base a mitad del consumidor.
 - Contrato: el esquema del evento publicado se valida contra el del consumidor.
+- Los dobles (`InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore`) salen de `@platform/messaging/test-utils` y pasan `runOutboxStoreContract` y `runProcessedMessageStoreContract`, igual que los stores reales.

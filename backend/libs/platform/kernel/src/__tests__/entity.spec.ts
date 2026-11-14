@@ -1,5 +1,5 @@
 import { Entity } from '../entity.js';
-import { Id } from '../id.js';
+import { Id } from '../ids/id.js';
 import { SequentialIdGenerator } from './utils/sequential-id-generator.js';
 
 class User extends Entity {

@@ -1,6 +1,6 @@
 import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline } from '../deadline.js';
-import { DeadlineExceededError, InvalidArgumentError } from '../errors.js';
+import { DeadlineExceededError, InvalidArgumentError } from '../index.js';
 import {
   abortableSleep,
   armTimer,

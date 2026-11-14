@@ -25,7 +25,7 @@ El ORM es TypeORM sobre PostgreSQL. Se usan sus capacidades (entidades, `DataSou
 
 ## Repositorios y mappers
 
-- El dominio declara el puerto (`UserRepository`). La infraestructura lo implementa con `TypeOrmUserRepository`, que extiende `BaseRepository<User, UserEntity>` y recibe un `UserMapper` (`toDomain`, `toPersistence`).
+- El dominio declara el puerto (`UserRepository`). La infraestructura lo implementa con `TypeOrmUserRepository`, que extiende `ShardedRepository<User, UserEntity>` y recibe un `UserMapper` (`toDomain`, `toPersistence`).
 - Guardar es por agregado entero. El mapper reconstruye con `User.rehydrate(...)`, nunca con el constructor público ni con `Object.assign`.
 - El repositorio obtiene el `EntityManager` de la transacción actual desde `@platform/persistence`. Nunca abre conexiones ni `QueryRunner` por su cuenta, ni usa `dataSource.manager` global dentro de una transacción (saldría de ella).
 - Un método de repositorio expresa una necesidad del negocio (`findActiveByEmail`), no un filtro genérico.
@@ -35,7 +35,7 @@ El ORM es TypeORM sobre PostgreSQL. Se usan sus capacidades (entidades, `DataSou
 ```ts
 @Injectable()
 export class TypeOrmUserRepository
-  extends BaseRepository<User, UserEntity>
+  extends ShardedRepository<User, UserEntity>
   implements UserRepository
 {
   async findByEmail(email: Email): Promise<User | null> {
@@ -86,6 +86,8 @@ export class TypeOrmUserRepository
 - [ ] Prueba de integración del repositorio contra PostgreSQL real
 ```
 
-## Nota sobre el ADR 0009
+## Decisión vigente
 
-El ADR 0009 describe una capa sobre `pg` sin ORM. La decisión vigente del proyecto es TypeORM con migraciones por CLI. Si tocas persistencia, actualiza o reemplaza ese ADR en el mismo cambio.
+La persistencia es TypeORM con `@platform/persistence` ([ADR 0024](../../../docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)), que reemplaza la capa propia sobre `pg` del ADR 0009. El ruteo al shard, la transacción de un solo shard (`ShardScope`, error `CROSS_SHARD_TX`), la lectura de réplica y las migraciones por shard y catálogo las pone la plataforma; el servicio escribe entidades, mappers, repositorios que extienden `ShardedRepository` y migraciones. Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) viven en `@platform/adapters-postgres`.
+
+Las pruebas de integración de repositorios usan Testcontainers con `ContainerRuntime` y `INTEGRATION_TESTS=require` en CI (ver `backend-pruebas`).

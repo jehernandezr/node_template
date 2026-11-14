@@ -115,10 +115,19 @@ describe('ErrorCatalog', () => {
   it.each([
     'platform.test.one',
     'PLATFORM.TEST',
-    'PLATFORM.TEST.ONE.TWO',
+    'PLATFORM.TEST.1ONE',
     'PLATFORM.test.ONE',
   ])('throws for invalid code %s', (code) => {
     const catalog = new ErrorCatalog();
     expect(() => catalog.register([sample(code)])).toThrow(/inválido/);
   });
+
+  it.each(['PLATFORM.TEST.ONE.TWO', 'PLATFORM.V2.ONE_1'])(
+    'accepts code %s, the same format the kernel accepts',
+    (code) => {
+      const catalog = new ErrorCatalog();
+      catalog.register([sample(code)]);
+      expect(catalog.get(code)).toBeDefined();
+    },
+  );
 });

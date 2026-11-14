@@ -20,6 +20,33 @@ class BackendStructureCheck {
   static INFRA_IN_DOMAIN =
     /from\s+['"](@nestjs\/|typeorm|pg['"/]|@aws-sdk\/|iovalkey|express)/;
   static OUTER_LAYER = /from\s+['"](\.\.\/)+(infrastructure|presentation)\//;
+  // Pruebas de integración: el sufijo es `.int-spec.ts`; `*.integration.spec.ts` correría como unitaria.
+  static MISNAMED_INTEGRATION_TEST = /\.integration\.spec\.ts$/;
+  // El núcleo de las librerías no conoce NestJS: solo lo importa `src/nest/`.
+  static NEST_GUARDED_AREA =
+    /^backend\/libs\/(platform|contracts|shared)\/.+\.ts$/;
+  static NEST_FOLDER = /\/src\/nest\//;
+  static NEST_IMPORT =
+    /(?:from|import)\s*\(?\s*['"](?:@nestjs\/[^'"]*|@platform\/[\w-]+\/nest)['"]/;
+  // Archivos donde una función exportada es la forma declarada de la API, no un script suelto.
+  static FUNCTION_EXCEPTIONS = [
+    {
+      pattern: /^backend\/libs\/contracts\/[^/]+\/src\/kit\/define-[\w-]+\.ts$/,
+      reason: 'fábricas declarativas define* de contracts',
+    },
+    {
+      pattern: /^backend\/libs\/contracts\/[^/]+\/src\/kit\/error-catalog\.ts$/,
+      reason: 'defineErrorCatalog de contracts',
+    },
+    {
+      pattern: /^backend\/libs\/platform\/config\/src\/(env|secret)\.ts$/,
+      reason: 'esquemas zod de env.ts y secret()',
+    },
+    {
+      pattern: /^backend\/tools\/[^/]+\/src\/main\.ts$/,
+      reason: 'main() de las herramientas',
+    },
+  ];
   static LOOSE_EXPORTED_FUNCTION =
     /^export\s+(async\s+)?function\s+\w+|^export\s+const\s+\w+\s*(:[^=]+)?=\s*(async\s+)?(\([^)]*\)|\w+)\s*=>/m;
 
@@ -100,6 +127,13 @@ class BackendStructureCheck {
         'el compilado de cada app va en backend/dist/<app>, nunca dentro de un proyecto',
       );
     }
+    if (BackendStructureCheck.MISNAMED_INTEGRATION_TEST.test(file)) {
+      this.add(
+        file,
+        'las pruebas de integración se llaman *.int-spec.ts: *.integration.spec.ts correría como unitaria',
+      );
+    }
+    if (file.endsWith('.ts')) this.checkNestBoundary(file);
     if (file.endsWith('.ts') && !BackendStructureCheck.TEST_FILE.test(file))
       this.checkSource(file);
   }
@@ -147,6 +181,21 @@ class BackendStructureCheck {
     return added;
   }
 
+  // Incluye las pruebas: las de código Nest viven en src/nest/__tests__.
+  checkNestBoundary(file) {
+    if (
+      !BackendStructureCheck.NEST_GUARDED_AREA.test(file) ||
+      BackendStructureCheck.NEST_FOLDER.test(file)
+    )
+      return;
+    if (BackendStructureCheck.NEST_IMPORT.test(this.sourceToCheck(file))) {
+      this.add(
+        file,
+        'fuera de src/nest/ no se importa @nestjs/* ni una sub-entrada @platform/<lib>/nest',
+      );
+    }
+  }
+
   checkSource(file) {
     const text = this.sourceToCheck(file);
     if (/\/domain\//.test(file)) {
@@ -177,7 +226,10 @@ class BackendStructureCheck {
     }
     const allowsFunctions =
       /\/(utils|__tests__|migrations)\//.test(file) ||
-      /(index|\.config|main|worker|migrate|instrumentation)\.ts$/.test(file);
+      /(index|\.config|main|worker|migrate|instrumentation)\.ts$/.test(file) ||
+      BackendStructureCheck.FUNCTION_EXCEPTIONS.some((e) =>
+        e.pattern.test(file),
+      );
     if (
       !allowsFunctions &&
       BackendStructureCheck.LOOSE_EXPORTED_FUNCTION.test(text)

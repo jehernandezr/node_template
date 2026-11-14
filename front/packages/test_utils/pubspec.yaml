@@ -5,7 +5,6 @@ version: 0.0.1
 
 environment:
   sdk: ^3.14.0
-  flutter: ">=1.17.0"
 
 dependencies:
   auth:
@@ -16,10 +15,12 @@ dependencies:
     sdk: flutter
   shell_core:
     path: ../shell_core
+  utils:
+    path: ../utils
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: 6.0.0
 
 resolution: workspace

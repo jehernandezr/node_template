@@ -6,7 +6,7 @@ import {
   DeadlineExceededError,
   InvalidArgumentError,
   StaleClaimError,
-} from '../../errors.js';
+} from '../../index.js';
 import {
   ClaimState,
   computeLeaseUntil,

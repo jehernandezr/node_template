@@ -1,21 +1,15 @@
-import { DomainError, PlatformError } from '@platform/kernel';
+import { DomainError } from '@platform/kernel';
 import {
   CallOutcome,
   CallOutcomeKind,
   isFinalOutcome,
   isSuccess,
 } from '../call-outcome.js';
-import { DeadlineExceededError, NonJsonValueError } from '../errors.js';
+import { CallOutcomeFactory } from '../call-outcome-factory.js';
+import { FailureClassifier } from '../failure/failure-classifier.js';
 
 class OutOfStockError extends DomainError {
   override readonly code = 'SALES.STOCK.OUT_OF_STOCK';
-}
-
-class UpstreamBusyError extends PlatformError {
-  override readonly code = 'PLATFORM.TEST.UPSTREAM_BUSY';
-  constructor() {
-    super('Upstream busy', { retryable: true });
-  }
 }
 
 function describeOutcome(outcome: CallOutcome<number>): string {
@@ -106,89 +100,11 @@ describe('guards', () => {
 });
 
 describe('CallOutcome.fromError', () => {
-  it('maps a DomainError to a business error with its code', () => {
-    const outcome = CallOutcome.fromError(
-      new OutOfStockError('No stock', { sku: 'A1' }),
+  it('maps like a factory with the default classifier', () => {
+    const error = new OutOfStockError('No stock', { sku: 'A1' });
+
+    expect(CallOutcome.fromError(error)).toEqual(
+      new CallOutcomeFactory(new FailureClassifier()).fromError(error),
     );
-    expect(outcome).toEqual({
-      kind: 'business-error',
-      code: 'SALES.STOCK.OUT_OF_STOCK',
-      message: 'No stock',
-      details: { sku: 'A1' },
-    });
-  });
-
-  it('maps a retryable DomainError to a non-final transient failure', () => {
-    class ConflictError extends DomainError {
-      override readonly code = 'SALES.STOCK.CONFLICT';
-    }
-    const error = new ConflictError('Conflict', undefined, {
-      retryable: true,
-    });
-    const outcome = CallOutcome.fromError(error);
-    expect(outcome).toEqual({
-      kind: 'transient-failure',
-      reason: 'SALES.STOCK.CONFLICT',
-      cause: error,
-    });
-    expect(isFinalOutcome(outcome)).toBe(false);
-  });
-
-  it('omits details when the DomainError has none', () => {
-    expect(CallOutcome.fromError(new OutOfStockError('x'))).not.toHaveProperty(
-      'details',
-    );
-  });
-
-  it('maps transient errors to transient-failure and keeps the cause', () => {
-    const cause = Object.assign(new Error('reset'), { code: 'ECONNRESET' });
-    const outcome = CallOutcome.fromError(cause);
-    expect(outcome).toEqual({
-      kind: 'transient-failure',
-      reason: 'ECONNRESET',
-      cause,
-    });
-    expect(CallOutcome.fromError(new UpstreamBusyError()).kind).toBe(
-      CallOutcomeKind.TransientFailure,
-    );
-  });
-
-  it('maps timeouts and cancellations to uncertain', () => {
-    const timeout = new DeadlineExceededError(0);
-    expect(CallOutcome.fromError(timeout)).toEqual({
-      kind: 'uncertain',
-      reason: 'PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED',
-      cause: timeout,
-    });
-    expect(CallOutcome.fromError(AbortSignal.abort().reason).kind).toBe(
-      CallOutcomeKind.Uncertain,
-    );
-  });
-
-  it('maps protocol violations and unknown errors to protocol-violation', () => {
-    expect(CallOutcome.fromError(new NonJsonValueError('$', 'x'))).toEqual({
-      kind: 'protocol-violation',
-      reason: 'PLATFORM.PRIMITIVES.NON_JSON_VALUE',
-      code: 'PLATFORM.PRIMITIVES.NON_JSON_VALUE',
-    });
-    expect(CallOutcome.fromError(new TypeError('x is undefined'))).toEqual({
-      kind: 'protocol-violation',
-      reason: 'TypeError',
-    });
-    expect(CallOutcome.fromError('boom')).toEqual({
-      kind: 'protocol-violation',
-      reason: 'string',
-    });
-    expect(CallOutcome.fromError(null)).toEqual({
-      kind: 'protocol-violation',
-      reason: 'object',
-    });
-  });
-
-  it('does not copy the raw message of non-domain errors', () => {
-    const outcome = CallOutcome.fromError(
-      new Error('raw input RAW-VALUE-123 rejected'),
-    );
-    expect(JSON.stringify(outcome)).not.toContain('RAW-VALUE-123');
   });
 });

@@ -1,13 +1,14 @@
-import type { Clock, IdGenerator } from '@platform/kernel';
-import { DeadlineExceededError, StaleClaimError } from '../errors.js';
 import {
-  assertClaimInput,
   ClaimState,
-  computeLeaseUntil,
+  IdempotencyStore,
   type ClaimRequest,
   type ClaimResult,
-  type IdempotencyStore,
-} from './idempotency-store.js';
+  type Clock,
+  type IdGenerator,
+} from '@platform/kernel';
+import { DeadlineExceededError } from '../errors/deadline-exceeded.error.js';
+import { StaleClaimError } from '../errors/stale-claim.error.js';
+import { ClaimRules } from './claim-rules.js';
 
 type StoredRecord<R> =
   | {
@@ -27,15 +28,15 @@ type StoredRecord<R> =
  * resuelve sin ceder el hilo; sirve para tests y para un solo proceso. No
  * expira resultados completados.
  */
-export class InMemoryIdempotencyStore<
-  R = unknown,
-> implements IdempotencyStore<R> {
+export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
   private readonly records = new Map<string, StoredRecord<R>>();
 
   constructor(
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
-  ) {}
+  ) {
+    super();
+  }
 
   claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>> {
     try {
@@ -67,7 +68,7 @@ export class InMemoryIdempotencyStore<
   }
 
   private claimNow(key: string, request: ClaimRequest): ClaimResult<R> {
-    assertClaimInput(key, request.fingerprint);
+    ClaimRules.assertInput(key, request.fingerprint);
     const now = this.clock.now().getTime();
     const record = this.records.get(key);
 
@@ -93,7 +94,7 @@ export class InMemoryIdempotencyStore<
     // Al tomar un lease vencido se conserva la huella del primer claim.
     const fingerprint = record?.fingerprint ?? request.fingerprint;
     const claimToken = this.ids.next().toString();
-    const leaseUntil = computeLeaseUntil(request, now);
+    const leaseUntil = ClaimRules.computeLeaseUntil(request, now);
     this.records.set(key, {
       state: ClaimState.InProgress,
       fingerprint,

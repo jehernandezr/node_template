@@ -16,11 +16,13 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 ## Código
 
 - Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Se cargan solas según la carpeta que toques (`paths`); la puerta de entrada es `backend-codigo-enterprise` en el backend y `front-codigo` en el front, y cada una enlaza a las demás.
-- Clases, composición e inyección de dependencias por constructor. Nada de módulos de funciones sueltas tipo script.
-- Persistencia con TypeORM: entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.
-- Backend: las pruebas van en una carpeta `__tests__/` dentro de la carpeta del código que prueban, nunca un `.spec.ts` junto al archivo fuente. Front: en el `test/` de cada paquete, con las carpetas de `lib/src`.
+- Clases, composición e inyección de dependencias por constructor. Las únicas funciones exportadas son utilidades puras sin estado y las de la lista declarada en `check-structure.mjs` (fábricas `define*` de contracts, esquemas de `env.ts` y `secret()`, `main()` de las herramientas). Nada de módulos de funciones sueltas tipo script.
+- Persistencia con TypeORM ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.
+- Backend: las pruebas van en una carpeta `__tests__/` dentro de la carpeta del código que prueban, nunca un `.spec.ts` junto al archivo fuente. Las de integración terminan en `.int-spec.ts`; lo que otra librería necesita de ellas sale por `@platform/<lib>/test-utils`. Front: en el `test/` de cada paquete, con las carpetas de `lib/src`.
 - Backend: código directo en `src/`, sin `src/lib/`. Un solo `node_modules`: las librerías se importan por alias de TypeScript y no tienen `package.json`.
 - Las importaciones relativas en las librerías terminan en `.js`, porque el proyecto usa ESM con `nodenext`.
+- Todo puerto es una clase abstracta sin decoradores y es su propio token de inyección. El cableado de NestJS de una librería vive en `src/nest/` y sale por `@platform/<lib>/nest`; fuera de esa carpeta no se importa `@nestjs/*` ([ADR 0025](docs/adr/0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md)).
+- Las tareas periódicas son clases que extienden `ScheduledJob` y las corre `@platform/scheduling` ([ADR 0026](docs/adr/0026-jobs-programados-scheduledjob-y-joblock.md)). Nada de `setInterval` propio en una librería.
 - El dominio (`domain/`) no importa NestJS, TypeORM, AWS ni otras librerías de infraestructura. Solo depende de `kernel`.
 - `application/` depende de `domain/`. `infrastructure/` y `presentation/` dependen de `domain/` y `application/`.
 - `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws`.
@@ -32,6 +34,7 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 - Todo cliente (backend o front) valida la petición contra el contrato antes de llamar por HTTP.
 - Una decisión nueva de arquitectura se registra como ADR en `docs/adr/`.
 - Los errores de dominio extienden `DomainError` y usan un código del formato `SERVICIO.SUBMÓDULO.ERROR`.
+- Front: cada pantalla con estado tiene un controlador y las pruebas comparten `test_utils` ([ADR 0027](docs/adr/0027-patrones-de-pantalla-y-pruebas-del-front.md)).
 
 ## Git
 
