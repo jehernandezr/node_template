@@ -1009,13 +1009,13 @@ Respaldo, sin instalar: si al construir WP8 la API `crypto.argon2` de la versió
 
 ## 11. Decisiones que requieren al usuario
 
-Ninguna de estas se da por tomada en el plan. Mientras no se decidan, los WP siguen lo que propone este documento y los ADR quedan en `Propuesta`.
+El usuario aprobó el 14 de noviembre de 2026 las decisiones 2, 4 y 5. Las demás siguen en revisión; mientras tanto, los WP siguen lo que propone este documento y los ADR quedan en `Propuesta`.
 
 1. **Claims nuevos.** `htid`, `proles`, `sxp`, `typ: at+jwt` y `pv` como par de versiones (ADR 0022 y 0023).
-2. **Espacio `auth:*` en Valkey.** Cambia la regla del ADR 0021 y del stack `data`: hoy cada servicio solo ve su prefijo; con esto todos leen `auth:*` y solo identity escribe (ADR 0022).
+2. **Aprobada. Espacio `auth:*` en Valkey.** Cambia la regla del ADR 0021 y del stack `data`: hoy cada servicio solo ve su prefijo; con esto todos leen `auth:*` y solo identity escribe (ADR 0022).
 3. **`@Endpoint(route)` en lugar de `@Endpoint.post('/', {...})`.** El plan muestra rutas escritas en el controller; este diseño las toma del contrato.
-4. **OpenAPI sin `@nestjs/swagger`.** El plan pide el plugin de Swagger y Scalar. Para minimizar dependencias, se propone generar OpenAPI desde `contract.json` en F11.
-5. **Node 24.7 o superior.** `crypto.argon2` exige al menos esa versión. Se propone fijar `.nvmrc` en una versión exacta de la línea 24 (por ejemplo `24.22.2`) en WP6.
+4. **Aprobada. OpenAPI sin `@nestjs/swagger`.** El plan pide el plugin de Swagger y Scalar. Para minimizar dependencias, se propone generar OpenAPI desde `contract.json` en F11.
+5. **Aprobada. Node 24.22.2.** `crypto.argon2` exige al menos esa versión. Se propone fijar `.nvmrc` en una versión exacta de la línea 24 (por ejemplo `24.22.2`) en WP6.
 6. **Canal web o nativo por `Origin`.** Alternativa: un header propio del cliente, que obligaría a cambiar el front.
 7. **Código del dispositivo registrado.** Se interpreta como un código que la app verificadora obtiene con una petición firmada y envía sola, no como un código derivado de la firma.
 8. **Longitud mínima de contraseña.** El plan no la fija; se propone 12.
