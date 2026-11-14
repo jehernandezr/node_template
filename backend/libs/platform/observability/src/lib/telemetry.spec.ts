@@ -16,6 +16,8 @@ import { PlatformMetric } from './metrics.js';
 import { RequestContext } from './request-context.js';
 import { platformTracer, SpanAttribute, withSpan } from './spans.js';
 import {
+  OtlpPath,
+  otlpUrl,
   parseOtlpHeaders,
   setupTelemetry,
   telemetryOptionsFromConfig,
@@ -233,5 +235,25 @@ describe('telemetryOptionsFromConfig', () => {
       c: '%E0%A4%A',
     });
     expect(parseOtlpHeaders(undefined)).toEqual({});
+  });
+});
+
+describe('otlpUrl', () => {
+  it('joins the endpoint and the signal path without duplicate slashes', () => {
+    expect(otlpUrl('http://localhost:4318', OtlpPath.Traces)).toBe(
+      'http://localhost:4318/v1/traces',
+    );
+    expect(otlpUrl('http://localhost:4318///', OtlpPath.Logs)).toBe(
+      'http://localhost:4318/v1/logs',
+    );
+  });
+
+  it('stays linear with many trailing slashes', () => {
+    const endpoint = `http://collector${'/'.repeat(100_000)}`;
+    const started = performance.now();
+    expect(otlpUrl(endpoint, OtlpPath.Metrics)).toBe(
+      'http://collector/v1/metrics',
+    );
+    expect(performance.now() - started).toBeLessThan(250);
   });
 });
