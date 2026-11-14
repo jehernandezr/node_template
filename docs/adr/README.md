@@ -39,3 +39,4 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0018   | [Contrato de microfrontend](0018-contrato-de-microfrontend.md)                                                        | Aceptada  |
 | 0019   | [CI y toolchain](0019-ci-y-toolchain.md)                                                                              | Aceptada  |
 | 0020   | [Terraform por stacks y runtime de API elegido por servicio](0020-terraform-por-stacks-y-runtime-por-servicio.md)     | Aceptada  |
+| 0021   | [Valkey como adaptador de caché, ruteo, Bloom e invalidación](0021-adaptador-valkey.md)                               | Aceptada  |
