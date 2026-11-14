@@ -1,6 +1,6 @@
 # Diseño de la fase F4: Identidad
 
-- Estado: Propuesta
+- Estado: Aceptada
 - Fecha: 2026-11-13
 - Rama de trabajo: `feat/f4-identity`
 - ADR relacionados: [0005](../adr/0005-autenticacion-sesiones-jwt.md), [0006](../adr/0006-mfa-dispositivo-registrado-passkeys.md), [0010](../adr/0010-sharding-logico-residencia-region.md), [0015](../adr/0015-estructura-backend-front-y-codigo-compartido.md), [0021](../adr/0021-adaptador-valkey.md), [0022](../adr/0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) y [0023](../adr/0023-enrutamiento-de-datos-de-identity.md)
@@ -529,7 +529,7 @@ En F4 el push que despierta la app es un fake; la app consulta al abrirse. El av
 | Rutas        | `POST /v1/auth/passkeys/options`, `POST /v1/auth/passkeys/verify`, `POST /v1/auth/mfa/passkey/options`, `POST /v1/auth/mfa/passkey/verify`, `POST /v1/me/step-up/passkey/options`, `POST /v1/me/step-up/passkey/verify`, `GET /v1/me/passkeys`, `POST /v1/me/passkeys/registration-options`, `POST /v1/me/passkeys`, `DELETE /v1/me/passkeys/{passkeyId}` |
 | Errores      | `IDENTITY.PASSKEY.VERIFICATION_FAILED`, `IDENTITY.PASSKEY.CHALLENGE_EXPIRED`                                                                                                                                                                                                                                                                              |
 
-- El contrato transporta las opciones y la respuesta de WebAuthn como texto JSON en base64url (`optionsJson`, `credentialJson`). El generador de Dart no admite objetos con propiedades libres (`clientExtensionResults`), y así el contrato no copia la especificación de WebAuthn. El servidor valida ese JSON con zod antes de pasarlo a la librería.
+- El contrato transporta las opciones y la respuesta de WebAuthn en base64url dentro del cuerpo JSON (`optionsJson`, `credentialJson`), decisión 9 de la sección 11. El generador de Dart no admite objetos con propiedades libres (`clientExtensionResults`), y así el contrato no copia la especificación de WebAuthn. El servidor decodifica el campo, lo valida con zod (forma y tamaño máximo) y lo pasa a la librería.
 - Una passkey con verificación de usuario usada desde un dispositivo registrado cumple los dos factores (`amr: ['passkey', 'device']`).
 - `rpID`, nombre y orígenes salen de `WEBAUTHN_RP_ID`, `WEBAUTHN_RP_NAME` y `WEBAUTHN_ORIGINS`. Atestación `none`.
 
@@ -1009,7 +1009,7 @@ Respaldo, sin instalar: si al construir WP8 la API `crypto.argon2` de la versió
 
 ## 11. Decisiones que requieren al usuario
 
-El usuario aprobó el 14 de noviembre de 2026 las decisiones 1 a 8 y 10, con el ajuste de la 6 que se describe abajo. Las demás siguen en revisión; mientras tanto, los WP siguen lo que propone este documento y los ADR quedan en `Propuesta`.
+El usuario aprobó el 14 de noviembre de 2026 las diez decisiones, con el ajuste de la 6 que se describe abajo. Con eso, los ADR 0022 y 0023 pasan a `Aceptada`.
 
 1. **Aprobada. Claims nuevos.** `htid`, `proles`, `sxp`, `typ: at+jwt` y `pv` como par de versiones (ADR 0022 y 0023).
 2. **Aprobada. Espacio `auth:*` en Valkey.** Cambia la regla del ADR 0021 y del stack `data`: hoy cada servicio solo ve su prefijo; con esto todos leen `auth:*` y solo identity escribe (ADR 0022).
@@ -1019,5 +1019,5 @@ El usuario aprobó el 14 de noviembre de 2026 las decisiones 1 a 8 y 10, con el 
 6. **Aprobada con ajuste. Canal web o nativo por header.** La app móvil declara su canal: envía el session token en `Authorization: Bearer <session token>` en refresh y cierre de sesión, y `X-Session-Transport: bearer` en el login y en la verificación MFA, cuando todavía no tiene token. Con ese header la respuesta trae el token en el cuerpo; sin él, el canal es web y el token viaja solo en la cookie `__Host-session`. Así un cliente que no declara nada nunca recibe el token en el cuerpo.
 7. **Aprobada. Código del dispositivo registrado.** Se interpreta como un código que la app verificadora obtiene con una petición firmada y envía sola, no como un código derivado de la firma.
 8. **Aprobada (12). Longitud mínima de contraseña.** El plan no la fija; se propone 12.
-9. **WebAuthn como JSON en texto dentro del contrato.** Evita modelar WebAuthn en zod y en el generador de Dart, a cambio de validar ese JSON en el servidor.
+9. **Aprobada. WebAuthn en base64url dentro del JSON del contrato.** Las opciones y la respuesta de WebAuthn viajan como un campo de texto en base64url (`optionsJson`, `credentialJson`) dentro del cuerpo JSON de la petición. El servidor decodifica ese campo, lo valida con zod (forma y tamaño máximo) y se lo pasa a `@simplewebauthn/server`, que verifica la firma. Así el contrato y el generador de Dart no copian la especificación de WebAuthn.
 10. **Aprobada. Intentos con emails inexistentes solo en Valkey y logs.** `login_attempts` guarda solo intentos de cuentas existentes, porque sin usuario no hay shard.

@@ -1,6 +1,6 @@
 # 0022. Verificación de tokens y estado de revocación compartido
 
-- Estado: Propuesta
+- Estado: Aceptada
 - Fecha: 2026-11-13
 
 ## Contexto

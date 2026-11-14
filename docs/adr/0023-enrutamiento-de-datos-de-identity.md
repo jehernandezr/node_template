@@ -1,6 +1,6 @@
 # 0023. Enrutamiento de los datos de identity entre shards
 
-- Estado: Propuesta
+- Estado: Aceptada
 - Fecha: 2026-11-13
 
 ## Contexto

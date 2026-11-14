@@ -40,5 +40,5 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0019   | [CI y toolchain](0019-ci-y-toolchain.md)                                                                                     | Aceptada  |
 | 0020   | [Terraform por stacks y runtime de API elegido por servicio](0020-terraform-por-stacks-y-runtime-por-servicio.md)            | Aceptada  |
 | 0021   | [Valkey como adaptador de caché, ruteo, Bloom e invalidación](0021-adaptador-valkey.md)                                      | Aceptada  |
-| 0022   | [Verificación de tokens y estado de revocación compartido](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) | Propuesta |
-| 0023   | [Enrutamiento de los datos de identity entre shards](0023-enrutamiento-de-datos-de-identity.md)                              | Propuesta |
+| 0022   | [Verificación de tokens y estado de revocación compartido](0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) | Aceptada  |
+| 0023   | [Enrutamiento de los datos de identity entre shards](0023-enrutamiento-de-datos-de-identity.md)                              | Aceptada  |
