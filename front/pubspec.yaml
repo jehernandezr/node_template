@@ -20,6 +20,7 @@ workspace:
   - packages/i18n
   - packages/shell_core
   - packages/shell_host
+  - packages/test_utils
   - packages/tokens
   - packages/ui
   - packages/utils

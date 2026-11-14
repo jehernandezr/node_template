@@ -1,13 +1,12 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
-import 'package:auth/testing.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mobile_shell/src/mobile_shell.dart';
 import 'package:shell_core/shell_core.dart';
-import 'package:shell_core/testing.dart';
+import 'package:test_utils/test_utils.dart';
 import 'package:shell_host/shell_host.dart';
 import 'package:ui/ui.dart';
 
@@ -182,7 +181,7 @@ Iterable<String> _absolutePaths(List<RouteBase> routes) sync* {
 }
 
 void main() {
-  setUpAll(() => loadDeferredLibraries(_manifestsWithProbe()));
+  setUpAll(() => const DeferredLibrariesLoader().load(_manifestsWithProbe()));
   setUp(resetDeferredPageCache);
 
   testWidgets('anonymous visitor on a protected page goes to login with from', (

@@ -5,7 +5,7 @@
 /// Los tipos y códigos son los generados del contrato `identity`
 /// (`package:contracts`). Los adaptadores de almacenamiento seguro y de claves
 /// de hardware (Keychain, Keystore, Secure Enclave o WebCrypto) viven fuera de
-/// este paquete. Los dobles de prueba están en `package:auth/testing.dart`.
+/// este paquete. Los dobles de prueba están en el paquete `test_utils`.
 library;
 
 export 'src/adapters/in_memory_token_store.dart';

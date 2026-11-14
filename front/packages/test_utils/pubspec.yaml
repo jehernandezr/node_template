@@ -1,0 +1,25 @@
+name: test_utils
+description: "Dobles y utilitarios de prueba compartidos por los paquetes del front. Solo se usa como dev_dependency."
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  auth:
+    path: ../auth
+  contracts:
+    path: ../contracts
+  flutter:
+    sdk: flutter
+  shell_core:
+    path: ../shell_core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+resolution: workspace

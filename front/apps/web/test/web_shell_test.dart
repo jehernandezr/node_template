@@ -1,6 +1,5 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
-import 'package:auth/testing.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +9,7 @@ import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';
 import 'package:mf_tasks/src/shared/types/task.dart';
 import 'package:shell_core/shell_core.dart';
-import 'package:shell_core/testing.dart';
+import 'package:test_utils/test_utils.dart';
 import 'package:shell_host/shell_host.dart';
 import 'package:ui/ui.dart';
 import 'package:web_shell/src/pages/web_shell_scaffold.dart';
@@ -96,7 +95,7 @@ List<String> routePaths(List<RouteBase> routes, [String parent = '']) {
 }
 
 void main() {
-  setUpAll(() => loadDeferredLibraries(manifestsWithProbe()));
+  setUpAll(() => const DeferredLibrariesLoader().load(manifestsWithProbe()));
   setUp(resetDeferredPageCache);
 
   testWidgets('anonymous visitor to /tasks lands on login with from', (

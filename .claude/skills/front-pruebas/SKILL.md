@@ -3,7 +3,7 @@ name: front-pruebas
 description: Cómo se escriben y ubican las pruebas del front de node_template (Flutter). Carpeta test/ que replica lib/src, controladores probados sin widgets, dobles como clases, pruebas de widgets con pumpApp, accesibilidad y layout, golden tests, sin esperas fijas y carga de librerías diferidas. Úsala al escribir o revisar pruebas del front.
 paths:
   - 'front/**/test/**'
-  - 'front/**/testing.dart'
+  - 'front/packages/test_utils/**'
 ---
 
 # Pruebas del front
@@ -12,7 +12,7 @@ paths:
 
 - Las pruebas van en el `test/` de cada paquete, con las mismas subcarpetas que `lib/src`. Ejemplo: `lib/src/flows/sign_in_flow.dart` se prueba en `test/flows/sign_in_flow_test.dart`.
 - No van dentro de `lib/`: Dart publicaría el código de prueba con el paquete, y `flutter_test` es una dependencia de desarrollo que `lib/` no puede importar.
-- Los dobles compartidos se exportan desde `lib/testing.dart` del paquete dueño del puerto (por ejemplo `package:auth/testing.dart`).
+- Los dobles y utilitarios que usan varios paquetes viven en `front/packages/test_utils` (`package:test_utils/test_utils.dart`), declarado solo en `dev_dependencies`. Lo que usan las pruebas de un solo paquete va en su `test/utils/`. Siguen las mismas reglas que el código: clases, un archivo por clase y sin duplicación.
 - Utilidades de prueba de un paquete (`pumpApp`, `setSurface`) viven en `test/utils/`, como en `packages/ui/test/utils/pump.dart`.
 
 ## Qué probar y dónde
@@ -37,7 +37,7 @@ Cada regla de negocio nueva trae su prueba de controlador. Cada bug corregido tr
 - Estado mutable en `setUp` con `late`, sin variables de nivel superior que se compartan entre pruebas. Lo que hay que liberar se registra con `addTearDown`.
 - Se prueba el comportamiento público; nunca un método privado directamente.
 - Los tiempos salen de un reloj inyectado o de constantes del código bajo prueba (`TasksListController.searchDebounce`), no de números mágicos.
-- Las suites que montan microfrontends llaman a `loadDeferredLibraries` de `package:shell_core/testing.dart` en `setUpAll`.
+- Las suites que montan microfrontends llaman a `const DeferredLibrariesLoader().load(...)` de `test_utils` en `setUpAll`.
 - No se filtran errores de layout (como el overflow) para que una prueba pase: se corrige el widget.
 
 ## Esperar sin esperas fijas

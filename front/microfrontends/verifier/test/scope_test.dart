@@ -1,4 +1,4 @@
-import 'package:auth/testing.dart';
+import 'package:test_utils/test_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_verifier/src/data/fake_verifier_repository.dart';
 import 'package:mf_verifier/src/data/verifier_repository.dart';

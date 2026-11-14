@@ -27,6 +27,8 @@ dependencies:
     path: ../../packages/ui
 
 dev_dependencies:
+  test_utils:
+    path: ../../packages/test_utils
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

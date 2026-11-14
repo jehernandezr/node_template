@@ -18,14 +18,14 @@ paths:
 ```
 front/
 ├── apps/            web y mobile: solo el shell de cada plataforma y su marco
-├── packages/        api, auth, contracts, i18n, shell_core, shell_host, tokens, ui, utils
+├── packages/        api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
 ├── microfrontends/  account, assistant, backoffice, billing, notifications, tasks, verifier
 └── tools/           contracts_gen y las comprobaciones de CI
 ```
 
 - Dentro de cada paquete o microfrontend, el código público va en `lib/<paquete>.dart` y el privado en `lib/src/`. Lo que está en `lib/src` no se importa desde otro paquete (convención de Dart).
 - `lib/<paquete>.dart` exporta con `export 'src/x.dart' show A, B;` solo lo que otros paquetes necesitan. Exportar un archivo entero filtra detalles de implementación.
-- Los dobles de prueba compartidos de un paquete se exportan en `lib/testing.dart`.
+- Los dobles y utilitarios de prueba que usan varios paquetes viven en el paquete `front/packages/test_utils`, que solo se declara en `dev_dependencies`. Ningún paquete expone un `lib/testing.dart` ni una carpeta `testing/`.
 
 ## Capas dentro de un microfrontend
 
@@ -51,7 +51,7 @@ lib/src/
 ## Paquetes compartidos
 
 - `ui` no conoce ningún microfrontend ni ningún dominio. `tokens` no depende de nada. `contracts` es generado: no se edita a mano.
-- Un paquete expone puertos (clases abstractas) y adaptadores. Los adaptadores de API usan `ApiClient`; los de demostración viven junto al puerto o en `testing.dart`.
+- Un paquete expone puertos (clases abstractas) y adaptadores. Los adaptadores de API usan `ApiClient`; los de demostración viven junto al puerto, en `data/`.
 - El tema y los valores de diseño salen de `tokens` y `ui` (ver `front-layout-adaptable`).
 
 ## Compilado

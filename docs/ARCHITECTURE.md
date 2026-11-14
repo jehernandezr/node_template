@@ -57,7 +57,7 @@ backend/                       backend: todas sus dependencias externas en backe
 front/                         pub workspace de Flutter
   apps/{web,mobile}/           shells
   microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
-  packages/                    api, auth, contracts, i18n, shell_core, shell_host, tokens, ui, utils
+  packages/                    api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
   tools/                       contracts_gen, nx-plugin y check_deferred_chunks.dart
 nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.json
 .github/  .husky/  commitlint.config.mjs  lint-staged.config.mjs  .prettierrc  renovate.json  docs/
@@ -203,8 +203,9 @@ El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto
 | `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores |
 | `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                       |
 | `utils`      | Funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                      |
-| `auth`       | Puertos, modelos y `SessionManager` de la sesión, con fakes para pruebas                                                               |
+| `auth`       | Puertos, modelos y `SessionManager` de la sesión                                                                                       |
 | `ui`         | Widgets adaptativos, layout (`AppPage`, `ShellChrome`, `PlatformScreen`) y tema                                                        |
+| `test_utils` | Dobles y utilitarios de prueba que comparten varios paquetes; solo en `dev_dependencies`                                               |
 | `tokens`     | Colores y escalas de diseño en Dart                                                                                                    |
 | `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores                                                       |
 

@@ -36,6 +36,8 @@ dependencies:
     path: ../../packages/ui
 
 dev_dependencies:
+  test_utils:
+    path: ../../packages/test_utils
   contracts:
     path: ../../packages/contracts
   flutter_lints: ^6.0.0

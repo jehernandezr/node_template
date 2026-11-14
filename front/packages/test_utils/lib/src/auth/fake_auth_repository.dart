@@ -1,8 +1,7 @@
 import 'dart:async';
 
+import 'package:auth/auth.dart';
 import 'package:contracts/contracts.dart';
-
-import '../ports.dart';
 
 /// Repositorio en memoria. Cada prueba configura los resultados y lee las
 /// peticiones recibidas.
@@ -134,57 +133,4 @@ class FakeAuthRepository implements AuthRepository {
           code: code.code,
         ),
       );
-}
-
-/// Almacén del session token en memoria que deja controlar y contar las
-/// escrituras.
-class FakeTokenStore implements TokenStore {
-  FakeTokenStore([this._sessionToken, this.sessionInCookie = false]);
-
-  String? _sessionToken;
-
-  @override
-  final bool sessionInCookie;
-
-  /// Si no es null, [writeSessionToken] espera a que se complete antes de
-  /// guardar. Sirve para probar lo que pasa mientras la escritura está pendiente.
-  Completer<void>? writeGate;
-
-  int writeCount = 0;
-
-  /// Session token guardado, sin pasar por la interfaz asíncrona.
-  String? get sessionToken => _sessionToken;
-
-  @override
-  Future<String?> readSessionToken() async => _sessionToken;
-
-  @override
-  Future<void> writeSessionToken(String sessionToken) async {
-    writeCount++;
-    final gate = writeGate;
-    if (gate != null) await gate.future;
-    _sessionToken = sessionToken;
-  }
-
-  @override
-  Future<void> clear() async {
-    _sessionToken = null;
-  }
-}
-
-/// Clave de dispositivo falsa. [sign] invierte los bytes para que sea determinista.
-class FakeDeviceKeyPort implements DeviceKeyPort {
-  FakeDeviceKeyPort({this._publicKey = const [1, 2, 3, 4]});
-
-  final List<int> _publicKey;
-  int signCount = 0;
-
-  @override
-  Future<List<int>> publicKey() async => _publicKey;
-
-  @override
-  Future<List<int>> sign(List<int> data) async {
-    signCount++;
-    return data.map((byte) => byte ^ 0xFF).toList();
-  }
 }

@@ -1,6 +1,6 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
-import 'package:auth/testing.dart';
+import 'package:test_utils/test_utils.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:i18n/i18n.dart';

@@ -12,7 +12,7 @@ Contracts and composition shared by the web and mobile Flutter shells. It knows 
 - `ScreenLoader` / `deferredPage`: screens load on demand; a failed load shows an error view with a retry. `resetDeferredPageCache()` (`@visibleForTesting`) forgets cached loads; call it in `setUp` of widget tests.
 - `AccessRule`, `AccessGate`, `context.can`, `accessRedirect`, `StepUpRequests`, `UserSession` and the access enums (from `contracts`) mirror the backend.
 
-`package:shell_core/testing.dart` has `loadDeferredLibraries(manifests)` for `setUpAll` of tests that open screens of several microfrontends.
+The `test_utils` package has `DeferredLibrariesLoader` for `setUpAll` of tests that open screens of several microfrontends.
 
 ## How to write a microfrontend
 

@@ -23,7 +23,7 @@ backend/        backend: dependencias externas en backend/package.json, alias en
 front/          pub workspace de Flutter
   apps/         shells web y mobile
   microfrontends/  un paquete por dominio
-  packages/     api, auth, contracts, i18n, shell_core, shell_host, tokens, ui, utils
+  packages/     api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
   tools/        contracts_gen, plugin de Nx y check_deferred_chunks.dart
 docs/           arquitectura, ADRs y guía de desarrollo local
 ```

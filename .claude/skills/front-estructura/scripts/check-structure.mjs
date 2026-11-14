@@ -70,6 +70,12 @@ class FrontStructureCheck {
         'lo compartido por las pruebas de un paquete va en test/utils/',
       );
     }
+    if (/^front\/.+\/lib\/(testing\.dart|(.+\/)?testing\/)/.test(file)) {
+      this.add(
+        file,
+        'los dobles compartidos van en el paquete test_utils, no en lib/testing',
+      );
+    }
     if (!file.endsWith('.dart')) return;
     const inLib = /\/lib\//.test(file);
     if (inLib && file.endsWith('_test.dart')) {
@@ -80,11 +86,11 @@ class FrontStructureCheck {
     }
     if (!inLib || FrontStructureCheck.GENERATED.test(file)) return;
     const text = readFileSync(join(this.root, file), 'utf8');
-    const isTestingSupport = /\/lib\/(testing\.dart|src\/testing\/)/.test(file);
-    if (!isTestingSupport && /import\s+'package:flutter_test\//.test(text)) {
+    const isTestUtilsPackage = file.startsWith('front/packages/test_utils/');
+    if (!isTestUtilsPackage && /import\s+'package:flutter_test\//.test(text)) {
       this.add(
         file,
-        'lib/ no importa flutter_test; los dobles compartidos van en lib/testing.dart',
+        'lib/ no importa flutter_test; los dobles compartidos van en el paquete test_utils',
       );
     }
     if (/\bDateTime\.now\(\)/.test(text) && !/clock/i.test(file)) {

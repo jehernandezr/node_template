@@ -51,9 +51,9 @@ hardware (Keychain/Keystore, Secure Enclave, WebCrypto) se agregan después.
 - **Errores**: los del servidor son `ApiErrorException` con el código del
   contrato; `SignedOutException` indica que no hay sesión o que un logout
   anuló la operación. Un fallo de red llega como `TransportException`.
-- **Dobles de prueba**: `package:auth/testing.dart` (`FakeAuthRepository`,
-  `FakeTokenStore`, `FakeDeviceKeyPort`). El código de producción no los
-  importa.
+- **Dobles de prueba**: `FakeAuthRepository`, `FakeTokenStore` y
+  `FakeDeviceKeyPort` viven en el paquete `test_utils`, que solo se usa en
+  `dev_dependencies`.
 
 ## Uso
 
