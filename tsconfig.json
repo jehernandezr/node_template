@@ -59,6 +59,9 @@
     },
     {
       "path": "./backend/libs/platform/adapters/aws"
+    },
+    {
+      "path": "./backend/libs/platform/adapters/postgres"
     }
   ],
   "compilerOptions": {}

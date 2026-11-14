@@ -197,9 +197,69 @@ export const IdempotencyKeysMigration: SqlMigration = {
   down: ['DROP TABLE IF EXISTS idempotency_keys'],
 };
 
+/**
+ * `processed_messages`: idempotencia de consumidores (`PostgresProcessedMessageStore`
+ * de `@platform/adapters-postgres`). Mismo esquema de tres fases que
+ * `idempotency_keys`; la llave es `(consumidor, id del mensaje)`. Va en cada shard
+ * para completar el mensaje en la misma transacción que los efectos del handler.
+ */
+export const ProcessedMessagesMigration: SqlMigration = {
+  name: 'PlatformProcessedMessages1794600000004',
+  up: [
+    `CREATE TABLE processed_messages (
+  key text PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('in-progress', 'completed')),
+  fingerprint text NOT NULL,
+  claim_token text,
+  lease_until bigint,
+  attempt integer NOT NULL,
+  result jsonb,
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL
+)`,
+    'CREATE INDEX processed_messages_updated_idx ON processed_messages (state, updated_at)',
+  ],
+  down: ['DROP TABLE IF EXISTS processed_messages'],
+};
+
+/**
+ * `outbox`: mensajes por publicar (`PostgresOutboxStore` de `@platform/adapters-postgres`),
+ * escritos en la transacción del cambio de negocio. Los estados son los de
+ * `OutboxStatus` de `@platform/messaging`. `seq` desempata el orden de
+ * `created_at` dentro de un grupo. Los instantes son `timestamptz` del `Clock` de la app.
+ * Los índices parciales cubren solo las filas abiertas, que son pocas.
+ */
+export const OutboxMigration: SqlMigration = {
+  name: 'PlatformOutbox1794600000005',
+  up: [
+    `CREATE TABLE outbox (
+  id text PRIMARY KEY,
+  seq bigserial NOT NULL,
+  envelope jsonb NOT NULL,
+  status text NOT NULL CHECK (status IN ('pending', 'published', 'failed', 'dead')),
+  attempts integer NOT NULL DEFAULT 0,
+  next_attempt_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL,
+  updated_at timestamptz NOT NULL,
+  group_id text,
+  delay_ms integer,
+  last_error text,
+  lease_owner text,
+  lease_token text,
+  lease_expires_at timestamptz
+)`,
+    `CREATE INDEX outbox_due_idx ON outbox (created_at, seq) WHERE status IN ('pending', 'failed')`,
+    `CREATE INDEX outbox_group_idx ON outbox (group_id, created_at, seq) WHERE status IN ('pending', 'failed') AND group_id IS NOT NULL`,
+    `CREATE INDEX outbox_retention_idx ON outbox (status, updated_at) WHERE status IN ('published', 'dead')`,
+  ],
+  down: ['DROP TABLE IF EXISTS outbox'],
+};
+
 /** Migraciones de la plataforma para cada shard, en orden. */
 export const shardMigrations: readonly SqlMigration[] = [
   PlatformFunctionsMigration,
   AuditLogMigration,
   IdempotencyKeysMigration,
+  ProcessedMessagesMigration,
+  OutboxMigration,
 ];

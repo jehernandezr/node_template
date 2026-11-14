@@ -168,6 +168,43 @@ importers:
         specifier: 12.2.1
         version: 12.2.1(bare-buffer@3.7.2)
 
+  backend/libs/platform/adapters/postgres:
+    dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../../contracts/platform
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../../kernel
+      '@platform/messaging':
+        specifier: workspace:*
+        version: link:../../messaging
+      '@platform/persistence':
+        specifier: workspace:*
+        version: link:../../persistence
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+    devDependencies:
+      '@platform/primitives':
+        specifier: workspace:*
+        version: link:../../primitives
+      '@testcontainers/postgresql':
+        specifier: 12.2.1
+        version: 12.2.1(bare-buffer@3.7.2)
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+      pg-mem:
+        specifier: 3.0.14
+        version: 3.0.14(typeorm@1.1.2(babel-plugin-macros@3.1.0)(pg@8.23.1)(ts-node@10.9.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@24.19.2)(typescript@6.0.3)))
+      testcontainers:
+        specifier: 12.2.1
+        version: 12.2.1(bare-buffer@3.7.2)
+
   backend/libs/platform/adapters/valkey:
     dependencies:
       '@platform/bloom':

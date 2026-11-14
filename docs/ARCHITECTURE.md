@@ -89,6 +89,7 @@ backend/apps/<servicio>/src/
 - Una app de servicio (`type:app`) importa de otro servicio solo su paquete `@contracts/<servicio>`, nunca su código interno.
 - Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. El siguiente paso es verificar estas capas en CI cuando exista el primer servicio.
 - `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); una regla `no-restricted-imports` lo impide en el resto. Trae `SnsSqsEnvelopePublisher` (lo usa el relay del outbox), `SnsSqsMessageBus` y `SqsDeliveryRunner` (Lambda con fallos parciales por lote o long polling), que aplica `ChangeMessageVisibility` y envía a la DLQ los fallos permanentes. La topología de ejecución sale de los contratos con `topologyFromContracts`.
+- Los adaptadores PostgreSQL de mensajería viven en `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`), y no dentro de `@platform/persistence`, porque `@platform/messaging` ya depende de la unidad de trabajo de persistencia. `PostgresOutboxStore` escribe el outbox en la misma transacción que el cambio de negocio y lo reclama con `FOR UPDATE SKIP LOCKED`, lease con fencing y orden FIFO por grupo; `PostgresProcessedMessageStore` guarda la idempotencia de los consumidores en `processed_messages`. Sus tablas (`outbox` y `processed_messages`) son parte de las migraciones de cada shard.
 
 ## Front: shells y microfrontends
 
