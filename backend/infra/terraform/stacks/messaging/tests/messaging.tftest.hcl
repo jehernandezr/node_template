@@ -52,15 +52,17 @@ run "permissions_come_from_the_topology" {
   }
 }
 
-run "provisional_topology_is_empty" {
+run "generated_topology_grants_its_producers" {
   command = plan
 
   variables {
     topology_file = "../../topology.json"
   }
 
+  # topology.json lo genera contracts-export desde los contratos: identity publica
+  # en su tópico de eventos.
   assert {
-    condition     = length(module.messaging.service_access) == 0
-    error_message = "Una topología vacía no da permisos."
+    condition     = contains(keys(module.messaging.service_access), "identity")
+    error_message = "El productor del tópico de identity debe recibir permiso de publicar."
   }
 }
