@@ -1,11 +1,11 @@
 ---
-name: codigo-enterprise
-description: Reglas de diseño de código del backend y del front de node_template. Clases, composición e inyección de dependencias, Clean Code y arquitectura hexagonal. Úsala antes de escribir, revisar o integrar cualquier código TypeScript o Dart del repositorio.
+name: backend-codigo-enterprise
+description: Reglas de diseño del código del backend de node_template (TypeScript, NestJS). Clases, composición e inyección de dependencias, Clean Code y arquitectura hexagonal. Úsala antes de escribir, revisar o integrar código en backend/.
 ---
 
-# Código enterprise
+# Código enterprise del backend
 
-Este repositorio es software enterprise, no scripting. Todo código nuevo, y todo código que se toque, sigue estas reglas.
+El backend es software enterprise, no scripting. Todo código nuevo, y todo código que se toque, sigue estas reglas.
 
 ## Clases, composición e inyección
 
@@ -54,11 +54,6 @@ export async function signIn(email: string, password: string) {
 - Comentarios solo para el porqué. Nada de comentarios que narran el código, ni referencias al proceso (planes, olas, auditorías, IDs de tareas).
 - Sin `any`, sin casts dobles, sin `eslint-disable` salvo con un porqué escrito.
 
-## Front (Dart)
-
-- Las mismas reglas: clases con dependencias por constructor, controladores fuera de los widgets, puertos y adaptadores en `auth`, `api` y los microfrontends.
-- Los widgets solo pintan estado. La lógica vive en controladores o flujos probados sin widgets.
-
 ## Antes de integrar el trabajo de un agente
 
-Revisa que el diff cumpla esta skill y las skills `estructura-de-proyecto`, `pruebas` y `persistencia-typeorm`. Si no cumple, se corrige antes del commit.
+Revisa que el diff cumpla esta skill y las skills `backend-estructura`, `backend-pruebas` y `backend-persistencia-typeorm`. Si no cumple, se corrige antes del commit.

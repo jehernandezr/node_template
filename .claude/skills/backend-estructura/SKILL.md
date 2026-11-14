@@ -1,26 +1,25 @@
 ---
-name: estructura-de-proyecto
-description: Cómo se organizan carpetas, dependencias y compilado en node_template. Un solo node_modules con pnpm, librerías por alias de TypeScript, código directo en src/, pruebas en __tests__ y compilado de cada app en backend/dist. Úsala al crear o mover librerías, apps, módulos o pruebas.
+name: backend-estructura
+description: Cómo se organizan carpetas, dependencias y compilado del backend de node_template. Un solo node_modules con pnpm, librerías por alias de TypeScript, código directo en src/, pruebas en __tests__ y compilado de cada app en backend/dist. Úsala al crear o mover librerías, apps, módulos o pruebas del backend.
 ---
 
-# Estructura de proyecto
+# Estructura del backend
 
 ## Raíz
 
 - La raíz solo tiene `backend/`, `front/`, Nx como orquestador y herramientas del repositorio (CI/CD, hooks, docs).
-- Cada aplicación es dueña de sus librerías: `backend/libs` y `front/packages`.
+- El backend es dueño de sus librerías en `backend/libs`. El front tiene su propia skill, `front-estructura`.
 
 ## Dependencias: un solo `node_modules`
 
 - Un pnpm workspace con un único `node_modules` en la raíz. Las dependencias externas se declaran en un solo `package.json` del backend (o de la raíz para herramientas), con versiones exactas.
 - Las librerías del backend no son paquetes: no tienen `package.json` ni `node_modules` propios. Son proyectos de Nx (`project.json` con sus tags) y se importan por alias de TypeScript (`@platform/kernel`, `@contracts/identity`) declarados en `tsconfig.base.json`.
 - Los límites entre proyectos los aplica `@nx/enforce-module-boundaries` con los tags.
-- En el front, un solo pub workspace: las dependencias se resuelven una vez en `front/`.
 
 ## Carpetas de código
 
 - El código va directo en `src/`. No existe `src/lib/`.
-- Lo compartido dentro de un servicio o microfrontend vive en `shared/{enums,constants,types,utils}`.
+- Lo compartido dentro de un servicio vive en `shared/{enums,constants,types,utils}`.
 
 ```
 backend/libs/platform/kernel/

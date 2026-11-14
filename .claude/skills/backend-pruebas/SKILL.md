@@ -1,14 +1,13 @@
 ---
-name: pruebas
-description: Cómo se escriben y ubican las pruebas en node_template, backend y front. Carpetas __tests__, dobles como clases, sin esperas fijas, integración con Testcontainers y cobertura mínima. Úsala al escribir o revisar pruebas.
+name: backend-pruebas
+description: Cómo se escriben y ubican las pruebas del backend de node_template. Carpetas __tests__, dobles como clases, sin esperas fijas, integración con Testcontainers y cobertura mínima. Úsala al escribir o revisar pruebas del backend.
 ---
 
-# Pruebas
+# Pruebas del backend
 
 ## Ubicación
 
-- Backend: `src/<carpeta>/__tests__/<archivo>.spec.ts` para unitarias y `src/<carpeta>/__tests__/<archivo>.int-spec.ts` para integración. Ver la skill `estructura-de-proyecto`.
-- Front: el `test/` de cada paquete de Dart replica las carpetas de `lib/src` (convención de Flutter).
+- `src/<carpeta>/__tests__/<archivo>.spec.ts` para unitarias y `src/<carpeta>/__tests__/<archivo>.int-spec.ts` para integración. Ver la skill `backend-estructura`.
 - End to end de una app: `backend/apps/<app>/e2e/`.
 
 ## Cómo se escriben

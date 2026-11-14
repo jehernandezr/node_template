@@ -1,5 +1,5 @@
 ---
-name: persistencia-typeorm
+name: backend-persistencia-typeorm
 description: Cómo se persiste en node_template con TypeORM. Entidades, repositorios que implementan puertos del dominio, migraciones generadas y aplicadas con la CLI de TypeORM, transacciones y sharding por DataSource. Úsala al crear tablas, repositorios o migraciones.
 ---
 

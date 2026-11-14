@@ -10,16 +10,16 @@ Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHIT
 ## Comandos
 
 - Nx corre desde la raíz y cubre backend y front. Prepara con `pnpm install` en la raíz y `flutter pub get` en `front/`. Ejemplos: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
-- Crea librerías siguiendo la skill `estructura-de-proyecto` (proyecto de Nx sin `package.json`). Los generadores de servicios y módulos llegan en la fase F11; mientras tanto, un servicio nuevo sigue la estructura del [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+- Crea librerías del backend siguiendo la skill `backend-estructura` (proyecto de Nx sin `package.json`). Los generadores de servicios y módulos llegan en la fase F11; mientras tanto, un servicio nuevo sigue la estructura del [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
 - Las configuraciones de Jest son `jest.config.cjs`.
 
 ## Código
 
-- Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`: `codigo-enterprise`, `estructura-de-proyecto`, `pruebas` y `persistencia-typeorm`.
+- Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Backend: `backend-codigo-enterprise`, `backend-estructura`, `backend-pruebas` y `backend-persistencia-typeorm`. Front: `front-codigo`, `front-estructura` y `front-pruebas`.
 - Clases, composición e inyección de dependencias por constructor. Nada de módulos de funciones sueltas tipo script.
 - Persistencia con TypeORM: entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.
-- Las pruebas van en una carpeta `__tests__/` dentro de la carpeta del código que prueban. Nunca un `.spec.ts` junto al archivo fuente.
-- Código directo en `src/`, sin `src/lib/`. Un solo `node_modules`: las librerías se importan por alias de TypeScript y no tienen `package.json`.
+- Backend: las pruebas van en una carpeta `__tests__/` dentro de la carpeta del código que prueban, nunca un `.spec.ts` junto al archivo fuente. Front: en el `test/` de cada paquete, con las carpetas de `lib/src`.
+- Backend: código directo en `src/`, sin `src/lib/`. Un solo `node_modules`: las librerías se importan por alias de TypeScript y no tienen `package.json`.
 - Las importaciones relativas en las librerías terminan en `.js`, porque el proyecto usa ESM con `nodenext`.
 - El dominio (`domain/`) no importa NestJS, TypeORM, AWS ni otras librerías de infraestructura. Solo depende de `kernel`.
 - `application/` depende de `domain/`. `infrastructure/` y `presentation/` dependen de `domain/` y `application/`.
