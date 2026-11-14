@@ -7,3 +7,4 @@ export * from './lib/valkey-routing-cache.js';
 export { BLOOM_BATCH_SIZE, REBUILD_KEY_TTL_MS } from './lib/bloom-keys.js';
 export * from './lib/valkey-bloom-filter.js';
 export * from './lib/valkey-shard-directory-channel.js';
+export * from './lib/rate-limit/index.js';

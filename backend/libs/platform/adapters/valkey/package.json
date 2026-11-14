@@ -28,6 +28,7 @@
     "@platform/config": "workspace:*",
     "@platform/kernel": "workspace:*",
     "@platform/primitives": "workspace:*",
+    "@platform/rate-limit": "workspace:*",
     "@platform/sharding": "workspace:*",
     "iovalkey": "0.4.0",
     "tslib": "^2.3.0",

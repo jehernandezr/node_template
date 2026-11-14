@@ -219,6 +219,9 @@ importers:
       '@platform/primitives':
         specifier: workspace:*
         version: link:../../primitives
+      '@platform/rate-limit':
+        specifier: workspace:*
+        version: link:../../rate-limit
       '@platform/sharding':
         specifier: workspace:*
         version: link:../../sharding
@@ -469,6 +472,18 @@ importers:
       '@platform/kernel':
         specifier: workspace:*
         version: link:../kernel
+      tslib:
+        specifier: ^2.3.0
+        version: 2.9.1
+
+  backend/libs/platform/rate-limit:
+    dependencies:
+      '@platform/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@platform/primitives':
+        specifier: workspace:*
+        version: link:../primitives
       tslib:
         specifier: ^2.3.0
         version: 2.9.1

@@ -62,6 +62,9 @@
     },
     {
       "path": "./backend/libs/platform/adapters/postgres"
+    },
+    {
+      "path": "./backend/libs/platform/rate-limit"
     }
   ],
   "compilerOptions": {}
