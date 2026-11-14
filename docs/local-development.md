@@ -1,6 +1,6 @@
 # Desarrollo local
 
-Esta guía prepara el repositorio para trabajar desde la raíz con Nx y levanta la infraestructura local: PostgreSQL, Valkey, LocalStack, Mailpit y OpenObserve.
+Esta guía prepara el repositorio para trabajar desde la raíz con Nx y levanta la infraestructura local: PostgreSQL, Valkey, LocalStack, Mailpit, el OpenTelemetry Collector y OpenObserve.
 
 ## Prerrequisitos
 
@@ -60,22 +60,39 @@ El stack local vive en `backend/`:
 
 1. Entra a la carpeta con `cd backend`.
 2. Copia las variables de entorno de las apps con `cp .env.example .env`. El archivo `.env` no se confirma en git.
-3. Levanta los servicios con `docker compose up -d`.
+3. Levanta los servicios con `docker compose up -d`, o desde la raíz con `backend/infra/scripts/local.sh up`, que espera a que todos queden sanos.
 4. Revisa el estado con `docker compose ps`. Todos los servicios deben aparecer como `healthy`.
+
+Los puertos se publican solo en `127.0.0.1`: nada queda expuesto a la red local. Las imágenes están fijadas por tag y digest, y Renovate las actualiza.
 
 ## Servicios y URLs
 
-| Servicio    | Puerto      | Acceso                                                                                                                                                     |
-| ----------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL  | 5432        | Imagen con pgvector. Credenciales de desarrollo en `backend/docker-compose.yml`. Bases: `catalog`, `identity_shard_0`, `identity_shard_1`, `tasks_shard_0` |
-| Valkey      | 6379        | `redis://localhost:6379`. No tiene interfaz web                                                                                                            |
-| LocalStack  | 4566        | http://localhost:4566. Estado: http://localhost:4566/_localstack/health. Servicios: SQS, SNS, S3, Scheduler, SES y Secrets Manager                         |
-| Mailpit     | 1025 y 8025 | SMTP en `localhost:1025`. Interfaz de correos: http://localhost:8025                                                                                       |
-| OpenObserve | 5080        | http://localhost:5080. Usuario y contraseña de desarrollo en `backend/docker-compose.yml`                                                                  |
+| Servicio                | Puerto      | Acceso                                                                                                                                                                              |
+| ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL              | 5432        | Imagen con pgvector. Credenciales de desarrollo en `backend/docker-compose.yml`. Bases: `catalog`, `identity_shard_0`, `identity_shard_1`, `tasks_shard_0`                          |
+| Valkey                  | 6379        | `redis://localhost:6379`, con los módulos de Valkey (incluye los comandos `BF.*` de Bloom). No tiene interfaz web                                                                   |
+| LocalStack              | 4566        | http://localhost:4566. Estado: http://localhost:4566/_localstack/health. Servicios: SQS, SNS, S3, Scheduler, SES y Secrets Manager                                                  |
+| Mailpit                 | 1025 y 8025 | SMTP en `localhost:1025`. Interfaz de correos: http://localhost:8025                                                                                                                |
+| OpenObserve             | 5080        | http://localhost:5080. Usuario y contraseña de desarrollo en `backend/docker-compose.yml`                                                                                           |
+| OpenTelemetry Collector | 4317 y 4318 | OTLP gRPC y HTTP. Los servicios envían a `http://localhost:4318`. Guarda todas las trazas con error y `OTEL_SAMPLING_PERCENT` (10 % por defecto) del resto, y reenvía a OpenObserve |
 
 Las dos bases `identity_shard_0` e `identity_shard_1` son intencionales. Sirven para probar el enrutamiento por shard en local.
 
-Al arrancar, LocalStack corre `backend/infra/local/localstack/init-aws.sh`, que crea el bucket `platform-files-local`. El siguiente paso es crear también las colas y los tópicos desde la topología de mensajería.
+Al arrancar, LocalStack corre `backend/infra/local/localstack/init-aws.sh`, que crea el bucket `platform-files-local` y la topología de mensajería desde `backend/infra/terraform/topology.json` (tópicos, colas, DLQ y suscripciones con filtro), con el prefijo `local` de `MESSAGING_NAME_PREFIX`.
+
+LocalStack se fija en una versión que corre sin token. Las versiones con fecha (2026.x) pueden exigir `LOCALSTACK_AUTH_TOKEN`; antes de subir de versión, valida que el plan vigente cubra SQS, SNS, S3, S3 Control, KMS, Scheduler, SES, Secrets Manager, STS, IAM, CloudWatch y Logs.
+
+## Terraform contra el entorno local
+
+El ambiente `local` de Terraform apunta a LocalStack. Desde la raíz:
+
+```bash
+backend/infra/scripts/local.sh tf plan
+backend/infra/scripts/local.sh tf apply
+backend/infra/scripts/local.sh tf destroy
+```
+
+`local.sh down` detiene los servicios y `local.sh reset` borra también sus volúmenes. La estructura de stacks y ambientes está en el [ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
 
 ## Reiniciar los volúmenes
 

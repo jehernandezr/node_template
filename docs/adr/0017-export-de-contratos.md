@@ -61,9 +61,9 @@ En el backend, `InternalClient` valida la entrada de una operación interna con 
 
 ### CI
 
-El job `contracts` de `.github/workflows/ci.yml` corre cuando cambian `backend/libs/contracts`, `front/packages/contracts`, `front/tools` o el propio workflow. Ejecuta dos comandos:
+El job `contracts` de `.github/workflows/ci.yml` corre cuando cambia algo que altera el JSON exportado, la topología, AsyncAPI o el Dart generado: `backend/libs/contracts`, `backend/libs/platform/messaging`, `backend/tools/contracts-export`, `backend/infra/terraform/topology.json`, `pnpm-lock.yaml`, `.prettierrc`, `front/packages/contracts`, los mensajes de error generados de `front/packages/i18n`, `front/pubspec.lock`, `front/tools` o el propio workflow. Ejecuta dos comandos:
 
-- `pnpm nx run contracts-export:check` desde la raíz.
+- `pnpm nx run contracts-export:check` desde la raíz, que compara también `topology.json` y `asyncapi.json`.
 - `flutter pub get` y `dart run contracts_gen --check` dentro de `front/`.
 
 Un cambio en un contrato obliga a confirmar en el mismo cambio el JSON exportado y el Dart generado.

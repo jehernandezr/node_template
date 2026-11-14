@@ -96,7 +96,7 @@ Lista de revisión:
 
 ## CI
 
-Cada PR corre `ci.yml` y `security.yml`. El único check requerido para `main` es `ci-ok`, que agrega el resultado de todos los jobs. El detalle está en el [ADR 0019](docs/adr/0019-ci-y-toolchain.md).
+Cada PR corre `ci.yml` y `security.yml`. El único check requerido para `main` es `ci-ok`, que agrega el resultado de los jobs de `ci.yml`; la protección de `main` la configura el dueño del repositorio. El job `nx` exige cobertura mínima en el backend y el `typecheck` revisa también las pruebas. El job `terraform` valida cada stack con `terraform test`, las pruebas en Python, shellcheck y tflint. El detalle está en el [ADR 0019](docs/adr/0019-ci-y-toolchain.md) y el [ADR 0020](docs/adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
 
 ## Revisión
 
