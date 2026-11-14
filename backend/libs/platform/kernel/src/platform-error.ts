@@ -11,7 +11,12 @@ export function isErrorCode(code: unknown): code is string {
 
 /** Opciones comunes al construir un `PlatformError`. */
 export interface PlatformErrorOptions {
-  /** Si reintentar la misma operación puede dar otro resultado. Por defecto `false`. */
+  /**
+   * `true` si reintentar la misma operación puede dar otro resultado. Sin
+   * valor, o con `false`, quien clasifica la falla sigue a la `cause` y, si
+   * nada la explica, la trata como permanente. Una subclase que necesita otra
+   * clase (tiempo agotado, violación de protocolo) declara `failureKind`.
+   */
   readonly retryable?: boolean;
   /** Datos de diagnóstico. No deben incluir secretos ni datos personales. */
   readonly details?: Readonly<Record<string, unknown>>;
@@ -31,13 +36,6 @@ export abstract class PlatformError extends Error {
   /** Si reintentar la misma operación puede dar otro resultado. */
   readonly retryable: boolean;
 
-  /**
-   * Si quien lo lanzó declaró `retryable` (`true` o `false`). Si es `false`, el
-   * valor de `retryable` es solo el predeterminado y un clasificador debe
-   * seguir a la `cause` en lugar de tomarlo como señal.
-   */
-  readonly retryableExplicit: boolean;
-
   /** Datos adicionales opcionales para diagnóstico. */
   readonly details?: Readonly<Record<string, unknown>>;
 
@@ -48,7 +46,6 @@ export abstract class PlatformError extends Error {
     );
     this.name = new.target.name;
     this.retryable = options.retryable ?? false;
-    this.retryableExplicit = options.retryable !== undefined;
     this.details = options.details;
   }
 }

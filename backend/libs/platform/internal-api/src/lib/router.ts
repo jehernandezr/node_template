@@ -1,4 +1,8 @@
-import { validateContract } from '@contracts/platform';
+import {
+  PlatformErrorCode,
+  validateContract,
+  type OperationDefinition,
+} from '@contracts/platform';
 import {
   context as otelContext,
   SpanKind,
@@ -11,7 +15,7 @@ import {
   parseTraceparent,
   withSpan,
 } from '@platform/observability';
-import type { TransactionManager } from '@platform/persistence';
+import type { TransactionManager } from '@platform/primitives';
 import {
   CallOutcome,
   CallOutcomeKind,
@@ -28,9 +32,8 @@ import type {
   HandlerInputOf,
   OperationDescriptor,
   OperationOutputOf,
-  OperationSource,
 } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiError } from './errors.js';
 import {
   DEFAULT_MAX_PAYLOAD_BYTES,
   fitsIdempotencyStore,
@@ -68,16 +71,10 @@ export interface InternalRouterOptions {
   readonly leaseMarginMs?: number;
   /** Shortest lease, counted from the claim. Defaults to none. */
   readonly minLeaseMs?: number;
-  /**
-   * @deprecated The lease now derives from the request deadline plus
-   * `leaseMarginMs`. A value here is used as `minLeaseMs`.
-   */
-  readonly leaseMs?: number;
   /** Largest serialized input accepted or output stored, in bytes. Defaults to 256 KiB. */
   readonly maxPayloadBytes?: number;
   /**
-   * Unit of work of the service, usually its `Database` from
-   * `@platform/persistence`. When given, the handler and the stored result
+   * Transaction manager of the service. When given, the handler and the stored result
    * (`processed.complete`) run in one transaction: the result is stored if and
    * only if the effects are committed. The claim runs before, on its own. The
    * store must then write through the open unit of work, as
@@ -94,7 +91,7 @@ export interface InternalRouterOptions {
  * error, a database outage is transient, an unknown error is a protocol
  * violation).
  */
-export type OperationHandler<S extends OperationSource> = (
+export type OperationHandler<S extends OperationDefinition> = (
   input: HandlerInputOf<S>,
   ctx: CallMeta,
 ) => Promise<CallOutcome<OperationOutputOf<S>>>;
@@ -108,6 +105,19 @@ interface Route {
   readonly descriptor: OperationDescriptor;
   readonly handler: StoredHandler;
   readonly allowedCodes: ReadonlySet<string>;
+}
+
+/** Closes the handler over the input type of its operation. */
+function bindRoute<S extends OperationDefinition>(
+  descriptor: OperationDescriptor,
+  handler: OperationHandler<S>,
+): Route {
+  return {
+    descriptor,
+    // The router only passes input parsed by `descriptor.input`, the schema of `S`.
+    handler: (input, ctx) => handler(input as HandlerInputOf<S>, ctx),
+    allowedCodes: allowedErrorCodes(descriptor.metadata),
+  };
 }
 
 interface Claimed {
@@ -165,32 +175,28 @@ export class InternalRouter {
     this.processed = options.processed;
     this.clock = options.clock ?? new SystemClock();
     this.leaseMarginMs = options.leaseMarginMs;
-    this.minLeaseMs = options.minLeaseMs ?? options.leaseMs;
+    this.minLeaseMs = options.minLeaseMs;
     this.maxPayloadBytes = options.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES;
     this.transactions = options.transactions;
   }
 
   /**
-   * Binds a handler to an operation (a `defineOperation` descriptor or an
-   * `@Operation` class). Throws `InvalidOperation` for anything else and
-   * `DuplicateOperation` if the operation is already bound.
+   * Binds a handler to an operation declared with `defineOperation`. Throws
+   * `InvalidOperation` for anything else and `DuplicateOperation` if the
+   * operation is already bound.
    */
-  register<S extends OperationSource>(
+  register<S extends OperationDefinition>(
     operation: S,
     handler: OperationHandler<S>,
   ): void {
     const descriptor = resolveOperation(operation);
     if (this.routes.has(descriptor.id)) {
       throw new InternalApiError(
-        InternalApiErrorCode.DuplicateOperation,
+        PlatformErrorCode.InternalApiDuplicateOperation,
         `A handler for "${descriptor.id}" is already registered`,
       );
     }
-    this.routes.set(descriptor.id, {
-      descriptor,
-      handler: handler as unknown as StoredHandler,
-      allowedCodes: allowedErrorCodes(descriptor.metadata),
-    });
+    this.routes.set(descriptor.id, bindRoute(descriptor, handler));
   }
 
   /** Throws `MissingHandler` listing every operation of the registry without a handler. */
@@ -201,7 +207,7 @@ export class InternalRouter {
       .filter((id) => !this.routes.has(id));
     if (missing.length > 0) {
       throw new InternalApiError(
-        InternalApiErrorCode.MissingHandler,
+        PlatformErrorCode.InternalApiMissingHandler,
         `Missing handlers for: ${missing.join(', ')}`,
       );
     }
@@ -253,19 +259,19 @@ export class InternalRouter {
     if (!route) {
       return CallOutcome.protocolViolation(
         InternalApiReason.UnknownOperation,
-        InternalApiErrorCode.UnknownOperation,
+        PlatformErrorCode.InternalApiUnknownOperation,
       );
     }
     if (!fitsPayload(rawInput, this.maxPayloadBytes)) {
       return CallOutcome.protocolViolation(
         InternalApiReason.PayloadTooLarge,
-        InternalApiErrorCode.PayloadTooLarge,
+        PlatformErrorCode.InternalApiPayloadTooLarge,
       );
     }
     if (!isValidCallKey(meta.idempotencyKey, meta.tenantId)) {
       return CallOutcome.protocolViolation(
         InternalApiReason.InvalidIdempotencyKey,
-        InternalApiErrorCode.InvalidIdempotencyKey,
+        PlatformErrorCode.InternalApiInvalidIdempotencyKey,
       );
     }
 
@@ -294,7 +300,7 @@ export class InternalRouter {
     if (!fitsIdempotencyStore(key)) {
       return CallOutcome.protocolViolation(
         InternalApiReason.InvalidIdempotencyKey,
-        InternalApiErrorCode.InvalidIdempotencyKey,
+        PlatformErrorCode.InternalApiInvalidIdempotencyKey,
       );
     }
 
@@ -318,7 +324,7 @@ export class InternalRouter {
       }
       return CallOutcome.protocolViolation(
         InternalApiReason.IdempotencyKeyReuse,
-        InternalApiErrorCode.IdempotencyKeyReuse,
+        PlatformErrorCode.InternalApiIdempotencyKeyReuse,
       );
     }
     switch (claim.state) {
@@ -471,7 +477,7 @@ export class InternalRouter {
     ) {
       return CallOutcome.protocolViolation(
         InternalApiReason.InvalidHandlerResult,
-        InternalApiErrorCode.InvalidHandlerResult,
+        PlatformErrorCode.InternalApiInvalidHandlerResult,
       );
     }
     if (outcome.kind === CallOutcomeKind.Success) {
@@ -479,13 +485,13 @@ export class InternalRouter {
       if (!parsed.success) {
         return CallOutcome.protocolViolation(
           InternalApiReason.InvalidOutput,
-          InternalApiErrorCode.InvalidOutput,
+          PlatformErrorCode.InternalApiInvalidOutput,
         );
       }
       if (!fitsPayload(parsed.data, this.maxPayloadBytes)) {
         return CallOutcome.protocolViolation(
           InternalApiReason.PayloadTooLarge,
-          InternalApiErrorCode.PayloadTooLarge,
+          PlatformErrorCode.InternalApiPayloadTooLarge,
         );
       }
       return CallOutcome.success(parsed.data);

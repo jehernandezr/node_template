@@ -1,4 +1,6 @@
-import { ResilienceError, ResilienceErrorCode } from './errors.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { FixedClock } from '@platform/kernel/testing';
+import { ResilienceError } from './errors.js';
 import type { ResilienceEvent } from './events.js';
 import { ResilienceRegistry } from './registry.js';
 import { ResilienceEventKind, ResiliencePolicyName } from './policy-name.js';
@@ -171,10 +173,48 @@ describe('ResilienceRegistry', () => {
       .catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ResilienceError);
     expect((error as ResilienceError).code).toBe(
-      ResilienceErrorCode.CircuitOpen,
+      PlatformErrorCode.ResilienceCircuitOpen,
     );
     expect((error as ResilienceError).retryAfterMs).toBe(10_000);
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('half-opens the circuit after halfOpenAfterMs of the injected clock', async () => {
+    const clock = new FixedClock();
+    const registry = new ResilienceRegistry(
+      {
+        [ResiliencePolicyName.ExternalApi]: {
+          timeoutMs: 50,
+          retry: undefined,
+          circuitBreaker: { consecutiveFailures: 1, halfOpenAfterMs: 10_000 },
+        },
+      },
+      { clock },
+    );
+    const kinds: ResilienceEventKind[] = [];
+    registry.onEvent((event) => {
+      kinds.push(event.kind);
+    });
+    await registry
+      .execute(ResiliencePolicyName.ExternalApi, async () => {
+        throw transientError();
+      })
+      .catch(() => undefined);
+
+    clock.advance(9_999);
+    await expect(
+      registry.execute(ResiliencePolicyName.ExternalApi, async () => 'ok'),
+    ).rejects.toMatchObject({ code: PlatformErrorCode.ResilienceCircuitOpen });
+
+    clock.advance(1);
+    await expect(
+      registry.execute(ResiliencePolicyName.ExternalApi, async () => 'ok'),
+    ).resolves.toBe('ok');
+    expect(kinds).toEqual([
+      ResilienceEventKind.Break,
+      ResilienceEventKind.HalfOpen,
+      ResilienceEventKind.Reset,
+    ]);
   });
 
   it('keeps a separate breaker per dependencyKey', async () => {
@@ -202,7 +242,7 @@ describe('ResilienceRegistry', () => {
       })
       .catch((e: unknown) => e);
     expect((blocked as ResilienceError).code).toBe(
-      ResilienceErrorCode.CircuitOpen,
+      PlatformErrorCode.ResilienceCircuitOpen,
     );
 
     await expect(
@@ -244,7 +284,9 @@ describe('ResilienceRegistry', () => {
       .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ResilienceError);
-    expect((error as ResilienceError).code).toBe(ResilienceErrorCode.Timeout);
+    expect((error as ResilienceError).code).toBe(
+      PlatformErrorCode.ResilienceTimeout,
+    );
   });
 
   it('enforces the total time budget across retries and maps it to Timeout', async () => {
@@ -262,7 +304,9 @@ describe('ResilienceRegistry', () => {
       })
       .catch((e: unknown) => e);
 
-    expect((error as ResilienceError).code).toBe(ResilienceErrorCode.Timeout);
+    expect((error as ResilienceError).code).toBe(
+      PlatformErrorCode.ResilienceTimeout,
+    );
     expect(Date.now() - started).toBeLessThan(500);
     expect(
       events.some(
@@ -433,13 +477,5 @@ describe('ResilienceRegistry', () => {
       registry.execute(ResiliencePolicyName.Queue, async () => 7),
     ).resolves.toBe(7);
     await new Promise((resolve) => setTimeout(resolve, 10));
-  });
-
-  it('stores and returns the default registry', () => {
-    const registry = fastRegistry();
-    ResilienceRegistry.setDefault(registry);
-    expect(ResilienceRegistry.getDefault()).toBe(registry);
-    ResilienceRegistry.setDefault(undefined);
-    expect(ResilienceRegistry.getDefault()).toBeUndefined();
   });
 });

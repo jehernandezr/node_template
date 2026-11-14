@@ -1,5 +1,6 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { type Clock, SystemClock } from '@platform/kernel';
-import type { TransactionManager, UnitOfWork } from '@platform/persistence';
+import type { TransactionManager, UnitOfWork } from '@platform/primitives';
 import type {
   CommandDefinition,
   EventDefinition,
@@ -7,10 +8,7 @@ import type {
   MessageOutput,
 } from '../contracts/message-contract.js';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 import type { OutboxWriter } from '../outbox/outbox.js';
 import type { Topology } from '../topology/topology.js';
 import type { MessageBus, PublishOptions, SendOptions } from './message-bus.js';
@@ -20,28 +18,29 @@ import {
   type OutboundMessageFactoryOptions,
 } from './outbound-message.js';
 
-/** Dependencias de {@link OutboxMessageBus}. */
+/** Dependencies of {@link OutboxMessageBus}. */
 export interface OutboxMessageBusOptions extends OutboundMessageFactoryOptions {
   readonly topology: Topology;
   readonly writer: OutboxWriter;
-  /** Unidad de trabajo de `@platform/persistence` donde se guarda cada mensaje. */
+  /** Transactions of the service: each message is stored in the open one. */
   readonly transactions: TransactionManager;
   /**
-   * Corre una vez después del commit de cada transacción que agregó mensajes,
-   * por ejemplo para despertar el relay (`() => relay.relayOnce()`). Si falla,
-   * la transacción ya está confirmada y el relay periódico publica igual.
+   * Runs once after the commit of each transaction that appended messages, for
+   * example to wake the relay (`() => relay.relayOnce()`). If it fails, the
+   * transaction is already committed and the periodic relay publishes anyway.
    */
   readonly onCommitted?: () => void | Promise<void>;
 }
 
 /**
- * `MessageBus` respaldado por el outbox. Valida el mensaje contra su contrato y
- * su ruta (con las mismas reglas que el resto de los buses), arma el envelope y
- * lo guarda con la transacción abierta, así el mensaje existe si y solo si el
- * cambio de negocio se confirmó. El `OutboxRelay` lo publica después del commit.
+ * `MessageBus` backed by the outbox. Validates the message against its contract
+ * and its route (with the same rules as every other bus), builds the envelope
+ * and stores it in the open transaction, so the message exists if and only if
+ * the business change was committed. The `OutboxRelay` publishes it after the
+ * commit.
  *
- * Fuera de una transacción lanza `PLATFORM.MESSAGING.TRANSACTION_REQUIRED`:
- * publicar sin ella es justo el caso que el outbox evita.
+ * Outside a transaction it throws `PLATFORM.MESSAGING.TRANSACTION_REQUIRED`:
+ * publishing without one is exactly what the outbox prevents.
  */
 export class OutboxMessageBus implements MessageBus {
   private readonly options: OutboxMessageBusOptions;
@@ -81,7 +80,7 @@ export class OutboxMessageBus implements MessageBus {
     const uow = this.options.transactions.current();
     if (!uow) {
       throw new MessagingError(
-        MessagingErrorCode.TransactionRequired,
+        PlatformErrorCode.MessagingTransactionRequired,
         `"${type}" must be published inside a transaction (runInTransaction)`,
       );
     }
@@ -92,15 +91,12 @@ export class OutboxMessageBus implements MessageBus {
     message: OutboundMessage<T>,
     uow: UnitOfWork,
   ): Promise<MessageEnvelope<T>> {
-    await this.options.writer.append(
-      {
-        envelope: message.envelope,
-        createdAt: this.clock.now(),
-        ...(message.groupId === undefined ? {} : { groupId: message.groupId }),
-        ...(message.delayMs ? { delayMs: message.delayMs } : {}),
-      },
-      uow,
-    );
+    await this.options.writer.append({
+      envelope: message.envelope,
+      createdAt: this.clock.now(),
+      ...(message.groupId === undefined ? {} : { groupId: message.groupId }),
+      ...(message.delayMs ? { delayMs: message.delayMs } : {}),
+    });
     const onCommitted = this.options.onCommitted;
     if (onCommitted && !this.notified.has(uow)) {
       this.notified.add(uow);

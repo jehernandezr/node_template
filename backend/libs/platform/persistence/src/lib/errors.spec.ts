@@ -1,7 +1,7 @@
 import { PlatformErrorCode, platformErrorCatalog } from '@contracts/platform';
 import { isErrorCode } from '@platform/kernel';
 import { classifyFailure, FailureKind } from '@platform/primitives';
-import { RequestContext } from '@platform/observability';
+import { ActorType, RequestContext } from '@platform/observability';
 import {
   EMPTY_PERSISTENCE_CONTEXT,
   requestContextProvider,
@@ -53,6 +53,16 @@ describe('errors', () => {
     expect(classifyFailure(error)).toBe(kind);
   });
 
+  it.each(['ECONNRESET', 'EPIPE'])(
+    'treats the Node network error %s as transient',
+    (code) => {
+      const error = toPersistenceError(
+        Object.assign(new Error('socket'), { code }),
+      );
+      expect(classifyFailure(error)).toBe(FailureKind.Transient);
+    },
+  );
+
   it('passes platform errors through', () => {
     const original = new OptimisticLockError('tasks', 1);
     expect(toPersistenceError(original)).toBe(original);
@@ -91,12 +101,14 @@ describe('sql comment', () => {
 });
 
 describe('requestContextProvider', () => {
-  it('reads trace, tenant and user from RequestContext', () => {
+  it('reads trace, tenant, actor and user from RequestContext', () => {
     const context = RequestContext.run(
       {
         traceId: '0193f1c2-0000-7000-8000-00000000c0de',
         spanId: '00f067aa0ba902b7',
         tenantId: 'tenant-1',
+        actorId: 'svc-billing',
+        actorType: ActorType.ServiceAccount,
         userId: 'user-1',
         debugSampled: false,
       },
@@ -106,8 +118,9 @@ describe('requestContextProvider', () => {
     expect(context).toEqual({
       traceId: '0193f1c200007000800000000000c0de',
       tenantId: 'tenant-1',
-      actorId: 'user-1',
-      actorType: undefined,
+      actorId: 'svc-billing',
+      actorType: ActorType.ServiceAccount,
+      userId: 'user-1',
     });
   });
 

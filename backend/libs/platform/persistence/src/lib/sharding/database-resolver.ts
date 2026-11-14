@@ -1,3 +1,4 @@
+import type { TransactionHook, TransactionOptions } from '@platform/primitives';
 import {
   routingKeyFor,
   ShardAccess,
@@ -13,15 +14,14 @@ import {
 import {
   currentUnitOfWork,
   Database,
+  runHookNow,
   type DatabaseOptions,
 } from '../database.js';
 import { DataAccess } from '../enums.js';
 import type { DatabaseConnection } from '../sql/sql-session.js';
 import type {
-  TransactionHook,
-  TransactionManager,
-  TransactionOptions,
-  UnitOfWork,
+  SqlTransactionManager,
+  SqlUnitOfWork,
 } from '../transaction/transaction-manager.js';
 
 /** Elige la base lógica de cada operación. */
@@ -45,6 +45,15 @@ export class SingleDatabaseResolver implements DatabaseResolver {
   }
 }
 
+/** Una base fija o un resolver, como resolver. Lo usan los adaptadores que aceptan ambos. */
+export function toResolver(
+  databases: Database | DatabaseResolver,
+): DatabaseResolver {
+  return databases instanceof Database
+    ? new SingleDatabaseResolver(databases)
+    : databases;
+}
+
 /** Shard lógico y la instancia física que lo aloja. */
 export interface ShardTarget {
   readonly logicalShard: string;
@@ -57,9 +66,9 @@ export interface ShardedDatabaseResolverOptions {
   readonly router: ShardRouter;
   /**
    * Declaración de sharding del servicio. Se valida al construir el resolver.
-   * `ShardKey.User` toma el actor del contexto; `ShardKey.Custom` pide un
-   * `keyResolver` que lee la llave del contexto. Sin llave, el resultado es
-   * `PLATFORM.SHARDING.KEY_MISSING`.
+   * `ShardKey.User` toma el `userId` del contexto (el usuario sobre el que se
+   * opera, no el actor); `ShardKey.Custom` pide un `keyResolver` que lee la
+   * llave del contexto. Sin llave, el resultado es `PLATFORM.SHARDING.KEY_MISSING`.
    */
   readonly sharding: ShardingFeatureOptions<PersistenceContext>;
   /** Abre la conexión a un shard lógico en su instancia. Se llama una vez por par. */
@@ -85,10 +94,11 @@ interface CachedDatabase {
  * en el shard del contexto.
  */
 export class ShardedDatabaseResolver
-  implements DatabaseResolver, TransactionManager
+  implements DatabaseResolver, SqlTransactionManager
 {
   private readonly databases = new Map<string, CachedDatabase>();
-  private readonly retired: Database[] = [];
+  /** Bases de instancias anteriores que esperan a que se devuelvan sus sesiones. */
+  private readonly retiring = new Set<Database>();
   private readonly context: () => PersistenceContext;
 
   constructor(private readonly options: ShardedDatabaseResolverOptions) {
@@ -100,7 +110,7 @@ export class ShardedDatabaseResolver
     const context = this.context();
     const key = routingKeyFor(
       this.options.sharding,
-      { tenantId: context.tenantId ?? '', userId: context.actorId },
+      { tenantId: context.tenantId ?? '', userId: context.userId },
       context,
     );
     const resolved = await this.options.router.resolve({
@@ -129,14 +139,14 @@ export class ShardedDatabaseResolver
   }
 
   async runInTransaction<T>(
-    fn: (uow: UnitOfWork) => Promise<T>,
+    fn: (uow: SqlUnitOfWork) => Promise<T>,
     options?: TransactionOptions,
   ): Promise<T> {
     const database = await this.resolve(DataAccess.Write);
     return database.runInTransaction(fn, options);
   }
 
-  current(): UnitOfWork | undefined {
+  current(): SqlUnitOfWork | undefined {
     return currentUnitOfWork();
   }
 
@@ -150,26 +160,24 @@ export class ShardedDatabaseResolver
       unit.afterCommit(hook);
       return;
     }
-    void Promise.resolve()
-      .then(hook)
-      .catch((error: unknown) => this.options.database?.onHookError?.(error));
+    runHookNow(hook, (error) => this.options.database?.onHookError?.(error));
   }
 
   /** Cierra las conexiones abiertas, incluidas las de instancias anteriores. */
   async close(): Promise<void> {
     const all = [
       ...[...this.databases.values()].map((cached) => cached.database),
-      ...this.retired,
+      ...this.retiring,
     ];
     this.databases.clear();
-    this.retired.length = 0;
+    this.retiring.clear();
     await Promise.all(all.map((database) => database.close()));
   }
 
   /**
    * Una {@link Database} por shard lógico. Si el shard cambió de instancia (un
-   * traslado), se abre una nueva y la anterior se cierra en `close()`, porque
-   * puede tener sesiones en uso.
+   * traslado), se abre una nueva y la anterior se cierra cuando termine la
+   * última sesión que tenga prestada.
    */
   private databaseFor(target: ShardTarget): Database {
     const cached = this.databases.get(target.logicalShard);
@@ -177,7 +185,7 @@ export class ShardedDatabaseResolver
       return cached.database;
     }
     if (cached !== undefined) {
-      this.retired.push(cached.database);
+      this.retire(cached.database);
     }
     const database = new Database({
       ...this.options.database,
@@ -189,5 +197,16 @@ export class ShardedDatabaseResolver
       database,
     });
     return database;
+  }
+
+  private retire(database: Database): void {
+    this.retiring.add(database);
+    database.closeWhenIdle().then(
+      () => this.retiring.delete(database),
+      (error: unknown) => {
+        this.retiring.delete(database);
+        this.options.database?.onHookError?.(error);
+      },
+    );
   }
 }

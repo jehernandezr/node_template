@@ -1,17 +1,16 @@
-import { PlatformError } from '@platform/kernel';
-import { FailureKind } from './failure-kind.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { FailureKind, PlatformError } from '@platform/kernel';
 
 /** Códigos de error de `@platform/primitives`. */
-export enum PrimitivesErrorCode {
-  InvalidArgument = 'PLATFORM.PRIMITIVES.INVALID_ARGUMENT',
-  NonJsonValue = 'PLATFORM.PRIMITIVES.NON_JSON_VALUE',
-  DeadlineExceeded = 'PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED',
-  StaleClaim = 'PLATFORM.PRIMITIVES.STALE_CLAIM',
-}
+export type PrimitivesErrorCode =
+  | PlatformErrorCode.PrimitivesInvalidArgument
+  | PlatformErrorCode.PrimitivesNonJsonValue
+  | PlatformErrorCode.PrimitivesDeadlineExceeded
+  | PlatformErrorCode.PrimitivesStaleClaim;
 
 /** Un argumento no cumple el rango o el tipo esperado. Es un error de programación. */
 export class InvalidArgumentError extends PlatformError {
-  override readonly code = PrimitivesErrorCode.InvalidArgument;
+  override readonly code = PlatformErrorCode.PrimitivesInvalidArgument;
   readonly failureKind = FailureKind.ProtocolViolation;
 
   constructor(argument: string, expectation: string) {
@@ -26,7 +25,7 @@ export class InvalidArgumentError extends PlatformError {
  * posición (por ejemplo `$.items[2].price`); no se incluye el valor.
  */
 export class NonJsonValueError extends PlatformError {
-  override readonly code = PrimitivesErrorCode.NonJsonValue;
+  override readonly code = PlatformErrorCode.PrimitivesNonJsonValue;
   readonly failureKind = FailureKind.ProtocolViolation;
 
   constructor(path: string, reason: string) {
@@ -38,7 +37,7 @@ export class NonJsonValueError extends PlatformError {
 
 /** Se agotó el presupuesto de tiempo de la operación. */
 export class DeadlineExceededError extends PlatformError {
-  override readonly code = PrimitivesErrorCode.DeadlineExceeded;
+  override readonly code = PlatformErrorCode.PrimitivesDeadlineExceeded;
   readonly failureKind = FailureKind.Timeout;
 
   constructor(deadlineAtMs: number) {
@@ -51,7 +50,7 @@ export class DeadlineExceededError extends PlatformError {
  * el lease, la operación ya terminó o el claim se liberó.
  */
 export class StaleClaimError extends PlatformError {
-  override readonly code = PrimitivesErrorCode.StaleClaim;
+  override readonly code = PlatformErrorCode.PrimitivesStaleClaim;
   readonly failureKind = FailureKind.Permanent;
 
   constructor(operation: 'complete' | 'release') {

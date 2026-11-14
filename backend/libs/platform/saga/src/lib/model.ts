@@ -1,5 +1,3 @@
-import { SystemClock, type Clock } from '@platform/kernel';
-
 export type { Clock } from '@platform/kernel';
 
 /** Lifecycle of a saga instance. */
@@ -64,13 +62,19 @@ export interface SagaInstance {
   readonly suspendedSince: Date | null;
   readonly deadlineAt: Date | null;
   readonly lastErrorCode: string | null;
-  /** Call context of every step (tenant, actor, traceparent). Absent on instances from older versions. */
-  readonly context?: SagaCallContext | null;
+  /**
+   * What went wrong besides the code, for whoever handles an intervention: the
+   * reason of the call outcome, or the name and message of the error a step
+   * builder threw. Never the input or the state. Cleared when a step succeeds.
+   */
+  readonly lastErrorDetail: string | null;
+  /** Call context of every step (tenant, actor, traceparent), or null when none was given. */
+  readonly context: SagaCallContext | null;
   /**
    * `stableDigest` of the initial state. An idempotent start with the same key
-   * and another input is rejected. Absent on instances from older versions.
+   * and another input is rejected.
    */
-  readonly inputDigest?: string | null;
+  readonly inputDigest: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -89,19 +93,13 @@ export interface StepLogEntry {
   readonly errorCode: string | null;
   /**
    * W3C traceparent of the step, written with its dispatch. A retry of the
-   * step, also from another node after a crash, runs in that trace. Absent on
-   * entries from older versions.
+   * step, also from another node after a crash, runs in that trace. Null when
+   * there was no trace.
    */
-  readonly traceparent?: string | null;
+  readonly traceparent: string | null;
   readonly startedAt: Date;
   readonly finishedAt: Date | null;
 }
-
-/**
- * Clock backed by the system time.
- * @deprecated Use `SystemClock` from `@platform/kernel`.
- */
-export const systemClock: Clock = new SystemClock();
 
 /** Builds the idempotency key of a step attempt. */
 export function stepIdempotencyKey(

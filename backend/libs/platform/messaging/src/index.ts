@@ -3,9 +3,13 @@ export * from './lib/errors/describe-error.js';
 export * from './lib/envelope/message-envelope.js';
 export * from './lib/contracts/message-contract.js';
 export * from './lib/topology/retry-policy.js';
-export * from './lib/topology/topic-def.js';
-export * from './lib/topology/queue-def.js';
-export * from './lib/topology/route.js';
+export type { TopicDef } from './lib/topology/topic-def.js';
+export type {
+  DeadLetterConfig,
+  QueueDef,
+  Subscription,
+} from './lib/topology/queue-def.js';
+export { TargetKind, type RouteDef } from './lib/topology/route.js';
 export * from './lib/topology/topology.js';
 export * from './lib/topology/contract-topology.js';
 export * from './lib/dispatch/classify-error.js';

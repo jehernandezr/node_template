@@ -1,16 +1,48 @@
-import { Compensation, defineOperation } from '@contracts/platform';
+import {
+  Compensation,
+  defineOperation,
+  PlatformErrorCode,
+} from '@contracts/platform';
 import { z } from 'zod';
-import { SagaError, SagaErrorCode } from '../errors.js';
+import { SagaError } from '../errors.js';
 import { StepStatus } from '../model.js';
 import { SagaDefinition } from './saga-definition.js';
-import { OperationRef, SagaFlow } from './saga-flow.js';
+import { SagaFlow } from './saga-flow.js';
 
-const CREATE_A: OperationRef<{ name: string }, { id: string }> = {
-  id: 'a.create',
-  compensatedBy: 'a.remove',
-};
-const CREATE_B: OperationRef = { id: 'b.create', compensatedBy: 'b.remove' };
-const SEND: OperationRef = { id: 'post.send', compensatedBy: null };
+const CREATE_A = defineOperation({
+  id: 'a.item.create.v1',
+  input: z.object({ name: z.string() }),
+  output: z.object({ id: z.string() }),
+  idempotent: true,
+  compensatedBy: 'a.item.remove.v1',
+  description: 'Creates an a.',
+});
+const CREATE_B = defineOperation({
+  id: 'b.item.create.v1',
+  input: z.unknown(),
+  output: z.unknown(),
+  idempotent: true,
+  compensatedBy: 'b.item.remove.v1',
+  description: 'Creates a b.',
+});
+const SEND = defineOperation({
+  id: 'post.item.send.v1',
+  input: z.unknown(),
+  output: z.unknown(),
+  idempotent: true,
+  compensatedBy: Compensation.None,
+  compensationReason: 'A sent post cannot be recalled.',
+  description: 'Sends a post.',
+});
+const UNDOABLE_A = defineOperation({
+  id: 'a.item.create-final.v1',
+  input: z.unknown(),
+  output: z.unknown(),
+  idempotent: true,
+  compensatedBy: Compensation.None,
+  compensationReason: 'Nothing undoes it.',
+  description: 'Creates an a for good.',
+});
 
 interface State {
   a?: string;
@@ -50,13 +82,13 @@ describe('SagaDefinition.build', () => {
     expect(compiled.type).toBe('valid');
     expect(compiled.pivotIndex).toBe(2);
     expect(compiled.steps.map((s) => s.operationId)).toEqual([
-      'a.create',
-      'b.create',
-      'post.send',
+      'a.item.create.v1',
+      'b.item.create.v1',
+      'post.item.send.v1',
     ]);
     expect(compiled.steps.map((s) => s.compensationOperationId)).toEqual([
-      'a.remove',
-      'b.remove',
+      'a.item.remove.v1',
+      'b.item.remove.v1',
       null,
     ]);
     expect(compiled.steps[2].afterPivot).toBe(true);
@@ -91,12 +123,12 @@ describe('SagaDefinition.build', () => {
       readonly type = 'missing-compensation';
 
       protected define(flow: SagaFlow<State>): void {
-        flow.step({ id: 'a.create', compensatedBy: null }).step(CREATE_B);
+        flow.step(UNDOABLE_A).step(CREATE_B);
       }
     }
 
     expect(codeOf(() => new Saga().build())).toBe(
-      SagaErrorCode.MissingCompensation,
+      PlatformErrorCode.SagaMissingCompensation,
     );
   });
 
@@ -134,7 +166,7 @@ describe('SagaDefinition.build', () => {
     }
 
     expect(codeOf(() => new TwoPivots().build())).toBe(
-      SagaErrorCode.InvalidDefinition,
+      PlatformErrorCode.SagaInvalidDefinition,
     );
   });
 });
@@ -214,7 +246,7 @@ describe('SagaFlow with contract definitions', () => {
 
   it('rejects an operation with Compensation.None before the pivot', () => {
     expect(codeOf(() => compile((flow) => flow.step(Ship)))).toBe(
-      SagaErrorCode.MissingCompensation,
+      PlatformErrorCode.SagaMissingCompensation,
     );
   });
 
@@ -235,16 +267,6 @@ describe('SagaFlow with contract definitions', () => {
   it('rejects an operation that is not idempotent after the pivot', () => {
     expect(
       codeOf(() => compile((flow) => flow.step(Reserve).pivot().step(Email))),
-    ).toBe(SagaErrorCode.InvalidDefinition);
-  });
-
-  it('treats Compensation.None in a hand-written reference as no compensation', () => {
-    expect(
-      codeOf(() =>
-        compile((flow) =>
-          flow.step({ id: 'stock.ship.v1', compensatedBy: Compensation.None }),
-        ),
-      ),
-    ).toBe(SagaErrorCode.MissingCompensation);
+    ).toBe(PlatformErrorCode.SagaInvalidDefinition);
   });
 });

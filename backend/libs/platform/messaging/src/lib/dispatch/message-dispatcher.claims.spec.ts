@@ -1,9 +1,8 @@
-import { defineEvent } from '@contracts/platform';
+import { defineEvent, PlatformErrorCode } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { type ClaimRequest, ClaimState, Deadline } from '@platform/primitives';
 import { z } from 'zod';
 import { createEnvelope } from '../envelope/message-envelope.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { QueueDef } from '../topology/queue-def.js';
 import { RetryPolicy } from '../topology/retry-policy.js';
 import { Route } from '../topology/route.js';
@@ -131,7 +130,7 @@ describe('MessageDispatcher three-state claims', () => {
       }),
     ).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.IdempotencyConflict,
+      code: PlatformErrorCode.MessagingIdempotencyConflict,
     });
   });
 
@@ -141,10 +140,11 @@ describe('MessageDispatcher three-state claims', () => {
       .subscribesTo(topic)
       .visibilityTimeout(120)
       .deadLetter({ maxReceiveCount: 5 });
-    class WithQueue extends Topology {
-      readonly topics = [topic];
-      readonly queues = [queue];
-      readonly routes = [Route.event(TaskUpdated).to(topic)];
+    function withQueue(): Topology {
+      const topics = [topic];
+      const queues = [queue];
+      const routes = [Route.event(TaskUpdated).to(topic)];
+      return new Topology({ topics, queues, routes });
     }
     const clock = new FixedClock();
     const store = new InMemoryProcessedMessageStore(
@@ -155,7 +155,7 @@ describe('MessageDispatcher three-state claims', () => {
     const dispatcher = new MessageDispatcher({
       consumer: 'notifications',
       processed: store,
-      topology: new WithQueue(),
+      topology: withQueue(),
       clock,
     });
     dispatcher.register(TaskUpdated, () => undefined);
@@ -195,7 +195,9 @@ describe('MessageDispatcher three-state claims', () => {
           minLeaseMs: 0,
         }),
     ).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.InvalidOptions }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingInvalidOptions,
+      }),
     );
   });
 
@@ -297,7 +299,7 @@ describe('MessageDispatcher three-state claims', () => {
       outcome: DispatchOutcome.DeadLetter,
       id: 'msg-1',
       error: 'message id was already used with different content',
-      code: MessagingErrorCode.IdempotencyConflict,
+      code: PlatformErrorCode.MessagingIdempotencyConflict,
     });
     expect(handler).toHaveBeenCalledTimes(1);
   });

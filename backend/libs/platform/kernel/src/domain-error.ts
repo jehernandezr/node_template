@@ -1,3 +1,4 @@
+import { FailureKind } from './failure-kind.js';
 import { PlatformError } from './platform-error.js';
 
 /** Opciones adicionales de un `DomainError`. */
@@ -14,6 +15,9 @@ export interface DomainErrorOptions {
  * una regla de negocio da el mismo resultado al repetirse.
  */
 export abstract class DomainError extends PlatformError {
+  /** Una regla de negocio no depende de su `cause`: la clase sale solo de `retryable`. */
+  readonly failureKind: FailureKind;
+
   constructor(
     message: string,
     details?: Readonly<Record<string, unknown>>,
@@ -24,5 +28,9 @@ export abstract class DomainError extends PlatformError {
       cause: options.cause,
       retryable: options.retryable ?? false,
     });
+    this.failureKind =
+      options.retryable === true
+        ? FailureKind.Transient
+        : FailureKind.Permanent;
   }
 }

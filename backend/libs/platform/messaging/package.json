@@ -27,7 +27,6 @@
     "@opentelemetry/api": "1.10.0",
     "@platform/kernel": "workspace:*",
     "@platform/observability": "workspace:*",
-    "@platform/persistence": "workspace:*",
     "@platform/primitives": "workspace:*",
     "tslib": "^2.3.0",
     "zod": "^4.6.7"

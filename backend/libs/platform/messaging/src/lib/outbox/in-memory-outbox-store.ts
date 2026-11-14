@@ -1,5 +1,5 @@
 import { type Clock, SystemClock } from '@platform/kernel';
-import type { UnitOfWork } from '@platform/persistence';
+import type { TransactionManager } from '@platform/primitives';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import {
   type ClaimOutboxRequest,
@@ -23,6 +23,11 @@ export interface AddOutboxOptions {
 export interface InMemoryOutboxStoreOptions {
   /** Default time for {@link InMemoryOutboxStore.add}. Defaults to the system clock. */
   readonly clock?: Clock;
+  /**
+   * Transactions whose rollback removes the records appended inside them, as a
+   * real store would never have written them.
+   */
+  readonly transactions?: TransactionManager;
 }
 
 type Patch = Partial<
@@ -40,9 +45,11 @@ function isOpen(record: OutboxRecord): boolean {
 export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
   private readonly records = new Map<string, OutboxRecord>();
   private readonly clock: Clock;
+  private readonly transactions?: TransactionManager;
 
   constructor(options: InMemoryOutboxStoreOptions = {}) {
     this.clock = options.clock ?? new SystemClock();
+    this.transactions = options.transactions;
   }
 
   /** Appends an envelope to the outbox. */
@@ -63,16 +70,16 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
   }
 
   /**
-   * Appends a record inside a unit of work. A rollback removes it, as a real
-   * store would never have written it.
+   * Appends a record in the open transaction of `transactions`, if any. A
+   * rollback removes it.
    */
-  append(record: OutboxAppend, uow: UnitOfWork): Promise<void> {
+  append(record: OutboxAppend): Promise<void> {
     const added = this.add(record.envelope, {
       now: record.createdAt,
       groupId: record.groupId,
       delayMs: record.delayMs,
     });
-    uow.afterRollback(() => {
+    this.transactions?.current()?.afterRollback(() => {
       this.records.delete(added.id);
     });
     return Promise.resolve();

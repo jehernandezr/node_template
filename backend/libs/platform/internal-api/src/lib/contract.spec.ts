@@ -1,126 +1,96 @@
+import {
+  defineOperation,
+  PlatformErrorCode,
+  type OperationDefinition,
+} from '@contracts/platform';
 import { z } from 'zod';
 import {
   Compensation,
-  Operation,
-  OperationContract,
   allowedErrorCodes,
   effectiveAttempts,
   effectiveTimeout,
-  getOperationMetadata,
+  resolveOperation,
 } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiError } from './errors.js';
 
-@Operation({
+const Reserve = defineOperation({
   id: 'billing.reserve.v1',
+  description: 'Reserves funds',
   compensatedBy: 'billing.release.v1',
   idempotent: true,
-  errors: ['NO_FUNDS'],
-})
-class Reserve extends OperationContract<{ amount: number }, { id: string }> {
-  readonly input = z.object({ amount: z.number() });
-  readonly output = z.object({ id: z.string() });
-}
+  errors: ['BILLING.FUNDS.NOT_ENOUGH'],
+  input: z.object({ amount: z.number() }),
+  output: z.object({ id: z.string() }),
+});
 
-@Operation({
-  id: 'mail.send.v1',
+const SendMail = defineOperation({
+  id: 'mail.message.send.v1',
+  description: 'Sends an email',
   compensatedBy: Compensation.None,
   compensationReason: 'Email cannot be unsent',
   idempotent: true,
-  mutating: false,
-})
-class SendMail extends OperationContract<{ to: string }, { ok: boolean }> {
-  readonly input = z.object({ to: z.string() });
-  readonly output = z.object({ ok: z.boolean() });
-}
+  input: z.object({ to: z.string() }),
+  output: z.object({ ok: z.boolean() }),
+});
 
-class Undecorated extends OperationContract<unknown, unknown> {
-  readonly input = z.unknown();
-  readonly output = z.unknown();
-}
-
-class InheritsReserve extends Reserve {}
-
-describe('@Operation', () => {
-  it('stores metadata with mutating and errors defaults', () => {
-    expect(getOperationMetadata(Reserve)).toEqual({
+describe('resolveOperation', () => {
+  it('normalizes the metadata of a descriptor', () => {
+    expect(resolveOperation(Reserve).metadata).toEqual({
       id: 'billing.reserve.v1',
       compensatedBy: 'billing.release.v1',
       idempotent: true,
-      errors: ['NO_FUNDS'],
+      errors: ['BILLING.FUNDS.NOT_ENOUGH'],
       mutating: true,
     });
+    const metadata = resolveOperation(SendMail).metadata;
+    expect(metadata.compensationReason).toBe('Email cannot be unsent');
+    expect(metadata.errors).toEqual([]);
   });
 
-  it('keeps an explicit mutating flag and an empty errors list by default', () => {
-    const metadata = getOperationMetadata(SendMail);
-    expect(metadata?.mutating).toBe(false);
-    expect(metadata?.compensationReason).toBe('Email cannot be unsent');
-    expect(getOperationMetadata(SendMail)?.errors).toEqual([]);
-  });
-
-  it('stores metadata under Symbol.for so it survives module boundaries', () => {
-    const key = Symbol.for('platform.internal-api.operation');
-    expect(Reflect.get(Reserve, key)).toBe(getOperationMetadata(Reserve));
-    expect(Reflect.get(Reserve, key)).toMatchObject({
-      id: 'billing.reserve.v1',
-    });
-  });
-
-  it('does not expose metadata as an enumerable property', () => {
-    expect(Object.getOwnPropertySymbols(Reserve)).toContain(
-      Symbol.for('platform.internal-api.operation'),
-    );
-    expect(
-      Object.getOwnPropertyDescriptor(
-        Reserve,
-        Symbol.for('platform.internal-api.operation'),
-      )?.enumerable,
-    ).toBe(false);
-  });
-
-  it('returns undefined for a class without the decorator', () => {
-    expect(getOperationMetadata(Undecorated)).toBeUndefined();
-  });
-
-  it('ignores metadata inherited from a decorated parent class', () => {
-    expect(getOperationMetadata(InheritsReserve)).toBeUndefined();
+  it('keeps the schemas and caches the descriptor', () => {
+    const descriptor = resolveOperation(Reserve);
+    expect(descriptor.input).toBe(Reserve.input);
+    expect(descriptor.output).toBe(Reserve.output);
+    expect(resolveOperation(Reserve)).toBe(descriptor);
   });
 
   it('exposes metadata as frozen', () => {
-    const metadata = getOperationMetadata(Reserve);
+    const { metadata } = resolveOperation(Reserve);
     expect(Object.isFrozen(metadata)).toBe(true);
-    expect(Object.isFrozen(metadata?.errors)).toBe(true);
+    expect(Object.isFrozen(metadata.errors)).toBe(true);
   });
 
-  it('throws MissingCompensation when Compensation.None has no reason, at decoration time', () => {
+  it('throws InvalidOperation for something that is not a descriptor', () => {
     expect(() =>
-      Operation({
-        id: 'a.b.v1',
-        compensatedBy: Compensation.None,
-        idempotent: true,
-      }),
-    ).toThrow(InternalApiError);
-    expect(() =>
-      Operation({
-        id: 'a.b.v1',
-        compensatedBy: Compensation.None,
-        compensationReason: '  ',
-        idempotent: true,
-      }),
+      resolveOperation({ id: 'x' } as unknown as OperationDefinition),
     ).toThrow(
       expect.objectContaining({
-        code: InternalApiErrorCode.MissingCompensation,
+        code: PlatformErrorCode.InternalApiInvalidOperation,
+      }),
+    );
+  });
+
+  it('throws MissingCompensation when Compensation.None has no reason', () => {
+    const unchecked = {
+      ...Reserve,
+      compensatedBy: Compensation.None,
+      compensationReason: '  ',
+    } as OperationDefinition;
+    expect(() => resolveOperation(unchecked)).toThrow(InternalApiError);
+    expect(() => resolveOperation(unchecked)).toThrow(
+      expect.objectContaining({
+        code: PlatformErrorCode.InternalApiMissingCompensation,
       }),
     );
   });
 
   it('exposes the effective attempts, timeout and allowed codes', () => {
-    const metadata = getOperationMetadata(Reserve);
-    expect(metadata && effectiveAttempts(metadata)).toBe(3);
-    expect(metadata && effectiveTimeout(metadata)).toBe(5000);
-    expect(metadata && [...allowedErrorCodes(metadata)].sort()).toEqual([
-      'NO_FUNDS',
-      'PLATFORM.VALIDATION.INVALID_INPUT',
+    const { metadata } = resolveOperation(Reserve);
+    expect(effectiveAttempts(metadata)).toBe(3);
+    expect(effectiveTimeout(metadata)).toBe(5000);
+    expect([...allowedErrorCodes(metadata)].sort()).toEqual([
+      'BILLING.FUNDS.NOT_ENOUGH',
+      PlatformErrorCode.ValidationInvalidInput,
     ]);
   });
 });

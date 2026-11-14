@@ -1,9 +1,8 @@
-import { defineEvent } from '@contracts/platform';
+import { defineEvent, PlatformErrorCode } from '@contracts/platform';
 import { z } from 'zod';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { BackoffStrategy } from '@platform/primitives';
 import { createEnvelope } from '../envelope/message-envelope.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { QueueDef } from '../topology/queue-def.js';
 import { Route } from '../topology/route.js';
 import { TopicDef } from '../topology/topic-def.js';
@@ -21,14 +20,15 @@ const OrderChanged = defineEvent({
   description: 'Evento de prueba.',
 });
 
-class TestTopology extends Topology {
-  readonly topics = [events];
-  readonly queues = [
+function testTopology(): Topology {
+  const topics = [events];
+  const queues = [
     new QueueDef('billing')
       .subscribesTo(events)
       .deadLetter({ maxReceiveCount: 5 }),
   ];
-  readonly routes = [Route.event(OrderChanged).to(events)];
+  const routes = [Route.event(OrderChanged).to(events)];
+  return new Topology({ topics, queues, routes });
 }
 
 const t0 = new Date('2026-01-01T00:00:00.000Z');
@@ -66,7 +66,7 @@ function setup() {
     new OutboxRelay({
       store,
       publisher,
-      topology: new TestTopology(),
+      topology: testTopology(),
       backoff: {
         strategy: BackoffStrategy.None,
         baseMs: 1_000,
@@ -157,10 +157,14 @@ describe('OutboxRelay fencing', () => {
   it('rejects invalid options', () => {
     const { relay } = setup();
     expect(() => relay({ leaseMs: 0 })).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.InvalidOptions }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingInvalidOptions,
+      }),
     );
     expect(() => relay({ batchSize: 1.5 })).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.InvalidOptions }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingInvalidOptions,
+      }),
     );
   });
 });

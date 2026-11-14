@@ -1,10 +1,20 @@
 import { PartitionBy, PartitionInterval } from '../enums.js';
 import { invalidConfiguration } from '../errors.js';
 import {
-  persistenceMetadataOf,
+  auditedOptionsOf,
   type EntityClass,
-  type PartitionedOptions,
 } from '../metadata/entity-metadata.js';
+
+/** Cómo se particiona una tabla. */
+export interface PartitionedOptions {
+  readonly by: PartitionBy;
+  /** Columna de partición. Para `Range` sobre UUIDv7 es el propio `id`. */
+  readonly column: string;
+  /** Intervalo de cada partición por rango. Por defecto un mes. */
+  readonly interval?: PartitionInterval;
+  /** Particiones vencidas que se archivan, en meses o días según el intervalo. */
+  readonly retention?: number;
+}
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
@@ -67,7 +77,7 @@ export function auditTriggerSqlFor(
   table: string,
   idColumn = 'id',
 ): string[] {
-  const audited = persistenceMetadataOf(entity).audited;
+  const audited = auditedOptionsOf(entity);
   if (audited === undefined) {
     throw invalidConfiguration('entity', 'decorated with @Audited');
   }

@@ -1,12 +1,14 @@
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { ClaimState, Deadline } from '@platform/primitives';
-import { idempotencyStoreContract } from '../../../test/support/idempotency-contract.js';
-import { memoryDatabase } from '../../../test/support/pg-mem.js';
-import { EMPTY_PERSISTENCE_CONTEXT } from '../context/persistence-context.js';
-import { Database } from '../database.js';
-import { IdempotencyKeysMigration } from '../migrations/shard-migrations.js';
-import { applyMigrations } from '../migrations/sql-migration.js';
+import {
+  applyMigrations,
+  Database,
+  EMPTY_PERSISTENCE_CONTEXT,
+} from '@platform/persistence';
+import { idempotencyStoreContract } from '../../test/support/idempotency-contract.js';
+import { memoryDatabase } from '../../test/support/pg-mem.js';
 import { PostgresIdempotencyStore } from './postgres-idempotency-store.js';
+import { IdempotencyKeysMigration } from './shard-migrations.js';
 
 const START = new Date('2026-11-12T10:00:00.000Z');
 
@@ -16,7 +18,6 @@ async function setup() {
   const database = new Database({
     name: 'shard-1',
     connection: memory.connection,
-    clock,
     context: () => EMPTY_PERSISTENCE_CONTEXT,
   });
   await database.readPrimary((session) =>
@@ -41,8 +42,8 @@ describe('PostgresIdempotencyStore on pg-mem', () => {
       throw new Error('expected acquired');
     }
     await store.complete('k', claim.claimToken, { orderId: 'o-1' });
-    expect(await store.purgeCompleted(START.getTime())).toBe(0);
-    expect(await store.purgeCompleted(START.getTime() + 1)).toBe(1);
+    expect(await store.purgeCompleted(START)).toBe(0);
+    expect(await store.purgeCompleted(new Date(START.getTime() + 1))).toBe(1);
   });
 
   it('refuses a table name that is not a plain identifier', () => {

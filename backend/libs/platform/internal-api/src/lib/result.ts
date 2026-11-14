@@ -1,24 +1,6 @@
 import type { FieldError } from '@contracts/platform';
-import {
-  CallOutcome,
-  CallOutcomeKind,
-  type BusinessErrorOutcome,
-} from '@platform/primitives';
+import { CallOutcome, type BusinessErrorOutcome } from '@platform/primitives';
 import { INVALID_INPUT_CODE } from './contract.js';
-
-/**
- * Discriminant of an operation outcome.
- * @deprecated Use `CallOutcomeKind` from `@platform/primitives`; the values are the same.
- */
-export const ResultKind = CallOutcomeKind;
-/** @deprecated Use `CallOutcomeKind` from `@platform/primitives`. */
-export type ResultKind = CallOutcomeKind;
-
-/**
- * Outcome of an operation call.
- * @deprecated Use `CallOutcome` from `@platform/primitives`.
- */
-export type OperationResult<T> = CallOutcome<T>;
 
 /** Reasons the internal API puts in non-success outcomes. */
 export enum InternalApiReason {

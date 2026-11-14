@@ -6,6 +6,7 @@ import {
   defineQueue,
   defineServiceContract,
   defineTopic,
+  PlatformErrorCode,
 } from '@contracts/platform';
 import { contextFromTraceparent } from '@platform/observability';
 import { z } from 'zod';
@@ -14,16 +15,15 @@ import {
   MessageDispatcher,
 } from '../dispatch/message-dispatcher.js';
 import { InMemoryProcessedMessageStore } from '../dispatch/processed-message-store.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { topologyFromContracts } from '../topology/contract-topology.js';
 import { InMemoryBus } from './in-memory-bus.js';
 import { MAX_SEND_DELAY_MS } from './message-bus.js';
 
 /**
- * Réplica de `SessionRevokedEvent` de `@contracts/identity`, declarada con el
- * mismo kit. `@platform/messaging` no puede importar contratos de un servicio
- * (reglas de dependencia del ADR 0015), pero el bus recibe el descriptor de
- * `defineEvent` tal cual, igual que recibiría el de identity.
+ * Copy of `SessionRevokedEvent` of `@contracts/identity`, declared with the
+ * same kit. `@platform/messaging` cannot import a service's contracts (the
+ * dependency rules of ADR 0015), but the bus takes the `defineEvent` descriptor
+ * as is, just as it would take identity's.
  */
 const SessionRevoked = defineEvent({
   type: 'identity.session.revoked.v1',
@@ -109,7 +109,7 @@ function setup(traceparent?: () => string | undefined) {
   const topology = topologyFromContracts([identity, gateway, ledger]);
   const bus = new InMemoryBus(topology, {
     source: '/services/identity',
-    now: () => new Date(now),
+    clock: { now: () => new Date(now) },
     ...(traceparent ? { traceparent } : {}),
   });
   const dispatcher = new MessageDispatcher({
@@ -187,14 +187,18 @@ describe('InMemoryBus with contracts of the kit', () => {
     const { bus } = setup();
     await expect(
       bus.publish(LedgerPosted, { accountId: 'a-1', amount: 10 }),
-    ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidOptions });
+    ).rejects.toMatchObject({
+      code: PlatformErrorCode.MessagingInvalidOptions,
+    });
     await expect(
       bus.publish(
         LedgerPosted,
         { accountId: 'a-1', amount: 10 },
         { groupId: 'has space' },
       ),
-    ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidOptions });
+    ).rejects.toMatchObject({
+      code: PlatformErrorCode.MessagingInvalidOptions,
+    });
 
     await bus.publish(
       LedgerPosted,
@@ -208,10 +212,14 @@ describe('InMemoryBus with contracts of the kit', () => {
     const { bus } = setup();
     await expect(
       bus.send(Remind, { userId: USER }, { delayMs: MAX_SEND_DELAY_MS + 1 }),
-    ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidOptions });
+    ).rejects.toMatchObject({
+      code: PlatformErrorCode.MessagingInvalidOptions,
+    });
     await expect(
       bus.send(Remind, { userId: USER }, { delayMs: -1 }),
-    ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidOptions });
+    ).rejects.toMatchObject({
+      code: PlatformErrorCode.MessagingInvalidOptions,
+    });
     await bus.send(Remind, { userId: USER }, { delayMs: MAX_SEND_DELAY_MS });
 
     await expect(
@@ -220,7 +228,9 @@ describe('InMemoryBus with contracts of the kit', () => {
         { accountId: 'a-1' },
         { groupId: 'a-1', delayMs: 1_000 },
       ),
-    ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidOptions });
+    ).rejects.toMatchObject({
+      code: PlatformErrorCode.MessagingInvalidOptions,
+    });
   });
 
   it('rejects an event routed with the wrong kind of contract', async () => {
@@ -231,7 +241,7 @@ describe('InMemoryBus with contracts of the kit', () => {
       description: 'Comando con el tipo de un evento.',
     });
     await expect(bus.send(Impostor, {})).rejects.toMatchObject({
-      code: MessagingErrorCode.UnknownRoute,
+      code: PlatformErrorCode.MessagingUnknownRoute,
     });
   });
 });

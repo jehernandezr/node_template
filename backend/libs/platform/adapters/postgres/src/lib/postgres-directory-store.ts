@@ -9,9 +9,12 @@ import {
   type DirectoryWriter,
   type TenantPlacement,
 } from '@platform/sharding';
-import type { Database } from '../database.js';
-import { invalidConfiguration, PersistenceError } from '../errors.js';
-import type { SqlSession } from '../sql/sql-session.js';
+import {
+  invalidConfiguration,
+  PersistenceError,
+  type Database,
+  type SqlSession,
+} from '@platform/persistence';
 
 /** Opciones de {@link PostgresDirectoryStore}. */
 export interface PostgresDirectoryStoreOptions {
@@ -33,9 +36,6 @@ interface PlacementRow {
   readonly version: unknown;
   readonly dedicated: unknown;
 }
-
-/** Intentos de escritura condicional cuando otro proceso inserta la misma fila a la vez. */
-const MAX_WRITE_ROUNDS = 3;
 
 const STATUSES = new Set<string>(Object.values(TenantStatus));
 
@@ -114,13 +114,13 @@ function assertPlacement(placement: TenantPlacement): void {
  * `ShardTaken`.
  *
  * `setPlacementIfNewer` es la escritura simple por versión (sin exclusividad):
- * conviene a réplicas y cachés. Sus escrituras son condicionales por versión, con la misma semántica que
- * `RoutingCache.setIfNewer`: `setPlacementIfNewer` solo escribe si no hay fila
- * o si la versión guardada es menor; una versión igual se rechaza. Cada
- * sentencia es atómica: el `UPDATE … WHERE version < $v` reevalúa la condición
- * sobre la última versión confirmada, así dos traslados concurrentes nunca
- * dejan la versión vieja encima de la nueva. Quien escribe después llama a
- * `ShardRouter.invalidate(tenantId, { version })`.
+ * conviene a réplicas y cachés, con la misma semántica que
+ * `RoutingCache.setIfNewer`: solo escribe si no hay fila o si la versión
+ * guardada es menor; una versión igual se rechaza. Es un solo
+ * `INSERT … ON CONFLICT DO UPDATE … WHERE version < EXCLUDED.version`, que
+ * Postgres resuelve de forma atómica sobre la última versión confirmada, así
+ * dos traslados concurrentes nunca dejan la versión vieja encima de la nueva.
+ * Quien escribe después llama a `ShardRouter.invalidate(tenantId, { version })`.
  */
 export class PostgresDirectoryStore implements DirectoryStore, DirectoryWriter {
   private readonly catalog: Database;
@@ -306,47 +306,25 @@ export class PostgresDirectoryStore implements DirectoryStore, DirectoryWriter {
     session: SqlSession,
     placement: TenantPlacement,
   ): Promise<boolean> {
-    const values = [
-      placement.tenantId,
-      placement.region,
-      [...placement.shardGroup],
-      placement.status,
-      placement.version,
-      placement.dedicated,
-      this.clock.now(),
-    ];
-    for (let round = 0; round < MAX_WRITE_ROUNDS; round += 1) {
-      const updated = await session.query(
-        'UPDATE shard_directory SET region = $2, shard_group = $3, status = $4, version = $5, dedicated = $6, updated_at = $7 ' +
-          'WHERE tenant_id = $1 AND version < $5',
-        values,
-      );
-      if (updated.rowCount > 0) {
-        return true;
-      }
-      const inserted = await session.query(
-        'INSERT INTO shard_directory (tenant_id, region, shard_group, status, version, dedicated, updated_at) ' +
-          'SELECT $1::text, $2::text, $3::text[], $4::text, $5::bigint, $6::boolean, $7::timestamptz WHERE NOT EXISTS (SELECT 1 FROM shard_directory WHERE tenant_id = $1) ' +
-          'ON CONFLICT (tenant_id) DO NOTHING',
-        values,
-      );
-      if (inserted.rowCount > 0) {
-        return true;
-      }
-      const existing = await session.query<{ version: unknown }>(
-        'SELECT version FROM shard_directory WHERE tenant_id = $1',
-        [placement.tenantId],
-      );
-      const stored = existing.rows[0];
-      if (stored !== undefined && Number(stored.version) >= placement.version) {
-        return false;
-      }
-      // La fila cambió entre sentencias (se borró o bajó de versión): se reintenta.
-    }
-    throw new PersistenceError(
-      PlatformErrorCode.PersistenceContention,
-      'Shard directory row kept changing while writing it',
-      { details: { rounds: MAX_WRITE_ROUNDS } },
+    const written = await session.query<{ version: unknown }>(
+      'INSERT INTO shard_directory (tenant_id, region, shard_group, status, version, dedicated, updated_at) ' +
+        'VALUES ($1, $2, $3, $4, $5, $6, $7) ' +
+        'ON CONFLICT (tenant_id) DO UPDATE SET region = EXCLUDED.region, shard_group = EXCLUDED.shard_group, ' +
+        'status = EXCLUDED.status, version = EXCLUDED.version, dedicated = EXCLUDED.dedicated, updated_at = EXCLUDED.updated_at ' +
+        'WHERE shard_directory.version < EXCLUDED.version RETURNING version',
+      [
+        placement.tenantId,
+        placement.region,
+        [...placement.shardGroup],
+        placement.status,
+        placement.version,
+        placement.dedicated,
+        this.clock.now(),
+      ],
+    );
+    // Postgres no devuelve fila si la versión guardada no es menor.
+    return written.rows.some(
+      (row) => Number(row.version) === placement.version,
     );
   }
 }

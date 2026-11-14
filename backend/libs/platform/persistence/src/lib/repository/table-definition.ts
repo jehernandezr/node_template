@@ -1,4 +1,3 @@
-import type { EntityMetadata } from 'typeorm';
 import { invalidConfiguration } from '../errors.js';
 
 /** Nombre de un campo del registro. */
@@ -6,8 +5,9 @@ export type RecordField<R> = keyof R & string;
 
 /**
  * Cómo se guarda un registro: tabla, campo a columna y columnas especiales.
- * Los campos son los del registro ORM (por ejemplo `TaskOrmEntity`); las
- * columnas, los nombres en Postgres. `Criteria` filtra por campo.
+ * Es la única definición de la tabla para la capa: los campos son los del
+ * registro (por ejemplo `TaskRecord`) y las columnas, los nombres en Postgres.
+ * `Criteria` filtra por campo.
  */
 export interface TableDefinition<R> {
   readonly name: string;
@@ -81,51 +81,4 @@ export function qualifiedTableName<R>(table: TableDefinition<R>): string {
   return table.schema === undefined
     ? quoteIdentifier(table.name)
     : `${quoteIdentifier(table.schema)}.${quoteIdentifier(table.name)}`;
-}
-
-/** Campos especiales que no salen de los metadatos de TypeORM. */
-export interface TypeOrmTableOverrides<R> {
-  readonly tenant?: RecordField<R>;
-  readonly createdBy?: RecordField<R>;
-  readonly updatedBy?: RecordField<R>;
-}
-
-/**
- * Arma la {@link TableDefinition} desde los metadatos de una entidad de
- * TypeORM (`dataSource.getMetadata(TaskOrmEntity)`): tabla, columnas, llave
- * primaria, `@VersionColumn`, `@DeleteDateColumn`, `@CreateDateColumn` y
- * `@UpdateDateColumn`. Tenant y autor salen de `overrides` o, si no, de los
- * campos `tenantId`, `createdBy` y `updatedBy` cuando existen.
- */
-export function tableFromTypeOrm<R>(
-  metadata: EntityMetadata,
-  overrides: TypeOrmTableOverrides<R> = {},
-): TableDefinition<R> {
-  const columns: Record<string, string> = {};
-  for (const column of metadata.columns) {
-    if (column.embeddedMetadata !== undefined || column.relationMetadata) {
-      continue;
-    }
-    columns[column.propertyName] = column.databaseName;
-  }
-  if (metadata.primaryColumns.length !== 1) {
-    throw invalidConfiguration('entity primary key', 'a single column');
-  }
-  const has = (field: string): string | undefined =>
-    Object.hasOwn(columns, field) ? field : undefined;
-  const table = {
-    name: metadata.tableName,
-    ...(metadata.schema === undefined ? {} : { schema: metadata.schema }),
-    columns,
-    id: metadata.primaryColumns[0].propertyName,
-    version: metadata.versionColumn?.propertyName,
-    softDelete: metadata.deleteDateColumn?.propertyName,
-    createdAt: metadata.createDateColumn?.propertyName,
-    updatedAt: metadata.updateDateColumn?.propertyName,
-    tenant: overrides.tenant ?? has('tenantId'),
-    createdBy: overrides.createdBy ?? has('createdBy'),
-    updatedBy: overrides.updatedBy ?? has('updatedBy'),
-  } as TableDefinition<R>;
-  assertTableDefinition(table);
-  return table;
 }

@@ -72,14 +72,14 @@ describe('ResilienceRegistry retry rule (primitives classifyFailure)', () => {
     expect(attempts).toBe(2);
   });
 
-  it('does not retry when the outer error says retryable false, even with a transient cause', async () => {
+  it('does not retry when the outer error declares a permanent failure, even with a transient cause', async () => {
     const registry = registryWith({
       timeoutMs: 50,
       retry: { maxAttempts: 3, initialDelayMs: 1, maxDelayMs: 2 },
     });
     let attempts = 0;
     const error = Object.assign(new Error('final'), {
-      retryable: false,
+      failureKind: FailureKind.Permanent,
       cause: { code: 'ECONNRESET' },
     });
 

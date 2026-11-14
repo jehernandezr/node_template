@@ -1,4 +1,3 @@
-import type { UnitOfWork } from '@platform/persistence';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import type { TargetKind } from '../topology/route.js';
 
@@ -83,12 +82,13 @@ export interface OutboxAppend {
 }
 
 /**
- * Write side of the outbox. `append` stores the record with the session of the
- * given unit of work (`@platform/persistence`), so it commits or rolls back
- * with the business change. Use it through `OutboxMessageBus`.
+ * Write side of the outbox. `append` stores the record in the transaction that
+ * is open in the current async context, so it commits or rolls back with the
+ * business change. The adapter finds that transaction through its own
+ * transaction manager. Use it through `OutboxMessageBus`.
  */
 export interface OutboxWriter {
-  append(record: OutboxAppend, uow: UnitOfWork): Promise<void>;
+  append(record: OutboxAppend): Promise<void>;
 }
 
 /**

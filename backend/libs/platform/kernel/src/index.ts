@@ -3,6 +3,7 @@ export * from './clock.js';
 export * from './domain-error.js';
 export * from './domain-event.js';
 export * from './entity.js';
+export * from './failure-kind.js';
 export * from './id.js';
 export * from './id-generator.js';
 export * from './invalid-id.error.js';

@@ -1,11 +1,9 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   type MessageDefinition,
   MessageKind,
 } from '../contracts/message-contract.js';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 import type { QueueDef } from './queue-def.js';
 import { type RouteDef, TargetKind } from './route.js';
 import type { TopicDef } from './topic-def.js';
@@ -76,14 +74,18 @@ export class TopologyError extends MessagingError {
 
   constructor(issues: readonly TopologyIssue[]) {
     super(
-      MessagingErrorCode.InvalidTopology,
+      PlatformErrorCode.MessagingInvalidTopology,
       `invalid topology: ${issues.map((issue) => issue.message).join('; ')}`,
     );
     this.issues = issues;
   }
 }
 
-/** Canonical JSON export of a topology, consumed by Terraform, local setup and docs. */
+/**
+ * JSON view of a topology with stable ordering. Infrastructure is provisioned
+ * from the contracts export (`contracts-export`), not from this document; it
+ * serves tests that create the same resources in LocalStack.
+ */
 export interface TopologyDocument {
   readonly topics: readonly { readonly name: string; readonly fifo: boolean }[];
   readonly queues: readonly {
@@ -109,9 +111,17 @@ export interface TopologyDocument {
   }[];
 }
 
-function compare(a: string, b: string): number {
+/** Byte-order string comparison, so exports do not depend on the locale. */
+export function compareText(a: string, b: string): number {
   if (a < b) return -1;
   return a > b ? 1 : 0;
+}
+
+/** Topics, queues and routes a {@link Topology} indexes. */
+export interface TopologyParts {
+  readonly topics: readonly TopicDef[];
+  readonly queues: readonly QueueDef[];
+  readonly routes: readonly RouteDef[];
 }
 
 function duplicatesOf(names: readonly string[]): string[] {
@@ -125,13 +135,35 @@ function duplicatesOf(names: readonly string[]): string[] {
 }
 
 /**
- * Single source of truth for routing. Subclass it and declare topics, queues and routes.
- * Use {@link Topology.assertValid} at startup and {@link Topology.toJSON} for the export.
+ * Read-only routing index of a service: where each message type goes and how
+ * each queue retries. Services build it from their contracts with
+ * `topologyFromContracts`, the same source the infrastructure export reads, so
+ * runtime routing and the provisioned resources cannot diverge. Call
+ * {@link Topology.assertValid} at startup.
  */
-export abstract class Topology {
-  abstract readonly topics: readonly TopicDef[];
-  abstract readonly queues: readonly QueueDef[];
-  abstract readonly routes: readonly RouteDef[];
+export class Topology {
+  readonly topics: readonly TopicDef[];
+  readonly queues: readonly QueueDef[];
+  readonly routes: readonly RouteDef[];
+  private readonly routesByType = new Map<string, RouteDef>();
+  private readonly queuesByName = new Map<string, QueueDef>();
+
+  constructor(parts: TopologyParts) {
+    this.topics = Object.freeze([...parts.topics]);
+    this.queues = Object.freeze([...parts.queues]);
+    this.routes = Object.freeze([...parts.routes]);
+    // The first declaration wins; duplicates are reported by `validate`.
+    for (const route of this.routes) {
+      if (!this.routesByType.has(route.type)) {
+        this.routesByType.set(route.type, route);
+      }
+    }
+    for (const queue of this.queues) {
+      if (!this.queuesByName.has(queue.name)) {
+        this.queuesByName.set(queue.name, queue);
+      }
+    }
+  }
 
   /** Returns every structural problem, errors and warnings. */
   validate(options: ValidateOptions = {}): TopologyIssue[] {
@@ -311,12 +343,12 @@ export abstract class Topology {
 
   /** Returns the route for a message type, if any. */
   routeFor(type: string): RouteDef | undefined {
-    return this.routes.find((route) => route.type === type);
+    return this.routesByType.get(type);
   }
 
   /** Returns a queue by name, if declared. */
   queueFor(name: string): QueueDef | undefined {
-    return this.queues.find((queue) => queue.name === name);
+    return this.queuesByName.get(name);
   }
 
   /** Exports the topology with stable ordering. Validates first. */
@@ -324,7 +356,7 @@ export abstract class Topology {
     this.assertValid();
 
     const byName = (a: { name: string }, b: { name: string }) =>
-      compare(a.name, b.name);
+      compareText(a.name, b.name);
 
     return {
       topics: [...this.topics]
@@ -334,7 +366,7 @@ export abstract class Topology {
         const dlq = queue.deadLetterConfig;
         if (dlq === null) {
           throw new MessagingError(
-            MessagingErrorCode.InvalidTopology,
+            PlatformErrorCode.MessagingInvalidTopology,
             `queue "${queue.name}" has no dead-letter queue`,
           );
         }
@@ -351,13 +383,13 @@ export abstract class Topology {
           subscriptions: queue.subscriptions
             .map((subscription) => ({
               topic: subscription.topic.name,
-              filterTypes: [...subscription.filterTypes].sort(compare),
+              filterTypes: [...subscription.filterTypes].sort(compareText),
             }))
-            .sort((a, b) => compare(a.topic, b.topic)),
+            .sort((a, b) => compareText(a.topic, b.topic)),
         };
       }),
       routes: [...this.routes]
-        .sort((a, b) => compare(a.type, b.type))
+        .sort((a, b) => compareText(a.type, b.type))
         .map((route) => ({
           type: route.type,
           kind: route.kind,

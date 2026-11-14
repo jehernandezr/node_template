@@ -1,3 +1,4 @@
+import { ActorType } from '@platform/observability';
 import {
   InMemoryDirectoryStore,
   ShardingErrorCode,
@@ -112,16 +113,25 @@ describe('ShardedDatabaseResolver', () => {
     });
   });
 
-  it('uses the actor as key with ShardKey.User', async () => {
-    const { resolver, setContext } = setup(ShardKey.User);
-    setContext({ tenantId: TENANT_A });
+  it('routes ShardKey.User by the user operated on, not by the actor', async () => {
+    const { resolver, router, setContext } = setup(ShardKey.User);
+    const resolve = jest.spyOn(router, 'resolve');
+    setContext({ tenantId: TENANT_A, actorId: 'svc-1' });
     await expect(resolver.resolve(DataAccess.Read)).rejects.toMatchObject({
       code: ShardingErrorCode.KeyMissing,
     });
-    setContext({ tenantId: TENANT_A, actorId: 'user-1' });
+    setContext({
+      tenantId: TENANT_A,
+      actorType: ActorType.ServiceAccount,
+      actorId: 'svc-1',
+      userId: 'user-1',
+    });
     await expect(resolver.resolve(DataAccess.Read)).resolves.toMatchObject({
       name: 'shard-1',
     });
+    expect(resolve).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyKind: ShardKey.User, keyValue: 'user-1' }),
+    );
   });
 
   it('rejects an invalid sharding declaration when it is built', () => {
@@ -161,7 +171,7 @@ describe('ShardedDatabaseResolver', () => {
   });
 
   it('opens a new database when a shard moves to another instance', async () => {
-    const { resolver, directory, router, opened } = setup();
+    const { resolver, directory, router, opened, connections } = setup();
     const before = await resolver.resolve(DataAccess.Read);
     directory.setInstance('shard-1', 'db-z');
     router.invalidateShard('shard-1');
@@ -171,6 +181,10 @@ describe('ShardedDatabaseResolver', () => {
       logicalShard: 'shard-1',
       instance: 'db-z',
     });
+    // Sin sesiones prestadas, la base de la instancia vieja se cierra sola.
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(connections.get('shard-1@db-a')?.closed).toBe(true);
+    expect(connections.get('shard-1@db-z')?.closed).toBe(false);
     await resolver.close();
   });
 

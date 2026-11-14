@@ -1,6 +1,6 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { FixedClock } from '@platform/kernel/testing';
-import { FailureKind } from '@platform/primitives';
+import { ActorType } from '@platform/observability';
+import { FailureKind, IsolationLevel } from '@platform/primitives';
 import {
   ShardingError,
   ShardingErrorCode,
@@ -9,14 +9,14 @@ import {
 import { RecordingConnection } from '../../test/support/recording-connection.js';
 import type { PersistenceContext } from './context/persistence-context.js';
 import { currentUnitOfWork, Database } from './database.js';
-import { DatabaseRole, IsolationLevel, SessionSetting } from './enums.js';
+import { DatabaseRole, SessionSetting } from './enums.js';
 import { PersistenceError } from './errors.js';
 
 const CONTEXT: PersistenceContext = {
   traceId: '0193f1c2-0000-7000-8000-000000000001',
   tenantId: 'tenant-1',
   actorId: 'user-1',
-  actorType: 'user',
+  actorType: ActorType.User,
 };
 
 function setup(
@@ -27,20 +27,17 @@ function setup(
   } = {},
 ) {
   const connection = new RecordingConnection();
-  const clock = new FixedClock(new Date('2026-11-13T00:00:00.000Z'));
   const hookErrors: unknown[] = [];
   let context = options.context ?? CONTEXT;
   const database = new Database({
     name: options.name ?? 'shard-1',
     global: options.global,
     connection,
-    clock,
     context: () => context,
     onHookError: (error) => hookErrors.push(error),
   });
   return {
     connection,
-    clock,
     database,
     hookErrors,
     setContext: (next: PersistenceContext) => {
@@ -351,29 +348,15 @@ describe('Database', () => {
       expect(connection.statements[0].role).toBe(DatabaseRole.Replica);
     });
 
-    it('reads from the primary for a few seconds after the same tenant wrote', async () => {
-      const { connection, database, clock, setContext } = setup();
+    it('keeps reading the replica after a write, unless asked for the primary', async () => {
+      const { connection, database } = setup();
       await database.write((session) => session.query('UPDATE t SET x = 1'));
       await database.read((session) => session.query('SELECT 1'));
-      setContext({ ...CONTEXT, tenantId: 'tenant-2' });
-      await database.read((session) => session.query('SELECT 2'));
-      setContext(CONTEXT);
-      clock.advance(5_000);
-      await database.read((session) => session.query('SELECT 3'));
+      await database.readPrimary((session) => session.query('SELECT 2'));
       const role = (sql: string) =>
         connection.statements.find((s) => s.sql.endsWith(sql))?.role;
-      expect(role('SELECT 1')).toBe(DatabaseRole.Primary);
-      expect(role('SELECT 2')).toBe(DatabaseRole.Replica);
-      expect(role('SELECT 3')).toBe(DatabaseRole.Replica);
-    });
-
-    it('does not mark read only transactions as writes', async () => {
-      const { connection, database } = setup();
-      await database.runInTransaction(async () => undefined, {
-        readOnly: true,
-      });
-      await database.read((session) => session.query('SELECT 1'));
-      expect(connection.statements.at(-1)?.role).toBe(DatabaseRole.Replica);
+      expect(role('SELECT 1')).toBe(DatabaseRole.Replica);
+      expect(role('SELECT 2')).toBe(DatabaseRole.Primary);
     });
 
     it('uses the transaction session for reads inside it', async () => {
@@ -406,11 +389,35 @@ describe('Database', () => {
     expect(() => new Database({ name: '', connection })).toThrow(
       PersistenceError,
     );
-    expect(
-      () => new Database({ name: 'x', connection, readAfterWriteMs: -1 }),
-    ).toThrow('readAfterWriteMs must be a finite number >= 0');
-    expect(
-      () => new Database({ name: 'x', connection, maxTrackedTenants: 0 }),
-    ).toThrow('maxTrackedTenants must be an integer >= 1');
+  });
+
+  describe('closing', () => {
+    it('closes when idle only after the last borrowed session returns', async () => {
+      const { connection, database } = setup();
+      let finish: () => void = () => undefined;
+      const running = database.runInTransaction(
+        () => new Promise<void>((resolve) => (finish = resolve)),
+      );
+      await Promise.resolve();
+      await new Promise((resolve) => setImmediate(resolve));
+      let closed = false;
+      const closing = database.closeWhenIdle().then(() => {
+        closed = true;
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(closed).toBe(false);
+      expect(connection.closed).toBe(false);
+      finish();
+      await running;
+      await closing;
+      expect(closed).toBe(true);
+      expect(connection.closed).toBe(true);
+    });
+
+    it('closes at once when nothing is borrowed', async () => {
+      const { connection, database } = setup();
+      await database.closeWhenIdle();
+      expect(connection.closed).toBe(true);
+    });
   });
 });

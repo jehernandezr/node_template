@@ -16,11 +16,10 @@ import {
   type DatabaseResolver,
   invalidConfiguration,
   PersistenceError,
-  RowLock,
-  SingleDatabaseResolver,
   type SqlSession,
-  type UnitOfWork,
+  toResolver,
 } from '@platform/persistence';
+import { OPEN_OUTBOX_STATUSES_SQL } from './shard-migrations.js';
 
 /** Opciones de {@link PostgresOutboxStore}. */
 export interface PostgresOutboxStoreOptions {
@@ -66,7 +65,6 @@ interface Candidate {
 
 const TABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const STATUSES: readonly string[] = Object.values(OutboxStatus);
-const OPEN = `'${OutboxStatus.Pending}', '${OutboxStatus.Failed}'`;
 
 function toDate(value: Date | string): Date {
   const date = value instanceof Date ? value : new Date(value);
@@ -119,14 +117,15 @@ function toRecord(row: OutboxRow): OutboxRecord {
 /**
  * Adaptador Postgres de `OutboxStore` y `OutboxWriter` de `@platform/messaging`.
  *
- * - `append` inserta con la sesión de la unidad de trabajo, así el registro se
- *   confirma o se deshace con el cambio de negocio. Es idempotente por id del
- *   envelope (`ON CONFLICT DO NOTHING`).
- * - `claimPending` corre en una transacción corta: bloquea las filas vencidas con
- *   `FOR UPDATE SKIP LOCKED` (varios relays no se pisan) y les pone el lease con
- *   su token de fencing. Respeta FIFO por `groupId`: un grupo con un registro
- *   abierto anterior que no está vencido (programado o con lease ajeno), incluso
- *   uno que otro relay tiene bloqueado en ese instante, no entrega los siguientes.
+ * - `append` inserta en la transacción abierta, así el registro se confirma o
+ *   se deshace con el cambio de negocio. Es idempotente por id del envelope
+ *   (`ON CONFLICT DO NOTHING`).
+ * - `claimPending` corre en una transacción corta: elige en una sola consulta
+ *   las filas vencidas, con un solo `LIMIT` y `FOR UPDATE SKIP LOCKED` (varios
+ *   relays no se pisan), y les pone el lease con su token de fencing. Respeta
+ *   FIFO por `groupId`: un grupo con un registro abierto anterior que no está
+ *   vencido (programado o con lease ajeno), incluso uno que otro relay tiene
+ *   bloqueado en ese instante, no entrega los siguientes.
  * - Las marcas (`markPublished`, `markFailed`, `markDead`, `releaseLease`) solo
  *   aplican mientras la fila conserve el lease dado; si no, devuelven `false`.
  * - El orden es `created_at` y luego `seq`. Se asume que los registros de un
@@ -138,10 +137,7 @@ export class PostgresOutboxStore implements OutboxStore, OutboxWriter {
   private readonly table: string;
 
   constructor(options: PostgresOutboxStoreOptions) {
-    this.databases =
-      'resolve' in options.databases
-        ? options.databases
-        : new SingleDatabaseResolver(options.databases);
+    this.databases = toResolver(options.databases);
     this.clock = options.clock ?? new SystemClock();
     this.table = options.table ?? 'outbox';
     if (!TABLE_NAME.test(this.table)) {
@@ -149,18 +145,25 @@ export class PostgresOutboxStore implements OutboxStore, OutboxWriter {
     }
   }
 
-  async append(record: OutboxAppend, uow: UnitOfWork): Promise<void> {
-    await uow.session.query(
-      `INSERT INTO ${this.table} (id, envelope, status, attempts, next_attempt_at, created_at, updated_at, group_id, delay_ms) ` +
-        'VALUES ($1, $2::jsonb, $3, 0, $4, $4, $4, $5, $6) ON CONFLICT (id) DO NOTHING',
-      [
-        record.envelope.id,
-        JSON.stringify(record.envelope),
-        OutboxStatus.Pending,
-        record.createdAt,
-        record.groupId ?? null,
-        record.delayMs ?? null,
-      ],
+  /**
+   * Inserta en la transacción abierta en la base del contexto. Fuera de una,
+   * abre una corta, pero `OutboxMessageBus` ya exige que haya una.
+   */
+  async append(record: OutboxAppend): Promise<void> {
+    const database = await this.databases.resolve(DataAccess.Write);
+    await database.write((session) =>
+      session.query(
+        `INSERT INTO ${this.table} (id, envelope, status, attempts, next_attempt_at, created_at, updated_at, group_id, delay_ms) ` +
+          'VALUES ($1, $2::jsonb, $3, 0, $4, $4, $4, $5, $6) ON CONFLICT (id) DO NOTHING',
+        [
+          record.envelope.id,
+          JSON.stringify(record.envelope),
+          OutboxStatus.Pending,
+          record.createdAt,
+          record.groupId ?? null,
+          record.delayMs ?? null,
+        ],
+      ),
     );
   }
 
@@ -271,44 +274,33 @@ export class PostgresOutboxStore implements OutboxStore, OutboxWriter {
     if (request.limit <= 0) {
       return [];
     }
-    // 1. Los registros abiertos que no están vencidos bloquean a los siguientes de su grupo.
-    const blockers = await session.query<Candidate>(
-      `SELECT id, group_id, created_at, seq FROM ${this.table} ` +
-        `WHERE status IN (${OPEN}) AND group_id IS NOT NULL ` +
-        'AND (next_attempt_at > $1 OR lease_expires_at > $1)',
-      [request.now],
+    // Vencidos y libres, en orden, bloqueados sin esperar, con un solo LIMIT.
+    // `blocker` es, por grupo, el primer registro abierto que no se puede
+    // publicar todavía (programado para después o con lease ajeno); los
+    // posteriores de ese grupo esperan, así se respeta el FIFO del grupo.
+    const picked = await session.query<Candidate>(
+      `SELECT o.id, o.group_id, o.created_at, o.seq FROM ${this.table} o ` +
+        'LEFT JOIN (' +
+        `SELECT DISTINCT ON (group_id) group_id, created_at, seq FROM ${this.table} ` +
+        `WHERE status IN (${OPEN_OUTBOX_STATUSES_SQL}) AND group_id IS NOT NULL ` +
+        'AND (next_attempt_at > $1 OR lease_expires_at > $1) ' +
+        'ORDER BY group_id, created_at, seq' +
+        ') blocker ON blocker.group_id = o.group_id ' +
+        `WHERE o.status IN (${OPEN_OUTBOX_STATUSES_SQL}) AND o.next_attempt_at <= $1 ` +
+        'AND (o.lease_expires_at IS NULL OR o.lease_expires_at <= $1) ' +
+        'AND (blocker.group_id IS NULL OR o.created_at < blocker.created_at ' +
+        'OR (o.created_at = blocker.created_at AND o.seq < blocker.seq)) ' +
+        'ORDER BY o.created_at, o.seq LIMIT $2 FOR UPDATE OF o SKIP LOCKED',
+      [request.now, request.limit],
     );
-    // 2. Vencidos, en orden, bloqueados sin esperar. Se pagina de a `limit` (el bloqueo
-    //    cubre solo lo leído) porque los de grupos bloqueados se descartan y no deben agotar el límite.
-    const picked: Candidate[] = [];
-    const pageSize = request.limit;
-    for (let offset = 0; picked.length < request.limit; offset += pageSize) {
-      const page = await session.query<Candidate>(
-        `SELECT id, group_id, created_at, seq FROM ${this.table} ` +
-          `WHERE status IN (${OPEN}) AND next_attempt_at <= $1 ` +
-          'AND (lease_expires_at IS NULL OR lease_expires_at <= $1) ' +
-          `ORDER BY created_at, seq LIMIT $2 OFFSET $3 ${RowLock.ForUpdateSkipLocked}`,
-        [request.now, pageSize, offset],
-      );
-      for (const row of page.rows) {
-        const blocked =
-          row.group_id !== null &&
-          blockers.rows.some(
-            (b) => b.group_id === row.group_id && isEarlier(b, row),
-          );
-        if (!blocked && picked.length < request.limit) {
-          picked.push(row);
-        }
-      }
-      if (page.rows.length < pageSize) {
-        break;
-      }
-    }
-    const candidates = await this.withoutSkippedPredecessors(session, picked);
+    const candidates = await this.withoutSkippedPredecessors(
+      session,
+      picked.rows,
+    );
     if (candidates.length === 0) {
       return [];
     }
-    // 2. Lease con token nuevo. El orden del RETURNING no está garantizado: se reordena.
+    // Lease con token nuevo. El orden del RETURNING no está garantizado: se reordena.
     const leased = await session.query<OutboxRow>(
       `UPDATE ${this.table} SET lease_owner = $1, lease_token = $2, lease_expires_at = $3, updated_at = $4 ` +
         `WHERE id IN (${placeholders(5, candidates.length)}) RETURNING *`,
@@ -347,7 +339,7 @@ export class PostgresOutboxStore implements OutboxStore, OutboxWriter {
     }
     const others = await session.query<Candidate>(
       `SELECT id, group_id, created_at, seq FROM ${this.table} ` +
-        `WHERE group_id IN (${placeholders(1, groups.length)}) AND status IN (${OPEN})`,
+        `WHERE group_id IN (${placeholders(1, groups.length)}) AND status IN (${OPEN_OUTBOX_STATUSES_SQL})`,
       groups,
     );
     const mine = new Set(candidates.map((c) => c.id));

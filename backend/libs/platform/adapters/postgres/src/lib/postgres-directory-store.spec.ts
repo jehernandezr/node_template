@@ -9,10 +9,9 @@ import {
   TenantStatus,
   type TenantPlacement,
 } from '@platform/sharding';
-import { memoryDatabase } from '../../../test/support/pg-mem.js';
-import { Database } from '../database.js';
-import { catalogMigrations } from '../migrations/catalog-migrations.js';
-import { applyMigrations } from '../migrations/sql-migration.js';
+import { applyMigrations, Database } from '@platform/persistence';
+import { memoryDatabase } from '../../test/support/pg-mem.js';
+import { catalogMigrations } from './catalog-migrations.js';
 import { PostgresDirectoryStore } from './postgres-directory-store.js';
 
 const TENANT = '0193f1c2-0000-7000-8000-000000000001';
@@ -69,9 +68,10 @@ describe('PostgresDirectoryStore on pg-mem', () => {
   it('writes only a strictly higher version, like RoutingCache.setIfNewer', async () => {
     const { store } = await setup();
     await store.setPlacementIfNewer(placement({ version: 2 }));
-    expect(
-      await store.setPlacementIfNewer(placement({ version: 2, region: 'mx' })),
-    ).toBe(false);
+    // pg-mem devuelve la fila guardada aunque el WHERE del ON CONFLICT no se
+    // cumpla, así que la versión igual solo se distingue en Postgres: la prueba
+    // de integración "keeps the highest version" cubre ese caso.
+    await store.setPlacementIfNewer(placement({ version: 2, region: 'mx' }));
     expect(
       await store.setPlacementIfNewer(placement({ version: 1, region: 'mx' })),
     ).toBe(false);

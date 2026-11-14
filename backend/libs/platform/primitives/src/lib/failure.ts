@@ -1,13 +1,17 @@
+import { FailureKind } from '@platform/kernel';
 import { InvalidArgumentError } from './errors.js';
-import { FailureKind } from './failure-kind.js';
 
-export { FailureKind } from './failure-kind.js';
+export { FailureKind } from '@platform/kernel';
 
 /** Niveles de `cause` que se revisan además del error de arriba. */
 export const MAX_CAUSE_DEPTH = 3;
 
-/** Códigos de red de Node y undici que indican una falla pasajera. */
-const TRANSIENT_CODES: ReadonlySet<string> = new Set([
+/**
+ * Códigos de error de red del propio Node (`net`, `dns`) y de su `fetch`
+ * (undici) que indican una falla pasajera. Los errores de cada proveedor
+ * (Postgres, AWS, Valkey) los traduce su adaptador a un `failureKind`.
+ */
+const TRANSIENT_NETWORK_CODES: ReadonlySet<string> = new Set([
   'ECONNRESET',
   'ETIMEDOUT',
   'ECONNREFUSED',
@@ -21,44 +25,6 @@ const TRANSIENT_CODES: ReadonlySet<string> = new Set([
   'UND_ERR_SOCKET',
   'UND_ERR_HEADERS_TIMEOUT',
   'UND_ERR_BODY_TIMEOUT',
-]);
-
-/** SQLSTATE de Postgres: serialización, deadlock, apagado, demasiadas conexiones, sin memoria. */
-const TRANSIENT_SQLSTATES: ReadonlySet<string> = new Set([
-  '40001',
-  '40P01',
-  '57P01',
-  '57P02',
-  '57P03',
-  '53300',
-  '53200',
-]);
-
-/** Clase 08 de Postgres (excepción de conexión), cualquier subcódigo. */
-const CONNECTION_SQLSTATE = /^08[0-9A-Z]{3}$/;
-
-/**
- * Nombres de error del SDK de AWS v3 que el propio SDK reintenta: limitación de
- * tasa (throttling) y tiempos agotados del lado del servicio, antes de procesar
- * la petición.
- */
-const AWS_TRANSIENT_NAMES: ReadonlySet<string> = new Set([
-  'BandwidthLimitExceeded',
-  'EC2ThrottledException',
-  'LimitExceededException',
-  'PriorRequestNotComplete',
-  'ProvisionedThroughputExceededException',
-  'RequestLimitExceeded',
-  'RequestThrottled',
-  'RequestThrottledException',
-  'SlowDown',
-  'ThrottledException',
-  'Throttling',
-  'ThrottlingException',
-  'TooManyRequestsException',
-  'TransactionInProgressException',
-  'RequestTimeout',
-  'RequestTimeoutException',
 ]);
 
 const TRANSIENT_STATUS: ReadonlySet<number> = new Set([
@@ -82,29 +48,13 @@ interface ErrorLike {
   readonly status?: unknown;
   readonly statusCode?: unknown;
   readonly retryable?: unknown;
-  readonly retryableExplicit?: unknown;
   readonly failureKind?: unknown;
   readonly cause?: unknown;
-  /** SDK de AWS v3: presente cuando el SDK considera el error reintentable. */
-  readonly $retryable?: unknown;
-  /** SDK de AWS v3: metadatos de la respuesta, con `httpStatusCode`. */
-  readonly $metadata?: unknown;
-}
-
-function awsStatusCode(node: ErrorLike): unknown {
-  const metadata = node.$metadata;
-  return typeof metadata === 'object' && metadata !== null
-    ? (metadata as { readonly httpStatusCode?: unknown }).httpStatusCode
-    : undefined;
 }
 
 function httpStatus(node: ErrorLike): number | undefined {
   const status =
-    typeof node.status === 'number'
-      ? node.status
-      : typeof node.statusCode === 'number'
-        ? node.statusCode
-        : awsStatusCode(node);
+    typeof node.status === 'number' ? node.status : node.statusCode;
   return typeof status === 'number' && Number.isInteger(status)
     ? status
     : undefined;
@@ -121,21 +71,10 @@ function explicitKind(node: ErrorLike): FailureKind | undefined {
   if (node.name === 'TimeoutError') {
     return FailureKind.Timeout;
   }
-  if (typeof node.retryable === 'boolean' && node.retryableExplicit !== false) {
-    return node.retryable ? FailureKind.Transient : FailureKind.Permanent;
-  }
-  if (
-    (typeof node.$retryable === 'object' && node.$retryable !== null) ||
-    (typeof node.name === 'string' && AWS_TRANSIENT_NAMES.has(node.name))
-  ) {
+  if (node.retryable === true) {
     return FailureKind.Transient;
   }
-  if (
-    typeof node.code === 'string' &&
-    (TRANSIENT_CODES.has(node.code) ||
-      TRANSIENT_SQLSTATES.has(node.code) ||
-      CONNECTION_SQLSTATE.test(node.code))
-  ) {
+  if (typeof node.code === 'string' && TRANSIENT_NETWORK_CODES.has(node.code)) {
     return FailureKind.Transient;
   }
   const status = httpStatus(node);
@@ -151,17 +90,14 @@ function explicitKind(node: ErrorLike): FailureKind | undefined {
  * Clasifica cualquier valor lanzado. Recorre el error y su cadena `cause`
  * (hasta `MAX_CAUSE_DEPTH` niveles) y usa la primera señal explícita, de
  * afuera hacia adentro:
- * 1. Una propiedad `failureKind` con un valor de `FailureKind`.
+ * 1. Una propiedad `failureKind` con un valor de `FailureKind`. Es la forma en
+ *    que cada adaptador traduce los errores de su proveedor, y la que declaran
+ *    `DomainError` y los errores de la plataforma.
  * 2. `name` `AbortError` (cancelado) o `TimeoutError` (tiempo agotado).
- * 3. Un booleano `retryable` declarado, como el de `PlatformError` (un
- *    `PlatformError` sin `retryable` explícito no cuenta: se sigue a su `cause`;
- *    `DomainError` siempre lo declara y es permanente salvo que diga lo contrario).
- * 4. Un error del SDK de AWS v3 marcado con `$retryable`, o con nombre de
- *    limitación de tasa o tiempo agotado del servicio (`ThrottlingException`,
- *    `SlowDown`, `RequestTimeout`...): pasajero.
- * 5. Un código de red de Node o undici, o un SQLSTATE pasajero de Postgres.
- * 6. Un estado HTTP (`status`, `statusCode` o `$metadata.httpStatusCode` de AWS):
- *    408, 425, 429, 502, 503 y 504 son pasajeros; el resto de 4xx y 5xx, permanentes.
+ * 3. `retryable: true`, como el de un `PlatformError` que se declaró reintentable.
+ * 4. Un código de red de Node o de su `fetch`.
+ * 5. Un estado HTTP (`status` o `statusCode`): 408, 425, 429, 502, 503 y 504
+ *    son pasajeros; el resto de 4xx y 5xx, permanentes.
  *
  * Sin señal, un `TypeError`, `ReferenceError`, `SyntaxError`, `RangeError` o
  * `ZodError` es una violación de protocolo, y cualquier otra cosa es permanente.

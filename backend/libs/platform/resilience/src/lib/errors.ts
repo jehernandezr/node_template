@@ -1,73 +1,47 @@
-import { PlatformError } from '@platform/kernel';
-import { FailureKind } from '@platform/primitives';
+import { PlatformErrorCode } from '@contracts/platform';
+import { FailureKind, PlatformError } from '@platform/kernel';
 
-/** Códigos de error estables de `@platform/resilience`. */
-export enum ResilienceErrorCode {
-  CircuitOpen = 'PLATFORM.RESILIENCE.CIRCUIT_OPEN',
-  Timeout = 'PLATFORM.RESILIENCE.TIMEOUT',
-  BulkheadFull = 'PLATFORM.RESILIENCE.BULKHEAD_FULL',
-  Overloaded = 'PLATFORM.RESILIENCE.OVERLOADED',
-  UnknownPolicy = 'PLATFORM.RESILIENCE.UNKNOWN_POLICY',
-  NotConfigured = 'PLATFORM.RESILIENCE.NOT_CONFIGURED',
-}
+/** Codes of `PlatformErrorCode` raised by `@platform/resilience`. */
+export type ResilienceErrorCode =
+  | PlatformErrorCode.ResilienceCircuitOpen
+  | PlatformErrorCode.ResilienceTimeout
+  | PlatformErrorCode.ResilienceBulkheadFull
+  | PlatformErrorCode.ResilienceUnknownPolicy;
 
-/** Opciones de {@link ResilienceError}. */
+/** Options of {@link ResilienceError}. */
 export interface ResilienceErrorOptions {
-  /** Error que lo originó. */
   readonly cause?: unknown;
-  /** Espera sugerida antes de reintentar, en milisegundos. */
+  /** Suggested wait before retrying, in milliseconds. */
   readonly retryAfterMs?: number;
-  /** Datos de diagnóstico sin secretos ni valores de entrada. */
+  /** Diagnostic data, without secrets or input values. */
   readonly details?: Readonly<Record<string, unknown>>;
 }
 
 /**
- * Clase de falla y si se puede reintentar, por código.
- * - Circuito abierto, bulkhead lleno y sobrecarga: la llamada nunca se ejecutó,
- *   así que repetirla más tarde es seguro (`Transient`).
- * - Tiempo agotado: el efecto pudo aplicarse (`Timeout`); solo quien sabe que
- *   la operación es idempotente decide repetirla.
- * - Política desconocida o registro sin configurar: error de programación.
+ * Failure kind per code.
+ * - Open circuit and full bulkhead: the call never ran, so repeating it later
+ *   is safe (`Transient`).
+ * - Timeout: the effect may have been applied (`Timeout`); only a caller that
+ *   knows the operation is idempotent repeats it.
+ * - Unknown policy: a programming error.
  */
-const CLASSIFICATION: Readonly<
-  Record<ResilienceErrorCode, { kind: FailureKind; retryable: boolean }>
-> = {
-  [ResilienceErrorCode.CircuitOpen]: {
-    kind: FailureKind.Transient,
-    retryable: true,
-  },
-  [ResilienceErrorCode.BulkheadFull]: {
-    kind: FailureKind.Transient,
-    retryable: true,
-  },
-  [ResilienceErrorCode.Overloaded]: {
-    kind: FailureKind.Transient,
-    retryable: true,
-  },
-  [ResilienceErrorCode.Timeout]: {
-    kind: FailureKind.Timeout,
-    retryable: false,
-  },
-  [ResilienceErrorCode.UnknownPolicy]: {
-    kind: FailureKind.ProtocolViolation,
-    retryable: false,
-  },
-  [ResilienceErrorCode.NotConfigured]: {
-    kind: FailureKind.ProtocolViolation,
-    retryable: false,
-  },
+const FAILURE_KIND: Readonly<Record<ResilienceErrorCode, FailureKind>> = {
+  [PlatformErrorCode.ResilienceCircuitOpen]: FailureKind.Transient,
+  [PlatformErrorCode.ResilienceBulkheadFull]: FailureKind.Transient,
+  [PlatformErrorCode.ResilienceTimeout]: FailureKind.Timeout,
+  [PlatformErrorCode.ResilienceUnknownPolicy]: FailureKind.ProtocolViolation,
 };
 
 /**
- * Error que lanza una política de resiliencia al rechazar o cortar una llamada.
- * `failureKind` y `retryable` salen del código, así que `classifyFailure` de
- * `@platform/primitives` lo clasifica sin reglas propias.
+ * Error raised by a resilience policy when it rejects or cuts a call.
+ * `failureKind` follows from the code, so `classifyFailure` from
+ * `@platform/primitives` needs no rules of its own for it.
  */
 export class ResilienceError extends PlatformError {
   override readonly code: ResilienceErrorCode;
-  /** Clase de la falla para `classifyFailure`. */
+  /** Failure kind read by `classifyFailure`. */
   readonly failureKind: FailureKind;
-  /** Espera sugerida antes de reintentar, cuando se conoce. */
+  /** Suggested wait before retrying, when known. */
   readonly retryAfterMs?: number;
 
   constructor(
@@ -75,9 +49,9 @@ export class ResilienceError extends PlatformError {
     message: string,
     options: ResilienceErrorOptions = {},
   ) {
-    const { kind, retryable } = CLASSIFICATION[code];
+    const kind = FAILURE_KIND[code];
     super(message, {
-      retryable,
+      retryable: kind === FailureKind.Transient,
       cause: options.cause,
       details: options.details,
     });
@@ -87,7 +61,7 @@ export class ResilienceError extends PlatformError {
   }
 }
 
-/** El circuito de la dependencia está abierto; la llamada no se ejecutó. */
+/** The dependency's circuit is open; the call did not run. */
 export class CircuitOpenError extends ResilienceError {
   constructor(
     policy: string,
@@ -95,22 +69,22 @@ export class CircuitOpenError extends ResilienceError {
     options: ResilienceErrorOptions = {},
   ) {
     super(
-      ResilienceErrorCode.CircuitOpen,
+      PlatformErrorCode.ResilienceCircuitOpen,
       `Circuit open for policy "${policy}"`,
       { ...options, details: { policy, dependencyKey } },
     );
   }
 }
 
-/** Alcance de un tiempo agotado. */
+/** Scope of a timeout. */
 export enum TimeoutScope {
-  /** Se agotó el tiempo de un intento. */
+  /** One attempt ran out of time. */
   Attempt = 'attempt',
-  /** Se agotó el presupuesto total de la llamada (deadline). */
+  /** The whole call ran out of budget (deadline). */
   Total = 'total',
 }
 
-/** Se agotó el tiempo de un intento o el presupuesto total de la llamada. */
+/** An attempt or the whole call ran out of time. */
 export class ResilienceTimeoutError extends ResilienceError {
   readonly scope: TimeoutScope;
   readonly timeoutMs: number;
@@ -121,16 +95,20 @@ export class ResilienceTimeoutError extends ResilienceError {
     timeoutMs: number,
     options: ResilienceErrorOptions = {},
   ) {
-    super(ResilienceErrorCode.Timeout, `Call to policy "${policy}" timed out`, {
-      ...options,
-      details: { policy, scope, timeoutMs },
-    });
+    super(
+      PlatformErrorCode.ResilienceTimeout,
+      `Call to policy "${policy}" timed out`,
+      {
+        ...options,
+        details: { policy, scope, timeoutMs },
+      },
+    );
     this.scope = scope;
     this.timeoutMs = timeoutMs;
   }
 }
 
-/** El bulkhead de la dependencia no tiene cupo ni cola; la llamada no se ejecutó. */
+/** The dependency's bulkhead has no free slot nor queue room; the call did not run. */
 export class BulkheadFullError extends ResilienceError {
   constructor(
     policy: string,
@@ -138,36 +116,20 @@ export class BulkheadFullError extends ResilienceError {
     options: ResilienceErrorOptions = {},
   ) {
     super(
-      ResilienceErrorCode.BulkheadFull,
+      PlatformErrorCode.ResilienceBulkheadFull,
       `Bulkhead full for policy "${policy}"`,
       { ...options, details: { policy, dependencyKey } },
     );
   }
 }
 
-/** El servicio rechaza trabajo por sobrecarga; la llamada no se ejecutó. */
-export class OverloadedError extends ResilienceError {
-  constructor(retryAfterMs: number) {
-    super(ResilienceErrorCode.Overloaded, 'Service overloaded, shedding load', {
-      retryAfterMs,
-    });
-  }
-}
-
-/** No existe una política con ese nombre. */
+/** There is no policy with that name. */
 export class UnknownPolicyError extends ResilienceError {
   constructor(policy: string) {
     super(
-      ResilienceErrorCode.UnknownPolicy,
+      PlatformErrorCode.ResilienceUnknownPolicy,
       `Unknown resilience policy "${policy}"`,
       { details: { policy } },
     );
-  }
-}
-
-/** El decorador `@Resilient` se usó sin registro por defecto o sobre algo que no es un método. */
-export class ResilienceNotConfiguredError extends ResilienceError {
-  constructor(message: string, policy: string) {
-    super(ResilienceErrorCode.NotConfigured, message, { details: { policy } });
   }
 }

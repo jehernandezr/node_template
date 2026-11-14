@@ -1,9 +1,5 @@
-import {
-  type Clock,
-  type IdGenerator,
-  SystemClock,
-  UuidV7IdGenerator,
-} from '@platform/kernel';
+import { PlatformErrorCode } from '@contracts/platform';
+import { type Clock, type IdGenerator, SystemClock } from '@platform/kernel';
 import type {
   CommandDefinition,
   EventDefinition,
@@ -13,10 +9,7 @@ import type {
 import type { MessageDispatcher } from '../dispatch/message-dispatcher.js';
 import { DispatchOutcome } from '../dispatch/message-dispatcher.js';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 import type { Topology } from '../topology/topology.js';
 import type { MessageBus, PublishOptions, SendOptions } from './message-bus.js';
 import { OutboundMessageFactory } from './outbound-message.js';
@@ -29,10 +22,6 @@ export interface InMemoryBusOptions {
   readonly clock?: Clock;
   /** Id generator for envelopes. Defaults to UUIDv7. */
   readonly ids?: IdGenerator;
-  /** @deprecated Use `clock`. Takes precedence over `clock` when given. */
-  readonly now?: () => Date;
-  /** @deprecated Use `ids`. Takes precedence over `ids` when given. */
-  readonly newId?: () => string;
   /** Source of the default `traceparent`. Defaults to `currentTraceparent()`. */
   readonly traceparent?: () => string | undefined;
 }
@@ -76,13 +65,11 @@ export class InMemoryBus implements MessageBus {
   constructor(topology: Topology, options: InMemoryBusOptions) {
     topology.assertValid();
     this.topology = topology;
-    const now = options.now;
-    this.clockSource = now ? { now } : (options.clock ?? new SystemClock());
-    const ids = options.ids ?? new UuidV7IdGenerator();
+    this.clockSource = options.clock ?? new SystemClock();
     this.factory = new OutboundMessageFactory(topology, {
       source: options.source,
       clock: this.clockSource,
-      newId: options.newId ?? (() => ids.next().toString()),
+      ...(options.ids ? { ids: options.ids } : {}),
       ...(options.traceparent ? { traceparent: options.traceparent } : {}),
     });
     for (const queue of topology.queues) {
@@ -232,7 +219,7 @@ export class InMemoryBus implements MessageBus {
     const queue = this.queues.get(queueName);
     if (!queue) {
       throw new MessagingError(
-        MessagingErrorCode.UnknownQueue,
+        PlatformErrorCode.MessagingUnknownQueue,
         `unknown queue "${queueName}"`,
       );
     }

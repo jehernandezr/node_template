@@ -3,11 +3,8 @@ import type {
   ProcessedMessage,
   ProcessedMessageStore,
 } from '@platform/messaging';
-import {
-  type Database,
-  type DatabaseResolver,
-  PostgresIdempotencyStore,
-} from '@platform/persistence';
+import type { Database, DatabaseResolver } from '@platform/persistence';
+import { PostgresIdempotencyStore } from './postgres-idempotency-store.js';
 
 /** Opciones de {@link PostgresProcessedMessageStore}. */
 export interface PostgresProcessedMessageStoreOptions {

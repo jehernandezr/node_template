@@ -1,26 +1,25 @@
-import { isErrorCode, PlatformError } from '@platform/kernel';
+import { PlatformErrorCode } from '@contracts/platform';
+import { PlatformError } from '@platform/kernel';
 import * as primitives from '../index.js';
 import {
   DeadlineExceededError,
   InvalidArgumentError,
   NonJsonValueError,
-  PrimitivesErrorCode,
   StaleClaimError,
 } from './errors.js';
 
 describe('primitives errors', () => {
-  it.each(Object.values(PrimitivesErrorCode))(
-    'code %s has the SERVICE.SUBMODULE.ERROR format',
-    (code) => {
-      expect(isErrorCode(code)).toBe(true);
-    },
-  );
-
   it.each([
-    [new InvalidArgumentError('x', 'y'), PrimitivesErrorCode.InvalidArgument],
-    [new NonJsonValueError('$', 'z'), PrimitivesErrorCode.NonJsonValue],
-    [new DeadlineExceededError(1), PrimitivesErrorCode.DeadlineExceeded],
-    [new StaleClaimError('release'), PrimitivesErrorCode.StaleClaim],
+    [
+      new InvalidArgumentError('x', 'y'),
+      PlatformErrorCode.PrimitivesInvalidArgument,
+    ],
+    [new NonJsonValueError('$', 'z'), PlatformErrorCode.PrimitivesNonJsonValue],
+    [
+      new DeadlineExceededError(1),
+      PlatformErrorCode.PrimitivesDeadlineExceeded,
+    ],
+    [new StaleClaimError('release'), PlatformErrorCode.PrimitivesStaleClaim],
   ])('%p is a non-retryable PlatformError with its code', (error, code) => {
     expect(error).toBeInstanceOf(PlatformError);
     expect(error.code).toBe(code);
@@ -44,13 +43,19 @@ describe('public API', () => {
         'FailureKind',
         'InMemoryIdempotencyStore',
         'InvalidArgumentError',
+        'IsolationLevel',
+        'MAX_TIMER_MS',
+        'RaceStop',
+        'abortReason',
+        'abortableSleep',
+        'armTimer',
+        'raceDeadline',
         'MAX_BACKOFF_ATTEMPT',
         'MAX_CANONICAL_JSON_DEPTH',
         'MAX_CAUSE_DEPTH',
         'MAX_FINGERPRINT_LENGTH',
         'MAX_IDEMPOTENCY_KEY_LENGTH',
         'NonJsonValueError',
-        'PrimitivesErrorCode',
         'StaleClaimError',
         'assertClaimInput',
         'backoffDelay',

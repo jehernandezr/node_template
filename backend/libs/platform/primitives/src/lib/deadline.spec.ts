@@ -1,10 +1,7 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/testing';
 import { Deadline } from './deadline.js';
-import {
-  DeadlineExceededError,
-  InvalidArgumentError,
-  PrimitivesErrorCode,
-} from './errors.js';
+import { DeadlineExceededError, InvalidArgumentError } from './errors.js';
 
 const START = new Date('2026-11-12T10:00:00.000Z');
 
@@ -68,7 +65,9 @@ describe('Deadline', () => {
       clock.advance(10);
       expect(() => deadline.throwIfExpired()).toThrow(DeadlineExceededError);
       expect(() => deadline.throwIfExpired()).toThrow(
-        expect.objectContaining({ code: PrimitivesErrorCode.DeadlineExceeded }),
+        expect.objectContaining({
+          code: PlatformErrorCode.PrimitivesDeadlineExceeded,
+        }),
       );
     });
 

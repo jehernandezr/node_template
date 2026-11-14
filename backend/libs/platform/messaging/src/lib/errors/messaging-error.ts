@@ -1,12 +1,36 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { PlatformError, type PlatformErrorOptions } from '@platform/kernel';
+import {
+  FailureKind,
+  PlatformError,
+  type PlatformErrorOptions,
+} from '@platform/kernel';
+
+/** Error codes of the messaging library, declared once in `@contracts/platform`. */
+export type MessagingErrorCode =
+  | PlatformErrorCode.MessagingInvalidEnvelope
+  | PlatformErrorCode.MessagingInvalidPayload
+  | PlatformErrorCode.MessagingInvalidRetryPolicy
+  | PlatformErrorCode.MessagingInvalidTopology
+  | PlatformErrorCode.MessagingUnknownRoute
+  | PlatformErrorCode.MessagingUnknownQueue
+  | PlatformErrorCode.MessagingDuplicateHandler
+  | PlatformErrorCode.MessagingPermanentError
+  | PlatformErrorCode.MessagingPayloadTooLarge
+  /** The envelope tenant does not match the tenant the consumer expects. */
+  | PlatformErrorCode.MessagingTenantMismatch
+  /** A message id was reused with different content. */
+  | PlatformErrorCode.MessagingIdempotencyConflict
+  /** Invalid relay, dispatcher or publish options (delay, group id). */
+  | PlatformErrorCode.MessagingInvalidOptions
+  /** The outbox bus was called outside a unit of work. */
+  | PlatformErrorCode.MessagingTransactionRequired
+  /** The transport (SNS, SQS) failed or rejected the call. */
+  | PlatformErrorCode.MessagingTransportFailed;
 
 /**
- * Stable error codes emitted by the messaging library. Each value is a member
- * of `PlatformErrorCode` of `@contracts/platform`, the catalog the front also
- * reads, so a code is written once. It is a frozen object instead of an enum
- * because `isolatedModules` does not allow enum members initialized from
- * another module's enum.
+ * Short names of the {@link MessagingErrorCode} values, for the transport
+ * adapters that build and match these errors. The values are the
+ * `PlatformErrorCode` members themselves.
  */
 export const MessagingErrorCode = Object.freeze({
   InvalidEnvelope: PlatformErrorCode.MessagingInvalidEnvelope,
@@ -18,36 +42,41 @@ export const MessagingErrorCode = Object.freeze({
   DuplicateHandler: PlatformErrorCode.MessagingDuplicateHandler,
   PermanentError: PlatformErrorCode.MessagingPermanentError,
   PayloadTooLarge: PlatformErrorCode.MessagingPayloadTooLarge,
-  /** The envelope tenant does not match the tenant the consumer expects. */
   TenantMismatch: PlatformErrorCode.MessagingTenantMismatch,
-  /** A message id was reused with different content. */
   IdempotencyConflict: PlatformErrorCode.MessagingIdempotencyConflict,
-  /** Invalid relay, dispatcher or publish options (delay, group id). */
   InvalidOptions: PlatformErrorCode.MessagingInvalidOptions,
-  /** The outbox bus was called outside a unit of work. */
   TransactionRequired: PlatformErrorCode.MessagingTransactionRequired,
-  /** The transport (SNS, SQS) failed or rejected the call. Retryable. */
   TransportFailed: PlatformErrorCode.MessagingTransportFailed,
-} as const);
+} as const satisfies Record<string, MessagingErrorCode>);
 
-/** One of the {@link MessagingErrorCode} values. */
-export type MessagingErrorCode =
-  (typeof MessagingErrorCode)[keyof typeof MessagingErrorCode];
+/** Options of a {@link MessagingError}. */
+export interface MessagingErrorOptions extends PlatformErrorOptions {
+  /** How the failure behaves when retried. Defaults to what `retryable` says. */
+  readonly failureKind?: FailureKind;
+}
 
 /**
- * Base error of the messaging library, carrying a stable `code`. Extends
- * `PlatformError`, so `classifyFailure` reads `retryable` (false by default).
- * The message must not include raw input values.
+ * Base error of the messaging library, carrying a stable `code`. A messaging
+ * error is final unless it says otherwise: `failureKind` is `Transient` only
+ * when the error was declared retryable, so `classifyFailure` never turns it
+ * into a retry because of its `cause`. The message must not include raw input
+ * values.
  */
 export class MessagingError extends PlatformError {
   override readonly code: MessagingErrorCode;
+  readonly failureKind: FailureKind;
 
   constructor(
     code: MessagingErrorCode,
     message: string,
-    options: PlatformErrorOptions = {},
+    options: MessagingErrorOptions = {},
   ) {
-    super(message, options);
+    const { failureKind, ...rest } = options;
+    const kind =
+      failureKind ??
+      (rest.retryable === true ? FailureKind.Transient : FailureKind.Permanent);
+    super(message, { ...rest, retryable: kind === FailureKind.Transient });
     this.code = code;
+    this.failureKind = kind;
   }
 }

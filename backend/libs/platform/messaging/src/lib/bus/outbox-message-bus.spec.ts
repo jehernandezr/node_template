@@ -5,17 +5,17 @@ import {
   defineQueue,
   defineServiceContract,
   defineTopic,
+  PlatformErrorCode,
 } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
-import type {
-  SqlSession,
-  TransactionHook,
-  TransactionManager,
-  UnitOfWork,
-} from '@platform/persistence';
+import {
+  BackoffStrategy,
+  type TransactionHook,
+  type TransactionManager,
+  type UnitOfWork,
+} from '@platform/primitives';
 import { z } from 'zod';
 import { createEnvelope } from '../envelope/message-envelope.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { InMemoryOutboxStore } from '../outbox/in-memory-outbox-store.js';
 import type {
   EnvelopePublisher,
@@ -28,7 +28,7 @@ import { topologyFromContracts } from '../topology/contract-topology.js';
 import { TargetKind } from '../topology/route.js';
 import { OutboxMessageBus } from './outbox-message-bus.js';
 
-/** Unidad de trabajo en memoria con los ganchos de `@platform/persistence`. */
+/** In-memory transactions with the hooks of the `@platform/primitives` port. */
 class FakeTransactions implements TransactionManager {
   private readonly storage = new AsyncLocalStorage<FakeUnitOfWork>();
 
@@ -64,9 +64,6 @@ class FakeTransactions implements TransactionManager {
 
 class FakeUnitOfWork implements UnitOfWork {
   readonly database = 'shard-1';
-  readonly session: SqlSession = {
-    query: () => Promise.resolve({ rows: [], rowCount: 0 }),
-  };
   readonly commitHooks: TransactionHook[] = [];
   readonly rollbackHooks: TransactionHook[] = [];
 
@@ -127,8 +124,8 @@ interface Published {
 function setup() {
   const clock = new FixedClock(t0);
   const topology = topologyFromContracts([orders]);
-  const store = new InMemoryOutboxStore({ clock });
   const transactions = new FakeTransactions();
+  const store = new InMemoryOutboxStore({ clock, transactions });
   const published: Published[] = [];
   const publisher: EnvelopePublisher = {
     publish: (envelope, target, options) => {
@@ -140,7 +137,11 @@ function setup() {
     store,
     publisher,
     topology,
-    backoff: { baseMs: 1_000, maxMs: 60_000, jitter: false },
+    backoff: {
+      strategy: BackoffStrategy.None,
+      baseMs: 1_000,
+      maxMs: 60_000,
+    },
     clock,
     ids: new SequentialIdGenerator(),
   });
@@ -176,7 +177,9 @@ describe('OutboxMessageBus', () => {
         { orderId: 'o-1', total: 10 },
         { groupId: 'o-1' },
       ),
-    ).rejects.toMatchObject({ code: MessagingErrorCode.TransactionRequired });
+    ).rejects.toMatchObject({
+      code: PlatformErrorCode.MessagingTransactionRequired,
+    });
     expect(store.get('00000000-0000-7000-8000-000000000001')).toBeUndefined();
   });
 
@@ -242,10 +245,14 @@ describe('OutboxMessageBus', () => {
           { orderId: 'o-1', total: -1 },
           { groupId: 'o-1' },
         ),
-      ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidPayload });
+      ).rejects.toMatchObject({
+        code: PlatformErrorCode.MessagingInvalidPayload,
+      });
       await expect(
         bus.publish(OrderPlaced, { orderId: 'o-1', total: 10 }),
-      ).rejects.toMatchObject({ code: MessagingErrorCode.InvalidOptions });
+      ).rejects.toMatchObject({
+        code: PlatformErrorCode.MessagingInvalidOptions,
+      });
     });
   });
 });

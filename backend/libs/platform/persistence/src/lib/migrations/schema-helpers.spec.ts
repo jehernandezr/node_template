@@ -1,15 +1,6 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { PartitionBy, PartitionInterval } from '../enums.js';
-import {
-  Audited,
-  EntityPlacement,
-  GlobalEntity,
-  Partitioned,
-  persistenceMetadataOf,
-  ShardedEntity,
-  ShardKeyColumn,
-} from '../metadata/entity-metadata.js';
-import { catalogMigrations } from './catalog-migrations.js';
+import { Audited, auditedOptionsOf } from '../metadata/entity-metadata.js';
 import {
   auditTriggerSql,
   auditTriggerSqlFor,
@@ -19,19 +10,15 @@ import {
   partitionClause,
   uuidV7LowerBound,
 } from './schema-helpers.js';
-import { shardMigrations } from './shard-migrations.js';
-import { assertMigrations, toTypeOrmMigration } from './sql-migration.js';
+import { persistenceMigrations } from './persistence-migrations.js';
+import { assertMigrations } from './sql-migration.js';
 
-@ShardedEntity()
 @Audited({ exclude: ['password_hash'] })
-@Partitioned({ by: PartitionBy.Range, column: 'id' })
-class UserOrmEntity {
-  @ShardKeyColumn()
+class UserRecord {
   id!: string;
 }
 
-@GlobalEntity()
-class PlanOrmEntity {}
+class PlanRecord {}
 
 describe('schema helpers', () => {
   it('builds the audit trigger with the id column and the excluded columns', () => {
@@ -54,37 +41,19 @@ describe('schema helpers', () => {
   });
 
   it('reads @Audited from the entity', () => {
-    expect(auditTriggerSqlFor(UserOrmEntity, 'users')[1]).toContain(
+    expect(auditTriggerSqlFor(UserRecord, 'users')[1]).toContain(
       "platform_audit_row('id', 'password_hash')",
     );
-    expect(() => auditTriggerSqlFor(PlanOrmEntity, 'plans')).toThrow(
+    expect(() => auditTriggerSqlFor(PlanRecord, 'plans')).toThrow(
       'entity must be decorated with @Audited',
     );
   });
 
-  it('records sharding and partition declarations', () => {
-    expect(persistenceMetadataOf(UserOrmEntity)).toEqual({
-      placement: EntityPlacement.Sharded,
-      shardKeyField: 'id',
-      audited: { exclude: ['password_hash'] },
-      partitioned: {
-        by: PartitionBy.Range,
-        column: 'id',
-        interval: PartitionInterval.Month,
-      },
+  it('keeps the @Audited options per class', () => {
+    expect(auditedOptionsOf(UserRecord)).toEqual({
+      exclude: ['password_hash'],
     });
-    expect(persistenceMetadataOf(PlanOrmEntity).placement).toBe(
-      EntityPlacement.Global,
-    );
-  });
-
-  it('refuses an entity declared both sharded and global', () => {
-    expect(() => {
-      @GlobalEntity()
-      @ShardedEntity()
-      class Both {}
-      return Both;
-    }).toThrow('entity placement must be either sharded or global');
+    expect(auditedOptionsOf(PlanRecord)).toBeUndefined();
   });
 
   it('builds partitioned tables with a default partition and future partitions', () => {
@@ -132,30 +101,14 @@ describe('schema helpers', () => {
 
 describe('migrations', () => {
   it('are named for TypeORM and strictly ordered', () => {
-    expect(() => assertMigrations(shardMigrations)).not.toThrow();
-    expect(() => assertMigrations(catalogMigrations)).not.toThrow();
-    expect(() => assertMigrations([...shardMigrations].reverse())).toThrow(
-      'migration order must be strictly increasing timestamps',
-    );
+    expect(() => assertMigrations(persistenceMigrations)).not.toThrow();
+    expect(() =>
+      assertMigrations([...persistenceMigrations].reverse()),
+    ).toThrow('migration order must be strictly increasing timestamps');
     expect(() =>
       assertMigrations([{ name: 'NoTimestamp', up: [], down: [] }]),
     ).toThrow(
       'migration name must be letters and digits ending in a 13 digit timestamp',
     );
-  });
-
-  it('wraps a migration as a TypeORM migration class that runs each statement', async () => {
-    const Migration = toTypeOrmMigration({
-      name: 'Demo1794600000999',
-      up: ['A', 'B'],
-      down: ['C'],
-    });
-    const migration = new Migration();
-    const statements: string[] = [];
-    const runner = { query: async (sql: string) => statements.push(sql) };
-    await migration.up(runner as never);
-    await migration.down(runner as never);
-    expect(migration.name).toBe('Demo1794600000999');
-    expect(statements).toEqual(['A', 'B', 'C']);
   });
 });

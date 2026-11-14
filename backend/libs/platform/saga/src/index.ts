@@ -8,4 +8,5 @@ export * from './lib/definition/saga-validation.js';
 export * from './lib/store/saga-store.js';
 export * from './lib/store/in-memory-saga-store.js';
 export * from './lib/engine/saga-engine.js';
+export { INVALID_INVOKER_RESULT } from './lib/engine/step-call.js';
 export * from './lib/recovery/saga-recovery-job.js';

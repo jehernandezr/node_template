@@ -1,4 +1,4 @@
-import { defineEvent } from '@contracts/platform';
+import { defineEvent, PlatformErrorCode } from '@contracts/platform';
 import { z } from 'zod';
 import {
   createEnvelope,
@@ -8,7 +8,6 @@ import {
   MAX_ENVELOPE_TENANT_ID_LENGTH,
   MAX_ENVELOPE_TYPE_LENGTH,
 } from '../envelope/message-envelope.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { RetryPolicy } from '../topology/retry-policy.js';
 import {
   DispatchOutcome,
@@ -65,7 +64,7 @@ describe('MessageDispatcher tenant verification', () => {
       outcome: DispatchOutcome.DeadLetter,
       id: 'msg-1',
       error: 'envelope tenant does not match the subscription tenant',
-      code: MessagingErrorCode.TenantMismatch,
+      code: PlatformErrorCode.MessagingTenantMismatch,
     });
     // A missing tenant does not match either.
     expect(
@@ -73,7 +72,7 @@ describe('MessageDispatcher tenant verification', () => {
         receiveCount: 1,
         expectedTenantId: 'tenant-a',
       }),
-    ).toMatchObject({ code: MessagingErrorCode.TenantMismatch });
+    ).toMatchObject({ code: PlatformErrorCode.MessagingTenantMismatch });
     expect(handler).not.toHaveBeenCalled();
   });
 
@@ -121,7 +120,7 @@ describe('MessageDispatcher tenant verification', () => {
       }),
     ).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.TenantMismatch,
+      code: PlatformErrorCode.MessagingTenantMismatch,
     });
     expect(verifyTenant).toHaveBeenCalledWith(
       'tenant-x',
@@ -149,7 +148,7 @@ describe('MessageDispatcher tenant verification', () => {
       await dispatcher.dispatch(envelopeFor('tenant-a'), { receiveCount: 1 }),
     ).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.TenantMismatch,
+      code: PlatformErrorCode.MessagingTenantMismatch,
     });
     // Without a tenant claim there is nothing to verify.
     expect(
@@ -157,14 +156,6 @@ describe('MessageDispatcher tenant verification', () => {
         .outcome,
     ).toBe(DispatchOutcome.Processed);
     expect(handler).toHaveBeenCalledTimes(1);
-  });
-
-  it('keeps the deprecated opt-out that trusts the envelope tenant', async () => {
-    const { dispatcher } = setup({ trustEnvelopeTenant: true });
-    expect(
-      (await dispatcher.dispatch(envelopeFor('tenant-a'), { receiveCount: 1 }))
-        .outcome,
-    ).toBe(DispatchOutcome.Processed);
   });
 
   it('verifies the tenant before opening the context', async () => {
@@ -190,7 +181,7 @@ describe('MessageDispatcher input bounds', () => {
     );
     expect(result).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.PayloadTooLarge,
+      code: PlatformErrorCode.MessagingPayloadTooLarge,
     });
     expect(parse).not.toHaveBeenCalled();
     expect(handler).not.toHaveBeenCalled();
@@ -204,7 +195,7 @@ describe('MessageDispatcher input bounds', () => {
     const jsonParse = jest.spyOn(JSON, 'parse');
     expect(await dispatcher.dispatch(body, { receiveCount: 1 })).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.PayloadTooLarge,
+      code: PlatformErrorCode.MessagingPayloadTooLarge,
     });
     expect(jsonParse).not.toHaveBeenCalled();
   });
@@ -226,7 +217,7 @@ describe('MessageDispatcher input bounds', () => {
       await dispatcher.dispatch('{not json', { receiveCount: 1 }),
     ).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.InvalidEnvelope,
+      code: PlatformErrorCode.MessagingInvalidEnvelope,
     });
   });
 
@@ -239,7 +230,7 @@ describe('MessageDispatcher input bounds', () => {
   ])(
     'dead-letters an envelope with an oversized %s',
     async (_label, field, value) => {
-      const { dispatcher, handler } = setup({ trustEnvelopeTenant: true });
+      const { dispatcher, handler } = setup();
       expect(
         await dispatcher.dispatch(
           { ...envelopeFor(undefined), [field]: value },
@@ -247,7 +238,7 @@ describe('MessageDispatcher input bounds', () => {
         ),
       ).toMatchObject({
         outcome: DispatchOutcome.DeadLetter,
-        code: MessagingErrorCode.InvalidEnvelope,
+        code: PlatformErrorCode.MessagingInvalidEnvelope,
       });
       expect(handler).not.toHaveBeenCalled();
     },
@@ -261,7 +252,7 @@ describe('MessageDispatcher input bounds', () => {
       await dispatcher.dispatch(cyclic, { receiveCount: 1 }),
     ).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: MessagingErrorCode.InvalidEnvelope,
+      code: PlatformErrorCode.MessagingInvalidEnvelope,
     });
   });
 });

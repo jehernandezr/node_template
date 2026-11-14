@@ -1,12 +1,26 @@
-import { defineOperation, PlatformErrorCode } from '@contracts/platform';
-import { PlatformError } from '@platform/kernel';
+import {
+  Compensation,
+  defineOperation,
+  type OperationRetryPolicy,
+  PlatformErrorCode,
+} from '@contracts/platform';
+import { FailureKind, PlatformError } from '@platform/kernel';
 import { SequentialIdGenerator } from '@platform/kernel/testing';
-import { CallOutcome, stableDigest } from '@platform/primitives';
+import {
+  CallOutcome,
+  classifyFailure,
+  stableDigest,
+} from '@platform/primitives';
+import {
+  CrashingSagaStore,
+  ProcessDied,
+} from '../../../test/support/crashing-saga-store.js';
 import { z } from 'zod';
+import type { LoggerPort } from '@platform/observability';
 import { SagaDefinition } from '../definition/saga-definition.js';
-import { OperationRef, SagaFlow } from '../definition/saga-flow.js';
-import { SagaError, SagaErrorCode, SimulatedCrash } from '../errors.js';
-import { InvokeKind, InvokeOptions, OperationInvoker } from '../invoker.js';
+import { SagaFlow } from '../definition/saga-flow.js';
+import { SagaError } from '../errors.js';
+import { InvokeOptions, OperationInvoker } from '../invoker.js';
 import {
   Clock,
   SagaEvent,
@@ -17,7 +31,6 @@ import {
   StepStatus,
 } from '../model.js';
 import { SagaRecoveryJob } from '../recovery/saga-recovery-job.js';
-import { SagaStore } from '../store/saga-store.js';
 import { InMemorySagaStore } from '../store/in-memory-saga-store.js';
 import { SagaEngine, SagaEngineOptions } from './saga-engine.js';
 
@@ -29,27 +42,40 @@ interface State {
   post?: string;
 }
 
-interface Created {
-  id: string;
-  at: string;
+/** Fits every step budget of these tests: one attempt of 50 ms. */
+const FAST = {
+  timeoutMs: 50,
+  retry: { maxAttempts: 1, baseMs: 0, maxMs: 0 } satisfies OperationRetryPolicy,
+} as const;
+
+const NameInput = z.looseObject({ name: z.string() });
+const CreatedOutput = z.object({ id: z.string(), at: z.string() });
+
+function creates(name: string) {
+  return defineOperation({
+    id: `${name}.create.v1`,
+    input: NameInput,
+    output: CreatedOutput,
+    idempotent: true,
+    compensatedBy: `${name}.remove.v1`,
+    description: `Creates a ${name}.`,
+    ...FAST,
+  });
 }
 
-const STEP_A: OperationRef<{ name: string }, Created> = {
-  id: 'a.create',
-  compensatedBy: 'a.remove',
-};
-const STEP_B: OperationRef<{ name: string }, Created> = {
-  id: 'b.create',
-  compensatedBy: 'b.remove',
-};
-const STEP_C: OperationRef<{ name: string }, Created> = {
-  id: 'c.create',
-  compensatedBy: 'c.remove',
-};
-const SEND: OperationRef<{ name: string }, Created> = {
-  id: 'post.send',
-  compensatedBy: null,
-};
+const STEP_A = creates('a');
+const STEP_B = creates('b');
+const STEP_C = creates('c');
+const SEND = defineOperation({
+  id: 'post.send.v1',
+  input: NameInput,
+  output: CreatedOutput,
+  idempotent: true,
+  compensatedBy: Compensation.None,
+  compensationReason: 'A sent post cannot be recalled.',
+  description: 'Sends a post.',
+  ...FAST,
+});
 
 type InvokeResult = CallOutcome<unknown>;
 
@@ -156,7 +182,7 @@ class FakeParticipant implements OperationInvoker {
   }
 
   removes(): string[] {
-    return this.operations().filter((op) => op.endsWith('.remove'));
+    return this.operations().filter((op) => op.includes('.remove.'));
   }
 
   async invoke(
@@ -190,30 +216,6 @@ class FakeParticipant implements OperationInvoker {
     this.effects.set(operationId, (this.effects.get(operationId) ?? 0) + 1);
     const result = ok({ id, at: new Date(0) });
     this.results.set(idempotencyKey, result);
-    return result;
-  }
-}
-
-/** Invoker that performs the call and then dies once, before the outcome is logged. */
-class CrashAfterEffect implements OperationInvoker {
-  private armed = true;
-
-  constructor(
-    private readonly inner: OperationInvoker,
-    private readonly operationId: string,
-  ) {}
-
-  async invoke(
-    operationId: string,
-    input: unknown,
-    key: string,
-    options?: InvokeOptions,
-  ): ReturnType<OperationInvoker['invoke']> {
-    const result = await this.inner.invoke(operationId, input, key, options);
-    if (this.armed && operationId === this.operationId) {
-      this.armed = false;
-      throw new SimulatedCrash(`after effect of ${operationId}`);
-    }
     return result;
   }
 }
@@ -285,7 +287,7 @@ async function codeOf(promise: Promise<unknown>): Promise<unknown> {
 }
 
 function setup() {
-  const store: SagaStore = new InMemorySagaStore();
+  const store = new CrashingSagaStore();
   const clock = new FakeClock();
   const participant = new FakeParticipant();
   const events: SagaEvent[] = [];
@@ -339,6 +341,21 @@ function setup() {
   };
 }
 
+/** Logger whose calls the test inspects. */
+function recordingLogger(): LoggerPort & {
+  readonly error: jest.Mock;
+  readonly warn: jest.Mock;
+} {
+  const logger = {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    child: () => logger,
+  };
+  return logger;
+}
+
 function instanceRecord(overrides: Partial<SagaInstance>): SagaInstance {
   const now = new Date('2026-01-01T00:00:00Z');
   return {
@@ -357,6 +374,9 @@ function instanceRecord(overrides: Partial<SagaInstance>): SagaInstance {
     suspendedSince: null,
     deadlineAt: null,
     lastErrorCode: null,
+    lastErrorDetail: null,
+    context: null,
+    inputDigest: stableDigest(null),
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -402,10 +422,15 @@ class VolatileSaga extends SagaDefinition<State> {
   }
 }
 
-const LOOSE_A: OperationRef<unknown, Created> = {
-  id: 'a.create',
-  compensatedBy: 'a.remove',
-};
+const LOOSE_A = defineOperation({
+  id: 'a.create.v1',
+  input: z.unknown(),
+  output: CreatedOutput,
+  idempotent: true,
+  compensatedBy: 'a.remove.v1',
+  description: 'Creates an a from any input.',
+  ...FAST,
+});
 
 /** Saga whose first step input is produced by a supplied function. */
 class InputSaga extends SagaDefinition<State> {
@@ -498,19 +523,21 @@ describe('SagaEngine', () => {
         bAt: '1970-01-01T00:00:00.000Z',
       });
       expect(participant.operations()).toEqual([
-        'a.create',
-        'b.create',
-        'c.create',
+        'a.create.v1',
+        'b.create.v1',
+        'c.create.v1',
       ]);
       expect(participant.liveResources).toBe(3);
       const logged = (await store.steps('s1')).find((e) => e.stepIndex === 1);
-      expect((logged?.output as Created).at).toBe('1970-01-01T00:00:00.000Z');
+      expect((logged?.output as z.output<typeof CreatedOutput>).at).toBe(
+        '1970-01-01T00:00:00.000Z',
+      );
       expect(events.map((e) => e.kind)).toEqual([SagaEventKind.Completed]);
     });
 
     it('compensates completed steps in reverse order after a business error', async () => {
       const { participant, engineFor, events } = setup();
-      participant.script('c.create', business('SOLD_OUT'));
+      participant.script('c.create.v1', business('SOLD_OUT'));
 
       const result = await engineFor('node-1').start(
         'three-step',
@@ -520,15 +547,15 @@ describe('SagaEngine', () => {
 
       expect(result.status).toBe(SagaStatus.Compensated);
       expect(result.lastErrorCode).toBe('SOLD_OUT');
-      expect(participant.removes()).toEqual(['b.remove', 'a.remove']);
+      expect(participant.removes()).toEqual(['b.remove.v1', 'a.remove.v1']);
       expect(participant.liveResources).toBe(0);
       expect(events.map((e) => e.kind)).toEqual([SagaEventKind.Compensated]);
     });
 
     it('moves to CompensationFailed when a compensation returns a business error', async () => {
       const { participant, engineFor } = setup();
-      participant.script('c.create', business('SOLD_OUT'));
-      participant.script('b.remove', business('LOCKED'));
+      participant.script('c.create.v1', business('SOLD_OUT'));
+      participant.script('b.remove.v1', business('LOCKED'));
 
       const result = await engineFor('node-1').start(
         'three-step',
@@ -538,14 +565,14 @@ describe('SagaEngine', () => {
 
       expect(result.status).toBe(SagaStatus.CompensationFailed);
       expect(result.lastErrorCode).toBe('LOCKED');
-      expect(participant.removes()).toEqual(['b.remove']);
+      expect(participant.removes()).toEqual(['b.remove.v1']);
       expect(participant.liveResources).toBe(2);
     });
 
     it('suspends on a compensation transient failure and finishes on retry', async () => {
       const { participant, engineFor, clock, recovery } = setup();
-      participant.script('c.create', business('SOLD_OUT'));
-      participant.script('b.remove', transient());
+      participant.script('c.create.v1', business('SOLD_OUT'));
+      participant.script('b.remove.v1', transient());
 
       const suspended = await engineFor('node-1').start(
         'three-step',
@@ -559,9 +586,9 @@ describe('SagaEngine', () => {
       const report = await recovery(engineFor('node-2')).runOnce();
       expect(report.resumed).toEqual(['s1']);
       expect(participant.removes()).toEqual([
-        'b.remove',
-        'b.remove',
-        'a.remove',
+        'b.remove.v1',
+        'b.remove.v1',
+        'a.remove.v1',
       ]);
       expect(participant.liveResources).toBe(0);
     });
@@ -570,80 +597,58 @@ describe('SagaEngine', () => {
   describe('crash and recovery', () => {
     it('re-invokes a dispatched step with the same key after a crash and produces one effect', async () => {
       const { store, clock, participant, engineFor, recovery } = setup();
-      let armed = true;
-      const crashing = engineFor('node-1', {
-        crashAfterDispatch: (index) => {
-          if (armed && index === 1) {
-            armed = false;
-            return true;
-          }
-          return false;
-        },
-      });
+      store.crashAfterDispatch(1);
 
       await expect(
-        crashing.start('three-step', {}, { sagaId: 's1' }),
-      ).rejects.toBeInstanceOf(SimulatedCrash);
-      expect(participant.operations()).toEqual(['a.create']);
+        engineFor('node-1').start('three-step', {}, { sagaId: 's1' }),
+      ).rejects.toBeInstanceOf(ProcessDied);
+      expect(participant.operations()).toEqual(['a.create.v1']);
 
       clock.advance(30_001);
       const report = await recovery(engineFor('node-2')).runOnce();
 
       expect(report.resumed).toEqual(['s1']);
       const bCalls = participant.calls.filter(
-        (call) => call.operationId === 'b.create',
+        (call) => call.operationId === 'b.create.v1',
       );
       expect(bCalls.map((call) => call.idempotencyKey)).toEqual([
         's1:1:forward',
       ]);
-      expect(participant.effects.get('b.create')).toBe(1);
+      expect(participant.effects.get('b.create.v1')).toBe(1);
       expect((await store.get('s1'))?.status).toBe(SagaStatus.Completed);
     });
 
     it('replays a call whose effect happened before the crash, normalizing the replayed output', async () => {
-      const { participant, clock, engineFor, recovery } = setup();
-      const crashing = new CrashAfterEffect(participant, 'b.create');
+      const { participant, clock, engineFor, recovery, store } = setup();
+      store.crashBeforeOutcome(1);
 
       await expect(
-        engineFor('node-1', { invoker: crashing }).start(
-          'three-step',
-          {},
-          { sagaId: 's1' },
-        ),
-      ).rejects.toBeInstanceOf(SimulatedCrash);
-      expect(participant.effects.get('b.create')).toBe(1);
+        engineFor('node-1').start('three-step', {}, { sagaId: 's1' }),
+      ).rejects.toBeInstanceOf(ProcessDied);
+      expect(participant.effects.get('b.create.v1')).toBe(1);
 
       clock.advance(30_001);
       const report = await recovery(engineFor('node-2')).runOnce();
 
       expect(report.resumed).toEqual(['s1']);
       const keys = participant.calls
-        .filter((call) => call.operationId === 'b.create')
+        .filter((call) => call.operationId === 'b.create.v1')
         .map((call) => call.idempotencyKey);
       expect(keys).toEqual(['s1:1:forward', 's1:1:forward']);
-      expect(participant.effects.get('b.create')).toBe(1);
+      expect(participant.effects.get('b.create.v1')).toBe(1);
       const final = await engineFor('node-3').resume('s1');
       expect((final.state as State).bAt).toBe('1970-01-01T00:00:00.000Z');
     });
 
     it('refuses to run a saga whose lease another run holds', async () => {
-      const { clock, engineFor } = setup();
-      let armed = true;
-      const crashing = engineFor('node-1', {
-        crashAfterDispatch: () => {
-          if (armed) {
-            armed = false;
-            return true;
-          }
-          return false;
-        },
-      });
+      const { clock, engineFor, store } = setup();
+      store.crashAfterDispatch();
       await expect(
-        crashing.start('three-step', {}, { sagaId: 's1' }),
-      ).rejects.toBeInstanceOf(SimulatedCrash);
+        engineFor('node-1').start('three-step', {}, { sagaId: 's1' }),
+      ).rejects.toBeInstanceOf(ProcessDied);
 
       expect(await codeOf(engineFor('node-2').resume('s1'))).toBe(
-        SagaErrorCode.LeaseNotAcquired,
+        PlatformErrorCode.SagaLeaseNotAcquired,
       );
 
       clock.advance(30_001);
@@ -653,20 +658,11 @@ describe('SagaEngine', () => {
     });
 
     it('lets only one of two concurrent resumes on the same node run the step', async () => {
-      const { participant, clock, engineFor } = setup();
-      let armed = true;
-      const crashing = engineFor('node-1', {
-        crashAfterDispatch: (index) => {
-          if (armed && index === 1) {
-            armed = false;
-            return true;
-          }
-          return false;
-        },
-      });
+      const { participant, clock, engineFor, store } = setup();
+      store.crashAfterDispatch(1);
       await expect(
-        crashing.start('three-step', {}, { sagaId: 's1' }),
-      ).rejects.toBeInstanceOf(SimulatedCrash);
+        engineFor('node-1').start('three-step', {}, { sagaId: 's1' }),
+      ).rejects.toBeInstanceOf(ProcessDied);
       clock.advance(30_001);
 
       const worker = engineFor('node-2');
@@ -680,20 +676,24 @@ describe('SagaEngine', () => {
         (o): o is PromiseRejectedResult => o.status === 'rejected',
       );
       expect((rejected?.reason as SagaError).code).toBe(
-        SagaErrorCode.LeaseNotAcquired,
+        PlatformErrorCode.SagaLeaseNotAcquired,
       );
       expect(
-        participant.calls.filter((c) => c.operationId === 'b.create'),
+        participant.calls.filter((c) => c.operationId === 'b.create.v1'),
       ).toHaveLength(1);
-      expect(participant.effects.get('b.create')).toBe(1);
+      expect(participant.effects.get('b.create.v1')).toBe(1);
     });
 
     it('rejects the write of a stale run that lost its lease, leaving the log to the new run', async () => {
       const { store, participant, clock, engineFor } = setup();
-      const stale = new StaleRunInvoker(participant, 'b.create', async () => {
-        clock.advance(30_001);
-        await engineFor('node-2').resume('s1');
-      });
+      const stale = new StaleRunInvoker(
+        participant,
+        'b.create.v1',
+        async () => {
+          clock.advance(30_001);
+          await engineFor('node-2').resume('s1');
+        },
+      );
 
       const error = await codeOf(
         engineFor('node-1', { invoker: stale }).start(
@@ -703,8 +703,8 @@ describe('SagaEngine', () => {
         ),
       );
 
-      expect(error).toBe(SagaErrorCode.LeaseLost);
-      expect(participant.effects.get('b.create')).toBe(1);
+      expect(error).toBe(PlatformErrorCode.SagaLeaseLost);
+      expect(participant.effects.get('b.create.v1')).toBe(1);
       const logged = (await store.steps('s1')).find((e) => e.stepIndex === 1);
       expect(logged?.status).toBe(StepStatus.Succeeded);
       expect((await store.get('s1'))?.status).toBe(SagaStatus.Completed);
@@ -719,8 +719,8 @@ describe('SagaEngine', () => {
         engine.start('three-step', {}, { sagaId: 's1' }),
       );
 
-      expect(error).toBe(SagaErrorCode.LeaseLost);
-      expect(participant.operations()).toEqual(['a.create']);
+      expect(error).toBe(PlatformErrorCode.SagaLeaseLost);
+      expect(participant.operations()).toEqual(['a.create.v1']);
       const instance = await flaky.get('s1');
       expect(instance?.currentStep).toBe(1);
       expect(instance?.status).toBe(SagaStatus.Running);
@@ -733,7 +733,7 @@ describe('SagaEngine', () => {
   describe('transient failures and deadlines', () => {
     it('suspends on a transient failure, logs the step as uncertain, and completes on retry', async () => {
       const { store, participant, clock, engineFor, recovery } = setup();
-      participant.script('b.create', transient());
+      participant.script('b.create.v1', transient());
 
       const suspended = await engineFor('node-1').start(
         'three-step',
@@ -742,10 +742,13 @@ describe('SagaEngine', () => {
       );
 
       expect(suspended.status).toBe(SagaStatus.Suspended);
-      expect(suspended.lastErrorCode).toBe(SagaErrorCode.TransientFailure);
-      expect(suspended.nextAttemptAt?.getTime()).toBe(
-        clock.now().getTime() + 1_000,
+      expect(suspended.lastErrorCode).toBe(
+        PlatformErrorCode.SagaTransientFailure,
       );
+      const delay =
+        (suspended.nextAttemptAt?.getTime() ?? 0) - clock.now().getTime();
+      expect(delay).toBeGreaterThanOrEqual(500);
+      expect(delay).toBeLessThan(1_000);
       expect(
         (await store.steps('s1')).find((e) => e.stepIndex === 1)?.status,
       ).toBe(StepStatus.Uncertain);
@@ -759,13 +762,13 @@ describe('SagaEngine', () => {
         's1',
       ]);
       expect((await store.get('s1'))?.status).toBe(SagaStatus.Completed);
-      expect(participant.effects.get('b.create')).toBe(1);
+      expect(participant.effects.get('b.create.v1')).toBe(1);
     });
 
     it('suspends when the invoker throws a network error, classified as transient', async () => {
       const { participant, engineFor } = setup();
       participant.script(
-        'b.create',
+        'b.create.v1',
         Object.assign(new Error('socket reset'), { code: 'ECONNRESET' }),
       );
 
@@ -776,12 +779,14 @@ describe('SagaEngine', () => {
       );
 
       expect(suspended.status).toBe(SagaStatus.Suspended);
-      expect(suspended.lastErrorCode).toBe(SagaErrorCode.TransientFailure);
+      expect(suspended.lastErrorCode).toBe(
+        PlatformErrorCode.SagaTransientFailure,
+      );
     });
 
     it('compensates an uncertain step, including itself, once the deadline has passed', async () => {
       const { participant, clock, engineFor, recovery } = setup();
-      participant.script('b.create', transient());
+      participant.script('b.create.v1', transient());
 
       const suspended = await engineFor('node-1').start(
         'three-step',
@@ -798,9 +803,9 @@ describe('SagaEngine', () => {
       const final = await engineFor('node-2').resume('s1');
       expect(final.status).toBe(SagaStatus.Compensated);
       expect(
-        participant.calls.filter((c) => c.operationId === 'b.create'),
+        participant.calls.filter((c) => c.operationId === 'b.create.v1'),
       ).toHaveLength(1);
-      expect(participant.removes()).toEqual(['b.remove', 'a.remove']);
+      expect(participant.removes()).toEqual(['b.remove.v1', 'a.remove.v1']);
       expect(participant.liveResources).toBe(0);
     });
 
@@ -820,7 +825,7 @@ describe('SagaEngine', () => {
     it('requires intervention after too many suspension attempts', async () => {
       const { participant, clock, engineFor, recovery, events } = setup();
       participant.script(
-        'b.create',
+        'b.create.v1',
         transient(),
         transient(),
         transient(),
@@ -842,12 +847,14 @@ describe('SagaEngine', () => {
       expect(events.map((e) => e.kind)).toContain(
         SagaEventKind.RequiresIntervention,
       );
-      expect(events.at(-1)?.lastErrorCode).toBe(SagaErrorCode.TransientFailure);
+      expect(events.at(-1)?.lastErrorCode).toBe(
+        PlatformErrorCode.SagaTransientFailure,
+      );
     });
 
     it('requires intervention when a suspension outlives the maximum age', async () => {
       const { participant, clock, engineFor, recovery } = setup();
-      participant.script('b.create', transient(), transient());
+      participant.script('b.create.v1', transient(), transient());
       await engineFor('node-1', { maxSuspendAgeMs: 500 }).start(
         'three-step',
         {},
@@ -867,7 +874,7 @@ describe('SagaEngine', () => {
   describe('post-pivot and protocol violations', () => {
     it('never compensates a transient failure after the pivot, even past the deadline', async () => {
       const { participant, clock, engineFor, recovery } = setup();
-      participant.script('post.send', transient());
+      participant.script('post.send.v1', transient());
 
       const suspended = await engineFor('node-1').start(
         'pivot-saga',
@@ -887,7 +894,7 @@ describe('SagaEngine', () => {
 
     it('requires intervention on a business error after the pivot and never compensates', async () => {
       const { participant, engineFor, recovery, events, clock } = setup();
-      participant.script('post.send', business('BAD_ADDRESS'));
+      participant.script('post.send.v1', business('BAD_ADDRESS'));
 
       const result = await engineFor('node-1').start(
         'pivot-saga',
@@ -911,7 +918,7 @@ describe('SagaEngine', () => {
 
     it('compensates a protocol violation before the pivot, including the current step, and alerts', async () => {
       const { participant, engineFor, events } = setup();
-      participant.script('b.create', protocol());
+      participant.script('b.create.v1', protocol());
 
       const result = await engineFor('node-1').start(
         'three-step',
@@ -920,8 +927,10 @@ describe('SagaEngine', () => {
       );
 
       expect(result.status).toBe(SagaStatus.Compensated);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.ProtocolViolation);
-      expect(participant.removes()).toEqual(['b.remove', 'a.remove']);
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaProtocolViolation,
+      );
+      expect(participant.removes()).toEqual(['b.remove.v1', 'a.remove.v1']);
       expect(events.map((e) => e.kind)).toEqual([
         SagaEventKind.ProtocolViolation,
         SagaEventKind.Compensated,
@@ -930,7 +939,7 @@ describe('SagaEngine', () => {
 
     it('requires intervention on a protocol violation after the pivot', async () => {
       const { participant, engineFor, events } = setup();
-      participant.script('post.send', protocol());
+      participant.script('post.send.v1', protocol());
 
       const result = await engineFor('node-1').start(
         'pivot-saga',
@@ -939,7 +948,9 @@ describe('SagaEngine', () => {
       );
 
       expect(result.status).toBe(SagaStatus.RequiresIntervention);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.ProtocolViolation);
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaProtocolViolation,
+      );
       expect(events.map((e) => e.kind)).toEqual([
         SagaEventKind.ProtocolViolation,
         SagaEventKind.RequiresIntervention,
@@ -948,8 +959,8 @@ describe('SagaEngine', () => {
 
     it('moves to CompensationFailed on a protocol violation during compensation, and alerts', async () => {
       const { participant, engineFor, events } = setup();
-      participant.script('c.create', business('SOLD_OUT'));
-      participant.script('b.remove', protocol());
+      participant.script('c.create.v1', business('SOLD_OUT'));
+      participant.script('b.remove.v1', protocol());
 
       const result = await engineFor('node-1').start(
         'three-step',
@@ -958,8 +969,10 @@ describe('SagaEngine', () => {
       );
 
       expect(result.status).toBe(SagaStatus.CompensationFailed);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.ProtocolViolation);
-      expect(participant.removes()).toEqual(['b.remove']);
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaProtocolViolation,
+      );
+      expect(participant.removes()).toEqual(['b.remove.v1']);
       expect(events.map((e) => e.kind)).toContain(
         SagaEventKind.ProtocolViolation,
       );
@@ -969,16 +982,59 @@ describe('SagaEngine', () => {
   describe('state, events and configuration', () => {
     it('requires intervention when onSuccess throws, and logs the step as succeeded', async () => {
       const { store, engineFor } = setup();
+      const logger = recordingLogger();
 
-      const result = await engineFor('node-1').start(
+      const result = await engineFor('node-1', { logger }).start(
         'throwing',
         {},
         { sagaId: 's1' },
       );
 
       expect(result.status).toBe(SagaStatus.RequiresIntervention);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.StateUpdateFailed);
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaStateUpdateFailed,
+      );
+      expect(result.lastErrorDetail).toBe('Error: state rule failed');
       expect((await store.steps('s1'))[0].status).toBe(StepStatus.Succeeded);
+      expect(logger.error).toHaveBeenCalledWith(
+        'saga onSuccess rule failed',
+        expect.objectContaining({ sagaId: 's1', stepIndex: 0 }),
+      );
+    });
+
+    it('clears the error detail once a retried step succeeds', async () => {
+      const { participant, clock, engineFor, recovery, store } = setup();
+      participant.script('b.create.v1', transient());
+
+      const suspended = await engineFor('node-1').start(
+        'three-step',
+        {},
+        { sagaId: 's1' },
+      );
+      expect(suspended.lastErrorDetail).toBe('timeout');
+
+      clock.advance(1_000);
+      await recovery(engineFor('node-2')).runOnce();
+
+      const done = await store.get('s1');
+      expect(done?.status).toBe(SagaStatus.Completed);
+      expect(done?.lastErrorCode).toBeNull();
+      expect(done?.lastErrorDetail).toBeNull();
+    });
+
+    it('spreads retries with equal jitter by default, from an injectable random source', async () => {
+      const { participant, clock, engineFor } = setup();
+      participant.script('b.create.v1', transient());
+
+      const suspended = await engineFor('node-1', { random: () => 0 }).start(
+        'three-step',
+        {},
+        { sagaId: 's1' },
+      );
+
+      expect(suspended.nextAttemptAt?.getTime()).toBe(
+        clock.now().getTime() + 500,
+      );
     });
 
     it('ignores listeners that throw or reject', async () => {
@@ -1023,12 +1079,12 @@ describe('SagaEngine', () => {
         await codeOf(
           engineFor('node-1').start('three-step', { seen: new Map() }),
         ),
-      ).toBe(SagaErrorCode.InvalidState);
+      ).toBe(PlatformErrorCode.SagaInvalidState);
       expect(
         await codeOf(
           engineFor('node-1').start('three-step', { when: new Date() }),
         ),
-      ).toBe(SagaErrorCode.InvalidState);
+      ).toBe(PlatformErrorCode.SagaInvalidState);
     });
 
     it('rejects a lease that is not longer than the maximum step duration', async () => {
@@ -1045,7 +1101,7 @@ describe('SagaEngine', () => {
         });
 
       await expect(codeOf(Promise.resolve().then(build))).resolves.toBe(
-        SagaErrorCode.InvalidConfiguration,
+        PlatformErrorCode.SagaInvalidConfiguration,
       );
     });
 
@@ -1070,7 +1126,7 @@ describe('SagaEngine', () => {
         });
 
       await expect(codeOf(Promise.resolve().then(build))).resolves.toBe(
-        SagaErrorCode.InvalidDefinition,
+        PlatformErrorCode.SagaInvalidDefinition,
       );
     });
 
@@ -1101,7 +1157,7 @@ describe('SagaEngine', () => {
             .input(() => ({ name: 'c' }));
         }
       }
-      participant.script('c.create', business('SOLD_OUT'));
+      participant.script('c.create.v1', business('SOLD_OUT'));
       const engine = new SagaEngine({
         store,
         invoker: participant,
@@ -1116,10 +1172,10 @@ describe('SagaEngine', () => {
 
       expect(result.status).toBe(SagaStatus.Compensated);
       expect(participant.operations()).toEqual([
-        'a.create',
+        'a.create.v1',
         'a.lookup.v1',
-        'c.create',
-        'a.remove',
+        'c.create.v1',
+        'a.remove.v1',
       ]);
     });
 
@@ -1127,7 +1183,7 @@ describe('SagaEngine', () => {
       const { engineFor } = setup();
 
       expect(await codeOf(engineFor('node-1').start('unknown', {}))).toBe(
-        SagaErrorCode.UnknownDefinition,
+        PlatformErrorCode.SagaUnknownDefinition,
       );
     });
   });
@@ -1135,7 +1191,7 @@ describe('SagaEngine', () => {
   describe('recovery isolation', () => {
     it('records a failing saga and keeps resuming the rest of the batch', async () => {
       const { store, participant, clock, engineFor, recovery } = setup();
-      participant.script('b.create', transient());
+      participant.script('b.create.v1', transient());
       await engineFor('node-1').start('three-step', {}, { sagaId: 'good' });
       await store.create(
         instanceRecord({ id: 'ghost', status: SagaStatus.Running }),
@@ -1146,29 +1202,49 @@ describe('SagaEngine', () => {
 
       expect(report.resumed).toEqual(['good']);
       expect(report.failed).toEqual([
-        { sagaId: 'ghost', errorCode: SagaErrorCode.UnknownDefinition },
+        {
+          sagaId: 'ghost',
+          errorCode: PlatformErrorCode.SagaUnknownDefinition,
+          detail: expect.stringContaining(
+            PlatformErrorCode.SagaUnknownDefinition,
+          ),
+        },
       ]);
     });
 
     it('reports an unexpected error with the catalog code PLATFORM.INTERNAL.UNEXPECTED', async () => {
-      const { clock, engineFor, participant, recovery } = setup();
-      participant.script('b.create', transient());
+      const { clock, engineFor, participant, store } = setup();
+      participant.script('b.create.v1', transient());
       await engineFor('node-1').start('three-step', {}, { sagaId: 's1' });
       clock.advance(1_000);
       const engine = engineFor('node-2');
       jest.spyOn(engine, 'resume').mockRejectedValueOnce(new Error('boom'));
 
-      const report = await recovery(engine).runOnce();
+      const logger = recordingLogger();
+      const report = await new SagaRecoveryJob({
+        engine,
+        store,
+        clock,
+        logger,
+      }).runOnce();
 
+      expect(logger.error).toHaveBeenCalledWith(
+        'saga recovery failed',
+        expect.objectContaining({ sagaId: 's1' }),
+      );
       expect(report.failed).toEqual([
-        { sagaId: 's1', errorCode: PlatformErrorCode.InternalUnexpected },
+        {
+          sagaId: 's1',
+          errorCode: PlatformErrorCode.InternalUnexpected,
+          detail: 'Error: boom',
+        },
       ]);
     });
   });
   describe('retries reuse the logged input', () => {
     it('re-dispatches an uncertain forward step with the logged input and the same key', async () => {
       const { participant, clock, counts, engineFor, recovery } = setup();
-      participant.script('b.create', transient());
+      participant.script('b.create.v1', transient());
 
       await engineFor('node-1').start('volatile', {}, { sagaId: 's1' });
       clock.advance(1_000);
@@ -1177,7 +1253,7 @@ describe('SagaEngine', () => {
       ]);
 
       const bCalls = participant.calls.filter(
-        (c) => c.operationId === 'b.create',
+        (c) => c.operationId === 'b.create.v1',
       );
       expect(bCalls).toHaveLength(2);
       expect(bCalls[1].input).toEqual(bCalls[0].input);
@@ -1190,8 +1266,8 @@ describe('SagaEngine', () => {
 
     it('re-dispatches an uncertain compensation with the logged input', async () => {
       const { participant, clock, counts, engineFor, recovery } = setup();
-      participant.script('c.create', business('SOLD_OUT'));
-      participant.script('b.remove', transient());
+      participant.script('c.create.v1', business('SOLD_OUT'));
+      participant.script('b.remove.v1', transient());
 
       const suspended = await engineFor('node-1').start(
         'volatile',
@@ -1203,7 +1279,7 @@ describe('SagaEngine', () => {
       await recovery(engineFor('node-2')).runOnce();
 
       const removes = participant.calls.filter(
-        (c) => c.operationId === 'b.remove',
+        (c) => c.operationId === 'b.remove.v1',
       );
       expect(removes).toHaveLength(2);
       expect(removes[1].input).toEqual(removes[0].input);
@@ -1227,7 +1303,10 @@ describe('SagaEngine', () => {
         );
 
         expect(result.status).toBe(SagaStatus.RequiresIntervention);
-        expect(result.lastErrorCode).toBe(SagaErrorCode.InputBuildFailed);
+        expect(result.lastErrorCode).toBe(
+          PlatformErrorCode.SagaInputBuildFailed,
+        );
+        expect(result.lastErrorDetail).toEqual(expect.any(String));
         expect(participant.operations()).toEqual([]);
         expect(events.map((e) => e.kind)).toEqual([
           SagaEventKind.RequiresIntervention,
@@ -1237,7 +1316,7 @@ describe('SagaEngine', () => {
 
     it('requires intervention when a compensation input cannot be built', async () => {
       const { participant, engineFor } = setup();
-      participant.script('c.create', business('SOLD_OUT'));
+      participant.script('c.create.v1', business('SOLD_OUT'));
 
       const result = await engineFor('node-1').start(
         'comp-input-throws',
@@ -1246,7 +1325,7 @@ describe('SagaEngine', () => {
       );
 
       expect(result.status).toBe(SagaStatus.RequiresIntervention);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.InputBuildFailed);
+      expect(result.lastErrorCode).toBe(PlatformErrorCode.SagaInputBuildFailed);
       expect(participant.removes()).toEqual([]);
       expect(participant.liveResources).toBe(1);
     });
@@ -1261,24 +1340,37 @@ describe('SagaEngine', () => {
       );
 
       expect(result.status).toBe(SagaStatus.RequiresIntervention);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.StateUpdateFailed);
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaStateUpdateFailed,
+      );
     });
   });
 
   describe('call timeouts', () => {
     it('treats a call that exceeds maxStepDurationMs as uncertain, aborts it and retries it later', async () => {
       const { participant, clock, engineFor, store, recovery } = setup();
-      const hanging = new HangingInvoker(participant, 'b.create');
+      const hanging = new HangingInvoker(participant, 'b.create.v1');
       const engine = engineFor('node-1', {
         invoker: hanging,
         leaseMs: 1_000,
         maxStepDurationMs: 100,
       });
 
-      const suspended = await engine.start('three-step', {}, { sagaId: 's1' });
+      jest.useFakeTimers();
+      let suspended: SagaInstance;
+      try {
+        const running = engine.start('three-step', {}, { sagaId: 's1' });
+        await jest.advanceTimersByTimeAsync(100);
+        suspended = await running;
+      } finally {
+        jest.useRealTimers();
+      }
 
       expect(suspended.status).toBe(SagaStatus.Suspended);
-      expect(suspended.lastErrorCode).toBe(SagaErrorCode.UncertainOutcome);
+      expect(suspended.lastErrorCode).toBe(
+        PlatformErrorCode.SagaUncertainOutcome,
+      );
+      expect(suspended.lastErrorDetail).toBe('timed out after 100 ms');
       expect(hanging.signals[0]?.aborted).toBe(true);
       expect(
         (await store.steps('s1')).find((e) => e.stepIndex === 1)?.status,
@@ -1320,7 +1412,7 @@ describe('SagaEngine', () => {
 
     it('emits nothing when a retry leaves the saga suspended', async () => {
       const { participant, clock, events, engineFor } = setup();
-      participant.script('b.create', transient(), transient());
+      participant.script('b.create.v1', transient(), transient());
       await engineFor('node-1').start('three-step', {}, { sagaId: 's1' });
       expect(events.map((e) => e.kind)).toEqual([SagaEventKind.Suspended]);
       events.splice(0);
@@ -1344,13 +1436,13 @@ describe('SagaEngine', () => {
         await codeOf(
           engineFor('node-1').start('pivot-saga', {}, { idempotencyKey: 'k1' }),
         ),
-      ).toBe(SagaErrorCode.IdempotencyKeyConflict);
+      ).toBe(PlatformErrorCode.SagaIdempotencyKeyConflict);
     });
   });
   describe('call outcomes, budgets and context', () => {
     it('suspends on an uncertain outcome and retries with the same key and input until it completes', async () => {
       const { participant, clock, engineFor, recovery, store } = setup();
-      participant.script('b.create', CallOutcome.uncertain('timeout'));
+      participant.script('b.create.v1', CallOutcome.uncertain('timeout'));
 
       const suspended = await engineFor('node-1').start(
         'three-step',
@@ -1358,7 +1450,9 @@ describe('SagaEngine', () => {
         { sagaId: 's1' },
       );
       expect(suspended.status).toBe(SagaStatus.Suspended);
-      expect(suspended.lastErrorCode).toBe(SagaErrorCode.UncertainOutcome);
+      expect(suspended.lastErrorCode).toBe(
+        PlatformErrorCode.SagaUncertainOutcome,
+      );
       expect(
         (await store.steps('s1')).find((e) => e.stepIndex === 1)?.status,
       ).toBe(StepStatus.Uncertain);
@@ -1368,7 +1462,7 @@ describe('SagaEngine', () => {
 
       expect((await store.get('s1'))?.status).toBe(SagaStatus.Completed);
       const calls = participant.calls.filter(
-        (call) => call.operationId === 'b.create',
+        (call) => call.operationId === 'b.create.v1',
       );
       expect(calls.map((call) => call.idempotencyKey)).toEqual([
         's1:1:forward',
@@ -1380,7 +1474,7 @@ describe('SagaEngine', () => {
     it('requires intervention when uncertain outcomes exhaust the retry budget', async () => {
       const { participant, clock, engineFor } = setup();
       participant.script(
-        'b.create',
+        'b.create.v1',
         CallOutcome.uncertain('timeout'),
         CallOutcome.uncertain('timeout'),
       );
@@ -1391,13 +1485,13 @@ describe('SagaEngine', () => {
       const final = await engine().resume('s1');
 
       expect(final.status).toBe(SagaStatus.RequiresIntervention);
-      expect(final.lastErrorCode).toBe(SagaErrorCode.UncertainOutcome);
+      expect(final.lastErrorCode).toBe(PlatformErrorCode.SagaUncertainOutcome);
     });
 
     it('suspends an uncertain compensation and finishes it on retry', async () => {
       const { participant, clock, engineFor } = setup();
-      participant.script('c.create', business('C.CREATE.REJECTED'));
-      participant.script('b.remove', CallOutcome.uncertain('timeout'));
+      participant.script('c.create.v1', business('C.CREATE.REJECTED'));
+      participant.script('b.remove.v1', CallOutcome.uncertain('timeout'));
 
       const suspended = await engineFor('node-1').start(
         'three-step',
@@ -1406,7 +1500,9 @@ describe('SagaEngine', () => {
       );
       expect(suspended.status).toBe(SagaStatus.Suspended);
       expect(suspended.direction).toBe(StepDirection.Compensate);
-      expect(suspended.lastErrorCode).toBe(SagaErrorCode.UncertainOutcome);
+      expect(suspended.lastErrorCode).toBe(
+        PlatformErrorCode.SagaUncertainOutcome,
+      );
 
       clock.advance(1_000);
       const final = await engineFor('node-2').resume('s1');
@@ -1415,7 +1511,10 @@ describe('SagaEngine', () => {
 
     it('classifies an unknown thrown error as a protocol violation and compensates', async () => {
       const { participant, engineFor } = setup();
-      participant.script('b.create', new Error('undefined is not a function'));
+      participant.script(
+        'b.create.v1',
+        new Error('undefined is not a function'),
+      );
 
       const result = await engineFor('node-1').start(
         'three-step',
@@ -1424,12 +1523,14 @@ describe('SagaEngine', () => {
       );
 
       expect(result.status).toBe(SagaStatus.Compensated);
-      expect(result.lastErrorCode).toBe(SagaErrorCode.ProtocolViolation);
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaProtocolViolation,
+      );
     });
 
     it('treats an invoker result of unknown shape as a protocol violation', async () => {
       const { participant, engineFor } = setup();
-      participant.script('b.create', {
+      participant.script('b.create.v1', {
         kind: 'mystery',
       } as unknown as InvokeResult);
 
@@ -1439,29 +1540,9 @@ describe('SagaEngine', () => {
         { sagaId: 's1' },
       );
 
-      expect(result.lastErrorCode).toBe(SagaErrorCode.ProtocolViolation);
-    });
-
-    it('still accepts results from a legacy invoker', async () => {
-      const { store, registry, clock } = setup();
-      const legacy: OperationInvoker = {
-        invoke: async (operationId: string) =>
-          operationId === 'b.create'
-            ? { kind: InvokeKind.BusinessError, code: 'B.CREATE.REJECTED' }
-            : { kind: InvokeKind.Success, output: { id: 'x', at: 'now' } },
-      };
-      const engine = new SagaEngine({
-        store,
-        invoker: legacy,
-        registry,
-        owner: 'node-1',
-        clock,
-      });
-
-      const result = await engine.start('three-step', {}, { sagaId: 's1' });
-
-      expect(result.status).toBe(SagaStatus.Compensated);
-      expect(result.lastErrorCode).toBe('B.CREATE.REJECTED');
+      expect(result.lastErrorCode).toBe(
+        PlatformErrorCode.SagaProtocolViolation,
+      );
     });
 
     it('hands each call one step deadline and renews the lease past it', async () => {
@@ -1487,20 +1568,11 @@ describe('SagaEngine', () => {
         actorId: 'u-1',
         traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
       };
-      let armed = true;
-      const crashing = engineFor('node-1', {
-        crashAfterDispatch: (index) => {
-          if (armed && index === 1) {
-            armed = false;
-            return true;
-          }
-          return false;
-        },
-      });
+      store.crashAfterDispatch(1);
 
       await expect(
-        crashing.start('three-step', {}, { sagaId: 's1', context }),
-      ).rejects.toBeInstanceOf(SimulatedCrash);
+        engineFor('node-1').start('three-step', {}, { sagaId: 's1', context }),
+      ).rejects.toBeInstanceOf(ProcessDied);
       expect((await store.get('s1'))?.context).toEqual(context);
 
       clock.advance(30_001);
@@ -1552,7 +1624,7 @@ describe('SagaEngine', () => {
         await codeOf(
           engine.start('three-step', { a: 'other' }, { idempotencyKey: 'k1' }),
         ),
-      ).toBe(SagaErrorCode.IdempotencyKeyConflict);
+      ).toBe(PlatformErrorCode.SagaIdempotencyKeyConflict);
       expect(participant.operations()).toHaveLength(3);
     });
 
@@ -1567,26 +1639,6 @@ describe('SagaEngine', () => {
       expect((await store.get('s1'))?.inputDigest).toBe(
         stableDigest({ a: 'x' }),
       );
-    });
-
-    it('accepts an instance stored before digests existed', async () => {
-      const { engineFor, store } = setup();
-      await store.create(
-        instanceRecord({
-          id: 'old',
-          type: 'three-step',
-          idempotencyKey: 'k-old',
-          status: SagaStatus.Completed,
-        }),
-      );
-
-      const reused = await engineFor('node-1').start(
-        'three-step',
-        { anything: true },
-        { idempotencyKey: 'k-old' },
-      );
-
-      expect(reused.id).toBe('old');
     });
   });
 
@@ -1605,13 +1657,14 @@ describe('SagaEngine', () => {
     });
 
     it('raises errors that extend PlatformError, retryable only for contention', () => {
-      const lost = new SagaError(SagaErrorCode.LeaseLost, 'lost');
-      const invalid = new SagaError(SagaErrorCode.InvalidState, 'bad');
+      const lost = new SagaError(PlatformErrorCode.SagaLeaseLost, 'lost');
+      const invalid = new SagaError(PlatformErrorCode.SagaInvalidState, 'bad');
 
       expect(lost).toBeInstanceOf(PlatformError);
       expect(lost.retryable).toBe(true);
+      expect(classifyFailure(lost)).toBe(FailureKind.Transient);
       expect(invalid.retryable).toBe(false);
-      expect(new SimulatedCrash('x').name).toBe('SimulatedCrash');
+      expect(classifyFailure(invalid)).toBe(FailureKind.Permanent);
     });
   });
 });

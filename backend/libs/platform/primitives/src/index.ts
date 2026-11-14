@@ -7,3 +7,5 @@ export * from './lib/failure.js';
 export * from './lib/hash.js';
 export * from './lib/idempotency/idempotency-store.js';
 export * from './lib/idempotency/in-memory-idempotency-store.js';
+export * from './lib/timers.js';
+export * from './lib/transaction/transaction-manager.js';

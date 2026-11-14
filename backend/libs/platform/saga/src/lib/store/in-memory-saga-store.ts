@@ -1,4 +1,5 @@
-import { SagaError, SagaErrorCode } from '../errors.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { SagaError } from '../errors.js';
 import {
   SagaInstance,
   SagaStatus,
@@ -21,7 +22,7 @@ export class InMemorySagaStore implements SagaStore {
       );
     if (this.instances.has(instance.id) || keyTaken) {
       throw new SagaError(
-        SagaErrorCode.DuplicateSaga,
+        PlatformErrorCode.SagaDuplicateSaga,
         `Saga ${instance.id} or its idempotency key already exists`,
       );
     }
@@ -47,7 +48,7 @@ export class InMemorySagaStore implements SagaStore {
   async dispatchStep(write: DispatchWrite): Promise<SagaInstance> {
     if (write.step.status !== StepStatus.Dispatched) {
       throw new SagaError(
-        SagaErrorCode.InvalidState,
+        PlatformErrorCode.SagaInvalidState,
         'dispatchStep requires a step in Dispatched status',
       );
     }
@@ -137,17 +138,20 @@ export class InMemorySagaStore implements SagaStore {
     const id = write.instance.id;
     const current = this.instances.get(id);
     if (current === undefined) {
-      throw new SagaError(SagaErrorCode.NotFound, `Saga ${id} not found`);
+      throw new SagaError(
+        PlatformErrorCode.SagaNotFound,
+        `Saga ${id} not found`,
+      );
     }
     if (current.leaseToken !== write.leaseToken) {
       throw new SagaError(
-        SagaErrorCode.LeaseLost,
+        PlatformErrorCode.SagaLeaseLost,
         `Lease on saga ${id} was lost`,
       );
     }
     if (current.version !== write.expectedVersion) {
       throw new SagaError(
-        SagaErrorCode.ConcurrentModification,
+        PlatformErrorCode.SagaConcurrentModification,
         `Saga ${id} is at version ${current.version}, expected ${write.expectedVersion}`,
       );
     }
@@ -180,9 +184,7 @@ function cloneInstance(instance: SagaInstance): SagaInstance {
   return {
     ...instance,
     state: jsonClone(instance.state),
-    ...(instance.context !== undefined && {
-      context: jsonClone(instance.context),
-    }),
+    context: jsonClone(instance.context),
     leaseUntil: copyDate(instance.leaseUntil),
     nextAttemptAt: copyDate(instance.nextAttemptAt),
     suspendedSince: copyDate(instance.suspendedSince),

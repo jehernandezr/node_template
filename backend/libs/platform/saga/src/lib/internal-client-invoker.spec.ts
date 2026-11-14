@@ -28,13 +28,16 @@ import {
   SagaDefinitionIssueCode,
   type SagaDefinitionIssue,
 } from './definition/saga-validation.js';
-import { SagaErrorCode, SimulatedCrash } from './errors.js';
 import { InternalClientInvoker } from './internal-client-invoker.js';
-import type { InvokeOptions, OperationInvoker } from './invoker.js';
+import type { OperationInvoker } from './invoker.js';
 import { SagaStatus } from './model.js';
 import { SagaRecoveryJob } from './recovery/saga-recovery-job.js';
 import { SagaEngine } from './engine/saga-engine.js';
 import { InMemorySagaStore } from './store/in-memory-saga-store.js';
+import {
+  CrashingSagaStore,
+  ProcessDied,
+} from '../../test/support/crashing-saga-store.js';
 
 /** Fits the 2 s step budget of these tests: 2 x 500 ms + 100 ms of backoff. */
 const FAST = {
@@ -95,30 +98,6 @@ class OnboardingSaga extends SagaDefinition<State> {
   }
 }
 
-/** Invoker that performs the call and then dies once, before the outcome is logged. */
-class CrashAfterEffect implements OperationInvoker {
-  private armed = true;
-
-  constructor(
-    private readonly inner: OperationInvoker,
-    private readonly operationId: string,
-  ) {}
-
-  async invoke(
-    operationId: string,
-    input: unknown,
-    key: string,
-    options?: InvokeOptions,
-  ) {
-    const result = await this.inner.invoke(operationId, input, key, options);
-    if (this.armed && operationId === this.operationId) {
-      this.armed = false;
-      throw new SimulatedCrash(`after effect of ${operationId}`);
-    }
-    return result;
-  }
-}
-
 const context = {
   tenantId: 't-1',
   actorId: 'u-1',
@@ -153,7 +132,7 @@ function wire() {
       new InternalClient({ transport, registry, clock }),
     );
 
-  const store = new InMemorySagaStore();
+  const store = new CrashingSagaStore();
   const sagas = new Map<string, SagaDefinition<unknown>>([
     ['onboarding', new OnboardingSaga() as SagaDefinition<unknown>],
   ]);
@@ -190,16 +169,16 @@ function keysOf(
 
 describe('InternalClientInvoker with SagaEngine', () => {
   it('rebuilds exactly the same idempotency key when a step is recovered after a crash', async () => {
-    const { clock, claims, created, sent, store, engine, invoker } = wire();
-    const crashing = new CrashAfterEffect(invoker(), CreateAccount.id);
+    const { clock, claims, created, sent, store, engine } = wire();
+    store.crashBeforeOutcome(0);
 
     await expect(
-      engine('node-1', crashing).start(
+      engine('node-1').start(
         'onboarding',
         { name: 'Ana' },
         { sagaId: 's1', context },
       ),
-    ).rejects.toBeInstanceOf(SimulatedCrash);
+    ).rejects.toBeInstanceOf(ProcessDied);
     expect(created).toHaveBeenCalledTimes(1);
 
     clock.advance(30_001);
@@ -368,12 +347,21 @@ describe('SagaEngine startup validation against the contracts', () => {
     ]);
   });
 
-  it('rejects a hand-written compensation that differs from the contract', () => {
+  it('rejects a step whose compensation differs from the registered contract', () => {
+    const DriftedCreate = defineOperation({
+      id: CreateAccount.id,
+      input: CreateAccount.input,
+      output: CreateAccount.output,
+      idempotent: true,
+      compensatedBy: 'acct.archive.v1',
+      description: 'An outdated copy of the contract.',
+      ...FAST,
+    });
     class Drifted extends SagaDefinition<unknown> {
       readonly type = 'drifted';
 
       protected define(flow: SagaFlow<unknown>): void {
-        flow.step({ id: CreateAccount.id, compensatedBy: 'acct.archive.v1' });
+        flow.step(DriftedCreate);
       }
     }
 
@@ -420,7 +408,9 @@ describe('SagaEngine startup validation against the contracts', () => {
       caught = error;
     }
 
-    expect(caught).toMatchObject({ code: SagaErrorCode.InvalidDefinition });
+    expect(caught).toMatchObject({
+      code: PlatformErrorCode.SagaInvalidDefinition,
+    });
   });
 });
 
@@ -438,7 +428,7 @@ describe('SagaEngine trace propagation', () => {
   });
 
   it('keeps the trace of whoever started the saga, also for a step recovered by another node', async () => {
-    const { clock, created, notified, store, engine, invoker } = wire();
+    const { clock, created, notified, store, engine } = wire();
     const seen: (string | undefined)[] = [];
     const record = () => {
       seen.push(parseTraceparent(currentTraceparent())?.traceId);
@@ -451,17 +441,17 @@ describe('SagaEngine trace propagation', () => {
       record();
       return CallOutcome.success({ sent: true });
     });
-    const crashing = new CrashAfterEffect(invoker(), CreateAccount.id);
+    store.crashBeforeOutcome(0);
 
     await expect(
       otelContext.with(contextFromTraceparent(TRACEPARENT), () =>
-        engine('node-1', crashing).start(
+        engine('node-1').start(
           'onboarding',
           { name: 'Ana' },
           { sagaId: 's1', context: { tenantId: 't-1' } },
         ),
       ),
-    ).rejects.toBeInstanceOf(SimulatedCrash);
+    ).rejects.toBeInstanceOf(ProcessDied);
 
     expect((await store.get('s1'))?.context).toEqual({
       tenantId: 't-1',

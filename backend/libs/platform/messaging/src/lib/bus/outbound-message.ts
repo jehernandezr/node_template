@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   type Clock,
   type IdGenerator,
@@ -17,10 +18,7 @@ import {
   createEnvelope,
   toWireEnvelope,
 } from '../envelope/message-envelope.js';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 import type { OutboundTarget } from '../outbox/outbox.js';
 import type { RouteDef } from '../topology/route.js';
 import type { Topology } from '../topology/topology.js';
@@ -54,8 +52,6 @@ export interface OutboundMessageFactoryOptions {
   readonly clock?: Clock;
   /** Id generator for envelopes. Defaults to UUIDv7. */
   readonly ids?: IdGenerator;
-  /** Overrides the id generator (kept for the deprecated `InMemoryBus` options). */
-  readonly newId?: () => string;
   /** Source of the default `traceparent`. Defaults to `currentTraceparent()`. */
   readonly traceparent?: () => string | undefined;
 }
@@ -70,15 +66,14 @@ export class OutboundMessageFactory {
   private readonly topology: Topology;
   private readonly options: OutboundMessageFactoryOptions;
   private readonly clock: Clock;
-  private readonly newId: () => string;
+  private readonly ids: IdGenerator;
   private readonly traceparent: () => string | undefined;
 
   constructor(topology: Topology, options: OutboundMessageFactoryOptions) {
     this.topology = topology;
     this.options = options;
     this.clock = options.clock ?? new SystemClock();
-    const ids = options.ids ?? new UuidV7IdGenerator();
-    this.newId = options.newId ?? (() => ids.next().toString());
+    this.ids = options.ids ?? new UuidV7IdGenerator();
     this.traceparent = options.traceparent ?? currentTraceparent;
   }
 
@@ -113,7 +108,7 @@ export class OutboundMessageFactory {
     const parsed = contract.schema.safeParse(data);
     if (!parsed.success) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidPayload,
+        PlatformErrorCode.MessagingInvalidPayload,
         `invalid payload for "${contract.type}": ${parsed.error.message}`,
       );
     }
@@ -128,7 +123,7 @@ export class OutboundMessageFactory {
           tenantId: options.tenantId,
           actorId: options.actorId,
         },
-        { clock: this.clock, newId: this.newId },
+        { clock: this.clock, ids: this.ids },
       ),
     );
     return {
@@ -148,7 +143,7 @@ export class OutboundMessageFactory {
     const route = this.topology.routeFor(contract.type);
     if (!route || route.kind !== contract.kind) {
       throw new MessagingError(
-        MessagingErrorCode.UnknownRoute,
+        PlatformErrorCode.MessagingUnknownRoute,
         `no ${contract.kind} route for type "${contract.type}"`,
       );
     }
@@ -162,7 +157,7 @@ export class OutboundMessageFactory {
     if (groupId === undefined) {
       if (route.fifo) {
         throw new MessagingError(
-          MessagingErrorCode.InvalidOptions,
+          PlatformErrorCode.MessagingInvalidOptions,
           `"${route.type}" goes to the FIFO ${route.targetKind} "${route.target.name}" and needs a groupId`,
         );
       }
@@ -170,7 +165,7 @@ export class OutboundMessageFactory {
     }
     if (groupId.length > MAX_GROUP_ID_LENGTH || !GROUP_ID.test(groupId)) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidOptions,
+        PlatformErrorCode.MessagingInvalidOptions,
         `groupId must be 1 to ${MAX_GROUP_ID_LENGTH} printable ASCII characters without spaces`,
       );
     }
@@ -184,13 +179,13 @@ export class OutboundMessageFactory {
       delayMs > MAX_SEND_DELAY_MS
     ) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidOptions,
+        PlatformErrorCode.MessagingInvalidOptions,
         `delayMs must be between 0 and ${MAX_SEND_DELAY_MS}; longer delays need the scheduler`,
       );
     }
     if (delayMs > 0 && route.fifo) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidOptions,
+        PlatformErrorCode.MessagingInvalidOptions,
         `FIFO queue "${route.target.name}" does not support per-message delays`,
       );
     }

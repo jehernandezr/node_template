@@ -4,7 +4,7 @@ import {
   type OperationDefinition,
 } from '@contracts/platform';
 import type { z } from 'zod';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiError } from './errors.js';
 
 export { Compensation };
 
@@ -15,29 +15,20 @@ export interface RetryPolicy {
   readonly maxMs: number;
 }
 
-/** Options accepted by the `@Operation` decorator. */
-export interface OperationOptions {
+/** Normalized metadata of an operation, taken from its `defineOperation` descriptor. */
+export interface OperationMetadata {
   readonly id: string;
   /** Id of the operation that reverts this one, or `Compensation.None`. */
   readonly compensatedBy?: string | Compensation;
   /** Required and non-empty when `compensatedBy` is `Compensation.None`. */
   readonly compensationReason?: string;
-  /** Defaults to `true`. */
-  readonly mutating?: boolean;
+  readonly mutating: boolean;
   readonly idempotent: boolean;
-  readonly errors?: readonly string[];
+  /** Business error codes the operation may return. */
+  readonly errors: readonly string[];
   readonly retry?: RetryPolicy;
   readonly timeoutMs?: number;
 }
-
-/** Normalized metadata of an operation. */
-export interface OperationMetadata extends OperationOptions {
-  readonly mutating: boolean;
-  readonly errors: readonly string[];
-}
-
-/** Symbol under which `@Operation` stores metadata on the contract class. */
-export const OPERATION_METADATA = Symbol.for('platform.internal-api.operation');
 
 /**
  * Business error code allowed on every operation without being declared. The
@@ -52,55 +43,6 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = Object.freeze({
   maxMs: 2000,
 });
 export const DEFAULT_TIMEOUT_MS = 5000;
-
-function assertCompensationReason(options: OperationOptions): void {
-  if (
-    options.compensatedBy === Compensation.None &&
-    !options.compensationReason?.trim()
-  ) {
-    throw new InternalApiError(
-      InternalApiErrorCode.MissingCompensation,
-      `Operation "${options.id}" uses Compensation.None without a reason`,
-    );
-  }
-}
-
-function normalizeMetadata(options: OperationOptions): OperationMetadata {
-  return Object.freeze({
-    ...options,
-    mutating: options.mutating ?? true,
-    errors: Object.freeze([...(options.errors ?? [])]),
-  });
-}
-
-/**
- * Class decorator that stores the operation metadata on the contract class.
- * Throws `MissingCompensation` when `Compensation.None` has no reason.
- * @deprecated Declare operations with `defineOperation` from `@contracts/platform`
- * and pass the descriptor to the registry, the client and the router.
- */
-export function Operation(options: OperationOptions): ClassDecorator {
-  assertCompensationReason(options);
-  const metadata = normalizeMetadata(options);
-  return (target) => {
-    Object.defineProperty(target, OPERATION_METADATA, {
-      value: metadata,
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    });
-  };
-}
-
-/** Returns the `@Operation` metadata declared on this class itself (inherited metadata is ignored). */
-export function getOperationMetadata(
-  contract: object,
-): OperationMetadata | undefined {
-  if (!Object.prototype.hasOwnProperty.call(contract, OPERATION_METADATA)) {
-    return undefined;
-  }
-  return Reflect.get(contract, OPERATION_METADATA) as OperationMetadata;
-}
 
 /** Retry policy with defaults applied. */
 export function effectiveRetry(metadata: OperationMetadata): RetryPolicy {
@@ -150,69 +92,30 @@ export function allowedErrorCodes(
   return new Set([...metadata.errors, INVALID_INPUT_CODE]);
 }
 
-/**
- * Base class of every operation contract. Subclasses provide the zod schemas.
- * @deprecated Use `defineOperation` from `@contracts/platform`.
- */
-export abstract class OperationContract<TIn, TOut> {
-  abstract readonly input: z.ZodType<TIn>;
-  abstract readonly output: z.ZodType<TOut>;
-}
-
-/** Constructor of a concrete contract class. */
-export type ContractConstructor = new () => OperationContract<unknown, unknown>;
-
-/** Input type of a contract class. */
-export type ContractInput<C> = C extends new () => OperationContract<
-  infer I,
-  unknown
->
-  ? I
-  : never;
-
-/** Output type of a contract class. */
-export type ContractOutput<C> = C extends new () => OperationContract<
-  unknown,
-  infer O
->
-  ? O
-  : never;
-
 /** Input and output schemas of an operation. */
 export interface OperationSchemas {
   readonly input: z.ZodType;
   readonly output: z.ZodType;
 }
 
-/**
- * Anything accepted as an operation: a descriptor from `defineOperation`
- * (the contract source) or a legacy `@Operation` class.
- */
-export type OperationSource = OperationDefinition | ContractConstructor;
-
-/** Operation resolved from any `OperationSource`. */
+/** Operation resolved from its `defineOperation` descriptor. */
 export interface OperationDescriptor extends OperationSchemas {
   readonly id: string;
   readonly metadata: OperationMetadata;
 }
 
 /** What a caller passes as input (before parsing). */
-export type CallInputOf<S> =
-  S extends OperationDefinition<infer I, z.ZodType>
-    ? z.input<I>
-    : ContractInput<S>;
+export type CallInputOf<S extends OperationDefinition> = z.input<S['input']>;
 
 /** What a handler receives (the parsed input). */
-export type HandlerInputOf<S> =
-  S extends OperationDefinition<infer I, z.ZodType>
-    ? z.output<I>
-    : ContractInput<S>;
+export type HandlerInputOf<S extends OperationDefinition> = z.output<
+  S['input']
+>;
 
 /** Output of an operation, as returned by a handler and by the client. */
-export type OperationOutputOf<S> =
-  S extends OperationDefinition<z.ZodType, infer O>
-    ? z.output<O>
-    : ContractOutput<S>;
+export type OperationOutputOf<S extends OperationDefinition> = z.output<
+  S['output']
+>;
 
 /** Whether `value` looks like a `defineOperation` descriptor. */
 export function isOperationDefinition(
@@ -233,11 +136,20 @@ export function isOperationDefinition(
 const resolved = new WeakMap<object, OperationDescriptor>();
 
 function fromDefinition(definition: OperationDefinition): OperationDescriptor {
-  const options: OperationOptions = {
+  if (
+    definition.compensatedBy === Compensation.None &&
+    !definition.compensationReason?.trim()
+  ) {
+    throw new InternalApiError(
+      PlatformErrorCode.InternalApiMissingCompensation,
+      `Operation "${definition.id}" uses Compensation.None without a reason`,
+    );
+  }
+  const metadata: OperationMetadata = Object.freeze({
     id: definition.id,
     idempotent: definition.idempotent,
     mutating: definition.mutating,
-    errors: definition.errors,
+    errors: Object.freeze([...definition.errors]),
     ...(definition.compensatedBy !== undefined && {
       compensatedBy: definition.compensatedBy,
     }),
@@ -248,54 +160,34 @@ function fromDefinition(definition: OperationDefinition): OperationDescriptor {
     ...(definition.timeoutMs !== undefined && {
       timeoutMs: definition.timeoutMs,
     }),
-  };
-  assertCompensationReason(options);
+  });
   return Object.freeze({
     id: definition.id,
     input: definition.input,
     output: definition.output,
-    metadata: normalizeMetadata(options),
-  });
-}
-
-function fromClass(ContractClass: ContractConstructor): OperationDescriptor {
-  const metadata = getOperationMetadata(ContractClass);
-  if (metadata === undefined) {
-    throw new InternalApiError(
-      InternalApiErrorCode.InvalidOperation,
-      `${ContractClass.name} is not decorated with @Operation`,
-    );
-  }
-  const contract = new ContractClass();
-  return Object.freeze({
-    id: metadata.id,
-    input: contract.input,
-    output: contract.output,
     metadata,
   });
 }
 
 /**
- * Resolves an operation from a `defineOperation` descriptor or an
- * `@Operation` class. The result is cached per source. Throws
- * `InvalidOperation` for anything else.
+ * Resolves an operation from its `defineOperation` descriptor. The result is
+ * cached per descriptor. Throws `InvalidOperation` for anything else, which
+ * only an untyped caller can pass.
  */
-export function resolveOperation(source: OperationSource): OperationDescriptor {
-  const cached = resolved.get(source);
+export function resolveOperation(
+  definition: OperationDefinition,
+): OperationDescriptor {
+  const cached = resolved.get(definition);
   if (cached !== undefined) {
     return cached;
   }
-  let descriptor: OperationDescriptor;
-  if (typeof source === 'function') {
-    descriptor = fromClass(source);
-  } else if (isOperationDefinition(source)) {
-    descriptor = fromDefinition(source);
-  } else {
+  if (!isOperationDefinition(definition)) {
     throw new InternalApiError(
-      InternalApiErrorCode.InvalidOperation,
-      'Expected a defineOperation descriptor or an @Operation class',
+      PlatformErrorCode.InternalApiInvalidOperation,
+      'Expected a defineOperation descriptor',
     );
   }
-  resolved.set(source, descriptor);
+  const descriptor = fromDefinition(definition);
+  resolved.set(definition, descriptor);
   return descriptor;
 }

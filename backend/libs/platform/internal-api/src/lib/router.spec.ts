@@ -1,7 +1,7 @@
 import { defineOperation, PlatformErrorCode } from '@contracts/platform';
 import { context as otelContext } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
-import { DomainError } from '@platform/kernel';
+import { DomainError, FailureKind } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import {
   CallOutcome,
@@ -11,13 +11,7 @@ import {
 } from '@platform/primitives';
 import { currentTraceparent, parseTraceparent } from '@platform/observability';
 import { z } from 'zod';
-import {
-  Compensation,
-  INVALID_INPUT_CODE,
-  Operation,
-  OperationContract,
-} from './contract.js';
-import { InternalApiErrorCode } from './errors.js';
+import { Compensation, INVALID_INPUT_CODE } from './contract.js';
 import { MAX_CALL_IDEMPOTENCY_KEY_LENGTH } from './limits.js';
 import { ContractRegistry } from './registry.js';
 import { InternalApiReason } from './result.js';
@@ -55,20 +49,6 @@ const Count = defineOperation({
   mutating: false,
   description: 'Counts stock.',
 });
-
-@Operation({ id: 'stock.legacy-count.v1', mutating: false, idempotent: true })
-class LegacyCount extends OperationContract<
-  { sku: string },
-  { total: number }
-> {
-  readonly input = z.object({ sku: z.string() });
-  readonly output = z.object({ total: z.number() });
-}
-
-class Unannotated extends OperationContract<object, object> {
-  readonly input = z.object({});
-  readonly output = z.object({});
-}
 
 class OutOfStock extends DomainError {
   readonly code = OUT_OF_STOCK;
@@ -131,7 +111,7 @@ describe('InternalRouter', () => {
         caught = error;
       }
       expect(caught).toMatchObject({
-        code: InternalApiErrorCode.MissingHandler,
+        code: PlatformErrorCode.InternalApiMissingHandler,
       });
       expect((caught as Error).message).toContain('stock.release.v1');
       expect((caught as Error).message).toContain('stock.count.v1');
@@ -144,30 +124,23 @@ describe('InternalRouter', () => {
       router.register(Count, handler);
       expect(() => router.register(Count, handler)).toThrow(
         expect.objectContaining({
-          code: InternalApiErrorCode.DuplicateOperation,
+          code: PlatformErrorCode.InternalApiDuplicateOperation,
         }),
       );
     });
 
-    it('rejects a class without @Operation with InvalidOperation', () => {
+    it('rejects something that is not a descriptor with InvalidOperation', () => {
       const { router } = setup();
       expect(() =>
-        router.register(Unannotated, async () => CallOutcome.success({})),
+        router.register(
+          { id: 'stock.plain.v1' } as unknown as typeof Count,
+          async () => CallOutcome.success({ total: 0 }),
+        ),
       ).toThrow(
         expect.objectContaining({
-          code: InternalApiErrorCode.InvalidOperation,
+          code: PlatformErrorCode.InternalApiInvalidOperation,
         }),
       );
-    });
-
-    it('keeps serving a legacy @Operation class', async () => {
-      const { router, meta } = setup();
-      router.register(LegacyCount, async ({ sku }) =>
-        CallOutcome.success({ total: sku.length }),
-      );
-      await expect(
-        router.handle('stock.legacy-count.v1', { sku: 'AB' }, meta('k')),
-      ).resolves.toEqual(CallOutcome.success({ total: 2 }));
     });
   });
 
@@ -203,7 +176,7 @@ describe('InternalRouter', () => {
       ).resolves.toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.UnknownOperation,
-          InternalApiErrorCode.UnknownOperation,
+          PlatformErrorCode.InternalApiUnknownOperation,
         ),
       );
     });
@@ -229,7 +202,7 @@ describe('InternalRouter', () => {
       );
 
       expect(result).toMatchObject({
-        code: InternalApiErrorCode.PayloadTooLarge,
+        code: PlatformErrorCode.InternalApiPayloadTooLarge,
       });
       expect(handler).not.toHaveBeenCalled();
     });
@@ -246,7 +219,7 @@ describe('InternalRouter', () => {
         router.handle('stock.reserve.v1', input, meta(key)),
       ).resolves.toMatchObject({
         kind: CallOutcomeKind.ProtocolViolation,
-        code: InternalApiErrorCode.InvalidIdempotencyKey,
+        code: PlatformErrorCode.InternalApiInvalidIdempotencyKey,
       });
       expect(handler).not.toHaveBeenCalled();
     });
@@ -421,7 +394,7 @@ describe('InternalRouter', () => {
       expect(reused).toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.IdempotencyKeyReuse,
-          InternalApiErrorCode.IdempotencyKeyReuse,
+          PlatformErrorCode.InternalApiIdempotencyKeyReuse,
         ),
       );
       expect(handler).toHaveBeenCalledTimes(1);
@@ -502,8 +475,10 @@ describe('InternalRouter', () => {
 
     it('treats a database outage thrown by the handler as transient, not stored, claim released', async () => {
       const { router, meta } = setup();
+      // As the persistence adapter translates a terminated connection.
       const outage = Object.assign(new Error('terminating connection'), {
         code: '57P01',
+        failureKind: FailureKind.Transient,
       });
       const handler = jest
         .fn<Promise<ReserveOutcome>, []>()
@@ -603,7 +578,7 @@ describe('InternalRouter', () => {
       expect(first).toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.InvalidOutput,
-          InternalApiErrorCode.InvalidOutput,
+          PlatformErrorCode.InternalApiInvalidOutput,
         ),
       );
       expect(second).toEqual(success('r-valid'));
@@ -620,7 +595,7 @@ describe('InternalRouter', () => {
       await expect(
         router.handle('stock.reserve.v1', input, meta('k')),
       ).resolves.toMatchObject({
-        code: InternalApiErrorCode.InvalidHandlerResult,
+        code: PlatformErrorCode.InternalApiInvalidHandlerResult,
       });
     });
 
@@ -701,7 +676,10 @@ function setupWithUnitOfWork() {
 }
 
 const outage = (): Error =>
-  Object.assign(new Error('terminating connection'), { code: '57P01' });
+  Object.assign(new Error('terminating connection'), {
+    code: '57P01',
+    failureKind: FailureKind.Transient,
+  });
 
 describe('InternalRouter with a unit of work', () => {
   it('runs the handler and stores the result inside the same unit of work', async () => {

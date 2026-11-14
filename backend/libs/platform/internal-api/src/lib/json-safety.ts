@@ -1,5 +1,6 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import type { OperationSchemas } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiError } from './errors.js';
 
 /** Zod schema types that cannot round-trip through JSON transport unchanged. */
 const NON_JSON_TYPES: ReadonlySet<string> = new Set([
@@ -69,7 +70,7 @@ export function assertJsonSafeContract(
     const found = findNonJsonType(schema, new Set());
     if (found !== undefined) {
       throw new InternalApiError(
-        InternalApiErrorCode.NonJsonSafeSchema,
+        PlatformErrorCode.InternalApiNonJsonSafeSchema,
         `${label} ${side} schema uses "${found}", which does not survive JSON transport`,
       );
     }

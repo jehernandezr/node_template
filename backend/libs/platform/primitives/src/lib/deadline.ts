@@ -1,7 +1,6 @@
 import type { Clock } from '@platform/kernel';
 import { DeadlineExceededError, InvalidArgumentError } from './errors.js';
-
-const MAX_TIMER_MS = 2_147_483_647;
+import { armTimer } from './timers.js';
 
 function assertBudget(budgetMs: number): void {
   if (!Number.isFinite(budgetMs) || budgetMs < 0) {
@@ -80,19 +79,11 @@ export class Deadline {
       return AbortSignal.abort(new DeadlineExceededError(this.atMs));
     }
     const controller = new AbortController();
-    // setTimeout acepta como máximo 2^31 - 1 ms; un plazo mayor se arma por tramos.
-    const arm = (ms: number): void => {
-      const chunk = Math.min(ms, MAX_TIMER_MS);
-      const timer = setTimeout(() => {
-        if (ms > chunk) {
-          arm(ms - chunk);
-        } else {
-          controller.abort(new DeadlineExceededError(this.atMs));
-        }
-      }, chunk);
-      timer.unref();
-    };
-    arm(remaining);
+    armTimer(
+      remaining,
+      () => controller.abort(new DeadlineExceededError(this.atMs)),
+      true,
+    );
     return controller.signal;
   }
 

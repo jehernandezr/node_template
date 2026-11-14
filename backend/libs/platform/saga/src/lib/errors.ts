@@ -1,64 +1,55 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { PlatformError } from '@platform/kernel';
+import { FailureKind, PlatformError } from '@platform/kernel';
 
-/**
- * Error codes of the saga library, format `PLATFORM.SAGA.<ERROR>`. Each value
- * is the `PlatformErrorCode` of the catalog, so the code is declared once in
- * `@contracts/platform`.
- */
-export const SagaErrorCode = {
-  NotFound: PlatformErrorCode.SagaNotFound,
-  DuplicateSaga: PlatformErrorCode.SagaDuplicateSaga,
-  UnknownDefinition: PlatformErrorCode.SagaUnknownDefinition,
-  InvalidDefinition: PlatformErrorCode.SagaInvalidDefinition,
-  InvalidConfiguration: PlatformErrorCode.SagaInvalidConfiguration,
-  InvalidState: PlatformErrorCode.SagaInvalidState,
-  MissingCompensation: PlatformErrorCode.SagaMissingCompensation,
-  ConcurrentModification: PlatformErrorCode.SagaConcurrentModification,
-  LeaseNotAcquired: PlatformErrorCode.SagaLeaseNotAcquired,
-  LeaseLost: PlatformErrorCode.SagaLeaseLost,
-  TransientFailure: PlatformErrorCode.SagaTransientFailure,
-  ProtocolViolation: PlatformErrorCode.SagaProtocolViolation,
-  /** A step call ended without knowing whether it applied (timeout or cancellation). */
-  UncertainOutcome: PlatformErrorCode.SagaUncertainOutcome,
-  StateUpdateFailed: PlatformErrorCode.SagaStateUpdateFailed,
-  InputBuildFailed: PlatformErrorCode.SagaInputBuildFailed,
-  IdempotencyKeyConflict: PlatformErrorCode.SagaIdempotencyKeyConflict,
-  DeadlineExceeded: PlatformErrorCode.SagaDeadlineExceeded,
-  SimulatedCrash: PlatformErrorCode.SagaSimulatedCrash,
-} as const;
-
-/** One of the {@link SagaErrorCode} values. */
-export type SagaErrorCode = (typeof SagaErrorCode)[keyof typeof SagaErrorCode];
+/** Error codes of the saga library: the `PLATFORM.SAGA.*` values of the catalog. */
+export type SagaErrorCode =
+  | PlatformErrorCode.SagaNotFound
+  | PlatformErrorCode.SagaDuplicateSaga
+  | PlatformErrorCode.SagaUnknownDefinition
+  | PlatformErrorCode.SagaInvalidDefinition
+  | PlatformErrorCode.SagaInvalidConfiguration
+  | PlatformErrorCode.SagaInvalidState
+  | PlatformErrorCode.SagaMissingCompensation
+  | PlatformErrorCode.SagaConcurrentModification
+  | PlatformErrorCode.SagaLeaseNotAcquired
+  | PlatformErrorCode.SagaLeaseLost
+  | PlatformErrorCode.SagaTransientFailure
+  | PlatformErrorCode.SagaProtocolViolation
+  | PlatformErrorCode.SagaUncertainOutcome
+  | PlatformErrorCode.SagaStateUpdateFailed
+  | PlatformErrorCode.SagaInputBuildFailed
+  | PlatformErrorCode.SagaIdempotencyKeyConflict
+  | PlatformErrorCode.SagaDeadlineExceeded;
 
 /** Codes that mean another run got in the way; trying again later can succeed. */
-const RETRYABLE: ReadonlySet<SagaErrorCode> = new Set<SagaErrorCode>([
-  SagaErrorCode.ConcurrentModification,
-  SagaErrorCode.LeaseNotAcquired,
-  SagaErrorCode.LeaseLost,
-  SagaErrorCode.SimulatedCrash,
+const CONTENTION: ReadonlySet<SagaErrorCode> = new Set<SagaErrorCode>([
+  PlatformErrorCode.SagaConcurrentModification,
+  PlatformErrorCode.SagaLeaseNotAcquired,
+  PlatformErrorCode.SagaLeaseLost,
 ]);
 
-/** Base error of the saga library. Carries a stable `code`. */
+/**
+ * Base error of the saga library. Carries a stable `code`. Contention is
+ * transient; everything else is permanent, since repeating the same call
+ * against the same instance gives the same answer.
+ */
 export class SagaError extends PlatformError {
   override readonly code: SagaErrorCode;
+  readonly failureKind: FailureKind;
 
   constructor(
     code: SagaErrorCode,
     message: string,
     details?: Readonly<Record<string, unknown>>,
   ) {
+    const contention = CONTENTION.has(code);
     super(message, {
-      retryable: RETRYABLE.has(code),
+      retryable: contention,
       ...(details !== undefined && { details }),
     });
     this.code = code;
-  }
-}
-
-/** Thrown by test hooks to emulate the death of the process running a saga. */
-export class SimulatedCrash extends SagaError {
-  constructor(detail: string) {
-    super(SagaErrorCode.SimulatedCrash, `Simulated crash: ${detail}`);
+    this.failureKind = contention
+      ? FailureKind.Transient
+      : FailureKind.Permanent;
   }
 }

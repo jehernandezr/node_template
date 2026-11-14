@@ -21,7 +21,16 @@ export function dockerAvailable(): boolean {
       stdio: 'ignore',
     },
   );
-  return probe.status === 0;
+  if (probe.status === 0) {
+    return true;
+  }
+  // En CI, saltar en silencio dejaría el job verde sin probar nada.
+  if (process.env['CI'] === 'true') {
+    throw new Error(
+      'Docker is not available: set the integration flag to 0 to skip these tests explicitly',
+    );
+  }
+  return false;
 }
 
 /** `describe` que solo corre si hay Docker; si no, queda como `describe.skip`. */

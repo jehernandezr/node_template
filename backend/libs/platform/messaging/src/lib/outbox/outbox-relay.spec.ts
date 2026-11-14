@@ -1,3 +1,4 @@
+import { BackoffStrategy } from '@platform/primitives';
 import { defineEvent } from '@contracts/platform';
 import { z } from 'zod';
 import {
@@ -26,19 +27,24 @@ const TaskUpdated = defineEvent({
   description: 'Evento de prueba.',
 });
 
-class TestTopology extends Topology {
-  readonly topics = [events];
-  readonly queues = [
+function testTopology(): Topology {
+  const topics = [events];
+  const queues = [
     new QueueDef('notifications')
       .subscribesTo(events)
       .deadLetter({ maxReceiveCount: 5 }),
   ];
-  readonly routes = [Route.event(TaskUpdated).to(events)];
+  const routes = [Route.event(TaskUpdated).to(events)];
+  return new Topology({ topics, queues, routes });
 }
 
 const t0 = new Date('2026-01-01T00:00:00.000Z');
 const at = (ms: number) => new Date(t0.getTime() + ms);
-const backoff = { baseMs: 1_000, maxMs: 60_000, jitter: false };
+const backoff = {
+  strategy: BackoffStrategy.None,
+  baseMs: 1_000,
+  maxMs: 60_000,
+};
 
 function envelope(
   id: string,
@@ -79,7 +85,7 @@ function relayFor(
   return new OutboxRelay({
     store,
     publisher,
-    topology: new TestTopology(),
+    topology: testTopology(),
     backoff,
     ...extra,
   });

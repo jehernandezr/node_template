@@ -31,8 +31,8 @@ describe('PostgresProcessedMessageStore on pg-mem', () => {
     });
     if (claim.state !== ClaimState.Acquired) throw new Error('unreachable');
     await store.complete('k', claim.claimToken, { processedAt: 1 });
-    expect(await store.purgeCompleted(START.getTime())).toBe(0);
-    expect(await store.purgeCompleted(START.getTime() + 1)).toBe(1);
+    expect(await store.purgeCompleted(START)).toBe(0);
+    expect(await store.purgeCompleted(new Date(START.getTime() + 1))).toBe(1);
   });
 });
 

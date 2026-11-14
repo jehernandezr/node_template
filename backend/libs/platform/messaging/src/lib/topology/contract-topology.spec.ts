@@ -4,10 +4,10 @@ import {
   defineQueue,
   defineServiceContract,
   defineTopic,
+  PlatformErrorCode,
 } from '@contracts/platform';
 import { z } from 'zod';
 import { MessageKind } from '../contracts/message-contract.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { topologyFromContracts } from './contract-topology.js';
 import { TargetKind } from './route.js';
 
@@ -137,7 +137,7 @@ describe('topologyFromContracts', () => {
   it('fails when a sent command has no queue in the given contracts', () => {
     expect(() => topologyFromContracts([tasks, notifications])).toThrow(
       expect.objectContaining({
-        code: MessagingErrorCode.InvalidTopology,
+        code: PlatformErrorCode.MessagingInvalidTopology,
         message: expect.stringContaining('reports.report.generate.v1'),
       }),
     );

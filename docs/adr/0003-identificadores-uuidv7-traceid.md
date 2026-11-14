@@ -11,7 +11,7 @@ Los servicios generan eventos, sagas, jobs y registros de auditoría que deben i
 
 Todo identificador es un UUIDv7: usuarios, tenants, sesiones, dispositivos, eventos, sagas, jobs, archivos, facturas y el `traceId`.
 
-- La aplicación genera el ID (librería `uuid`, puerto `IdGenerator`) antes de persistir la entidad. En TypeORM se usa `@PrimaryColumn('uuid')`.
+- La aplicación genera el ID con `UuidV7IdGenerator` (sobre `node:crypto`, puerto `IdGenerator`) antes de persistir la entidad. La columna es `uuid` y es la llave primaria.
 - El `traceId` es un UUIDv7 generado al entrar al sistema. Sus 128 bits sin guiones forman un trace-id W3C válido dentro de `traceparent`.
 - La paginación usa el ID como cursor (`?after=<id>`).
 - Los secretos (refresh tokens, `mfaToken`, OTP, tokens de reset y API keys) no usan UUIDv7. Usan 256 bits aleatorios de `crypto.randomBytes`.

@@ -11,8 +11,6 @@ import {
 } from '@platform/primitives';
 import { contextFromTraceparent } from '@platform/observability';
 import { z } from 'zod';
-import { Operation, OperationContract } from './contract.js';
-import { InternalApiErrorCode } from './errors.js';
 import { InternalClient } from './client.js';
 import {
   MAX_CALL_IDEMPOTENCY_KEY_LENGTH,
@@ -95,19 +93,6 @@ const Unregistered = defineOperation({
   description: 'Never registered.',
 });
 
-@Operation({
-  id: 'billing.legacy.v1',
-  compensatedBy: 'billing.release.v1',
-  idempotent: true,
-})
-class LegacyReserve extends OperationContract<
-  { amount: number },
-  { id: string }
-> {
-  readonly input = z.object({ amount: z.number() });
-  readonly output = z.object({ id: z.string() });
-}
-
 class NoFundsError extends DomainError {
   readonly code = NO_FUNDS;
 }
@@ -147,7 +132,6 @@ function setup(
     Refund,
     SlowRefund,
     RetryPolicyOp,
-    LegacyReserve,
   );
   const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
   const { transport, invoke } = fakeTransport(results);
@@ -215,7 +199,7 @@ describe('InternalClient', () => {
       await expect(client.call(Reserve, { amount: 1 }, call)).resolves.toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.InvalidIdempotencyKey,
-          InternalApiErrorCode.InvalidIdempotencyKey,
+          PlatformErrorCode.InternalApiInvalidIdempotencyKey,
         ),
       );
       expect(invoke).not.toHaveBeenCalled();
@@ -228,7 +212,7 @@ describe('InternalClient', () => {
 
       expect(outcome).toMatchObject({
         kind: CallOutcomeKind.ProtocolViolation,
-        code: InternalApiErrorCode.UnknownOperation,
+        code: PlatformErrorCode.InternalApiUnknownOperation,
       });
       expect(invoke).not.toHaveBeenCalled();
     });
@@ -241,7 +225,7 @@ describe('InternalClient', () => {
         client.call(notAnOperation, { amount: 1 }, options),
       ).resolves.toMatchObject({
         kind: CallOutcomeKind.ProtocolViolation,
-        code: InternalApiErrorCode.InvalidOperation,
+        code: PlatformErrorCode.InternalApiInvalidOperation,
       });
     });
 
@@ -257,7 +241,7 @@ describe('InternalClient', () => {
       expect(outcome).toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.PayloadTooLarge,
-          InternalApiErrorCode.PayloadTooLarge,
+          PlatformErrorCode.InternalApiPayloadTooLarge,
         ),
       );
       expect(invoke).not.toHaveBeenCalled();
@@ -338,18 +322,9 @@ describe('InternalClient', () => {
         client.callById('billing.nope.v1', {}, options),
       ).resolves.toMatchObject({
         kind: CallOutcomeKind.ProtocolViolation,
-        code: InternalApiErrorCode.UnknownOperation,
+        code: PlatformErrorCode.InternalApiUnknownOperation,
       });
       expect(invoke).toHaveBeenCalledTimes(1);
-    });
-
-    it('keeps accepting a legacy @Operation class', async () => {
-      const { client, invoke } = setup([ok]);
-
-      await expect(
-        client.call(LegacyReserve, { amount: 1 }, options),
-      ).resolves.toEqual(ok);
-      expect(invoke.mock.calls[0]?.[0]).toBe('billing.legacy.v1');
     });
   });
 
@@ -563,7 +538,7 @@ describe('InternalClient', () => {
       ).resolves.toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.InvalidOutput,
-          InternalApiErrorCode.InvalidOutput,
+          PlatformErrorCode.InternalApiInvalidOutput,
         ),
       );
     });
@@ -576,7 +551,9 @@ describe('InternalClient', () => {
       );
       await expect(
         client.call(Reserve, { amount: 1 }, options),
-      ).resolves.toMatchObject({ code: InternalApiErrorCode.PayloadTooLarge });
+      ).resolves.toMatchObject({
+        code: PlatformErrorCode.InternalApiPayloadTooLarge,
+      });
     });
 
     it('returns the parsed output value on success', async () => {

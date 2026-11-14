@@ -42,12 +42,6 @@ importers:
 
   backend:
     dependencies:
-      cockatiel:
-        specifier: ^4.0.0
-        version: 4.0.0
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -182,13 +176,16 @@ importers:
       '@platform/persistence':
         specifier: workspace:*
         version: link:../../persistence
+      '@platform/primitives':
+        specifier: workspace:*
+        version: link:../../primitives
+      '@platform/sharding':
+        specifier: workspace:*
+        version: link:../../sharding
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
     devDependencies:
-      '@platform/primitives':
-        specifier: workspace:*
-        version: link:../../primitives
       '@testcontainers/postgresql':
         specifier: 12.2.1
         version: 12.2.1(bare-buffer@3.7.2)
@@ -301,9 +298,6 @@ importers:
       '@platform/observability':
         specifier: workspace:*
         version: link:../observability
-      '@platform/persistence':
-        specifier: workspace:*
-        version: link:../persistence
       '@platform/primitives':
         specifier: workspace:*
         version: link:../primitives
@@ -320,12 +314,12 @@ importers:
 
   backend/libs/platform/kernel:
     dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../contracts/platform
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
 
   backend/libs/platform/messaging:
     dependencies:
@@ -341,9 +335,6 @@ importers:
       '@platform/observability':
         specifier: workspace:*
         version: link:../observability
-      '@platform/persistence':
-        specifier: workspace:*
-        version: link:../persistence
       '@platform/primitives':
         specifier: workspace:*
         version: link:../primitives
@@ -450,9 +441,6 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
-      typeorm:
-        specifier: 1.1.2
-        version: 1.1.2(babel-plugin-macros@3.1.0)(pg@8.23.1)(ts-node@10.9.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@24.19.2)(typescript@6.0.3))
     devDependencies:
       '@testcontainers/postgresql':
         specifier: 12.2.1
@@ -469,6 +457,9 @@ importers:
 
   backend/libs/platform/primitives:
     dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../contracts/platform
       '@platform/kernel':
         specifier: workspace:*
         version: link:../kernel
@@ -478,15 +469,15 @@ importers:
 
   backend/libs/platform/resilience:
     dependencies:
+      '@contracts/platform':
+        specifier: workspace:*
+        version: link:../../contracts/platform
       '@platform/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@platform/primitives':
         specifier: workspace:*
         version: link:../primitives
-      cockatiel:
-        specifier: ^4.0.0
-        version: 4.0.0
       tslib:
         specifier: ^2.3.0
         version: 2.9.1
@@ -2922,10 +2913,6 @@ packages:
     resolution: {integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==}
     engines: {iojs: '>= 1.0.0', node: '>= 0.12.0'}
 
-  cockatiel@4.0.0:
-    resolution: {integrity: sha512-XpUZJnogsd03BGB19T9sv7Xb8SwvD8JddZV2Tlp0LNspopZ6Idv24ZwCl8vAGJ6JwODZ0zLRYVj3NWvmRcUDqA==}
-    engines: {node: '>=22'}
-
   collect-v8-coverage@1.0.3:
     resolution: {integrity: sha512-1L5aqIkwPfiodaMgQunkF1zRhNqifHBmtbbbxcr6yVxxBnliw4TDOW6NxpO8DJLgJ16OT+Y4ztZqP6p/FtXnAw==}
 
@@ -4737,10 +4724,6 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
-
-  uuid@14.0.3:
-    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
-    hasBin: true
 
   v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
@@ -7030,7 +7013,8 @@ snapshots:
     dependencies:
       tslib: 2.9.1
 
-  '@sqltools/formatter@1.2.5': {}
+  '@sqltools/formatter@1.2.5':
+    optional: true
 
   '@swc-node/core@1.15.0(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.28)':
     dependencies:
@@ -7457,7 +7441,8 @@ snapshots:
 
   ansi-styles@6.2.3: {}
 
-  ansis@4.5.0: {}
+  ansis@4.5.0:
+    optional: true
 
   anymatch@3.1.3:
     dependencies:
@@ -7812,8 +7797,6 @@ snapshots:
 
   co@4.6.0: {}
 
-  cockatiel@4.0.0: {}
-
   collect-v8-coverage@1.0.3: {}
 
   color-convert@2.0.1:
@@ -7902,7 +7885,8 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  dayjs@1.11.23: {}
+  dayjs@1.11.23:
+    optional: true
 
   debug@4.4.3:
     dependencies:
@@ -9563,7 +9547,8 @@ snapshots:
     dependencies:
       redis-errors: 1.2.0
 
-  reflect-metadata@0.2.2: {}
+  reflect-metadata@0.2.2:
+    optional: true
 
   regenerate-unicode-properties@10.3.0:
     dependencies:
@@ -9683,7 +9668,8 @@ snapshots:
 
   sprintf-js@1.0.3: {}
 
-  sql-highlight@6.1.0: {}
+  sql-highlight@6.1.0:
+    optional: true
 
   ssh-remote-port-forward@1.0.4:
     dependencies:
@@ -9977,6 +9963,7 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
+    optional: true
 
   typescript-eslint@8.72.2(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3):
     dependencies:
@@ -10048,8 +10035,6 @@ snapshots:
       punycode: 2.3.1
 
   util-deprecate@1.0.2: {}
-
-  uuid@14.0.3: {}
 
   v8-compile-cache-lib@3.0.1: {}
 

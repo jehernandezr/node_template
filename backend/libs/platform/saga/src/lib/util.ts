@@ -1,5 +1,6 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { canonicalize, NonJsonValueError } from '@platform/primitives';
-import { SagaError, SagaErrorCode } from './errors.js';
+import { SagaError } from './errors.js';
 
 /** Exhaustiveness check for switches over unions. */
 export function assertNever(value: never): never {
@@ -36,7 +37,7 @@ export function assertSerializableState(value: unknown): void {
   } catch (error) {
     if (error instanceof NonJsonValueError) {
       throw new SagaError(
-        SagaErrorCode.InvalidState,
+        PlatformErrorCode.SagaInvalidState,
         `Saga state is not JSON: ${error.message}`,
         error.details,
       );

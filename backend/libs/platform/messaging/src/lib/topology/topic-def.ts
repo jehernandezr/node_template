@@ -4,7 +4,7 @@ export interface TopicOptions {
   readonly fifo?: boolean;
 }
 
-/** Declares a topic (fan-out point for events). */
+/** A topic (fan-out point for events) of a {@link Topology}. */
 export class TopicDef {
   readonly name: string;
   readonly fifo: boolean;

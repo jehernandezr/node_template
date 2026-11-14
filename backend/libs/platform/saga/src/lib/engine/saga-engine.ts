@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { context as otelContext, SpanKind } from '@opentelemetry/api';
 import type { ContractRegistry } from '@platform/internal-api';
 import {
@@ -9,19 +10,23 @@ import {
 import {
   contextFromTraceparent,
   currentTraceparent,
+  type LoggerPort,
   withSpan,
 } from '@platform/observability';
 import {
-  BackoffStrategy,
-  CallOutcome,
+  type CallOutcome,
   CallOutcomeKind,
-  createBackoff,
   Deadline,
-  DeadlineExceededError,
   stableDigest,
 } from '@platform/primitives';
-import { SagaError, SagaErrorCode, SimulatedCrash } from '../errors.js';
-import { OperationInvoker, toCallOutcome } from '../invoker.js';
+import type { CompiledSaga, CompiledStep } from '../definition/saga-flow.js';
+import type { SagaDefinition } from '../definition/saga-definition.js';
+import {
+  validateSagas,
+  type SagaDefinitionIssue,
+} from '../definition/saga-validation.js';
+import { SagaError } from '../errors.js';
+import type { OperationInvoker } from '../invoker.js';
 import {
   SagaCallContext,
   SagaEvent,
@@ -34,26 +39,32 @@ import {
   StepStatus,
   stepIdempotencyKey,
 } from '../model.js';
-import type {
-  CompiledSaga,
-  CompiledStep,
-  ForwardEntry,
-} from '../definition/saga-flow.js';
-import type { SagaDefinition } from '../definition/saga-definition.js';
-import {
-  SagaDefinitionIssueCode,
-  validateSagas,
-  type SagaDefinitionIssue,
-} from '../definition/saga-validation.js';
 import type { SagaStore } from '../store/saga-store.js';
 import { assertNever, assertSerializableState, jsonClone } from '../util.js';
-
-const TRANSIENT_CODE: string = SagaErrorCode.TransientFailure;
-const PROTOCOL_CODE: string = SagaErrorCode.ProtocolViolation;
-const UNCERTAIN_CODE: string = SagaErrorCode.UncertainOutcome;
-const DEADLINE_CODE: string = SagaErrorCode.DeadlineExceeded;
-const STATE_UPDATE_CODE: string = SagaErrorCode.StateUpdateFailed;
-const INPUT_BUILD_CODE: string = SagaErrorCode.InputBuildFailed;
+import {
+  assertLeaseOutlivesStep,
+  callContext,
+  compileAll,
+  DEFAULT_LEASE_MS,
+  DEFAULT_MAX_STEP_MS,
+  DEFAULT_MAX_SUSPEND_AGE_MS,
+  DEFAULT_MAX_SUSPEND_ATTEMPTS,
+  defaultBackoff,
+} from './engine-setup.js';
+import { buildSerializable, invokeStep } from './step-call.js';
+import {
+  advanceTo,
+  compensationStart,
+  deadlinePassed,
+  errorDetail,
+  findEntry,
+  nextCompensation,
+  replaceEntry,
+  requireIntervention,
+  suspend,
+  type SuspendPolicy,
+  toForwardEntry,
+} from './transitions.js';
 
 const FINISHED: ReadonlySet<SagaStatus> = new Set([
   SagaStatus.Completed,
@@ -137,11 +148,18 @@ export interface SagaEngineOptions {
   readonly ids?: IdGenerator;
   /**
    * Delay in milliseconds before retrying after the given failed attempt
-   * (1-based). Defaults to exponential backoff from 1 s up to 60 s.
+   * (1-based). Defaults to exponential backoff from 1 s up to 60 s with equal
+   * jitter.
    */
   readonly backoff?: (attempt: number) => number;
-  /** Test hook: throws `SimulatedCrash` right after the dispatch of a step is persisted. */
-  readonly crashAfterDispatch?: (stepIndex: number) => boolean;
+  /** Random source in `[0, 1)` of the default backoff. Defaults to `Math.random`. */
+  readonly random?: () => number;
+  /**
+   * Receives the errors the engine turns into a saga status (a step builder or
+   * `onSuccess` rule that throws) and the ones it cannot report otherwise (a
+   * listener or a lease release that fails).
+   */
+  readonly logger?: LoggerPort;
 }
 
 /** A run holds one lease token for its whole execution. */
@@ -150,16 +168,32 @@ interface Run {
   readonly token: string;
 }
 
-const DEFAULT_BACKOFF = createBackoff({
-  strategy: BackoffStrategy.None,
-  baseMs: 1_000,
-  maxMs: 60_000,
-});
+/** Step attempt being dispatched: which step, in which direction and against which operation. */
+interface StepTarget {
+  readonly step: CompiledStep<unknown>;
+  readonly direction: StepDirection;
+  readonly operationId: string;
+  /** Log entry of a previous attempt in this direction, if any. */
+  readonly entry: StepLogEntry | undefined;
+  readonly traceparent: string | undefined;
+  /** Builds the input of a first attempt. Retries reuse the logged one. */
+  readonly buildInput: (state: unknown) => unknown;
+}
 
-const DEFAULT_LEASE_MS = 30_000;
-const DEFAULT_MAX_STEP_MS = 25_000;
-const DEFAULT_MAX_SUSPEND_ATTEMPTS = 20;
-const DEFAULT_MAX_SUSPEND_AGE_MS = 24 * 60 * 60 * 1000;
+/** A dispatched attempt and what the call returned. */
+interface Attempt {
+  /** Instance as written with the dispatch. */
+  readonly instance: SagaInstance;
+  readonly dispatched: StepLogEntry;
+  readonly outcome: CallOutcome<unknown>;
+}
+
+/** A forward attempt that did not end cleanly. */
+interface ForwardFailure {
+  readonly instance: SagaInstance;
+  readonly dispatched: StepLogEntry;
+  readonly detail: string;
+}
 
 /**
  * Runs sagas step by step. Each attempt persists its intent before calling the
@@ -184,13 +218,10 @@ export class SagaEngine {
   private readonly owner: string;
   private readonly leaseMs: number;
   private readonly maxStepDurationMs: number;
-  private readonly maxSuspendAttempts: number;
-  private readonly maxSuspendAgeMs: number;
+  private readonly suspendPolicy: SuspendPolicy;
   private readonly clock: Clock;
   private readonly ids: IdGenerator;
-  private readonly backoff: (attempt: number) => number;
-  private readonly crashAfterDispatch:
-    ((stepIndex: number) => boolean) | undefined;
+  private readonly logger: LoggerPort | undefined;
   private readonly listeners = new Set<SagaEventListener>();
 
   /**
@@ -203,28 +234,23 @@ export class SagaEngine {
     this.invoker = options.invoker;
     this.owner = options.owner;
     this.leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
-    const maxStepDurationMs = options.maxStepDurationMs ?? DEFAULT_MAX_STEP_MS;
-    if (this.leaseMs <= maxStepDurationMs) {
-      throw new SagaError(
-        SagaErrorCode.InvalidConfiguration,
-        `leaseMs (${this.leaseMs}) must be greater than maxStepDurationMs (${maxStepDurationMs})`,
-      );
-    }
-    this.maxStepDurationMs = maxStepDurationMs;
-    this.maxSuspendAttempts =
-      options.maxSuspendAttempts ?? DEFAULT_MAX_SUSPEND_ATTEMPTS;
-    this.maxSuspendAgeMs =
-      options.maxSuspendAgeMs ?? DEFAULT_MAX_SUSPEND_AGE_MS;
+    this.maxStepDurationMs = options.maxStepDurationMs ?? DEFAULT_MAX_STEP_MS;
+    assertLeaseOutlivesStep(this.leaseMs, this.maxStepDurationMs);
+    this.suspendPolicy = {
+      maxSuspendAttempts:
+        options.maxSuspendAttempts ?? DEFAULT_MAX_SUSPEND_ATTEMPTS,
+      maxSuspendAgeMs: options.maxSuspendAgeMs ?? DEFAULT_MAX_SUSPEND_AGE_MS,
+      backoff: options.backoff ?? defaultBackoff(options.random),
+    };
     this.clock = options.clock ?? new SystemClock();
     this.ids = options.ids ?? new UuidV7IdGenerator();
-    this.backoff = options.backoff ?? DEFAULT_BACKOFF;
-    this.crashAfterDispatch = options.crashAfterDispatch;
+    this.logger = options.logger;
     this.compiled = compileAll(options.registry);
     this.contracts = options.contracts ?? options.invoker.contracts;
     const issues = this.validate();
     if (issues.length > 0) {
       throw new SagaError(
-        SagaErrorCode.InvalidDefinition,
+        PlatformErrorCode.SagaInvalidDefinition,
         `Invalid sagas:\n${issues.map((issue) => `  ${issue.message}`).join('\n')}`,
         { issues },
       );
@@ -306,6 +332,7 @@ export class SagaEngine {
             ? null
             : new Date(now.getTime() + options.deadlineMs),
         lastErrorCode: null,
+        lastErrorDetail: null,
         context,
         inputDigest,
         createdAt: now,
@@ -315,7 +342,7 @@ export class SagaEngine {
       if (
         key !== null &&
         error instanceof SagaError &&
-        error.code === SagaErrorCode.DuplicateSaga
+        error.code === PlatformErrorCode.SagaDuplicateSaga
       ) {
         const existing = await this.store.findByIdempotencyKey(key);
         if (existing !== null) {
@@ -342,10 +369,13 @@ export class SagaEngine {
     );
     if (!acquired) {
       if ((await this.store.get(sagaId)) === null) {
-        throw new SagaError(SagaErrorCode.NotFound, `Saga ${sagaId} not found`);
+        throw new SagaError(
+          PlatformErrorCode.SagaNotFound,
+          `Saga ${sagaId} not found`,
+        );
       }
       throw new SagaError(
-        SagaErrorCode.LeaseNotAcquired,
+        PlatformErrorCode.SagaLeaseNotAcquired,
         `Saga ${sagaId} is leased by another run`,
       );
     }
@@ -357,10 +387,7 @@ export class SagaEngine {
     try {
       await this.drive(run);
     } catch (error) {
-      // A simulated crash models a dead process, which never releases its lease.
-      if (!(error instanceof SimulatedCrash)) {
-        await this.releaseQuietly(run);
-      }
+      await this.releaseQuietly(run);
       throw error;
     }
     await this.store.releaseLease(run.sagaId, run.token);
@@ -416,11 +443,13 @@ export class SagaEngine {
         entry?.status === StepStatus.Uncertain;
       return this.commit(
         run,
-        this.compensationStart(
+        compensationStart(
+          compiled,
           instance,
           steps,
           uncertain ? index : index - 1,
-          DEADLINE_CODE,
+          PlatformErrorCode.SagaDeadlineExceeded,
+          null,
         ),
       );
     }
@@ -432,63 +461,120 @@ export class SagaEngine {
       StepDirection.Forward,
       step.operationId,
       (traceparent) =>
-        this.forwardStep(
+        this.dispatchAttempt(
           run,
           instance,
-          compiled,
-          steps,
-          step,
-          entry,
-          traceparent,
+          {
+            step,
+            direction: StepDirection.Forward,
+            operationId: step.operationId,
+            entry,
+            traceparent,
+            buildInput: (state) => step.input(state),
+          },
+          (attempt) => this.forwardOutcome(run, compiled, steps, attempt),
         ),
     );
   }
 
-  /** Dispatches a forward step (or re-invokes a dispatched one) and applies its outcome. */
-  private async forwardStep(
+  private async compensationAttempt(
     run: Run,
     instance: SagaInstance,
     compiled: CompiledSaga<unknown>,
     steps: StepLogEntry[],
-    step: CompiledStep<unknown>,
-    entry: StepLogEntry | undefined,
-    traceparent: string | undefined,
   ): Promise<SagaInstance> {
-    const index = step.index;
+    const index = instance.currentStep;
+    const step = this.stepAt(compiled, index);
+    const forward = findEntry(steps, index, StepDirection.Forward);
+    const entry = findEntry(steps, index, StepDirection.Compensate);
+    const operationId = step.compensationOperationId;
+    if (operationId === null || forward === undefined) {
+      throw new SagaError(
+        PlatformErrorCode.SagaInvalidState,
+        `Step ${index} of saga ${run.sagaId} cannot be compensated`,
+      );
+    }
+    return this.inStepSpan(
+      instance,
+      entry,
+      index,
+      StepDirection.Compensate,
+      operationId,
+      (traceparent) =>
+        this.dispatchAttempt(
+          run,
+          instance,
+          {
+            step,
+            direction: StepDirection.Compensate,
+            operationId,
+            entry,
+            traceparent,
+            buildInput: (state) =>
+              step.compensationInput(state, toForwardEntry(forward)),
+          },
+          (attempt) => this.compensationOutcome(run, compiled, steps, attempt),
+        ),
+    );
+  }
+
+  /**
+   * Dispatches one attempt of a step in either direction and hands the outcome
+   * to `settle`. A dispatched entry (the process died after the dispatch) is
+   * re-invoked as is; any other logged attempt is retried with its logged
+   * input, never a rebuilt one, under the same idempotency key.
+   */
+  private async dispatchAttempt(
+    run: Run,
+    instance: SagaInstance,
+    target: StepTarget,
+    settle: (attempt: Attempt) => Promise<SagaInstance>,
+  ): Promise<SagaInstance> {
+    const { step, direction, operationId, entry, traceparent } = target;
     let dispatched: StepLogEntry;
     let current: SagaInstance;
-    let input: unknown;
     if (entry?.status === StepStatus.Dispatched) {
-      // Crash after dispatch: re-invoke with the same key and the logged input.
       dispatched = entry;
       current = instance;
-      input = entry.input;
     } else {
+      let input: unknown;
       if (entry === undefined) {
         const built = buildSerializable(() =>
-          step.input(jsonClone(instance.state)),
+          target.buildInput(jsonClone(instance.state)),
         );
-        if (built === null) {
-          return this.inputFailed(run, instance);
+        if (!built.ok) {
+          this.logger?.error('saga step input could not be built', {
+            ...this.logFields(instance, step.index, direction),
+            error: built.error,
+          });
+          return this.commit(
+            run,
+            requireIntervention(
+              instance,
+              PlatformErrorCode.SagaInputBuildFailed,
+              built.detail,
+            ),
+          );
         }
         input = built.value;
       } else {
-        // A logged attempt exists: retry with its input, never a rebuilt one.
         input = entry.input;
       }
       dispatched = this.newEntry(
         run.sagaId,
-        index,
-        StepDirection.Forward,
-        step.operationId,
-        StepStatus.Dispatched,
+        step.index,
+        direction,
+        operationId,
         input,
         entry?.traceparent ?? traceparent,
       );
       current = await this.store.dispatchStep({
         instance: this.stamp({
           ...instance,
-          status: SagaStatus.Running,
+          status:
+            direction === StepDirection.Forward
+              ? SagaStatus.Running
+              : SagaStatus.Compensating,
           nextAttemptAt: null,
         }),
         expectedVersion: instance.version,
@@ -497,171 +583,142 @@ export class SagaEngine {
       });
     }
 
-    this.maybeCrash(index);
-    const result = await this.call(
+    const outcome = await this.call(
       run,
       current,
-      step.operationId,
-      input,
-      stepIdempotencyKey(run.sagaId, index, StepDirection.Forward),
+      operationId,
+      dispatched.input,
+      dispatched.idempotencyKey,
       traceparent,
     );
-    return this.forwardOutcome(
-      run,
-      current,
-      compiled,
-      steps,
-      dispatched,
-      result,
-    );
+    return settle({ instance: current, dispatched, outcome });
   }
 
   private async forwardOutcome(
     run: Run,
-    instance: SagaInstance,
     compiled: CompiledSaga<unknown>,
     steps: StepLogEntry[],
-    dispatched: StepLogEntry,
-    result: CallOutcome<unknown>,
+    { instance, dispatched, outcome }: Attempt,
   ): Promise<SagaInstance> {
     const index = dispatched.stepIndex;
-    const finish = (
-      patch: Pick<StepLogEntry, 'status' | 'output' | 'errorCode'>,
-    ): StepLogEntry => ({
-      ...dispatched,
-      ...patch,
-      finishedAt: this.clock.now(),
-    });
-
-    switch (result.kind) {
+    switch (outcome.kind) {
       case CallOutcomeKind.Success: {
         let output: unknown;
         try {
-          output = jsonClone(result.value);
-        } catch {
-          return this.uncertainForward(
-            run,
+          output = jsonClone(outcome.value);
+        } catch (error) {
+          // The callee answered with a value the log cannot hold: its contract is broken.
+          return this.protocolForward(run, compiled, steps, {
             instance,
-            compiled,
-            steps,
             dispatched,
-            PROTOCOL_CODE,
-            true,
-          );
+            detail: errorDetail(error),
+          });
         }
         return this.advance(
           run,
           instance,
           compiled,
           index,
-          finish({ status: StepStatus.Succeeded, output, errorCode: null }),
+          this.finish(dispatched, StepStatus.Succeeded, null, output),
         );
       }
       case CallOutcomeKind.BusinessError: {
-        const entry = finish({
-          status: StepStatus.Failed,
-          output: undefined,
-          errorCode: result.code,
-        });
-        if (index >= compiled.pivotIndex) {
-          return this.commit(
-            run,
-            {
-              ...instance,
-              status: SagaStatus.RequiresIntervention,
-              nextAttemptAt: null,
-              suspendedSince: null,
-              lastErrorCode: result.code,
-            },
-            entry,
-          );
-        }
-        return this.commit(
-          run,
-          this.compensationStart(
-            instance,
-            replaceEntry(steps, entry),
-            index - 1,
-            result.code,
-          ),
-          entry,
-        );
+        const entry = this.finish(dispatched, StepStatus.Failed, outcome.code);
+        const next =
+          index >= compiled.pivotIndex
+            ? requireIntervention(instance, outcome.code, null)
+            : compensationStart(
+                compiled,
+                instance,
+                replaceEntry(steps, entry),
+                index - 1,
+                outcome.code,
+                null,
+              );
+        return this.commit(run, next, entry);
       }
       case CallOutcomeKind.TransientFailure:
-        return this.uncertainForward(
+        return this.retryForward(
           run,
-          instance,
           compiled,
           steps,
-          dispatched,
-          TRANSIENT_CODE,
-          false,
+          { instance, dispatched, detail: outcome.reason },
+          PlatformErrorCode.SagaTransientFailure,
         );
       case CallOutcomeKind.Uncertain:
-        return this.uncertainForward(
+        return this.retryForward(
           run,
-          instance,
           compiled,
           steps,
-          dispatched,
-          UNCERTAIN_CODE,
-          false,
+          { instance, dispatched, detail: outcome.reason },
+          PlatformErrorCode.SagaUncertainOutcome,
         );
       case CallOutcomeKind.ProtocolViolation:
-        return this.uncertainForward(
-          run,
+        return this.protocolForward(run, compiled, steps, {
           instance,
-          compiled,
-          steps,
           dispatched,
-          PROTOCOL_CODE,
-          true,
-        );
+          detail: outcome.reason,
+        });
       default:
-        return assertNever(result);
+        return assertNever(outcome);
     }
   }
 
-  /** Handles a step whose outcome is unknown: transient failure, uncertain outcome or protocol violation. */
-  private async uncertainForward(
+  /**
+   * A forward step that may or may not have applied and can be retried:
+   * suspend and retry with the same key, unless the saga deadline has passed
+   * before the pivot, in which case the step is undone too.
+   */
+  private async retryForward(
     run: Run,
-    instance: SagaInstance,
     compiled: CompiledSaga<unknown>,
     steps: StepLogEntry[],
-    dispatched: StepLogEntry,
-    code: string,
-    protocol: boolean,
+    { instance, dispatched, detail }: ForwardFailure,
+    code: PlatformErrorCode,
   ): Promise<SagaInstance> {
     const index = dispatched.stepIndex;
-    const entry: StepLogEntry = {
-      ...dispatched,
-      status: StepStatus.Uncertain,
-      output: undefined,
-      errorCode: code,
-      finishedAt: this.clock.now(),
-    };
-    const updated = replaceEntry(steps, entry);
-    const beforePivot = index < compiled.pivotIndex;
-    let next: SagaInstance;
-    if (protocol) {
-      next = beforePivot
-        ? this.compensationStart(instance, updated, index, PROTOCOL_CODE)
-        : {
-            ...instance,
-            status: SagaStatus.RequiresIntervention,
-            nextAttemptAt: null,
-            suspendedSince: null,
-            lastErrorCode: PROTOCOL_CODE,
-          };
-    } else if (beforePivot && this.deadlinePassed(instance)) {
-      next = this.compensationStart(instance, updated, index, DEADLINE_CODE);
-    } else {
-      next = this.suspend(instance, code);
-    }
+    const entry = this.finish(dispatched, StepStatus.Uncertain, code);
+    const next =
+      index < compiled.pivotIndex && this.deadlinePassed(instance)
+        ? compensationStart(
+            compiled,
+            instance,
+            replaceEntry(steps, entry),
+            index,
+            PlatformErrorCode.SagaDeadlineExceeded,
+            detail,
+          )
+        : suspend(instance, code, detail, this.clock.now(), this.suspendPolicy);
+    return this.commit(run, next, entry);
+  }
+
+  /**
+   * A forward step whose callee broke the protocol: it may have applied, and
+   * retrying cannot fix it. Before the pivot the saga is undone including the
+   * step; after it, a person decides. Either way an alert is emitted.
+   */
+  private async protocolForward(
+    run: Run,
+    compiled: CompiledSaga<unknown>,
+    steps: StepLogEntry[],
+    { instance, dispatched, detail }: ForwardFailure,
+  ): Promise<SagaInstance> {
+    const index = dispatched.stepIndex;
+    const code = PlatformErrorCode.SagaProtocolViolation;
+    const entry = this.finish(dispatched, StepStatus.Uncertain, code);
+    const next =
+      index < compiled.pivotIndex
+        ? compensationStart(
+            compiled,
+            instance,
+            replaceEntry(steps, entry),
+            index,
+            code,
+            detail,
+          )
+        : requireIntervention(instance, code, detail);
     const saved = await this.commit(run, next, entry);
-    if (protocol) {
-      this.emit(SagaEventKind.ProtocolViolation, saved);
-    }
+    this.emit(SagaEventKind.ProtocolViolation, saved);
     return saved;
   }
 
@@ -679,285 +736,102 @@ export class SagaEngine {
       this.stepAt(compiled, index).onSuccess(draft, entry.output);
       assertSerializableState(draft);
       state = jsonClone(draft);
-    } catch {
+    } catch (error) {
+      this.logger?.error('saga onSuccess rule failed', {
+        ...this.logFields(instance, index, StepDirection.Forward),
+        error,
+      });
       return this.commit(
         run,
-        {
-          ...instance,
-          status: SagaStatus.RequiresIntervention,
-          nextAttemptAt: null,
-          suspendedSince: null,
-          lastErrorCode: STATE_UPDATE_CODE,
-        },
+        requireIntervention(
+          instance,
+          PlatformErrorCode.SagaStateUpdateFailed,
+          errorDetail(error),
+        ),
         entry,
       );
     }
-    const next = index + 1;
-    const done = next >= compiled.steps.length;
-    return this.commit(
-      run,
-      {
-        ...instance,
-        state,
-        status: done ? SagaStatus.Completed : SagaStatus.Running,
-        currentStep: done ? index : next,
-        attempts: 0,
-        suspendedSince: null,
-        nextAttemptAt: null,
-        lastErrorCode: null,
-      },
-      entry,
-    );
+    return this.commit(run, advanceTo(compiled, instance, index, state), entry);
   }
 
-  private async compensationAttempt(
+  private async compensationOutcome(
     run: Run,
-    instance: SagaInstance,
     compiled: CompiledSaga<unknown>,
     steps: StepLogEntry[],
+    { instance, dispatched, outcome }: Attempt,
   ): Promise<SagaInstance> {
-    const index = instance.currentStep;
-    const step = this.stepAt(compiled, index);
-    const forward = findEntry(steps, index, StepDirection.Forward);
-    const entry = findEntry(steps, index, StepDirection.Compensate);
-    const operationId = step.compensationOperationId;
-    if (operationId === null || forward === undefined) {
-      throw new SagaError(
-        SagaErrorCode.InvalidState,
-        `Step ${index} of saga ${run.sagaId} cannot be compensated`,
-      );
-    }
-    return this.inStepSpan(
-      instance,
-      entry,
-      index,
-      StepDirection.Compensate,
-      operationId,
-      (traceparent) =>
-        this.compensationStep(
-          run,
-          instance,
-          steps,
-          step,
-          operationId,
-          forward,
-          entry,
-          traceparent,
-        ),
-    );
-  }
-
-  /** Dispatches a compensation (or re-invokes a dispatched one) and applies its outcome. */
-  private async compensationStep(
-    run: Run,
-    instance: SagaInstance,
-    steps: StepLogEntry[],
-    step: CompiledStep<unknown>,
-    operationId: string,
-    forward: StepLogEntry,
-    entry: StepLogEntry | undefined,
-    traceparent: string | undefined,
-  ): Promise<SagaInstance> {
-    const index = step.index;
-    let dispatched: StepLogEntry;
-    let current: SagaInstance;
-    let input: unknown;
-    if (entry?.status === StepStatus.Dispatched) {
-      dispatched = entry;
-      current = instance;
-      input = entry.input;
-    } else {
-      if (entry === undefined) {
-        const built = buildSerializable(() =>
-          step.compensationInput(
-            jsonClone(instance.state),
-            toForwardEntry(forward),
-          ),
-        );
-        if (built === null) {
-          return this.inputFailed(run, instance);
-        }
-        input = built.value;
-      } else {
-        // A logged attempt exists: retry with its input, never a rebuilt one.
-        input = entry.input;
-      }
-      dispatched = this.newEntry(
-        run.sagaId,
-        index,
-        StepDirection.Compensate,
-        operationId,
-        StepStatus.Dispatched,
-        input,
-        entry?.traceparent ?? traceparent,
-      );
-      current = await this.store.dispatchStep({
-        instance: this.stamp({
-          ...instance,
-          status: SagaStatus.Compensating,
-          nextAttemptAt: null,
-        }),
-        expectedVersion: instance.version,
-        leaseToken: run.token,
-        step: dispatched,
-      });
-    }
-
-    this.maybeCrash(index);
-    const result = await this.call(
-      run,
-      current,
-      operationId,
-      input,
-      stepIdempotencyKey(run.sagaId, index, StepDirection.Compensate),
-      traceparent,
-    );
-    const finish = (
-      patch: Pick<StepLogEntry, 'status' | 'output' | 'errorCode'>,
-    ): StepLogEntry => ({
-      ...dispatched,
-      ...patch,
-      finishedAt: this.clock.now(),
-    });
-
-    switch (result.kind) {
+    const index = dispatched.stepIndex;
+    switch (outcome.kind) {
       case CallOutcomeKind.Success: {
-        const done = finish({
-          status: StepStatus.Succeeded,
-          output: undefined,
-          errorCode: null,
-        });
+        const done = this.finish(dispatched, StepStatus.Succeeded, null);
         return this.commit(
           run,
-          this.nextCompensation(current, replaceEntry(steps, done), index - 1),
+          nextCompensation(
+            compiled,
+            instance,
+            replaceEntry(steps, done),
+            index - 1,
+          ),
           done,
         );
       }
-      case CallOutcomeKind.BusinessError: {
-        const failed = finish({
-          status: StepStatus.Failed,
-          output: undefined,
-          errorCode: result.code,
-        });
+      case CallOutcomeKind.BusinessError:
         return this.commit(
           run,
-          {
-            ...current,
-            status: SagaStatus.CompensationFailed,
-            nextAttemptAt: null,
-            suspendedSince: null,
-            lastErrorCode: result.code,
-          },
-          failed,
+          compensationFailed(instance, outcome.code, null),
+          this.finish(dispatched, StepStatus.Failed, outcome.code),
         );
-      }
       case CallOutcomeKind.TransientFailure:
       case CallOutcomeKind.Uncertain: {
         const code =
-          result.kind === CallOutcomeKind.Uncertain
-            ? UNCERTAIN_CODE
-            : TRANSIENT_CODE;
-        const uncertain = finish({
-          status: StepStatus.Uncertain,
-          output: undefined,
-          errorCode: code,
-        });
-        return this.commit(run, this.suspend(current, code), uncertain);
+          outcome.kind === CallOutcomeKind.Uncertain
+            ? PlatformErrorCode.SagaUncertainOutcome
+            : PlatformErrorCode.SagaTransientFailure;
+        return this.commit(
+          run,
+          suspend(
+            instance,
+            code,
+            outcome.reason,
+            this.clock.now(),
+            this.suspendPolicy,
+          ),
+          this.finish(dispatched, StepStatus.Uncertain, code),
+        );
       }
       case CallOutcomeKind.ProtocolViolation: {
-        const uncertain = finish({
-          status: StepStatus.Uncertain,
-          output: undefined,
-          errorCode: PROTOCOL_CODE,
-        });
+        const code = PlatformErrorCode.SagaProtocolViolation;
         const saved = await this.commit(
           run,
-          {
-            ...current,
-            status: SagaStatus.CompensationFailed,
-            nextAttemptAt: null,
-            suspendedSince: null,
-            lastErrorCode: PROTOCOL_CODE,
-          },
-          uncertain,
+          compensationFailed(instance, code, outcome.reason),
+          this.finish(dispatched, StepStatus.Uncertain, code),
         );
         this.emit(SagaEventKind.ProtocolViolation, saved);
         return saved;
       }
       default:
-        return assertNever(result);
+        return assertNever(outcome);
     }
   }
 
-  /** Starts compensation from `from` (inclusive) downwards. Completes at once if nothing needs undoing. */
-  private compensationStart(
-    instance: SagaInstance,
-    steps: StepLogEntry[],
-    from: number,
-    code: string,
-  ): SagaInstance {
-    const next = compensableFrom(this.compile(instance.type), steps, from);
+  /** The dispatched entry with its outcome. */
+  private finish(
+    dispatched: StepLogEntry,
+    status: StepStatus,
+    errorCode: string | null,
+    output?: unknown,
+  ): StepLogEntry {
     return {
-      ...instance,
-      direction: StepDirection.Compensate,
-      status: next === null ? SagaStatus.Compensated : SagaStatus.Compensating,
-      currentStep: next ?? instance.currentStep,
-      attempts: 0,
-      suspendedSince: null,
-      nextAttemptAt: null,
-      lastErrorCode: code,
-    };
-  }
-
-  private nextCompensation(
-    instance: SagaInstance,
-    steps: StepLogEntry[],
-    from: number,
-  ): SagaInstance {
-    const next = compensableFrom(this.compile(instance.type), steps, from);
-    return {
-      ...instance,
-      status: next === null ? SagaStatus.Compensated : SagaStatus.Compensating,
-      currentStep: next ?? instance.currentStep,
-      attempts: 0,
-      suspendedSince: null,
-      nextAttemptAt: null,
-    };
-  }
-
-  /** Pauses for a retry, or requires intervention when the suspension caps are exceeded. */
-  private suspend(instance: SagaInstance, code: string): SagaInstance {
-    const now = this.clock.now();
-    const attempts = instance.attempts + 1;
-    const since = instance.suspendedSince ?? now;
-    const exhausted =
-      attempts > this.maxSuspendAttempts ||
-      now.getTime() - since.getTime() >= this.maxSuspendAgeMs;
-    if (exhausted) {
-      return {
-        ...instance,
-        status: SagaStatus.RequiresIntervention,
-        attempts,
-        suspendedSince: since,
-        nextAttemptAt: null,
-        lastErrorCode: code,
-      };
-    }
-    return {
-      ...instance,
-      status: SagaStatus.Suspended,
-      attempts,
-      suspendedSince: since,
-      nextAttemptAt: new Date(now.getTime() + this.backoff(attempts)),
-      lastErrorCode: code,
+      ...dispatched,
+      status,
+      output,
+      errorCode,
+      finishedAt: this.clock.now(),
     };
   }
 
   private deadlinePassed(instance: SagaInstance): boolean {
-    return (
-      instance.deadlineAt !== null &&
-      this.clock.now().getTime() >= instance.deadlineAt.getTime()
-    );
+    return deadlinePassed(instance, this.clock.now());
   }
 
   /** Fenced write of an instance transition, optionally with its step entry. */
@@ -994,12 +868,10 @@ export class SagaEngine {
       ...instance.context,
       ...(traceparent !== undefined && { traceparent }),
     };
-    return this.invokeSafely(
-      operationId,
-      input,
-      idempotencyKey,
-      deadline,
-      context,
+    return invokeStep(
+      this.invoker,
+      { operationId, input, idempotencyKey, deadline, context },
+      this.maxStepDurationMs,
     );
   }
 
@@ -1019,22 +891,19 @@ export class SagaEngine {
     operationId: string,
     fn: (traceparent: string | undefined) => Promise<T>,
   ): Promise<T> {
-    const parent = entry?.traceparent ?? instance.context?.traceparent;
+    const parent =
+      entry?.traceparent ?? instance.context?.traceparent ?? undefined;
     return inTrace(parent, () =>
-      withSpan(
-        SAGA_STEP_SPAN,
-        () => fn(currentTraceparent() ?? parent ?? undefined),
-        {
-          kind: SpanKind.INTERNAL,
-          attributes: {
-            [SagaSpanAttribute.SagaType]: instance.type,
-            [SagaSpanAttribute.SagaId]: instance.id,
-            [SagaSpanAttribute.StepIndex]: index,
-            [SagaSpanAttribute.Direction]: direction,
-            [SagaSpanAttribute.Operation]: operationId,
-          },
+      withSpan(SAGA_STEP_SPAN, () => fn(currentTraceparent() ?? parent), {
+        kind: SpanKind.INTERNAL,
+        attributes: {
+          [SagaSpanAttribute.SagaType]: instance.type,
+          [SagaSpanAttribute.SagaId]: instance.id,
+          [SagaSpanAttribute.StepIndex]: index,
+          [SagaSpanAttribute.Direction]: direction,
+          [SagaSpanAttribute.Operation]: operationId,
         },
-      ),
+      }),
     );
   }
 
@@ -1047,53 +916,9 @@ export class SagaEngine {
     );
     if (!renewed) {
       throw new SagaError(
-        SagaErrorCode.LeaseLost,
+        PlatformErrorCode.SagaLeaseLost,
         `Lease on saga ${run.sagaId} was lost`,
       );
-    }
-  }
-
-  /**
-   * Calls the operation until `deadline`. When it runs out, the call's signal
-   * aborts and the outcome is `uncertain`. A thrown error is classified with
-   * `classifyFailure`. The timer is cleared when the call settles. Simulated
-   * crashes propagate.
-   */
-  private async invokeSafely(
-    operationId: string,
-    input: unknown,
-    idempotencyKey: string,
-    deadline: Deadline,
-    context: SagaCallContext,
-  ): Promise<CallOutcome<unknown>> {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timedOut = new Promise<CallOutcome<unknown>>((resolve) => {
-      timer = setTimeout(() => {
-        controller.abort(new DeadlineExceededError(deadline.atMs));
-        resolve(
-          CallOutcome.uncertain(`timed out after ${this.maxStepDurationMs} ms`),
-        );
-      }, deadline.remaining());
-    });
-    try {
-      return await Promise.race([
-        this.invoker
-          .invoke(operationId, input, idempotencyKey, {
-            signal: controller.signal,
-            deadline,
-            context,
-          })
-          .then(toCallOutcome),
-        timedOut,
-      ]);
-    } catch (error) {
-      if (error instanceof SimulatedCrash) {
-        throw error;
-      }
-      return CallOutcome.fromError(error);
-    } finally {
-      clearTimeout(timer);
     }
   }
 
@@ -1108,17 +933,13 @@ export class SagaEngine {
   ): SagaInstance {
     if (existing.type !== definitionType) {
       throw new SagaError(
-        SagaErrorCode.IdempotencyKeyConflict,
+        PlatformErrorCode.SagaIdempotencyKeyConflict,
         `Idempotency key is already used by a "${existing.type}" saga, not "${definitionType}"`,
       );
     }
-    if (
-      existing.inputDigest !== undefined &&
-      existing.inputDigest !== null &&
-      existing.inputDigest !== inputDigest
-    ) {
+    if (existing.inputDigest !== inputDigest) {
       throw new SagaError(
-        SagaErrorCode.IdempotencyKeyConflict,
+        PlatformErrorCode.SagaIdempotencyKeyConflict,
         `Idempotency key is already used by saga ${existing.id} with a different input`,
         { sagaId: existing.id },
       );
@@ -1126,23 +947,11 @@ export class SagaEngine {
     return existing;
   }
 
-  /** Requires intervention when a step input cannot be built or is not serializable. */
-  private inputFailed(run: Run, instance: SagaInstance): Promise<SagaInstance> {
-    return this.commit(run, {
-      ...instance,
-      status: SagaStatus.RequiresIntervention,
-      nextAttemptAt: null,
-      suspendedSince: null,
-      lastErrorCode: INPUT_BUILD_CODE,
-    });
-  }
-
   private newEntry(
     sagaId: string,
     stepIndex: number,
     direction: StepDirection,
     operationId: string,
-    status: StepStatus,
     input: unknown,
     traceparent: string | null | undefined,
   ): StepLogEntry {
@@ -1151,7 +960,7 @@ export class SagaEngine {
       stepIndex,
       operationId,
       direction,
-      status,
+      status: StepStatus.Dispatched,
       idempotencyKey: stepIdempotencyKey(sagaId, stepIndex, direction),
       input,
       output: undefined,
@@ -1174,10 +983,17 @@ export class SagaEngine {
     return `${this.owner}:${this.ids.next().toString()}`;
   }
 
-  private maybeCrash(stepIndex: number): void {
-    if (this.crashAfterDispatch?.(stepIndex)) {
-      throw new SimulatedCrash(`after dispatch of step ${stepIndex}`);
-    }
+  private logFields(
+    instance: SagaInstance,
+    stepIndex: number,
+    direction: StepDirection,
+  ): Record<string, unknown> {
+    return {
+      sagaId: instance.id,
+      sagaType: instance.type,
+      stepIndex,
+      direction,
+    };
   }
 
   private emit(kind: SagaEventKind, instance: SagaInstance): void {
@@ -1187,27 +1003,42 @@ export class SagaEngine {
       type: instance.type,
       lastErrorCode: instance.lastErrorCode,
     };
+    // Listener failures never affect the saga; they are only logged.
+    const report = (error: unknown): void => {
+      this.logger?.warn('saga event listener failed', {
+        sagaId: instance.id,
+        kind,
+        error,
+      });
+    };
     for (const listener of [...this.listeners]) {
       try {
-        void Promise.resolve(listener(event)).catch(() => undefined);
-      } catch {
-        // Listener failures never affect the saga.
+        void Promise.resolve(listener(event)).catch(report);
+      } catch (error) {
+        report(error);
       }
     }
   }
 
+  /** Releases the lease after a failed run; the original error is what the caller needs. */
   private async releaseQuietly(run: Run): Promise<void> {
     try {
       await this.store.releaseLease(run.sagaId, run.token);
-    } catch {
-      // The original error is more useful to the caller.
+    } catch (error) {
+      this.logger?.warn('saga lease release failed', {
+        sagaId: run.sagaId,
+        error,
+      });
     }
   }
 
   private async load(sagaId: string): Promise<SagaInstance> {
     const instance = await this.store.get(sagaId);
     if (instance === null) {
-      throw new SagaError(SagaErrorCode.NotFound, `Saga ${sagaId} not found`);
+      throw new SagaError(
+        PlatformErrorCode.SagaNotFound,
+        `Saga ${sagaId} not found`,
+      );
     }
     return instance;
   }
@@ -1216,7 +1047,7 @@ export class SagaEngine {
     const compiled = this.compiled.get(type);
     if (compiled === undefined) {
       throw new SagaError(
-        SagaErrorCode.UnknownDefinition,
+        PlatformErrorCode.SagaUnknownDefinition,
         `No saga registered as "${type}"`,
       );
     }
@@ -1230,7 +1061,7 @@ export class SagaEngine {
     const step = compiled.steps[index];
     if (step === undefined) {
       throw new SagaError(
-        SagaErrorCode.InvalidDefinition,
+        PlatformErrorCode.SagaInvalidDefinition,
         `Saga "${compiled.type}" has no step ${index}`,
       );
     }
@@ -1238,117 +1069,21 @@ export class SagaEngine {
   }
 }
 
-/** Keeps only the defined fields of a call context; null when none is set. */
-function callContext(
-  context: SagaCallContext | undefined,
-): SagaCallContext | null {
-  if (context === undefined) {
-    return null;
-  }
-  const { tenantId, actorId, traceparent } = context;
-  const copy: SagaCallContext = {
-    ...(tenantId !== undefined && { tenantId }),
-    ...(actorId !== undefined && { actorId }),
-    ...(traceparent !== undefined && { traceparent }),
-  };
-  return Object.keys(copy).length === 0 ? null : copy;
-}
-
-/** Builds a value and checks that it is serializable. Returns null when building or checking fails. */
-function buildSerializable(build: () => unknown): { value: unknown } | null {
-  try {
-    const value = build();
-    assertSerializableState(value);
-    return { value: jsonClone(value) };
-  } catch {
-    return null;
-  }
-}
-
-function findEntry(
-  steps: readonly StepLogEntry[],
-  stepIndex: number,
-  direction: StepDirection,
-): StepLogEntry | undefined {
-  return steps.find(
-    (entry) => entry.stepIndex === stepIndex && entry.direction === direction,
-  );
-}
-
-/** Returns the log with `entry` in place of its predecessor, or appended when it is new. */
-function replaceEntry(
-  steps: readonly StepLogEntry[],
-  entry: StepLogEntry,
-): StepLogEntry[] {
-  const matches = (step: StepLogEntry): boolean =>
-    step.stepIndex === entry.stepIndex && step.direction === entry.direction;
-  return steps.some(matches)
-    ? steps.map((step) => (matches(step) ? entry : step))
-    : [...steps, entry];
-}
-
-/**
- * Largest index at or below `from` whose forward effect may need undoing.
- * Steps without compensation (read-only operations) have nothing to undo.
- */
-function compensableFrom(
-  compiled: CompiledSaga<unknown>,
-  steps: readonly StepLogEntry[],
-  from: number,
-): number | null {
-  for (let index = from; index >= 0; index--) {
-    if (compiled.steps[index]?.compensationOperationId === null) {
-      continue;
-    }
-    const entry = findEntry(steps, index, StepDirection.Forward);
-    if (
-      entry?.status === StepStatus.Succeeded ||
-      entry?.status === StepStatus.Dispatched ||
-      entry?.status === StepStatus.Uncertain
-    ) {
-      return index;
-    }
-  }
-  return null;
-}
-
-function toForwardEntry(entry: StepLogEntry): ForwardEntry {
+/** A compensation that cannot complete: a person has to undo the rest. */
+function compensationFailed(
+  instance: SagaInstance,
+  code: string,
+  detail: string | null,
+): SagaInstance {
   return {
-    input: entry.input,
-    output: entry.output,
-    idempotencyKey: entry.idempotencyKey,
-    status: entry.status,
+    ...requireIntervention(instance, code, detail),
+    status: SagaStatus.CompensationFailed,
   };
-}
-
-/** Builds every saga once, checking that each is registered under its own type. */
-function compileAll(
-  registry: ReadonlyMap<string, SagaDefinition<unknown>>,
-): ReadonlyMap<string, CompiledSaga<unknown>> {
-  const compiled = new Map<string, CompiledSaga<unknown>>();
-  const mismatches: string[] = [];
-  for (const [key, definition] of registry) {
-    const saga = definition.build();
-    if (saga.type !== key) {
-      mismatches.push(
-        `Saga "${saga.type}" is registered as "${key}"; the key must be its type`,
-      );
-    }
-    compiled.set(key, saga);
-  }
-  if (mismatches.length > 0) {
-    throw new SagaError(
-      SagaErrorCode.InvalidDefinition,
-      mismatches.join('\n'),
-      { code: SagaDefinitionIssueCode.TypeMismatch },
-    );
-  }
-  return compiled;
 }
 
 /** Runs `fn` in the trace context of `traceparent`, or in the active one when it is absent or invalid. */
 function inTrace<T>(
-  traceparent: string | null | undefined,
+  traceparent: string | undefined,
   fn: () => Promise<T>,
 ): Promise<T> {
   return otelContext.with(

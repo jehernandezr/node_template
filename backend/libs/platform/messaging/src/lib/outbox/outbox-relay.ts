@@ -1,24 +1,22 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   type Clock,
   type IdGenerator,
   SystemClock,
   UuidV7IdGenerator,
 } from '@platform/kernel';
-import { validateBackoffOptions } from '@platform/primitives';
-import { describeError } from '../errors/describe-error.js';
 import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+  type BackoffOptions,
+  BackoffStrategy,
+  validateBackoffOptions,
+} from '@platform/primitives';
+import { describeError } from '../errors/describe-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 import {
   MAX_ENVELOPE_BYTES,
   envelopeSizeBytes,
 } from '../envelope/message-envelope.js';
-import {
-  type MessagingBackoffOptions,
-  messagingBackoffDelay,
-  toSharedBackoff,
-} from '../topology/retry-policy.js';
+import { messagingBackoffDelay } from '../topology/retry-policy.js';
 import type { Topology } from '../topology/topology.js';
 import type {
   EnvelopePublisher,
@@ -28,16 +26,36 @@ import type {
   OutboxStore,
 } from './outbox.js';
 
+/**
+ * Earlier backoff shape: exponential with full jitter when `jitter` is true.
+ * @deprecated Use `BackoffOptions` of `@platform/primitives`.
+ */
+export interface LegacyBackoffOptions {
+  readonly baseMs: number;
+  readonly maxMs: number;
+  readonly jitter?: boolean;
+}
+
+function toBackoffOptions(
+  options: BackoffOptions | LegacyBackoffOptions,
+): BackoffOptions {
+  if ('strategy' in options) return options;
+  return {
+    strategy: options.jitter
+      ? BackoffStrategy.FullJitter
+      : BackoffStrategy.None,
+    baseMs: options.baseMs,
+    maxMs: options.maxMs,
+  };
+}
+
 /** Dependencies and tuning of the relay. */
 export interface OutboxRelayOptions {
   readonly store: OutboxStore;
   readonly publisher: EnvelopePublisher;
   readonly topology: Topology;
-  /**
-   * Backoff applied between failed attempts: `BackoffOptions` of
-   * `@platform/primitives`, or the deprecated `{ baseMs, maxMs, jitter }` shape.
-   */
-  readonly backoff: MessagingBackoffOptions;
+  /** Backoff applied between failed attempts. */
+  readonly backoff: BackoffOptions | LegacyBackoffOptions;
   /** Records leased per pass. Defaults to 100. */
   readonly batchSize?: number;
   /** Attempts before a record is marked Dead. Defaults to 10. */
@@ -83,7 +101,7 @@ const DEFAULT_LEASE_MS = 30_000;
 function assertPositiveInteger(name: string, value: number | undefined): void {
   if (value !== undefined && (!Number.isInteger(value) || value < 1)) {
     throw new MessagingError(
-      MessagingErrorCode.InvalidOptions,
+      PlatformErrorCode.MessagingInvalidOptions,
       `${name} must be an integer >= 1`,
     );
   }
@@ -109,10 +127,12 @@ export class OutboxRelay {
   private readonly options: OutboxRelayOptions;
   private readonly clock: Clock;
   private readonly ids: IdGenerator;
+  private readonly backoff: BackoffOptions;
 
   constructor(options: OutboxRelayOptions) {
     options.topology.assertValid();
-    validateBackoffOptions(toSharedBackoff(options.backoff));
+    this.backoff = toBackoffOptions(options.backoff);
+    validateBackoffOptions(this.backoff);
     assertPositiveInteger('batchSize', options.batchSize);
     assertPositiveInteger('maxAttempts', options.maxAttempts);
     assertPositiveInteger('leaseMs', options.leaseMs);
@@ -199,7 +219,7 @@ export class OutboxRelay {
         } else {
           const delay = messagingBackoffDelay(
             record.attempts + 1,
-            this.options.backoff,
+            this.backoff,
           );
           const marked = await store.markFailed(
             record.id,

@@ -1,7 +1,5 @@
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { MessagingError } from '../errors/messaging-error.js';
 import { RetryPolicy } from './retry-policy.js';
 import type { TopicDef } from './topic-def.js';
 
@@ -75,7 +73,7 @@ export class QueueDef {
       options.maxReceiveCount < 1
     ) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidTopology,
+        PlatformErrorCode.MessagingInvalidTopology,
         `queue "${this.name}": maxReceiveCount must be an integer >= 1`,
       );
     }
@@ -96,7 +94,7 @@ export class QueueDef {
   visibilityTimeout(seconds: number): this {
     if (!(seconds > 0) || !Number.isFinite(seconds)) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidTopology,
+        PlatformErrorCode.MessagingInvalidTopology,
         `queue "${this.name}": visibility timeout must be > 0 seconds`,
       );
     }

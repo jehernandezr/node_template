@@ -1,10 +1,10 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
 import { CallOutcome, type FinalOutcome } from '../call-outcome.js';
 import { Deadline } from '../deadline.js';
 import {
   DeadlineExceededError,
   InvalidArgumentError,
-  PrimitivesErrorCode,
   StaleClaimError,
 } from '../errors.js';
 import {
@@ -191,7 +191,7 @@ describe('InMemoryIdempotencyStore', () => {
       );
       await expect(late).rejects.toBeInstanceOf(StaleClaimError);
       await expect(late).rejects.toMatchObject({
-        code: PrimitivesErrorCode.StaleClaim,
+        code: PlatformErrorCode.PrimitivesStaleClaim,
       });
 
       // El dueño nuevo sí completa, y su resultado es el que queda.

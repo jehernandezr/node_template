@@ -1,104 +1,67 @@
-import { defineOperation } from '@contracts/platform';
+import {
+  defineOperation,
+  PlatformErrorCode,
+  type OperationDefinition,
+} from '@contracts/platform';
 import { z } from 'zod';
-import { Compensation, Operation, OperationContract } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { Compensation } from './contract.js';
+import { InternalApiError } from './errors.js';
 import { ContractRegistry, RegistryIssueCode } from './registry.js';
 
 const schema = z.object({});
 
-@Operation({
-  id: 'a.reserve.v1',
-  compensatedBy: 'a.release.v1',
-  idempotent: true,
-})
-class Reserve extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
+/**
+ * Descriptor built without `defineOperation`, so the registry checks can be
+ * exercised on shapes that `defineOperation` would already reject.
+ */
+function op(
+  fields: Partial<OperationDefinition> & Pick<OperationDefinition, 'id'>,
+): OperationDefinition {
+  return {
+    version: 1,
+    description: 'Test operation',
+    input: schema,
+    output: schema,
+    idempotent: true,
+    mutating: true,
+    errors: [],
+    ...fields,
+  };
 }
 
-@Operation({
+const Reserve = op({ id: 'a.reserve.v1', compensatedBy: 'a.release.v1' });
+const Release = op({
   id: 'a.release.v1',
   compensatedBy: Compensation.None,
   compensationReason: 'Releasing is final',
-  idempotent: true,
-})
-class Release extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({ id: 'a.read.v1', mutating: false, idempotent: true })
-class Read extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({ id: 'a.create.v1', idempotent: true })
-class CreateWithoutCompensation extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({
-  id: 'a.orphan.v1',
-  compensatedBy: 'a.missing.v1',
-  idempotent: true,
-})
-class Orphan extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({
+});
+const Read = op({ id: 'a.read.v1', mutating: false });
+const CreateWithoutCompensation = op({ id: 'a.create.v1' });
+const Orphan = op({ id: 'a.orphan.v1', compensatedBy: 'a.missing.v1' });
+const ReserveDuplicate = op({
   id: 'a.reserve.v1',
   compensatedBy: Compensation.None,
   compensationReason: 'Duplicate',
-  idempotent: true,
-})
-class ReserveDuplicate extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({
+});
+const SlowIdempotent = op({
   id: 'a.slow.v1',
   compensatedBy: Compensation.None,
   compensationReason: 'Slow',
-  idempotent: true,
   timeoutMs: 10_000,
-})
-class SlowIdempotent extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({
+});
+const SlowOnce = op({
   id: 'a.slow-once.v1',
   compensatedBy: Compensation.None,
   compensationReason: 'Once',
   idempotent: false,
   timeoutMs: 30_000,
-})
-class SlowOnce extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-class Plain extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = schema;
-}
-
-@Operation({
+});
+const RawDate = op({
   id: 'a.raw-date.v1',
   compensatedBy: Compensation.None,
   compensationReason: 'Dates',
-  idempotent: true,
-})
-class RawDate extends OperationContract<object, object> {
-  readonly input = schema;
-  readonly output = z.object({ at: z.date() });
-}
+  output: z.object({ at: z.date() }),
+});
 
 describe('ContractRegistry', () => {
   it('reports no issues for a valid registry', () => {
@@ -187,7 +150,7 @@ describe('ContractRegistry', () => {
     ]);
     expect(() => registry.assertValid()).toThrow(
       expect.objectContaining({
-        code: InternalApiErrorCode.CallBudgetExceeded,
+        code: PlatformErrorCode.InternalApiCallBudgetExceeded,
       }),
     );
   });
@@ -204,7 +167,7 @@ describe('ContractRegistry', () => {
     expect(() => duplicates.assertValid()).toThrow(InternalApiError);
     expect(() => duplicates.assertValid()).toThrow(
       expect.objectContaining({
-        code: InternalApiErrorCode.DuplicateOperation,
+        code: PlatformErrorCode.InternalApiDuplicateOperation,
       }),
     );
 
@@ -212,7 +175,7 @@ describe('ContractRegistry', () => {
     missing.register(CreateWithoutCompensation);
     expect(() => missing.assertValid()).toThrow(
       expect.objectContaining({
-        code: InternalApiErrorCode.MissingCompensation,
+        code: PlatformErrorCode.InternalApiMissingCompensation,
       }),
     );
   });
@@ -220,7 +183,9 @@ describe('ContractRegistry', () => {
   it('refuses to register a contract whose schema is not JSON-safe', () => {
     const registry = new ContractRegistry();
     expect(() => registry.register(RawDate)).toThrow(
-      expect.objectContaining({ code: InternalApiErrorCode.NonJsonSafeSchema }),
+      expect.objectContaining({
+        code: PlatformErrorCode.InternalApiNonJsonSafeSchema,
+      }),
     );
     expect(registry.get('a.raw-date.v1')).toBeUndefined();
   });
@@ -228,7 +193,6 @@ describe('ContractRegistry', () => {
   it('gets registered contracts by id', () => {
     const registry = new ContractRegistry();
     registry.register(Reserve, Release);
-    expect(registry.get('a.reserve.v1')?.ContractClass).toBe(Reserve);
     expect(registry.get('a.reserve.v1')?.contract.input).toBe(schema);
     expect(registry.get('a.reserve.v1')?.descriptor.id).toBe('a.reserve.v1');
     expect(registry.get('unknown')).toBeUndefined();
@@ -238,14 +202,18 @@ describe('ContractRegistry', () => {
     ]);
   });
 
-  it('rejects a class without @Operation with InvalidOperation', () => {
+  it('rejects something that is not a descriptor with InvalidOperation', () => {
     const registry = new ContractRegistry();
-    expect(() => registry.register(Plain)).toThrow(
-      expect.objectContaining({ code: InternalApiErrorCode.InvalidOperation }),
+    expect(() =>
+      registry.register({ id: 'a.plain.v1' } as unknown as OperationDefinition),
+    ).toThrow(
+      expect.objectContaining({
+        code: PlatformErrorCode.InternalApiInvalidOperation,
+      }),
     );
   });
 
-  it('registers defineOperation descriptors next to legacy classes', () => {
+  it('keeps the metadata of a defineOperation descriptor', () => {
     const Revert = defineOperation({
       id: 'a.revert.v1',
       input: schema,
@@ -261,7 +229,6 @@ describe('ContractRegistry', () => {
 
     expect(registry.validate()).toEqual([]);
     const entry = registry.get('a.revert.v1');
-    expect(entry?.ContractClass).toBeUndefined();
     expect(entry?.metadata).toMatchObject({
       id: 'a.revert.v1',
       compensatedBy: 'a.reserve.v1',

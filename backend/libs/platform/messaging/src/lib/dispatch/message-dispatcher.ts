@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { context, ROOT_CONTEXT, SpanKind } from '@opentelemetry/api';
 import { type Clock, isErrorCode, SystemClock } from '@platform/kernel';
 import { contextFromTraceparent, withSpan } from '@platform/observability';
@@ -14,10 +15,7 @@ import {
   MessageKind,
 } from '../contracts/message-contract.js';
 import { describeError } from '../errors/describe-error.js';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 import {
   type MessageEnvelope,
   parseEnvelope,
@@ -35,6 +33,19 @@ import {
   type ProcessedMessageStore,
   processedMessageKey,
 } from './processed-message-store.js';
+
+/** Attributes of the consumer span of each delivery (OpenTelemetry semantic conventions). */
+export enum MessagingSpanAttribute {
+  OperationType = 'messaging.operation.type',
+  DestinationName = 'messaging.destination.name',
+  MessageId = 'messaging.message.id',
+  EventType = 'cloudevents.event_type',
+}
+
+/** Value of `messaging.operation.type` for a delivery handled by a consumer. */
+export enum MessagingOperationType {
+  Process = 'process',
+}
 
 /** Result of handling one delivery. */
 export enum DispatchOutcome {
@@ -163,23 +174,41 @@ export interface MessageDispatcherOptions {
   readonly expectedTenantId?: string;
   /** Verifies the envelope tenant before the handler runs. */
   readonly verifyTenant?: TenantVerifier;
-  /**
-   * Accepts any envelope `tenantid` without verification. Insecure: a producer
-   * could act on another tenant's data.
-   * @deprecated Configure `expectedTenantId` or `verifyTenant` instead.
-   */
-  readonly trustEnvelopeTenant?: boolean;
 }
 
 /** Lease used when neither the options nor the topology give a visibility timeout (SQS default). */
 export const DEFAULT_CLAIM_LEASE_MS = 30_000;
 
+/** A delivery whose payload passed the contract, ready to run its handler. */
+interface PreparedDelivery {
+  readonly envelope: MessageEnvelope;
+  readonly run: () => void | Promise<void>;
+}
+
+/** A registered handler, closed over the payload type of its contract. */
 interface Registration {
-  readonly schema: z.ZodType<unknown>;
-  readonly handler: (
-    data: unknown,
-    envelope: MessageEnvelope<unknown>,
-  ) => void | Promise<void>;
+  /** Parses the payload with the contract; a string is the validation error. */
+  prepare(envelope: MessageEnvelope): PreparedDelivery | string;
+}
+
+function bindRegistration<S extends z.ZodType>(
+  schema: S,
+  handler: MessageHandler<z.output<S>>,
+): Registration {
+  return {
+    prepare(envelope) {
+      const parsed = schema.safeParse(envelope.data);
+      if (!parsed.success) return parsed.error.message;
+      const validated: MessageEnvelope<z.output<S>> = {
+        ...envelope,
+        data: parsed.data,
+      };
+      return {
+        envelope: validated,
+        run: () => handler(parsed.data, validated),
+      };
+    },
+  };
 }
 
 /** Where the run stopped, to decide what a thrown error means. */
@@ -206,7 +235,7 @@ function codeOf(err: unknown): string | undefined {
 function assertLease(name: string, value: number | undefined): void {
   if (value !== undefined && (!Number.isFinite(value) || value <= 0)) {
     throw new MessagingError(
-      MessagingErrorCode.InvalidOptions,
+      PlatformErrorCode.MessagingInvalidOptions,
       `${name} must be a finite number > 0`,
     );
   }
@@ -238,7 +267,7 @@ export class MessageDispatcher {
     if (options.leaseMarginMs !== undefined) {
       if (!Number.isFinite(options.leaseMarginMs) || options.leaseMarginMs < 0)
         throw new MessagingError(
-          MessagingErrorCode.InvalidOptions,
+          PlatformErrorCode.MessagingInvalidOptions,
           'leaseMarginMs must be a finite number >= 0',
         );
     }
@@ -264,14 +293,14 @@ export class MessageDispatcher {
   ): this {
     if (this.registrations.has(contract.type)) {
       throw new MessagingError(
-        MessagingErrorCode.DuplicateHandler,
+        PlatformErrorCode.MessagingDuplicateHandler,
         `a handler is already registered for type "${contract.type}"`,
       );
     }
-    this.registrations.set(contract.type, {
-      schema: contract.schema as z.ZodType,
-      handler: handler as Registration['handler'],
-    });
+    this.registrations.set(
+      contract.type,
+      bindRegistration<M['schema']>(contract.schema, handler),
+    );
     return this;
   }
 
@@ -323,19 +352,15 @@ export class MessageDispatcher {
       };
     }
 
-    const data = registration.schema.safeParse(envelope.data);
-    if (!data.success) {
+    const delivery = registration.prepare(envelope);
+    if (typeof delivery === 'string') {
       return {
         outcome: DispatchOutcome.DeadLetter,
         id: envelope.id,
-        error: `invalid data: ${data.error.message}`,
-        code: MessagingErrorCode.InvalidPayload,
+        error: `invalid data: ${delivery}`,
+        code: PlatformErrorCode.MessagingInvalidPayload,
       };
     }
-    const validated: MessageEnvelope<unknown> = {
-      ...envelope,
-      data: data.data,
-    };
 
     let fingerprint: string;
     try {
@@ -349,7 +374,7 @@ export class MessageDispatcher {
         outcome: DispatchOutcome.DeadLetter,
         id: envelope.id,
         error: 'invalid envelope: data is not canonical JSON',
-        code: MessagingErrorCode.InvalidEnvelope,
+        code: PlatformErrorCode.MessagingInvalidEnvelope,
       };
     }
 
@@ -373,14 +398,15 @@ export class MessageDispatcher {
           ? {}
           : { leaseMarginMs: this.options.leaseMarginMs }),
       });
-      if (claim.state === ClaimState.Acquired) {
-        state.claimToken = claim.claimToken;
-      }
+      const claimToken =
+        claim.state === ClaimState.Acquired ? claim.claimToken : undefined;
+      state.claimToken = claimToken;
       state.result = this.claimOutcome(envelope.id, claim, fingerprint);
-      if (state.result) {
-        if (state.claimToken !== undefined) {
+      // Without a result the claim was acquired, so the token is set.
+      if (state.result !== undefined || claimToken === undefined) {
+        if (claimToken !== undefined) {
           // Acquired with a conflicting fingerprint: give the claim back.
-          await this.release(key, state.claimToken);
+          await this.release(key, claimToken);
           state.claimToken = undefined;
         }
         state.stage = Stage.Done;
@@ -388,17 +414,13 @@ export class MessageDispatcher {
       }
 
       state.stage = Stage.Handler;
-      await registration.handler(data.data, validated);
+      await delivery.run();
 
       state.stage = Stage.Complete;
       const result: ProcessedMessage = {
         processedAt: this.clock.now().getTime(),
       };
-      await this.options.processed.complete(
-        key,
-        state.claimToken as string,
-        result,
-      );
+      await this.options.processed.complete(key, claimToken, result);
       state.stage = Stage.Done;
     };
 
@@ -406,14 +428,15 @@ export class MessageDispatcher {
     const processDelivery = (): Promise<void> =>
       withSpan(
         `${envelope.type} process`,
-        () => (runInContext ? runInContext(validated, run) : run()),
+        () => (runInContext ? runInContext(delivery.envelope, run) : run()),
         {
           kind: SpanKind.CONSUMER,
           attributes: {
-            'messaging.operation.type': 'process',
-            'messaging.destination.name': this.options.consumer,
-            'messaging.message.id': envelope.id,
-            'cloudevents.event_type': envelope.type,
+            [MessagingSpanAttribute.OperationType]:
+              MessagingOperationType.Process,
+            [MessagingSpanAttribute.DestinationName]: this.options.consumer,
+            [MessagingSpanAttribute.MessageId]: envelope.id,
+            [MessagingSpanAttribute.EventType]: envelope.type,
           },
         },
       );
@@ -453,7 +476,7 @@ export class MessageDispatcher {
         outcome: DispatchOutcome.DeadLetter,
         id,
         error: 'message id was already used with different content',
-        code: MessagingErrorCode.IdempotencyConflict,
+        code: PlatformErrorCode.MessagingIdempotencyConflict,
       };
     }
     switch (claim.state) {
@@ -472,8 +495,9 @@ export class MessageDispatcher {
 
   /**
    * Checks the envelope tenant against the expected tenant and the verifier.
-   * Without either, an envelope that names a tenant is rejected unless
-   * `trustEnvelopeTenant` is set. Returns the rejection, or undefined to accept.
+   * Without either, an envelope that names a tenant is rejected: nothing proves
+   * the producer may act on that tenant. Returns the rejection, or undefined to
+   * accept.
    */
   private async checkTenant(
     envelope: MessageEnvelope,
@@ -485,7 +509,7 @@ export class MessageDispatcher {
 
     if (expected !== undefined && tenant !== expected) {
       return new MessagingError(
-        MessagingErrorCode.TenantMismatch,
+        PlatformErrorCode.MessagingTenantMismatch,
         'envelope tenant does not match the subscription tenant',
       );
     }
@@ -493,19 +517,15 @@ export class MessageDispatcher {
       return (await verify(tenant, envelope))
         ? undefined
         : new MessagingError(
-            MessagingErrorCode.TenantMismatch,
+            PlatformErrorCode.MessagingTenantMismatch,
             'envelope tenant was rejected by the tenant verifier',
           );
     }
-    if (
-      expected !== undefined ||
-      tenant === undefined ||
-      this.options.trustEnvelopeTenant === true
-    ) {
+    if (expected !== undefined || tenant === undefined) {
       return undefined;
     }
     return new MessagingError(
-      MessagingErrorCode.TenantMismatch,
+      PlatformErrorCode.MessagingTenantMismatch,
       'envelope tenant cannot be verified: configure expectedTenantId or verifyTenant',
     );
   }
@@ -523,7 +543,7 @@ export class MessageDispatcher {
       outcome: DispatchOutcome.DeadLetter,
       id: envelope.id,
       error: `no handler registered for type "${envelope.type}"`,
-      code: MessagingErrorCode.UnknownRoute,
+      code: PlatformErrorCode.MessagingUnknownRoute,
     };
   }
 

@@ -2,7 +2,6 @@ import { SystemClock, UuidV7IdGenerator } from '@platform/kernel';
 import type { Clock, IdGenerator } from '@platform/kernel';
 import {
   InMemoryIdempotencyStore,
-  type ClaimResult,
   type FinalOutcome,
   type IdempotencyStore,
 } from '@platform/primitives';
@@ -18,9 +17,6 @@ export type { ClaimRequest } from '@platform/primitives';
  * its effects were committed.
  */
 export type ProcessedOperationStore = IdempotencyStore<FinalOutcome<unknown>>;
-
-/** @deprecated Use `ClaimResult` from `@platform/primitives`. */
-export type ClaimOutcome = ClaimResult<FinalOutcome<unknown>>;
 
 /**
  * Process-local store. Atomic within one process, suitable for tests and

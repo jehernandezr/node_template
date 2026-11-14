@@ -1,5 +1,3 @@
-import { stableDigest } from '@platform/primitives';
-import { hashInput } from './input-hash.js';
 import {
   fitsPayload,
   isValidCallKey,
@@ -91,15 +89,5 @@ describe('payload size', () => {
     const cycle: Record<string, unknown> = {};
     cycle.self = cycle;
     expect(fitsPayload(cycle, 1_000)).toBe(false);
-  });
-});
-
-describe('hashInput', () => {
-  it('is the stable digest, so a __proto__ key does not collapse the hash', () => {
-    const withProto = JSON.parse('{"__proto__":{"admin":true}}') as unknown;
-    expect(hashInput(withProto)).toBe(stableDigest(withProto));
-    expect(hashInput(withProto)).not.toBe(hashInput({}));
-    expect(hashInput({ b: 1, a: 2 })).toBe(hashInput({ a: 2, b: 1 }));
-    expect(hashInput(undefined)).toBe(stableDigest(null));
   });
 });

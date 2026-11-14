@@ -22,6 +22,5 @@ module.exports = {
     '<rootDir>/src/**/*.spec.ts',
     '<rootDir>/test/integration/**/*.int-spec.ts',
   ],
-  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
   coverageDirectory: 'test-output/jest/coverage',
 };

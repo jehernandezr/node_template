@@ -5,7 +5,8 @@ import {
   MAX_CANONICAL_JSON_DEPTH,
   stableDigest,
 } from './canonical-json.js';
-import { NonJsonValueError, PrimitivesErrorCode } from './errors.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { NonJsonValueError } from './errors.js';
 
 describe('canonicalJson', () => {
   it('serializes primitives like JSON', () => {
@@ -127,7 +128,7 @@ describe('canonicalJson', () => {
       }
       expect(error).toBeInstanceOf(NonJsonValueError);
       const nonJson = error as NonJsonValueError;
-      expect(nonJson.code).toBe(PrimitivesErrorCode.NonJsonValue);
+      expect(nonJson.code).toBe(PlatformErrorCode.PrimitivesNonJsonValue);
       expect(nonJson.details?.['path']).toBe(path);
       expect(nonJson.retryable).toBe(false);
     });

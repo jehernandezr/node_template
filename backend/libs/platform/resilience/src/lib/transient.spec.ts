@@ -1,4 +1,4 @@
-import { isTransientError } from '@platform/primitives';
+import { FailureKind, isTransientError } from '@platform/primitives';
 import { retryAfterHintMs } from './transient.js';
 
 describe('isTransientError', () => {
@@ -60,20 +60,8 @@ describe('isTransientError', () => {
     expect(isTransientError(deep)).toBe(false);
   });
 
-  it.each([
-    ['40001'],
-    ['40P01'],
-    ['57P01'],
-    ['53300'],
-    ['08000'],
-    ['08006'],
-    ['08P01'],
-  ])('treats Postgres SQLSTATE %s as transient', (code) => {
-    expect(isTransientError({ code })).toBe(true);
-  });
-
-  it.each([['23505'], ['42P01'], ['22001']])(
-    'treats Postgres SQLSTATE %s as not transient',
+  it.each([['40001'], ['08006'], ['23505']])(
+    'leaves Postgres SQLSTATE %s to the persistence adapter',
     (code) => {
       expect(isTransientError({ code })).toBe(false);
     },
@@ -112,11 +100,11 @@ describe('retryAfterHintMs without options', () => {
 });
 
 describe('isTransientError precedence', () => {
-  it('treats an outer retryable false as final even with a transient cause', () => {
+  it('treats an outer permanent failure as final even with a transient cause', () => {
     expect(
       isTransientError(
         Object.assign(new Error('final'), {
-          retryable: false,
+          failureKind: FailureKind.Permanent,
           cause: { code: 'ECONNRESET' },
         }),
       ),

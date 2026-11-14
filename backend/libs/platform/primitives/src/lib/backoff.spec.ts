@@ -6,7 +6,8 @@ import {
   validateBackoffOptions,
   type BackoffOptions,
 } from './backoff.js';
-import { InvalidArgumentError, PrimitivesErrorCode } from './errors.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { InvalidArgumentError } from './errors.js';
 
 const base = { baseMs: 100, maxMs: 1_000 } as const;
 
@@ -181,7 +182,9 @@ describe('backoffDelay', () => {
         InvalidArgumentError,
       );
       expect(() => backoffDelay(1, options)).toThrow(
-        expect.objectContaining({ code: PrimitivesErrorCode.InvalidArgument }),
+        expect.objectContaining({
+          code: PlatformErrorCode.PrimitivesInvalidArgument,
+        }),
       );
     });
 

@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 import { FailureKind } from '@platform/primitives';
 import { z } from 'zod';
@@ -7,7 +8,6 @@ import {
   PermanentMessageError,
   classifyError,
   dispositionFor,
-  isPermanentByDefault,
   isPermanentFailure,
 } from './classify-error.js';
 
@@ -39,6 +39,27 @@ describe('classifyError', () => {
     expect(classifyError({ status: 404 })).toBe(ErrorDisposition.DeadLetter);
   });
 
+  it('keeps a messaging error final unless it was declared retryable', () => {
+    const transientCause = Object.assign(new Error('reset'), {
+      code: 'ECONNRESET',
+    });
+    const rejected = new MessagingError(
+      PlatformErrorCode.MessagingTransportFailed,
+      'rejected',
+      { retryable: false, cause: transientCause },
+    );
+    const throttled = new MessagingError(
+      PlatformErrorCode.MessagingTransportFailed,
+      'throttled',
+      { retryable: true },
+    );
+    expect(rejected.failureKind).toBe(FailureKind.Permanent);
+    expect(isPermanentFailure(rejected)).toBe(true);
+    expect(throttled.failureKind).toBe(FailureKind.Transient);
+    expect(throttled.retryable).toBe(true);
+    expect(isPermanentFailure(throttled)).toBe(false);
+  });
+
   it('maps every failure kind to a disposition', () => {
     expect(dispositionFor(FailureKind.Transient)).toBe(ErrorDisposition.Retry);
     expect(dispositionFor(FailureKind.Timeout)).toBe(ErrorDisposition.Retry);
@@ -58,11 +79,5 @@ describe('classifyError', () => {
     expect(classifyError(new PermanentMessageError('x'), () => false)).toBe(
       ErrorDisposition.Retry,
     );
-  });
-
-  it('keeps isPermanentByDefault as a deprecated alias of isPermanentFailure', () => {
-    expect(isPermanentByDefault).toBe(isPermanentFailure);
-    expect(isPermanentFailure({ code: 'A.B.C', retryable: false })).toBe(true);
-    expect(isPermanentFailure({ code: 'A.B.C', retryable: true })).toBe(false);
   });
 });

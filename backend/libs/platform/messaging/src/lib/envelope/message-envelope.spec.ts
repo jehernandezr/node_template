@@ -1,5 +1,5 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/testing';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import {
   MAX_ENVELOPE_ACTOR_ID_LENGTH,
   MAX_ENVELOPE_BYTES,
@@ -198,7 +198,7 @@ describe('parseEnvelope', () => {
       const result = parseEnvelope(raw);
       expect(result.ok).toBe(false);
       expect(!result.ok && result.error.code).toBe(
-        MessagingErrorCode.PayloadTooLarge,
+        PlatformErrorCode.MessagingPayloadTooLarge,
       );
     }
   });
@@ -209,7 +209,7 @@ describe('parseEnvelope', () => {
     for (const raw of ['{', cyclic, { ...envelope, id: '' }]) {
       const result = parseEnvelope(raw);
       expect(!result.ok && result.error.code).toBe(
-        MessagingErrorCode.InvalidEnvelope,
+        PlatformErrorCode.MessagingInvalidEnvelope,
       );
     }
   });
@@ -236,7 +236,9 @@ describe('toWireEnvelope', () => {
       { newId: () => '' },
     );
     expect(() => toWireEnvelope(envelope)).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.InvalidEnvelope }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingInvalidEnvelope,
+      }),
     );
   });
 
@@ -246,7 +248,9 @@ describe('toWireEnvelope', () => {
       { newId: () => 'id-1', now: () => fixedNow },
     );
     expect(() => toWireEnvelope(envelope)).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.PayloadTooLarge }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingPayloadTooLarge,
+      }),
     );
   });
 

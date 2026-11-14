@@ -3,7 +3,4 @@ export * from './lib/errors.js';
 export * from './lib/transient.js';
 export * from './lib/config.js';
 export * from './lib/events.js';
-export * from './lib/fallback.js';
 export * from './lib/registry.js';
-export * from './lib/resilient.decorator.js';
-export * from './lib/load-shedder.js';

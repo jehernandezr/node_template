@@ -44,15 +44,14 @@ const ThingHappened = defineEvent({
 });
 
 /** The canonical test topology. Its toJSON() export is asserted in the JSON test below. */
-class PlatformTopology extends Topology {
-  readonly topics = [
+function platformTopology(): Topology {
+  const topics = [
     new TopicDef('tasks-events'),
     new TopicDef('ledger-events', { fifo: true }),
   ];
-
-  readonly queues = [
+  const queues = [
     new QueueDef('notifications')
-      .subscribesTo(this.topics[0], { types: ['tasks.task.updated.v1'] })
+      .subscribesTo(topics[0], { types: ['tasks.task.updated.v1'] })
       .retry(
         RetryPolicy.exponential({
           maxAttempts: 6,
@@ -63,7 +62,7 @@ class PlatformTopology extends Topology {
       )
       .deadLetter({ maxReceiveCount: 6 }),
     new QueueDef('audit')
-      .subscribesTo(this.topics[0])
+      .subscribesTo(topics[0])
       .deadLetter({ maxReceiveCount: 5 }),
     new QueueDef('reports').deadLetter({
       maxReceiveCount: 5,
@@ -72,25 +71,24 @@ class PlatformTopology extends Topology {
     new QueueDef('ledger-projection')
       .fifo()
       .visibilityTimeout(60)
-      .subscribesTo(this.topics[1])
+      .subscribesTo(topics[1])
       .deadLetter({ maxReceiveCount: 5 }),
   ];
-
-  readonly routes = [
-    Route.event(TaskUpdated).to(this.topics[0]),
-    Route.event(LedgerPosted).to(this.topics[1]),
-    Route.command(GenerateReport).to(this.queues[2]),
+  const routes = [
+    Route.event(TaskUpdated).to(topics[0]),
+    Route.event(LedgerPosted).to(topics[1]),
+    Route.command(GenerateReport).to(queues[2]),
   ];
+  return new Topology({ topics, queues, routes });
 }
 
 /** Builds a topology with one queue, for targeted validation tests. */
 function singleQueue(queue: QueueDef, topics: TopicDef[] = []): Topology {
-  class Single extends Topology {
-    readonly topics = topics;
-    readonly queues = [queue];
-    readonly routes = [Route.command(RunJob).to(queue)];
-  }
-  return new Single();
+  return new Topology({
+    topics,
+    queues: [queue],
+    routes: [Route.command(RunJob).to(queue)],
+  });
 }
 
 function kindsOf(topology: Topology): TopologyIssueKind[] {
@@ -102,22 +100,23 @@ function kindsOf(topology: Topology): TopologyIssueKind[] {
 
 describe('Topology.validate', () => {
   it('accepts the canonical topology without errors or warnings', () => {
-    expect(new PlatformTopology().validate()).toEqual([]);
+    expect(platformTopology().validate()).toEqual([]);
   });
 
   it('reports duplicate names and duplicate route types', () => {
-    class Broken extends Topology {
-      readonly topics = [new TopicDef('a'), new TopicDef('a')];
-      readonly queues = [
+    function broken(): Topology {
+      const topics = [new TopicDef('a'), new TopicDef('a')];
+      const queues = [
         new QueueDef('q').deadLetter({ maxReceiveCount: 5 }),
         new QueueDef('q').deadLetter({ maxReceiveCount: 5 }),
       ];
-      readonly routes = [
+      const routes = [
         Route.event(ThingHappened).to(new TopicDef('a')),
         Route.event(ThingHappened).to(new TopicDef('a')),
       ];
+      return new Topology({ topics, queues, routes });
     }
-    expect(kindsOf(new Broken())).toEqual(
+    expect(kindsOf(broken())).toEqual(
       expect.arrayContaining([
         TopologyIssueKind.DuplicateTopic,
         TopologyIssueKind.DuplicateQueue,
@@ -127,19 +126,20 @@ describe('Topology.validate', () => {
   });
 
   it('reports routes to undeclared targets and subscriptions to undeclared topics', () => {
-    class Broken extends Topology {
-      readonly topics = [new TopicDef('declared')];
-      readonly queues = [
+    function broken(): Topology {
+      const topics = [new TopicDef('declared')];
+      const queues = [
         new QueueDef('q')
           .subscribesTo(new TopicDef('ghost'))
           .deadLetter({ maxReceiveCount: 5 }),
       ];
-      readonly routes = [
+      const routes = [
         Route.event(ThingHappened).to(new TopicDef('missing')),
         Route.command(RunJob).to(new QueueDef('nope')),
       ];
+      return new Topology({ topics, queues, routes });
     }
-    expect(kindsOf(new Broken())).toEqual([
+    expect(kindsOf(broken())).toEqual([
       TopologyIssueKind.UndeclaredRouteTarget,
       TopologyIssueKind.UndeclaredRouteTarget,
       TopologyIssueKind.UndeclaredSubscriptionTopic,
@@ -287,28 +287,28 @@ describe('Topology.validate', () => {
 
   it('rejects filter types that no route produces', () => {
     const topic = new TopicDef('events');
-    class Broken extends Topology {
-      readonly topics = [topic];
-      readonly queues = [
+    function broken(): Topology {
+      const topics = [topic];
+      const queues = [
         new QueueDef('q')
           .subscribesTo(topic, { types: ['never.produced.v1'] })
           .deadLetter({ maxReceiveCount: 5 }),
       ];
-      readonly routes = [Route.event(ThingHappened).to(topic)];
+      const routes = [Route.event(ThingHappened).to(topic)];
+      return new Topology({ topics, queues, routes });
     }
-    expect(kindsOf(new Broken())).toEqual([
-      TopologyIssueKind.UnproducedFilterType,
-    ]);
+    expect(kindsOf(broken())).toEqual([TopologyIssueKind.UnproducedFilterType]);
   });
 
   it('warns, without failing, when an event has no subscribers', () => {
     const topic = new TopicDef('lonely');
-    class Lonely extends Topology {
-      readonly topics = [topic];
-      readonly queues: QueueDef[] = [];
-      readonly routes = [Route.event(ThingHappened).to(topic)];
+    function lonely(): Topology {
+      const topics = [topic];
+      const queues: QueueDef[] = [];
+      const routes = [Route.event(ThingHappened).to(topic)];
+      return new Topology({ topics, queues, routes });
     }
-    const topology = new Lonely();
+    const topology = lonely();
     expect(topology.validate()).toEqual([
       expect.objectContaining({
         kind: TopologyIssueKind.NoSubscribers,
@@ -320,16 +320,17 @@ describe('Topology.validate', () => {
 
   it('requires a contract on every route, its own or one given in the options', () => {
     const topic = new TopicDef('tasks-events');
-    class Untyped extends Topology {
-      readonly topics = [topic];
-      readonly queues = [
+    function untyped(): Topology {
+      const topics = [topic];
+      const queues = [
         new QueueDef('audit')
           .subscribesTo(topic)
           .deadLetter({ maxReceiveCount: 5 }),
       ];
-      readonly routes = [Route.event('tasks.task.updated.v1').to(topic)];
+      const routes = [Route.event('tasks.task.updated.v1').to(topic)];
+      return new Topology({ topics, queues, routes });
     }
-    const topology = new Untyped();
+    const topology = untyped();
     expect(kindsOf(topology)).toEqual([TopologyIssueKind.RouteWithoutContract]);
     expect(() => topology.assertValid()).toThrow(TopologyError);
     expect(topology.validate({ contracts: [TaskUpdated] })).toEqual([]);
@@ -337,23 +338,25 @@ describe('Topology.validate', () => {
 
   it('rejects a contract of the other kind', () => {
     const queue = new QueueDef('reports').deadLetter({ maxReceiveCount: 5 });
-    class Mixed extends Topology {
-      readonly topics: TopicDef[] = [];
-      readonly queues = [queue];
-      readonly routes = [Route.command('reports.report.generate.v1').to(queue)];
+    function mixed(): Topology {
+      const topics: TopicDef[] = [];
+      const queues = [queue];
+      const routes = [Route.command('reports.report.generate.v1').to(queue)];
+      return new Topology({ topics, queues, routes });
     }
     expect(
-      new Mixed()
+      mixed()
         .validate({ contracts: [GenerateReport] })
         .map((issue) => issue.kind),
     ).toEqual([]);
-    class Wrong extends Topology {
-      readonly topics: TopicDef[] = [];
-      readonly queues = [queue];
-      readonly routes = [Route.command('tasks.task.updated.v1').to(queue)];
+    function wrong(): Topology {
+      const topics: TopicDef[] = [];
+      const queues = [queue];
+      const routes = [Route.command('tasks.task.updated.v1').to(queue)];
+      return new Topology({ topics, queues, routes });
     }
     expect(
-      new Wrong()
+      wrong()
         .validate({ contracts: [TaskUpdated] })
         .map((issue) => issue.kind),
     ).toEqual([TopologyIssueKind.ContractKindMismatch]);
@@ -379,18 +382,19 @@ describe('Topology.validate', () => {
   });
 
   it('assertValid throws a TopologyError carrying every error issue', () => {
-    class Broken extends Topology {
-      readonly topics = [new TopicDef('a'), new TopicDef('a')];
-      readonly queues: QueueDef[] = [];
-      readonly routes: never[] = [];
+    function broken(): Topology {
+      const topics = [new TopicDef('a'), new TopicDef('a')];
+      const queues: QueueDef[] = [];
+      const routes: never[] = [];
+      return new Topology({ topics, queues, routes });
     }
-    expect(() => new Broken().assertValid()).toThrow(TopologyError);
+    expect(() => broken().assertValid()).toThrow(TopologyError);
   });
 });
 
 describe('Topology routing and export', () => {
   it('resolves routes by message type and keeps the contract of contract-based routes', () => {
-    const topology = new PlatformTopology();
+    const topology = platformTopology();
     expect(topology.routeFor('tasks.task.updated.v1')).toMatchObject({
       kind: MessageKind.Event,
       targetKind: TargetKind.Topic,
@@ -405,7 +409,7 @@ describe('Topology routing and export', () => {
   });
 
   it('exports the canonical JSON with stable ordering', () => {
-    expect(new PlatformTopology().toJSON()).toEqual({
+    expect(platformTopology().toJSON()).toEqual({
       topics: [
         { name: 'ledger-events', fifo: true },
         { name: 'tasks-events', fifo: false },
@@ -486,15 +490,16 @@ describe('Topology routing and export', () => {
   });
 
   it('is serialized by JSON.stringify and refuses to export an invalid topology', () => {
-    expect(JSON.parse(JSON.stringify(new PlatformTopology()))).toEqual(
-      new PlatformTopology().toJSON(),
+    expect(JSON.parse(JSON.stringify(platformTopology()))).toEqual(
+      platformTopology().toJSON(),
     );
 
-    class Broken extends Topology {
-      readonly topics = [new TopicDef('a'), new TopicDef('a')];
-      readonly queues: QueueDef[] = [];
-      readonly routes: never[] = [];
+    function broken(): Topology {
+      const topics = [new TopicDef('a'), new TopicDef('a')];
+      const queues: QueueDef[] = [];
+      const routes: never[] = [];
+      return new Topology({ topics, queues, routes });
     }
-    expect(() => new Broken().toJSON()).toThrow(TopologyError);
+    expect(() => broken().toJSON()).toThrow(TopologyError);
   });
 });

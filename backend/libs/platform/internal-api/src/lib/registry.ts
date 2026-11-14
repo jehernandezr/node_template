@@ -1,16 +1,18 @@
 import {
+  PlatformErrorCode,
+  type OperationDefinition,
+} from '@contracts/platform';
+import {
   Compensation,
   defaultCallBudgetMs,
   resolveOperation,
 } from './contract.js';
 import type {
-  ContractConstructor,
   OperationDescriptor,
   OperationMetadata,
   OperationSchemas,
-  OperationSource,
 } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiError, type InternalApiErrorCode } from './errors.js';
 import { assertJsonSafeContract } from './json-safety.js';
 
 /** Kind of problem found by `ContractRegistry.validate()`. */
@@ -31,8 +33,6 @@ export interface RegistryIssue {
 /** A registered operation with its metadata and schemas. */
 export interface RegisteredContract {
   readonly id: string;
-  /** The `@Operation` class, when the operation was registered from one. */
-  readonly ContractClass?: ContractConstructor;
   readonly metadata: OperationMetadata;
   /** Input and output schemas. */
   readonly contract: OperationSchemas;
@@ -57,15 +57,15 @@ function registryErrorCode(
   const has = (code: RegistryIssueCode): boolean =>
     issues.some((issue) => issue.code === code);
   if (has(RegistryIssueCode.DuplicateId)) {
-    return InternalApiErrorCode.DuplicateOperation;
+    return PlatformErrorCode.InternalApiDuplicateOperation;
   }
   if (
     has(RegistryIssueCode.MissingCompensation) ||
     has(RegistryIssueCode.UnknownCompensation)
   ) {
-    return InternalApiErrorCode.MissingCompensation;
+    return PlatformErrorCode.InternalApiMissingCompensation;
   }
-  return InternalApiErrorCode.CallBudgetExceeded;
+  return PlatformErrorCode.InternalApiCallBudgetExceeded;
 }
 
 /** Catalogue of the operations a service publishes. */
@@ -80,19 +80,18 @@ export class ContractRegistry {
   }
 
   /**
-   * Registers operations, from `defineOperation` descriptors or `@Operation`
-   * classes. Duplicates are accepted here and reported by `validate()`.
-   * Throws `InvalidOperation` for anything else and `NonJsonSafeSchema` for
-   * schemas that do not survive JSON transport.
+   * Registers operations from their `defineOperation` descriptors. Duplicates
+   * are accepted here and reported by `validate()`. Throws `InvalidOperation`
+   * for anything else and `NonJsonSafeSchema` for schemas that do not survive
+   * JSON transport.
    */
-  register(...sources: OperationSource[]): void {
-    for (const source of sources) {
-      const descriptor = resolveOperation(source);
+  register(...definitions: OperationDefinition[]): void {
+    for (const definition of definitions) {
+      const descriptor = resolveOperation(definition);
       assertJsonSafeContract(descriptor, descriptor.id);
 
       const entry: RegisteredContract = {
         id: descriptor.id,
-        ...(typeof source === 'function' && { ContractClass: source }),
         metadata: descriptor.metadata,
         contract: { input: descriptor.input, output: descriptor.output },
         descriptor,

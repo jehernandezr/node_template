@@ -30,8 +30,7 @@
     "@platform/primitives": "workspace:*",
     "@platform/sharding": "workspace:*",
     "pg": "8.23.1",
-    "tslib": "^2.3.0",
-    "typeorm": "1.1.2"
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "12.2.1",

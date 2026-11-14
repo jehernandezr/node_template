@@ -1,42 +1,26 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { PlatformError } from '@platform/kernel';
-import { FailureKind } from '@platform/primitives';
+import { FailureKind, PlatformError } from '@platform/kernel';
 
-/**
- * Error codes of the internal API, format `PLATFORM.INTERNAL_API.<ERROR>`.
- * Each value is the `PlatformErrorCode` of the catalog, so the code is
- * declared once in `@contracts/platform`.
- */
-export const InternalApiErrorCode = {
-  /**
-   * @deprecated Calls answer an invalid input with the business error
-   * `PlatformErrorCode.ValidationInvalidInput`; the code stays in the catalog.
-   */
-  InvalidInput: PlatformErrorCode.InternalApiInvalidInput,
-  InvalidOutput: PlatformErrorCode.InternalApiInvalidOutput,
-  UnknownOperation: PlatformErrorCode.InternalApiUnknownOperation,
-  DuplicateOperation: PlatformErrorCode.InternalApiDuplicateOperation,
-  MissingCompensation: PlatformErrorCode.InternalApiMissingCompensation,
-  MissingHandler: PlatformErrorCode.InternalApiMissingHandler,
-  Timeout: PlatformErrorCode.InternalApiTimeout,
-  NonJsonSafeSchema: PlatformErrorCode.InternalApiNonJsonSafeSchema,
-  /** The value given as an operation is neither an `@Operation` class nor a `defineOperation` descriptor. */
-  InvalidOperation: PlatformErrorCode.InternalApiInvalidOperation,
-  /** Missing, empty or oversized idempotency key or tenant id. */
-  InvalidIdempotencyKey: PlatformErrorCode.InternalApiInvalidIdempotencyKey,
-  /** The same idempotency key was reused with a different input. */
-  IdempotencyKeyReuse: PlatformErrorCode.InternalApiIdempotencyKeyReuse,
-  /** The serialized input or output exceeds the configured limit. */
-  PayloadTooLarge: PlatformErrorCode.InternalApiPayloadTooLarge,
-  /** A handler returned something that is not a `CallOutcome`. */
-  InvalidHandlerResult: PlatformErrorCode.InternalApiInvalidHandlerResult,
-  /** An operation can take longer than the registry allows for one call, retries included. */
-  CallBudgetExceeded: PlatformErrorCode.InternalApiCallBudgetExceeded,
-} as const;
-
-/** One of the {@link InternalApiErrorCode} values. */
+/** Error codes of the internal API, declared once in `@contracts/platform`. */
 export type InternalApiErrorCode =
-  (typeof InternalApiErrorCode)[keyof typeof InternalApiErrorCode];
+  | PlatformErrorCode.InternalApiInvalidOutput
+  | PlatformErrorCode.InternalApiUnknownOperation
+  | PlatformErrorCode.InternalApiDuplicateOperation
+  | PlatformErrorCode.InternalApiMissingCompensation
+  | PlatformErrorCode.InternalApiMissingHandler
+  | PlatformErrorCode.InternalApiNonJsonSafeSchema
+  /** The value given as an operation is not a `defineOperation` descriptor. */
+  | PlatformErrorCode.InternalApiInvalidOperation
+  /** Missing, empty or oversized idempotency key or tenant id. */
+  | PlatformErrorCode.InternalApiInvalidIdempotencyKey
+  /** The same idempotency key was reused with a different input. */
+  | PlatformErrorCode.InternalApiIdempotencyKeyReuse
+  /** The serialized input or output exceeds the configured limit. */
+  | PlatformErrorCode.InternalApiPayloadTooLarge
+  /** A handler returned something that is not a `CallOutcome`. */
+  | PlatformErrorCode.InternalApiInvalidHandlerResult
+  /** An operation can take longer than the registry allows for one call, retries included. */
+  | PlatformErrorCode.InternalApiCallBudgetExceeded;
 
 /**
  * Raised for contract violations found while defining or registering

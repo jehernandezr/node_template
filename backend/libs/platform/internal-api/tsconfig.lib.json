@@ -14,9 +14,6 @@
       "path": "../primitives/tsconfig.lib.json"
     },
     {
-      "path": "../persistence/tsconfig.lib.json"
-    },
-    {
       "path": "../observability/tsconfig.lib.json"
     },
     {

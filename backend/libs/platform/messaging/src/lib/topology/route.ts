@@ -101,14 +101,14 @@ export class CommandRouteBuilder {
 }
 
 /**
- * Entry point of the routing DSL. Prefer `Topology.fromContracts`, which
- * builds every route from the `topics` and `queues` of the service contracts.
+ * Builds routes inside the library. Services get theirs from the contracts
+ * through `topologyFromContracts`.
  */
 export class Route {
   /**
    * Starts a route for an event of the contracts kit (`defineEvent`). A bare
-   * type string is still accepted, but validation then needs its contract in
-   * `ValidateOptions.contracts`.
+   * type string is accepted for validation tests; validation then needs its
+   * contract in `ValidateOptions.contracts`.
    */
   static event(source: string | EventDefinition): EventRouteBuilder {
     return new EventRouteBuilder(source);

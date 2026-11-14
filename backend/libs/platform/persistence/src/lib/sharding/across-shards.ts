@@ -1,4 +1,5 @@
 import { isPlatformError } from '@platform/kernel';
+import { raceDeadline, RaceStop } from '@platform/primitives';
 import { ShardingError, ShardingErrorCode } from '@platform/sharding';
 import { currentUnitOfWork, type Database } from '../database.js';
 import { invalidConfiguration } from '../errors.js';
@@ -31,17 +32,6 @@ export interface AcrossShardsResult<T> {
   readonly failures: readonly ShardFailure[];
   /** `true` si algún shard falló: el resultado no incluye sus filas. */
   readonly partial: boolean;
-}
-
-class ShardTimeout extends Error {}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: NodeJS.Timeout | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => reject(new ShardTimeout()), ms);
-    timer.unref();
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 /**
@@ -80,12 +70,19 @@ export async function acrossShards<T>(
       const database = databases[next];
       next += 1;
       try {
-        const value = await withTimeout(fn(database), timeoutMs);
-        results.push({ shard: database.name, value });
+        const outcome = await raceDeadline(() => fn(database), { timeoutMs });
+        if (outcome.settled) {
+          results.push({ shard: database.name, value: outcome.value });
+        } else {
+          failures.push({
+            shard: database.name,
+            timedOut: outcome.stop === RaceStop.Timeout,
+          });
+        }
       } catch (error) {
         failures.push({
           shard: database.name,
-          timedOut: error instanceof ShardTimeout,
+          timedOut: false,
           ...(isPlatformError(error) ? { code: error.code } : {}),
         });
       }

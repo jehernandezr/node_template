@@ -27,10 +27,11 @@
     "@platform/kernel": "workspace:*",
     "@platform/messaging": "workspace:*",
     "@platform/persistence": "workspace:*",
+    "@platform/primitives": "workspace:*",
+    "@platform/sharding": "workspace:*",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@platform/primitives": "workspace:*",
     "@testcontainers/postgresql": "12.2.1",
     "@types/pg": "^8.23.1",
     "pg": "8.23.1",

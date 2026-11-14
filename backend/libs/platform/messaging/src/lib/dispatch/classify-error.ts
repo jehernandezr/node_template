@@ -1,18 +1,17 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import type { PlatformErrorOptions } from '@platform/kernel';
 import { classifyFailure, FailureKind } from '@platform/primitives';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 
 /** A failure that retrying cannot fix. Goes straight to the dead-letter queue. */
 export class PermanentMessageError extends MessagingError {
-  readonly failureKind = FailureKind.Permanent;
-
-  constructor(message: string, options: PlatformErrorOptions = {}) {
-    super(MessagingErrorCode.PermanentError, message, {
+  constructor(
+    message: string,
+    options: Omit<PlatformErrorOptions, 'retryable'> = {},
+  ) {
+    super(PlatformErrorCode.MessagingPermanentError, message, {
       ...options,
-      retryable: false,
+      failureKind: FailureKind.Permanent,
     });
   }
 }
@@ -48,17 +47,12 @@ export function dispositionFor(kind: FailureKind): ErrorDisposition {
  * Platform permanence rule, from `classifyFailure` of `@platform/primitives`:
  * permanent unless the error is transient, a timeout or a cancellation. As in
  * the rest of the platform, an error without any signal is not retried; throw
- * an error with `retryable: true` (or a known transient code) to ask for a retry.
+ * an error whose `failureKind` is `Transient` (or a `PlatformError` declared
+ * `retryable`) to ask for a retry.
  */
 export function isPermanentFailure(error: unknown): boolean {
   return dispositionFor(classifyFailure(error)) === ErrorDisposition.DeadLetter;
 }
-
-/**
- * @deprecated Use {@link isPermanentFailure}. Kept as an alias; it now follows
- * the shared `classifyFailure` rule instead of the old messaging-only rule.
- */
-export const isPermanentByDefault: PermanenceCheck = isPermanentFailure;
 
 /** Maps an error to a disposition using the given permanence rule. */
 export function classifyError(

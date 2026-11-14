@@ -12,13 +12,23 @@ import {
   applyMigrations,
   Database,
   PgPoolConnection,
-  shardMigrations,
 } from '@platform/persistence';
+import { SystemClock } from '@platform/kernel';
 import { ClaimState, Deadline } from '@platform/primitives';
+import {
+  DirectoryWriteResult,
+  TenantStatus,
+  type TenantPlacement,
+} from '@platform/sharding';
 import { Pool } from 'pg';
+import { catalogMigrations } from '../../src/lib/catalog-migrations.js';
+import { PostgresDirectoryStore } from '../../src/lib/postgres-directory-store.js';
+import { PostgresIdempotencyStore } from '../../src/lib/postgres-idempotency-store.js';
 import { PostgresOutboxStore } from '../../src/lib/postgres-outbox-store.js';
+import { shardMigrations } from '../../src/lib/shard-migrations.js';
 import { PostgresProcessedMessageStore } from '../../src/lib/postgres-processed-message-store.js';
 import { describeWithDocker } from '../support/docker.js';
+import { idempotencyStoreContract } from '../support/idempotency-contract.js';
 import { outboxStoreContract } from '../support/outbox-contract.js';
 import { processedMessageStoreContract } from '../support/processed-message-contract.js';
 
@@ -36,7 +46,9 @@ const lease = (owner: string) => ({ owner, token: `${owner}-token` });
 describeWithDocker('Postgres messaging adapters (Testcontainers)', () => {
   let container: StartedPostgreSqlContainer;
   let pool: Pool;
+  let catalogPool: Pool;
   let database: Database;
+  let catalog: Database;
 
   beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:17').start();
@@ -53,15 +65,32 @@ describeWithDocker('Postgres messaging adapters (Testcontainers)', () => {
     await database.readPrimary((session) =>
       applyMigrations(session, shardMigrations),
     );
+    await pool.query('CREATE DATABASE catalog');
+    const catalogUrl = new URL(container.getConnectionUri());
+    catalogUrl.pathname = '/catalog';
+    catalogPool = new Pool({
+      connectionString: catalogUrl.toString(),
+      max: 10,
+    });
+    catalogPool.on('error', () => undefined);
+    catalog = new Database({
+      name: 'catalog',
+      global: true,
+      connection: new PgPoolConnection({ primary: catalogPool }),
+    });
+    await catalog.readPrimary((session) =>
+      applyMigrations(session, catalogMigrations),
+    );
   });
 
   afterAll(async () => {
+    await catalogPool.end();
     await pool.end();
     await container.stop();
   });
 
   beforeEach(async () => {
-    await pool.query('TRUNCATE outbox, processed_messages');
+    await pool.query('TRUNCATE outbox, processed_messages, idempotency_keys');
   });
 
   const outbox = (clock = new FixedClock(START)) =>
@@ -72,8 +101,8 @@ describeWithDocker('Postgres messaging adapters (Testcontainers)', () => {
     createdAt: Date,
     groupId?: string,
   ) =>
-    database.runInTransaction((uow) =>
-      store.append({ envelope: envelope(id), createdAt, groupId }, uow),
+    database.runInTransaction(() =>
+      store.append({ envelope: envelope(id), createdAt, groupId }),
     );
 
   describe('OutboxStore contract', () => {
@@ -83,16 +112,13 @@ describeWithDocker('Postgres messaging adapters (Testcontainers)', () => {
       return {
         store,
         add: (env, options) =>
-          database.runInTransaction((uow) =>
-            store.append(
-              {
-                envelope: env,
-                groupId: options.groupId,
-                delayMs: options.delayMs,
-                createdAt: options.now,
-              },
-              uow,
-            ),
+          database.runInTransaction(() =>
+            store.append({
+              envelope: env,
+              groupId: options.groupId,
+              delayMs: options.delayMs,
+              createdAt: options.now,
+            }),
           ),
         get: (id) => store.get(id),
       };
@@ -118,11 +144,11 @@ describeWithDocker('Postgres messaging adapters (Testcontainers)', () => {
     it('commits and rolls back with the business change', async () => {
       const store = outbox();
       await expect(
-        database.runInTransaction(async (uow) => {
-          await store.append(
-            { envelope: envelope('rolled-back'), createdAt: START },
-            uow,
-          );
+        database.runInTransaction(async () => {
+          await store.append({
+            envelope: envelope('rolled-back'),
+            createdAt: START,
+          });
           throw new Error('business failure');
         }),
       ).rejects.toThrow('business failure');
@@ -264,6 +290,156 @@ describeWithDocker('Postgres messaging adapters (Testcontainers)', () => {
         state: ClaimState.Completed,
         result: { processedAt: 2 },
       });
+    });
+  });
+  describe('PostgresIdempotencyStore', () => {
+    describe('contract', () => {
+      idempotencyStoreContract(async () => {
+        await pool.query('TRUNCATE idempotency_keys');
+        const clock = new FixedClock(START);
+        return {
+          clock,
+          start: START,
+          store: new PostgresIdempotencyStore<{ orderId: string }>({
+            databases: database,
+            ids: new SequentialIdGenerator(START),
+            clock,
+          }),
+        };
+      });
+    });
+
+    it('gives exactly one acquirer among concurrent claims', async () => {
+      const clock = new SystemClock();
+      const ids = new SequentialIdGenerator();
+      const stores = Array.from(
+        { length: 8 },
+        () =>
+          new PostgresIdempotencyStore({
+            databases: new Database({
+              name: 'shard-1',
+              connection: new PgPoolConnection({ primary: pool }),
+            }),
+            ids,
+            clock,
+          }),
+      );
+      const results = await Promise.all(
+        stores.map((store) =>
+          store.claim('race', {
+            fingerprint: 'fp',
+            deadline: Deadline.after(5_000, clock),
+          }),
+        ),
+      );
+      expect(
+        results.filter((r) => r.state === ClaimState.Acquired),
+      ).toHaveLength(1);
+      expect(
+        results.filter((r) => r.state === ClaimState.InProgress),
+      ).toHaveLength(7);
+    });
+
+    it('rolls back complete with the business transaction', async () => {
+      const clock = new FixedClock(START);
+      const store = new PostgresIdempotencyStore<{ orderId: string }>({
+        databases: database,
+        ids: new SequentialIdGenerator(START),
+        clock,
+      });
+      const request = () => ({
+        fingerprint: 'fp',
+        deadline: Deadline.after(1_000, clock),
+      });
+      const claim = await store.claim('k', request());
+      if (claim.state !== ClaimState.Acquired) throw new Error('unreachable');
+      await expect(
+        database.runInTransaction(async () => {
+          await store.complete('k', claim.claimToken, { orderId: 'o-1' });
+          throw new Error('business failure');
+        }),
+      ).rejects.toThrow('business failure');
+      expect((await store.claim('k', request())).state).toBe(
+        ClaimState.InProgress,
+      );
+    });
+  });
+
+  describe('PostgresDirectoryStore', () => {
+    const placement = (
+      tenantId: string,
+      shard: string,
+      version: number,
+    ): TenantPlacement => ({
+      tenantId,
+      region: 'co',
+      shardGroup: [shard],
+      status: TenantStatus.Active,
+      version,
+      dedicated: false,
+    });
+    const directory = () => new PostgresDirectoryStore({ catalog });
+
+    it('keeps the highest version when placements race', async () => {
+      const store = directory();
+      const tenant = '0193f1c2-0000-7000-8000-0000000000f1';
+      const versions = [7, 3, 12, 1, 9, 12, 5, 2, 11, 4, 8, 6, 10];
+      const written = await Promise.all(
+        versions.map((version) =>
+          store.setPlacementIfNewer(
+            placement(tenant, `shard-v${version}`, version),
+          ),
+        ),
+      );
+      const stored = await store.getPlacement(tenant);
+      expect(stored?.version).toBe(12);
+      expect(stored?.shardGroup).toEqual(['shard-v12']);
+      expect(written.filter(Boolean).length).toBeGreaterThanOrEqual(1);
+      expect(
+        await store.setPlacementIfNewer(placement(tenant, 'shard-x', 12)),
+      ).toBe(false);
+    });
+
+    it('lets only one dedicated tenant take an empty shard when placements race', async () => {
+      const store = directory();
+      const tenants = Array.from(
+        { length: 8 },
+        (_, index) => `0193f1c2-0000-7000-8000-0000000001${index}0`,
+      );
+      const results = await Promise.all(
+        tenants.map((tenantId) =>
+          store.putPlacement(
+            { ...placement(tenantId, 'shard-empty', 1), dedicated: true },
+            undefined,
+          ),
+        ),
+      );
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.Written),
+      ).toHaveLength(1);
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.ShardTaken),
+      ).toHaveLength(7);
+    });
+
+    it('lets one of several concurrent updates win by version', async () => {
+      const store = directory();
+      const tenant = '0193f1c2-0000-7000-8000-0000000002f1';
+      expect(
+        await store.putPlacement(placement(tenant, 'shard-cas', 1), undefined),
+      ).toBe(DirectoryWriteResult.Written);
+      const results = await Promise.all(
+        ['shard-cas-a', 'shard-cas-b', 'shard-cas-c', 'shard-cas-d'].map(
+          (shard) => store.putPlacement(placement(tenant, shard, 2), 1),
+        ),
+      );
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.Written),
+      ).toHaveLength(1);
+      expect(
+        results.filter((r) => r === DirectoryWriteResult.VersionConflict),
+      ).toHaveLength(3);
+      expect((await store.getPlacement(tenant))?.version).toBe(2);
     });
   });
 });

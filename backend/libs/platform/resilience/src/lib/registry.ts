@@ -1,21 +1,17 @@
 import { SystemClock, type Clock } from '@platform/kernel';
 import {
+  abortableSleep,
+  abortReason,
+  armTimer,
   backoffDelay,
   BackoffStrategy,
   Deadline,
   DEFAULT_RETRY_AFTER_MAX_MS,
   isTransientError,
+  raceDeadline,
 } from '@platform/primitives';
-import {
-  ConsecutiveBreaker,
-  bulkhead as createBulkhead,
-  circuitBreaker as createCircuitBreaker,
-  handleWhen,
-  isBrokenCircuitError,
-  isBulkheadRejectedError,
-  type BulkheadPolicy,
-  type CircuitBreakerPolicy,
-} from 'cockatiel';
+import { Bulkhead } from './bulkhead.js';
+import { ConsecutiveCircuitBreaker } from './circuit-breaker.js';
 import {
   defaultPolicies,
   TimeoutStrategy,
@@ -44,7 +40,10 @@ export type ResilienceOverrides = Partial<
 
 /** Collaborators of {@link ResilienceRegistry}. All optional. */
 export interface ResilienceRegistryOptions {
-  /** Time source for deadlines, `Retry-After` dates and event timestamps. Default: `SystemClock`. */
+  /**
+   * Time source for deadlines, `Retry-After` dates, event timestamps and the
+   * breaker's half-open wait. Default: `SystemClock`.
+   */
   readonly clock?: Clock;
   /** Random source in `[0, 1)` for the backoff jitter. Default: `Math.random`. */
   readonly random?: () => number;
@@ -86,8 +85,8 @@ export type ResilientOperation<T> = (
 
 /** Breaker and bulkhead shared by all calls to one dependency. */
 interface DependencyEntry {
-  readonly bulkhead?: BulkheadPolicy;
-  readonly breaker?: CircuitBreakerPolicy;
+  readonly bulkhead?: Bulkhead;
+  readonly breaker?: ConsecutiveCircuitBreaker;
 }
 
 /** State of one `execute` call. */
@@ -121,44 +120,19 @@ function describeError(
   };
 }
 
-function abortReason(signal: AbortSignal): Error {
-  return signal.reason instanceof Error
-    ? signal.reason
-    : new Error('Resilience call aborted', { cause: signal.reason });
-}
-
-/** Rejects as soon as `signal` aborts, even if the work is still running. */
-function raceWithSignal<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) {
-    // The work may still settle; keep its rejection handled.
-    work.catch(() => undefined);
-    return Promise.reject(abortReason(signal));
+/**
+ * Runs `work` until it settles or `signal` aborts, whichever comes first. On
+ * abort it rejects with the signal's reason even if the work keeps running.
+ */
+async function untilAborted<T>(
+  work: () => Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  const result = await raceDeadline(work, { signal });
+  if (result.settled) {
+    return result.value;
   }
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = (): void => reject(abortReason(signal));
-    signal.addEventListener('abort', onAbort, { once: true });
-    work
-      .then(resolve, reject)
-      .finally(() => signal.removeEventListener('abort', onAbort));
-  });
-}
-
-/** Waits `ms`, or rejects with the abort reason as soon as `signal` aborts. */
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  if (signal.aborted) {
-    return Promise.reject(abortReason(signal));
-  }
-  return new Promise<void>((resolve, reject) => {
-    const onAbort = (): void => {
-      clearTimeout(timer);
-      reject(abortReason(signal));
-    };
-    const timer = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort);
-      resolve();
-    }, ms);
-    signal.addEventListener('abort', onAbort, { once: true });
-  });
+  throw abortReason(signal);
 }
 
 /**
@@ -177,8 +151,6 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
  * deadline; in that case the last error is rethrown.
  */
 export class ResilienceRegistry {
-  private static defaultRegistry: ResilienceRegistry | undefined;
-
   private readonly configs = new Map<
     ResiliencePolicyName,
     ResiliencePolicyConfig
@@ -207,16 +179,6 @@ export class ResilienceRegistry {
       validatePolicyConfig(config);
       this.configs.set(name, config);
     }
-  }
-
-  /** Registers the registry used by the `@Resilient` decorator. */
-  static setDefault(registry: ResilienceRegistry | undefined): void {
-    ResilienceRegistry.defaultRegistry = registry;
-  }
-
-  /** Returns the registry used by the `@Resilient` decorator, if any. */
-  static getDefault(): ResilienceRegistry | undefined {
-    return ResilienceRegistry.defaultRegistry;
   }
 
   /**
@@ -257,17 +219,17 @@ export class ResilienceRegistry {
       call.abort(abortReason(callerSignal as AbortSignal));
     };
     callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
-    let budgetTimer: ReturnType<typeof setTimeout> | undefined;
-    if (budgetMs !== undefined) {
-      budgetTimer = setTimeout(() => {
-        this.emit(name, dependencyKey, ResilienceEventKind.Timeout, {
-          timeoutMs: budgetMs,
-        });
-        call.abort(
-          new ResilienceTimeoutError(name, TimeoutScope.Total, budgetMs),
-        );
-      }, budgetMs);
-    }
+    const cancelBudget =
+      budgetMs === undefined
+        ? undefined
+        : armTimer(budgetMs, () => {
+            this.emit(name, dependencyKey, ResilienceEventKind.Timeout, {
+              timeoutMs: budgetMs,
+            });
+            call.abort(
+              new ResilienceTimeoutError(name, TimeoutScope.Total, budgetMs),
+            );
+          });
 
     const context: CallContext<T> = {
       name,
@@ -281,9 +243,9 @@ export class ResilienceRegistry {
       deadline,
     };
     try {
-      return await raceWithSignal(this.runBulkhead(context), call.signal);
+      return await untilAborted(() => this.runBulkhead(context), call.signal);
     } finally {
-      clearTimeout(budgetTimer);
+      cancelBudget?.();
       callerSignal?.removeEventListener('abort', onCallerAbort);
     }
   }
@@ -319,22 +281,13 @@ export class ResilienceRegistry {
     if (!bulkhead) {
       return this.runAttempts(context);
     }
-    try {
-      return await bulkhead.execute(() => {
-        // A queued call may get its slot after the caller gave up.
-        if (context.signal.aborted) {
-          throw abortReason(context.signal);
-        }
-        return this.runAttempts(context);
-      }, context.signal);
-    } catch (error) {
-      if (isBulkheadRejectedError(error)) {
-        throw new BulkheadFullError(context.name, context.dependencyKey, {
-          cause: error,
-        });
+    return bulkhead.execute(() => {
+      // A queued call may get its slot after the caller gave up.
+      if (context.signal.aborted) {
+        throw abortReason(context.signal);
       }
-      throw error;
-    }
+      return this.runAttempts(context);
+    }, context.signal);
   }
 
   private async runAttempts<T>(context: CallContext<T>): Promise<T> {
@@ -371,7 +324,7 @@ export class ResilienceRegistry {
           ResilienceEventKind.Retry,
           { attempt, delayMs, ...describeError(error) },
         );
-        await sleep(delayMs, context.signal);
+        await abortableSleep(delayMs, { signal: context.signal });
       }
     }
   }
@@ -418,19 +371,7 @@ export class ResilienceRegistry {
     if (!breaker) {
       return this.runTimedAttempt(context, attempt);
     }
-    try {
-      return await breaker.execute(() =>
-        this.runTimedAttempt(context, attempt),
-      );
-    } catch (error) {
-      if (isBrokenCircuitError(error)) {
-        throw new CircuitOpenError(context.name, context.dependencyKey, {
-          cause: error,
-          retryAfterMs: context.config.circuitBreaker?.halfOpenAfterMs,
-        });
-      }
-      throw error;
-    }
+    return breaker.execute(() => this.runTimedAttempt(context, attempt));
   }
 
   /**
@@ -452,9 +393,9 @@ export class ResilienceRegistry {
     } else {
       context.signal.addEventListener('abort', forward, { once: true });
     }
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancelTimer: (() => void) | undefined;
     if (deadline === undefined || config.timeoutMs < deadline.remaining()) {
-      timer = setTimeout(() => {
+      cancelTimer = armTimer(config.timeoutMs, () => {
         this.emit(
           context.name,
           context.dependencyKey,
@@ -468,21 +409,22 @@ export class ResilienceRegistry {
             config.timeoutMs,
           ),
         );
-      }, config.timeoutMs);
+      });
     }
 
-    try {
-      const work = Promise.resolve().then(() =>
+    const run = (): Promise<T> =>
+      Promise.resolve().then(() =>
         context.fn(controller.signal, {
           number: attempt,
           deadline: attemptDeadline,
         }),
       );
+    try {
       if (config.timeoutStrategy !== TimeoutStrategy.Cooperative) {
-        return await raceWithSignal(work, controller.signal);
+        return await untilAborted(run, controller.signal);
       }
       try {
-        return await work;
+        return await run();
       } catch (error) {
         // Cooperative: the operation honored the abort; report why it was aborted.
         throw controller.signal.aborted
@@ -490,7 +432,7 @@ export class ResilienceRegistry {
           : error;
       }
     } finally {
-      clearTimeout(timer);
+      cancelTimer?.();
       context.signal.removeEventListener('abort', forward);
       if (config.abortOnReturn ?? true) {
         controller.abort();
@@ -527,39 +469,41 @@ export class ResilienceRegistry {
     ): void => this.emit(name, dependencyKey, kind, detail);
     const isTransient = config.isTransient ?? isTransientError;
 
-    let bulkhead: BulkheadPolicy | undefined;
-    if (config.bulkhead) {
-      bulkhead = createBulkhead(config.bulkhead.limit, config.bulkhead.queue);
-      bulkhead.onReject(() => notify(ResilienceEventKind.BulkheadRejected));
-    }
+    const bulkheadConfig = config.bulkhead;
+    const bulkhead =
+      bulkheadConfig === undefined
+        ? undefined
+        : new Bulkhead({
+            limit: bulkheadConfig.limit,
+            queue: bulkheadConfig.queue,
+            rejectWith: () => new BulkheadFullError(name, dependencyKey),
+            onReject: () => notify(ResilienceEventKind.BulkheadRejected),
+          });
 
-    let breaker: CircuitBreakerPolicy | undefined;
-    if (config.circuitBreaker) {
-      // Attempt timeouts count as failures. Non-transient errors, caller
-      // aborts and an exhausted caller deadline never open the circuit.
-      breaker = createCircuitBreaker(
-        handleWhen(
-          (error) =>
-            (error instanceof ResilienceTimeoutError &&
-              error.scope === TimeoutScope.Attempt) ||
-            (!(error instanceof ResilienceTimeoutError) && isTransient(error)),
-        ),
-        {
-          breaker: new ConsecutiveBreaker(
-            config.circuitBreaker.consecutiveFailures,
-          ),
-          halfOpenAfter: config.circuitBreaker.halfOpenAfterMs,
-        },
-      );
-      breaker.onBreak((reason) =>
-        notify(
-          ResilienceEventKind.Break,
-          'error' in reason ? describeError(reason.error) : {},
-        ),
-      );
-      breaker.onHalfOpen(() => notify(ResilienceEventKind.HalfOpen));
-      breaker.onReset(() => notify(ResilienceEventKind.Reset));
-    }
+    const breakerConfig = config.circuitBreaker;
+    const breaker =
+      breakerConfig === undefined
+        ? undefined
+        : new ConsecutiveCircuitBreaker({
+            consecutiveFailures: breakerConfig.consecutiveFailures,
+            halfOpenAfterMs: breakerConfig.halfOpenAfterMs,
+            clock: this.clock,
+            // Attempt timeouts count as failures. Non-transient errors, caller
+            // aborts and an exhausted caller deadline never open the circuit.
+            counts: (error) =>
+              (error instanceof ResilienceTimeoutError &&
+                error.scope === TimeoutScope.Attempt) ||
+              (!(error instanceof ResilienceTimeoutError) &&
+                isTransient(error)),
+            rejectWith: () =>
+              new CircuitOpenError(name, dependencyKey, {
+                retryAfterMs: breakerConfig.halfOpenAfterMs,
+              }),
+            onBreak: (error) =>
+              notify(ResilienceEventKind.Break, describeError(error)),
+            onHalfOpen: () => notify(ResilienceEventKind.HalfOpen),
+            onReset: () => notify(ResilienceEventKind.Reset),
+          });
 
     return { bulkhead, breaker };
   }

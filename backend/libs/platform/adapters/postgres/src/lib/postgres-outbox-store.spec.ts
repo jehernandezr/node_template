@@ -17,16 +17,13 @@ async function setup(): Promise<
     database,
     store,
     add: (envelope, options) =>
-      database.runInTransaction((uow) =>
-        store.append(
-          {
-            envelope,
-            groupId: options.groupId,
-            delayMs: options.delayMs,
-            createdAt: options.now,
-          },
-          uow,
-        ),
+      database.runInTransaction(() =>
+        store.append({
+          envelope,
+          groupId: options.groupId,
+          delayMs: options.delayMs,
+          createdAt: options.now,
+        }),
       ),
     get: (id) => store.get(id),
   };
@@ -44,11 +41,12 @@ describe('PostgresOutboxStore on pg-mem', () => {
   it('ignores a second append with the same envelope id', async () => {
     const env = await setup();
     const append = () =>
-      env.database.runInTransaction((uow) =>
-        env.store.append(
-          { envelope: envelope('a'), createdAt: START, groupId: 'g' },
-          uow,
-        ),
+      env.database.runInTransaction(() =>
+        env.store.append({
+          envelope: envelope('a'),
+          createdAt: START,
+          groupId: 'g',
+        }),
       );
     await append();
     await append();
@@ -68,8 +66,8 @@ describe('PostgresOutboxStore on pg-mem', () => {
     const { database, clock } = await memoryShard();
     const store = new PostgresOutboxStore({ databases: database, clock });
     for (const id of ['pub', 'dead', 'open']) {
-      await database.runInTransaction((uow) =>
-        store.append({ envelope: envelope(id), createdAt: START }, uow),
+      await database.runInTransaction(() =>
+        store.append({ envelope: envelope(id), createdAt: START }),
       );
     }
     const lease = { owner: 'r', token: 't' };

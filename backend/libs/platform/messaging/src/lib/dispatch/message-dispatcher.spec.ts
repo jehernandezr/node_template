@@ -1,7 +1,10 @@
-import { defineCommand, defineEvent } from '@contracts/platform';
+import {
+  defineCommand,
+  defineEvent,
+  PlatformErrorCode,
+} from '@contracts/platform';
 import { z, ZodError } from 'zod';
 import { createEnvelope } from '../envelope/message-envelope.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { QueueDef } from '../topology/queue-def.js';
 import { RetryPolicy } from '../topology/retry-policy.js';
 import { Route } from '../topology/route.js';
@@ -164,7 +167,7 @@ describe('MessageDispatcher', () => {
       outcome: DispatchOutcome.DeadLetter,
       id: 'msg-1',
       error: 'task no longer exists',
-      code: MessagingErrorCode.PermanentError,
+      code: PlatformErrorCode.MessagingPermanentError,
     });
   });
 
@@ -277,17 +280,18 @@ describe('MessageDispatcher', () => {
     const queue = new QueueDef('notifications')
       .subscribesTo(topic)
       .deadLetter({ maxReceiveCount: 5 });
-    class Known extends Topology {
-      readonly topics = [topic];
-      readonly queues = [queue];
-      readonly routes = [
+    function known(): Topology {
+      const topics = [topic];
+      const queues = [queue];
+      const routes = [
         Route.event('some.event.v1').to(topic),
         Route.command('some.command.v1').to(
           new QueueDef('work').deadLetter({ maxReceiveCount: 5 }),
         ),
       ];
+      return new Topology({ topics, queues, routes });
     }
-    const { dispatcher } = setup({ topology: new Known() });
+    const { dispatcher } = setup({ topology: known() });
 
     expect(
       await dispatcher.dispatch(envelopeFor('some.event.v1', {}), {
@@ -399,7 +403,9 @@ describe('MessageDispatcher', () => {
     const { dispatcher } = setup();
     dispatcher.register(TaskUpdated, () => undefined);
     expect(() => dispatcher.register(TaskUpdated, () => undefined)).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.DuplicateHandler }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingDuplicateHandler,
+      }),
     );
   });
 });

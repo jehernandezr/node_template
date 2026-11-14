@@ -4,13 +4,13 @@ Nov 11, 2026 · Documento vivo: https://claude.ai/artifact/Bn67Z4R16bLoevfodCcHi
 
 ## Resumen
 
-La plataforma es un monorepo reutilizable para construir backends de microservicios en NestJS con TypeORM, arquitectura hexagonal y despliegue en AWS. Reemplaza al repositorio `node_template` y sirve como punto de partida para cualquier producto nuevo: se clona, se renombra y se agregan servicios con un generador.
+La plataforma es un monorepo reutilizable para construir backends de microservicios en NestJS sobre PostgreSQL, arquitectura hexagonal y despliegue en AWS. Reemplaza al repositorio `node_template` y sirve como punto de partida para cualquier producto nuevo: se clona, se renombra y se agregan servicios con un generador.
 
 Trae resuelto lo que todo backend necesita y casi nunca se hace bien desde el inicio: identidad con MFA, multitenancy, auditoría, mensajería con reintentos, sagas recuperables, archivos, notificaciones, facturación por uso y trazabilidad de punta a punta.
 
 **Principios que guían cada decisión**
 
-- **Hexagonal estricto.** El dominio y los casos de uso desconocen NestJS, TypeORM y AWS. Todo lo externo entra por puertos.
+- **Hexagonal estricto.** El dominio y los casos de uso desconocen NestJS, el driver de PostgreSQL y AWS. Todo lo externo entra por puertos.
 - **Agnóstico a la plataforma.** Migrar de AWS a otro proveedor significa reescribir adaptadores, nunca lógica de negocio.
 - **Tipado antes que strings.** Operaciones, eventos, colas, permisos, errores y jobs se nombran con enums. Un cambio de nombre lo detecta el compilador.
 - **Contratos explícitos.** Cada servicio publica lo que expone (operaciones, eventos, errores) con validación en tiempo de ejecución en ambos lados.
@@ -223,7 +223,7 @@ Cambiar de runtime es cambiar el adaptador de entrada. Controllers, handlers y c
 **Identificadores UUIDv7**
 
 - Todo identificador es un UUIDv7: usuarios, tenants, sesiones, dispositivos, eventos, sagas, jobs, archivos, facturas y el propio `traceId`.
-- La app genera el ID (librería `uuid`, puerto `IdGenerator`), así la entidad tiene identidad antes de persistirse. En TypeORM se usa `@PrimaryColumn('uuid')`.
+- La app genera el ID con `UuidV7IdGenerator` (sobre `node:crypto`, puerto `IdGenerator`), así la entidad tiene identidad antes de persistirse. La columna es `uuid` y es la llave primaria.
 - Los UUIDv7 se ordenan por tiempo: los índices de Postgres crecen en orden y sirven como cursor de paginación (`?after=<id>`).
 - Los secretos usan 256 bits aleatorios de `crypto.randomBytes`: refresh tokens, `mfaToken`, OTP, tokens de reset y API keys.
 - Un UUIDv7 revela su fecha de creación al milisegundo. Se tiene en cuenta en IDs públicos donde esa fecha sea sensible.
@@ -386,11 +386,11 @@ La conexión a base de datos se define en el módulo y queda fuera del endpoint:
 
 ## Persistencia
 
-`backend/libs/platform/persistence` es nuestra capa sobre TypeORM. El dominio ve solo puertos de repositorio; TypeORM queda como motor interno y se puede reemplazar sin tocar el negocio.
+`backend/libs/platform/persistence` es nuestra capa propia sobre el driver `pg`, sin ORM (ADR 0009). El dominio ve solo puertos de repositorio.
 
 ```ts
-export class TypeOrmTaskRepository
-  extends BaseRepository<Task, TaskOrmEntity>
+export class PostgresTaskRepository
+  extends BaseRepository<Task, TaskRecord>
   implements TaskRepository {
   // solo los métodos propios del agregado
 }
@@ -401,19 +401,19 @@ export class TypeOrmTaskRepository
 - Lectura: `findById`, `findOne(criteria)`, `findMany(criteria, cursor)`, `exists`, `count`, `stream`.
 - Escritura: `save`, `saveMany`, `upsert`, `softDelete`, `restore`.
 - Bloqueo optimista con columna `version` y bloqueo pesimista.
-- `Criteria` propio: `Criteria.where(TaskField.Status).eq(TaskStatus.Open)`, traducido a QueryBuilder.
+- `Criteria` propio: `Criteria.where(TaskField.Status).eq(TaskStatus.Open)`, traducido a SQL parametrizado.
 - Transacciones con el puerto `TransactionManager` (Unit of Work en CLS); el outbox se escribe en la misma transacción.
 - Columnas de auditoría (`createdAt`, `updatedAt`, `createdBy`, `updatedBy`) y soft delete automáticos.
 - Cada SQL lleva un comentario `/* traceId=… tenantId=… */` para ubicarlo en Performance Insights.
-- Lecturas a réplica y escrituras al primario; dentro de una transacción o justo después de escribir, se lee del primario.
+- Lecturas a réplica y escrituras al primario; dentro de una transacción se lee del primario, y fuera de ella `readPrimary` lee lo recién confirmado.
 
-**Entidades y migraciones.** Las entidades ORM viven en `infrastructure/persistence/entities` de cada módulo y se registran explícitamente en `database/entities.ts` de cada servicio (esbuild exige imports explícitos). Cada servicio tiene su carpeta `migrations/` y scripts `migration:generate`, `migration:run` y `migration:revert`. `synchronize` siempre está apagado.
+**Tablas y migraciones.** Cada módulo declara su `TableDefinition` y su registro en `infrastructure/persistence`. Las migraciones son `SqlMigration` en SQL plano dentro de la carpeta `migrations/` de cada servicio, y `applyMigrations` las aplica bajo `pg_advisory_lock`.
 
 **Particionamiento**
 
-- Se declara en la entidad: `@Partitioned({ by: PartitionBy.Range, column: 'id', interval: Interval.Month, retention: '12 months' })`. También admite `List` y `Hash`.
+- Se declara en la migración: `createPartitionedTableSql('tasks', columnas, { by: PartitionBy.Range, column: 'id', interval: PartitionInterval.Month })`. También admite `List` y `Hash`.
 - Como el UUIDv7 contiene la fecha, se particiona por rango del propio `id` y la llave primaria sigue siendo solo `id`.
-- Helpers de migración (`createPartitionedTable`, `createRangePartitions`) y un job programado que crea particiones futuras y archiva las vencidas.
+- `createRangePartitionsSql` la usa la migración una vez y un job programado la repite para crear las particiones futuras y archivar las vencidas.
 - En desarrollo, la capa avisa cuando una query sobre tabla particionada omite la llave de partición.
 
 **Sharding**: el enrutamiento de cada query al shard correcto se detalla en [Sharding y enrutamiento de datos](#sharding-y-enrutamiento-de-datos).
@@ -451,24 +451,29 @@ La cadena de enrutamiento es **tenant → región → grupo de shards → shard 
 **Declaración en código**
 
 ```ts
-@ShardedEntity()
-@Partitioned({ by: PartitionBy.Range, column: TaskColumn.Id, interval: Interval.Month })
-export class TaskOrmEntity {
-  @PrimaryColumn('uuid') id: string;
-  @ShardKeyColumn() tenantId: string;                    // tasks reparte por tenant
-}
+// tasks reparte por tenant: la tabla declara su columna de tenant.
+export const taskTable: TableDefinition<TaskRecord> = {
+  name: TaskTable.Name,
+  columns: {
+    id: 'id',
+    tenantId: 'tenant_id',
+    title: 'title',
+    version: 'version',
+  },
+  id: 'id',
+  tenant: 'tenantId',
+  version: 'version',
+};
 
-@ShardedEntity()
-export class UserOrmEntity {
-  @PrimaryColumn('uuid') @ShardKeyColumn() id: string;   // identity reparte por usuario
-}
-
-@GlobalEntity()                                          // vive en el catálogo
-export class PlanOrmEntity { ... }
-
-PersistenceModule.forFeature({
-  connection: Connections.Identity,
-  sharding: { strategy: ShardStrategy.Directory, key: ShardKey.User },
+// identity reparte por usuario: el servicio elige la llave y la estrategia al crear la persistencia.
+const persistence = createPersistence({
+  catalog,
+  sharding: {
+    key: ShardKey.User,
+    strategy: ShardStrategy.Directory,
+    directory: (catalog) => new PostgresDirectoryStore({ catalog }),
+    connect,
+  },
 });
 ```
 
@@ -563,7 +568,7 @@ PostgreSQL resuelve la búsqueda semántica con la extensión pgvector, en el mi
   text: [TaskField.Title, TaskField.Description],
   embedding: { fields: [TaskField.Title, TaskField.Description], model: EmbeddingModel.Default },
 })
-export class TaskOrmEntity { ... }
+export class TaskRecord { ... }
 
 const results = await this.taskSearch.search({
   query: 'facturas vencidas de proveedores',
@@ -1406,7 +1411,7 @@ La infraestructura de cada pieza se agrega en su propia fase; F12 completa el Te
 
 | Tema                         | Decisión                                                                                                                                                                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack                        | NestJS, TypeORM, PostgreSQL, Node 24 LTS, TypeScript estricto                                                                                                                                                             |
+| Stack                        | NestJS, PostgreSQL con `pg`, Node 24 LTS, TypeScript estricto                                                                                                                                                             |
 | Repositorio                  | Reescritura completa de `node_template` como monorepo Nx con raíz mínima, `backend/` (pnpm) y `front/` (pub workspace)                                                                                                    |
 | Identificadores              | UUIDv7 en todo, incluido el `traceId`                                                                                                                                                                                     |
 | Observabilidad               | OpenTelemetry con OpenObserve como única herramienta de logs, métricas y trazas                                                                                                                                           |

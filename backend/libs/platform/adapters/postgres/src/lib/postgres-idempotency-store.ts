@@ -1,6 +1,15 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { SystemClock, type Clock, type IdGenerator } from '@platform/kernel';
 import {
+  DataAccess,
+  invalidConfiguration,
+  PersistenceError,
+  toResolver,
+  type Database,
+  type DatabaseResolver,
+  type SqlSession,
+} from '@platform/persistence';
+import {
   assertClaimInput,
   ClaimState,
   computeLeaseUntil,
@@ -10,12 +19,6 @@ import {
   type ClaimResult,
   type IdempotencyStore,
 } from '@platform/primitives';
-import type { Database } from '../database.js';
-import { DataAccess } from '../enums.js';
-import { invalidConfiguration, PersistenceError } from '../errors.js';
-import type { DatabaseResolver } from '../sharding/database-resolver.js';
-import { SingleDatabaseResolver } from '../sharding/database-resolver.js';
-import type { SqlSession } from '../sql/sql-session.js';
 
 /** Opciones de {@link PostgresIdempotencyStore}. */
 export interface PostgresIdempotencyStoreOptions<R> {
@@ -31,21 +34,25 @@ export interface PostgresIdempotencyStoreOptions<R> {
   readonly deserialize?: (stored: unknown) => R;
 }
 
-/** Intentos de claim cuando otro proceso cambia la fila entre sentencias. */
-const MAX_CLAIM_ROUNDS = 5;
-
 const TABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/** Fila que devuelve el `INSERT … ON CONFLICT` de `claim`. */
+interface ClaimedRow {
+  readonly claim_token: string | null;
+  readonly fingerprint: string;
+  readonly attempt: number;
+}
 
 interface StoredRow {
   readonly state: string;
   readonly fingerprint: string;
-  readonly lease_until: unknown;
+  readonly lease_until: Date | string | null;
   readonly result: unknown;
 }
 
-function toMs(value: unknown): number {
-  const ms = Number(value);
-  if (!Number.isSafeInteger(ms)) {
+function toMs(value: Date | string | null): number {
+  const ms = value === null ? Number.NaN : new Date(value).getTime();
+  if (Number.isNaN(ms)) {
     throw new PersistenceError(
       PlatformErrorCode.PersistenceCorruptRow,
       'Idempotency row has an invalid lease',
@@ -58,14 +65,14 @@ function toMs(value: unknown): number {
  * Adaptador Postgres del puerto `IdempotencyStore` de `@platform/primitives`,
  * con los mismos tres estados y el mismo fencing que el adaptador en memoria.
  *
- * - `claim` es atómico por llave sin bloquear filas: primero intenta tomar un
- *   lease vencido con un `UPDATE` condicional, luego insertar con
- *   `ON CONFLICT DO NOTHING`, y si ambos fallan lee el estado. Si la fila cambió
- *   entre sentencias (otro proceso la liberó o la venció), repite.
+ * - `claim` toma la llave en una sola sentencia: inserta la fila o, si existe
+ *   en curso con el lease vencido, la retoma con un token nuevo (el anterior
+ *   deja de valer). Solo si no tomó nada lee el estado guardado.
  * - `complete` y `release` solo aceptan el token vigente. Corren en la unidad
  *   de trabajo abierta si la hay, así el resultado se guarda en la misma
  *   transacción que los efectos.
- * - El token es un UUIDv7 del `IdGenerator`; los instantes, milisegundos del `Clock`.
+ * - El token es un UUIDv7 del `IdGenerator`; los instantes, `timestamptz` del
+ *   `Clock`. El puerto los expone en milisegundos epoch.
  */
 export class PostgresIdempotencyStore<
   R = unknown,
@@ -78,10 +85,7 @@ export class PostgresIdempotencyStore<
   private readonly deserialize: (stored: unknown) => R;
 
   constructor(options: PostgresIdempotencyStoreOptions<R>) {
-    this.databases =
-      'resolve' in options.databases
-        ? options.databases
-        : new SingleDatabaseResolver(options.databases);
+    this.databases = toResolver(options.databases);
     this.ids = options.ids;
     this.clock = options.clock ?? new SystemClock();
     this.table = options.table ?? 'idempotency_keys';
@@ -111,7 +115,7 @@ export class PostgresIdempotencyStore<
           claimToken,
           ClaimState.Completed,
           stored,
-          this.now(),
+          this.clock.now(),
           ClaimState.InProgress,
         ],
       ),
@@ -134,16 +138,13 @@ export class PostgresIdempotencyStore<
     }
   }
 
-  /**
-   * Borra resultados completados antes de `beforeMs` (milisegundos epoch).
-   * Para el job de retención. Devuelve cuántos borró.
-   */
-  async purgeCompleted(beforeMs: number): Promise<number> {
+  /** Borra resultados completados antes de `before`. Para el job de retención. Devuelve cuántos borró. */
+  async purgeCompleted(before: Date): Promise<number> {
     const database = await this.databases.resolve(DataAccess.Write);
     const deleted = await database.write((session) =>
       session.query(
         `DELETE FROM ${this.table} WHERE state = $1 AND updated_at < $2`,
-        [ClaimState.Completed, beforeMs],
+        [ClaimState.Completed, before],
       ),
     );
     return deleted.rowCount;
@@ -154,63 +155,53 @@ export class PostgresIdempotencyStore<
     key: string,
     request: ClaimRequest,
   ): Promise<ClaimResult<R>> {
-    for (let round = 0; round < MAX_CLAIM_ROUNDS; round += 1) {
-      const now = this.now();
-      const live = await this.readLive(session, key, now);
+    const now = this.clock.now();
+    if (request.deadline.atMs <= now.getTime()) {
+      // Sin tiempo para correr la operación solo sirve un resultado ya guardado.
+      const live = await this.readLive(session, key, now.getTime());
       if (live !== undefined) {
         return live;
       }
-      if (request.deadline.atMs <= now) {
-        throw new DeadlineExceededError(request.deadline.atMs);
-      }
-      const claimToken = this.ids.next().toString();
-      const leaseUntil = computeLeaseUntil(request, now);
-
-      // Lease vencido: se emite un token nuevo y el anterior deja de valer.
-      const takeover = await session.query<{ fingerprint: string }>(
-        `UPDATE ${this.table} SET claim_token = $2, lease_until = $3, attempt = attempt + 1, updated_at = $4 ` +
-          'WHERE key = $1 AND state = $5 AND lease_until <= $4 RETURNING fingerprint, claim_token',
-        [key, claimToken, leaseUntil, now, ClaimState.InProgress],
-      );
-      const taken = takeover.rows[0] as
-        { fingerprint: string; claim_token: string } | undefined;
-      if (taken !== undefined && taken.claim_token === claimToken) {
-        return {
-          state: ClaimState.Acquired,
-          claimToken,
-          leaseUntil,
-          fingerprint: taken.fingerprint,
-          takeover: true,
-        };
-      }
-
-      // Llave libre: la inserta quien llegue primero.
-      const inserted = await session.query<{ claim_token: string }>(
-        `INSERT INTO ${this.table} (key, state, fingerprint, claim_token, lease_until, attempt, created_at, updated_at) ` +
-          'VALUES ($1, $2, $3, $4, $5, 1, $6, $6) ON CONFLICT (key) DO NOTHING RETURNING claim_token',
-        [
-          key,
-          ClaimState.InProgress,
-          request.fingerprint,
-          claimToken,
-          leaseUntil,
-          now,
-        ],
-      );
-      if (inserted.rows[0]?.claim_token === claimToken) {
-        return {
-          state: ClaimState.Acquired,
-          claimToken,
-          leaseUntil,
-          fingerprint: request.fingerprint,
-          takeover: false,
-        };
-      }
+      throw new DeadlineExceededError(request.deadline.atMs);
     }
+    const claimToken = this.ids.next().toString();
+    const leaseUntil = computeLeaseUntil(request, now.getTime());
+    const claimed = await session.query<ClaimedRow>(
+      `INSERT INTO ${this.table} (key, state, fingerprint, claim_token, lease_until, attempt, created_at, updated_at) ` +
+        'VALUES ($1, $2, $3, $4, $5, 1, $6, $6) ' +
+        `ON CONFLICT (key) DO UPDATE SET claim_token = EXCLUDED.claim_token, lease_until = EXCLUDED.lease_until, ` +
+        `attempt = ${this.table}.attempt + 1, updated_at = EXCLUDED.updated_at ` +
+        `WHERE ${this.table}.state = $2 AND ${this.table}.lease_until <= EXCLUDED.updated_at ` +
+        'RETURNING claim_token, fingerprint, attempt',
+      [
+        key,
+        ClaimState.InProgress,
+        request.fingerprint,
+        claimToken,
+        new Date(leaseUntil),
+        now,
+      ],
+    );
+    // Postgres no devuelve fila si el WHERE del conflicto no se cumple; otros
+    // motores devuelven la guardada. El token propio dice si se tomó la llave.
+    const row = claimed.rows[0];
+    if (row !== undefined && row.claim_token === claimToken) {
+      return {
+        state: ClaimState.Acquired,
+        claimToken,
+        leaseUntil,
+        fingerprint: row.fingerprint,
+        takeover: Number(row.attempt) > 1,
+      };
+    }
+    const live = await this.readLive(session, key, now.getTime());
+    if (live !== undefined) {
+      return live;
+    }
+    // La fila se liberó o venció entre las dos sentencias: quien llama reintenta.
     throw new PersistenceError(
       PlatformErrorCode.PersistenceContention,
-      'Idempotency key kept changing while claiming it',
-      { details: { rounds: MAX_CLAIM_ROUNDS } },
+      'Idempotency key changed while claiming it',
     );
   }
 
@@ -218,7 +209,7 @@ export class PostgresIdempotencyStore<
   private async readLive(
     session: SqlSession,
     key: string,
-    now: number,
+    nowMs: number,
   ): Promise<ClaimResult<R> | undefined> {
     const found = await session.query<StoredRow>(
       `SELECT state, fingerprint, lease_until, result FROM ${this.table} WHERE key = $1`,
@@ -242,16 +233,12 @@ export class PostgresIdempotencyStore<
       );
     }
     const leaseUntil = toMs(row.lease_until);
-    return leaseUntil > now
+    return leaseUntil > nowMs
       ? {
           state: ClaimState.InProgress,
           leaseUntil,
           fingerprint: row.fingerprint,
         }
       : undefined;
-  }
-
-  private now(): number {
-    return this.clock.now().getTime();
   }
 }

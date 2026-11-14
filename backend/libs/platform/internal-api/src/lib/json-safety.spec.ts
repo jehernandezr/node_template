@@ -1,17 +1,10 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import { z } from 'zod';
-import { OperationContract } from './contract.js';
+import type { OperationSchemas } from './contract.js';
 import { assertJsonSafeContract } from './json-safety.js';
-import { InternalApiErrorCode } from './errors.js';
 
-function contractWith(
-  input: z.ZodType,
-  output: z.ZodType,
-): OperationContract<unknown, unknown> {
-  class Probe extends OperationContract<unknown, unknown> {
-    readonly input = input;
-    readonly output = output;
-  }
-  return new Probe();
+function contractWith(input: z.ZodType, output: z.ZodType): OperationSchemas {
+  return { input, output };
 }
 
 describe('assertJsonSafeContract', () => {
@@ -37,7 +30,9 @@ describe('assertJsonSafeContract', () => {
       z.object({}),
     );
     expect(() => assertJsonSafeContract(contract, 'billing.x.v1')).toThrow(
-      expect.objectContaining({ code: InternalApiErrorCode.NonJsonSafeSchema }),
+      expect.objectContaining({
+        code: PlatformErrorCode.InternalApiNonJsonSafeSchema,
+      }),
     );
   });
 

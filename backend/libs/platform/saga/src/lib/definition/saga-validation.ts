@@ -107,37 +107,32 @@ function validateStep(
     );
   }
   const metadata =
-    registered?.metadata ??
-    (step.definition === undefined
-      ? undefined
-      : resolveOperation(step.definition).metadata);
+    registered?.metadata ?? resolveOperation(step.definition).metadata;
 
-  if (metadata !== undefined) {
-    if (step.afterPivot && !metadata.idempotent) {
+  if (step.afterPivot && !metadata.idempotent) {
+    at(
+      SagaDefinitionIssueCode.NotIdempotentAfterPivot,
+      step.operationId,
+      'runs after the pivot and is not idempotent',
+    );
+  }
+  if (!step.afterPivot) {
+    const expected = compensationOf(metadata);
+    if (metadata.mutating && expected === null) {
       at(
-        SagaDefinitionIssueCode.NotIdempotentAfterPivot,
+        SagaDefinitionIssueCode.MissingCompensation,
         step.operationId,
-        'runs after the pivot and is not idempotent',
+        'runs before the pivot and its contract declares no compensation',
+      );
+    } else if (expected !== step.compensationOperationId) {
+      at(
+        SagaDefinitionIssueCode.CompensationMismatch,
+        step.operationId,
+        `is compensated by "${step.compensationOperationId}", but its contract says "${expected}"`,
       );
     }
-    if (!step.afterPivot) {
-      const expected = compensationOf(metadata);
-      if (metadata.mutating && expected === null) {
-        at(
-          SagaDefinitionIssueCode.MissingCompensation,
-          step.operationId,
-          'runs before the pivot and its contract declares no compensation',
-        );
-      } else if (expected !== step.compensationOperationId) {
-        at(
-          SagaDefinitionIssueCode.CompensationMismatch,
-          step.operationId,
-          `is compensated by "${step.compensationOperationId}", but its contract says "${expected}"`,
-        );
-      }
-    }
-    checkBudget(step.operationId, metadata);
   }
+  checkBudget(step.operationId, metadata);
 
   const compensationId = step.compensationOperationId;
   if (compensationId !== null && contracts !== undefined) {

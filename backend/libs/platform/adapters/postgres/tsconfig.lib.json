@@ -23,6 +23,9 @@
       "path": "../../messaging/tsconfig.lib.json"
     },
     {
+      "path": "../../sharding/tsconfig.lib.json"
+    },
+    {
       "path": "../../../contracts/platform/tsconfig.lib.json"
     }
   ],

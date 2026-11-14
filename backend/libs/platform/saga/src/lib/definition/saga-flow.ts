@@ -1,28 +1,11 @@
-import { Compensation, type OperationDefinition } from '@contracts/platform';
+import {
+  type OperationDefinition,
+  PlatformErrorCode,
+} from '@contracts/platform';
 import { compensationOf, resolveOperation } from '@platform/internal-api';
 import type { z } from 'zod';
-import { SagaError, SagaErrorCode } from '../errors.js';
+import { SagaError } from '../errors.js';
 import { StepStatus } from '../model.js';
-
-/**
- * Reference to an operation written by hand, typed by its input and output.
- * @deprecated Pass the `OperationDefinition` of the contract (`defineOperation`
- * of `@contracts/platform`) to `step()`: the compensation and the types come
- * from it, so they cannot drift from the contract.
- */
-export interface OperationRef<TIn = unknown, TOut = unknown> {
-  readonly id: string;
-  /** Id of the operation that undoes this one, or null (or `Compensation.None`) when it has none. */
-  readonly compensatedBy: string | null;
-  /** Phantom type marker; never set at runtime. */
-  readonly __input?: TIn;
-  /** Phantom type marker; never set at runtime. */
-  readonly __output?: TOut;
-}
-
-/** What a step accepts as its operation. */
-export type StepOperation =
-  OperationDefinition | OperationRef<unknown, unknown>;
 
 /** Input a step builds for an operation definition: what the client accepts. */
 export type StepInputOf<D extends OperationDefinition> = z.input<D['input']>;
@@ -48,11 +31,8 @@ export interface CompiledStep<TState> {
    */
   readonly compensationOperationId: string | null;
   readonly afterPivot: boolean;
-  /**
-   * Contract of the operation, when the step was declared with one. Used by
-   * the engine to check idempotency and time budgets at startup.
-   */
-  readonly definition?: OperationDefinition;
+  /** Contract of the operation. The engine checks idempotency and time budgets against it at startup. */
+  readonly definition: OperationDefinition;
   input(state: TState): unknown;
   onSuccess(state: TState, output: unknown): void;
   compensationInput(state: TState, forward: ForwardEntry): unknown;
@@ -68,7 +48,7 @@ export interface CompiledSaga<TState> {
 
 /** Configuration of one step while the flow is being built. */
 export interface StepDraft<TState> {
-  readonly operation: StepOperation;
+  readonly operation: OperationDefinition;
   input?: (state: TState) => unknown;
   onSuccess?: (state: TState, output: unknown) => void;
   compensationInput?: (state: TState, forward: ForwardEntry) => unknown;
@@ -108,13 +88,8 @@ export class StepConfig<TState, TIn, TOut> {
   /** Adds the next step that calls the operation of a contract. */
   step<D extends OperationDefinition>(
     operation: D,
-  ): StepConfig<TState, StepInputOf<D>, StepOutputOf<D>>;
-  /** @deprecated Pass the `OperationDefinition` of the contract. */
-  step<TNextIn, TNextOut>(
-    operation: OperationRef<TNextIn, TNextOut>,
-  ): StepConfig<TState, TNextIn, TNextOut>;
-  step(operation: StepOperation): StepConfig<TState, unknown, unknown> {
-    return this.flow.step(operation as OperationRef);
+  ): StepConfig<TState, StepInputOf<D>, StepOutputOf<D>> {
+    return this.flow.step(operation);
   }
 
   /** Marks the boundary: steps added after this call are never compensated. */
@@ -122,43 +97,6 @@ export class StepConfig<TState, TIn, TOut> {
     this.flow.markPivot();
     return this;
   }
-}
-
-/** Whether `operation` is a contract definition rather than a hand-written reference. */
-function isDefinition(
-  operation: StepOperation,
-): operation is OperationDefinition {
-  return 'idempotent' in operation && 'input' in operation;
-}
-
-/** Normalized view of a step operation. */
-interface ResolvedOperation {
-  readonly id: string;
-  readonly compensatedBy: string | null;
-  /** Whether the operation changes data. A hand-written reference is assumed to. */
-  readonly mutating: boolean;
-  readonly definition?: OperationDefinition;
-}
-
-function resolveStepOperation(operation: StepOperation): ResolvedOperation {
-  if (isDefinition(operation)) {
-    const { metadata } = resolveOperation(operation);
-    return {
-      id: operation.id,
-      compensatedBy: compensationOf(metadata),
-      mutating: metadata.mutating,
-      definition: operation,
-    };
-  }
-  const { compensatedBy } = operation;
-  return {
-    id: operation.id,
-    compensatedBy:
-      compensatedBy === null || compensatedBy === Compensation.None
-        ? null
-        : compensatedBy,
-    mutating: true,
-  };
 }
 
 /**
@@ -176,15 +114,10 @@ export class SagaFlow<TState> {
    */
   step<D extends OperationDefinition>(
     operation: D,
-  ): StepConfig<TState, StepInputOf<D>, StepOutputOf<D>>;
-  /** @deprecated Pass the `OperationDefinition` of the contract. */
-  step<TIn, TOut>(
-    operation: OperationRef<TIn, TOut>,
-  ): StepConfig<TState, TIn, TOut>;
-  step(operation: StepOperation): StepConfig<TState, unknown, unknown> {
+  ): StepConfig<TState, StepInputOf<D>, StepOutputOf<D>> {
     const draft: StepDraft<TState> = { operation };
     this.drafts.push(draft);
-    return new StepConfig<TState, unknown, unknown>(this, draft);
+    return new StepConfig<TState, StepInputOf<D>, StepOutputOf<D>>(this, draft);
   }
 
   /**
@@ -194,7 +127,7 @@ export class SagaFlow<TState> {
   markPivot(): void {
     if (this.pivotIndex !== null) {
       throw new SagaError(
-        SagaErrorCode.InvalidDefinition,
+        PlatformErrorCode.SagaInvalidDefinition,
         'pivot() can be declared only once per saga',
       );
     }
@@ -204,45 +137,41 @@ export class SagaFlow<TState> {
   /**
    * Validates the flow and freezes it into a compiled saga:
    * - a step before the pivot that changes data declares a compensation;
-   * - a step after the pivot is never compensated, and when it comes from a
-   *   contract, that operation is idempotent (it is retried until it completes).
+   * - a step after the pivot is never compensated, and its operation is
+   *   idempotent (it is retried until it completes).
    * @internal Called by `SagaDefinition.build()`.
    */
   compile(type: string): CompiledSaga<TState> {
     if (this.drafts.length === 0) {
       throw new SagaError(
-        SagaErrorCode.InvalidDefinition,
+        PlatformErrorCode.SagaInvalidDefinition,
         `Saga "${type}" declares no steps`,
       );
     }
     const pivotIndex = this.pivotIndex ?? this.drafts.length;
     const steps = this.drafts.map((draft, index): CompiledStep<TState> => {
       const afterPivot = index >= pivotIndex;
-      const operation = resolveStepOperation(draft.operation);
-      if (
-        !afterPivot &&
-        operation.mutating &&
-        operation.compensatedBy === null
-      ) {
+      const operation = draft.operation;
+      const { metadata } = resolveOperation(operation);
+      const compensatedBy = compensationOf(metadata);
+      if (!afterPivot && metadata.mutating && compensatedBy === null) {
         throw new SagaError(
-          SagaErrorCode.MissingCompensation,
+          PlatformErrorCode.SagaMissingCompensation,
           `Step ${index} (${operation.id}) of saga "${type}" runs before the pivot and has no compensation`,
         );
       }
-      if (afterPivot && operation.definition?.idempotent === false) {
+      if (afterPivot && !operation.idempotent) {
         throw new SagaError(
-          SagaErrorCode.InvalidDefinition,
+          PlatformErrorCode.SagaInvalidDefinition,
           `Step ${index} (${operation.id}) of saga "${type}" runs after the pivot and is not idempotent`,
         );
       }
       return {
         index,
         operationId: operation.id,
-        compensationOperationId: afterPivot ? null : operation.compensatedBy,
+        compensationOperationId: afterPivot ? null : compensatedBy,
         afterPivot,
-        ...(operation.definition !== undefined && {
-          definition: operation.definition,
-        }),
+        definition: operation,
         input: draft.input ?? (() => undefined),
         onSuccess: draft.onSuccess ?? (() => undefined),
         compensationInput:

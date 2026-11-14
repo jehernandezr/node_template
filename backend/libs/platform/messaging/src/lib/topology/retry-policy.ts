@@ -1,51 +1,11 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import {
-  type BackoffOptions as SharedBackoffOptions,
+  type BackoffOptions,
   BackoffStrategy,
   backoffDelay,
   MAX_BACKOFF_ATTEMPT,
 } from '@platform/primitives';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
-
-/**
- * Old messaging backoff shape: exponential with factor 2 and optional full jitter.
- * @deprecated Use `BackoffOptions` from `@platform/primitives` with a `BackoffStrategy`.
- */
-export interface LegacyBackoffOptions {
-  readonly baseMs: number;
-  readonly maxMs: number;
-  /** Full jitter: the delay is uniform in [0, ceiling). Defaults to false here. */
-  readonly jitter?: boolean;
-  /** Source of randomness in [0, 1). Defaults to `Math.random`. */
-  readonly random?: () => number;
-}
-
-/**
- * @deprecated Alias of {@link LegacyBackoffOptions}. Use `BackoffOptions` from
- * `@platform/primitives`.
- */
-export type BackoffOptions = LegacyBackoffOptions;
-
-/** Backoff accepted by messaging: the shared shape or the deprecated one. */
-export type MessagingBackoffOptions =
-  SharedBackoffOptions | LegacyBackoffOptions;
-
-/** Converts any accepted backoff shape to the shared `@platform/primitives` one. */
-export function toSharedBackoff(
-  options: MessagingBackoffOptions,
-): SharedBackoffOptions {
-  if ('strategy' in options) return options;
-  return {
-    strategy: options.jitter
-      ? BackoffStrategy.FullJitter
-      : BackoffStrategy.None,
-    baseMs: options.baseMs,
-    maxMs: options.maxMs,
-    ...(options.random === undefined ? {} : { random: options.random }),
-  };
-}
+import { MessagingError } from '../errors/messaging-error.js';
 
 /**
  * Delay before retry number `attempt` (1-based) with the shared backoff. Attempts
@@ -54,23 +14,12 @@ export function toSharedBackoff(
  */
 export function messagingBackoffDelay(
   attempt: number,
-  options: MessagingBackoffOptions,
+  options: BackoffOptions,
 ): number {
   const bounded = Number.isInteger(attempt)
     ? Math.min(attempt, MAX_BACKOFF_ATTEMPT)
     : attempt;
-  return backoffDelay(bounded, toSharedBackoff(options));
-}
-
-/**
- * Delay before retry number `attempt` (1-based).
- * @deprecated Use `backoffDelay` from `@platform/primitives`.
- */
-export function backoffDelayMs(
-  attempt: number,
-  options: LegacyBackoffOptions,
-): number {
-  return messagingBackoffDelay(attempt, options);
+  return backoffDelay(bounded, options);
 }
 
 /** Options for {@link RetryPolicy.exponential}. */
@@ -102,19 +51,19 @@ export class RetryPolicy {
     const { maxAttempts, baseMs, maxMs } = options;
     if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidRetryPolicy,
+        PlatformErrorCode.MessagingInvalidRetryPolicy,
         `maxAttempts must be an integer >= 1, got ${maxAttempts}`,
       );
     }
     if (!(baseMs > 0) || !Number.isFinite(baseMs)) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidRetryPolicy,
+        PlatformErrorCode.MessagingInvalidRetryPolicy,
         `baseMs must be > 0, got ${baseMs}`,
       );
     }
     if (!(maxMs >= baseMs) || !Number.isFinite(maxMs)) {
       throw new MessagingError(
-        MessagingErrorCode.InvalidRetryPolicy,
+        PlatformErrorCode.MessagingInvalidRetryPolicy,
         `maxMs must be finite and >= baseMs, got ${maxMs}`,
       );
     }
@@ -127,7 +76,7 @@ export class RetryPolicy {
   }
 
   /** The policy curve as shared `@platform/primitives` backoff options. */
-  backoff(random?: () => number): SharedBackoffOptions {
+  backoff(random?: () => number): BackoffOptions {
     return {
       strategy: this.jitter ? BackoffStrategy.FullJitter : BackoffStrategy.None,
       baseMs: this.baseMs,

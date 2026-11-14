@@ -1,7 +1,11 @@
-import { defineCommand, defineEvent } from '@contracts/platform';
+import {
+  defineCommand,
+  defineEvent,
+  PlatformErrorCode,
+} from '@contracts/platform';
+import { SequentialIdGenerator } from '@platform/kernel/testing';
 import { z } from 'zod';
 import { MAX_ENVELOPE_BYTES } from '../envelope/message-envelope.js';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
 import { MessageDispatcher } from '../dispatch/message-dispatcher.js';
 import { InMemoryProcessedMessageStore } from '../dispatch/processed-message-store.js';
 import { QueueDef } from '../topology/queue-def.js';
@@ -37,9 +41,9 @@ const Blob = defineCommand({
 
 const tasksEvents = new TopicDef('tasks-events');
 
-class TestTopology extends Topology {
-  readonly topics = [tasksEvents];
-  readonly queues = [
+function testTopology(): Topology {
+  const topics = [tasksEvents];
+  const queues = [
     new QueueDef('notifications')
       .subscribesTo(tasksEvents, { types: ['tasks.task.updated.v1'] })
       .retry(
@@ -57,21 +61,21 @@ class TestTopology extends Topology {
     new QueueDef('reports').deadLetter({ maxReceiveCount: 5 }),
     new QueueDef('blobs').deadLetter({ maxReceiveCount: 5 }),
   ];
-  readonly routes = [
+  const routes = [
     Route.event(TaskCreated).to(tasksEvents),
     Route.event(TaskUpdated).to(tasksEvents),
-    Route.command(GenerateReport).to(this.queues[2]),
-    Route.command(Blob).to(this.queues[3]),
+    Route.command(GenerateReport).to(queues[2]),
+    Route.command(Blob).to(queues[3]),
   ];
+  return new Topology({ topics, queues, routes });
 }
 
 function setup() {
   let clock = 0;
-  let counter = 0;
-  const bus = new InMemoryBus(new TestTopology(), {
+  const bus = new InMemoryBus(testTopology(), {
     source: '/services/tasks',
-    now: () => new Date(clock),
-    newId: () => `id-${++counter}`,
+    clock: { now: () => new Date(clock) },
+    ids: new SequentialIdGenerator(),
   });
   const dispatcher = new MessageDispatcher({
     consumer: 'notifications',
@@ -117,7 +121,7 @@ describe('InMemoryBus', () => {
       description: 'Mensaje de prueba.',
     });
     await expect(bus.publish(Unrouted, { x: 1 })).rejects.toMatchObject({
-      code: MessagingErrorCode.UnknownRoute,
+      code: PlatformErrorCode.MessagingUnknownRoute,
     });
   });
 
@@ -126,12 +130,12 @@ describe('InMemoryBus', () => {
     await expect(
       bus.publish(TaskCreated, { id: 42 as unknown as string }),
     ).rejects.toMatchObject({
-      code: MessagingErrorCode.InvalidPayload,
+      code: PlatformErrorCode.MessagingInvalidPayload,
     });
     await expect(
       bus.send(GenerateReport, { reportId: 1 as unknown as string }),
     ).rejects.toMatchObject({
-      code: MessagingErrorCode.InvalidPayload,
+      code: PlatformErrorCode.MessagingInvalidPayload,
     });
     expect(bus.pendingCount('audit')).toBe(0);
   });
@@ -141,7 +145,7 @@ describe('InMemoryBus', () => {
     await expect(
       bus.send(Blob, { body: 'x'.repeat(MAX_ENVELOPE_BYTES) }),
     ).rejects.toMatchObject({
-      code: MessagingErrorCode.PayloadTooLarge,
+      code: PlatformErrorCode.MessagingPayloadTooLarge,
     });
     expect(bus.pendingCount('blobs')).toBe(0);
   });
@@ -234,7 +238,9 @@ describe('InMemoryBus', () => {
   it('throws for unknown queues', () => {
     const { bus } = setup();
     expect(() => bus.pendingCount('missing')).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.UnknownQueue }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingUnknownQueue,
+      }),
     );
   });
 });

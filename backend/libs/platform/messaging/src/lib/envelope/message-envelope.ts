@@ -1,3 +1,4 @@
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   type Clock,
   err,
@@ -8,10 +9,7 @@ import {
   UuidV7IdGenerator,
 } from '@platform/kernel';
 import { z } from 'zod';
-import {
-  MessagingError,
-  MessagingErrorCode,
-} from '../errors/messaging-error.js';
+import { MessagingError } from '../errors/messaging-error.js';
 
 /** Maximum serialized size of one envelope (256 KB), `data` included. */
 export const MAX_ENVELOPE_BYTES = 256 * 1024;
@@ -144,7 +142,7 @@ export function envelopeSizeBytes(envelope: unknown): number {
 
 function tooLarge(size: number | undefined): MessagingError {
   return new MessagingError(
-    MessagingErrorCode.PayloadTooLarge,
+    PlatformErrorCode.MessagingPayloadTooLarge,
     size === undefined
       ? `envelope exceeds the limit of ${MAX_ENVELOPE_BYTES} bytes`
       : `envelope is ${size} bytes, limit is ${MAX_ENVELOPE_BYTES}`,
@@ -153,7 +151,7 @@ function tooLarge(size: number | undefined): MessagingError {
 
 function invalid(reason: string): MessagingError {
   return new MessagingError(
-    MessagingErrorCode.InvalidEnvelope,
+    PlatformErrorCode.MessagingInvalidEnvelope,
     `invalid envelope: ${reason}`,
   );
 }

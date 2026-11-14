@@ -1,4 +1,4 @@
-import { KernelErrorCode } from './invalid-id.error.js';
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   ERROR_CODE_PATTERN,
   isErrorCode,
@@ -37,16 +37,6 @@ describe('PlatformError', () => {
     expect('cause' in error).toBe(false);
   });
 
-  it('records whether retryable was declared', () => {
-    expect(new UpstreamUnavailableError('x').retryableExplicit).toBe(false);
-    expect(
-      new UpstreamUnavailableError('x', { retryable: false }).retryableExplicit,
-    ).toBe(true);
-    expect(
-      new UpstreamUnavailableError('x', { retryable: true }).retryableExplicit,
-    ).toBe(true);
-  });
-
   it('keeps falsy causes other than undefined', () => {
     expect(new UpstreamUnavailableError('x', { cause: null }).cause).toBeNull();
     expect(new UpstreamUnavailableError('x', { cause: 0 }).cause).toBe(0);
@@ -66,7 +56,7 @@ describe('isErrorCode', () => {
     'PLATFORM.INTERNAL_API.INVALID_INPUT',
     'A.B.C.D',
     'S3.UPLOAD.TOO_LARGE',
-    KernelErrorCode.InvalidId,
+    PlatformErrorCode.KernelInvalidId,
   ])('accepts %s', (code) => {
     expect(isErrorCode(code)).toBe(true);
     expect(ERROR_CODE_PATTERN.test(code)).toBe(true);

@@ -50,8 +50,8 @@ export type OperationSpec<
   (CompensatedSpec | UncompensatedSpec | ReadOnlySpec);
 
 /**
- * Operación interna entre servicios. Sus campos coinciden con `OperationOptions`
- * de `@platform/internal-api`, así se puede pasar tal cual a `@Operation`.
+ * Operación interna entre servicios. `@platform/internal-api` la registra en el
+ * router y la llama desde el cliente tal como se declara aquí.
  */
 export interface OperationDefinition<
   I extends z.ZodType = z.ZodType,

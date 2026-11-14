@@ -27,6 +27,40 @@ const FAILURE_KIND: Readonly<
   [PlatformErrorCode.PersistenceContention]: FailureKind.Transient,
 };
 
+/**
+ * SQLSTATE pasajeros de Postgres: serialización, deadlock, apagado o reinicio
+ * del servidor, demasiadas conexiones y falta de memoria. Repetir la
+ * transacción completa puede funcionar.
+ */
+const TRANSIENT_SQLSTATES: ReadonlySet<string> = new Set([
+  '40001',
+  '40P01',
+  '57P01',
+  '57P02',
+  '57P03',
+  '53300',
+  '53200',
+]);
+
+/** Clase 08 de Postgres (excepción de conexión), cualquier subcódigo. */
+const CONNECTION_SQLSTATE = /^08[0-9A-Z]{3}$/;
+
+/**
+ * Clase de un error del driver de Postgres. Los SQLSTATE los traduce esta
+ * capa; un error de red de Node (sin SQLSTATE) queda en `classifyFailure`.
+ */
+export function classifyPostgresFailure(error: unknown): FailureKind {
+  const sqlState = sqlStateOf(error);
+  if (
+    sqlState !== undefined &&
+    (TRANSIENT_SQLSTATES.has(sqlState) || CONNECTION_SQLSTATE.test(sqlState))
+  ) {
+    return FailureKind.Transient;
+  }
+  // `EPIPE` también tiene cinco caracteres: el resto lo decide `classifyFailure`.
+  return classifyFailure(error);
+}
+
 /** Opciones de un {@link PersistenceError}. */
 export interface PersistenceErrorOptions {
   /** Datos de diagnóstico. Nunca valores de filas ni parámetros de la sentencia. */
@@ -51,7 +85,7 @@ export class PersistenceError extends PlatformError {
   ) {
     const failureKind =
       code === PlatformErrorCode.PersistenceQueryFailed
-        ? (options.failureKind ?? classifyFailure(options.cause))
+        ? (options.failureKind ?? classifyPostgresFailure(options.cause))
         : FAILURE_KIND[code];
     super(message, {
       retryable: failureKind === FailureKind.Transient,
@@ -91,7 +125,7 @@ export function invalidConfiguration(
   );
 }
 
-/** SQLSTATE de un error de `pg`, si lo trae. */
+/** SQLSTATE de un error de `pg`, si lo trae. Los códigos de red de Node no tienen cinco caracteres. */
 export function sqlStateOf(error: unknown): string | undefined {
   const code = (error as { code?: unknown } | null)?.code;
   return typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)

@@ -10,7 +10,7 @@ import {
   type Page,
 } from '@platform/criteria';
 import { SystemClock, type Clock } from '@platform/kernel';
-import { Database } from '../database.js';
+import type { Database } from '../database.js';
 import { DataAccess, type RowLock } from '../enums.js';
 import {
   invalidConfiguration,
@@ -23,7 +23,7 @@ import {
   type ShardFailure,
 } from '../sharding/across-shards.js';
 import {
-  SingleDatabaseResolver,
+  toResolver,
   type DatabaseResolver,
 } from '../sharding/database-resolver.js';
 import type { SqlSession } from '../sql/sql-session.js';
@@ -89,12 +89,13 @@ function cursorValue(value: unknown): unknown {
 }
 
 /**
- * Repositorio base sobre SQL parametrizado. Cada repositorio concreto lo
- * extiende y agrega solo los métodos propios del agregado:
+ * Repositorio base sobre SQL parametrizado, con la tabla descrita por una
+ * {@link TableDefinition} escrita a mano. Cada repositorio concreto lo extiende
+ * y agrega solo los métodos propios del agregado:
  *
  * ```ts
- * export class TypeOrmTaskRepository
- *   extends BaseRepository<Task, TaskOrmEntity>
+ * export class PostgresTaskRepository
+ *   extends BaseRepository<Task, TaskRecord>
  *   implements TaskRepository {}
  * ```
  *
@@ -120,10 +121,7 @@ export class BaseRepository<D, R extends object> {
     assertTableDefinition(options.table);
     this.table = options.table;
     this.mapper = options.mapper;
-    this.databases =
-      options.databases instanceof Database
-        ? new SingleDatabaseResolver(options.databases)
-        : options.databases;
+    this.databases = toResolver(options.databases);
     this.clock = options.clock ?? new SystemClock();
     this.cursorOptions = options.cursor;
     this.tableName = qualifiedTableName(options.table);
@@ -140,11 +138,11 @@ export class BaseRepository<D, R extends object> {
     id: string,
     options: ReadOptions = {},
   ): Promise<D | undefined> {
-    const criteria = Criteria.for<Row>().where(this.table.id).eq(id).limit(1);
-    const page = await this.findMany(
-      criteria as unknown as Criteria<R>,
-      options,
-    );
+    const criteria = Criteria.for<R>()
+      .where(this.table.id)
+      .eq(id as NonNullable<R[RecordField<R>]>)
+      .limit(1);
+    const page = await this.findMany(criteria, options);
     return page.items[0];
   }
 

@@ -1,11 +1,16 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { SequentialIdGenerator } from '@platform/kernel/testing';
 import { ShardKey } from '@platform/sharding';
 import { RecordingConnection } from '../../test/support/recording-connection.js';
 import { Database } from './database.js';
 import { DataAccess } from './enums.js';
-import { createPersistence } from './persistence.js';
+import { createPersistence, type ShardDirectory } from './persistence.js';
 import { ShardedDatabaseResolver } from './sharding/database-resolver.js';
+
+const emptyDirectory: ShardDirectory = {
+  getPlacement: async () => undefined,
+  getInstance: async () => undefined,
+  listShards: async () => [],
+};
 
 describe('createPersistence', () => {
   it('builds a single database service', async () => {
@@ -17,9 +22,6 @@ describe('createPersistence', () => {
       'primary',
     );
     expect(persistence.router).toBeUndefined();
-    expect(
-      persistence.idempotencyStore(new SequentialIdGenerator()),
-    ).toBeDefined();
     await persistence.close();
   });
 
@@ -29,17 +31,21 @@ describe('createPersistence', () => {
       sharding: {
         key: ShardKey.Tenant,
         connect: () => new RecordingConnection(),
+        directory: (catalog) => {
+          expect(catalog.global).toBe(true);
+          return emptyDirectory;
+        },
       },
     });
     expect(persistence.transactions).toBeInstanceOf(ShardedDatabaseResolver);
     expect(persistence.catalog?.global).toBe(true);
     expect(persistence.router).toBeDefined();
-    expect(persistence.directory).toBeDefined();
+    expect(persistence.directory).toBe(emptyDirectory);
     await persistence.close();
   });
 
   it('requires exactly one mode and a catalog for sharding', () => {
-    expect(() => createPersistence({})).toThrow(
+    expect(() => createPersistence({} as never)).toThrow(
       expect.objectContaining({
         code: PlatformErrorCode.PersistenceInvalidConfig,
       }),
@@ -50,16 +56,18 @@ describe('createPersistence', () => {
         sharding: {
           key: ShardKey.Tenant,
           connect: () => new RecordingConnection(),
+          directory: () => emptyDirectory,
         },
-      }),
+      } as never),
     ).toThrow('persistence must be either database or sharding');
     expect(() =>
       createPersistence({
         sharding: {
           key: ShardKey.Tenant,
           connect: () => new RecordingConnection(),
+          directory: () => emptyDirectory,
         },
-      }),
+      } as never),
     ).toThrow('catalog must be set when sharding is enabled');
   });
 });

@@ -4,11 +4,11 @@ import {
   retryAfterMs as parseRetryAfterMs,
 } from '@platform/primitives';
 
-/** Opciones de {@link retryAfterHintMs}. */
+/** Options of {@link retryAfterHintMs}. */
 export interface RetryAfterHintOptions {
-  /** Tope de la espera. Por defecto `DEFAULT_RETRY_AFTER_MAX_MS` de primitives. */
+  /** Upper bound of the wait. Default: `DEFAULT_RETRY_AFTER_MAX_MS` from primitives. */
   readonly maxMs?: number;
-  /** Hora actual en milisegundos epoch, para encabezados con fecha. */
+  /** Current time in epoch milliseconds, for headers that carry a date. */
   readonly nowMs?: number;
 }
 
@@ -54,11 +54,11 @@ function readHint(
 }
 
 /**
- * Espera sugerida por el servidor antes de reintentar, en milisegundos y
- * acotada a `[0, maxMs]`. Lee una propiedad numérica `retryAfterMs` o un
- * encabezado `Retry-After` (interpretado con `retryAfterMs` de primitives) en
- * el error, en su `response` o en su cadena `cause`.
- * @returns undefined si el error no trae una sugerencia válida.
+ * Wait suggested by the server before retrying, in milliseconds and bounded to
+ * `[0, maxMs]`. Reads a numeric `retryAfterMs` property or a `Retry-After`
+ * header (parsed with `retryAfterMs` from primitives) on the error, its
+ * `response` or its `cause` chain.
+ * @returns undefined when the error carries no valid hint.
  */
 export function retryAfterHintMs(
   error: unknown,

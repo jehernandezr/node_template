@@ -1,6 +1,7 @@
 import { UuidV7IdGenerator } from './id-generator.js';
 import { Id } from './id.js';
-import { InvalidIdError, KernelErrorCode } from './invalid-id.error.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { InvalidIdError } from './invalid-id.error.js';
 
 const generator = new UuidV7IdGenerator();
 
@@ -38,7 +39,9 @@ describe('Id', () => {
       error = caught;
     }
     expect(error).toBeInstanceOf(InvalidIdError);
-    expect((error as InvalidIdError).code).toBe(KernelErrorCode.InvalidId);
+    expect((error as InvalidIdError).code).toBe(
+      PlatformErrorCode.KernelInvalidId,
+    );
     expect((error as InvalidIdError).name).toBe('InvalidIdError');
   });
 

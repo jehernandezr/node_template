@@ -26,6 +26,7 @@ export class RecordingConnection implements DatabaseConnection {
     | ((sql: string) => SqlResult<Record<string, unknown>> | undefined)
     | undefined;
   acquireError: unknown;
+  closed = false;
   private sessions = 0;
 
   async acquire(role: DatabaseRole): Promise<LeasedSession> {
@@ -51,7 +52,7 @@ export class RecordingConnection implements DatabaseConnection {
   }
 
   async close(): Promise<void> {
-    return undefined;
+    this.closed = true;
   }
 
   /** Sentencias sin el comentario de traza. */

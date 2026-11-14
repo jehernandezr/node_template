@@ -181,11 +181,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     true,
     'El servicio está sobrecargado. Intenta de nuevo en unos instantes.',
   ),
-  [C.InternalApiInvalidInput]: internal(
-    400,
-    false,
-    'La entrada de una operación interna no cumple su contrato.',
-  ),
   [C.InternalApiInvalidOutput]: internal(
     502,
     false,
@@ -210,11 +205,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     500,
     false,
     'La operación interna no tiene manejador.',
-  ),
-  [C.InternalApiTimeout]: internal(
-    504,
-    true,
-    'La operación interna no respondió a tiempo.',
   ),
   [C.InternalApiNonJsonSafeSchema]: internal(
     500,
@@ -377,11 +367,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'La saga superó su plazo máximo.',
   ),
-  [C.SagaSimulatedCrash]: internal(
-    500,
-    true,
-    'Caída simulada en pruebas de recuperación de sagas.',
-  ),
   [C.BloomInvalidParameters]: internal(
     500,
     false,
@@ -516,11 +501,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     500,
     false,
     'No existe la política de resiliencia pedida.',
-  ),
-  [C.ResilienceNotConfigured]: internal(
-    500,
-    false,
-    'El registro de resiliencia no está configurado.',
   ),
   [C.ShardingInvalidConfig]: internal(
     500,

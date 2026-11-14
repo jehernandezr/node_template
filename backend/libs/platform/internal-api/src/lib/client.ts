@@ -1,13 +1,19 @@
-import { validateContract } from '@contracts/platform';
+import {
+  PlatformErrorCode,
+  validateContract,
+  type OperationDefinition,
+} from '@contracts/platform';
 import { SystemClock, type Clock } from '@platform/kernel';
 import { currentTraceparent } from '@platform/observability';
 import {
+  abortableSleep,
   backoffDelay,
   BackoffStrategy,
   CallOutcome,
   CallOutcomeKind,
   Deadline,
-  DeadlineExceededError,
+  raceDeadline,
+  RaceStop,
 } from '@platform/primitives';
 import {
   allowedErrorCodes,
@@ -21,9 +27,8 @@ import type {
   CallInputOf,
   OperationDescriptor,
   OperationOutputOf,
-  OperationSource,
 } from './contract.js';
-import { InternalApiError, InternalApiErrorCode } from './errors.js';
+import { InternalApiError } from './errors.js';
 import {
   DEFAULT_MAX_PAYLOAD_BYTES,
   fitsPayload,
@@ -42,7 +47,7 @@ export interface InternalClientOptions {
   readonly registry?: ContractRegistry;
   /** Source of time for deadlines. Defaults to the system clock. */
   readonly clock?: Clock;
-  /** Waits between attempts and resolves early when `signal` aborts. Defaults to `setTimeout`. */
+  /** Waits between attempts and resolves early when `signal` aborts. Defaults to a timer. */
   readonly sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Returns a value in [0, 1) for the backoff jitter. Defaults to `Math.random`. */
   readonly random?: () => number;
@@ -74,22 +79,15 @@ export interface CallOptions {
   readonly signal?: AbortSignal;
 }
 
-function defaultSleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    if (signal?.aborted) {
-      resolve();
-      return;
+/** Waits between attempts; an abort ends the wait early and the loop stops. */
+async function defaultSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  try {
+    await abortableSleep(ms, { signal });
+  } catch (error) {
+    if (signal?.aborted !== true) {
+      throw error;
     }
-    const onAbort = (): void => {
-      clearTimeout(timer);
-      resolve();
-    };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort);
-      resolve();
-    }, ms);
-    signal?.addEventListener('abort', onAbort, { once: true });
-  });
+  }
 }
 
 function isRetryable(outcome: CallOutcome<unknown>): boolean {
@@ -135,8 +133,8 @@ export class InternalClient {
     return this.registry;
   }
 
-  /** Calls an operation declared with `defineOperation` (or a legacy `@Operation` class). */
-  async call<S extends OperationSource>(
+  /** Calls an operation declared with `defineOperation`. */
+  async call<S extends OperationDefinition>(
     operation: S,
     input: CallInputOf<S>,
     options: CallOptions,
@@ -162,13 +160,13 @@ export class InternalClient {
     if (registered === undefined) {
       return CallOutcome.protocolViolation(
         InternalApiReason.UnknownOperation,
-        InternalApiErrorCode.UnknownOperation,
+        PlatformErrorCode.InternalApiUnknownOperation,
       );
     }
     return this.callDescriptor(registered.descriptor, input, options);
   }
 
-  private descriptorFor(operation: OperationSource): OperationDescriptor {
+  private descriptorFor(operation: OperationDefinition): OperationDescriptor {
     const descriptor = resolveOperation(operation);
     if (this.registry === undefined) {
       return descriptor;
@@ -176,7 +174,7 @@ export class InternalClient {
     const registered = this.registry.get(descriptor.id);
     if (registered === undefined) {
       throw new InternalApiError(
-        InternalApiErrorCode.UnknownOperation,
+        PlatformErrorCode.InternalApiUnknownOperation,
         `Operation "${descriptor.id}" is not registered`,
       );
     }
@@ -192,7 +190,7 @@ export class InternalClient {
     if (!isValidCallKey(options.idempotencyKey, options.tenantId)) {
       return CallOutcome.protocolViolation(
         InternalApiReason.InvalidIdempotencyKey,
-        InternalApiErrorCode.InvalidIdempotencyKey,
+        PlatformErrorCode.InternalApiInvalidIdempotencyKey,
       );
     }
     const validation = validateContract(descriptor.input, input);
@@ -202,7 +200,7 @@ export class InternalClient {
     if (!fitsPayload(input, this.maxPayloadBytes)) {
       return CallOutcome.protocolViolation(
         InternalApiReason.PayloadTooLarge,
-        InternalApiErrorCode.PayloadTooLarge,
+        PlatformErrorCode.InternalApiPayloadTooLarge,
       );
     }
 
@@ -263,7 +261,7 @@ export class InternalClient {
         if (!fitsPayload(outcome.value, this.maxPayloadBytes)) {
           return CallOutcome.protocolViolation(
             InternalApiReason.PayloadTooLarge,
-            InternalApiErrorCode.PayloadTooLarge,
+            PlatformErrorCode.InternalApiPayloadTooLarge,
           );
         }
         const parsed = descriptor.output.safeParse(outcome.value);
@@ -271,7 +269,7 @@ export class InternalClient {
           ? CallOutcome.success(parsed.data)
           : CallOutcome.protocolViolation(
               InternalApiReason.InvalidOutput,
-              InternalApiErrorCode.InvalidOutput,
+              PlatformErrorCode.InternalApiInvalidOutput,
             );
       }
       case CallOutcomeKind.BusinessError:
@@ -288,7 +286,7 @@ export class InternalClient {
       default:
         return CallOutcome.protocolViolation(
           InternalApiReason.InvalidHandlerResult,
-          InternalApiErrorCode.InvalidHandlerResult,
+          PlatformErrorCode.InternalApiInvalidHandlerResult,
         );
     }
   }
@@ -310,46 +308,31 @@ export class InternalClient {
       Math.min(effectiveTimeout(descriptor.metadata), deadline.atMs - now),
     );
     const attemptAt = now + budget;
-    const controller = new AbortController();
-    const signal =
-      options.signal === undefined
-        ? controller.signal
-        : AbortSignal.any([controller.signal, options.signal]);
-
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let onCancel: (() => void) | undefined;
-    const stopped = new Promise<CallOutcome<unknown>>((resolve) => {
-      timer = setTimeout(() => {
-        controller.abort(new DeadlineExceededError(attemptAt));
-        resolve(CallOutcome.uncertain(InternalApiReason.Timeout));
-      }, budget);
-      onCancel = () => {
-        resolve(CallOutcome.uncertain(InternalApiReason.Cancelled));
-      };
-      options.signal?.addEventListener('abort', onCancel, { once: true });
-    });
-
     const traceparent = options.traceparent ?? currentTraceparent();
-    const meta: CallMeta = {
-      idempotencyKey: options.idempotencyKey,
-      timeoutMs: budget,
-      deadline: attemptAt,
-      signal,
-      ...(traceparent !== undefined && { traceparent }),
-      ...(options.tenantId !== undefined && { tenantId: options.tenantId }),
-      ...(options.actorId !== undefined && { actorId: options.actorId }),
-    };
-    try {
-      return await Promise.race([
-        this.invokeTransport(descriptor.id, input, meta),
-        stopped,
-      ]);
-    } finally {
-      clearTimeout(timer);
-      if (onCancel !== undefined) {
-        options.signal?.removeEventListener('abort', onCancel);
-      }
+    const raced = await raceDeadline(
+      (signal) =>
+        this.invokeTransport(descriptor.id, input, {
+          idempotencyKey: options.idempotencyKey,
+          timeoutMs: budget,
+          deadline: attemptAt,
+          signal,
+          ...(traceparent !== undefined && { traceparent }),
+          ...(options.tenantId !== undefined && { tenantId: options.tenantId }),
+          ...(options.actorId !== undefined && { actorId: options.actorId }),
+        }),
+      {
+        deadline: Deadline.at(attemptAt, this.clock),
+        ...(options.signal !== undefined && { signal: options.signal }),
+      },
+    );
+    if (raced.settled) {
+      return raced.value;
     }
+    return CallOutcome.uncertain(
+      raced.stop === RaceStop.Timeout
+        ? InternalApiReason.Timeout
+        : InternalApiReason.Cancelled,
+    );
   }
 
   private async invokeTransport(

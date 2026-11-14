@@ -34,7 +34,6 @@ function setup(
   const database = new Database({
     name: 'shard-1',
     connection: memory.connection,
-    clock,
     context: () => context,
   });
   const repository = new TaskRepository({

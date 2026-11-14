@@ -1,4 +1,4 @@
-import type { SqlMigration } from './sql-migration.js';
+import type { SqlMigration } from '@platform/persistence';
 
 /**
  * Directorio del catálogo global: tenant a región y grupo de shards, y shard

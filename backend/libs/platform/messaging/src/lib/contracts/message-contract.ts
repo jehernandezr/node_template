@@ -7,15 +7,15 @@ import {
 import type { z } from 'zod';
 
 /**
- * Los contratos de los mensajes son los del kit de `@contracts/platform`
- * (`defineEvent` y `defineCommand`). Este módulo los reexporta para que el
- * código de mensajería tenga un solo punto de entrada.
+ * Message contracts are those of the `@contracts/platform` kit (`defineEvent`
+ * and `defineCommand`). This module re-exports them so messaging code has a
+ * single entry point.
  */
 export { MessageKind };
 export type { CommandDefinition, EventDefinition, MessageDefinition };
 
-/** Payload que acepta un contrato al publicar o enviar (antes de los defaults de zod). */
+/** Payload a contract accepts when publishing or sending (before zod defaults). */
 export type MessageInput<M extends MessageDefinition> = z.input<M['schema']>;
 
-/** Payload ya validado que recibe un handler. */
+/** Validated payload a handler receives. */
 export type MessageOutput<M extends MessageDefinition> = z.output<M['schema']>;

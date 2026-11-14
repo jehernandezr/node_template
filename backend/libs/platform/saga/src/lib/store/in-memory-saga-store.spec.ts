@@ -1,4 +1,4 @@
-import { SagaErrorCode } from '../errors.js';
+import { PlatformErrorCode } from '@contracts/platform';
 import {
   SagaInstance,
   SagaStatus,
@@ -28,6 +28,9 @@ function instance(overrides: Partial<SagaInstance> = {}): SagaInstance {
     suspendedSince: null,
     deadlineAt: null,
     lastErrorCode: null,
+    lastErrorDetail: null,
+    context: null,
+    inputDigest: 'digest',
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
@@ -45,6 +48,7 @@ function entry(overrides: Partial<StepLogEntry> = {}): StepLogEntry {
     input: { name: 'a' },
     output: undefined,
     errorCode: null,
+    traceparent: null,
     startedAt: NOW,
     finishedAt: null,
     ...overrides,
@@ -105,7 +109,7 @@ describe('InMemorySagaStore', () => {
           step: entry(),
         }),
       ),
-    ).toBe(SagaErrorCode.ConcurrentModification);
+    ).toBe(PlatformErrorCode.SagaConcurrentModification);
     expect((await store.get('saga-1'))?.currentStep).toBe(0);
     expect(await store.steps('saga-1')).toEqual([]);
   });
@@ -122,7 +126,7 @@ describe('InMemorySagaStore', () => {
           step: entry(),
         }),
       ),
-    ).toBe(SagaErrorCode.LeaseLost);
+    ).toBe(PlatformErrorCode.SagaLeaseLost);
     expect((await store.get('saga-1'))?.version).toBe(0);
     expect(await store.steps('saga-1')).toEqual([]);
   });
@@ -139,7 +143,7 @@ describe('InMemorySagaStore', () => {
           step: entry({ status: StepStatus.Succeeded }),
         }),
       ),
-    ).toBe(SagaErrorCode.InvalidState);
+    ).toBe(PlatformErrorCode.SagaInvalidState);
 
     const saved = await store.dispatchStep({
       instance: instance(),
@@ -231,6 +235,6 @@ describe('InMemorySagaStore', () => {
       await codeOf(
         store.create(instance({ id: 'saga-2', idempotencyKey: 'k1' })),
       ),
-    ).toBe(SagaErrorCode.DuplicateSaga);
+    ).toBe(PlatformErrorCode.SagaDuplicateSaga);
   });
 });

@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { SystemClock, type Clock } from '@platform/kernel';
+import type { TransactionHook, TransactionOptions } from '@platform/primitives';
 import {
   ShardingError,
   ShardingErrorCode,
@@ -20,19 +20,9 @@ import type {
   SqlSession,
 } from './sql/sql-session.js';
 import type {
-  TransactionHook,
-  TransactionManager,
-  TransactionOptions,
-  UnitOfWork,
+  SqlTransactionManager,
+  SqlUnitOfWork,
 } from './transaction/transaction-manager.js';
-
-/** Valores por defecto de {@link Database}. */
-export const DATABASE_DEFAULTS = {
-  /** Tras escribir, las lecturas del mismo tenant van al primario durante este tiempo. */
-  readAfterWriteMs: 5_000,
-  /** Tenants recordados para la ventana de lectura después de escribir. */
-  maxTrackedTenants: 10_000,
-} as const;
 
 /** Opciones de {@link Database}. */
 export interface DatabaseOptions {
@@ -47,15 +37,11 @@ export interface DatabaseOptions {
   readonly global?: boolean;
   /** Por defecto lee `RequestContext` de observability. */
   readonly context?: PersistenceContextProvider;
-  readonly clock?: Clock;
-  /** Por defecto {@link DATABASE_DEFAULTS.readAfterWriteMs}. `0` la apaga. */
-  readonly readAfterWriteMs?: number;
-  readonly maxTrackedTenants?: number;
   /** Recibe los errores de los efectos post-commit y post-rollback. */
   readonly onHookError?: (error: unknown) => void;
 }
 
-interface ActiveUnitOfWork extends UnitOfWork {
+interface ActiveUnitOfWork extends SqlUnitOfWork {
   readonly owner: Database;
   readonly commitHooks: TransactionHook[];
   readonly rollbackHooks: TransactionHook[];
@@ -69,7 +55,7 @@ const unitsStorage = new AsyncLocalStorage<OpenUnits>();
 const NO_UNITS: OpenUnits = new Map();
 
 /** Unidad de trabajo abierta más interna del contexto, en cualquier base. */
-export function currentUnitOfWork(): UnitOfWork | undefined {
+export function currentUnitOfWork(): SqlUnitOfWork | undefined {
   const units = unitsStorage.getStore();
   if (units === undefined || units.size === 0) {
     return undefined;
@@ -124,30 +110,44 @@ async function runHooks(
 }
 
 /**
+ * `afterCommit` fuera de una transacción: no hay commit que esperar, así que
+ * el efecto corre ya, sin bloquear a quien lo registra. Sus errores van a
+ * `onError`, igual que los de un efecto después del commit.
+ */
+export function runHookNow(
+  hook: TransactionHook,
+  onError: (error: unknown) => void,
+): void {
+  void runHooks([hook], onError);
+}
+
+/**
  * Una base lógica (un shard o el catálogo) con su primario y su réplica.
- * Implementa {@link TransactionManager} para esa base.
+ * Implementa el puerto de transacciones para esa base.
  *
  * - Escrituras: siempre en una transacción del primario. Si no hay una abierta,
  *   abre una corta, así los triggers de auditoría leen actor, tenant y `traceId`.
- * - Lecturas: dentro de una transacción usan su sesión. Fuera, van a la réplica,
- *   salvo durante `readAfterWriteMs` después de que el mismo tenant escribió.
+ * - Lecturas: dentro de una transacción usan su sesión. Fuera, van a la réplica.
+ *   Quien necesita leer lo que acaba de escribir sin transacción usa
+ *   `readPrimary`: la réplica puede ir atrasada y esta capa no recuerda
+ *   escrituras entre peticiones, que pueden caer en otro proceso.
  * - Cada transacción fija `app.actor_id`, `app.actor_type`, `app.tenant_id` y
  *   `app.trace_id` con `set_config(…, true)`, que vale solo dentro de ella. Así
  *   nada queda pegado a la conexión que el pool (o RDS Proxy) presta a otro.
  * - Cada transacción de un shard abre su propio `TransactionShardGuard`; tocar
  *   otro shard dentro de ella lanza `PLATFORM.SHARDING.CROSS_SHARD_TX`.
  */
-export class Database implements TransactionManager {
+export class Database implements SqlTransactionManager {
   readonly name: string;
   readonly global: boolean;
   private readonly connection: DatabaseConnection;
   private readonly context: PersistenceContextProvider;
-  private readonly clock: Clock;
-  private readonly readAfterWriteMs: number;
-  private readonly maxTrackedTenants: number;
   private readonly onHookError: (error: unknown) => void;
-  /** Última escritura confirmada por tenant (`''` sin tenant), en milisegundos epoch. */
-  private readonly lastWrites = new Map<string, number>();
+  /** Sesiones prestadas y aún no devueltas. */
+  private leased = 0;
+  /** Con valor, la base se cierra cuando se devuelva la última sesión. */
+  private closing: (() => void) | undefined;
+  private closed: Promise<void> | undefined;
 
   constructor(options: DatabaseOptions) {
     if (typeof options.name !== 'string' || options.name.length === 0) {
@@ -157,21 +157,7 @@ export class Database implements TransactionManager {
     this.global = options.global ?? false;
     this.connection = options.connection;
     this.context = options.context ?? requestContextProvider;
-    this.clock = options.clock ?? new SystemClock();
-    this.readAfterWriteMs =
-      options.readAfterWriteMs ?? DATABASE_DEFAULTS.readAfterWriteMs;
-    this.maxTrackedTenants =
-      options.maxTrackedTenants ?? DATABASE_DEFAULTS.maxTrackedTenants;
     this.onHookError = options.onHookError ?? ((): void => undefined);
-    if (!Number.isFinite(this.readAfterWriteMs) || this.readAfterWriteMs < 0) {
-      throw invalidConfiguration('readAfterWriteMs', 'a finite number >= 0');
-    }
-    if (
-      !Number.isInteger(this.maxTrackedTenants) ||
-      this.maxTrackedTenants < 1
-    ) {
-      throw invalidConfiguration('maxTrackedTenants', 'an integer >= 1');
-    }
   }
 
   /** Contexto de la petición actual, tal como lo ve esta base. */
@@ -179,7 +165,7 @@ export class Database implements TransactionManager {
     return this.context();
   }
 
-  current(): UnitOfWork | undefined {
+  current(): SqlUnitOfWork | undefined {
     return unitsStorage.getStore()?.get(this);
   }
 
@@ -193,7 +179,7 @@ export class Database implements TransactionManager {
       unit.afterCommit(hook);
       return;
     }
-    void runHooks([hook], this.onHookError);
+    runHookNow(hook, this.onHookError);
   }
 
   /**
@@ -201,7 +187,7 @@ export class Database implements TransactionManager {
    * abierta en ella. Ver {@link TransactionManager.runInTransaction}.
    */
   async runInTransaction<T>(
-    fn: (uow: UnitOfWork) => Promise<T>,
+    fn: (uow: SqlUnitOfWork) => Promise<T>,
     options: TransactionOptions = {},
   ): Promise<T> {
     const open = this.current();
@@ -238,31 +224,24 @@ export class Database implements TransactionManager {
       throw error;
     }
     await lease.release();
-    if (options.readOnly !== true) {
-      this.rememberWrite(context.tenantId);
-    }
     await runHooks(unit.commitHooks, this.onHookError);
     return result;
   }
 
-  /**
-   * Lectura: usa la transacción abierta en esta base o, fuera de ella, una
-   * sesión de la réplica (del primario si el tenant escribió hace poco).
-   */
+  /** Lectura: usa la transacción abierta en esta base o, fuera de ella, la réplica. */
   async read<T>(fn: (session: SqlSession) => Promise<T>): Promise<T> {
     const open = this.current();
     if (open !== undefined) {
       return fn(open.session);
     }
     this.assertNoOtherShard();
-    const context = this.context();
-    const role = this.wroteRecently(context.tenantId)
-      ? DatabaseRole.Primary
-      : DatabaseRole.Replica;
-    return this.withSession(role, context, fn);
+    return this.withSession(DatabaseRole.Replica, this.context(), fn);
   }
 
-  /** Lectura forzada al primario, por ejemplo para leer y luego escribir sin transacción. */
+  /**
+   * Lectura forzada al primario: para leer y luego escribir sin transacción, o
+   * para leer lo que se acaba de confirmar sin depender del atraso de la réplica.
+   */
   async readPrimary<T>(fn: (session: SqlSession) => Promise<T>): Promise<T> {
     const open = this.current();
     if (open !== undefined) {
@@ -274,13 +253,31 @@ export class Database implements TransactionManager {
 
   /** Escritura: dentro de la transacción abierta o en una nueva y corta. */
   write<T>(
-    fn: (session: SqlSession, uow: UnitOfWork) => Promise<T>,
+    fn: (session: SqlSession, uow: SqlUnitOfWork) => Promise<T>,
   ): Promise<T> {
     return this.runInTransaction((uow) => fn(uow.session, uow));
   }
 
-  async close(): Promise<void> {
-    await this.connection.close();
+  /** Cierra los pools ya, aunque haya sesiones prestadas. */
+  close(): Promise<void> {
+    this.closed ??= this.connection.close();
+    return this.closed;
+  }
+
+  /**
+   * Cierra los pools cuando se devuelva la última sesión prestada. Lo usa el
+   * resolver cuando un shard se trasladó a otra instancia: las transacciones en
+   * curso terminan contra la vieja y su pool no queda abierto para siempre.
+   */
+  closeWhenIdle(): Promise<void> {
+    if (this.leased === 0) {
+      return this.close();
+    }
+    return new Promise<void>((resolve, reject) => {
+      this.closing = () => {
+        this.close().then(resolve, reject);
+      };
+    });
   }
 
   private async withSession<T>(
@@ -300,11 +297,31 @@ export class Database implements TransactionManager {
   }
 
   private async acquire(role: DatabaseRole): Promise<LeasedSession> {
+    let lease: LeasedSession;
     try {
-      return await this.connection.acquire(role);
+      lease = await this.connection.acquire(role);
     } catch (error) {
       throw toPersistenceError(error);
     }
+    this.leased += 1;
+    let returned = false;
+    return {
+      query: (sql, params) => lease.query(sql, params),
+      release: async (error?: unknown) => {
+        if (returned) {
+          return;
+        }
+        returned = true;
+        try {
+          await lease.release(error);
+        } finally {
+          this.leased -= 1;
+          if (this.leased === 0) {
+            this.closing?.();
+          }
+        }
+      },
+    };
   }
 
   private newUnit(session: SqlSession): ActiveUnitOfWork {
@@ -395,37 +412,6 @@ export class Database implements TransactionManager {
     } catch {
       // La conexión quedó en un estado desconocido: el pool la descarta.
       await lease.release(cause);
-    }
-  }
-
-  private wroteRecently(tenantId: string | undefined): boolean {
-    if (this.readAfterWriteMs === 0) {
-      return false;
-    }
-    const key = tenantId ?? '';
-    const at = this.lastWrites.get(key);
-    if (at === undefined) {
-      return false;
-    }
-    if (this.clock.now().getTime() - at < this.readAfterWriteMs) {
-      return true;
-    }
-    this.lastWrites.delete(key);
-    return false;
-  }
-
-  private rememberWrite(tenantId: string | undefined): void {
-    if (this.readAfterWriteMs === 0) {
-      return;
-    }
-    const key = tenantId ?? '';
-    this.lastWrites.delete(key);
-    this.lastWrites.set(key, this.clock.now().getTime());
-    if (this.lastWrites.size > this.maxTrackedTenants) {
-      const oldest = this.lastWrites.keys().next().value;
-      if (oldest !== undefined) {
-        this.lastWrites.delete(oldest);
-      }
     }
   }
 }

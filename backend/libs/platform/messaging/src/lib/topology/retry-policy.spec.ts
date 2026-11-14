@@ -1,34 +1,26 @@
-import { BackoffStrategy, PrimitivesErrorCode } from '@platform/primitives';
-import { MessagingErrorCode } from '../errors/messaging-error.js';
-import {
-  RetryPolicy,
-  backoffDelayMs,
-  messagingBackoffDelay,
-  toSharedBackoff,
-} from './retry-policy.js';
+import { PlatformErrorCode } from '@contracts/platform';
+import { BackoffStrategy } from '@platform/primitives';
+import { RetryPolicy, messagingBackoffDelay } from './retry-policy.js';
 
-describe('backoffDelayMs', () => {
-  const base = { baseMs: 100, maxMs: 1_000 };
+describe('messagingBackoffDelay', () => {
+  const base = { strategy: BackoffStrategy.None, baseMs: 100, maxMs: 1_000 };
 
-  it('doubles the delay per attempt without jitter and caps at maxMs', () => {
+  it('doubles the delay per attempt and caps at maxMs', () => {
     expect(
-      [1, 2, 3, 4, 5, 6].map((attempt) =>
-        backoffDelayMs(attempt, { ...base, jitter: false }),
-      ),
+      [1, 2, 3, 4, 5, 6].map((attempt) => messagingBackoffDelay(attempt, base)),
     ).toEqual([100, 200, 400, 800, 1_000, 1_000]);
   });
 
   it('stays within [0, ceiling] with full jitter', () => {
     for (let attempt = 1; attempt <= 12; attempt++) {
       const ceiling = Math.min(base.maxMs, base.baseMs * 2 ** (attempt - 1));
-      const low = backoffDelayMs(attempt, {
-        ...base,
-        jitter: true,
+      const jittered = { ...base, strategy: BackoffStrategy.FullJitter };
+      const low = messagingBackoffDelay(attempt, {
+        ...jittered,
         random: () => 0,
       });
-      const high = backoffDelayMs(attempt, {
-        ...base,
-        jitter: true,
+      const high = messagingBackoffDelay(attempt, {
+        ...jittered,
         random: () => 0.999999,
       });
       expect(low).toBe(0);
@@ -38,34 +30,15 @@ describe('backoffDelayMs', () => {
   });
 
   it('never overflows for very large attempts', () => {
-    expect(backoffDelayMs(5_000, { ...base, jitter: false })).toBe(base.maxMs);
+    expect(messagingBackoffDelay(5_000, base)).toBe(base.maxMs);
   });
 
   it('rejects attempts below 1', () => {
-    expect(() => backoffDelayMs(0, base)).toThrow(
-      expect.objectContaining({ code: PrimitivesErrorCode.InvalidArgument }),
+    expect(() => messagingBackoffDelay(0, base)).toThrow(
+      expect.objectContaining({
+        code: PlatformErrorCode.PrimitivesInvalidArgument,
+      }),
     );
-  });
-});
-
-describe('shared backoff', () => {
-  it('maps the deprecated shape to the primitives strategy', () => {
-    expect(toSharedBackoff({ baseMs: 1, maxMs: 2 })).toEqual({
-      strategy: BackoffStrategy.None,
-      baseMs: 1,
-      maxMs: 2,
-    });
-    expect(toSharedBackoff({ baseMs: 1, maxMs: 2, jitter: true })).toEqual({
-      strategy: BackoffStrategy.FullJitter,
-      baseMs: 1,
-      maxMs: 2,
-    });
-    const shared = {
-      strategy: BackoffStrategy.EqualJitter,
-      baseMs: 1,
-      maxMs: 2,
-    };
-    expect(toSharedBackoff(shared)).toBe(shared);
   });
 
   it('accepts the primitives options directly', () => {
@@ -117,7 +90,9 @@ describe('RetryPolicy.exponential', () => {
     ['maxMs', { maxAttempts: 3, baseMs: 10, maxMs: 5 }],
   ])('rejects invalid %s', (_label, options) => {
     expect(() => RetryPolicy.exponential(options)).toThrow(
-      expect.objectContaining({ code: MessagingErrorCode.InvalidRetryPolicy }),
+      expect.objectContaining({
+        code: PlatformErrorCode.MessagingInvalidRetryPolicy,
+      }),
     );
   });
 });

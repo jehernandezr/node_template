@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "@contracts/platform": "workspace:*",
     "@platform/kernel": "workspace:*",
     "tslib": "^2.3.0"
   }
