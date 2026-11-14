@@ -17,20 +17,8 @@ void main() {
       ),
     );
     expect(find.text('The code expired.'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is SelectableText &&
-            w.data == 'Código: IDENTITY.MFA.CODE_EXPIRED',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SelectableText && w.data == 'ID de traza: trace-123',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Código: IDENTITY.MFA.CODE_EXPIRED'), findsOneWidget);
+    expect(find.text('ID de traza: trace-123'), findsOneWidget);
     expect(find.byType(AppButton), findsNothing);
   });
 
@@ -46,7 +34,7 @@ void main() {
 
   testWidgets('omits code, trace and retry when not provided', (tester) async {
     await pumpApp(tester, const ErrorView(message: 'Failed.'));
-    expect(find.byType(SelectableText), findsNothing);
+    expect(find.byType(SelectionArea), findsNothing);
     expect(find.text('Reintentar'), findsNothing);
   });
 
@@ -62,50 +50,35 @@ void main() {
         onRetry: () {},
       ),
     );
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SelectableText && w.data == 'Código: X.CODE',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SelectableText && w.data == 'ID de traza: trace-9',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Código: X.CODE'), findsOneWidget);
+    expect(find.text('ID de traza: trace-9'), findsOneWidget);
     expect(find.text('Reintentar'), findsOneWidget);
   });
 
-  testWidgets('fromProblem shows code and trace id from the problem', (
-    tester,
-  ) async {
-    const problem = ProblemDetails(
-      type: 'about:blank',
-      title: 'Expired',
-      status: 400,
-      code: 'IDENTITY.MFA.CODE_EXPIRED',
-      traceId: 'trace-abc',
-    );
+  testWidgets('details shows message, code and trace id', (tester) async {
     await pumpApp(
       tester,
-      ErrorView.fromProblem(problem, message: 'El código expiró.'),
+      ErrorView.details(
+        const ErrorDetails(
+          message: 'El código expiró.',
+          code: 'IDENTITY.MFA.CODE_EXPIRED',
+          traceId: 'trace-abc',
+        ),
+      ),
     );
     expect(find.text('El código expiró.'), findsOneWidget);
+    expect(find.text('Código: IDENTITY.MFA.CODE_EXPIRED'), findsOneWidget);
+    expect(find.text('ID de traza: trace-abc'), findsOneWidget);
+  });
+
+  testWidgets('the message is a live region', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpApp(tester, const ErrorView(message: 'Failed.'));
     expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is SelectableText &&
-            w.data == 'Código: IDENTITY.MFA.CODE_EXPIRED',
-      ),
-      findsOneWidget,
+      tester.getSemantics(find.text('Failed.')),
+      matchesSemantics(label: 'Failed.', isLiveRegion: true),
     );
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SelectableText && w.data == 'ID de traza: trace-abc',
-      ),
-      findsOneWidget,
-    );
+    handle.dispose();
   });
 
   testWidgets('fromException uses the problem for ApiErrorException', (
@@ -126,18 +99,8 @@ void main() {
       ),
     );
     expect(find.text('No se pudo cargar.'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SelectableText && w.data == 'Código: PLATFORM.INTERNAL',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SelectableText && w.data == 'ID de traza: trace-xyz',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Código: PLATFORM.INTERNAL'), findsOneWidget);
+    expect(find.text('ID de traza: trace-xyz'), findsOneWidget);
   });
 
   testWidgets('fromException shows only the fallback for other errors', (
@@ -151,7 +114,7 @@ void main() {
       ),
     );
     expect(find.text('No se pudo cargar.'), findsOneWidget);
-    expect(find.byType(SelectableText), findsNothing);
+    expect(find.byType(SelectionArea), findsNothing);
   });
 
   testWidgets('default labels follow the app locale', (tester) async {
@@ -167,8 +130,8 @@ void main() {
     );
 
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    expect(find.text('${l10n.errorCodeLabel}: X.CODE'), findsOneWidget);
-    expect(find.text('${l10n.errorTraceIdLabel}: trace-1'), findsOneWidget);
+    expect(find.text(l10n.errorCodeLine('X.CODE')), findsOneWidget);
+    expect(find.text(l10n.errorTraceIdLine('trace-1')), findsOneWidget);
     expect(find.text(l10n.actionRetry), findsOneWidget);
     expect(find.text('Reintentar'), findsNothing);
   });

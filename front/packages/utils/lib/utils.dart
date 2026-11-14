@@ -6,4 +6,5 @@ export 'src/clock.dart';
 export 'src/dates.dart';
 export 'src/field_errors.dart';
 export 'src/money.dart';
+export 'src/money_formatter.dart';
 export 'src/numbers.dart';

@@ -3,10 +3,13 @@ import 'package:go_router/go_router.dart';
 
 import 'enums.dart';
 import 'microfrontend_registry.dart';
+import 'shell_navigator.dart';
 import 'user_session.dart';
 
 /// Path of the first visible menu entry for [session] on [platform], or null
 /// when the session sees no menu entry.
+///
+/// Superseded by [ShellNavigator.home].
 String? homeLocation(
   MicrofrontendRegistry registry,
   UserSession session,
@@ -20,6 +23,8 @@ String? homeLocation(
 ///
 /// The location left behind is not passed as `from`: the user lands on the
 /// plain login page.
+///
+/// Superseded by [ShellNavigator.signOutAndGoToLogin].
 Future<void> signOutAndGoToLogin({
   required GoRouter router,
   required ValueNotifier<UserSession> session,

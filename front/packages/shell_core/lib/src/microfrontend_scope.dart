@@ -94,6 +94,7 @@ final class MicrofrontendScope {
       if (release == null) continue;
       try {
         await release(entry.value);
+        // catch-all: a failing resource is reported so the remaining ones still close
       } catch (error, stack) {
         FlutterError.reportError(
           FlutterErrorDetails(

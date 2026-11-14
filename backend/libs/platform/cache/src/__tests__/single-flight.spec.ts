@@ -1,149 +1,125 @@
 import { SystemClock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
-import { Deadline, DeadlineExceededError } from '@platform/primitives';
-import { CacheInvalidArgumentError, CacheKeyTooLongError } from '../errors.js';
+import { CallerWait } from '../caller-wait.js';
+import { CacheErrorCode } from '../errors/cache-error-code.enum.js';
 import { SingleFlight } from '../single-flight.js';
+import { Deadline, PrimitivesErrorCode } from '@platform/primitives';
 
 describe('SingleFlight', () => {
-  it('runs the loader once for concurrent calls with the same key', async () => {
-    const flight = new SingleFlight();
-    const loader = jest.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      return 'value';
-    });
-
-    const results = await Promise.all(
-      Array.from({ length: 10 }, () => flight.run('k', loader)),
-    );
-
-    expect(loader).toHaveBeenCalledTimes(1);
-    expect(results.every((result) => result === 'value')).toBe(true);
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
-  it('shares an error with every waiter', async () => {
-    const flight = new SingleFlight();
-    const failure = new Error('boom');
-    const loader = jest.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      throw failure;
-    });
+  it('runs the function once for concurrent calls with the same key', async () => {
+    const flight = new SingleFlight(new CallerWait(new FixedClock()));
+    let runs = 0;
+    const work = async (): Promise<string> => {
+      runs += 1;
+      return 'shared';
+    };
 
-    const outcomes = await Promise.allSettled(
-      Array.from({ length: 5 }, () => flight.run('k', loader)),
-    );
+    const results = await Promise.all([
+      flight.run('key', work),
+      flight.run('key', work),
+    ]);
 
-    expect(loader).toHaveBeenCalledTimes(1);
-    for (const outcome of outcomes) {
-      expect(outcome).toEqual({ status: 'rejected', reason: failure });
-    }
+    expect(results).toEqual(['shared', 'shared']);
+    expect(runs).toBe(1);
   });
 
   it('releases the key once the execution settles', async () => {
-    const flight = new SingleFlight();
-    const loader = jest.fn(async () => 'v');
-
-    await flight.run('k', loader);
-    await flight.run('k', loader);
-
-    expect(loader).toHaveBeenCalledTimes(2);
-  });
-
-  it('releases the key after a failure so the next call retries', async () => {
-    const flight = new SingleFlight();
-    const loader = jest
-      .fn<Promise<string>, []>()
-      .mockRejectedValueOnce(new Error('first'))
-      .mockResolvedValueOnce('second');
-
-    await expect(flight.run('k', loader)).rejects.toThrow('first');
-    await expect(flight.run('k', loader)).resolves.toBe('second');
-  });
-
-  it('lets one waiter abort without cancelling the shared execution', async () => {
-    const flight = new SingleFlight();
-    let finish: (value: string) => void = () => undefined;
-    const loader = jest.fn(
-      () =>
-        new Promise<string>((resolve) => {
-          finish = resolve;
-        }),
-    );
-    const controller = new AbortController();
-    const reason = new Error('client left');
-
-    const leaver = flight.run('k', loader, { signal: controller.signal });
-    const stayer = flight.run('k', loader);
-    controller.abort(reason);
-
-    await expect(leaver).rejects.toBe(reason);
-    finish('value');
-    await expect(stayer).resolves.toBe('value');
-    expect(loader).toHaveBeenCalledTimes(1);
+    const flight = new SingleFlight(new CallerWait(new FixedClock()));
+    await flight.run('key', async () => 'value');
     expect(flight.size).toBe(0);
   });
 
-  it('lets the leader abort while followers still get the value', async () => {
-    const flight = new SingleFlight();
-    const controller = new AbortController();
-    const loader = jest.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return 'value';
-    });
+  it('shares a failure with every waiter and releases the key', async () => {
+    const flight = new SingleFlight(new CallerWait(new FixedClock()));
+    const failure = new Error('load failed');
+    const failing = async (): Promise<string> => {
+      throw failure;
+    };
 
-    const leader = flight.run('k', loader, { signal: controller.signal });
-    const follower = flight.run('k', loader);
-    controller.abort(new Error('leader left'));
+    const outcomes = await Promise.allSettled([
+      flight.run('key', failing),
+      flight.run('key', failing),
+    ]);
 
-    await expect(leader).rejects.toThrow('leader left');
-    await expect(follower).resolves.toBe('value');
-    expect(loader).toHaveBeenCalledTimes(1);
+    expect(outcomes).toEqual([
+      { status: 'rejected', reason: failure },
+      { status: 'rejected', reason: failure },
+    ]);
+    expect(flight.size).toBe(0);
   });
 
-  it('rejects one waiter with DeadlineExceededError when its deadline expires', async () => {
-    const flight = new SingleFlight();
-    const loader = jest.fn(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 40));
-      return 'value';
+  it('rejects keys longer than the limit without running the function', async () => {
+    const flight = new SingleFlight(new CallerWait(new FixedClock()), {
+      maxKeyLength: 4,
     });
-
-    const hurried = flight.run('k', loader, {
-      deadline: Deadline.after(5, new SystemClock()),
-    });
-    const patient = flight.run('k', loader, {
-      deadline: Deadline.after(5_000, new SystemClock()),
-    });
-
-    await expect(hurried).rejects.toBeInstanceOf(DeadlineExceededError);
-    await expect(patient).resolves.toBe('value');
-    expect(loader).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not start the execution for a caller that already gave up', async () => {
-    const flight = new SingleFlight();
-    const loader = jest.fn(async () => 'value');
-    const clock = new FixedClock();
-
+    let runs = 0;
     await expect(
-      flight.run('k', loader, { signal: AbortSignal.abort(new Error('gone')) }),
+      flight.run('too-long', async () => {
+        runs += 1;
+        return 'never';
+      }),
+    ).rejects.toMatchObject({ code: CacheErrorCode.KeyTooLong });
+    expect(runs).toBe(0);
+  });
+
+  it('does not start the function for a caller that is already cancelled', async () => {
+    const flight = new SingleFlight(new CallerWait(new FixedClock()));
+    const controller = new AbortController();
+    controller.abort(new Error('gone'));
+    let runs = 0;
+    await expect(
+      flight.run(
+        'key',
+        async () => {
+          runs += 1;
+          return 'never';
+        },
+        { signal: controller.signal },
+      ),
     ).rejects.toThrow('gone');
-    await expect(
-      flight.run('k', loader, { deadline: Deadline.after(0, clock) }),
-    ).rejects.toBeInstanceOf(DeadlineExceededError);
-    expect(loader).not.toHaveBeenCalled();
-    expect(flight.size).toBe(0);
+    expect(runs).toBe(0);
   });
 
-  it('rejects keys longer than maxKeyLength', async () => {
-    const flight = new SingleFlight({ maxKeyLength: 8 });
-    const loader = jest.fn(async () => 'value');
+  it('lets a caller stop waiting while the shared execution keeps running', async () => {
+    jest.useFakeTimers();
+    const clock = new SystemClock();
+    const flight = new SingleFlight(new CallerWait(clock));
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = (): void => resolve();
+    });
+    const shared = flight.run('key', async () => {
+      await gate;
+      return 'late';
+    });
+    const impatient = flight
+      .run('key', async () => 'unused', {
+        deadline: Deadline.after(10, clock),
+      })
+      .catch((error: unknown) => error);
 
-    await expect(flight.run('123456789', loader)).rejects.toBeInstanceOf(
-      CacheKeyTooLongError,
-    );
-    await expect(flight.run('12345678', loader)).resolves.toBe('value');
-    expect(loader).toHaveBeenCalledTimes(1);
-    expect(() => new SingleFlight({ maxKeyLength: 0 })).toThrow(
-      CacheInvalidArgumentError,
-    );
+    await jest.advanceTimersByTimeAsync(10);
+    await expect(impatient).resolves.toMatchObject({
+      code: PrimitivesErrorCode.DeadlineExceeded,
+    });
+
+    release();
+    await expect(shared).resolves.toBe('late');
   });
+
+  it.each([0, -1, 1.5, Number.NaN])(
+    'rejects maxKeyLength %p at construction',
+    (maxKeyLength) => {
+      expect(
+        () =>
+          new SingleFlight(new CallerWait(new FixedClock()), { maxKeyLength }),
+      ).toThrow(
+        expect.objectContaining({ code: CacheErrorCode.InvalidArgument }),
+      );
+    },
+  );
 });

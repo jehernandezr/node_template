@@ -110,6 +110,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorTraceIdLabel => 'Trace ID';
 
   @override
+  String errorCodeLine(String code) {
+    return 'Code: $code';
+  }
+
+  @override
+  String errorTraceIdLine(String traceId) {
+    return 'Trace ID: $traceId';
+  }
+
+  @override
+  String get metaSeparator => ' · ';
+
+  @override
   String get notFound => 'Page not found.';
 
   @override

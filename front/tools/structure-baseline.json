@@ -106,26 +106,8 @@
     "front/microfrontends/verifier/lib/src/screens/verifier_screen.dart": {
       "widget-repository": 3
     },
-    "front/packages/auth/lib/src/session_manager.dart": {
-      "catch-without-on": 1
-    },
-    "front/packages/shell_core/lib/src/access_rule.dart": {
-      "datetime-now": 3
-    },
-    "front/packages/shell_core/lib/src/microfrontend_scope.dart": {
-      "catch-without-on": 1
-    },
-    "front/packages/shell_core/lib/src/shell_runtime.dart": {
-      "catch-without-on": 2
-    },
     "front/packages/shell_host/lib/src/shell_host.dart": {
       "catch-without-on": 1
-    },
-    "front/packages/ui/lib/src/components/async_value_view.dart": {
-      "catch-without-on": 1
-    },
-    "front/packages/ui/lib/src/components/error_view.dart": {
-      "l10n-interpolation": 2
     }
   }
 }

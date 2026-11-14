@@ -1,34 +1,15 @@
 import { SystemClock, type Clock } from '@platform/kernel';
-import { InvalidArgumentError } from '@platform/primitives';
-import {
-  assertRateLimitCall,
-  type RateLimitResult,
-  type RateLimitRule,
-} from './rate-limit-rule.js';
+import { RateLimitArgumentGuard } from './errors/rate-limit-argument-guard.js';
+import type { InMemoryRateLimiterOptions } from './in-memory-rate-limiter.options.js';
+import type { RateLimitResult } from './rate-limit-result.js';
+import type { RateLimitRule } from './rate-limit-rule.js';
+import { RateLimitCallValidator } from './rate-limit-call-validator.js';
 import { RateLimiter } from './rate-limiter.js';
-import {
-  admits,
-  slidingWindowResult,
-  windowPosition,
-  type WindowCounts,
-  type WindowPosition,
-} from './sliding-window.js';
+import { SlidingWindow } from './sliding-window.js';
+import type { WindowCounts } from './window-counts.js';
+import type { WindowPosition } from './window-position.js';
 
-/** Llaves que guarda por defecto un {@link InMemoryRateLimiter}. */
-export const DEFAULT_IN_MEMORY_RATE_LIMIT_ENTRIES = 100_000;
-
-/** Opciones de {@link InMemoryRateLimiter}. */
-export interface InMemoryRateLimiterOptions {
-  /** Fuente de tiempo. En pruebas, `FixedClock` de `@platform/kernel/test-utils`. */
-  readonly clock?: Clock;
-  /**
-   * Llaves que guarda como máximo. Al pasarse olvida la usada hace más tiempo,
-   * que vuelve a empezar de cero: así una ráfaga de llaves distintas no agota
-   * la memoria del proceso. Por defecto {@link DEFAULT_IN_MEMORY_RATE_LIMIT_ENTRIES}.
-   */
-  readonly maxEntries?: number;
-}
-
+/** Contadores de una llave: índice de la ventana y cuentas. */
 interface Entry {
   index: number;
   previous: number;
@@ -41,6 +22,9 @@ interface Entry {
  * compartido falla.
  */
 export class InMemoryRateLimiter extends RateLimiter {
+  /** Llaves que guarda por defecto. */
+  static readonly DEFAULT_MAX_ENTRIES = 100_000;
+
   // El orden de inserción del Map es el orden de uso: cada acceso reinserta.
   private readonly entries = new Map<string, Entry>();
   private readonly clock: Clock;
@@ -49,13 +33,11 @@ export class InMemoryRateLimiter extends RateLimiter {
   /** @throws InvalidArgumentError si `maxEntries` no es un entero positivo. */
   constructor(options: InMemoryRateLimiterOptions = {}) {
     super();
-    const maxEntries =
-      options.maxEntries ?? DEFAULT_IN_MEMORY_RATE_LIMIT_ENTRIES;
-    if (!Number.isSafeInteger(maxEntries) || maxEntries < 1) {
-      throw new InvalidArgumentError('maxEntries', 'a positive integer');
-    }
+    this.maxEntries = RateLimitArgumentGuard.instance.positiveInteger(
+      'maxEntries',
+      options.maxEntries ?? InMemoryRateLimiter.DEFAULT_MAX_ENTRIES,
+    );
     this.clock = options.clock ?? new SystemClock();
-    this.maxEntries = maxEntries;
   }
 
   async consume(
@@ -63,10 +45,10 @@ export class InMemoryRateLimiter extends RateLimiter {
     rule: RateLimitRule,
     cost = 1,
   ): Promise<RateLimitResult> {
-    assertRateLimitCall(key, rule, cost);
-    const id = entryId(key, rule);
+    RateLimitCallValidator.validate(key, rule, cost);
+    const id = InMemoryRateLimiter.entryId(key, rule);
     const { position, counts } = this.read(id, rule);
-    const allowed = admits(counts, position, rule, cost);
+    const allowed = SlidingWindow.admits(counts, position, rule, cost);
     const next: Entry = {
       index: position.index,
       previous: counts.previous,
@@ -76,24 +58,35 @@ export class InMemoryRateLimiter extends RateLimiter {
     this.entries.delete(id);
     this.entries.set(id, next);
     this.evict();
-    return slidingWindowResult(next, position, rule, allowed, cost);
+    return SlidingWindow.result(next, position, rule, allowed, cost);
   }
 
   async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
-    assertRateLimitCall(key, rule);
-    const { position, counts } = this.read(entryId(key, rule), rule);
-    return slidingWindowResult(
+    RateLimitCallValidator.validate(key, rule);
+    const { position, counts } = this.read(
+      InMemoryRateLimiter.entryId(key, rule),
+      rule,
+    );
+    return SlidingWindow.result(
       counts,
       position,
       rule,
-      admits(counts, position, rule, 1),
+      SlidingWindow.admits(counts, position, rule, 1),
       1,
     );
   }
 
   async reset(key: string, rule: RateLimitRule): Promise<void> {
-    assertRateLimitCall(key, rule);
-    this.entries.delete(entryId(key, rule));
+    RateLimitCallValidator.validate(key, rule);
+    this.entries.delete(InMemoryRateLimiter.entryId(key, rule));
+  }
+
+  /**
+   * Identidad de los contadores: nombre, ventana y llave. El separador no puede
+   * aparecer en el nombre ni en la ventana, así que dos llaves no chocan.
+   */
+  private static entryId(key: string, rule: RateLimitRule): string {
+    return `${rule.name}\u0000${rule.windowMs}\u0000${key}`;
   }
 
   /** Cuentas de la ventana en curso, corriendo las ventanas que ya pasaron. */
@@ -101,14 +94,20 @@ export class InMemoryRateLimiter extends RateLimiter {
     id: string,
     rule: RateLimitRule,
   ): { position: WindowPosition; counts: WindowCounts } {
-    const now = windowPosition(this.clock.now().getTime(), rule.windowMs);
+    const now = SlidingWindow.position(
+      this.clock.now().getTime(),
+      rule.windowMs,
+    );
     const entry = this.entries.get(id);
     if (entry === undefined) {
       return { position: now, counts: { previous: 0, current: 0 } };
     }
     if (entry.index > now.index) {
       // El reloj retrocedió: se sigue en la ventana guardada, desde su inicio.
-      return { position: { index: entry.index, elapsedMs: 0 }, counts: entry };
+      return {
+        position: { index: entry.index, elapsedMs: 0 },
+        counts: entry,
+      };
     }
     if (entry.index === now.index) {
       return { position: now, counts: entry };
@@ -125,12 +124,4 @@ export class InMemoryRateLimiter extends RateLimiter {
       this.entries.delete(id);
     }
   }
-}
-
-/**
- * Identidad de los contadores: nombre, ventana y llave. El separador no puede
- * aparecer en el nombre ni en la ventana, así que dos llaves no chocan.
- */
-function entryId(key: string, rule: RateLimitRule): string {
-  return `${rule.name}\u0000${rule.windowMs}\u0000${key}`;
 }

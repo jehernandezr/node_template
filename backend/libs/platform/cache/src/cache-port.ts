@@ -1,11 +1,18 @@
-/** Storage contract for the query cache. Values are opaque strings. */
-export interface CachePort {
-  /** Returns the stored value, or `undefined` when missing or expired. */
-  get(key: string): Promise<string | undefined>;
-  /** Stores a value. It expires after `ttlMs` milliseconds, or never when `ttlMs` is omitted. */
-  set(key: string, value: string, ttlMs?: number): Promise<void>;
-  /** Stores a value only when the key is missing or expired. Returns true when it was stored. */
-  setIfAbsent(key: string, value: string): Promise<boolean>;
-  /** Removes a key if present. */
-  delete(key: string): Promise<void>;
+/**
+ * Puerto de almacenamiento del caché de consultas. Los valores son texto
+ * opaco. Todos sus miembros son abstractos, así que un objeto literal con esos
+ * métodos sigue sirviendo de doble.
+ */
+export abstract class CachePort {
+  /** Valor guardado, o `undefined` si no existe o venció. */
+  abstract get(key: string): Promise<string | undefined>;
+
+  /** Guarda un valor. Vence a los `ttlMs` milisegundos, o nunca si se omite. */
+  abstract set(key: string, value: string, ttlMs?: number): Promise<void>;
+
+  /** Guarda solo si la llave no existe o venció. Devuelve `true` si guardó. */
+  abstract setIfAbsent(key: string, value: string): Promise<boolean>;
+
+  /** Borra la llave si existe. */
+  abstract delete(key: string): Promise<void>;
 }

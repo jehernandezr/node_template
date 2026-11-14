@@ -46,7 +46,7 @@ void main() {
     await tester.pumpWidget(
       testApp(
         AccountOverviewScreen(
-          repository: _FailingRepository(StateError('boom')),
+          repository: _FailingRepository(Exception('boom')),
           onSignOut: () async {},
         ),
       ),

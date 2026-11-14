@@ -287,16 +287,18 @@ class SessionManager {
       final fresh = await _repository.refresh(sessionToken: _sessionToken);
       await _adopt(fresh, generation: generation);
       return fresh;
-    } catch (error) {
+    } on ApiErrorException catch (error) {
       // Tras un logout el estado ya es signedOut y no se toca.
-      if (generation == _generation) {
-        if (error is ApiErrorException && _endsSession(error)) {
-          await _clearLocal();
-        } else {
-          _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
-        }
+      if (generation == _generation && _endsSession(error)) {
+        await _clearLocal();
       }
       rethrow;
+    } finally {
+      // Cualquier otra falla, incluido un error de programación que sigue de
+      // largo, devuelve el estado que el refresh encontró.
+      if (generation == _generation && _state == AuthState.refreshing) {
+        _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
+      }
     }
   }
 

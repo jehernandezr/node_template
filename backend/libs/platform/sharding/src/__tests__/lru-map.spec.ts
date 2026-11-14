@@ -1,5 +1,5 @@
-import { ShardingErrorCode } from '../errors.js';
-import { InvalidationLog, LruMap } from '../lru-map.js';
+import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
+import { LruMap } from '../lru-map.js';
 
 describe('LruMap', () => {
   it('evicts the least recently written entry past the limit', () => {
@@ -47,20 +47,4 @@ describe('LruMap', () => {
       );
     },
   );
-});
-
-describe('InvalidationLog', () => {
-  it('answers 0 for keys never invalidated', () => {
-    expect(new InvalidationLog(2).lastFor('a')).toBe(0);
-  });
-
-  it('answers the highest evicted sequence for forgotten keys', () => {
-    const log = new InvalidationLog(1);
-    log.record('a', 5);
-    log.record('b', 7);
-    expect(log.lastFor('b')).toBe(7);
-    // "a" was evicted: its answer can only be later than the truth, never earlier.
-    expect(log.lastFor('a')).toBe(5);
-    expect(log.lastFor('never-seen')).toBe(5);
-  });
 });

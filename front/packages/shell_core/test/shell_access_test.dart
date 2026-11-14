@@ -263,24 +263,49 @@ void main() {
       },
     );
 
-    test('redirectFor keeps the original location and skips shell pages', () {
+    test('ShellPaths.redirectFor keeps the original location and skips shell '
+        'pages', () {
       const paths = ShellPaths(stepUp: '/step-up');
+      final location = Uri.parse('/backoffice/sagas?page=2');
       expect(
-        redirectFor(
-          AccessDecision.stepUpRequired,
-          Uri.parse('/backoffice/sagas?page=2'),
-          paths,
-        ),
+        paths.redirectFor(AccessDecision.stepUpRequired, location),
         '/step-up?from=%2Fbackoffice%2Fsagas%3Fpage%3D2',
       );
       expect(
-        redirectFor(AccessDecision.denied, Uri.parse('/forbidden'), paths),
+        paths.redirectFor(AccessDecision.signInRequired, location),
+        '/login?from=%2Fbackoffice%2Fsagas%3Fpage%3D2',
+      );
+      expect(
+        paths.redirectFor(AccessDecision.denied, Uri.parse('/forbidden')),
         isNull,
       );
       expect(
-        redirectFor(AccessDecision.allowed, Uri.parse('/tasks'), paths),
+        paths.redirectFor(AccessDecision.allowed, Uri.parse('/tasks')),
         isNull,
       );
+    });
+
+    test('ShellPaths.redirectFor sends a step-up to forbidden without a '
+        'step-up page', () {
+      expect(
+        const ShellPaths().redirectFor(
+          AccessDecision.stepUpRequired,
+          Uri.parse('/backoffice'),
+        ),
+        '/forbidden?from=%2Fbackoffice',
+      );
+    });
+
+    test('redirectFor gives the same answer as ShellPaths.redirectFor', () {
+      const paths = ShellPaths(stepUp: '/step-up');
+      final location = Uri.parse('/backoffice');
+      for (final decision in AccessDecision.values) {
+        expect(
+          redirectFor(decision, location, paths),
+          paths.redirectFor(decision, location),
+          reason: decision.name,
+        );
+      }
     });
   });
 

@@ -1,50 +1,48 @@
-import { CacheInvalidArgumentError, CacheKeyTooLongError } from './errors.js';
-import { cancellation, waitFor, type WaitOptions } from './wait.js';
+import { CallerWait } from './caller-wait.js';
+import type { CallerWaitOptions } from './caller-wait.options.js';
+import { CacheKeyTooLongError } from './errors/cache-key-too-long.error.js';
+import { CacheGuard } from './errors/cache-guard.js';
+import type { SingleFlightOptions } from './single-flight.options.js';
 
-export type { WaitOptions } from './wait.js';
-
-/** Default bound for a single-flight key, in characters. */
-export const DEFAULT_SINGLE_FLIGHT_MAX_KEY_LENGTH = 1_024;
-
-/** Options for {@link SingleFlight}. */
-export interface SingleFlightOptions {
-  /** Longest key accepted. Defaults to {@link DEFAULT_SINGLE_FLIGHT_MAX_KEY_LENGTH}. */
-  maxKeyLength?: number;
-}
-
-/** Deduplicates concurrent executions that share a key. */
+/**
+ * Une las ejecuciones concurrentes que comparten una llave: mientras una está en
+ * vuelo, las demás reciben su misma promesa en vez de repetir el trabajo.
+ */
 export class SingleFlight {
+  /** Largo máximo por defecto de una llave, en caracteres. */
+  static readonly DEFAULT_MAX_KEY_LENGTH = 1_024;
+
   private readonly inFlight = new Map<string, Promise<unknown>>();
   private readonly maxKeyLength: number;
 
-  constructor(options: SingleFlightOptions = {}) {
-    const maxKeyLength =
-      options.maxKeyLength ?? DEFAULT_SINGLE_FLIGHT_MAX_KEY_LENGTH;
-    if (!Number.isInteger(maxKeyLength) || maxKeyLength < 1) {
-      throw new CacheInvalidArgumentError('maxKeyLength', 'an integer >= 1');
-    }
-    this.maxKeyLength = maxKeyLength;
+  constructor(
+    private readonly wait: CallerWait,
+    options: SingleFlightOptions = {},
+  ) {
+    this.maxKeyLength = CacheGuard.instance.positiveInteger(
+      'maxKeyLength',
+      options.maxKeyLength ?? SingleFlight.DEFAULT_MAX_KEY_LENGTH,
+    );
   }
 
-  /** Executions currently in progress. */
+  /** Ejecuciones en curso. */
   get size(): number {
     return this.inFlight.size;
   }
 
   /**
-   * Runs `fn` unless a call with the same key is already in progress, in which case
-   * that call's promise is shared. The key is released once the execution settles.
-   * Errors reach every waiter.
+   * Ejecuta `fn` salvo que ya haya una en curso con la misma llave, en cuyo caso
+   * comparte su promesa. La llave se libera al terminar, con éxito o con error.
    *
-   * `options` only bounds this caller's wait: when its signal aborts or its
-   * deadline expires it rejects, while the shared execution keeps running for
-   * the other waiters. A caller that is already cancelled does not start `fn`.
-   * @throws CacheKeyTooLongError when the key exceeds `maxKeyLength`.
+   * `options` solo acota la espera de quien llama: si aborta o vence su plazo,
+   * ese llamador rechaza mientras la ejecución compartida sigue para los demás.
+   * Un llamador ya cancelado no arranca `fn`.
+   * @throws CacheKeyTooLongError cuando la llave supera `maxKeyLength`.
    */
   run<T>(
     key: string,
     fn: () => Promise<T>,
-    options: WaitOptions = {},
+    options: CallerWaitOptions = {},
   ): Promise<T> {
     if (key.length > this.maxKeyLength) {
       return Promise.reject(
@@ -53,9 +51,9 @@ export class SingleFlight {
     }
     const existing = this.inFlight.get(key) as Promise<T> | undefined;
     if (existing !== undefined) {
-      return waitFor(existing, options);
+      return this.wait.wait(existing, options);
     }
-    const cancelled = cancellation(options);
+    const cancelled = this.wait.cancellation(options);
     if (cancelled !== undefined) {
       return Promise.reject(cancelled);
     }
@@ -67,6 +65,6 @@ export class SingleFlight {
       }
     };
     promise.then(release, release);
-    return waitFor(promise, options);
+    return this.wait.wait(promise, options);
   }
 }

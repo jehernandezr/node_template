@@ -4,84 +4,94 @@ import 'package:flutter/foundation.dart';
 import '../identity_connection.dart';
 import '../session_manager.dart';
 import 'mfa_methods.dart';
+import 'mfa_state.dart';
 
-/// Estado común del login y del paso adicional: un desafío MFA pendiente, el
-/// desafío del método elegido, si hay una llamada en curso y el código del
-/// último error.
+/// Shared state of the sign-in and the step-up: one [MfaState] at a time.
 ///
-/// Los formularios solo dibujan este estado y llaman a sus acciones; las
-/// reglas de qué paso se reinicia ante cada error viven aquí, así se prueban
-/// sin montar widgets.
+/// The forms only draw [state] and call the actions. Which step each error
+/// resets lives here, so it is tested without mounting widgets.
 abstract base class MfaFlow extends ChangeNotifier {
-  MfaFlow({this._busy = false});
+  MfaFlow({MfaState initial = const MfaIdle()}) : _state = initial;
 
-  PendingMfa? _pending;
-  MfaChallenge? _challenge;
-  String? _errorCode;
-  bool _busy;
+  MfaState _state;
   bool _disposed = false;
 
-  /// Desafío pendiente con sus métodos, o null antes de que el servidor lo
-  /// pida (o después de que lo diera por muerto).
-  PendingMfa? get pending => _pending;
+  /// What the flow is doing now.
+  MfaState get state => _state;
 
-  /// Desafío del método elegido, o null mientras no hay uno vigente.
-  MfaChallenge? get challenge => _challenge;
+  /// Legacy getter derived from [state]; read [state] instead.
+  PendingMfa? get pending => _state.pending;
 
-  /// Código público del último error, para `errorMessage`, o null.
-  String? get errorCode => _errorCode;
+  /// Legacy getter derived from [state]; read [state] instead.
+  MfaChallenge? get challenge => _state.challenge;
 
-  /// Si hay una llamada en curso.
-  bool get busy => _busy;
+  /// Legacy getter derived from [state]; read [state] instead.
+  String? get errorCode => _state.errorCode;
 
-  /// Métodos del desafío pendiente que este flujo sabe completar, en el orden
-  /// del servidor.
+  /// Legacy getter derived from [state]; read [state] instead.
+  bool get busy => _state.isBusy;
+
+  /// Methods of the pending challenge that this flow can complete, in the
+  /// server's order.
   List<MfaFactor> get methods => [
-    for (final method in _pending?.methods ?? const <MfaFactor>[])
+    for (final method in pending?.methods ?? const <MfaFactor>[])
       if (codeMfaMethods.contains(method)) method,
   ];
 
-  /// Errores que obligan a pedir un desafío nuevo con el mismo `mfaToken`.
+  /// Errors that need a new challenge with the same `mfaToken`.
   Set<IdentityErrorCode> get _challengeResetCodes;
 
-  /// Corre [step] marcando el flujo ocupado y traduce sus fallos a
-  /// [errorCode]. Devuelve el resultado, o null si falló.
+  MfaStep get _step => switch (_state) {
+    final MfaStep step => step,
+    MfaBusy(:final step) => step,
+    MfaFailed(:final step) => step,
+  };
+
+  /// Runs [call] with the flow busy and turns its failures into [MfaFailed].
+  /// [call] names the step the flow moves to on success through the callback
+  /// it receives; without one the flow goes back to where it was. Returns the
+  /// result, or null when it failed.
   ///
-  /// Solo atrapa excepciones: un error de programación (`TypeError`,
-  /// `StateError`) sale tal cual, después de soltar [busy].
-  Future<T?> _run<T>(Future<T> Function() step) async {
-    _busy = true;
-    _errorCode = null;
-    _notify();
+  /// Only exceptions are caught: a programming error (`TypeError`,
+  /// `StateError`) escapes as is, after the flow leaves [MfaBusy].
+  Future<T?> _run<T>(
+    Future<T> Function(void Function(MfaStep next) advance) call,
+  ) async {
+    final from = _step;
+    final busy = MfaBusy(from);
+    MfaStep? next;
+    _emit(busy);
     try {
-      return await step();
+      final result = await call((step) => next = step);
+      _emit(next ?? from);
+      return result;
     } on ApiErrorException catch (error) {
-      _onProblem(error.problem.code);
+      final code = error.problem.code;
+      _emit(MfaFailed(code, _stepAfterFailure(from, code)));
     } on ContractViolationException {
-      _errorCode = PlatformErrorCode.validationInvalidInput.code;
+      _emit(MfaFailed(PlatformErrorCode.validationInvalidInput.code, from));
     } on Exception {
-      // Red, tiempo agotado o sesión cerrada: un mensaje genérico, nunca el
-      // texto de la excepción.
-      _errorCode = PlatformErrorCode.internalUnexpected.code;
+      // Network, timeout or closed session: a generic message, never the
+      // text of the exception.
+      _emit(MfaFailed(PlatformErrorCode.internalUnexpected.code, from));
     } finally {
-      _busy = false;
-      _notify();
+      // Still busy here only when an error escaped the handlers above.
+      if (identical(_state, busy)) _emit(from);
     }
     return null;
   }
 
-  void _onProblem(String code) {
-    _errorCode = code;
+  MfaStep _stepAfterFailure(MfaStep from, String code) {
     final identity = IdentityErrorCode.fromCode(code);
-    if (identity == IdentityErrorCode.mfaTokenInvalid) {
-      _pending = null;
-      _challenge = null;
-    } else if (_challengeResetCodes.contains(identity)) {
-      _challenge = null;
+    if (identity == IdentityErrorCode.mfaTokenInvalid) return const MfaIdle();
+    if (_challengeResetCodes.contains(identity) && from is MfaAwaitingCode) {
+      return MfaAwaitingMethod(from.pending);
     }
+    return from;
   }
 
-  void _notify() {
+  void _emit(MfaState next) {
+    _state = next;
     if (!_disposed) notifyListeners();
   }
 
@@ -92,12 +102,12 @@ abstract base class MfaFlow extends ChangeNotifier {
   }
 }
 
-/// Login real contra identity.
+/// Real sign-in against identity.
 ///
-/// Primero email y contraseña ([signIn]). Si identity pide un segundo factor,
-/// el usuario elige un método ([requestChallenge]) y verifica el código
-/// ([verify]). Cuando la sesión queda abierta carga su acceso, y la acción
-/// devuelve true.
+/// First email and password ([signIn]). When identity asks for a second
+/// factor, the user picks a method ([requestChallenge]) and verifies the code
+/// ([verify]). Once the session is open it loads its access, and the action
+/// returns true.
 final class SignInFlow extends MfaFlow {
   SignInFlow(this._connection);
 
@@ -111,19 +121,19 @@ final class SignInFlow extends MfaFlow {
     IdentityErrorCode.mfaTooManyAttempts,
   };
 
-  /// Envía las credenciales. Devuelve true si la sesión quedó abierta y false
-  /// si falló o si falta el segundo factor ([pending] deja de ser null).
+  /// Sends the credentials. Returns true when the session is open and false
+  /// when it failed or a second factor is missing ([MfaAwaitingMethod]).
   Future<bool> signIn({
     required String email,
     required String password,
   }) async =>
-      await _run(() async {
+      await _run((advance) async {
         final response = await _manager.signIn(
           SignInRequest(email: email, password: password),
         );
         final pending = response.mfa;
         if (pending != null) {
-          _pending = pending;
+          advance(MfaAwaitingMethod(pending));
           return false;
         }
         await _connection.reloadAccess();
@@ -131,27 +141,30 @@ final class SignInFlow extends MfaFlow {
       }) ??
       false;
 
-  /// Pide el desafío de [method] para el segundo factor pendiente.
+  /// Asks for the challenge of [method] for the pending second factor.
   Future<void> requestChallenge(MfaFactor method) async {
-    final pending = _pending;
-    if (pending == null) throw StateError('No hay un segundo factor pendiente');
-    await _run(() async {
-      _challenge = await _manager.requestMfaChallenge(
+    final pending = state.pending;
+    if (pending == null) {
+      throw StateError('There is no pending second factor');
+    }
+    await _run((advance) async {
+      final challenge = await _manager.requestMfaChallenge(
         mfaToken: pending.mfaToken,
         method: method,
       );
+      advance(MfaAwaitingCode(pending, challenge));
     });
   }
 
-  /// Verifica [code] para el desafío vigente y registra el dispositivo si hay
-  /// clave de dispositivo. Devuelve true si la sesión quedó abierta.
+  /// Verifies [code] for the active challenge and registers the device when
+  /// there is a device key. Returns true when the session is open.
   Future<bool> verify(String code) async {
-    final pending = _pending;
-    final challenge = _challenge;
+    final pending = state.pending;
+    final challenge = state.challenge;
     if (pending == null || challenge == null) {
-      throw StateError('No hay un desafío vigente');
+      throw StateError('There is no active challenge');
     }
-    return await _run(() async {
+    return await _run((_) async {
           await _manager.verifyMfa(
             mfaToken: pending.mfaToken,
             challengeId: challenge.challengeId,
@@ -165,15 +178,15 @@ final class SignInFlow extends MfaFlow {
   }
 }
 
-/// Paso adicional de una sesión abierta contra identity.
+/// Step-up of an open session against identity.
 ///
-/// [start] abre el paso adicional y trae los métodos ofrecidos; el usuario
-/// elige uno ([requestChallenge]) y verifica el código ([verify]). La sesión
-/// adopta el access token nuevo, que lleva el segundo factor reciente.
+/// [start] opens the step-up and brings the offered methods; the user picks
+/// one ([requestChallenge]) and verifies the code ([verify]). The session
+/// adopts the new access token, which carries the fresh second factor.
 ///
-/// Nace ocupado: quien lo crea llama a [start] enseguida.
+/// Starts busy because whoever creates it calls [start] right away.
 final class StepUpFlow extends MfaFlow {
-  StepUpFlow(this._manager) : super(busy: true);
+  StepUpFlow(this._manager) : super(initial: const MfaBusy(MfaIdle()));
 
   final SessionManager _manager;
 
@@ -184,31 +197,32 @@ final class StepUpFlow extends MfaFlow {
     IdentityErrorCode.mfaMethodUnavailable,
   };
 
-  /// Abre el paso adicional. Se puede repetir si falló.
-  Future<void> start() => _run(() async {
-    _pending = await _manager.startStepUp();
+  /// Opens the step-up. It can be repeated after a failure.
+  Future<void> start() => _run((advance) async {
+    advance(MfaAwaitingMethod(await _manager.startStepUp()));
   });
 
-  /// Pide el desafío de [method] para el paso adicional abierto.
+  /// Asks for the challenge of [method] for the open step-up.
   Future<void> requestChallenge(MfaFactor method) async {
-    final pending = _pending;
-    if (pending == null) throw StateError('El paso adicional no está abierto');
-    await _run(() async {
-      _challenge = await _manager.requestStepUpChallenge(
+    final pending = state.pending;
+    if (pending == null) throw StateError('The step-up is not open');
+    await _run((advance) async {
+      final challenge = await _manager.requestStepUpChallenge(
         mfaToken: pending.mfaToken,
         method: method,
       );
+      advance(MfaAwaitingCode(pending, challenge));
     });
   }
 
-  /// Verifica [code] y devuelve el nuevo `mfaVerifiedAt`, o null si falló.
+  /// Verifies [code] and returns the new `mfaVerifiedAt`, or null on failure.
   Future<DateTime?> verify(String code) async {
-    final pending = _pending;
-    final challenge = _challenge;
+    final pending = state.pending;
+    final challenge = state.challenge;
     if (pending == null || challenge == null) {
-      throw StateError('No hay un desafío vigente');
+      throw StateError('There is no active challenge');
     }
-    return _run(() async {
+    return _run((_) async {
       final result = await _manager.verifyStepUp(
         mfaToken: pending.mfaToken,
         challengeId: challenge.challengeId,

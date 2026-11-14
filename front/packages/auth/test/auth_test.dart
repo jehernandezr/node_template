@@ -233,6 +233,19 @@ void main() {
   });
 
   test(
+    'a programming error during refresh escapes and keeps the session',
+    () async {
+      await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
+      repo.refreshError = TypeError();
+
+      await expectLater(manager.accessToken(), throwsA(isA<TypeError>()));
+
+      expect(store.sessionToken, isNotNull);
+      expect(manager.state, AuthState.signedIn);
+    },
+  );
+
+  test(
     'refresh forces a new access token while the current one is valid',
     () async {
       await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));

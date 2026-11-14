@@ -1,8 +1,9 @@
-import type { RateLimitResult, RateLimitRule } from './rate-limit-rule.js';
+import type { RateLimitResult } from './rate-limit-result.js';
+import type { RateLimitRule } from './rate-limit-rule.js';
 
 /**
  * Puerto de límite de tasa por llave con ventana deslizante. Las
- * implementaciones validan con `assertRateLimitCall` y lanzan
+ * implementaciones validan con `RateLimitCallValidator.validate` y lanzan
  * `InvalidArgumentError` antes de contar nada.
  */
 export abstract class RateLimiter {

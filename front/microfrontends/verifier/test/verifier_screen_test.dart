@@ -142,7 +142,7 @@ void main() {
 
     testWidgets('a failing code shows the localized failure', (tester) async {
       final repo = _ControlledRepository()
-        ..onAutoCode = (_) async => throw StateError('no key');
+        ..onAutoCode = (_) async => throw Exception('no key');
       await _pump(tester, repo);
 
       repo.source.add(challenge);

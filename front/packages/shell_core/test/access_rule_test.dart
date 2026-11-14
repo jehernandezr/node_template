@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shell_core/shell_core.dart';
 
+final _now = DateTime.utc(2026, 1, 1);
+
 void main() {
   final reader = UserSession(
     userId: 'u1',
@@ -18,16 +20,19 @@ void main() {
 
   group('AccessRule', () {
     test('public allows anonymous and signed-in sessions', () {
-      expect(AccessRule.public().allows(UserSession.anonymous()), isTrue);
-      expect(AccessRule.public().allows(reader), isTrue);
+      expect(
+        AccessRule.public().allows(UserSession.anonymous(), now: _now),
+        isTrue,
+      );
+      expect(AccessRule.public().allows(reader, now: _now), isTrue);
     });
 
     test('authenticated requires a user id', () {
       expect(
-        AccessRule.authenticated().allows(UserSession.anonymous()),
+        AccessRule.authenticated().allows(UserSession.anonymous(), now: _now),
         isFalse,
       );
-      expect(AccessRule.authenticated().allows(reader), isTrue);
+      expect(AccessRule.authenticated().allows(reader, now: _now), isTrue);
     });
 
     test('permissions requires every listed permission', () {
@@ -35,8 +40,8 @@ void main() {
         Permission.tasksRead,
         Permission.tasksWrite,
       ]);
-      expect(rule.allows(reader), isFalse);
-      expect(rule.allows(full), isTrue);
+      expect(rule.allows(reader, now: _now), isFalse);
+      expect(rule.allows(full, now: _now), isTrue);
     });
 
     test('permissions rejects an empty list', () {
@@ -48,22 +53,23 @@ void main() {
         AccessRule.platformRoles([
           PlatformRole.superAdmin,
           PlatformRole.support,
-        ]).allows(full),
+        ]).allows(full, now: _now),
         isTrue,
       );
       expect(
-        AccessRule.platformRoles([PlatformRole.finance]).allows(full),
+        AccessRule.platformRoles([PlatformRole.finance])
+            .allows(full, now: _now),
         isFalse,
       );
     });
 
     test('planFeature checks the plan', () {
       expect(
-        AccessRule.planFeature(PlanFeature.aiAssistant).allows(full),
+        AccessRule.planFeature(PlanFeature.aiAssistant).allows(full, now: _now),
         isTrue,
       );
       expect(
-        AccessRule.planFeature(PlanFeature.webhooks).allows(full),
+        AccessRule.planFeature(PlanFeature.webhooks).allows(full, now: _now),
         isFalse,
       );
     });
@@ -74,8 +80,8 @@ void main() {
         AccessRule.permissions([Permission.tasksRead]),
         AccessRule.planFeature(PlanFeature.aiAssistant),
       ]);
-      expect(rule.allows(reader), isFalse);
-      expect(rule.allows(full), isTrue);
+      expect(rule.allows(reader, now: _now), isFalse);
+      expect(rule.allows(full, now: _now), isTrue);
     });
 
     test('all requires at least one nested rule', () {

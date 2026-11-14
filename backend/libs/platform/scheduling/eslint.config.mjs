@@ -21,4 +21,9 @@ export default [
       ],
     },
   },
+  {
+    // Aquí se declaran los códigos: es el único lugar donde van como texto.
+    files: ['src/errors/scheduling-error-code.enum.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
 ];

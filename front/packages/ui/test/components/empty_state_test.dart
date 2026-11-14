@@ -46,4 +46,12 @@ void main() {
     );
     expect(find.text('Create'), findsNothing);
   });
+
+  testWidgets('draws the icon at the extra large size', (tester) async {
+    await pumpApp(
+      tester,
+      const EmptyState(icon: Icons.inbox_outlined, title: 'No tasks'),
+    );
+    expect(tester.widget<Icon>(find.byType(Icon)).size, AppIconSize.xl);
+  });
 }

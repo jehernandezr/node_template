@@ -1,24 +1,24 @@
 import { inspect } from 'node:util';
 import { z } from 'zod';
 
-/** Text shown in place of a secret by `toString`, `toJSON` and `inspect`. */
+/** Texto que se muestra en lugar del secreto en `toString`, `toJSON` e `inspect`. */
 export const SECRET_PLACEHOLDER = '[REDACTED]';
 
-const values = new WeakMap<Secret, string>();
-
 /**
- * Holds a sensitive configuration value. The raw text is not an own property,
- * so spreading, `JSON.stringify`, `String(...)` and `util.inspect` only ever
- * show `[REDACTED]`. Read it explicitly with `reveal()` at the point of use.
+ * Guarda un valor sensible. El texto crudo vive en un campo privado de la
+ * clase, así que spread, `JSON.stringify`, `String(...)` y `util.inspect` solo
+ * muestran `[REDACTED]`. Se lee con `reveal()` en el punto de uso.
  */
 export class Secret {
+  readonly #value: string;
+
   constructor(value: string) {
-    values.set(this, value);
+    this.#value = value;
   }
 
-  /** Returns the raw value. Never log or serialize the result. */
+  /** Devuelve el valor crudo. Nunca lo registres ni lo serialices. */
   reveal(): string {
-    return values.get(this) as string;
+    return this.#value;
   }
 
   toString(): string {
@@ -32,24 +32,24 @@ export class Secret {
   [inspect.custom](): string {
     return `Secret(${SECRET_PLACEHOLDER})`;
   }
-}
 
-/** Tells whether `value` is a `Secret`. */
-export function isSecret(value: unknown): value is Secret {
-  return value instanceof Secret;
+  /** Indica si `value` es un `Secret`. */
+  static is(value: unknown): value is Secret {
+    return value instanceof Secret;
+  }
 }
 
 export interface SecretOptions {
-  /** Minimum length of the raw value. */
+  /** Longitud mínima del valor crudo. */
   minLength?: number;
-  /** Maximum length of the raw value. */
+  /** Longitud máxima del valor crudo. */
   maxLength?: number;
 }
 
 /**
- * Schema for a sensitive environment variable (password, API key, token).
- * It parses to a `Secret`; validation messages never include the raw value
- * nor any part of it.
+ * Esquema para una variable de entorno sensible (contraseña, clave de API,
+ * token). Se convierte en un `Secret`; los mensajes de validación nunca
+ * incluyen el valor crudo ni una parte de él.
  */
 export function secret(options: SecretOptions = {}) {
   const { minLength = 1, maxLength } = options;

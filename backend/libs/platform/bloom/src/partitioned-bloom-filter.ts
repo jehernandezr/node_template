@@ -1,82 +1,41 @@
-import type { AsyncBloomFilter } from './async-bloom-filter.js';
-import { InvalidParameters } from './bloom-error.js';
-import { murmur3_32 } from './hashing.js';
-import { MAX_BITS } from './limits.js';
-import {
-  DEFAULT_FALSE_POSITIVE_RATE,
-  requiredBits,
-} from './optimal-parameters.js';
+import { AsyncBloomFilter } from './async-bloom-filter.js';
+import { BloomMath } from './bloom-math.js';
+import type {
+  BloomRebuildSource,
+  BloomRebuildSourceFactory,
+} from './bloom-rebuild-source.js';
+import { BloomSizing } from './bloom-sizing.js';
+import { InvalidParametersError } from './errors/invalid-parameters.error.js';
+import { RebuildableBloomFilter } from './rebuildable-bloom-filter.js';
 
 /**
- * Seed of the hash that picks the partition. It differs from the hashes that pick bit positions (FNV-1a and
- * MurmurHash3 with seed 0), so the items of one partition still spread over all of its bits.
- */
-export const PARTITION_HASH_SEED = 0x5bd1e995;
-
-/** Largest number of partitions accepted. */
-export const MAX_PARTITIONS = 4_096;
-
-/**
- * Partitions needed so that each one fits in `maxBitsPerPartition` at the target rate.
- * For example, 1.5 billion items at 1 % need about 14.4 billion bits: 4 partitions of at most 2^32 bits.
- * @throws {InvalidParameters} for out-of-range inputs, or when more than {@link MAX_PARTITIONS} are needed.
- */
-export function partitionCount(
-  expectedItems: number,
-  falsePositiveRate: number = DEFAULT_FALSE_POSITIVE_RATE,
-  maxBitsPerPartition: number = MAX_BITS,
-): number {
-  if (
-    !Number.isSafeInteger(maxBitsPerPartition) ||
-    maxBitsPerPartition < 1 ||
-    maxBitsPerPartition > MAX_BITS
-  ) {
-    throw new InvalidParameters(
-      `maxBitsPerPartition must be an integer in [1, ${MAX_BITS}], got ${maxBitsPerPartition}`,
-    );
-  }
-  const count = Math.ceil(
-    requiredBits(expectedItems, falsePositiveRate) / maxBitsPerPartition,
-  );
-  if (count > MAX_PARTITIONS) {
-    throw new InvalidParameters(
-      `${count} partitions needed; the maximum is ${MAX_PARTITIONS}`,
-    );
-  }
-  return count;
-}
-
-/**
- * Partition of an item among `partitions`: MurmurHash3 with {@link PARTITION_HASH_SEED}, modulo the count.
- * The rebuild job of a partitioned filter uses it to feed each partition only its own items.
- */
-export function partitionOf(item: string, partitions: number): number {
-  return murmur3_32(item, PARTITION_HASH_SEED) % partitions;
-}
-
-/**
- * One logical filter spread over several filters by a hash of the item. Each item lives in exactly one
- * partition, so the false positive rate of the whole is the rate of each partition. Use it when a set does
- * not fit in one filter: the Have I Been Pwned list does not fit in one 2^32-bit filter at 1 %, and the
- * Valkey `BF.*` module caps each filter's memory (`bf.bloom-memory-usage-limit`, 128 MiB by default).
+ * Un filtro lógico repartido en varios filtros según un hash del ítem. Cada ítem vive en una sola
+ * partición, así que la tasa de falsos positivos del conjunto es la de cada partición. Sirve cuando un
+ * conjunto no cabe en un solo filtro: la lista de Have I Been Pwned no cabe en un filtro de 2^32 bits al
+ * 1 %, y el módulo `BF.*` de Valkey limita la memoria de cada filtro (`bf.bloom-memory-usage-limit`, 128 MiB
+ * por defecto).
  *
- * Size each partition for `expectedItems / partitions` items. Rebuild each partition separately, feeding it
- * the items for which {@link partitionOf} returns its index.
+ * Dimensiona cada partición para `expectedItems / partitions` ítems. Reconstruye cada partición por separado,
+ * dándole solo los ítems para los que `BloomMath.partitionOf` devuelve su índice.
  */
-export class PartitionedBloomFilter implements AsyncBloomFilter {
+export class PartitionedBloomFilter extends AsyncBloomFilter {
   private readonly partitions: readonly AsyncBloomFilter[];
 
-  /** @throws {InvalidParameters} with no partitions or more than {@link MAX_PARTITIONS}. */
+  /** @throws InvalidParametersError sin particiones o con más de `BloomSizing.MAX_PARTITIONS`. */
   constructor(partitions: readonly AsyncBloomFilter[]) {
-    if (partitions.length === 0 || partitions.length > MAX_PARTITIONS) {
-      throw new InvalidParameters(
-        `partitions must have between 1 and ${MAX_PARTITIONS} filters, got ${partitions.length}`,
+    super();
+    if (
+      partitions.length === 0 ||
+      partitions.length > BloomSizing.MAX_PARTITIONS
+    ) {
+      throw new InvalidParametersError(
+        `partitions must have between 1 and ${BloomSizing.MAX_PARTITIONS} filters, got ${partitions.length}`,
       );
     }
     this.partitions = [...partitions];
   }
 
-  /** Number of partitions. */
+  /** Número de particiones. */
   get size(): number {
     return this.partitions.length;
   }
@@ -88,7 +47,7 @@ export class PartitionedBloomFilter implements AsyncBloomFilter {
   async addMany(items: readonly string[]): Promise<void> {
     const batches = new Map<number, string[]>();
     for (const item of items) {
-      const index = partitionOf(item, this.partitions.length);
+      const index = BloomMath.partitionOf(item, this.partitions.length);
       const batch = batches.get(index);
       if (batch === undefined) {
         batches.set(index, [item]);
@@ -107,7 +66,40 @@ export class PartitionedBloomFilter implements AsyncBloomFilter {
     return this.partitionFor(item).mightContain(item);
   }
 
+  /**
+   * Reconstruye cada partición desde una fuente nueva. Antes comprueba que todas se puedan reconstruir y, si
+   * no, lanza `InvalidParametersError` sin tocar ninguna. Luego, en secuencia, cada partición lee la fuente
+   * desde el principio y se queda solo con sus ítems, así no se guarda todo el conjunto en memoria.
+   */
+  async rebuildFrom(factory: BloomRebuildSourceFactory): Promise<void> {
+    const rebuildable = this.partitions.filter(RebuildableBloomFilter.is);
+    if (rebuildable.length !== this.partitions.length) {
+      throw new InvalidParametersError(
+        'every partition must be rebuildable to rebuild the filter',
+      );
+    }
+    for (let index = 0; index < rebuildable.length; index += 1) {
+      await rebuildable[index].rebuild(this.itemsOf(factory, index));
+    }
+  }
+
   private partitionFor(item: string): AsyncBloomFilter {
-    return this.partitions[partitionOf(item, this.partitions.length)];
+    return this.partitions[BloomMath.partitionOf(item, this.partitions.length)];
+  }
+
+  /** Lotes de la fuente que pertenecen a la partición `index`. Los lotes vacíos no se entregan. */
+  private async *itemsOf(
+    factory: BloomRebuildSourceFactory,
+    index: number,
+  ): AsyncGenerator<readonly string[]> {
+    const source: BloomRebuildSource = factory();
+    for await (const batch of source) {
+      const own = batch.filter(
+        (item) => BloomMath.partitionOf(item, this.partitions.length) === index,
+      );
+      if (own.length > 0) {
+        yield own;
+      }
+    }
   }
 }

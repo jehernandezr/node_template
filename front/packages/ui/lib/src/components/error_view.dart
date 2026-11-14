@@ -1,4 +1,3 @@
-import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tokens/tokens.dart';
@@ -8,10 +7,11 @@ import 'app_button.dart';
 /// Error message with the stable error [code] and [traceId] for support.
 ///
 /// The code and trace id are selectable so users can copy them into a
-/// support request. The retry button appears only when [onRetry] is set.
+/// support request. The retry button appears only when [onRetry] is set, and
+/// the message is announced to screen readers as it appears.
 ///
-/// The labels come from [AppLocalizations] (`errorCodeLabel`,
-/// `errorTraceIdLabel` and `actionRetry`), so the app must provide it.
+/// The labels come from [AppLocalizations] (`errorCodeLine`,
+/// `errorTraceIdLine` and `actionRetry`), so the app must provide it.
 class ErrorView extends StatelessWidget {
   /// Creates an error view showing a human [message].
   const ErrorView({
@@ -20,45 +20,28 @@ class ErrorView extends StatelessWidget {
     this.code,
     this.traceId,
     this.onRetry,
-  });
+  }) : _error = null;
 
-  /// Creates an error view from an API [problem] document. The [message] is
-  /// shown to the user and the problem's code and trace id are displayed
-  /// for support.
-  factory ErrorView.fromProblem(
-    ProblemDetails problem, {
-    Key? key,
-    required String message,
-    VoidCallback? onRetry,
-  }) {
-    return ErrorView(
-      key: key,
-      message: message,
-      code: problem.code,
-      traceId: problem.traceId,
-      onRetry: onRetry,
-    );
-  }
+  /// Creates an error view from [details], as an `ErrorPresenter` describes
+  /// them.
+  ErrorView.details(ErrorDetails details, {super.key, this.onRetry})
+    : message = details.message,
+      code = details.code,
+      traceId = details.traceId,
+      _error = null;
 
-  /// Creates an error view from any [error]. When the error is an
-  /// [ApiErrorException] its problem's code and trace id are shown;
-  /// otherwise only [fallbackMessage] is shown.
-  factory ErrorView.fromException(
+  /// Creates an error view from any [error]. The code and trace id of an API
+  /// error are shown; the text is always [fallbackMessage], never the
+  /// server's own.
+  const ErrorView.fromException(
     Object error, {
-    Key? key,
+    super.key,
     required String fallbackMessage,
-    VoidCallback? onRetry,
-  }) {
-    if (error is ApiErrorException) {
-      return ErrorView.fromProblem(
-        error.problem,
-        key: key,
-        message: fallbackMessage,
-        onRetry: onRetry,
-      );
-    }
-    return ErrorView(key: key, message: fallbackMessage, onRetry: onRetry);
-  }
+    this.onRetry,
+  }) : message = fallbackMessage,
+       code = null,
+       traceId = null,
+       _error = error;
 
   /// Human-readable description of the failure.
   final String message;
@@ -72,6 +55,8 @@ class ErrorView extends StatelessWidget {
   /// Called when the retry button is tapped.
   final VoidCallback? onRetry;
 
+  final Object? _error;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -79,37 +64,53 @@ class ErrorView extends StatelessWidget {
     final small = theme.textTheme.labelSmall?.copyWith(
       color: scheme.onSurfaceVariant,
     );
-    final errorCode = code;
-    final errorTraceId = traceId;
     final retry = onRetry;
     final l10n = AppLocalizations.of(context);
+    final source = _error;
+    final fromError = source == null
+        ? null
+        : ErrorPresenter(l10n).describe(source);
+    final errorCode = fromError?.code ?? code;
+    final errorTraceId = fromError?.traceId ?? traceId;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: scheme.error),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              message,
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
+            Icon(
+              Icons.error_outline,
+              size: AppIconSize.xl,
+              color: scheme.error,
             ),
-            if (errorCode != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              SelectableText(
-                '${l10n.errorCodeLabel}: $errorCode',
-                style: small,
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                message,
+                style: theme.textTheme.titleLarge,
+                textAlign: TextAlign.center,
               ),
-            ],
-            if (errorTraceId != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              SelectableText(
-                '${l10n.errorTraceIdLabel}: $errorTraceId',
-                style: small,
+            ),
+            if (errorCode != null || errorTraceId != null)
+              // A SelectionArea keeps the lines copyable without the
+              // per-line long-press target of SelectableText, which is
+              // shorter than the minimum tap target.
+              SelectionArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (errorCode != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(l10n.errorCodeLine(errorCode), style: small),
+                    ],
+                    if (errorTraceId != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(l10n.errorTraceIdLine(errorTraceId), style: small),
+                    ],
+                  ],
+                ),
               ),
-            ],
             if (retry != null) ...[
               const SizedBox(height: AppSpacing.md),
               AppButton(

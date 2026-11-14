@@ -1,162 +1,151 @@
 import { FixedClock } from '@platform/kernel/test-utils';
 import { InvalidArgumentError } from '@platform/primitives';
-import { FakeRateLimiter } from './utils/fake-rate-limiter.js';
 import { DegradingRateLimiter } from '../degrading-rate-limiter.js';
-import { InMemoryRateLimiter } from '../in-memory-rate-limiter.js';
-import { RateLimitOperation, type RateLimitRule } from '../rate-limit-rule.js';
+import { RateLimitOperation } from '../rate-limit-operation.enum.js';
+import type { RateLimitRule } from '../rate-limit-rule.js';
+import {
+  FakeRateLimiter,
+  RecordingDegradationReporter,
+} from './utils/index.js';
 
-const RULE: RateLimitRule = { name: 'api', limit: 10, windowMs: 60_000 };
+const RULE: RateLimitRule = { name: 'degrade', limit: 4, windowMs: 1000 };
+const START = new Date('2025-01-01T00:00:00.000Z');
+const DOWN = new Error('valkey down');
 
-function setup(localDivisor = 4) {
-  const clock = new FixedClock();
+function setup(): { primary: FakeRateLimiter; limiter: DegradingRateLimiter } {
+  const clock = new FixedClock(START);
   const primary = new FakeRateLimiter(clock);
-  const onDegraded = jest.fn();
-  const limiter = new DegradingRateLimiter({
-    primary,
-    localDivisor,
-    clock,
-    onDegraded,
-  });
-  return { clock, primary, onDegraded, limiter };
-}
-
-async function allowedCount(
-  limiter: DegradingRateLimiter,
-  rule: RateLimitRule,
-  attempts: number,
-): Promise<number> {
-  let allowed = 0;
-  for (let i = 0; i < attempts; i += 1) {
-    if ((await limiter.consume('k', rule)).allowed) allowed += 1;
-  }
-  return allowed;
+  const limiter = new DegradingRateLimiter({ primary, localDivisor: 2, clock });
+  return { primary, limiter };
 }
 
 describe('DegradingRateLimiter', () => {
-  it('answers with the shared limiter while it works', async () => {
-    const { primary, onDegraded, limiter } = setup();
-    expect(await allowedCount(limiter, RULE, 12)).toBe(10);
-    expect(await limiter.peek('k', RULE)).toMatchObject({ allowed: false });
-    expect(primary.callsOf(RateLimitOperation.Consume)).toHaveLength(12);
-    expect(onDegraded).not.toHaveBeenCalled();
+  it('answers from the shared limiter while it works', async () => {
+    const { primary, limiter } = setup();
+    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
+      count: 1,
+    });
+    expect(primary.callsOf(RateLimitOperation.Consume)).toHaveLength(1);
   });
 
-  it('falls back to a local limit divided by localDivisor', async () => {
-    const { primary, onDegraded, limiter } = setup(4);
-    const outage = new Error('connection refused');
-    primary.failWith(outage);
-    expect(await allowedCount(limiter, RULE, 5)).toBe(2);
-    expect(await limiter.peek('k', RULE)).toMatchObject({
+  it('answers from the local limiter with the divided limit when the shared one fails', async () => {
+    const { primary, limiter } = setup();
+    primary.failWith(DOWN);
+    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
+      allowed: true,
+      count: 1,
+    });
+    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
+      allowed: true,
+      count: 2,
+    });
+    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
       allowed: false,
       count: 2,
     });
-    expect(onDegraded).toHaveBeenCalledWith(
-      RateLimitOperation.Consume,
-      RULE,
-      outage,
-    );
-    expect(onDegraded).toHaveBeenCalledWith(
-      RateLimitOperation.Peek,
-      RULE,
-      outage,
-    );
   });
 
-  it('keeps at least one unit and bounds the cost to the local limit', async () => {
-    const { primary, limiter } = setup(100);
-    primary.failWith(new Error('down'));
-    expect(await limiter.consume('k', RULE, 7)).toMatchObject({
-      allowed: true,
-      count: 1,
-      remaining: 0,
-    });
-    expect((await limiter.consume('k', RULE)).allowed).toBe(false);
-  });
-
-  it('returns to the shared limiter when it recovers', async () => {
+  it('caps a cost at the local limit', async () => {
     const { primary, limiter } = setup();
-    primary.failWith(new Error('down'));
-    await allowedCount(limiter, RULE, 5);
-    primary.failWith();
-    expect((await limiter.consume('k', RULE)).allowed).toBe(true);
+    primary.failWith(DOWN);
+    await expect(limiter.consume('k', RULE, 3)).resolves.toMatchObject({
+      allowed: true,
+      count: 2,
+    });
   });
 
-  it('resets both limiters and only reports a failure of the shared one', async () => {
-    const { primary, onDegraded, limiter } = setup(4);
-    primary.failWith(new Error('down'));
-    await allowedCount(limiter, RULE, 2);
-    await expect(limiter.reset('k', RULE)).resolves.toBeUndefined();
-    expect(onDegraded).toHaveBeenLastCalledWith(
-      RateLimitOperation.Reset,
-      RULE,
-      expect.any(Error),
-    );
-    expect(await allowedCount(limiter, RULE, 3)).toBe(2);
-
-    primary.failWith();
-    await limiter.consume('k', RULE, 10);
-    await limiter.reset('k', RULE);
-    expect((await limiter.consume('k', RULE)).allowed).toBe(true);
+  it('answers peek from the local limiter when the shared one fails', async () => {
+    const { primary, limiter } = setup();
+    primary.failWith(DOWN);
+    await expect(limiter.peek('k', RULE)).resolves.toEqual({
+      allowed: true,
+      count: 0,
+      remaining: 2,
+      retryAfterMs: 0,
+    });
   });
 
-  it('validates before calling the shared limiter', async () => {
-    const { primary, onDegraded, limiter } = setup();
-    await expect(limiter.consume('k', RULE, 11)).rejects.toBeInstanceOf(
-      InvalidArgumentError,
-    );
-    await expect(limiter.peek('', RULE)).rejects.toBeInstanceOf(
-      InvalidArgumentError,
-    );
-    await expect(
-      limiter.reset('k', { ...RULE, windowMs: 0 }),
-    ).rejects.toBeInstanceOf(InvalidArgumentError);
-    expect(primary.calls).toHaveLength(0);
-    expect(onDegraded).not.toHaveBeenCalled();
-  });
-
-  it('ignores a listener that throws', async () => {
-    const primary = new FakeRateLimiter();
-    primary.failWith(new Error('down'));
+  it('reports each failure to the listener and the reporter', async () => {
+    const { primary } = setup();
+    const reporter = new RecordingDegradationReporter();
+    const seen: RateLimitOperation[] = [];
     const limiter = new DegradingRateLimiter({
       primary,
       localDivisor: 1,
-      onDegraded: () => {
-        throw new Error('listener bug');
+      reporter,
+      onDegraded: (operation) => {
+        seen.push(operation);
       },
     });
-    expect((await limiter.consume('k', RULE)).allowed).toBe(true);
+    primary.failWith(DOWN);
+    await limiter.consume('k', RULE);
+    await limiter.peek('k', RULE);
+    await limiter.reset('k', RULE);
+    expect(seen).toEqual([
+      RateLimitOperation.Consume,
+      RateLimitOperation.Peek,
+      RateLimitOperation.Reset,
+    ]);
+    expect(reporter.degradations.map((entry) => entry.operation)).toEqual(seen);
+    expect(reporter.degradations[0]).toMatchObject({ rule: RULE, error: DOWN });
   });
 
-  it('uses the given fallback', async () => {
-    const primary = new FakeRateLimiter();
-    primary.failWith(new Error('down'));
-    const fallback = new FakeRateLimiter();
+  it('does not fail reset when the shared limiter is down', async () => {
+    const { primary, limiter } = setup();
+    primary.failWith(DOWN);
+    await expect(limiter.reset('k', RULE)).resolves.toBeUndefined();
+  });
+
+  it('keeps answering when the listener or the reporter throws', async () => {
+    const { primary } = setup();
+    const throwing = new (class extends RecordingDegradationReporter {
+      override degraded(): void {
+        throw new Error('reporter broke');
+      }
+    })();
     const limiter = new DegradingRateLimiter({
       primary,
-      fallback,
-      localDivisor: 2,
-    });
-    await limiter.consume('k', RULE);
-    expect(fallback.calls).toEqual([
-      {
-        operation: RateLimitOperation.Consume,
-        key: 'k',
-        rule: { ...RULE, limit: 5 },
-        cost: 1,
+      localDivisor: 1,
+      reporter: throwing,
+      onDegraded: () => {
+        throw new Error('listener broke');
       },
-    ]);
+    });
+    primary.failWith(DOWN);
+    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
+      allowed: true,
+    });
   });
 
-  it.each([0, -2, 1.5, Number.NaN])(
-    'rejects localDivisor %p',
-    (localDivisor) => {
-      expect(
-        () =>
-          new DegradingRateLimiter({
-            primary: new InMemoryRateLimiter(),
-            localDivisor,
-          }),
-      ).toThrow(InvalidArgumentError);
-    },
-  );
+  it('uses a provided fallback limiter', async () => {
+    const primary = new FakeRateLimiter(new FixedClock(START));
+    const fallback = new FakeRateLimiter(new FixedClock(START));
+    const limiter = new DegradingRateLimiter({
+      primary,
+      localDivisor: 1,
+      fallback,
+    });
+    primary.failWith(DOWN);
+    await limiter.consume('k', RULE);
+    expect(fallback.callsOf(RateLimitOperation.Consume)).toHaveLength(1);
+  });
+
+  it('uses the system clock when no fallback or clock is given', async () => {
+    const primary = new FakeRateLimiter(new FixedClock(START));
+    const limiter = new DegradingRateLimiter({ primary, localDivisor: 1 });
+    primary.failWith(DOWN);
+    await expect(limiter.consume('k', RULE)).resolves.toMatchObject({
+      allowed: true,
+    });
+  });
+
+  it.each([0, 1.5, -2])('rejects localDivisor %p', (localDivisor) => {
+    expect(
+      () =>
+        new DegradingRateLimiter({
+          primary: new FakeRateLimiter(),
+          localDivisor,
+        }),
+    ).toThrow(InvalidArgumentError);
+  });
 });

@@ -1,3 +1,4 @@
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
@@ -57,9 +58,46 @@ void main() {
     expect(taps, 0);
   });
 
+  testWidgets('loading spinner is labeled with the loading text', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      AppButton(label: 'Submit', onPressed: () {}, loading: true),
+    );
+    expect(
+      tester
+          .widget<CircularProgressIndicator>(
+            find.byType(CircularProgressIndicator),
+          )
+          .semanticsLabel,
+      'Cargando',
+    );
+  });
+
   testWidgets('null onPressed disables the button', (tester) async {
     await pumpApp(tester, const AppButton(label: 'Off', onPressed: null));
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNull);
+  });
+
+  testWidgets('keeps a 48 pixel height even with a shrink-wrapped tap target', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light().copyWith(
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Center(
+            child: AppButton(label: 'Ok', onPressed: () {}),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(FilledButton)).height, 48);
   });
 }

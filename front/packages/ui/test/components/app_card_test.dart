@@ -21,4 +21,24 @@ void main() {
     await tester.tap(find.text('Open'));
     expect(taps, 1);
   });
+
+  testWidgets('is announced as a button when tappable', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpApp(tester, AppCard(onTap: () {}, child: const Text('Abrir')));
+    expect(
+      tester.getSemantics(find.byType(AppCard)),
+      isSemantics(isButton: true),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('is not announced as a button when static', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpApp(tester, const AppCard(child: Text('Abrir')));
+    expect(
+      tester.getSemantics(find.byType(AppCard)),
+      isSemantics(isButton: false),
+    );
+    handle.dispose();
+  });
 }

@@ -53,11 +53,13 @@ void main() {
       );
 
       expect(
-        AccessRule.permissions([Permission.billingWrite]).allows(session),
+        AccessRule.permissions([Permission.billingWrite])
+            .allows(session, now: DateTime.utc(2026, 1, 1)),
         isTrue,
       );
       expect(
-        AccessRule.planFeature(PlanFeature.aiAssistant).allows(session),
+        AccessRule.planFeature(PlanFeature.aiAssistant)
+            .allows(session, now: DateTime.utc(2026, 1, 1)),
         isTrue,
       );
       expect(
@@ -80,7 +82,8 @@ void main() {
 
       expect(session.mfaVerifiedAt, isNull);
       expect(
-        AccessRule.mfa(const Duration(minutes: 10)).decide(session),
+        AccessRule.mfa(const Duration(minutes: 10))
+            .decide(session, now: DateTime.utc(2026, 1, 1)),
         AccessDecision.stepUpRequired,
       );
     });

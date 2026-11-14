@@ -56,21 +56,19 @@ sealed class AccessRule {
   /// visitors included. Use [AccessRule.public] for that.
   factory AccessRule.all(List<AccessRule> rules) = _AllRule;
 
-  /// Whether [session] satisfies this rule at [now] (default: the current time).
+  /// Whether [session] satisfies this rule at [now].
   ///
   /// [now] only matters for [AccessRule.mfa].
-  bool allows(UserSession session, {DateTime? now}) =>
-      _check(session, now ?? DateTime.now(), assumeRecentMfa: false);
+  bool allows(UserSession session, {required DateTime now}) =>
+      _check(session, now, assumeRecentMfa: false);
 
-  /// Decides what [session] needs to pass this rule at [now] (default: the
-  /// current time).
-  AccessDecision decide(UserSession session, {DateTime? now}) {
-    final at = now ?? DateTime.now();
-    if (_check(session, at, assumeRecentMfa: false)) {
+  /// Decides what [session] needs to pass this rule at [now].
+  AccessDecision decide(UserSession session, {required DateTime now}) {
+    if (_check(session, now, assumeRecentMfa: false)) {
       return AccessDecision.allowed;
     }
     if (!session.isAuthenticated) return AccessDecision.signInRequired;
-    if (_check(session, at, assumeRecentMfa: true)) {
+    if (_check(session, now, assumeRecentMfa: true)) {
       return AccessDecision.stepUpRequired;
     }
     return AccessDecision.denied;
@@ -80,8 +78,8 @@ sealed class AccessRule {
   ///
   /// Menus use it: an entry that needs a recent second factor stays visible so
   /// the user can reach the step-up page from it.
-  bool reachableBy(UserSession session, {DateTime? now}) =>
-      _check(session, now ?? DateTime.now(), assumeRecentMfa: true);
+  bool reachableBy(UserSession session, {required DateTime now}) =>
+      _check(session, now, assumeRecentMfa: true);
 
   /// Evaluates the rule. With [assumeRecentMfa], MFA rules pass for any
   /// signed-in session. Implemented by the rules of this library.

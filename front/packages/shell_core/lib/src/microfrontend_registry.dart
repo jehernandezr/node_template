@@ -48,7 +48,7 @@ final class MicrofrontendRegistry {
   }
 
   /// Manifests visible to [session] on [platform] at [now], in registration
-  /// order.
+  /// order. [now] defaults to the system clock.
   List<MicrofrontendManifest> visibleFor(
     UserSession session,
     AppPlatform platform, {
@@ -63,7 +63,7 @@ final class MicrofrontendRegistry {
   ///
   /// A manifest that only lacks a recent second factor is included, so the
   /// user can open it and step up. Entries with equal order keep registration
-  /// order where the sort allows.
+  /// order where the sort allows. [now] defaults to the system clock.
   List<MenuEntry> menuFor(
     UserSession session,
     AppPlatform platform, {

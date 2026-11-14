@@ -1,8 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:tokens/tokens.dart';
 
+import 'status_colors.dart';
+
 /// Material 3 themes built from the design tokens in `package:tokens`.
 abstract final class AppTheme {
+  // Every button and field gets the same 48 logical pixel minimum, so a
+  // thumb hits any control on a phone without guessing its size.
+  static const double _minTapTarget = 48;
+
   /// Light theme built from [AppColors.light].
   static ThemeData light() => _build(AppColors.light, Brightness.light);
 
@@ -37,6 +43,20 @@ abstract final class AppTheme {
         headlineMedium: text.headlineMedium?.copyWith(
           fontSize: AppTypeScale.headline,
         ),
+      ),
+      extensions: [StatusColors.fromPalette(palette)],
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.square(_minTapTarget),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.square(_minTapTarget),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationThemeData(
+        constraints: BoxConstraints(minHeight: _minTapTarget),
       ),
     );
   }

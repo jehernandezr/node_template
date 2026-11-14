@@ -285,6 +285,24 @@ abstract class AppLocalizations {
   /// **'ID de traza'**
   String get errorTraceIdLabel;
 
+  /// No description provided for @errorCodeLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Código: {code}'**
+  String errorCodeLine(String code);
+
+  /// No description provided for @errorTraceIdLine.
+  ///
+  /// In es, this message translates to:
+  /// **'ID de traza: {traceId}'**
+  String errorTraceIdLine(String traceId);
+
+  /// No description provided for @metaSeparator.
+  ///
+  /// In es, this message translates to:
+  /// **' · '**
+  String get metaSeparator;
+
   /// No description provided for @notFound.
   ///
   /// In es, this message translates to:

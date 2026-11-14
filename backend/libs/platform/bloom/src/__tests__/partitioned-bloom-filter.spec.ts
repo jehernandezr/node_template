@@ -1,101 +1,120 @@
-import { InMemoryAsyncBloomFilter } from '../async-bloom-filter.js';
-import { InvalidParameters } from '../bloom-error.js';
-import { BloomFilter } from '../bloom-filter.js';
-import { MAX_BITS } from '../limits.js';
-import {
-  MAX_PARTITIONS,
-  partitionCount,
-  partitionOf,
-  PartitionedBloomFilter,
-} from '../partitioned-bloom-filter.js';
-
-function partitions(count: number, expectedItems: number) {
-  return Array.from(
-    { length: count },
-    () => new InMemoryAsyncBloomFilter(BloomFilter.create({ expectedItems })),
-  );
-}
-
-describe('partitionCount', () => {
-  it('sizes the HIBP list at 1 % in partitions of at most 2^32 bits', () => {
-    // About 1.5 billion hashes at 1 % need about 14.4 billion bits.
-    expect(partitionCount(1_500_000_000)).toBe(4);
-    expect(partitionCount(1_000, 0.01)).toBe(1);
-  });
-
-  it('honours a smaller budget per partition, such as the BF.* memory limit', () => {
-    const bitsIn128MiB = 128 * 1024 * 1024 * 8;
-    expect(partitionCount(1_000_000_000, 0.01, bitsIn128MiB)).toBe(9);
-  });
-
-  it('rejects invalid budgets and absurd sizes', () => {
-    expect(() => partitionCount(10, 0.01, 0)).toThrow(InvalidParameters);
-    expect(() => partitionCount(10, 0.01, MAX_BITS + 1)).toThrow(
-      InvalidParameters,
-    );
-    expect(() => partitionCount(Number.MAX_SAFE_INTEGER, 0.01)).toThrow(
-      InvalidParameters,
-    );
-  });
-});
+import { BloomMath } from '../bloom-math.js';
+import { BloomSizing } from '../bloom-sizing.js';
+import { BloomErrorCode } from '../errors/bloom-error-code.enum.js';
+import { PartitionedBloomFilter } from '../partitioned-bloom-filter.js';
+import { BloomFixtures } from './utils/bloom-fixtures.js';
+import { FakeRebuildSourceProvider } from './utils/fake-rebuild-source-provider.js';
+import { NonRebuildableBloomFilter } from './utils/non-rebuildable-bloom-filter.js';
 
 describe('PartitionedBloomFilter', () => {
   it('finds every added item, with no false negatives', async () => {
-    const filter = new PartitionedBloomFilter(partitions(4, 1_000));
-    const items = Array.from({ length: 2_000 }, (_, i) => `hash-${i}`);
+    const filter = new PartitionedBloomFilter(
+      BloomFixtures.inMemoryPartitions(4, 1_000),
+    );
+    const items = BloomFixtures.items('hash', 2_000);
     await filter.addMany(items.slice(0, 1_000));
-    for (const item of items.slice(1_000, 1_010)) {
-      await filter.add(item);
-    }
-    for (const item of items.slice(0, 1_010)) {
-      await expect(filter.mightContain(item)).resolves.toBe(true);
-    }
+    await filter.addMany(items.slice(1_000, 1_010));
+
+    await expect(
+      BloomFixtures.countPositive(filter, items.slice(0, 1_010)),
+    ).resolves.toBe(1_010);
     expect(filter.size).toBe(4);
   });
 
-  it('stores each item in exactly the partition partitionOf names', async () => {
-    const parts = partitions(3, 100);
+  it('stores each item in exactly the partition that partitionOf names', async () => {
+    const parts = BloomFixtures.inMemoryPartitions(3, 100);
     const filter = new PartitionedBloomFilter(parts);
     const item = 'only-here';
     await filter.add(item);
-    const index = partitionOf(item, 3);
-    for (const [i, part] of parts.entries()) {
-      await expect(part.mightContain(item)).resolves.toBe(i === index);
-    }
+    const index = BloomMath.partitionOf(item, 3);
+
+    const found = await Promise.all(
+      parts.map((part) => part.mightContain(item)),
+    );
+    expect(found).toEqual(parts.map((_part, i) => i === index));
   });
 
   it('spreads items evenly over the partitions', () => {
-    const counts = [0, 0, 0, 0];
-    for (let i = 0; i < 40_000; i += 1) {
-      counts[partitionOf(`item-${i}`, 4)] += 1;
-    }
-    for (const count of counts) {
-      expect(count).toBeGreaterThan(9_000);
-      expect(count).toBeLessThan(11_000);
-    }
+    const counts = BloomFixtures.partitionCounts(
+      BloomFixtures.items('item', 40_000),
+      4,
+    );
+    expect(counts.every((count) => count > 9_000 && count < 11_000)).toBe(true);
   });
 
   it('keeps the false positive rate of one partition', async () => {
-    const filter = new PartitionedBloomFilter(partitions(4, 2_500));
-    await filter.addMany(
-      Array.from({ length: 10_000 }, (_, i) => `member-${i}`),
+    const filter = new PartitionedBloomFilter(
+      BloomFixtures.inMemoryPartitions(4, 2_500),
     );
-    let positives = 0;
-    for (let i = 0; i < 10_000; i += 1) {
-      if (await filter.mightContain(`absent-${i}`)) {
-        positives += 1;
-      }
-    }
+    await filter.addMany(BloomFixtures.items('member', 10_000));
+
+    const positives = await BloomFixtures.countPositive(
+      filter,
+      BloomFixtures.items('absent', 10_000),
+    );
     expect(positives / 10_000).toBeLessThan(0.02);
   });
 
   it('rejects an empty or oversized partition list', () => {
-    expect(() => new PartitionedBloomFilter([])).toThrow(InvalidParameters);
+    expect(() => new PartitionedBloomFilter([])).toThrow(
+      expect.objectContaining({ code: BloomErrorCode.InvalidParameters }),
+    );
     expect(
       () =>
         new PartitionedBloomFilter(
-          new Array(MAX_PARTITIONS + 1).fill(partitions(1, 10)[0]),
+          BloomFixtures.inMemoryPartitions(BloomSizing.MAX_PARTITIONS + 1, 10),
         ),
-    ).toThrow(InvalidParameters);
+    ).toThrow(
+      expect.objectContaining({ code: BloomErrorCode.InvalidParameters }),
+    );
+  });
+
+  it('rebuilds every partition, reading the source once per partition', async () => {
+    const parts = BloomFixtures.inMemoryPartitions(3, 1_000);
+    const filter = new PartitionedBloomFilter(parts);
+    await filter.add('removed-long-ago');
+    const source = new FakeRebuildSourceProvider([
+      ['fresh-1', 'fresh-2', 'fresh-3', 'fresh-4'],
+    ]);
+
+    await filter.rebuildFrom(() => source.batches());
+
+    await expect(
+      BloomFixtures.countPositive(filter, [
+        'fresh-1',
+        'fresh-2',
+        'fresh-3',
+        'fresh-4',
+      ]),
+    ).resolves.toBe(4);
+    await expect(filter.mightContain('removed-long-ago')).resolves.toBe(false);
+    expect(source.calls).toBe(3);
+  });
+
+  it('keeps the old items when the source fails before the first batch', async () => {
+    const filter = new PartitionedBloomFilter(
+      BloomFixtures.inMemoryPartitions(2, 1_000),
+    );
+    await filter.add('still-here');
+    const source = new FakeRebuildSourceProvider([], new Error('source down'));
+
+    await expect(filter.rebuildFrom(() => source.batches())).rejects.toThrow(
+      'source down',
+    );
+    await expect(filter.mightContain('still-here')).resolves.toBe(true);
+  });
+
+  it('refuses to rebuild when a partition cannot be rebuilt, without touching any', async () => {
+    const rebuildable = BloomFixtures.inMemoryPartitions(1, 1_000)[0];
+    const filter = new PartitionedBloomFilter([
+      rebuildable,
+      new NonRebuildableBloomFilter(),
+    ]);
+    await filter.add('still-here');
+
+    await expect(
+      filter.rebuildFrom(() => new FakeRebuildSourceProvider().batches()),
+    ).rejects.toMatchObject({ code: BloomErrorCode.InvalidParameters });
+    await expect(filter.mightContain('still-here')).resolves.toBe(true);
   });
 });

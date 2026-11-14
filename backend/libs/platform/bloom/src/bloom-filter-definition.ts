@@ -1,62 +1,24 @@
-import { InvalidParameters } from './bloom-error.js';
-import {
-  DEFAULT_FALSE_POSITIVE_RATE,
-  requiredBits,
-} from './optimal-parameters.js';
-
 /**
- * Declaration of a named filter: how big it is, how wrong it may be and when it is rebuilt.
- * @typeParam TName caller-provided string enum of filter names.
+ * Declaración de un filtro con nombre: cuánto cabe, cuánto puede equivocarse y cuándo se reconstruye.
+ * @typeParam TName enum de nombres de filtro del llamador, como cadena.
  */
 export interface BloomFilterDefinition<TName extends string = string> {
   readonly name: TName;
-  /** Items the filter is sized for. Past it the false positive rate grows. */
+  /** Ítems para los que se dimensiona el filtro. Más allá de ellos, la tasa de falsos positivos crece. */
   readonly expectedItems: number;
-  /** Target false positive rate. Default {@link DEFAULT_FALSE_POSITIVE_RATE} (1 %). */
+  /** Tasa de falsos positivos objetivo. Por defecto `BloomSizing.DEFAULT_FALSE_POSITIVE_RATE` (1 %). */
   readonly falsePositiveRate?: number;
   /**
-   * Cron expression (five fields, or six with seconds, in UTC) of the scheduled job that rebuilds the
-   * filter from its source of truth. A filter cannot forget items, so the rebuild is what drops removed
-   * items and resets a filter that grew past `expectedItems`.
+   * Expresión cron (cinco campos, o seis con segundos, en UTC) del job que reconstruye el filtro desde su
+   * fuente de verdad. Un filtro no olvida ítems, así que la reconstrucción es lo que descarta los eliminados
+   * y reinicia un filtro que creció más allá de `expectedItems`.
    */
   readonly rebuildCron: string;
 }
 
-/** A definition with its defaults applied and its values checked. */
+/** Una definición con su valor por defecto aplicado y sus valores verificados. */
 export interface ResolvedBloomFilterDefinition<
   TName extends string = string,
 > extends BloomFilterDefinition<TName> {
   readonly falsePositiveRate: number;
-}
-
-const CRON_FIELD = /^[0-9A-Za-z*/,?#-]+$/;
-
-/**
- * Applies the default rate and validates a definition.
- * @throws {InvalidParameters} for an empty name, a bad size or rate, or a cron expression that does not have
- *   five or six fields.
- */
-export function resolveBloomFilterDefinition<TName extends string>(
-  definition: BloomFilterDefinition<TName>,
-): ResolvedBloomFilterDefinition<TName> {
-  if (typeof definition.name !== 'string' || definition.name.length === 0) {
-    throw new InvalidParameters('name must be a non-empty string');
-  }
-  const falsePositiveRate =
-    definition.falsePositiveRate ?? DEFAULT_FALSE_POSITIVE_RATE;
-  // Validates expectedItems and the rate with the same rules as the sizing.
-  requiredBits(definition.expectedItems, falsePositiveRate);
-  const fields =
-    typeof definition.rebuildCron === 'string'
-      ? definition.rebuildCron.trim().split(/\s+/)
-      : [];
-  if (
-    (fields.length !== 5 && fields.length !== 6) ||
-    !fields.every((field) => CRON_FIELD.test(field))
-  ) {
-    throw new InvalidParameters(
-      'rebuildCron must be a cron expression with five or six fields',
-    );
-  }
-  return { ...definition, falsePositiveRate };
 }

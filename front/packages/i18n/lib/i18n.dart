@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'src/generated/app_localizations.dart';
 import 'src/generated/error_messages.dart';
 
+export 'src/error_presenter.dart';
 export 'src/generated/app_localizations.dart';
 
 /// Locales the app supports, Spanish first (the template locale).

@@ -1,12 +1,10 @@
 import type { Clock } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { InMemoryRateLimiter } from '../../in-memory-rate-limiter.js';
-import {
-  assertRateLimitCall,
-  RateLimitOperation,
-  type RateLimitResult,
-  type RateLimitRule,
-} from '../../rate-limit-rule.js';
+import { RateLimitOperation } from '../../rate-limit-operation.enum.js';
+import type { RateLimitResult } from '../../rate-limit-result.js';
+import type { RateLimitRule } from '../../rate-limit-rule.js';
+import { RateLimitCallValidator } from '../../rate-limit-call-validator.js';
 import { RateLimiter } from '../../rate-limiter.js';
 
 /** Una llamada que recibió un {@link FakeRateLimiter}. */
@@ -88,7 +86,7 @@ export class FakeRateLimiter extends RateLimiter {
     rule: RateLimitRule,
     cost: number,
   ): void {
-    assertRateLimitCall(key, rule, cost);
+    RateLimitCallValidator.validate(key, rule, cost);
     this.calls.push({ operation, key, rule, cost });
     if (this.failure !== undefined) {
       throw this.failure.error;

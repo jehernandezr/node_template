@@ -1,5 +1,6 @@
 import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:utils/utils.dart';
 
 import 'access_rule.dart';
 import 'deferred_page.dart';
@@ -88,8 +89,8 @@ final class MicrofrontendManifest {
     MicrofrontendScope Function() scope,
   ) => [for (final screen in screens) screen.toGoRoute(load, scope)];
 
-  /// Whether [session] may see this microfrontend on [platform] at [now]
-  /// (default: the current time).
+  /// Whether [session] may see this microfrontend on [platform] at [now].
+  /// [now] defaults to the system clock.
   ///
   /// Requires the platform to be supported, [access] to allow the session and,
   /// when [flag] is set, the session to hold that flag.
@@ -97,7 +98,9 @@ final class MicrofrontendManifest {
     UserSession session,
     AppPlatform platform, {
     DateTime? now,
-  }) => _isAvailable(session, platform) && access.allows(session, now: now);
+  }) =>
+      _isAvailable(session, platform) &&
+      access.allows(session, now: now ?? systemClock());
 
   /// Like [isVisibleTo], but an MFA rule counts as passed for a signed-in
   /// session. Menus use it so the user can open a section and step up there.
@@ -106,7 +109,8 @@ final class MicrofrontendManifest {
     AppPlatform platform, {
     DateTime? now,
   }) =>
-      _isAvailable(session, platform) && access.reachableBy(session, now: now);
+      _isAvailable(session, platform) &&
+      access.reachableBy(session, now: now ?? systemClock());
 
   bool _isAvailable(UserSession session, AppPlatform platform) {
     if (!platforms.contains(platform)) return false;

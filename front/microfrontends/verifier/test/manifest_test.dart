@@ -45,10 +45,13 @@ void main() {
     final signedIn = UserSession(userId: 'u1', tenantId: 't1');
 
     expect(
-      verifierManifest.access.decide(anonymous),
+      verifierManifest.access.decide(anonymous, now: DateTime.utc(2026, 1, 1)),
       AccessDecision.signInRequired,
     );
-    expect(verifierManifest.access.allows(signedIn), isTrue);
+    expect(
+      verifierManifest.access.allows(signedIn, now: DateTime.utc(2026, 1, 1)),
+      isTrue,
+    );
   });
 
   test('screens: one route with no extra access and no children', () {

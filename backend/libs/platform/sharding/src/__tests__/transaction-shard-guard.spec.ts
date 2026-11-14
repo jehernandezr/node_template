@@ -1,4 +1,5 @@
-import { ShardingError, ShardingErrorCode } from '../errors.js';
+import { ShardingError } from '../errors/sharding-error.js';
+import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 import { TransactionShardGuard } from '../transaction-shard-guard.js';
 
 describe('TransactionShardGuard', () => {
@@ -21,7 +22,7 @@ describe('TransactionShardGuard', () => {
     );
   });
 
-  // A guard per request made a second legitimate transaction of the same request fail.
+  // Con un guard por petición, una segunda transacción legítima de la misma petición fallaba.
   it('lets one request run successive transactions on different shards', async () => {
     const transaction = (shard: string) =>
       TransactionShardGuard.run(async () => {

@@ -70,8 +70,16 @@ void main() {
     for (final path in ['/tasks/new', '/tasks/:id/edit']) {
       final rule = access[path];
       expect(rule, isNotNull, reason: path);
-      expect(rule!.allows(readOnly), isFalse, reason: path);
-      expect(rule.allows(writer), isTrue, reason: path);
+      expect(
+        rule!.allows(readOnly, now: DateTime.utc(2026, 1, 1)),
+        isFalse,
+        reason: path,
+      );
+      expect(
+        rule.allows(writer, now: DateTime.utc(2026, 1, 1)),
+        isTrue,
+        reason: path,
+      );
     }
   });
 
@@ -82,8 +90,14 @@ void main() {
       tenantId: 't',
       permissions: {Permission.tasksRead},
     );
-    expect(tasksManifest.access.allows(none), isFalse);
-    expect(tasksManifest.access.allows(reader), isTrue);
+    expect(
+      tasksManifest.access.allows(none, now: DateTime.utc(2026, 1, 1)),
+      isFalse,
+    );
+    expect(
+      tasksManifest.access.allows(reader, now: DateTime.utc(2026, 1, 1)),
+      isTrue,
+    );
   });
 
   test('the manifest does not import data, screens or l10n eagerly', () {

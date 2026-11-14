@@ -9,7 +9,7 @@ import 'package:i18n/i18n.dart';
 /// Public error codes of every generated catalog in `packages/contracts`.
 ///
 /// Reads the generated enums as text, so a new service is covered without
-/// this package depending on `contracts`.
+/// listing its enum here.
 Set<String> _publicErrorCodes() {
   final codes = <String>{};
   final pattern = RegExp(r"'([A-Z0-9_.]+)',\s*httpStatus:");
@@ -59,6 +59,9 @@ void main() {
       'loading',
       'errorCodeLabel',
       'errorTraceIdLabel',
+      'errorCodeLine',
+      'errorTraceIdLine',
+      'metaSeparator',
       'notFound',
       'confirm',
       'delete',

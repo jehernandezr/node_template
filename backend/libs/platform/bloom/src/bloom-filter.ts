@@ -1,71 +1,51 @@
-import { CorruptedData, IncompatibleFilters } from './bloom-error.js';
-import { bloomPositions } from './positions.js';
+import { BloomMath } from './bloom-math.js';
+import { BloomHashScheme } from './bloom-hash-scheme.enum.js';
+import { BloomSizing } from './bloom-sizing.js';
+import type {
+  BloomFilterOptions,
+  CreateBloomFilterOptions,
+} from './bloom-filter.options.js';
 import {
-  DEFAULT_FALSE_POSITIVE_RATE,
-  optimalParameters,
-  type BloomParameters,
-} from './optimal-parameters.js';
-import {
-  MAX_BITS,
-  MAX_HASHES,
-  MIN_BITS,
-  MIN_HASHES,
-  assertIntegerInRange,
-} from './limits.js';
-
-/** Identifies how items map to bit positions. Part of the serialized format. */
-export enum BloomHashScheme {
-  EnhancedDoubleHashing = 'fnv1a32+murmur3_32/edh',
-}
-
-/** Serialized format version understood by this library. */
-export const BLOOM_FORMAT_VERSION = 1 as const;
-
-/** Options accepted by the {@link BloomFilter} constructor. */
-export interface BloomFilterOptions extends BloomParameters {
-  /** Raw bit array. Must be exactly `ceil(bits / 8)` bytes with unused tail bits zero. Copied on construction. */
-  readonly data?: Uint8Array;
-}
-
-/** Options accepted by {@link BloomFilter.create}. */
-export interface CreateBloomFilterOptions {
-  readonly expectedItems: number;
-  /** Default {@link DEFAULT_FALSE_POSITIVE_RATE} (1 %). */
-  readonly falsePositiveRate?: number;
-}
-
-/** JSON-friendly representation of a filter. `data` is canonical base64 of the bit array. */
-export interface SerializedBloomFilter extends BloomParameters {
-  readonly version: typeof BLOOM_FORMAT_VERSION;
-  readonly scheme: BloomHashScheme;
-  readonly data: string;
-}
+  BLOOM_FORMAT_VERSION,
+  type SerializedBloomFilter,
+} from './serialized-bloom-filter.js';
+import { BloomGuard } from './errors/bloom-guard.js';
+import { CorruptedDataError } from './errors/corrupted-data.error.js';
+import { IncompatibleFiltersError } from './errors/incompatible-filters.error.js';
 
 /**
- * Space-efficient probabilistic set. `mightContain` answers "definitely not" or
- * "maybe", with no false negatives.
+ * Conjunto probabilístico de poco espacio. `mightContain` responde "seguro que no"
+ * o "quizás", sin falsos negativos.
  */
 export class BloomFilter {
-  /** Number of bits in the filter. */
+  /** Número de bits del filtro. */
   readonly bits: number;
-  /** Number of hash positions per item. */
+  /** Número de posiciones de hash por ítem. */
   readonly hashes: number;
   private readonly data: Uint8Array;
 
   /**
-   * @throws {InvalidParameters} when `bits` or `hashes` is outside its supported range.
-   * @throws {CorruptedData} when `data` has the wrong length or sets unused tail bits.
+   * @throws InvalidParametersError cuando `bits` o `hashes` están fuera de su rango.
+   * @throws CorruptedDataError cuando `data` tiene otro largo o activa bits sobrantes.
    */
   constructor(options: BloomFilterOptions) {
-    assertIntegerInRange(options.bits, MIN_BITS, MAX_BITS, 'bits');
-    assertIntegerInRange(options.hashes, MIN_HASHES, MAX_HASHES, 'hashes');
-    this.bits = options.bits;
-    this.hashes = options.hashes;
+    this.bits = BloomGuard.instance.integerInRange(
+      'bits',
+      options.bits,
+      BloomSizing.MIN_BITS,
+      BloomSizing.MAX_BITS,
+    );
+    this.hashes = BloomGuard.instance.integerInRange(
+      'hashes',
+      options.hashes,
+      BloomSizing.MIN_HASHES,
+      BloomSizing.MAX_HASHES,
+    );
 
     const byteLength = Math.ceil(this.bits / 8);
     if (options.data !== undefined) {
       if (options.data.length !== byteLength) {
-        throw new CorruptedData(
+        throw new CorruptedDataError(
           `expected ${byteLength} bytes for ${this.bits} bits, got ${options.data.length}`,
         );
       }
@@ -76,24 +56,24 @@ export class BloomFilter {
     }
   }
 
-  /** Builds an empty filter sized for `expectedItems` at `falsePositiveRate`. */
+  /** Crea un filtro vacío dimensionado para `expectedItems` con la tasa dada. */
   static create(options: CreateBloomFilterOptions): BloomFilter {
     return new BloomFilter(
-      optimalParameters(
+      BloomSizing.optimalParameters(
         options.expectedItems,
-        options.falsePositiveRate ?? DEFAULT_FALSE_POSITIVE_RATE,
+        options.falsePositiveRate ?? BloomSizing.DEFAULT_FALSE_POSITIVE_RATE,
       ),
     );
   }
 
-  /** Inserts an item. */
+  /** Inserta un ítem. */
   add(item: string): void {
     for (const position of this.positions(item)) {
       this.data[Math.floor(position / 8)] |= 1 << (position % 8);
     }
   }
 
-  /** Returns false when the item is definitely absent, true when it may be present. */
+  /** Devuelve false cuando el ítem seguro que no está; true cuando puede estar. */
   mightContain(item: string): boolean {
     return this.positions(item).every(
       (position) =>
@@ -101,7 +81,7 @@ export class BloomFilter {
     );
   }
 
-  /** Estimates the number of distinct inserted items from the count of set bits. */
+  /** Estima cuántos ítems distintos se insertaron, a partir de los bits encendidos. */
   approximateCount(): number {
     const setBits = this.countSetBits();
     if (setBits === this.bits) {
@@ -115,12 +95,12 @@ export class BloomFilter {
     );
   }
 
-  /** Estimates the current false positive rate from the fill ratio: (set bits / m)^k. */
+  /** Estima la tasa de falsos positivos actual a partir del llenado: (bits encendidos / m)^k. */
   estimatedFalsePositiveRate(): number {
     return Math.pow(this.countSetBits() / this.bits, this.hashes);
   }
 
-  /** Encodes the filter with its format version, hash scheme and base64 bit data. */
+  /** Codifica el filtro con su versión de formato, su esquema de hash y los bits en base64. */
   serialize(): SerializedBloomFilter {
     return {
       version: BLOOM_FORMAT_VERSION,
@@ -132,35 +112,35 @@ export class BloomFilter {
   }
 
   /**
-   * Restores a filter produced by {@link BloomFilter.serialize}.
-   * @throws {CorruptedData} when the version or scheme is unknown, the base64 is not canonical,
-   *   the length does not match `bits`, or unused tail bits are set.
+   * Restaura un filtro producido por `serialize`.
+   * @throws CorruptedDataError cuando la versión o el esquema no se conocen, el base64 no es canónico,
+   *   el largo no coincide con `bits` o hay bits sobrantes activos.
    */
   static deserialize(serialized: SerializedBloomFilter): BloomFilter {
     if (serialized.version !== BLOOM_FORMAT_VERSION) {
-      throw new CorruptedData(
+      throw new CorruptedDataError(
         `unsupported bloom format version: ${String(serialized.version)}`,
       );
     }
     if (serialized.scheme !== BloomHashScheme.EnhancedDoubleHashing) {
-      throw new CorruptedData(
+      throw new CorruptedDataError(
         `unsupported bloom hash scheme: ${String(serialized.scheme)}`,
       );
     }
     return new BloomFilter({
       bits: serialized.bits,
       hashes: serialized.hashes,
-      data: decodeCanonicalBase64(serialized.data),
+      data: BloomFilter.decodeCanonicalBase64(serialized.data),
     });
   }
 
   /**
-   * Returns a new filter containing the items of both filters. Neither input is modified.
-   * @throws {IncompatibleFilters} when the two filters have different parameters.
+   * Devuelve un filtro nuevo con los ítems de ambos. Ninguna entrada cambia.
+   * @throws IncompatibleFiltersError cuando los dos filtros tienen parámetros distintos.
    */
   union(other: BloomFilter): BloomFilter {
     if (other.bits !== this.bits || other.hashes !== this.hashes) {
-      throw new IncompatibleFilters(
+      throw new IncompatibleFiltersError(
         `cannot union filters with (${this.bits}, ${this.hashes}) and (${other.bits}, ${other.hashes})`,
       );
     }
@@ -176,7 +156,7 @@ export class BloomFilter {
   }
 
   private positions(item: string): number[] {
-    return bloomPositions(item, this.bits, this.hashes);
+    return BloomMath.positions(item, this.bits, this.hashes);
   }
 
   private assertUnusedTailBitsClear(): void {
@@ -186,7 +166,7 @@ export class BloomFilter {
     }
     const unusedMask = (0xff << remainder) & 0xff;
     if ((this.data[this.data.length - 1] & unusedMask) !== 0) {
-      throw new CorruptedData('unused tail bits of the last byte are set');
+      throw new CorruptedDataError('unused tail bits of the last byte are set');
     }
   }
 
@@ -201,19 +181,19 @@ export class BloomFilter {
     }
     return count;
   }
-}
 
-/**
- * Decodes base64 and requires it to be canonical (re-encoding yields the same string).
- * @throws {CorruptedData} otherwise.
- */
-function decodeCanonicalBase64(data: string): Uint8Array {
-  if (typeof data !== 'string' || data.length % 4 !== 0) {
-    throw new CorruptedData('data is not valid base64');
+  /**
+   * Decodifica base64 y exige que sea canónico (volver a codificar da el mismo texto).
+   * @throws CorruptedDataError en otro caso.
+   */
+  private static decodeCanonicalBase64(data: string): Uint8Array {
+    if (typeof data !== 'string' || data.length % 4 !== 0) {
+      throw new CorruptedDataError('data is not valid base64');
+    }
+    const bytes = Buffer.from(data, 'base64');
+    if (bytes.toString('base64') !== data) {
+      throw new CorruptedDataError('data is not canonical base64');
+    }
+    return new Uint8Array(bytes);
   }
-  const bytes = Buffer.from(data, 'base64');
-  if (bytes.toString('base64') !== data) {
-    throw new CorruptedData('data is not canonical base64');
-  }
-  return new Uint8Array(bytes);
 }

@@ -355,11 +355,11 @@ export abstract class AppConfig {
 }
 ```
 
-**Ciclo de vida.** Tres momentos, en este orden de apagado:
+**Ciclo de vida.** Nest 12 llama primero todos los `onModuleDestroy`, luego `beforeApplicationShutdown` y al final `onApplicationShutdown` (verificado en la ola 1):
 
-1. `BeforeApplicationShutdown`: se detienen los que generan trabajo (`JobRunner`, `SqsPoller`, suscripciones de Pub/Sub).
-2. `OnModuleDestroy`: se cierran los recursos (`SNSClient`, `SQSClient`, cliente de Valkey con `quit`, `DataSource` de TypeORM).
-3. `OnApplicationShutdown`: se vacía la telemetría.
+1. `onModuleDestroy` de los que generan trabajo (`JobRunner`, `SqsPoller`, suscripciones de Pub/Sub): se detienen primero porque sus módulos se importan después en `AppModule` (Nest destruye en orden inverso al de importación).
+2. `onModuleDestroy` de los recursos (`SNSClient`, `SQSClient`, cliente de Valkey con `quit`, `DataSource` de TypeORM), en módulos globales importados antes: `ValkeyModule`, `AwsModule` y `PersistenceModule` van antes que `SchedulingModule` y los consumidores.
+3. `onApplicationShutdown`: se vacía la telemetría.
 
 **Salud.** `HealthRegistry` vive en observability (`register(check: HealthCheckable)`, `checkAll()`). Cada adaptador de red se registra en su `onModuleInit`. Los endpoints `/health/live` y `/health/ready` los monta F4 en `@platform/http` sobre `HealthRegistry`.
 
@@ -952,7 +952,7 @@ Las tres tropas parten de la ola 0 integrada y no comparten carpetas. Los jobs d
 - **Consume:** `MessageBus`, `EnvelopePublisher`, `MessageDispatcher` y los puertos de messaging (WP-07), `CachePort`, `RateLimiter`, `RoutingCache`, `ShardDirectoryChange*`, `BloomFilter`, `JobLock`, `HealthCheckable`, `ResilienceRegistry`, `FailureClassifier`, `ContainerRuntime`.
 - **Produce:** `AwsModule`, `SNS_CLIENT`, `SQS_CLIENT`, `AwsMessagingNames`, `AwsErrorTranslator`, `ElastiCacheIamAuthTokenProvider`, `SqsDeliveryProcessor`, `SqsPoller`, `SqsLambdaHandler`, `SqsDeadLetterRedriver`, `SqsConsumerConfig`, `FakeSqsClient`, `FakeSnsClient`, `ValkeyModule`, `ValkeyClientFactory`, `ValkeyCommandExecutor`, `ValkeyKeyspace`, `ValkeyErrorTranslator`, `ValkeyJobLock`, `ValkeyHealthIndicator`, `ValkeyBloomFilterFactory`. Los `*.integration.spec.ts` pasan a `*.int-spec.ts`.
 - **Aceptación específica:**
-  - `AwsModule` cierra ambos clientes en `onModuleDestroy` y `SqsPoller` se detiene en `beforeApplicationShutdown` (prueba con `app.close()` y un cliente fake que cuenta cierres).
+  - `AwsModule` cierra ambos clientes en `onModuleDestroy` y `SqsPoller` se detiene en su `onModuleDestroy`, antes que los clientes (prueba con `app.close()` y un cliente fake que cuenta cierres).
   - Sin `if (name === 'GetQueueUrlCommand')` en pruebas.
   - `ValkeyModule` hace `quit` al cerrar y registra su `ValkeyHealthIndicator`; `ValkeyJobLock` impide que dos instancias tomen el mismo job (integración con Valkey real).
   - La prueba de contrato corre `runCachePortContract` y `runRateLimiterContract` contra `InMemory*` y contra Valkey; el script Lua y `SlidingWindow` dan el mismo resultado para la misma secuencia.

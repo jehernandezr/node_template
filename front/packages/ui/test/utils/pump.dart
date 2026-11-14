@@ -4,15 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
 
 /// Pumps [child] inside a themed app with a [Scaffold] body and the shared
-/// texts in [locale] (Spanish by default).
+/// texts in [locale] (Spanish by default). [theme] defaults to the light one.
 Future<void> pumpApp(
   WidgetTester tester,
   Widget child, {
   Locale locale = const Locale('es'),
+  ThemeData? theme,
 }) {
   return tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.light(),
+      theme: theme ?? AppTheme.light(),
       locale: locale,
       supportedLocales: supportedLocales,
       localizationsDelegates: [

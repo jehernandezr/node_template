@@ -1,4 +1,3 @@
-import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -9,7 +8,7 @@ import 'package:material_ui/material_ui.dart';
 /// ```dart
 /// try {
 ///   await repository.save(draft);
-/// } catch (error) {
+/// } on Exception catch (error) {
 ///   showActionError(context, error, message: l10n.saveError);
 /// }
 /// ```
@@ -28,9 +27,9 @@ bool showActionError(BuildContext context, Object error, {String? message}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return false;
 
-  final text =
-      message ?? actionErrorMessage(AppLocalizations.of(context), error);
-  final code = error is ApiErrorException ? error.problem.code : null;
+  final details = ErrorPresenter(AppLocalizations.of(context)).describe(error);
+  final text = message ?? details.message;
+  final code = details.code;
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -46,11 +45,4 @@ bool showActionError(BuildContext context, Object error, {String? message}) {
 /// other error (network, timeout...) the `errorFallback` text. Pair it with
 /// [showActionError] when the screen has no message of its own.
 String actionErrorMessage(AppLocalizations l10n, Object error) =>
-    switch (error) {
-      ApiErrorException(:final problem) => errorMessage(l10n, problem.code),
-      ContractViolationException(inResponse: false) => errorMessage(
-        l10n,
-        PlatformErrorCode.validationInvalidInput.code,
-      ),
-      _ => l10n.errorFallback,
-    };
+    ErrorPresenter(l10n).actionMessage(error);

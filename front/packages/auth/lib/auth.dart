@@ -13,6 +13,7 @@ export 'src/api_auth_repository.dart';
 export 'src/auth_errors.dart';
 export 'src/flows/mfa_flows.dart';
 export 'src/flows/mfa_methods.dart';
+export 'src/flows/mfa_state.dart';
 export 'src/identity_connection.dart';
 export 'src/ports.dart';
 export 'src/session_manager.dart';

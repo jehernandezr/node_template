@@ -1,5 +1,5 @@
 import { ConsistentHashRing } from '../consistent-hash-ring.js';
-import { ShardingErrorCode } from '../errors.js';
+import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 
 function keys(count: number): string[] {
   return Array.from({ length: count }, (_, i) => `key-${i}`);

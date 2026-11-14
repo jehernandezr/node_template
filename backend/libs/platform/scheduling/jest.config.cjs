@@ -16,5 +16,7 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
+  // NestJS 12 se publica solo como ESM: hay que transformarlo para que Jest lo cargue.
+  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?@nestjs[@/])'],
   coverageDirectory: 'test-output/jest/coverage',
 };

@@ -1,26 +1,24 @@
 import { SystemClock, type Clock } from '@platform/kernel';
-import type { CachePort } from './cache-port.js';
-
-/** Options for {@link InMemoryCache}. */
-export interface InMemoryCacheOptions {
-  /** Time source. Defaults to `SystemClock`; in tests use `FixedClock` from `@platform/kernel/test-utils`. */
-  clock?: Clock;
-}
+import { CachePort } from './cache-port.js';
+import type { InMemoryCacheOptions } from './in-memory-cache.options.js';
 
 interface Entry {
-  value: string;
-  /** Absolute expiry in clock milliseconds, or `undefined` when the entry never expires. */
-  expiresAt: number | undefined;
+  readonly value: string;
+  /** Instante de vencimiento en milisegundos del reloj, o `undefined` si nunca vence. */
+  readonly expiresAt: number | undefined;
 }
 
-/** Process-local {@link CachePort} with TTL expiry. Useful for tests and single-instance setups. */
-export class InMemoryCache implements CachePort {
+/**
+ * `CachePort` en el mismo proceso, con vencimiento por TTL. Sirve para pruebas y
+ * para instalaciones de una sola instancia.
+ */
+export class InMemoryCache extends CachePort {
   private readonly entries = new Map<string, Entry>();
-  private readonly now: () => number;
+  private readonly clock: Clock;
 
   constructor(options: InMemoryCacheOptions = {}) {
-    const clock = options.clock ?? new SystemClock();
-    this.now = () => clock.now().getTime();
+    super();
+    this.clock = options.clock ?? new SystemClock();
   }
 
   async get(key: string): Promise<string | undefined> {
@@ -46,7 +44,7 @@ export class InMemoryCache implements CachePort {
     this.entries.delete(key);
   }
 
-  /** Returns the entry if it has not expired, dropping it otherwise. */
+  /** Devuelve la entrada si no venció; si venció, la borra. */
   private live(key: string): Entry | undefined {
     const entry = this.entries.get(key);
     if (entry === undefined) {
@@ -57,5 +55,9 @@ export class InMemoryCache implements CachePort {
       return undefined;
     }
     return entry;
+  }
+
+  private now(): number {
+    return this.clock.now().getTime();
   }
 }

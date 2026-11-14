@@ -209,7 +209,7 @@ Un módulo se comunica con otro por su fachada (`UsersFacade`) o por eventos. La
 ## Ciclo de vida y apagado
 
 - `main.ts` importa primero `./instrumentation.js`, que llama a `TelemetryBootstrap.start(process.env)` de `@platform/observability/setup`, y después crea la app con NestJS y llama `app.enableShutdownHooks()`.
-- El apagado tiene tres momentos, en este orden: `BeforeApplicationShutdown` detiene lo que genera trabajo (`JobRunner`, `SqsPoller`, suscripciones); `OnModuleDestroy` cierra recursos (clientes SNS y SQS, Valkey con `quit`, `DataSource`); `OnApplicationShutdown` vacía la telemetría.
+- Nest 12 apaga en este orden: todos los `onModuleDestroy`, luego `beforeApplicationShutdown` y al final `onApplicationShutdown`. Por eso lo que genera trabajo (`JobRunner`, `SqsPoller`, suscripciones) se detiene en `onModuleDestroy`, y los módulos que cierran recursos (clientes SNS y SQS, Valkey con `quit`, `DataSource`) son globales y se importan antes en `AppModule`, para que su `onModuleDestroy` corra después: Nest destruye los módulos en orden inverso al de importación. `onApplicationShutdown` vacía la telemetría.
 - `onApplicationBootstrap` corre cuando todos los módulos ya iniciaron: ahí van las validaciones cruzadas (`InternalApiModule` llama `assertComplete`, `MessagingExplorer` registra los consumidores).
 - La salud la reúne `HealthRegistry` de observability: cada adaptador de red implementa `HealthCheckable` del kernel y se registra en su `onModuleInit`.
 - Los hooks de inicio son asíncronos y fallan fuerte: si la config o la base no están, el proceso no arranca.

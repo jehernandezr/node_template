@@ -37,6 +37,11 @@
 
   "errorCodeLabel": "Código",
   "errorTraceIdLabel": "ID de traza",
+  "errorCodeLine": "Código: {code}",
+  "@errorCodeLine": { "placeholders": { "code": { "type": "String" } } },
+  "errorTraceIdLine": "ID de traza: {traceId}",
+  "@errorTraceIdLine": { "placeholders": { "traceId": { "type": "String" } } },
+  "metaSeparator": " · ",
   "notFound": "Página no encontrada.",
   "confirm": "Confirmar",
   "delete": "Eliminar",

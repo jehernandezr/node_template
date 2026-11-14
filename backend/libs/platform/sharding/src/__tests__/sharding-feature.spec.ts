@@ -1,12 +1,9 @@
-import { ShardingErrorCode } from '../errors.js';
-import { RangeShardStrategy } from '../range-shard-strategy.js';
-import { routingKeyFor, validateShardingFeature } from '../sharding-feature.js';
-import {
-  ShardKey,
-  ShardStrategy,
-  type ShardKeyResolver,
-  type ShardingFeatureOptions,
-} from '../types.js';
+import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
+import { ShardKey } from '../model/shard-key.enum.js';
+import { ShardStrategy } from '../model/shard-strategy.enum.js';
+import type { ShardKeyResolver } from '../model/shard-key-resolver.js';
+import type { ShardingFeatureOptions } from '../model/sharding-feature-options.js';
+import { ShardingFeature } from '../sharding-feature.js';
 
 interface Invoice {
   readonly accountId?: string;
@@ -18,95 +15,122 @@ const byAccount: ShardKeyResolver<Invoice> = {
 
 const context = { tenantId: 't1', userId: 'u1' };
 
-describe('validateShardingFeature', () => {
-  it('accepts the documented declarations', () => {
-    const identity = {
-      strategy: ShardStrategy.Directory,
-      key: ShardKey.User,
-    } as const;
-    expect(validateShardingFeature(identity)).toBe(identity);
-    expect(() =>
-      validateShardingFeature({
+describe('ShardingFeature', () => {
+  describe('when validating a declaration that is valid', () => {
+    it('returns the same instance', () => {
+      const feature = new ShardingFeature({
+        strategy: ShardStrategy.Directory,
+        key: ShardKey.User,
+      });
+      expect(feature.validate()).toBe(feature);
+    });
+
+    it('accepts a custom key with its resolver', () => {
+      const feature = new ShardingFeature({
         strategy: ShardStrategy.ConsistentHash,
         key: ShardKey.Custom,
         keyResolver: byAccount,
-      }),
-    ).not.toThrow();
+      });
+      expect(() => feature.validate()).not.toThrow();
+    });
   });
 
-  it.each([
-    [{ strategy: 'nope', key: ShardKey.Tenant }],
-    [{ strategy: ShardStrategy.Range, key: 'nope' }],
-    [{ strategy: ShardStrategy.Directory, key: ShardKey.Custom }],
-    [
-      {
+  describe('when validating a declaration that is not valid', () => {
+    it.each([
+      [{ strategy: 'nope', key: ShardKey.Tenant }],
+      [{ strategy: ShardStrategy.Range, key: 'nope' }],
+      [{ strategy: ShardStrategy.Directory, key: ShardKey.Custom }],
+      [
+        {
+          strategy: ShardStrategy.Directory,
+          key: ShardKey.Tenant,
+          keyResolver: byAccount,
+        },
+      ],
+    ])('rejects %p with an invalid configuration', (options) => {
+      const feature = new ShardingFeature(
+        options as ShardingFeatureOptions<Invoice>,
+      );
+      expect(() => feature.validate()).toThrow(
+        expect.objectContaining({
+          code: ShardingErrorCode.InvalidConfiguration,
+        }),
+      );
+    });
+  });
+
+  describe('when the options are read', () => {
+    it('keeps a frozen copy instead of the received object', () => {
+      const options = {
         strategy: ShardStrategy.Directory,
         key: ShardKey.Tenant,
-        keyResolver: byAccount,
-      },
-    ],
-  ])('rejects %p', (options) => {
-    expect(() =>
-      validateShardingFeature(options as ShardingFeatureOptions<Invoice>),
-    ).toThrow(
-      expect.objectContaining({ code: ShardingErrorCode.InvalidConfiguration }),
-    );
-  });
-
-  it('names the built-in strategies', () => {
-    expect(new RangeShardStrategy([], 'shard-1').kind).toBe(
-      ShardStrategy.Range,
-    );
-  });
-});
-
-describe('routingKeyFor', () => {
-  it('uses the tenant, the user of the context or the resolver', () => {
-    expect(
-      routingKeyFor(
-        { strategy: ShardStrategy.Directory, key: ShardKey.Tenant },
-        context,
-      ),
-    ).toEqual({ keyKind: ShardKey.Tenant });
-    expect(
-      routingKeyFor(
-        { strategy: ShardStrategy.Directory, key: ShardKey.User },
-        context,
-      ),
-    ).toEqual({ keyKind: ShardKey.User, keyValue: 'u1' });
-    expect(
-      routingKeyFor(
-        {
-          strategy: ShardStrategy.Directory,
-          key: ShardKey.Custom,
-          keyResolver: byAccount,
-        },
-        context,
-        { accountId: 'acc-9' },
-      ),
-    ).toEqual({ keyKind: ShardKey.Custom, keyValue: 'acc-9' });
-  });
-
-  it('throws KeyMissing when the declared key is not available', () => {
-    const missing = expect.objectContaining({
-      code: ShardingErrorCode.KeyMissing,
+      };
+      const feature = new ShardingFeature(options);
+      expect(feature.options).not.toBe(options);
+      expect(Object.isFrozen(feature.options)).toBe(true);
     });
-    expect(() =>
-      routingKeyFor(
-        { strategy: ShardStrategy.Directory, key: ShardKey.User },
+  });
+
+  describe('when computing the routing key', () => {
+    it.each([
+      [ShardKey.Tenant, undefined, { keyKind: ShardKey.Tenant }],
+      [ShardKey.User, undefined, { keyKind: ShardKey.User, keyValue: 'u1' }],
+    ])('for %s gives %p', (key, _source, expected) => {
+      const feature = new ShardingFeature({
+        strategy: ShardStrategy.Directory,
+        key,
+      });
+      expect(feature.keyFor(context)).toEqual(expected);
+    });
+
+    it('uses the value the resolver reads from the source', () => {
+      const feature = new ShardingFeature<Invoice>({
+        strategy: ShardStrategy.Directory,
+        key: ShardKey.Custom,
+        keyResolver: byAccount,
+      });
+      expect(feature.keyFor(context, { accountId: 'acc-9' })).toEqual({
+        keyKind: ShardKey.Custom,
+        keyValue: 'acc-9',
+      });
+    });
+  });
+
+  describe('when the routing key is missing', () => {
+    it.each([
+      [
+        'a user without userId',
+        new ShardingFeature({
+          strategy: ShardStrategy.Directory,
+          key: ShardKey.User,
+        }),
         { tenantId: 't1' },
-      ),
-    ).toThrow(missing);
-    expect(() =>
-      routingKeyFor(
-        {
+        undefined,
+      ],
+      [
+        'a custom key the resolver cannot read',
+        new ShardingFeature<Invoice>({
           strategy: ShardStrategy.Directory,
           key: ShardKey.Custom,
           keyResolver: byAccount,
-        },
+        }),
         context,
         {},
-      ),
-    ).toThrow(missing);
+      ],
+      [
+        'a custom key without a source',
+        new ShardingFeature<Invoice>({
+          strategy: ShardStrategy.Directory,
+          key: ShardKey.Custom,
+          keyResolver: byAccount,
+        }),
+        context,
+        undefined,
+      ],
+    ])('throws KeyMissing for %s', (_description, feature, ctx, source) => {
+      expect(() => feature.keyFor(ctx, source)).toThrow(
+        expect.objectContaining({ code: ShardingErrorCode.KeyMissing }),
+      );
+    });
   });
 });

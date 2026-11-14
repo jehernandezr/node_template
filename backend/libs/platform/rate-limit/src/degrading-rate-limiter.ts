@@ -1,41 +1,15 @@
-import { SystemClock, type Clock } from '@platform/kernel';
-import { InvalidArgumentError } from '@platform/primitives';
+import { SystemClock } from '@platform/kernel';
+import { PrimitivesGuard } from '@platform/primitives';
+import type { DegradingRateLimiterOptions } from './degrading-rate-limiter.options.js';
 import { InMemoryRateLimiter } from './in-memory-rate-limiter.js';
-import {
-  assertRateLimitCall,
-  RateLimitOperation,
-  type RateLimitResult,
-  type RateLimitRule,
-} from './rate-limit-rule.js';
+import type { RateLimitDegradationReporter } from './rate-limit-degradation-reporter.js';
+import type { RateLimitDegradedListener } from './rate-limit-degraded-listener.js';
+import { RateLimitOperation } from './rate-limit-operation.enum.js';
+import type { RateLimitResult } from './rate-limit-result.js';
+import type { RateLimitRule } from './rate-limit-rule.js';
+import { RateLimitCallValidator } from './rate-limit-call-validator.js';
+import { NoopRateLimitDegradationReporter } from './noop-rate-limit-degradation-reporter.js';
 import { RateLimiter } from './rate-limiter.js';
-
-/** Aviso de que el limitador compartido falló y respondió el local. */
-export type RateLimitDegradedListener = (
-  operation: RateLimitOperation,
-  rule: RateLimitRule,
-  error: unknown,
-) => void;
-
-/** Opciones de {@link DegradingRateLimiter}. */
-export interface DegradingRateLimiterOptions {
-  /** Limitador compartido entre instancias, normalmente el de Valkey. */
-  readonly primary: RateLimiter;
-  /**
-   * Divide el límite de cada regla mientras responde el limitador local, por
-   * lo general el número de instancias del servicio: cada una cuenta solo su
-   * tráfico, y entre todas no deberían pasar mucho más del límite global.
-   */
-  readonly localDivisor: number;
-  /** Limitador local. Por defecto un `InMemoryRateLimiter` con `clock`. */
-  readonly fallback?: RateLimiter;
-  /** Reloj del limitador local por defecto. */
-  readonly clock?: Clock;
-  /**
-   * Se llama con cada falla del limitador compartido, para registrarla o
-   * medirla. Una excepción dentro de él se ignora.
-   */
-  readonly onDegraded?: RateLimitDegradedListener;
-}
 
 /**
  * {@link RateLimiter} que usa el limitador compartido y, si este falla, uno
@@ -52,22 +26,21 @@ export class DegradingRateLimiter extends RateLimiter {
   private readonly fallback: RateLimiter;
   private readonly localDivisor: number;
   private readonly onDegraded: RateLimitDegradedListener | undefined;
+  private readonly reporter: RateLimitDegradationReporter;
 
   /** @throws InvalidArgumentError si `localDivisor` no es un entero positivo. */
   constructor(options: DegradingRateLimiterOptions) {
     super();
-    if (
-      !Number.isSafeInteger(options.localDivisor) ||
-      options.localDivisor < 1
-    ) {
-      throw new InvalidArgumentError('localDivisor', 'a positive integer');
-    }
+    this.localDivisor = PrimitivesGuard.instance.positiveInteger(
+      'localDivisor',
+      options.localDivisor,
+    );
     this.primary = options.primary;
-    this.localDivisor = options.localDivisor;
     this.fallback =
       options.fallback ??
       new InMemoryRateLimiter({ clock: options.clock ?? new SystemClock() });
     this.onDegraded = options.onDegraded;
+    this.reporter = options.reporter ?? new NoopRateLimitDegradationReporter();
   }
 
   async consume(
@@ -75,7 +48,7 @@ export class DegradingRateLimiter extends RateLimiter {
     rule: RateLimitRule,
     cost = 1,
   ): Promise<RateLimitResult> {
-    assertRateLimitCall(key, rule, cost);
+    RateLimitCallValidator.validate(key, rule, cost);
     try {
       return await this.primary.consume(key, rule, cost);
     } catch (error) {
@@ -87,7 +60,7 @@ export class DegradingRateLimiter extends RateLimiter {
   }
 
   async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
-    assertRateLimitCall(key, rule);
+    RateLimitCallValidator.validate(key, rule);
     try {
       return await this.primary.peek(key, rule);
     } catch (error) {
@@ -102,7 +75,7 @@ export class DegradingRateLimiter extends RateLimiter {
    * por eso, y el contador viejo vence solo con su ventana.
    */
   async reset(key: string, rule: RateLimitRule): Promise<void> {
-    assertRateLimitCall(key, rule);
+    RateLimitCallValidator.validate(key, rule);
     await this.fallback.reset(key, this.localRule(rule));
     try {
       await this.primary.reset(key, rule);
@@ -129,6 +102,11 @@ export class DegradingRateLimiter extends RateLimiter {
       this.onDegraded?.(operation, rule, error);
     } catch {
       // El aviso es diagnóstico: no debe cambiar la respuesta del limitador.
+    }
+    try {
+      this.reporter.degraded(operation, rule, error);
+    } catch {
+      // El reporte es diagnóstico: no debe cambiar la respuesta del limitador.
     }
   }
 }

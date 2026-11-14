@@ -1,7 +1,7 @@
 import 'package:contracts/contracts.dart';
 
-/// Segundos factores que los flujos de este paquete saben completar con un
-/// código. Una passkey necesita WebAuthn, que todavía no tienen.
+/// Second factors that the flows of this package can complete with a code.
+/// A passkey needs WebAuthn, which they do not have yet.
 const Set<MfaFactor> codeMfaMethods = {
   MfaFactor.deviceOtp,
   MfaFactor.emailOtp,

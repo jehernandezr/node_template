@@ -1,38 +1,35 @@
-import { randomUUID } from 'node:crypto';
+import { IdGenerator, SystemClock, UuidV7IdGenerator } from '@platform/kernel';
+import { CanonicalJson } from '@platform/primitives';
 import type { CachePort } from './cache-port.js';
-import { CacheInvalidArgumentError, CacheKeyTooLongError } from './errors.js';
-import { queryDigest } from './stable-hash.js';
-
-/** Default bound for every key the keyspace builds, in characters. */
-export const DEFAULT_MAX_CACHE_KEY_LENGTH = 512;
-
-/** Options for {@link VersionedKeyspace}. */
-export interface VersionedKeyspaceOptions {
-  /** Leading segment of every key. Defaults to `cache`. Cannot contain ':'. */
-  prefix?: string;
-  /** Longest key accepted. Defaults to {@link DEFAULT_MAX_CACHE_KEY_LENGTH}. */
-  maxKeyLength?: number;
-}
-
-/** Shape of a version token: a random UUID. Anything else in the store is replaced. */
-const TOKEN_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+import { CacheInvalidArgumentError } from './errors/cache-invalid-argument.error.js';
+import { CacheKeyTooLongError } from './errors/cache-key-too-long.error.js';
+import { CacheGuard } from './errors/cache-guard.js';
+import type { VersionedKeyspaceOptions } from './versioned-keyspace.options.js';
 
 /**
- * Builds cache keys that embed a per-namespace version token.
- * Bumping the token makes every previously issued key unreachable at once.
+ * Arma llaves de caché que llevan un token de versión por espacio de nombres.
+ * Cambiar el token deja inalcanzables de golpe todas las llaves emitidas antes.
  *
- * Tokens are random and never derived from a counter. If a version key is evicted,
- * a new random token is created, so data written under the old token cannot come back.
+ * Los tokens son aleatorios y nunca salen de un contador. Si la llave de versión
+ * desaparece, se crea un token nuevo, así que los datos escritos con el token
+ * viejo no pueden volver.
  *
- * Concurrency: the first use creates the token with `setIfAbsent` and reads it
- * back, so concurrent first readers agree on one token. A bump writes a fresh
- * token; a reader that took the old token before the bump can only write under
- * the old key, which no reader after the bump will ever build again.
+ * Concurrencia: el primer uso crea el token con `setIfAbsent` y lo vuelve a leer,
+ * así que los primeros lectores concurrentes acuerdan un solo token. Un cambio
+ * escribe un token nuevo; un lector que tomó el token viejo solo puede escribir
+ * bajo la llave vieja, que ningún lector posterior volverá a construir.
  */
 export class VersionedKeyspace {
+  /** Largo máximo por defecto de cualquier llave, en caracteres. */
+  static readonly DEFAULT_MAX_KEY_LENGTH = 512;
+
+  /** Forma de un token de versión: un UUID. Cualquier otro valor se reemplaza. */
+  private static readonly TOKEN_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
   private readonly prefix: string;
   private readonly maxKeyLength: number;
+  private readonly ids: IdGenerator;
 
   constructor(
     private readonly cache: CachePort,
@@ -45,52 +42,60 @@ export class VersionedKeyspace {
         'a non-empty string without ":"',
       );
     }
-    const maxKeyLength = options.maxKeyLength ?? DEFAULT_MAX_CACHE_KEY_LENGTH;
-    if (!Number.isInteger(maxKeyLength) || maxKeyLength < 1) {
-      throw new CacheInvalidArgumentError('maxKeyLength', 'an integer >= 1');
-    }
     this.prefix = prefix;
-    this.maxKeyLength = maxKeyLength;
+    this.maxKeyLength = CacheGuard.instance.positiveInteger(
+      'maxKeyLength',
+      options.maxKeyLength ?? VersionedKeyspace.DEFAULT_MAX_KEY_LENGTH,
+    );
+    // El reloj del sistema solo entra cuando el llamador no trae su propio generador (uso sin NestJS).
+    this.ids = options.ids ?? new UuidV7IdGenerator(new SystemClock());
   }
 
-  /** Current version token of a namespace. Created on first use when missing. */
+  /** Token de versión actual de un espacio de nombres. Se crea en el primer uso. */
   async version(namespace: readonly string[]): Promise<string> {
     const key = this.versionKey(namespace);
     const existing = await this.cache.get(key);
-    if (existing !== undefined && TOKEN_PATTERN.test(existing)) {
+    if (
+      existing !== undefined &&
+      VersionedKeyspace.TOKEN_PATTERN.test(existing)
+    ) {
       return existing;
     }
     if (existing !== undefined) {
-      // A corrupt or foreign token would build unbounded keys: replace it.
+      // Un token corrupto o ajeno produciría llaves de largo sin límite: se reemplaza.
       return this.bump(namespace);
     }
-    await this.cache.setIfAbsent(key, randomUUID());
-    // Another writer may have won the race; read back the stored token.
+    await this.cache.setIfAbsent(key, this.token());
+    // Otro escritor pudo ganar la carrera: se lee el token que quedó guardado.
     const stored = await this.cache.get(key);
-    // If it vanished (eviction), a throwaway token keeps this read uncached.
-    return stored !== undefined && TOKEN_PATTERN.test(stored)
+    // Si desapareció (expulsión), un token desechable deja esta lectura sin caché.
+    return stored !== undefined && VersionedKeyspace.TOKEN_PATTERN.test(stored)
       ? stored
-      : randomUUID();
+      : this.token();
   }
 
-  /** Replaces the version token. Returns the new token. */
+  /** Reemplaza el token de versión. Devuelve el token nuevo. */
   async bump(namespace: readonly string[]): Promise<string> {
-    const token = randomUUID();
+    const token = this.token();
     await this.cache.set(this.versionKey(namespace), token);
     return token;
   }
 
   /**
-   * Cache key for `params` under the namespace's current version token.
-   * @throws CacheKeyTooLongError when the namespace makes the key too long.
-   * @throws NonJsonValueError (primitives) when `params` is not JSON.
+   * Llave de caché para `params` bajo el token actual del espacio de nombres.
+   * @throws CacheKeyTooLongError cuando el espacio de nombres hace la llave demasiado larga.
+   * @throws NonJsonValueError (primitives) cuando `params` no es JSON canónico.
    */
   async key(namespace: readonly string[], params: unknown): Promise<string> {
-    // Validate before touching the store, so a bad call costs no round trip.
+    // Se valida antes de tocar el almacén, para que una llamada mala no cueste un viaje.
     const encoded = this.encodedNamespace(namespace);
-    const digest = queryDigest(params);
+    const digest = CanonicalJson.digest(params);
     const token = await this.version(namespace);
     return this.bounded(`${this.prefix}:data:${encoded}:v${token}:${digest}`);
+  }
+
+  private token(): string {
+    return this.ids.next().toString();
   }
 
   private versionKey(namespace: readonly string[]): string {
@@ -100,8 +105,8 @@ export class VersionedKeyspace {
   }
 
   /**
-   * Encodes each segment so that segments containing ':' cannot collide with
-   * other namespaces, and rejects namespaces that cannot fit in a key.
+   * Codifica cada segmento para que uno con ':' no choque con otro espacio de
+   * nombres, y rechaza los espacios que no caben en una llave.
    */
   private encodedNamespace(namespace: readonly string[]): string {
     if (!Array.isArray(namespace)) {
@@ -115,7 +120,7 @@ export class VersionedKeyspace {
             'an array of strings',
           );
         }
-        // Encoding never shortens a segment: reject huge ones before encoding.
+        // Codificar nunca acorta un segmento: los enormes se rechazan antes de codificar.
         this.bounded(segment);
         return encodeURIComponent(segment);
       })
