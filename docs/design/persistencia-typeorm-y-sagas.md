@@ -119,6 +119,17 @@ Aprobado por el usuario el 14 de noviembre de 2026.
 - **Uso:** `SagaModule.forFeature([CreateTenantSaga])` arma el motor con valores por defecto (lease, plazos, dueño) y registra la recuperación. Un caso de uso inyecta `Sagas` y llama `await this.sagas.start(CreateTenantSaga, state, { idempotencyKey })`.
 - Las definiciones siguen siendo clases `SagaDefinition` con `flow.step(...).pivot()`, y las compensaciones siguen saliendo del `compensatedBy` de cada contrato.
 
+### 5.1 Dónde vive la bitácora y qué guarda
+
+- **Sin base compartida de sagas.** Cada servicio que orquesta guarda su bitácora en su propia base. Una base común para todos los servicios los acoplaría y sería un punto único de falla.
+- **En el shard del tenant.** Las tablas `saga_instances` y `saga_step_log` viven en el shard del tenant que inicia la saga. La saga arranca en la misma transacción que el cambio local que la provoca, y sus datos se quedan en la región del tenant (ADR 0010). `SagaRecoveryJob` recorre los shards con `AcrossShards` y `FOR UPDATE SKIP LOCKED`.
+- **Bitácora antes de llamar (write-ahead).** Antes de cada llamada, el paso queda `Dispatched` con su entrada completa y su llave `sagaId:paso:dirección`. Después de la llamada se guarda la respuesta o el error. La compensación se arma con la entrada y la salida guardadas, no con memoria del proceso.
+- **El participante guarda su respuesta.** Cada servicio llamado registra la respuesta de cada llave de idempotencia (`processed_messages`) en la misma transacción que sus efectos. Si la Lambda o el contenedor del orquestador cae entre `Dispatched` y la respuesta, al retomar se reenvía la misma petición con la misma llave: el participante devuelve la respuesta guardada sin repetir el efecto. Así ningún paso se pierde ni se duplica.
+- **Retoma sin proceso vivo.** El lease vence y `SagaRecoveryJob`, programado (EventBridge en AWS, cron en local), retoma la saga desde el último paso confirmado.
+- **Datos sensibles y tamaño.** La entrada y la salida se guardan cifradas cuando llevan datos personales, y un job purga las sagas terminadas después de la retención. Un payload grande se guarda por referencia (id del recurso), no completo.
+
+Alternativa descartada: AWS Step Functions como orquestador. Resuelve estado y reintentos, pero ata la plataforma a AWS (el diseño es agnóstico y corre en local), limita el payload a 256 KB y cobra por transición.
+
 ## 6. Paquetes de trabajo
 
 | Paquete                      | Alcance                                                                                                                                        | Depende de                            |
