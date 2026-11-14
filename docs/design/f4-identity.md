@@ -29,7 +29,7 @@ Faltan cuatro piezas de plataforma (entrada HTTP, verificación de tokens, lími
 3. **Verificación local en cada servicio.** `@platform/auth` verifica firma, vencimientos, sesión revocada, épocas y versión de permisos sin llamar a identity. El estado de revocación vive en un espacio de llaves de Valkey compartido de solo lectura, `auth:*` (ADR 0022).
 4. **Datos de usuario en el shard del usuario, datos de tenant en el shard del tenant.** Los datos de usuario se enrutan por `ShardKey.User` dentro del grupo de su tenant de origen (`homeTenantId`). Los de tenant (miembros, grupos, roles, API keys) se enrutan por `ShardKey.Tenant`. El catálogo guarda solo índices de enrutamiento (ADR 0023).
 5. **Tokens opacos con ruta.** Session token, token de reset, token de verificación de email, `mfaToken`, `deviceId` firmado e invitación llevan el id del usuario (o del tenant) y el de su tenant de origen. Con eso identity llega al shard sin consultar el catálogo.
-6. **Web o app nativa por el header `Origin`.** Un `Origin` permitido indica navegador: el session token va en la cookie `__Host-session`. Sin `Origin`, el token viaja en el cuerpo. Un `Origin` no permitido responde `PLATFORM.AUTH.ORIGIN_REJECTED`.
+6. **Web o app nativa por header.** La app móvil declara su canal con `Authorization: Bearer <session token>` (refresh y cierre de sesión) o `X-Session-Transport: bearer` (login y verificación MFA) y recibe el token en el cuerpo. Sin esos headers el canal es web: el session token viaja solo en la cookie `__Host-session`. Además, un `Origin` que no esté en la lista permitida responde `PLATFORM.AUTH.ORIGIN_REJECTED` (defensa contra CSRF).
 7. **Un solo cambio de contrato, al inicio.** El WP de contrato agrega en la primera ola todas las rutas, esquemas, códigos, eventos y operaciones de F4, junto con el Dart generado y los textos ARB. Los WP de módulos no editan el contrato.
 
 ## 3. Piezas de plataforma nuevas
@@ -243,16 +243,16 @@ Enums: `AuthMethod` (`Jwt`, `ApiKey`), `RateLimitTier` (`Auth`, `Sensitive`, `St
 
 #### 3.4.2 Pipeline de cada petición
 
-| Orden | Pieza de Nest                                  | Clase                        | Responsabilidad                                                                                                                                                                         |
-| ----- | ---------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Middleware                                     | `RequestContextMiddleware`   | `traceId` (del `traceparent` o UUIDv7 nuevo), `externalTraceId`, `RequestContext.run`, header `x-trace-id`.                                                                             |
-| 2     | Middleware                                     | `SecurityHeadersMiddleware`  | `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'`, `Cache-Control: no-store` en rutas de `/v1/auth`. |
-| 3     | Middleware                                     | `OriginPolicyMiddleware`     | Lee `Origin`; si viene y no está en `WEB_ORIGINS`, responde `PLATFORM.AUTH.ORIGIN_REJECTED` (403). Fija `ClientChannel`.                                                                |
-| 4     | Guard                                          | `EndpointGuard`              | Autenticación (JWT con `AccessTokenVerifier` o API key con `ApiKeyAuthenticator`), tenant, rate limit, `AccessGrant` y `evaluateAccess`, sunset (410 `PLATFORM.API.VERSION_SUNSET`).    |
-| 5     | Interceptor                                    | `EndpointContextInterceptor` | Abre un `RequestContext` nuevo con tenant y actor, aplica `timeoutMs`, resuelve `Api-Version`, agrega `Deprecation`, `Sunset` y `Link`, y maneja la cookie de sesión.                   |
-| 6     | Pipe                                           | `ContractInputPipe`          | Arma la entrada y la valida con `validateContract(route.request, …)`. Falla con `PLATFORM.VALIDATION.INVALID_INPUT` y `errors` por campo.                                               |
-| 7     | Interceptor (fuera de producción y en pruebas) | `ContractOutputInterceptor`  | Valida la respuesta contra `route.response`. Un desvío es un error del servidor.                                                                                                        |
-| 8     | Filtro                                         | `ProblemDetailsFilter`       | `PlatformError` a Problem Details con `ErrorCatalogRegistry` y `toProblemDetails`; `Retry-After` desde `details.retryAfterSeconds`; lo desconocido es `PLATFORM.INTERNAL.UNEXPECTED`.   |
+| Orden | Pieza de Nest                                  | Clase                        | Responsabilidad                                                                                                                                                                                                                                                |
+| ----- | ---------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Middleware                                     | `RequestContextMiddleware`   | `traceId` (del `traceparent` o UUIDv7 nuevo), `externalTraceId`, `RequestContext.run`, header `x-trace-id`.                                                                                                                                                    |
+| 2     | Middleware                                     | `SecurityHeadersMiddleware`  | `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'`, `Cache-Control: no-store` en rutas de `/v1/auth`.                                                                        |
+| 3     | Middleware                                     | `OriginPolicyMiddleware`     | Lee `Origin`; si viene y no está en `WEB_ORIGINS`, responde `PLATFORM.AUTH.ORIGIN_REJECTED` (403). Fija `ClientChannel`: `Native` si la petición trae `Authorization: Bearer` con session token o `X-Session-Transport: bearer`, `Web` en cualquier otro caso. |
+| 4     | Guard                                          | `EndpointGuard`              | Autenticación (JWT con `AccessTokenVerifier` o API key con `ApiKeyAuthenticator`), tenant, rate limit, `AccessGrant` y `evaluateAccess`, sunset (410 `PLATFORM.API.VERSION_SUNSET`).                                                                           |
+| 5     | Interceptor                                    | `EndpointContextInterceptor` | Abre un `RequestContext` nuevo con tenant y actor, aplica `timeoutMs`, resuelve `Api-Version`, agrega `Deprecation`, `Sunset` y `Link`, y maneja la cookie de sesión.                                                                                          |
+| 6     | Pipe                                           | `ContractInputPipe`          | Arma la entrada y la valida con `validateContract(route.request, …)`. Falla con `PLATFORM.VALIDATION.INVALID_INPUT` y `errors` por campo.                                                                                                                      |
+| 7     | Interceptor (fuera de producción y en pruebas) | `ContractOutputInterceptor`  | Valida la respuesta contra `route.response`. Un desvío es un error del servidor.                                                                                                                                                                               |
+| 8     | Filtro                                         | `ProblemDetailsFilter`       | `PlatformError` a Problem Details con `ErrorCatalogRegistry` y `toProblemDetails`; `Retry-After` desde `details.retryAfterSeconds`; lo desconocido es `PLATFORM.INTERNAL.UNEXPECTED`.                                                                          |
 
 `ErrorCatalogRegistry` reúne `platformErrorCatalog` y los catálogos del servicio. Falla al arrancar si un código declarado en una ruta no tiene entrada.
 
@@ -936,7 +936,7 @@ En `backend/apps/identity/test/e2e/`, con la app completa, Postgres y Valkey rea
 6. `sign-in` desde el dispositivo registrado: `device_otp`, `device-approvals/pull` firmado y `verify` con el código.
 7. Step-up: `POST /v1/me/password` responde `STEP_UP_REQUIRED`; tras `step-up/verify` funciona y las demás sesiones quedan revocadas.
 8. `sign-out`: el refresh responde `IDENTITY.SESSION.REVOKED`.
-9. Variante web: con `Origin` permitido, el token viaja en `__Host-session` y nunca en el cuerpo; con `Origin` no permitido, `PLATFORM.AUTH.ORIGIN_REJECTED`.
+9. Variante web: sin headers de canal, el token viaja en `__Host-session` y nunca en el cuerpo; con `X-Session-Transport: bearer` viaja en el cuerpo; con `Origin` no permitido, `PLATFORM.AUTH.ORIGIN_REJECTED`.
 10. Bloqueo: cinco fallos dan `INVALID_CREDENTIALS` con `Retry-After`, también con un email inexistente.
 
 Además: un e2e por WP de la ola 2 sobre sus rutas, y un e2e de autorización que recorre la matriz de acceso y prueba cada ruta autenticada sin token, con token sin permiso y con step-up vencido.
@@ -1009,15 +1009,15 @@ Respaldo, sin instalar: si al construir WP8 la API `crypto.argon2` de la versió
 
 ## 11. Decisiones que requieren al usuario
 
-El usuario aprobó el 14 de noviembre de 2026 las decisiones 2, 4 y 5. Las demás siguen en revisión; mientras tanto, los WP siguen lo que propone este documento y los ADR quedan en `Propuesta`.
+El usuario aprobó el 14 de noviembre de 2026 las decisiones 1 a 8 y 10, con el ajuste de la 6 que se describe abajo. Las demás siguen en revisión; mientras tanto, los WP siguen lo que propone este documento y los ADR quedan en `Propuesta`.
 
-1. **Claims nuevos.** `htid`, `proles`, `sxp`, `typ: at+jwt` y `pv` como par de versiones (ADR 0022 y 0023).
+1. **Aprobada. Claims nuevos.** `htid`, `proles`, `sxp`, `typ: at+jwt` y `pv` como par de versiones (ADR 0022 y 0023).
 2. **Aprobada. Espacio `auth:*` en Valkey.** Cambia la regla del ADR 0021 y del stack `data`: hoy cada servicio solo ve su prefijo; con esto todos leen `auth:*` y solo identity escribe (ADR 0022).
-3. **`@Endpoint(route)` en lugar de `@Endpoint.post('/', {...})`.** El plan muestra rutas escritas en el controller; este diseño las toma del contrato.
+3. **Aprobada. `@Endpoint(route)` en lugar de `@Endpoint.post('/', {...})`.** El plan muestra rutas escritas en el controller; este diseño las toma del contrato.
 4. **Aprobada. OpenAPI sin `@nestjs/swagger`.** El plan pide el plugin de Swagger y Scalar. Para minimizar dependencias, se propone generar OpenAPI desde `contract.json` en F11.
 5. **Aprobada. Node 24.22.2.** `crypto.argon2` exige al menos esa versión. Se propone fijar `.nvmrc` en una versión exacta de la línea 24 (por ejemplo `24.22.2`) en WP6.
-6. **Canal web o nativo por `Origin`.** Alternativa: un header propio del cliente, que obligaría a cambiar el front.
-7. **Código del dispositivo registrado.** Se interpreta como un código que la app verificadora obtiene con una petición firmada y envía sola, no como un código derivado de la firma.
-8. **Longitud mínima de contraseña.** El plan no la fija; se propone 12.
+6. **Aprobada con ajuste. Canal web o nativo por header.** La app móvil declara su canal: envía el session token en `Authorization: Bearer <session token>` en refresh y cierre de sesión, y `X-Session-Transport: bearer` en el login y en la verificación MFA, cuando todavía no tiene token. Con ese header la respuesta trae el token en el cuerpo; sin él, el canal es web y el token viaja solo en la cookie `__Host-session`. Así un cliente que no declara nada nunca recibe el token en el cuerpo.
+7. **Aprobada. Código del dispositivo registrado.** Se interpreta como un código que la app verificadora obtiene con una petición firmada y envía sola, no como un código derivado de la firma.
+8. **Aprobada (12). Longitud mínima de contraseña.** El plan no la fija; se propone 12.
 9. **WebAuthn como JSON en texto dentro del contrato.** Evita modelar WebAuthn en zod y en el generador de Dart, a cambio de validar ese JSON en el servidor.
-10. **Intentos con emails inexistentes solo en Valkey y logs.** `login_attempts` guarda solo intentos de cuentas existentes, porque sin usuario no hay shard.
+10. **Aprobada. Intentos con emails inexistentes solo en Valkey y logs.** `login_attempts` guarda solo intentos de cuentas existentes, porque sin usuario no hay shard.
