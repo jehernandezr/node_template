@@ -39,7 +39,7 @@ Los mensajes no incluyen líneas de atribución de IA ni líneas `Co-Authored-By
 `pnpm install` instala los hooks de Husky:
 
 - `commit-msg` valida el mensaje con commitlint (`@commitlint/config-conventional`) y rechaza los que no cumplan.
-- `pre-commit` corre lint-staged sobre los archivos preparados: Prettier para JS, TS, JSON, Markdown y YAML; ESLint con `--fix` para el TypeScript de `backend/`; `dart format` para el Dart de `front/`.
+- `pre-commit` corre lint-staged sobre los archivos preparados: Prettier para JS, TS, JSON, Markdown y YAML; ESLint con `--fix` para el TypeScript de `backend/` (rechaza una prueba fuera de `__tests__/` y cualquier archivo en `src/lib/`); `dart format` para el Dart de `front/`.
 
 Los hooks usan `pnpm exec`, así que necesitan `pnpm` en el `PATH` de la terminal o del editor que hace el commit.
 
@@ -66,6 +66,8 @@ Lista de revisión:
 - [ ] La rama tiene prefijo `feat/`, `fix/` o `chore/`.
 - [ ] Los comandos anteriores pasan sin errores.
 - [ ] Los cambios respetan las capas hexagonales: el dominio no importa frameworks.
+- [ ] En el backend, las pruebas están en la carpeta `__tests__/` de la carpeta que prueban, el código está directo en `src/` y no apareció ningún `package.json` ni `node_modules` fuera de la raíz.
+- [ ] Una dependencia externa nueva del backend está solo en `backend/package.json`, con versión exacta.
 - [ ] Los identificadores de evento, error, permiso, cola o job usan enums, no literales de texto.
 - [ ] Los códigos de error nuevos tienen el formato `SERVICIO.SUBMÓDULO.ERROR` y su entrada en el catálogo.
 - [ ] Los identificadores nuevos son UUIDv7.
@@ -77,6 +79,8 @@ Lista de revisión:
 ## Reglas de arquitectura
 
 **Raíz mínima.** La raíz solo tiene `backend/`, `front/`, Nx y las herramientas del repositorio. Lo compartido del backend vive en `backend/libs`, lo del front en `front/packages`, y lo compartido dentro de un servicio o microfrontend en su carpeta `shared/{enums,constants,types,utils}`. Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+
+**Un solo `node_modules`.** Las dependencias externas del backend se declaran solo en `backend/package.json`, con versión exacta, y las de Nx y los hooks en el `package.json` de la raíz. Las librerías, apps y herramientas del backend no tienen `package.json`: son proyectos de Nx (`project.json`) y se importan por los alias de `backend/tsconfig.base.json`. Una librería nueva sigue la skill `backend-estructura`: código directo en `src/`, pruebas en el `__tests__/` de cada carpeta y dobles compartidos en `src/testing/`. Las librerías no se compilan; solo las apps se empaquetan con esbuild en `backend/dist/<app>/`.
 
 **Capas hexagonales.** Dentro de cada módulo, `domain` depende solo de `kernel`. El dominio no importa NestJS, TypeORM, AWS ni ninguna librería de infraestructura. Los casos de uso dependen del dominio, y `infrastructure` y `presentation` dependen de los dos.
 

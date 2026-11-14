@@ -1,14 +1,11 @@
 {
   "compilerOptions": {
-    "composite": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true,
     "importHelpers": true,
     "isolatedModules": true,
     "lib": ["es2022"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "noEmitOnError": true,
+    "noEmit": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
@@ -16,10 +13,44 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@node-template/source"],
     "noUncheckedSideEffectImports": false,
     "types": ["*"],
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "@contracts/identity": ["./libs/contracts/identity/src/index.ts"],
+      "@contracts/platform": ["./libs/contracts/platform/src/index.ts"],
+      "@platform/adapters-aws": ["./libs/platform/adapters/aws/src/index.ts"],
+      "@platform/adapters-postgres": [
+        "./libs/platform/adapters/postgres/src/index.ts"
+      ],
+      "@platform/adapters-valkey": [
+        "./libs/platform/adapters/valkey/src/index.ts"
+      ],
+      "@platform/bloom": ["./libs/platform/bloom/src/index.ts"],
+      "@platform/cache": ["./libs/platform/cache/src/index.ts"],
+      "@platform/config": ["./libs/platform/config/src/index.ts"],
+      "@platform/criteria": ["./libs/platform/criteria/src/index.ts"],
+      "@platform/internal-api": ["./libs/platform/internal-api/src/index.ts"],
+      "@platform/kernel": ["./libs/platform/kernel/src/index.ts"],
+      "@platform/kernel/testing": [
+        "./libs/platform/kernel/src/testing/index.ts"
+      ],
+      "@platform/messaging": ["./libs/platform/messaging/src/index.ts"],
+      "@platform/observability": ["./libs/platform/observability/src/index.ts"],
+      "@platform/observability/setup": [
+        "./libs/platform/observability/src/setup.ts"
+      ],
+      "@platform/persistence": ["./libs/platform/persistence/src/index.ts"],
+      "@platform/primitives": ["./libs/platform/primitives/src/index.ts"],
+      "@platform/rate-limit": ["./libs/platform/rate-limit/src/index.ts"],
+      "@platform/rate-limit/testing": [
+        "./libs/platform/rate-limit/src/testing/index.ts"
+      ],
+      "@platform/resilience": ["./libs/platform/resilience/src/index.ts"],
+      "@platform/saga": ["./libs/platform/saga/src/index.ts"],
+      "@platform/sharding": ["./libs/platform/sharding/src/index.ts"],
+      "@shared/utils": ["./libs/shared/utils/src/index.ts"]
+    }
   }
 }

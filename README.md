@@ -15,9 +15,10 @@ El siguiente paso es el primer servicio en `backend/apps/`. El orden completo es
 ## Estructura del repositorio
 
 ```text
-backend/        workspace pnpm del backend
-  libs/         librerías de plataforma, contratos (zod) y utilidades compartidas
-  tools/        contracts-export: exporta los contratos a JSON
+backend/        backend: dependencias externas en backend/package.json, alias en tsconfig.base.json
+  libs/         librerías de plataforma, contratos (zod) y utilidades compartidas (proyectos de Nx)
+  tools/        contracts-export (exporta los contratos a JSON) y app-bundler (esbuild)
+  dist/         paquete de cada app, generado por el target build (fuera de git)
   infra/        Terraform (infra/terraform) y scripts del entorno local (infra/local)
 front/          pub workspace de Flutter
   apps/         shells web y mobile
@@ -28,6 +29,8 @@ docs/           arquitectura, ADRs y guía de desarrollo local
 ```
 
 En la raíz solo quedan Nx como orquestador (`nx.json`, `package.json`, `pnpm-workspace.yaml`) y las herramientas del repositorio (`.github/`, `.husky/`, commitlint, lint-staged, Prettier y Renovate). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+
+`pnpm install` deja un solo `node_modules`, en la raíz. Las librerías del backend no son paquetes: se importan por alias de TypeScript (`@platform/kernel`), no se compilan por separado y guardan sus pruebas en la carpeta `__tests__/` de cada carpeta de código.
 
 ## Requisitos
 
@@ -43,7 +46,7 @@ Todos se corren desde la raíz, salvo que se indique otra carpeta.
 
 ```bash
 corepack enable                                                   # habilita pnpm
-pnpm install                                                      # instala Nx y el backend
+pnpm install                                                      # instala Nx y el backend en un solo node_modules
 (cd front && flutter pub get)                                     # prepara el front
 pnpm nx affected -t lint test typecheck build analyze format-check   # valida lo que cambió (lo mismo que CI)
 pnpm nx format:check                                              # revisa el formato con Prettier

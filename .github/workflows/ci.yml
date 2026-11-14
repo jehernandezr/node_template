@@ -38,6 +38,7 @@ jobs:
               - 'backend/libs/contracts/**'
               - 'backend/libs/platform/messaging/**'
               - 'backend/tools/contracts-export/**'
+              - 'backend/tsconfig.base.json'
               - 'backend/infra/terraform/topology.json'
               - 'pnpm-lock.yaml'
               - '.prettierrc'
@@ -81,6 +82,16 @@ jobs:
           cache: true
 
       - run: pnpm install --frozen-lockfile
+
+      # pnpm-workspace.yaml usa nodeLinker: hoisted; una carpeta node_modules dentro de
+      # backend/ indica una dependencia duplicada o una librería con package.json propio.
+      - name: Un solo node_modules
+        run: |
+          extra=$(find . -path ./node_modules -prune -o -name node_modules -type d -print -prune)
+          if [ -n "$extra" ]; then
+            echo "::error::Hay node_modules fuera de la raíz: $extra"
+            exit 1
+          fi
 
       - run: flutter pub get
         working-directory: front

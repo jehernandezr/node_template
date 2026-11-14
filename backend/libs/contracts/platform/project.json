@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "contracts-platform",
+  "sourceRoot": "backend/libs/contracts/platform/src",
+  "projectType": "library",
+  "tags": ["type:contracts", "scope:platform"],
+  "targets": {
+    "typecheck": {}
+  }
+}

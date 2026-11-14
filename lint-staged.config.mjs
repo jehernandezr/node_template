@@ -4,7 +4,7 @@ const quote = (files) => files.map((file) => `"${file}"`).join(' ');
 const isBackendTs = (file) => /[\\/]backend[\\/].*\.ts$/.test(file);
 
 export default {
-  // TypeScript del backend: primero ESLint (workspace en backend/) y luego Prettier, en orden.
+  // TypeScript del backend: primero ESLint (configuración de backend/) y luego Prettier, en orden.
   // El resto: Prettier con la configuración de la raíz.
   '*.{js,mjs,cjs,ts,json,md,yml,yaml}': (files) => {
     const backendTs = files.filter(isBackendTs);

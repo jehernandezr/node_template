@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "contracts-identity",
+  "sourceRoot": "backend/libs/contracts/identity/src",
+  "projectType": "library",
+  "tags": ["type:contracts", "scope:identity"],
+  "targets": {
+    "typecheck": {}
+  }
+}

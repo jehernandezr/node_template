@@ -1,9 +1,9 @@
-export * from './lib/ast.js';
-export * from './lib/criteria.js';
-export * from './lib/cursor.js';
-export * from './lib/enums.js';
-export * from './lib/errors.js';
-export * from './lib/page.js';
-export * from './lib/postgres.js';
-export * from './lib/sql.js';
-export { MAX_LIMIT } from './lib/validation.js';
+export * from './ast.js';
+export * from './criteria.js';
+export * from './cursor.js';
+export * from './enums.js';
+export * from './errors.js';
+export * from './page.js';
+export * from './postgres.js';
+export * from './sql.js';
+export { MAX_LIMIT } from './validation.js';

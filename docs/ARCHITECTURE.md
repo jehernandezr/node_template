@@ -39,7 +39,10 @@ Estos hallazgos se corrigen como parte del paso inicial:
 La raíz del repositorio es mínima ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md)). Contiene dos aplicaciones, `backend/` y `front/`, Nx como orquestador y las herramientas del repositorio. Cada aplicación es dueña de sus librerías: nada compartido entre backend y front vive en la raíz, y el front recibe los contratos generados desde el backend.
 
 ```text
-backend/                       workspace pnpm del backend (Jest, ESLint y TypeScript en backend/package.json)
+backend/                       backend: todas sus dependencias externas en backend/package.json
+  package.json                 dependencias externas con versión exacta (único package.json del backend)
+  tsconfig.base.json           opciones de TypeScript y alias de las librerías (@platform/kernel...)
+  dist/<app>/                  paquete de cada app, generado con esbuild (no se confirma)
   libs/
     contracts/platform/        @contracts/platform: kit de contratos y piezas transversales
     contracts/identity/        @contracts/identity: contrato del servicio identity
@@ -47,6 +50,7 @@ backend/                       workspace pnpm del backend (Jest, ESLint y TypeSc
                                messaging, resilience, cache, bloom, sharding, criteria
     shared/utils/              @shared/utils: funciones puras sobre los tipos de los contratos
   tools/contracts-export/      exporta los contratos a JSON (proyecto Nx contracts-export)
+  tools/app-bundler/           empaqueta las apps con esbuild en backend/dist/<app>/
   infra/terraform/             raíz platform y módulos de AWS
   infra/local/                 scripts de arranque de PostgreSQL y LocalStack
   docker-compose.yml           stack local
@@ -61,15 +65,36 @@ nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.jso
 
 **Un solo grafo para backend y front**
 
-- `nx.json` registra los plugins `@nx/js/typescript` (`typecheck` y `build`), `@nx/jest/plugin` (`test`) y `@nx/eslint/plugin` (`lint`), limitados a `backend/**`. Cada proyecto del backend toma el nombre de su `package.json`: `platform-saga`, `contracts-identity`, `shared-utils`.
+- Cada proyecto del backend es un `project.json` con su nombre y sus tags: `platform-saga`, `contracts-identity`, `shared-utils`. Las librerías no son paquetes de npm: no tienen `package.json` ni `node_modules`, y se importan por los alias de `backend/tsconfig.base.json`. Nx lee esos alias para armar el grafo y aplicar los límites entre proyectos.
+- `nx.json` registra los plugins `@nx/jest/plugin` (`test`) y `@nx/eslint/plugin` (`lint`), limitados a `backend/**`. `typecheck` y `build` salen de `targetDefaults`: cada proyecto los declara vacíos en su `project.json`.
 - `front/tools/nx-plugin/index.cjs` lee la lista `workspace:` de `front/pubspec.yaml` y registra cada miembro como proyecto `front-<nombre del pubspec>`: `front-shell_core`, `front-mf_tasks`, `front-web_shell`. Cada uno tiene `analyze`, `format-check` y, si tiene carpeta `test/`, `test`, todas con caché. Las dependencias entre paquetes Dart salen de sus `pubspec.yaml`.
 - `front-contracts` depende de los proyectos de `backend/libs/contracts`. Un cambio de contrato marca como afectados los paquetes y microfrontends del front que lo usan.
-- `test` depende de `^build`, así las librerías se compilan antes de probar a quien las usa.
+- Las librerías no se compilan por separado. Su target es `typecheck`: `tsc` sin emitir sobre `tsconfig.lib.json` (código de producción) y `tsconfig.spec.json` (código y pruebas). Jest y las herramientas leen el TypeScript de las librerías por sus alias.
+- Solo las apps se empaquetan. Una app declara `"build": {}` en su `project.json` y hereda el target de `nx.json`, que corre `backend/tools/app-bundler` con esbuild y deja el resultado en `backend/dist/<app>/`. Las librerías entran al paquete; las dependencias de `node_modules` quedan externas.
 - `pnpm nx affected -t lint test typecheck build analyze format-check` es el comando de uso diario y el de CI.
 
 **Servicios**
 
-Cada microservicio será una app en `backend/apps/<servicio>` con su dominio, su base de datos, sus migraciones y su despliegue. Los servicios previstos son `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` y `backoffice-api`. El siguiente paso es crear `backend/apps/` con el primer servicio, sobre las librerías de plataforma que ya existen.
+Cada microservicio será una app en `backend/apps/<servicio>` (proyecto de Nx con `project.json`, sin `package.json`) con su dominio, su base de datos, sus migraciones y su despliegue. Los servicios previstos son `identity`, `tasks`, `reports`, `notifications`, `realtime`, `billing`, `files`, `agreements`, `assistant` y `backoffice-api`. El siguiente paso es crear `backend/apps/` con el primer servicio, sobre las librerías de plataforma que ya existen.
+
+**Estructura de cada librería**
+
+```text
+backend/libs/platform/kernel/
+  project.json        nombre, tags y targets
+  tsconfig.json       el que usa el editor (extiende tsconfig.spec.json)
+  tsconfig.lib.json   código de producción: src sin __tests__ ni testing
+  tsconfig.spec.json  código y pruebas
+  jest.config.cjs
+  src/
+    index.ts          entrada del alias @platform/kernel
+    ids/
+      uuid-v7-id-generator.ts
+      __tests__/uuid-v7-id-generator.spec.ts
+    testing/          dobles compartidos, alias @platform/kernel/testing
+```
+
+El código va directo en `src/`, sin `src/lib/`. Las pruebas de cada carpeta van en su `__tests__/`, unitarias (`*.spec.ts`) y de integración (`*.int-spec.ts`). Los dobles y el soporte de pruebas que comparten varias carpetas van en `src/testing/`; si otra librería los usa, se exportan con un alias `.../testing`.
 
 **Estructura interna de cada módulo**
 
@@ -1324,13 +1349,13 @@ Las decisiones de CI, seguridad y versiones de herramientas están en el [ADR 00
 
 Corre en cada PR y en cada push a `main`. Un job `changes` (`dorny/paths-filter`) decide qué jobs condicionales corren. Cada job tiene `timeout-minutes` y permisos mínimos.
 
-| Job            | Corre cuando cambia                                                 | Qué hace                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nx`           | siempre                                                             | `pnpm install --frozen-lockfile`, `flutter pub get` en `front/`, `pnpm nx affected -t lint test typecheck build analyze format-check` y `pnpm nx format:check` |
-| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `pnpm nx run contracts-export:check` y `dart run contracts_gen --check`                                                                                        |
-| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                                         |
-| `terraform`    | `backend/infra/terraform/**`                                        | `terraform fmt`, `init -backend=false` y `validate` de `platform` y de los ejemplos, y `tflint`                                                                |
-| `ci-ok`        | siempre                                                             | Agrega el resultado de todos los jobs                                                                                                                          |
+| Job            | Corre cuando cambia                                                 | Qué hace                                                                                                                                                                                                             |
+| -------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nx`           | siempre                                                             | `pnpm install --frozen-lockfile` (y falla si queda un `node_modules` fuera de la raíz), `flutter pub get` en `front/`, `pnpm nx affected -t lint test typecheck build analyze format-check` y `pnpm nx format:check` |
+| `contracts`    | `backend/libs/contracts`, `front/packages/contracts`, `front/tools` | `pnpm nx run contracts-export:check` y `dart run contracts_gen --check`                                                                                                                                              |
+| `web-deferred` | `front/**`                                                          | `flutter build web --release --source-maps` y `front/tools/check_deferred_chunks.dart`                                                                                                                               |
+| `terraform`    | `backend/infra/terraform/**`                                        | `terraform fmt`, `init -backend=false` y `validate` de `platform` y de los ejemplos, y `tflint`                                                                                                                      |
+| `ci-ok`        | siempre                                                             | Agrega el resultado de todos los jobs                                                                                                                                                                                |
 
 Un cambio en `ci.yml` activa todos los filtros. `ci-ok` falla si algún job terminó en `failure` o `cancelled`; un job omitido por el filtro cuenta como válido. `ci-ok` es el único check requerido para `main`, así los jobs condicionales no bloquean los PR que no los tocan.
 
@@ -1349,6 +1374,7 @@ Corre en cada PR, en cada push a `main` y los lunes a las 06:00 UTC:
 **Versiones fijadas**
 
 - Node: `.nvmrc` en la raíz (24). pnpm: campo `packageManager` del `package.json` de la raíz.
+- Dependencias de npm: versión exacta en `package.json` (Nx y herramientas de git) y `backend/package.json` (todo el backend). `pnpm-workspace.yaml` usa `nodeLinker: hoisted`, así que hay un solo `node_modules`, en la raíz.
 - Flutter: `front/.flutter-version`. CI la lee y la pasa a `subosito/flutter-action`.
 - Terraform: `backend/infra/terraform/.terraform-version`.
 - Toda acción de terceros se referencia por el SHA completo del commit, con la versión en un comentario. Renovate (`renovate.json`, con `helpers:pinGitHubActionDigests`) mantiene los SHA, las dependencias y las versiones de Node, Flutter y Terraform.
@@ -1356,7 +1382,7 @@ Corre en cada PR, en cada push a `main` y los lunes a las 06:00 UTC:
 **Hooks de git**
 
 - `commit-msg`: commitlint con `@commitlint/config-conventional`.
-- `pre-commit`: lint-staged. Prettier formatea JS, TS, JSON, Markdown y YAML; ESLint corrige el TypeScript de `backend/`; `dart format` formatea el Dart de `front/`.
+- `pre-commit`: lint-staged. Prettier formatea JS, TS, JSON, Markdown y YAML; ESLint corrige el TypeScript de `backend/` (también rechaza una prueba fuera de `__tests__/` y cualquier archivo en `src/lib/`); `dart format` formatea el Dart de `front/`.
 
 **Estándares de código**
 
@@ -1366,7 +1392,7 @@ Corre en cada PR, en cada push a `main` y los lunes a las 06:00 UTC:
 
 **Pruebas**
 
-- Cada librería del backend tiene su `jest.config.cjs` con `@swc/jest` y las pruebas `*.spec.ts` junto al código. El chequeo de tipos corre aparte, en el target `typecheck`.
+- Cada librería del backend tiene su `jest.config.cjs` con `@swc/jest`. El preset (`backend/jest.preset.js`) solo busca pruebas en `src/**/__tests__/` (`*.spec.ts` y `*.int-spec.ts`) y fija la cobertura mínima. El chequeo de tipos corre aparte, en el target `typecheck`.
 - Cada miembro del pub workspace con carpeta `test/` tiene el target `test` (`flutter test`).
 - Las pruebas de `@platform/saga` simulan la caída del proceso justo después de registrar un paso (`crashAfterDispatch`) y verifican que la saga retomada repita la llamada con la misma llave y produzca un solo efecto.
 

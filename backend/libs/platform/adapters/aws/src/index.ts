@@ -1,9 +1,9 @@
 // Único lugar del backend donde entra @aws-sdk/* (ADR 0002).
-export * from './lib/aws-config.js';
-export * from './lib/aws-clients.js';
-export * from './lib/aws-errors.js';
-export * from './lib/elasticache-iam-auth.js';
-export * from './lib/messaging-names.js';
-export * from './lib/sns-sqs-envelope-publisher.js';
-export * from './lib/sns-sqs-message-bus.js';
-export * from './lib/sqs-delivery-runner.js';
+export * from './aws-config.js';
+export * from './aws-clients.js';
+export * from './aws-errors.js';
+export * from './elasticache-iam-auth.js';
+export * from './messaging-names.js';
+export * from './sns-sqs-envelope-publisher.js';
+export * from './sns-sqs-message-bus.js';
+export * from './sqs-delivery-runner.js';

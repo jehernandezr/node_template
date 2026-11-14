@@ -15,12 +15,51 @@ const domainPatterns = [
   },
 ];
 
+/**
+ * Reglas de ubicación de archivos (skill backend-estructura). Van en un plugin propio y no en
+ * `no-restricted-syntax` porque las librerías redefinen esa regla en su eslint.config.mjs.
+ */
+const fileRule = (message, matches) => ({
+  meta: { type: 'problem', schema: [], messages: { misplaced: message } },
+  create: (context) => ({
+    Program(node) {
+      if (matches(context.filename.replaceAll('\\', '/'))) {
+        context.report({ node, messageId: 'misplaced' });
+      }
+    },
+  }),
+});
+
+const layoutPlugin = {
+  rules: {
+    // Jest solo ejecuta las pruebas de las carpetas __tests__ (jest.preset.js): una
+    // prueba fuera de ellas no correría nunca.
+    'tests-in-tests-folder': fileRule(
+      'Las pruebas van en la carpeta __tests__ de la carpeta del código que prueban.',
+      (file) =>
+        /\.(int-)?spec\.ts$/.test(file) && !file.includes('/__tests__/'),
+    ),
+    'no-src-lib': fileRule(
+      'El código va directo en src/, sin src/lib/.',
+      (file) => file.includes('/src/lib/'),
+    ),
+  },
+};
+
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
   {
-    ignores: ['**/dist', '**/out-tsc'],
+    ignores: ['**/dist'],
+  },
+  {
+    files: ['**/*.ts'],
+    plugins: { layout: layoutPlugin },
+    rules: {
+      'layout/tests-in-tests-folder': 'error',
+      'layout/no-src-lib': 'error',
+    },
   },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],

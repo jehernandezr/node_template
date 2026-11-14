@@ -1,9 +1,9 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# compiled output
-dist
+# compiled output: solo las apps se empaquetan, en backend/dist/<app>/ (esbuild).
+# Las librerías no compilan, así que un dist/ en otra carpeta queda a la vista en git status.
+/backend/dist/
 tmp
-out-tsc
 
 # dependencies
 node_modules

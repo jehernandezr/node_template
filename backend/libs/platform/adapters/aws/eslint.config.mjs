@@ -10,23 +10,4 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
-  {
-    files: ['**/*.json'],
-    rules: {
-      '@nx/dependency-checks': [
-        'error',
-        {
-          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
-          // tslib solo lo usa el build (importHelpers).
-          ignoredDependencies: ['tslib'],
-        },
-      ],
-    },
-    languageOptions: {
-      parser: await import('jsonc-eslint-parser'),
-    },
-  },
-  {
-    ignores: ['**/out-tsc'],
-  },
 ];

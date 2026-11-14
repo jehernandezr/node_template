@@ -1,21 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./out-tsc/jest",
-    "types": ["jest", "node"],
-    "forceConsistentCasingInFileNames": true
+    "types": ["jest", "node"]
   },
-  "include": [
-    "jest.config.ts",
-    "jest.config.cjs",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.d.ts",
-    "test/**/*.ts"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.lib.json"
-    }
-  ]
+  "include": ["src/**/*.ts"]
 }
