@@ -109,6 +109,12 @@
   "requiredLabel": "Required",
   "optionalLabel": "Optional",
   "reviewNotice": "By accepting you confirm that you reviewed this document.",
+  "reviewDialogMessage": "Version {version}. By accepting you confirm that you reviewed this document.",
+  "@reviewDialogMessage": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
   "agreementAccepted": "Agreement accepted.",
   "pendingEmptyTitle": "You have no pending agreements",
   "acceptedEmptyMessage": "You have not accepted any agreements yet.",

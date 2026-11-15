@@ -1,80 +1,30 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   defineCommand,
   defineEvent,
   defineQueue,
   defineServiceContract,
   defineTopic,
-  PlatformErrorCode,
 } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import {
-  BackoffStrategy,
-  type TransactionHook,
-  type TransactionManager,
-  type UnitOfWork,
-} from '@platform/primitives';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { z } from 'zod';
-import { createEnvelope } from '../../envelope/message-envelope.js';
-import { InMemoryOutboxStore } from '../../outbox/in-memory-outbox-store.js';
+import {
+  EnvelopeBuilder,
+  InMemoryOutboxStore,
+  InMemoryTransactionManager,
+} from '../../__tests__/utils/index.js';
 import type {
-  EnvelopePublisher,
   OutboundTarget,
   PublishOutboxOptions,
 } from '../../outbox/outbox.js';
 import { OutboxStatus } from '../../outbox/outbox.js';
 import { OutboxRelay } from '../../outbox/outbox-relay.js';
 import { topologyFromContracts } from '../../topology/contract-topology.js';
-import { TargetKind } from '../../topology/route.js';
+import { TargetKind } from '../../topology/target-kind.enum.js';
 import { OutboxMessageBus } from '../outbox-message-bus.js';
-
-/** In-memory transactions with the hooks of the `@platform/primitives` port. */
-class FakeTransactions implements TransactionManager {
-  private readonly storage = new AsyncLocalStorage<FakeUnitOfWork>();
-
-  async runInTransaction<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
-    const open = this.storage.getStore();
-    if (open) return fn(open);
-    const uow = new FakeUnitOfWork();
-    let result: T;
-    try {
-      result = await this.storage.run(uow, () => fn(uow));
-    } catch (err) {
-      for (const hook of uow.rollbackHooks) await hook();
-      throw err;
-    }
-    for (const hook of uow.commitHooks) await hook();
-    return result;
-  }
-
-  current(): UnitOfWork | undefined {
-    return this.storage.getStore();
-  }
-
-  isInTransaction(): boolean {
-    return this.current() !== undefined;
-  }
-
-  afterCommit(hook: TransactionHook): void {
-    const uow = this.storage.getStore();
-    if (uow) uow.afterCommit(hook);
-    else void hook();
-  }
-}
-
-class FakeUnitOfWork implements UnitOfWork {
-  readonly database = 'shard-1';
-  readonly commitHooks: TransactionHook[] = [];
-  readonly rollbackHooks: TransactionHook[] = [];
-
-  afterCommit(hook: TransactionHook): void {
-    this.commitHooks.push(hook);
-  }
-
-  afterRollback(hook: TransactionHook): void {
-    this.rollbackHooks.push(hook);
-  }
-}
+import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
+import { type EnvelopePublisher } from '../../outbox/envelope-publisher.js';
+import { CommitCounter } from './utils/commit-counter.js';
 
 const OrderPlaced = defineEvent({
   type: 'orders.order.placed.v1',
@@ -124,7 +74,7 @@ interface Published {
 function setup() {
   const clock = new FixedClock(t0);
   const topology = topologyFromContracts([orders]);
-  const transactions = new FakeTransactions();
+  const transactions = new InMemoryTransactionManager();
   const store = new InMemoryOutboxStore({ clock, transactions });
   const published: Published[] = [];
   const publisher: EnvelopePublisher = {
@@ -137,15 +87,11 @@ function setup() {
     store,
     publisher,
     topology,
-    backoff: {
-      strategy: BackoffStrategy.None,
-      baseMs: 1_000,
-      maxMs: 60_000,
-    },
+    retryPolicy: new RetryPolicy(10, 1_000, 60_000, BackoffStrategy.None),
     clock,
     ids: new SequentialIdGenerator(),
   });
-  const onCommitted = jest.fn(() => relay.relayOnce().then(() => undefined));
+  const commits = new CommitCounter();
   const bus = new OutboxMessageBus({
     topology,
     writer: store,
@@ -154,7 +100,10 @@ function setup() {
     clock,
     ids: new SequentialIdGenerator(),
     traceparent: () => undefined,
-    onCommitted,
+    onCommitted: async () => {
+      commits.notify();
+      await relay.relayOnce();
+    },
   });
   return {
     bus,
@@ -162,7 +111,7 @@ function setup() {
     relay,
     transactions,
     published,
-    onCommitted,
+    commits,
     clock,
     topology,
   };
@@ -178,13 +127,13 @@ describe('OutboxMessageBus', () => {
         { groupId: 'o-1' },
       ),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingTransactionRequired,
+      code: MessagingErrorCode.TransactionRequired,
     });
     expect(store.get('00000000-0000-7000-8000-000000000001')).toBeUndefined();
   });
 
   it('writes the envelope with the transaction and publishes it after the commit', async () => {
-    const { bus, store, transactions, published, onCommitted } = setup();
+    const { bus, store, transactions, published, commits } = setup();
 
     const envelope = await transactions.runInTransaction(async () => {
       const placed = await bus.publish(
@@ -193,12 +142,12 @@ describe('OutboxMessageBus', () => {
         { groupId: 'o-1' },
       );
       await bus.send(ExpireOrder, { orderId: 'o-1' }, { delayMs: 60_000 });
-      // Nothing is published while the transaction is open.
+      // Nada se publica mientras la transacción sigue abierta.
       expect(published).toEqual([]);
       return placed;
     });
 
-    expect(onCommitted).toHaveBeenCalledTimes(1);
+    expect(commits.count).toBe(1);
     expect(store.get(envelope.id)).toMatchObject({
       status: OutboxStatus.Published,
       groupId: 'o-1',
@@ -217,8 +166,27 @@ describe('OutboxMessageBus', () => {
     ]);
   });
 
-  it('drops the record when the transaction rolls back', async () => {
-    const { bus, store, transactions, onCommitted } = setup();
+  it('notifies the commit once when a transaction appends several messages', async () => {
+    const { bus, transactions, commits } = setup();
+
+    await transactions.runInTransaction(async () => {
+      await bus.publish(
+        OrderPlaced,
+        { orderId: 'o-1', total: 10 },
+        { groupId: 'o-1' },
+      );
+      await bus.publish(
+        OrderPlaced,
+        { orderId: 'o-2', total: 20 },
+        { groupId: 'o-2' },
+      );
+    });
+
+    expect(commits.count).toBe(1);
+  });
+
+  it('drops the record and skips the commit notice when the transaction rolls back', async () => {
+    const { bus, store, transactions, commits } = setup();
     let id = '';
     await expect(
       transactions.runInTransaction(async () => {
@@ -233,7 +201,7 @@ describe('OutboxMessageBus', () => {
     ).rejects.toThrow('business rule failed');
 
     expect(store.get(id)).toBeUndefined();
-    expect(onCommitted).not.toHaveBeenCalled();
+    expect(commits.count).toBe(0);
   });
 
   it('validates the payload and the FIFO group before writing', async () => {
@@ -246,12 +214,12 @@ describe('OutboxMessageBus', () => {
           { groupId: 'o-1' },
         ),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.MessagingInvalidPayload,
+        code: MessagingErrorCode.InvalidPayload,
       });
       await expect(
         bus.publish(OrderPlaced, { orderId: 'o-1', total: 10 }),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.MessagingInvalidOptions,
+        code: MessagingErrorCode.InvalidOptions,
       });
     });
   });
@@ -261,14 +229,12 @@ describe('OutboxRelay with contracts', () => {
   it('marks a record whose payload breaks the contract Dead without publishing it', async () => {
     const { store, relay, published } = setup();
     store.add(
-      createEnvelope(
-        {
-          type: OrderPlaced.type,
-          source: '/test',
-          data: { orderId: 'o-1', total: 'ten' },
-        },
-        { newId: () => 'bad', now: () => t0 },
-      ),
+      EnvelopeBuilder.anEnvelope({
+        id: 'bad',
+        type: OrderPlaced.type,
+        source: '/test',
+        data: { orderId: 'o-1', total: 'ten' },
+      }),
       { groupId: 'o-1' },
     );
 
@@ -283,14 +249,12 @@ describe('OutboxRelay with contracts', () => {
   it('marks a FIFO record without groupId Dead', async () => {
     const { store, relay } = setup();
     store.add(
-      createEnvelope(
-        {
-          type: OrderPlaced.type,
-          source: '/test',
-          data: { orderId: 'o-1', total: 10 },
-        },
-        { newId: () => 'nogroup', now: () => t0 },
-      ),
+      EnvelopeBuilder.anEnvelope({
+        id: 'nogroup',
+        type: OrderPlaced.type,
+        source: '/test',
+        data: { orderId: 'o-1', total: 10 },
+      }),
     );
     expect(await relay.relayOnce()).toMatchObject({ dead: 1 });
   });
@@ -298,14 +262,12 @@ describe('OutboxRelay with contracts', () => {
   it('passes only what is left of a command delay', async () => {
     const { store, relay, published, clock } = setup();
     store.add(
-      createEnvelope(
-        {
-          type: ExpireOrder.type,
-          source: '/test',
-          data: { orderId: 'o-1' },
-        },
-        { newId: () => 'late', now: () => t0 },
-      ),
+      EnvelopeBuilder.anEnvelope({
+        id: 'late',
+        type: ExpireOrder.type,
+        source: '/test',
+        data: { orderId: 'o-1' },
+      }),
       { delayMs: 60_000, now: t0 },
     );
     clock.advance(45_000);

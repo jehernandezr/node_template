@@ -22,8 +22,6 @@ Iterable<(String, AccessRule?)> _screens(
 }
 
 void main() {
-  setUp(resetDeferredPageCache);
-
   test('manifest id, menu and lifecycle', () {
     expect(accountManifest.id, const MicrofrontendId('account'));
     expect(accountManifest.modes, {ShellMode.demo, ShellMode.live});

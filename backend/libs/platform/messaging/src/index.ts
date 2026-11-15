@@ -1,24 +1,70 @@
-export * from './errors/messaging-error.js';
-export * from './errors/describe-error.js';
-export * from './envelope/message-envelope.js';
+export * from './bus/message-bus.js';
+export * from './bus/outbound-message.js';
+export * from './bus/outbox-message-bus.js';
 export * from './contracts/message-contract.js';
-export * from './topology/retry-policy.js';
+export * from './dispatch/accept-any-tenant-verifier.js';
+export * from './dispatch/claim-guard.js';
+export * from './dispatch/claim-outcome.js';
+export * from './dispatch/delivery-classifier.js';
+export * from './dispatch/dispatch-options.js';
+export * from './dispatch/dispatch-outcome.enum.js';
+export * from './dispatch/dispatch-result.js';
+export * from './dispatch/dispatch-results.js';
+export * from './dispatch/error-disposition.enum.js';
+export * from './dispatch/handler-registry.js';
+export * from './dispatch/message-dispatcher.js';
+export * from './dispatch/message-dispatcher-options.js';
+export * from './dispatch/message-handler.js';
+export * from './dispatch/messaging-operation-type.enum.js';
+export * from './dispatch/messaging-span-attribute.enum.js';
+export * from './dispatch/processed-message-key.js';
+export * from './dispatch/processed-message-store.js';
+export * from './dispatch/tenant-gate.js';
+export * from './dispatch/tenant-verifier.js';
+export * from './envelope/create-envelope-input.js';
+export * from './envelope/envelope-factory.js';
+export * from './envelope/envelope-limits.js';
+export * from './envelope/envelope-parser.js';
+export * from './envelope/envelope-validator.js';
+export * from './envelope/message-envelope.js';
+export * from './envelope/message-envelope.schema.js';
+export * from './errors/messaging-error.js';
+export * from './errors/messaging-error-catalog.js';
+export * from './errors/messaging-error-code.enum.js';
+export * from './errors/messaging-guard.js';
+export * from './errors/permanent-message.error.js';
+export * from './errors/topology.error.js';
+export * from './jobs/messaging-job.enum.js';
+export * from './jobs/outbox-relay-job.js';
+export * from './jobs/outbox-retention-job.js';
+export * from './jobs/processed-message-retention-job.js';
+export * from './outbox/envelope-publisher.js';
+export * from './outbox/outbox.js';
+export * from './outbox/outbox-relay.js';
+export * from './outbox/outbox-store.js';
+export * from './outbox/outbox-writer.js';
+export * from './relay/relay-scopes.js';
+export * from './relay/single-relay-scope.js';
+export * from './resilience/messaging-policies.js';
+export * from './resilience/resilient-envelope-publisher.js';
 export type { TopicDef } from './topology/topic-def.js';
 export type {
   DeadLetterConfig,
   QueueDef,
   Subscription,
 } from './topology/queue-def.js';
-export { TargetKind, type RouteDef } from './topology/route.js';
-export * from './topology/topology.js';
 export * from './topology/contract-topology.js';
-export * from './dispatch/classify-error.js';
-export * from './dispatch/processed-message-store.js';
-export * from './dispatch/message-dispatcher.js';
-export * from './bus/message-bus.js';
-export * from './bus/outbound-message.js';
-export * from './bus/in-memory-bus.js';
-export * from './bus/outbox-message-bus.js';
-export * from './outbox/outbox.js';
-export * from './outbox/in-memory-outbox-store.js';
-export * from './outbox/outbox-relay.js';
+export type { RouteDef } from './topology/route-def.js';
+export * from './topology/target-kind.enum.js';
+export * from './topology/topology.js';
+
+// Transitorio: las pruebas de los adaptadores todavía los importan de aquí.
+// Se retiran cuando esas librerías pasen a `@platform/messaging/test-utils`
+// y a `EnvelopeFactory`.
+export * from './utils/deprecated-messaging-functions.js';
+/** @deprecated Usa `InMemoryBus` de `@platform/messaging/test-utils`. */
+export { InMemoryBus } from './__tests__/utils/in-memory-bus.js';
+/** @deprecated Usa `InMemoryOutboxStore` de `@platform/messaging/test-utils`. */
+export { InMemoryOutboxStore } from './__tests__/utils/in-memory-outbox-store.js';
+/** @deprecated Usa `InMemoryProcessedMessageStore` de `@platform/messaging/test-utils`. */
+export { InMemoryProcessedMessageStore } from './__tests__/utils/in-memory-processed-message-store.js';

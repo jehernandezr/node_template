@@ -6,24 +6,26 @@ import {
   defineQueue,
   defineServiceContract,
   defineTopic,
-  PlatformErrorCode,
 } from '@contracts/platform';
-import { contextFromTraceparent } from '@platform/observability';
-import { z } from 'zod';
 import {
-  DispatchOutcome,
-  MessageDispatcher,
-} from '../../dispatch/message-dispatcher.js';
-import { InMemoryProcessedMessageStore } from '../../dispatch/processed-message-store.js';
+  Redactor,
+  TraceContextRestorer,
+  Tracing,
+} from '@platform/observability';
+import { z } from 'zod';
+import { MessageDispatcher } from '../../dispatch/message-dispatcher.js';
 import { topologyFromContracts } from '../../topology/contract-topology.js';
-import { InMemoryBus } from '../in-memory-bus.js';
+import { InMemoryBus } from '../../__tests__/utils/in-memory-bus.js';
 import { MAX_SEND_DELAY_MS } from '../message-bus.js';
+import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
+import { DispatchOutcome } from '../../dispatch/dispatch-outcome.enum.js';
+import { InMemoryProcessedMessageStore } from '../../__tests__/utils/in-memory-processed-message-store.js';
 
 /**
- * Copy of `SessionRevokedEvent` of `@contracts/identity`, declared with the
- * same kit. `@platform/messaging` cannot import a service's contracts (the
- * dependency rules of ADR 0015), but the bus takes the `defineEvent` descriptor
- * as is, just as it would take identity's.
+ * Copia de `SessionRevokedEvent` de `@contracts/identity`, declarada con el
+ * mismo kit. `@platform/messaging` no puede importar los contratos de un
+ * servicio (reglas de dependencia del ADR 0015), pero el bus recibe el
+ * descriptor de `defineEvent` tal cual, igual que recibiría el de identity.
  */
 const SessionRevoked = defineEvent({
   type: 'identity.session.revoked.v1',
@@ -131,7 +133,7 @@ describe('InMemoryBus with contracts of the kit', () => {
     const { bus, dispatcher } = setup();
     const received: unknown[] = [];
     dispatcher.register(SessionRevoked, (data) => {
-      // `data` has the output type of the contract: the default is applied.
+      // `data` tiene el tipo de salida del contrato: se aplica el valor por defecto.
       received.push(data.reason);
     });
 
@@ -161,7 +163,7 @@ describe('InMemoryBus with contracts of the kit', () => {
       retried: 1,
     });
     advance(1_000);
-    // maxAttempts is 2 in the contract: the second failure dead-letters.
+    // El contrato fija `maxAttempts` en 2: la segunda falla va a la cola de errores.
     expect(await bus.drain('gateway-inbox', dispatcher)).toMatchObject({
       deadLettered: 1,
     });
@@ -188,7 +190,7 @@ describe('InMemoryBus with contracts of the kit', () => {
     await expect(
       bus.publish(LedgerPosted, { accountId: 'a-1', amount: 10 }),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingInvalidOptions,
+      code: MessagingErrorCode.InvalidOptions,
     });
     await expect(
       bus.publish(
@@ -197,7 +199,7 @@ describe('InMemoryBus with contracts of the kit', () => {
         { groupId: 'has space' },
       ),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingInvalidOptions,
+      code: MessagingErrorCode.InvalidOptions,
     });
 
     await bus.publish(
@@ -213,12 +215,12 @@ describe('InMemoryBus with contracts of the kit', () => {
     await expect(
       bus.send(Remind, { userId: USER }, { delayMs: MAX_SEND_DELAY_MS + 1 }),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingInvalidOptions,
+      code: MessagingErrorCode.InvalidOptions,
     });
     await expect(
       bus.send(Remind, { userId: USER }, { delayMs: -1 }),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingInvalidOptions,
+      code: MessagingErrorCode.InvalidOptions,
     });
     await bus.send(Remind, { userId: USER }, { delayMs: MAX_SEND_DELAY_MS });
 
@@ -229,7 +231,7 @@ describe('InMemoryBus with contracts of the kit', () => {
         { groupId: 'a-1', delayMs: 1_000 },
       ),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingInvalidOptions,
+      code: MessagingErrorCode.InvalidOptions,
     });
   });
 
@@ -241,7 +243,7 @@ describe('InMemoryBus with contracts of the kit', () => {
       description: 'Comando con el tipo de un evento.',
     });
     await expect(bus.send(Impostor, {})).rejects.toMatchObject({
-      code: PlatformErrorCode.MessagingUnknownRoute,
+      code: MessagingErrorCode.UnknownRoute,
     });
   });
 });
@@ -260,7 +262,9 @@ describe('trace propagation through the bus', () => {
   it('stamps the active traceparent when publishing', async () => {
     const { bus } = setup();
     const envelope = await context.with(
-      contextFromTraceparent(TRACEPARENT),
+      new TraceContextRestorer(new Tracing(new Redactor())).contextFrom(
+        TRACEPARENT,
+      ),
       () => bus.publish(SessionRevoked, { sessionId: SESSION, userId: USER }),
     );
     expect(envelope.traceparent).toBe(TRACEPARENT);

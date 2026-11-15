@@ -1,21 +1,21 @@
-import {
-  defineCommand,
-  defineEvent,
-  PlatformErrorCode,
-} from '@contracts/platform';
+import { defineCommand, defineEvent } from '@contracts/platform';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { z, ZodError } from 'zod';
-import { createEnvelope } from '../../envelope/message-envelope.js';
 import { QueueDef } from '../../topology/queue-def.js';
-import { RetryPolicy } from '../../topology/retry-policy.js';
 import { Route } from '../../topology/route.js';
 import { TopicDef } from '../../topology/topic-def.js';
 import { Topology } from '../../topology/topology.js';
-import { PermanentMessageError } from '../classify-error.js';
-import { DispatchOutcome, MessageDispatcher } from '../message-dispatcher.js';
+import { PermanentMessageError } from '../../errors/permanent-message.error.js';
+import { MessageDispatcher } from '../message-dispatcher.js';
+import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
+import { DispatchOutcome } from '../dispatch-outcome.enum.js';
+import { EnvelopeBuilder } from '../../__tests__/utils/index.js';
 import {
-  InMemoryProcessedMessageStore,
-  type ProcessedMessageStore,
-} from '../processed-message-store.js';
+  FailingProcessedMessageStore,
+  RecordingMessageHandler,
+  StoreOperation,
+} from './utils/index.js';
+import { InMemoryProcessedMessageStore } from '../../__tests__/utils/in-memory-processed-message-store.js';
 
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
@@ -29,20 +29,15 @@ const GenerateReport = defineCommand({
   description: 'Mensaje de prueba.',
 });
 
-const policy = RetryPolicy.exponential({
-  maxAttempts: 3,
-  baseMs: 100,
-  maxMs: 10_000,
-  jitter: false,
-});
+const policy = new RetryPolicy(3, 100, 10_000, BackoffStrategy.None);
 
-/** An error the shared classifier treats as transient. */
+/** Error que el clasificador de la plataforma trata como transitorio. */
 function transient(message: string): Error {
   return Object.assign(new Error(message), { retryable: true });
 }
 
 function envelopeFor(type: string, data: unknown, id = 'msg-1'): unknown {
-  return createEnvelope({ type, source: '/test', data }, { newId: () => id });
+  return EnvelopeBuilder.anEnvelope({ id, type, data });
 }
 
 function setup(
@@ -60,8 +55,8 @@ function setup(
 describe('MessageDispatcher', () => {
   it('processes a valid delivery once and reports duplicates afterwards', async () => {
     const { dispatcher } = setup();
-    const handler = jest.fn();
-    dispatcher.register(TaskUpdated, handler);
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
 
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
     expect(await dispatcher.dispatch(raw, { receiveCount: 1 })).toEqual({
@@ -72,15 +67,18 @@ describe('MessageDispatcher', () => {
       outcome: DispatchOutcome.Duplicate,
       id: 'msg-1',
     });
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0]?.[0]).toEqual({ id: 't1' });
+    expect(handler.calls).toHaveLength(1);
+    expect(handler.calls[0]?.data).toEqual({ id: 't1' });
   });
 
   it('asks for a retry with backoff delay while attempts remain', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(TaskUpdated, () => {
-      throw transient('database unavailable');
-    });
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({
+        error: transient('database unavailable'),
+      }).handle,
+    );
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
 
     expect(
@@ -100,32 +98,36 @@ describe('MessageDispatcher', () => {
   });
 
   it('releases the claim on failure so the redelivery is processed', async () => {
-    const { dispatcher } = setup();
-    let fail = true;
-    const handler = jest.fn(() => {
-      if (fail) throw transient('transient');
-    });
-    dispatcher.register(TaskUpdated, handler);
+    const processed = new InMemoryProcessedMessageStore();
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
+    const failing = new MessageDispatcher({
+      consumer: 'notifications',
+      processed,
+    }).register(
+      TaskUpdated,
+      new RecordingMessageHandler({ error: transient('transient') }).handle,
+    );
+    const handler = new RecordingMessageHandler();
+    const recovering = new MessageDispatcher({
+      consumer: 'notifications',
+      processed,
+    }).register(TaskUpdated, handler.handle);
 
     expect(
-      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
+      (await failing.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
         .outcome,
     ).toBe(DispatchOutcome.RetryLater);
-    fail = false;
     expect(
-      await dispatcher.dispatch(raw, { receiveCount: 2, retryPolicy: policy }),
-    ).toEqual({
-      outcome: DispatchOutcome.Processed,
-      id: 'msg-1',
-    });
-    expect(handler).toHaveBeenCalledTimes(2);
+      await recovering.dispatch(raw, { receiveCount: 2, retryPolicy: policy }),
+    ).toEqual({ outcome: DispatchOutcome.Processed, id: 'msg-1' });
+    expect(handler.calls).toHaveLength(1);
   });
 
   it('dead-letters once the max attempts are reached', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(TaskUpdated, () =>
-      Promise.reject(new Error('still failing')),
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({ error: new Error('still failing') }).handle,
     );
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
 
@@ -140,9 +142,10 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters immediately without a retry policy', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(TaskUpdated, () => {
-      throw new Error('boom');
-    });
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({ error: new Error('boom') }).handle,
+    );
     const result = await dispatcher.dispatch(
       envelopeFor('tasks.task.updated.v1', { id: 't1' }),
       { receiveCount: 1 },
@@ -152,86 +155,93 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters PermanentMessageError without retrying', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(TaskUpdated, () => {
-      throw new PermanentMessageError('task no longer exists');
-    });
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({
+        error: new PermanentMessageError('task no longer exists'),
+      }).handle,
+    );
     expect(
       await dispatcher.dispatch(
         envelopeFor('tasks.task.updated.v1', { id: 't1' }),
-        {
-          receiveCount: 1,
-          retryPolicy: policy,
-        },
+        { receiveCount: 1, retryPolicy: policy },
       ),
     ).toEqual({
       outcome: DispatchOutcome.DeadLetter,
       id: 'msg-1',
       error: 'task no longer exists',
-      code: PlatformErrorCode.MessagingPermanentError,
+      code: MessagingErrorCode.PermanentError,
     });
   });
 
-  it('classifies handler errors with the shared classifyFailure rule', async () => {
-    const { dispatcher } = setup();
-    const domainError = (retryable?: boolean) =>
+  it.each([
+    [
+      'a domain error marked not retryable',
       Object.assign(new Error('insufficient stock'), {
         code: 'INVENTORY.STOCK.EMPTY',
-        retryable,
-      });
-    const timeout = Object.assign(new Error('slow'), { name: 'TimeoutError' });
-    let next: unknown;
-    dispatcher.register(TaskUpdated, () => {
-      throw next;
-    });
-    const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
+        retryable: false,
+      }),
+      DispatchOutcome.DeadLetter,
+    ],
+    [
+      'a domain error without any signal',
+      Object.assign(new Error('insufficient stock'), {
+        code: 'INVENTORY.STOCK.EMPTY',
+      }),
+      DispatchOutcome.DeadLetter,
+    ],
+    [
+      'a domain error marked retryable',
+      Object.assign(new Error('insufficient stock'), {
+        code: 'INVENTORY.STOCK.EMPTY',
+        retryable: true,
+      }),
+      DispatchOutcome.RetryLater,
+    ],
+    [
+      'a timeout, whose result is uncertain',
+      Object.assign(new Error('slow'), { name: 'TimeoutError' }),
+      DispatchOutcome.RetryLater,
+    ],
+    [
+      'an error without any signal',
+      new Error('unclassified'),
+      DispatchOutcome.DeadLetter,
+    ],
+  ])(
+    'classifies a handler failure as %s with the shared classifyFailure rule',
+    async (_label, error, expected) => {
+      const { dispatcher } = setup();
+      dispatcher.register(
+        TaskUpdated,
+        new RecordingMessageHandler({ error }).handle,
+      );
 
-    next = domainError(false);
-    expect(
-      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
-        .outcome,
-    ).toBe(DispatchOutcome.DeadLetter);
-    // Without any signal the platform rule does not retry.
-    next = domainError(undefined);
-    expect(
-      await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }),
-    ).toMatchObject({
-      outcome: DispatchOutcome.DeadLetter,
-      code: 'INVENTORY.STOCK.EMPTY',
-    });
-    next = domainError(true);
-    expect(
-      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
-        .outcome,
-    ).toBe(DispatchOutcome.RetryLater);
-    // A timeout leaves the result uncertain; the claim makes a retry safe.
-    next = timeout;
-    expect(
-      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
-        .outcome,
-    ).toBe(DispatchOutcome.RetryLater);
-    next = new Error('unclassified');
-    expect(
-      (await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }))
-        .outcome,
-    ).toBe(DispatchOutcome.DeadLetter);
-  });
+      expect(
+        (
+          await dispatcher.dispatch(
+            envelopeFor('tasks.task.updated.v1', { id: 't1' }),
+            { receiveCount: 1, retryPolicy: policy },
+          )
+        ).outcome,
+      ).toBe(expected);
+    },
+  );
 
   it('lets isPermanent replace the default rule', async () => {
     const { dispatcher } = setup({
       isPermanent: (error) =>
         error instanceof Error && error.message === 'bad input',
     });
-    dispatcher.register(TaskUpdated, () => {
-      throw new Error('bad input');
-    });
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({ error: new Error('bad input') }).handle,
+    );
     expect(
       (
         await dispatcher.dispatch(
           envelopeFor('tasks.task.updated.v1', { id: 't1' }),
-          {
-            receiveCount: 1,
-            retryPolicy: policy,
-          },
+          { receiveCount: 1, retryPolicy: policy },
         )
       ).outcome,
     ).toBe(DispatchOutcome.DeadLetter);
@@ -239,17 +249,15 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters a ZodError thrown inside the handler (a protocol violation)', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(TaskUpdated, () => {
-      throw new ZodError([]);
-    });
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({ error: new ZodError([]) }).handle,
+    );
     expect(
       (
         await dispatcher.dispatch(
           envelopeFor('tasks.task.updated.v1', { id: 't1' }),
-          {
-            receiveCount: 1,
-            retryPolicy: policy,
-          },
+          { receiveCount: 1, retryPolicy: policy },
         )
       ).outcome,
     ).toBe(DispatchOutcome.DeadLetter);
@@ -257,15 +265,32 @@ describe('MessageDispatcher', () => {
 
   it('dead-letters payloads that fail the contract schema and does not run the handler', async () => {
     const { dispatcher } = setup();
-    const handler = jest.fn();
-    dispatcher.register(TaskUpdated, handler);
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
 
     const result = await dispatcher.dispatch(
       envelopeFor('tasks.task.updated.v1', { id: '' }),
       { receiveCount: 1 },
     );
     expect(result.outcome).toBe(DispatchOutcome.DeadLetter);
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.calls).toEqual([]);
+  });
+
+  it('dead-letters an invalid payload at once even with a retry policy and the first receive', async () => {
+    const { dispatcher } = setup();
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
+
+    expect(
+      await dispatcher.dispatch(
+        envelopeFor('tasks.task.updated.v1', { id: '' }),
+        { receiveCount: 1, retryPolicy: policy },
+      ),
+    ).toMatchObject({
+      outcome: DispatchOutcome.DeadLetter,
+      code: MessagingErrorCode.InvalidPayload,
+    });
+    expect(handler.calls).toEqual([]);
   });
 
   it('dead-letters malformed envelopes', async () => {
@@ -347,21 +372,18 @@ describe('MessageDispatcher', () => {
   });
 
   it('turns a claim failure into RetryLater instead of throwing', async () => {
-    const failingStore: ProcessedMessageStore = {
-      claim: () => Promise.reject(new Error('connection reset')),
-      complete: () => Promise.resolve(),
-      release: () => Promise.resolve(),
-    };
-    const { dispatcher } = setup({ processed: failingStore });
-    const handler = jest.fn();
-    dispatcher.register(TaskUpdated, handler);
+    const { dispatcher } = setup({
+      processed: new FailingProcessedMessageStore(
+        StoreOperation.Claim,
+        new Error('connection reset'),
+      ),
+    });
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
 
     const result = await dispatcher.dispatch(
       envelopeFor('tasks.task.updated.v1', { id: 't1' }),
-      {
-        receiveCount: 1,
-        retryPolicy: policy,
-      },
+      { receiveCount: 1, retryPolicy: policy },
     );
     expect(result).toEqual({
       outcome: DispatchOutcome.RetryLater,
@@ -369,7 +391,7 @@ describe('MessageDispatcher', () => {
       delayMs: 100,
       error: 'connection reset',
     });
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler.calls).toEqual([]);
   });
 
   it('keys idempotency on (consumer, id): two consumers both process the same message', async () => {
@@ -382,9 +404,9 @@ describe('MessageDispatcher', () => {
       consumer: 'audit',
       processed: shared,
     });
-    const handler = jest.fn();
-    first.register(TaskUpdated, handler);
-    second.register(TaskUpdated, handler);
+    const handler = new RecordingMessageHandler();
+    first.register(TaskUpdated, handler.handle);
+    second.register(TaskUpdated, handler.handle);
     const raw = envelopeFor('tasks.task.updated.v1', { id: 't1' });
 
     expect((await first.dispatch(raw, { receiveCount: 1 })).outcome).toBe(
@@ -396,7 +418,7 @@ describe('MessageDispatcher', () => {
     expect((await first.dispatch(raw, { receiveCount: 2 })).outcome).toBe(
       DispatchOutcome.Duplicate,
     );
-    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.calls).toHaveLength(2);
   });
 
   it('rejects a second handler for the same type', () => {
@@ -404,7 +426,7 @@ describe('MessageDispatcher', () => {
     dispatcher.register(TaskUpdated, () => undefined);
     expect(() => dispatcher.register(TaskUpdated, () => undefined)).toThrow(
       expect.objectContaining({
-        code: PlatformErrorCode.MessagingDuplicateHandler,
+        code: MessagingErrorCode.DuplicateHandler,
       }),
     );
   });

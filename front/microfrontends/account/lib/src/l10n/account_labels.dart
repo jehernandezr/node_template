@@ -2,7 +2,7 @@ import 'package:contracts/contracts.dart' show ClientPlatform, MfaFactor;
 
 import 'generated/account_localizations.dart';
 
-/// Nombre de [platform] para mostrar.
+/// Display name of [platform].
 String platformLabel(AccountLocalizations l10n, ClientPlatform platform) =>
     switch (platform) {
       ClientPlatform.ios => l10n.platformIos,
@@ -13,7 +13,7 @@ String platformLabel(AccountLocalizations l10n, ClientPlatform platform) =>
       ClientPlatform.linux => l10n.platformLinux,
     };
 
-/// Nombre de [factor] para mostrar.
+/// Display name of [factor].
 String mfaFactorLabel(AccountLocalizations l10n, MfaFactor factor) =>
     switch (factor) {
       MfaFactor.deviceOtp => l10n.factorDeviceOtp,

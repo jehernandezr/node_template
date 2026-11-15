@@ -434,10 +434,15 @@ export class TypeOrmUserRepository
   extends ShardedRepository<User, UserEntity>
   implements UserRepository
 {
+  constructor(kit: RepositoryKit, mapper: UserMapper) {
+    super(UserEntity, kit, mapper);
+  }
+
   async findByEmail(email: Email): Promise<User | null> {
-    const entity = await this.manager().findOneBy(UserEntity, {
-      email: email.value,
-    });
+    const tenantId = this.tenantId();
+    const entity = await this.read((manager) =>
+      manager.findOneBy(UserEntity, { email: email.value, tenantId }),
+    );
     return entity ? this.mapper.toDomain(entity) : null;
   }
 }
@@ -445,27 +450,33 @@ export class TypeOrmUserRepository
 
 **Piezas de `@platform/persistence`**
 
-| Clase                                     | Responsabilidad                                                                                                                                                                      |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ShardDataSources`                        | Un `DataSource` de TypeORM por base física (instancia más shard lógico), con primario y réplicas. Los crea al primer uso y cierra el viejo cuando un shard cambia de instancia       |
-| `CatalogDataSource`                       | El `DataSource` del catálogo                                                                                                                                                         |
-| `ShardResolver`                           | Saca la llave del contexto según el módulo, llama a `ShardRouter` y devuelve el `DataSource` del shard                                                                               |
-| `TypeOrmTransactionManager`               | Implementa el puerto `TransactionManager` de `@platform/primitives` con un `QueryRunner` del shard. Corre los hooks `afterCommit` y rechaza tocar otro shard en la misma transacción |
-| `EntityManagerProvider`                   | El `EntityManager` de la transacción actual o, fuera de ella, el de la réplica. `readPrimary()` fuerza el primario                                                                   |
-| `ShardedRepository` y `CatalogRepository` | Base de los repositorios: tenant, versión optimista (`@VersionColumn`), borrado lógico (`@DeleteDateColumn`), auditoría y `Criteria` con paginación por cursor UUIDv7                |
-| `ShardScope`                              | Ejecuta un bloque en el shard de una llave explícita, como el usuario de otro tenant ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md))                                     |
-| `AcrossShards`                            | Recorre varios shards para reportes y mantenimiento, con plazo y concurrencia acotada                                                                                                |
-| `ShardedMigrationRunner`                  | Corre las migraciones de cada shard lógico y del catálogo, cada uno bajo `pg_advisory_lock`                                                                                          |
-| `PersistenceModule`                       | `forRoot(config)` arma todo con valores por defecto, y `forFeature({ entities, sharding })` registra los repositorios de un módulo con su llave                                      |
+| Clase                                     | Responsabilidad                                                                                                                                                                     |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ShardDataSources`                        | Un `DataSource` de TypeORM por base física (instancia más shard lógico), con primario y réplicas. Los crea al primer uso y cierra el viejo cuando un shard cambia de instancia      |
+| `CatalogDataSource`                       | El `DataSource` del catálogo                                                                                                                                                        |
+| `ShardResolver`                           | Saca la llave del contexto según el módulo, llama a `ShardRouter` y devuelve el `DataSource` del shard                                                                              |
+| `TypeOrmTransactionManager`               | Implementa el puerto `TransactionManager` de `@platform/kernel` con un `QueryRunner` del shard. Corre los hooks `afterCommit` y rechaza tocar otro shard en la misma transacción    |
+| `EntityManagerProvider`                   | El `EntityManager` de la transacción actual o, fuera de ella, el de la réplica. `this.readPrimary(fn)` fuerza el primario                                                           |
+| `ShardedRepository` y `CatalogRepository` | Base de los repositorios: tenant, versión optimista (`@VersionColumn`), borrado lógico (`@DeleteDateColumn`), auditoría y `Criteria` con paginación por cursor UUIDv7               |
+| `RepositoryKit`                           | Lo que un repositorio necesita además de su mapper: la declaración del módulo, el proveedor de managers, el escritor optimista, el contexto y el `ShardScope`. `forFeature` lo arma |
+| `PersistenceFeature`                      | Declaración de sharding de un módulo ya validada (`ShardKey`, estrategia) con sus entidades. `forFeature` la crea                                                                   |
+| `OptimisticWriter`                        | `UPDATE` que solo aplica si la versión sigue vigente. Si ninguna fila cambia lanza `OptimisticLockError`                                                                            |
+| `ShardLister`                             | Puerto que lista los shards lógicos del servicio con su instancia. Lo implementa el directorio y `forRoot` lo exige                                                                 |
+| `TypeOrmCriteriaTranslator`               | Traduce el AST de `Criteria` a un `QueryBuilder`: filtros con parámetros, orden, paginación por cursor y lista blanca de campos                                                     |
+| `MigrationGenerator`                      | Genera una migración comparando las entidades con una base temporal a la que se le aplican las migraciones existentes                                                               |
+| `ShardScope`                              | Ejecuta un bloque en el shard de una llave explícita, como el usuario de otro tenant ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md))                                    |
+| `AcrossShards`                            | Recorre varios shards para reportes y mantenimiento, con plazo y concurrencia acotada                                                                                               |
+| `ShardedMigrationRunner`                  | Corre las migraciones de cada shard lógico y del catálogo, cada uno bajo `pg_advisory_lock`                                                                                         |
+| `PersistenceModule`                       | `forRoot(config)` arma todo con valores por defecto, y `forFeature({ entities, sharding })` registra los repositorios de un módulo con su llave                                     |
 
 **Entidades y migraciones**
 
 - Las entidades base (`AuditedEntity`, `VersionedEntity`) traen `id` uuid, auditoría, versión y borrado lógico en `timestamptz`. El `id` es un UUIDv7 que genera la app.
 - La llave de shard de cada módulo se declara en `forFeature`, no en decoradores sobre la entidad.
-- Cada servicio guarda sus migraciones en `migrations/shard` y `migrations/catalog`. `pnpm nx run <servicio>:migration-generate --name=<Nombre> --target=shard` las genera comparando las entidades con una base temporal; `migration-run` y `migration-revert` usan los mismos `DataSource`. `synchronize` va siempre apagado.
+- Cada servicio guarda sus migraciones en `migrations/shard` y `migrations/catalog`. La librería trae `pnpm nx run platform-persistence:migration-generate --name=<Nombre> --definition=<modulo> --out=<carpeta>`, que genera la migración comparando las entidades con una base temporal. Cada servicio tendrá su target sobre esa CLI. `migration-run` y `migration-revert` usan los mismos `DataSource`. `synchronize` va siempre apagado.
 - Las tablas de la plataforma (outbox, mensajes procesados, idempotencia, directorio de shards y bitácora de sagas) traen sus entidades y migraciones desde `@platform/adapters-postgres`.
 
-**Código actual.** Hoy `@platform/persistence` corre sobre el driver `pg`, con `TableDefinition`, `BaseRepository` y migraciones en SQL (ADR 0009, reemplazado). Lo descrito arriba es el diseño sobre TypeORM; cuándo se construye está en el [plan](plan/README.md#orden-de-ejecución-por-olas).
+**Código actual.** El núcleo de persistencia sobre TypeORM está construido. El código viejo sobre `pg` quedó aislado en `src/legacy/` y se reexporta hasta que las tablas de la plataforma migren a TypeORM. El ADR 0009 sigue reemplazado.
 
 **Particionamiento**
 

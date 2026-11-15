@@ -4,6 +4,7 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart';
 
 import '../return_location.dart';
 import 'step_up_form.dart';
@@ -23,7 +24,7 @@ class StepUpPage extends StatelessWidget {
     super.key,
     required this.session,
     this.from,
-    this.clock = DateTime.now,
+    this.clock = systemClock,
     this.onResult,
     this.connection,
   });
@@ -42,7 +43,7 @@ class StepUpPage extends StatelessWidget {
   final String? from;
 
   /// Time recorded as the verification time in demo mode.
-  final DateTime Function() clock;
+  final Clock clock;
 
   /// Real identity connection, or null in demo mode.
   final IdentityConnection? connection;

@@ -1,313 +1,117 @@
-import { PlatformErrorCode } from '@contracts/platform';
-import { context, ROOT_CONTEXT, SpanKind } from '@opentelemetry/api';
-import { type Clock, isErrorCode, SystemClock } from '@platform/kernel';
-import { contextFromTraceparent, withSpan } from '@platform/observability';
+import { SystemClock, SystemRandomSource } from '@platform/kernel';
 import {
-  ClaimState,
-  Deadline,
-  type ClaimResult,
-  stableDigest,
-} from '@platform/primitives';
-import type { z } from 'zod';
-import {
-  type MessageDefinition,
-  type MessageOutput,
-  MessageKind,
+  Redactor,
+  TraceContextRestorer,
+  Tracing,
+} from '@platform/observability';
+import { FailureClassifier } from '@platform/primitives';
+import { MessageKind } from '../contracts/message-contract.js';
+import type {
+  MessageDefinition,
+  MessageOutput,
 } from '../contracts/message-contract.js';
-import { describeError } from '../errors/describe-error.js';
+import { EnvelopeParser } from '../envelope/envelope-parser.js';
+import { EnvelopeValidator } from '../envelope/envelope-validator.js';
+import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import { MessagingError } from '../errors/messaging-error.js';
-import {
-  type MessageEnvelope,
-  parseEnvelope,
-} from '../envelope/message-envelope.js';
-import type { RetryPolicy } from '../topology/retry-policy.js';
-import type { Topology } from '../topology/topology.js';
-import {
-  ErrorDisposition,
-  type PermanenceCheck,
-  classifyError,
-  isPermanentFailure,
-} from './classify-error.js';
-import {
-  type ProcessedMessage,
-  type ProcessedMessageStore,
-  processedMessageKey,
-} from './processed-message-store.js';
-
-/** Attributes of the consumer span of each delivery (OpenTelemetry semantic conventions). */
-export enum MessagingSpanAttribute {
-  OperationType = 'messaging.operation.type',
-  DestinationName = 'messaging.destination.name',
-  MessageId = 'messaging.message.id',
-  EventType = 'cloudevents.event_type',
-}
-
-/** Value of `messaging.operation.type` for a delivery handled by a consumer. */
-export enum MessagingOperationType {
-  Process = 'process',
-}
-
-/** Result of handling one delivery. */
-export enum DispatchOutcome {
-  Processed = 'processed',
-  Duplicate = 'duplicate',
-  /** Unknown event type: acknowledged and dropped. */
-  Ignored = 'ignored',
-  RetryLater = 'retry-later',
-  DeadLetter = 'dead-letter',
-  /**
-   * Another delivery of the same message holds the claim and its lease is still
-   * valid (the first handler may still be running). Never ack it: leave it for
-   * redelivery, e.g. as an SQS batch item failure.
-   */
-  InProgress = 'in-progress',
-}
-
-/** Outcome of {@link MessageDispatcher.dispatch}. */
-export type DispatchResult =
-  | { readonly outcome: DispatchOutcome.Processed; readonly id: string }
-  | { readonly outcome: DispatchOutcome.Duplicate; readonly id: string }
-  | {
-      readonly outcome: DispatchOutcome.Ignored;
-      readonly id: string;
-      readonly type: string;
-    }
-  | {
-      readonly outcome: DispatchOutcome.RetryLater;
-      readonly id: string;
-      readonly delayMs: number;
-      readonly error: string;
-      /** Stable code of the error, when it has one. */
-      readonly code?: string;
-    }
-  | {
-      readonly outcome: DispatchOutcome.InProgress;
-      readonly id: string;
-      /** Time left on the current lease; a sensible redelivery delay. */
-      readonly delayMs: number;
-    }
-  | {
-      readonly outcome: DispatchOutcome.DeadLetter;
-      readonly id?: string;
-      readonly error: string;
-      /** Stable code of the error, when it has one. */
-      readonly code?: string;
-    };
+import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
+import { MessagingGuard } from '../errors/messaging-guard.js';
+import { ClaimGuard } from './claim-guard.js';
+import { DeliveryClassifier } from './delivery-classifier.js';
+import { DeliveryExecution } from './delivery-execution.js';
+import { DispatchOutcome } from './dispatch-outcome.enum.js';
+import type { DispatchOptions } from './dispatch-options.js';
+import type { DispatchResult } from './dispatch-result.js';
+import { HandlerRegistry, type Registration } from './handler-registry.js';
+import type {
+  MessageDispatcherOptions,
+  MessageDispatcherParts,
+} from './message-dispatcher-options.js';
+import type { MessageHandler } from './message-handler.js';
+import { TenantGate } from './tenant-gate.js';
 
 /**
- * Whether the transport must leave the delivery for redelivery instead of
- * acknowledging it (SQS: report it as a batch item failure).
- */
-export function requiresRedelivery(result: DispatchResult): boolean {
-  return (
-    result.outcome === DispatchOutcome.RetryLater ||
-    result.outcome === DispatchOutcome.InProgress
-  );
-}
-
-/** Handles one validated message. */
-export type MessageHandler<T> = (
-  data: T,
-  envelope: MessageEnvelope<T>,
-) => void | Promise<void>;
-
-/**
- * Decides whether the envelope tenant is legitimate for this consumer, e.g. that
- * the tenant exists and is subscribed. `tenantId` is undefined when the
- * envelope has none. Throwing is treated as a transient failure.
- */
-export type TenantVerifier = (
-  tenantId: string | undefined,
-  envelope: MessageEnvelope,
-) => boolean | Promise<boolean>;
-
-/** Per-delivery information supplied by the transport. */
-export interface DispatchOptions {
-  /** Deliveries so far, counting this one (1 on the first delivery). */
-  readonly receiveCount: number;
-  /**
-   * Retry policy of the queue. Defaults to the policy of the consumer queue in
-   * the dispatcher topology. Without either, the first failure dead-letters.
-   */
-  readonly retryPolicy?: RetryPolicy;
-  /**
-   * Current visibility timeout of this delivery, in milliseconds. The claim
-   * lease is never shorter than this.
-   */
-  readonly visibilityTimeoutMs?: number;
-  /**
-   * Tenant of the subscription the delivery came through. When set, the
-   * envelope `tenantid` must be exactly this one. Overrides the dispatcher's
-   * `expectedTenantId`.
-   */
-  readonly expectedTenantId?: string;
-}
-
-/** Dependencies and rules of the dispatcher. */
-export interface MessageDispatcherOptions {
-  /** Consumer name, normally the queue name. Idempotency keys are `(consumer, id)`. */
-  readonly consumer: string;
-  readonly processed: ProcessedMessageStore;
-  /** Resolves the kind of types without a handler: unknown events are ignored, commands dead-letter. */
-  readonly topology?: Topology;
-  /**
-   * Overrides the permanence rule for errors thrown by handlers. Defaults to
-   * {@link isPermanentFailure} (the shared `classifyFailure`).
-   */
-  readonly isPermanent?: PermanenceCheck;
-  /** Wraps the claim and the handler, e.g. to open a transaction or a tenant context. */
-  readonly runInContext?: (
-    envelope: MessageEnvelope,
-    fn: () => Promise<void>,
-  ) => Promise<void>;
-  /** Source of time for leases. Defaults to the system clock. */
-  readonly clock?: Clock;
-  /**
-   * Minimum claim lease in milliseconds. Must be at least the queue visibility
-   * timeout. Defaults to the visibility timeout of the consumer queue in
-   * `topology`, or {@link DEFAULT_CLAIM_LEASE_MS}.
-   */
-  readonly minLeaseMs?: number;
-  /** Extra lease time over `minLeaseMs`. Defaults to the primitives default. */
-  readonly leaseMarginMs?: number;
-  /** Tenant this consumer serves (single-tenant queue). See {@link DispatchOptions.expectedTenantId}. */
-  readonly expectedTenantId?: string;
-  /** Verifies the envelope tenant before the handler runs. */
-  readonly verifyTenant?: TenantVerifier;
-}
-
-/** Lease used when neither the options nor the topology give a visibility timeout (SQS default). */
-export const DEFAULT_CLAIM_LEASE_MS = 30_000;
-
-/** A delivery whose payload passed the contract, ready to run its handler. */
-interface PreparedDelivery {
-  readonly envelope: MessageEnvelope;
-  readonly run: () => void | Promise<void>;
-}
-
-/** A registered handler, closed over the payload type of its contract. */
-interface Registration {
-  /** Parses the payload with the contract; a string is the validation error. */
-  prepare(envelope: MessageEnvelope): PreparedDelivery | string;
-}
-
-function bindRegistration<S extends z.ZodType>(
-  schema: S,
-  handler: MessageHandler<z.output<S>>,
-): Registration {
-  return {
-    prepare(envelope) {
-      const parsed = schema.safeParse(envelope.data);
-      if (!parsed.success) return parsed.error.message;
-      const validated: MessageEnvelope<z.output<S>> = {
-        ...envelope,
-        data: parsed.data,
-      };
-      return {
-        envelope: validated,
-        run: () => handler(parsed.data, validated),
-      };
-    },
-  };
-}
-
-/** Where the run stopped, to decide what a thrown error means. */
-enum Stage {
-  /** Opening the context or claiming: an infrastructure failure. */
-  Claim = 'claim',
-  Handler = 'handler',
-  Complete = 'complete',
-  Done = 'done',
-}
-
-interface RunState {
-  stage: Stage;
-  claimToken: string | undefined;
-  /** Set when the claim decided the outcome without running the handler. */
-  result: DispatchResult | undefined;
-}
-
-function codeOf(err: unknown): string | undefined {
-  const code = (err as { code?: unknown } | null)?.code;
-  return isErrorCode(code) ? code : undefined;
-}
-
-function assertLease(name: string, value: number | undefined): void {
-  if (value !== undefined && (!Number.isFinite(value) || value <= 0)) {
-    throw new MessagingError(
-      PlatformErrorCode.MessagingInvalidOptions,
-      `${name} must be a finite number > 0`,
-    );
-  }
-}
-
-/**
- * Validates and dispatches raw deliveries to registered handlers.
- *
- * Flow:
- * 1. Size limit and envelope validation, before any payload parsing (dead-letter on failure).
- * 2. Handler lookup, then tenant verification (dead-letter on mismatch).
- * 3. Contract validation of `data` (dead-letter on failure, handler not run).
- * 4. Three-state claim of `(consumer, id)` with a lease of at least the visibility timeout:
- *    `completed` is a duplicate, `in-progress` is left for redelivery, `acquired` runs the
- *    handler and then completes the claim with its token.
- * 5. A handler failure releases the claim and is classified by `isPermanent`. Store and
- *    context errors are always retried and never thrown.
+ * Valida y despacha las entregas crudas a sus manejadores: tamaño y sobre,
+ * tenant, payload, claim de idempotencia y ejecución. Cada paso que falla
+ * decide si la entrega va a la cola de errores, se ignora o se reintenta.
  */
 export class MessageDispatcher {
-  private readonly registrations = new Map<string, Registration>();
-  private readonly options: MessageDispatcherOptions;
-  private readonly isPermanent: PermanenceCheck;
-  private readonly clock: Clock;
-  private readonly baseLeaseMs: number;
-  private readonly queueRetryPolicy: RetryPolicy | undefined;
+  private readonly registry = new HandlerRegistry();
+  private readonly claimGuard: ClaimGuard;
+  private readonly tenantGate: TenantGate;
+  private readonly classifier: DeliveryClassifier;
+  private readonly parser = new EnvelopeParser(new EnvelopeValidator());
+  private readonly execution: DeliveryExecution;
+  private readonly queueRetryPolicy: DispatchOptions['retryPolicy'];
 
-  constructor(options: MessageDispatcherOptions) {
-    assertLease('minLeaseMs', options.minLeaseMs);
-    if (options.leaseMarginMs !== undefined) {
-      if (!Number.isFinite(options.leaseMarginMs) || options.leaseMarginMs < 0)
-        throw new MessagingError(
-          PlatformErrorCode.MessagingInvalidOptions,
-          'leaseMarginMs must be a finite number >= 0',
-        );
+  constructor(
+    private readonly options: MessageDispatcherOptions,
+    parts: MessageDispatcherParts = {},
+  ) {
+    const guard = MessagingGuard.instance;
+    if (options.minLeaseMs !== undefined) {
+      guard.positiveInteger('minLeaseMs', options.minLeaseMs);
     }
-    this.options = options;
-    this.isPermanent = options.isPermanent ?? isPermanentFailure;
-    this.clock = options.clock ?? new SystemClock();
+    if (options.leaseMarginMs !== undefined) {
+      guard.nonNegativeFinite('leaseMarginMs', options.leaseMarginMs);
+    }
     const queue = options.topology?.queues.find(
       (q) => q.name === options.consumer,
     );
-    this.baseLeaseMs =
-      options.minLeaseMs ??
-      (queue ? queue.visibilityTimeoutSeconds * 1000 : DEFAULT_CLAIM_LEASE_MS);
     this.queueRetryPolicy = queue?.retryPolicy;
+    const baseLeaseMs =
+      options.minLeaseMs ??
+      (queue
+        ? Math.ceil(queue.visibilityTimeoutSeconds * 1000)
+        : ClaimGuard.DEFAULT_LEASE_MS);
+
+    const tracing = parts.tracing ?? new Tracing(new Redactor());
+    this.claimGuard = new ClaimGuard(
+      options.processed,
+      options.clock ?? new SystemClock(),
+      guard,
+      {
+        baseLeaseMs,
+        ...(options.leaseMarginMs === undefined
+          ? {}
+          : { leaseMarginMs: options.leaseMarginMs }),
+      },
+    );
+    this.tenantGate = new TenantGate(
+      options.expectedTenantId,
+      options.verifyTenant,
+    );
+    this.classifier = new DeliveryClassifier(
+      parts.failures ?? new FailureClassifier(),
+      parts.random ?? new SystemRandomSource(),
+      options.isPermanent,
+    );
+    this.execution = new DeliveryExecution(
+      this.claimGuard,
+      this.classifier,
+      tracing,
+      parts.restorer ?? new TraceContextRestorer(tracing),
+      options.runInContext,
+      options.consumer,
+    );
   }
 
   /**
-   * Registers the handler for an event or command of the contracts kit
-   * (`defineEvent`, `defineCommand`). One handler per message type.
+   * Registra el manejador de un evento o comando del kit de contratos
+   * (`defineEvent`, `defineCommand`). Un manejador por tipo.
    */
   register<M extends MessageDefinition>(
     contract: M,
     handler: MessageHandler<MessageOutput<M>>,
   ): this {
-    if (this.registrations.has(contract.type)) {
-      throw new MessagingError(
-        PlatformErrorCode.MessagingDuplicateHandler,
-        `a handler is already registered for type "${contract.type}"`,
-      );
-    }
-    this.registrations.set(
-      contract.type,
-      bindRegistration<M['schema']>(contract.schema, handler),
-    );
+    this.registry.register(contract, handler);
     return this;
   }
 
   /**
-   * Handles one raw delivery (a JSON string or a decoded value) and reports what
-   * the transport should do with it. The handler runs in a consumer span that
-   * continues the envelope `traceparent`.
+   * Procesa una entrega cruda (un JSON como texto o un valor decodificado) e
+   * informa qué debe hacer el transporte con ella. El manejador corre en un
+   * span de consumidor que continúa el `traceparent` del sobre.
    */
   async dispatch(
     raw: unknown,
@@ -317,40 +121,32 @@ export class MessageDispatcher {
       options.retryPolicy === undefined && this.queueRetryPolicy !== undefined
         ? { ...options, retryPolicy: this.queueRetryPolicy }
         : options;
-    return this.dispatchWith(raw, effective);
-  }
 
-  private async dispatchWith(
-    raw: unknown,
-    options: DispatchOptions,
-  ): Promise<DispatchResult> {
-    const parsed = parseEnvelope(raw);
-    if (!parsed.ok) {
-      return {
-        outcome: DispatchOutcome.DeadLetter,
-        error: parsed.error.message,
-        code: parsed.error.code,
-      };
+    let envelope: MessageEnvelope;
+    try {
+      envelope = this.parser.parse(raw);
+    } catch (err) {
+      return this.rejected(err as MessagingError);
     }
-    const envelope = parsed.value;
 
-    const registration = this.registrations.get(envelope.type);
+    const registration = this.registry.find(envelope.type);
     if (!registration) return this.unhandled(envelope);
 
-    let tenantRejection: MessagingError | undefined;
+    return this.deliver(envelope, registration, effective);
+  }
+
+  private async deliver(
+    envelope: MessageEnvelope,
+    registration: Registration,
+    options: DispatchOptions,
+  ): Promise<DispatchResult> {
+    let rejection: MessagingError | undefined;
     try {
-      tenantRejection = await this.checkTenant(envelope, options);
+      rejection = await this.tenantGate.check(envelope, options);
     } catch (err) {
-      return this.failure(envelope.id, err, options, true);
+      return this.classifier.failure(envelope.id, err, options, true);
     }
-    if (tenantRejection) {
-      return {
-        outcome: DispatchOutcome.DeadLetter,
-        id: envelope.id,
-        error: tenantRejection.message,
-        code: tenantRejection.code,
-      };
-    }
+    if (rejection) return this.rejected(rejection, envelope.id);
 
     const delivery = registration.prepare(envelope);
     if (typeof delivery === 'string') {
@@ -358,178 +154,31 @@ export class MessageDispatcher {
         outcome: DispatchOutcome.DeadLetter,
         id: envelope.id,
         error: `invalid data: ${delivery}`,
-        code: PlatformErrorCode.MessagingInvalidPayload,
+        code: MessagingErrorCode.InvalidPayload,
       };
     }
 
     let fingerprint: string;
     try {
-      fingerprint = stableDigest({
-        type: envelope.type,
-        tenantid: envelope.tenantid ?? null,
-        data: envelope.data,
-      });
-    } catch {
-      return {
-        outcome: DispatchOutcome.DeadLetter,
-        id: envelope.id,
-        error: 'invalid envelope: data is not canonical JSON',
-        code: PlatformErrorCode.MessagingInvalidEnvelope,
-      };
-    }
-
-    const key = processedMessageKey(this.options.consumer, envelope.id);
-    const leaseMs = Math.max(
-      this.baseLeaseMs,
-      options.visibilityTimeoutMs ?? 0,
-    );
-    const state: RunState = {
-      stage: Stage.Claim,
-      claimToken: undefined,
-      result: undefined,
-    };
-
-    const run = async (): Promise<void> => {
-      const claim = await this.options.processed.claim(key, {
-        fingerprint,
-        deadline: Deadline.after(leaseMs, this.clock),
-        minLeaseMs: leaseMs,
-        ...(this.options.leaseMarginMs === undefined
-          ? {}
-          : { leaseMarginMs: this.options.leaseMarginMs }),
-      });
-      const claimToken =
-        claim.state === ClaimState.Acquired ? claim.claimToken : undefined;
-      state.claimToken = claimToken;
-      state.result = this.claimOutcome(envelope.id, claim, fingerprint);
-      // Without a result the claim was acquired, so the token is set.
-      if (state.result !== undefined || claimToken === undefined) {
-        if (claimToken !== undefined) {
-          // Acquired with a conflicting fingerprint: give the claim back.
-          await this.release(key, claimToken);
-          state.claimToken = undefined;
-        }
-        state.stage = Stage.Done;
-        return;
-      }
-
-      state.stage = Stage.Handler;
-      await delivery.run();
-
-      state.stage = Stage.Complete;
-      const result: ProcessedMessage = {
-        processedAt: this.clock.now().getTime(),
-      };
-      await this.options.processed.complete(key, claimToken, result);
-      state.stage = Stage.Done;
-    };
-
-    const runInContext = this.options.runInContext;
-    const processDelivery = (): Promise<void> =>
-      withSpan(
-        `${envelope.type} process`,
-        () => (runInContext ? runInContext(delivery.envelope, run) : run()),
-        {
-          kind: SpanKind.CONSUMER,
-          attributes: {
-            [MessagingSpanAttribute.OperationType]:
-              MessagingOperationType.Process,
-            [MessagingSpanAttribute.DestinationName]: this.options.consumer,
-            [MessagingSpanAttribute.MessageId]: envelope.id,
-            [MessagingSpanAttribute.EventType]: envelope.type,
-          },
-        },
-      );
-    try {
-      await context.with(
-        contextFromTraceparent(envelope.traceparent, ROOT_CONTEXT),
-        processDelivery,
-      );
+      fingerprint = this.claimGuard.fingerprint(envelope);
     } catch (err) {
-      switch (state.stage) {
-        case Stage.Handler:
-          await this.releaseHeld(key, state);
-          return this.failure(envelope.id, err, options, false);
-        case Stage.Complete:
-          // The effects may have been rolled back with the failed completion.
-          await this.releaseHeld(key, state);
-          return this.failure(envelope.id, err, options, true);
-        case Stage.Claim:
-        case Stage.Done:
-          return this.failure(envelope.id, err, options, true);
-      }
+      return this.rejected(err as MessagingError, envelope.id);
     }
 
-    return (
-      state.result ?? { outcome: DispatchOutcome.Processed, id: envelope.id }
-    );
+    return this.execution.execute(envelope, delivery, fingerprint, options);
   }
 
-  /** Outcome decided by the claim alone, or undefined when the handler must run. */
-  private claimOutcome(
-    id: string,
-    claim: ClaimResult<ProcessedMessage>,
-    fingerprint: string,
-  ): DispatchResult | undefined {
-    if (claim.fingerprint !== fingerprint) {
-      return {
-        outcome: DispatchOutcome.DeadLetter,
-        id,
-        error: 'message id was already used with different content',
-        code: PlatformErrorCode.MessagingIdempotencyConflict,
-      };
-    }
-    switch (claim.state) {
-      case ClaimState.Completed:
-        return { outcome: DispatchOutcome.Duplicate, id };
-      case ClaimState.InProgress:
-        return {
-          outcome: DispatchOutcome.InProgress,
-          id,
-          delayMs: Math.max(0, claim.leaseUntil - this.clock.now().getTime()),
-        };
-      case ClaimState.Acquired:
-        return undefined;
-    }
+  /** Entrega a la cola de errores por un error de la plataforma; sin `id` si el sobre no se pudo leer. */
+  private rejected(failure: MessagingError, id?: string): DispatchResult {
+    return {
+      outcome: DispatchOutcome.DeadLetter,
+      ...(id === undefined ? {} : { id }),
+      error: failure.message,
+      code: failure.code,
+    };
   }
 
-  /**
-   * Checks the envelope tenant against the expected tenant and the verifier.
-   * Without either, an envelope that names a tenant is rejected: nothing proves
-   * the producer may act on that tenant. Returns the rejection, or undefined to
-   * accept.
-   */
-  private async checkTenant(
-    envelope: MessageEnvelope,
-    options: DispatchOptions,
-  ): Promise<MessagingError | undefined> {
-    const expected = options.expectedTenantId ?? this.options.expectedTenantId;
-    const tenant = envelope.tenantid;
-    const verify = this.options.verifyTenant;
-
-    if (expected !== undefined && tenant !== expected) {
-      return new MessagingError(
-        PlatformErrorCode.MessagingTenantMismatch,
-        'envelope tenant does not match the subscription tenant',
-      );
-    }
-    if (verify) {
-      return (await verify(tenant, envelope))
-        ? undefined
-        : new MessagingError(
-            PlatformErrorCode.MessagingTenantMismatch,
-            'envelope tenant was rejected by the tenant verifier',
-          );
-    }
-    if (expected !== undefined || tenant === undefined) {
-      return undefined;
-    }
-    return new MessagingError(
-      PlatformErrorCode.MessagingTenantMismatch,
-      'envelope tenant cannot be verified: configure expectedTenantId or verifyTenant',
-    );
-  }
-
+  /** Un tipo sin manejador: un evento se ignora; un comando va a la cola de errores. */
   private unhandled(envelope: MessageEnvelope): DispatchResult {
     const kind = this.options.topology?.routeFor(envelope.type)?.kind;
     if (kind === MessageKind.Event) {
@@ -543,59 +192,7 @@ export class MessageDispatcher {
       outcome: DispatchOutcome.DeadLetter,
       id: envelope.id,
       error: `no handler registered for type "${envelope.type}"`,
-      code: PlatformErrorCode.MessagingUnknownRoute,
-    };
-  }
-
-  private async releaseHeld(key: string, state: RunState): Promise<void> {
-    if (state.claimToken === undefined) return;
-    await this.release(key, state.claimToken);
-    state.claimToken = undefined;
-  }
-
-  /**
-   * Releases a claim with its token. Best effort: if the release fails (store
-   * down, or the token is stale because the lease was taken over), the claim
-   * stays `in-progress` until its lease ends and a later delivery takes it over.
-   */
-  private async release(key: string, claimToken: string): Promise<void> {
-    try {
-      await this.options.processed.release(key, claimToken);
-    } catch {
-      // The lease bounds how long the claim can block redeliveries.
-    }
-  }
-
-  private failure(
-    id: string,
-    err: unknown,
-    options: DispatchOptions,
-    infrastructureFailure: boolean,
-  ): DispatchResult {
-    const error = describeError(err);
-    const code = codeOf(err);
-    const policy = options.retryPolicy;
-    const disposition = infrastructureFailure
-      ? ErrorDisposition.Retry
-      : classifyError(err, this.isPermanent);
-    if (
-      disposition === ErrorDisposition.DeadLetter ||
-      !policy ||
-      options.receiveCount >= policy.maxAttempts
-    ) {
-      return {
-        outcome: DispatchOutcome.DeadLetter,
-        id,
-        error,
-        ...(code === undefined ? {} : { code }),
-      };
-    }
-    return {
-      outcome: DispatchOutcome.RetryLater,
-      id,
-      delayMs: policy.delayMs(options.receiveCount),
-      error,
-      ...(code === undefined ? {} : { code }),
+      code: MessagingErrorCode.UnknownRoute,
     };
   }
 }

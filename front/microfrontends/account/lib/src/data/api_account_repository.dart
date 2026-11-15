@@ -6,13 +6,13 @@ import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 import 'account_repository.dart';
 
-/// Repositorio sobre la API de `identity`.
+/// Repository over the `identity` API.
 ///
-/// Sesiones y dispositivos usan las rutas generadas de [IdentityRoutes] con
-/// [ApiClient], que valida cada petición antes de llamar por HTTP. Lo que el
-/// contrato aún no cubre (perfil, confianza de dispositivos, seguridad,
-/// acuerdos) no está en [capabilities] y lanza [UnsupportedError]: nunca
-/// responde datos inventados como si vinieran del servidor.
+/// Sessions and devices use the generated [IdentityRoutes] with [ApiClient],
+/// which validates each request before calling over HTTP. What the contract
+/// does not cover yet (profile, device trust, security, agreements) is not in
+/// [capabilities] and throws [UnsupportedError]: it never answers made-up
+/// data as if it came from the server.
 class ApiAccountRepository implements AccountRepository {
   ApiAccountRepository({required this.client});
 
@@ -21,7 +21,7 @@ class ApiAccountRepository implements AccountRepository {
   @override
   Set<AccountCapability> get capabilities => const {};
 
-  /// Recorre las páginas de un listado hasta agotarlas o llegar al tope.
+  /// Walks the pages of a listing until they run out or the limit is reached.
   Future<List<T>> _collect<T>(
     Future<({List<T> items, String? next})> Function(PageQuery query) fetch,
   ) async {

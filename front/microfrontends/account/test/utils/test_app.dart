@@ -1,35 +1,39 @@
 import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'
-    show GlobalWidgetsLocalizations;
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_account/src/l10n/generated/account_localizations.dart';
+import 'package:mf_account/src/screens/step_up_gate.dart';
+import 'package:mf_account/src/shared/constants/account_access.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
-/// App mínima con los textos de la cuenta y los compartidos, en español.
+/// App with the shared texts, and the account texts installed on [home] the
+/// way the manifest installs them, in Spanish.
 ///
-/// [session] es la sesión que ven `context.can` y `AccessGate`; por defecto no
-/// tiene un segundo factor reciente.
+/// The account delegates sit in a [DeferredLocalizations] around [home] and
+/// not in the app, so a dialog opened without `showLocalizedDialog` misses
+/// them here as it would in the shell.
+///
+/// [session] is what `context.can` and `AccessGate` see; by default it has no
+/// recent second factor. [clock] is the time of the shell scope: use the same
+/// [FakeClock] for [testSession] so a fresh second factor stays fresh.
 Widget testApp(
   Widget home, {
   UserSession? session,
   Locale locale = const Locale('es'),
-}) => MaterialApp(
-  locale: locale,
-  builder: (context, child) => ShellAccessScope(
-    session: ValueNotifier(session ?? testSession()),
-    child: child!,
-  ),
-  supportedLocales: AppLocalizations.supportedLocales,
-  localizationsDelegates: [
-    ...GlobalMaterialLocalizations.delegates,
-    GlobalWidgetsLocalizations.delegate,
-    AppLocalizations.delegate,
-    AccountLocalizations.delegate,
-  ],
-  home: home,
-);
+  FakeClock? clock,
+}) =>
+    TestApp(
+      locale: locale,
+      session: session ?? testSession(clock: clock),
+      clock: (clock ?? FakeClock()).now,
+    ).wrap(
+      DeferredLocalizations(
+        delegates: const [AccountLocalizations.delegate],
+        child: home,
+      ),
+    );
 
 Future<AccountLocalizations> loadEs() =>
     AccountLocalizations.delegate.load(const Locale('es'));
@@ -40,15 +44,15 @@ Future<AccountLocalizations> loadEn() =>
 Future<AppLocalizations> loadSharedEs() =>
     AppLocalizations.delegate.load(const Locale('es'));
 
-/// Sesión de prueba. Con [mfaFresh] el segundo factor se verificó ahora.
-UserSession testSession({bool mfaFresh = false}) => UserSession(
-  userId: 'user-1',
-  tenantId: 'tenant-1',
-  mfaVerifiedAt: mfaFresh ? DateTime.now() : null,
-);
+/// Test session. With [mfaFresh] the second factor was verified at the time
+/// of [clock] (a default [FakeClock] when null).
+UserSession testSession({bool mfaFresh = false, FakeClock? clock}) {
+  final builder = SessionBuilder();
+  if (mfaFresh) builder.mfaVerifiedAt((clock ?? FakeClock()).now());
+  return builder.build();
+}
 
-/// Scope de una identidad de prueba en modo demo. Cada llamada crea un scope
-/// nuevo.
+/// Scope of a test identity in demo mode. Each call creates a new scope.
 MicrofrontendScope testScope({
   Future<void> Function()? onSignOut,
   Future<bool> Function()? onStepUp,
@@ -61,37 +65,27 @@ MicrofrontendScope testScope({
   ),
 );
 
-/// Scope de una identidad de prueba en modo vivo, con [api].
+/// Scope of a test identity in live mode, with [api].
 MicrofrontendScope liveScope(ApiClient api) => MicrofrontendScope(
   ShellServices(session: testSession(), mode: ShellMode.live, api: api),
 );
 
-/// Error de API de prueba con código y traza conocidos.
-ApiErrorException testApiError({
-  String code = 'PLATFORM.AUTH.FORBIDDEN',
-  String traceId = 'trace-123',
-}) => ApiErrorException(
-  ProblemDetails(
-    type: 'about:blank',
-    title: 'Forbidden',
-    status: 403,
-    code: code,
-    traceId: traceId,
-  ),
-);
+/// API error with a known code and trace id.
+ApiErrorException testApiError({String code = 'PLATFORM.AUTH.FORBIDDEN'}) =>
+    ApiErrorException(ProblemFixtures.withCode(code, status: 403));
 
-/// Step-up del shell que siempre se completa.
+/// Shell step-up that always completes.
 Future<bool> approveStepUp() async => true;
 
-/// Step-up de prueba que cuenta las llamadas y responde [answer].
-final class RecordingStepUp {
-  RecordingStepUp({this.answer = true});
-
-  final bool answer;
-  int calls = 0;
-
-  Future<bool> call() async {
-    calls++;
-    return answer;
-  }
-}
+/// Gate for controller tests. By default the session has no recent second
+/// factor, so [request] decides (it answers true when null).
+StepUpGate testStepUpGate({
+  UserSession? session,
+  FakeClock? clock,
+  Future<bool> Function()? request,
+}) => StepUpGate(
+  rule: accountStepUpRule,
+  session: ValueNotifier(session ?? testSession(clock: clock)),
+  clock: (clock ?? FakeClock()).now,
+  request: request ?? approveStepUp,
+);

@@ -20,6 +20,7 @@ import {
   type TopologyDocument,
   topologyFromContracts,
 } from '@platform/messaging';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import {
   GenericContainer,
   type StartedTestContainer,
@@ -345,7 +346,7 @@ describeWithDocker('SNS/SQS adapter against LocalStack', () => {
       store,
       publisher,
       topology,
-      backoff: { baseMs: 100, maxMs: 1_000, jitter: false },
+      retryPolicy: new RetryPolicy(5, 100, 1_000, BackoffStrategy.None),
     });
     const outbox = new SnsSqsMessageBus({
       topology,

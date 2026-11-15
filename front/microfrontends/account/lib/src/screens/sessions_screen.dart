@@ -5,15 +5,17 @@ import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatDateTime;
 
 import '../data/account_repository.dart';
+import '../l10n/account_labels.dart';
 import '../l10n/generated/account_localizations.dart';
+import '../shared/constants/account_access.dart';
 import '../shared/enums/account_enums.dart';
 import '../shared/utils/account_paths.dart';
-import '../l10n/account_labels.dart';
+import 'sessions_controller.dart';
+import 'step_up_gate.dart';
 import 'widgets/account_widgets.dart';
-import 'widgets/step_up.dart';
 
-/// Sesiones activas con cierre remoto.
-class SessionsScreen extends StatefulWidget {
+/// Active sessions with remote sign-out.
+class SessionsScreen extends StatelessWidget {
   const SessionsScreen({
     super.key,
     required this.repository,
@@ -22,73 +24,72 @@ class SessionsScreen extends StatefulWidget {
 
   final AccountRepository repository;
 
-  /// Step-up del shell (`ShellServices.requestStepUp`) para las acciones
-  /// sensibles.
-  final StepUpRequest requestStepUp;
+  /// The shell's step-up, for closing every other session.
+  final Future<bool> Function() requestStepUp;
 
   @override
-  State<SessionsScreen> createState() => _SessionsScreenState();
+  Widget build(BuildContext context) => ControllerBuilder<SessionsController>(
+    create: (context) => SessionsController(
+      repository,
+      stepUp: StepUpGate.fromContext(
+        context,
+        rule: accountStepUpRule,
+        request: requestStepUp,
+      ),
+    )..start(),
+    builder: (context, controller) => AppPage(
+      title: AccountLocalizations.of(context).sessionsTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
+      body: AsyncValueView<List<SessionSummary>>(
+        value: controller.sessions,
+        errorMessage: AccountLocalizations.of(context).loadError,
+        onRetry: controller.start,
+        data: (sessions) => _SessionsList(
+          sessions: sessions,
+          onClose: (id) async {
+            final result = await controller.closeSession(id);
+            if (!context.mounted) return;
+            final l10n = AccountLocalizations.of(context);
+            showActionResult(
+              context,
+              result,
+              success: l10n.sessionClosed,
+              failure: l10n.actionFailed,
+            );
+          },
+          onCloseOthers: () async {
+            final result = await controller.closeOthers();
+            if (!context.mounted) return;
+            final l10n = AccountLocalizations.of(context);
+            showActionResult(
+              context,
+              result,
+              success: switch (result) {
+                ActionSucceeded<int>(:final value) => l10n.othersClosed(value),
+                ActionFailed<int>() || ActionSkipped<int>() => null,
+              },
+              failure: l10n.actionFailed,
+            );
+          },
+        ),
+      ),
+    ),
+  );
 }
 
-class _SessionsScreenState extends State<SessionsScreen> {
-  AsyncValue<List<SessionSummary>> _sessions = const AsyncValue.loading();
+class _SessionsList extends StatelessWidget {
+  const _SessionsList({
+    required this.sessions,
+    required this.onClose,
+    required this.onCloseOthers,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final result = await AsyncValue.guard(widget.repository.listSessions);
-    if (!mounted) return;
-    setState(() => _sessions = result);
-  }
-
-  void _reload() {
-    setState(() => _sessions = const AsyncValue.loading());
-    _load();
-  }
-
-  Future<void> _closeSession(SessionSummary session) async {
-    final l10n = AccountLocalizations.of(context);
-    final done = await runAccountAction(
-      context,
-      () => widget.repository.revokeSession(session.id),
-      success: () => l10n.sessionClosed,
-    );
-    if (done && mounted) _reload();
-  }
-
-  Future<void> _closeOthers() async {
-    final l10n = AccountLocalizations.of(context);
-    final verified = await confirmStepUp(context, widget.requestStepUp);
-    if (!verified || !mounted) return;
-    var closed = 0;
-    final done = await runAccountAction(
-      context,
-      () async => closed = await widget.repository.revokeOtherSessions(),
-      success: () => l10n.othersClosed(closed),
-    );
-    if (done && mounted) _reload();
-  }
+  final List<SessionSummary> sessions;
+  final ValueChanged<String> onClose;
+  final VoidCallback onCloseOthers;
 
   @override
   Widget build(BuildContext context) {
-    return AppPage(
-      title: AccountLocalizations.of(context).sessionsTitle,
-      onBack: () => context.go(accountPath(AccountSection.overview)),
-      body: PlatformScreen(
-        compact: (_) => AccountAsyncView<List<SessionSummary>>(
-          value: _sessions,
-          onRetry: _reload,
-          data: (sessions) => _buildList(context, sessions),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildList(BuildContext context, List<SessionSummary> sessions) {
     final l10n = AccountLocalizations.of(context);
     if (sessions.isEmpty) {
       return EmptyState(
@@ -98,35 +99,44 @@ class _SessionsScreenState extends State<SessionsScreen> {
       );
     }
     final hasOthers = sessions.any((session) => !session.current);
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        if (hasOthers)
-          Align(
-            alignment: Alignment.centerRight,
-            child: AppButton(
-              label: l10n.sessionsCloseOthers,
-              variant: AppButtonVariant.secondary,
-              onPressed: _closeOthers,
+    return ContentColumn(
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          if (hasOthers)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: AppButton(
+                label: l10n.sessionsCloseOthers,
+                variant: AppButtonVariant.secondary,
+                onPressed: onCloseOthers,
+              ),
             ),
-          ),
-        for (final session in sessions)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: AccountRowCard(
-              title: session.deviceName,
-              subtitle:
-                  '${platformLabel(l10n, session.platform)} · ${l10n.lastSeenLabel(formatDateTime(session.lastSeenAt, locale: localeTag(context)))}',
-              trailing: session.current
-                  ? StatusBadge(label: l10n.sessionCurrent)
-                  : AppButton(
-                      label: l10n.sessionClose,
-                      variant: AppButtonVariant.secondary,
-                      onPressed: () => _closeSession(session),
+          for (final session in sessions)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: AccountRowCard(
+                title: session.deviceName,
+                details: [
+                  platformLabel(l10n, session.platform),
+                  l10n.lastSeenLabel(
+                    formatDateTime(
+                      session.lastSeenAt,
+                      locale: context.localeTag,
                     ),
+                  ),
+                ],
+                trailing: session.current
+                    ? StatusBadge(label: l10n.sessionCurrent)
+                    : AppButton(
+                        label: l10n.sessionClose,
+                        variant: AppButtonVariant.secondary,
+                        onPressed: () => onClose(session.id),
+                      ),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,4 @@
-import { type ActorType, RequestContext } from '@platform/observability';
+import type { ActorType } from '@platform/observability';
 
 /** Datos de la petición que la capa lleva a cada sentencia y a la auditoría. */
 export interface PersistenceContext {
@@ -14,24 +14,3 @@ export interface PersistenceContext {
    */
   readonly userId?: string;
 }
-
-/** Fuente del contexto. Se llama en cada sentencia, así que debe ser barata. */
-export type PersistenceContextProvider = () => PersistenceContext;
-
-/** Contexto vacío, para procesos sin petición (migraciones, jobs del catálogo). */
-export const EMPTY_PERSISTENCE_CONTEXT: PersistenceContext = Object.freeze({});
-
-/** Proveedor por defecto: copia los campos del `RequestContext` de observability. */
-export const requestContextProvider: PersistenceContextProvider = () => {
-  const ctx = RequestContext.current();
-  if (ctx === undefined) {
-    return EMPTY_PERSISTENCE_CONTEXT;
-  }
-  return {
-    traceId: ctx.traceId,
-    tenantId: ctx.tenantId,
-    actorId: ctx.actorId,
-    actorType: ctx.actorType,
-    userId: ctx.userId,
-  };
-};

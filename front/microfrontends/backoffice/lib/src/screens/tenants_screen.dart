@@ -8,156 +8,92 @@ import '../l10n/generated/backoffice_localizations.dart';
 import '../shared/constants/backoffice_paths.dart';
 import '../shared/enums/backoffice_enums.dart';
 import '../shared/types/backoffice_types.dart';
-import 'widgets.dart';
+import 'async_sliver.dart';
+import 'backoffice_page.dart';
+import 'enum_filter.dart';
+import 'sliver_gap.dart';
+import 'tenants_controller.dart';
 
 /// Tenant list with search by name or id, and region and status filters.
-class TenantsScreen extends StatefulWidget {
+class TenantsScreen extends StatelessWidget {
   const TenantsScreen({super.key, required this.repository});
 
   /// Data source of the screen.
   final BackofficeRepository repository;
 
   @override
-  State<TenantsScreen> createState() => _TenantsScreenState();
-}
-
-class _TenantsScreenState extends State<TenantsScreen> {
-  String _query = '';
-  TenantRegion? _region;
-  TenantStatus? _status;
-  late Future<List<Tenant>> _tenants = _load();
-
-  Future<List<Tenant>> _load() => widget.repository.listTenants(
-    query: _query,
-    region: _region,
-    status: _status,
-  );
-
-  void _reload() {
-    setState(() {
-      _tenants = _load();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = BackofficeLocalizations.of(context);
-    return BackofficePage(
-      title: l10n.tenantsTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            key: const Key('tenant-search'),
-            decoration: InputDecoration(
-              labelText: l10n.tenantSearchLabel,
-              prefixIcon: const Icon(Icons.search),
+  Widget build(BuildContext context) => ControllerBuilder<TenantsController>(
+    create: (_) => TenantsController(repository)..start(),
+    builder: (context, controller) {
+      final l10n = BackofficeLocalizations.of(context);
+      return BackofficePage(
+        title: l10n.tenantsTitle,
+        slivers: [
+          SliverToBoxAdapter(
+            child: TextField(
+              key: const Key('tenant-search'),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                labelText: l10n.tenantSearchLabel,
+                prefixIcon: const Icon(Icons.search),
+              ),
+              onChanged: controller.search,
             ),
-            onChanged: (value) {
-              _query = value;
-              _reload();
-            },
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _RegionFilter(
-                value: _region,
-                onChanged: (value) {
-                  _region = value;
-                  _reload();
-                },
-              ),
-              _StatusFilter(
-                value: _status,
-                onChanged: (value) {
-                  _status = value;
-                  _reload();
-                },
-              ),
-            ],
+          const SliverGap(AppSpacing.sm),
+          SliverToBoxAdapter(
+            child: Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.sm,
+              children: [
+                EnumFilter<TenantRegion>(
+                  key: const Key('tenant-region-filter'),
+                  label: l10n.filterRegion,
+                  allLabel: l10n.filterRegionAll,
+                  values: TenantRegion.values,
+                  valueLabel: (region) => regionLabel(l10n, region),
+                  value: controller.region,
+                  onChanged: controller.filterByRegion,
+                ),
+                EnumFilter<TenantStatus>(
+                  key: const Key('tenant-status-filter'),
+                  label: l10n.filterStatus,
+                  allLabel: l10n.filterStatusAll,
+                  values: TenantStatus.values,
+                  valueLabel: (status) => tenantStatusLabel(l10n, status),
+                  value: controller.status,
+                  onChanged: controller.filterByStatus,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          AsyncBody<List<Tenant>>(
-            future: _tenants,
-            onRetry: _reload,
-            builder: (context, tenants) {
-              if (tenants.isEmpty) {
-                return EmptyState(
-                  icon: Icons.search_off,
-                  title: l10n.tenantsEmpty,
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final tenant in tenants) _TenantTile(tenant: tenant),
-                ],
-              );
-            },
+          const SliverGap(AppSpacing.md),
+          AsyncSliver<List<Tenant>>(
+            value: controller.tenants,
+            onRetry: controller.start,
+            data: (tenants) => tenants.isEmpty
+                ? [
+                    SliverToBoxAdapter(
+                      child: EmptyState(
+                        icon: Icons.search_off,
+                        title: l10n.tenantsEmpty,
+                      ),
+                    ),
+                  ]
+                : [
+                    SliverList.separated(
+                      itemCount: tenants.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (context, index) =>
+                          _TenantTile(tenant: tenants[index]),
+                    ),
+                  ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RegionFilter extends StatelessWidget {
-  const _RegionFilter({required this.value, required this.onChanged});
-
-  final TenantRegion? value;
-  final ValueChanged<TenantRegion?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = BackofficeLocalizations.of(context);
-    return DropdownButton<TenantRegion?>(
-      key: const Key('tenant-region-filter'),
-      value: value,
-      items: [
-        DropdownMenuItem<TenantRegion?>(
-          value: null,
-          child: Text('${l10n.filterRegion}: ${l10n.filterAll}'),
-        ),
-        for (final region in TenantRegion.values)
-          DropdownMenuItem<TenantRegion?>(
-            value: region,
-            child: Text(regionLabel(l10n, region)),
-          ),
-      ],
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _StatusFilter extends StatelessWidget {
-  const _StatusFilter({required this.value, required this.onChanged});
-
-  final TenantStatus? value;
-  final ValueChanged<TenantStatus?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = BackofficeLocalizations.of(context);
-    return DropdownButton<TenantStatus?>(
-      key: const Key('tenant-status-filter'),
-      value: value,
-      items: [
-        DropdownMenuItem<TenantStatus?>(
-          value: null,
-          child: Text('${l10n.filterStatus}: ${l10n.filterAll}'),
-        ),
-        for (final status in TenantStatus.values)
-          DropdownMenuItem<TenantStatus?>(
-            value: status,
-            child: Text(tenantStatusLabel(l10n, status)),
-          ),
-      ],
-      onChanged: onChanged,
-    );
-  }
+      );
+    },
+  );
 }
 
 class _TenantTile extends StatelessWidget {
@@ -168,30 +104,30 @@ class _TenantTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = BackofficeLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
-        onTap: () => context.go(BackofficePaths.tenant(tenant.id)),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tenant.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Text(
-                    '${tenant.id} · ${regionLabel(l10n, tenant.region)} · ${tenant.plan}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+    final theme = Theme.of(context);
+    return AppCard(
+      onTap: () => context.go(BackofficePaths.tenant(tenant.id)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(tenant.name, style: theme.textTheme.titleMedium),
+                MetaLine(
+                  parts: [
+                    tenant.id,
+                    regionLabel(l10n, tenant.region),
+                    tenant.plan,
+                  ],
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
             ),
-            Chip(label: Text(tenantStatusLabel(l10n, tenant.status))),
-          ],
-        ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Chip(label: Text(tenantStatusLabel(l10n, tenant.status))),
+        ],
       ),
     );
   }

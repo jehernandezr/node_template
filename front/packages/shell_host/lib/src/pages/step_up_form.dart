@@ -3,7 +3,10 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import 'mfa_widgets.dart';
+import 'mfa_code_entry.dart';
+import 'mfa_error_text.dart';
+import 'mfa_method_picker.dart';
+import 'mfa_state_step.dart';
 
 /// Real step-up of an open session against identity. Draws the state of a
 /// [StepUpFlow], which opens as soon as the form shows; [onVerified] gets the
@@ -40,7 +43,7 @@ class _StepUpFormState extends State<StepUpForm> {
   }
 
   void _clearDeadCode() {
-    if (_flow.challenge == null) _code.clear();
+    if (_flow.state.challenge == null) _code.clear();
   }
 
   @override
@@ -61,38 +64,38 @@ class _StepUpFormState extends State<StepUpForm> {
     return ListenableBuilder(
       listenable: _flow,
       builder: (context, _) {
-        final pending = _flow.pending;
-        final challenge = _flow.challenge;
+        final state = _flow.state;
+        final busy = state.isBusy;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (pending == null)
-              _flow.busy
-                  ? const Center(child: CircularProgressIndicator())
-                  : AppButton(
-                      key: const ValueKey('step-up-retry'),
-                      label: l10n.actionRetry,
-                      variant: AppButtonVariant.secondary,
-                      onPressed: _flow.start,
-                    )
-            else if (challenge == null)
-              MfaMethodPicker(
+            switch (state.step) {
+              MfaIdle() =>
+                busy
+                    ? const Center(child: CircularProgressIndicator())
+                    : AppButton(
+                        key: const ValueKey('step-up-retry'),
+                        label: l10n.actionRetry,
+                        variant: AppButtonVariant.secondary,
+                        onPressed: _flow.start,
+                      ),
+              MfaAwaitingMethod() => MfaMethodPicker(
                 methods: _flow.methods,
-                busy: _flow.busy,
+                busy: busy,
                 onPick: _flow.requestChallenge,
-              )
-            else
-              MfaCodeEntry(
+              ),
+              MfaAwaitingCode(:final challenge) => MfaCodeEntry(
                 fieldKey: const ValueKey('step-up-code'),
                 controller: _code,
                 challenge: challenge,
-                busy: _flow.busy,
+                busy: busy,
                 onVerify: _verify,
               ),
+            },
             MfaErrorText(
               textKey: const ValueKey('step-up-error'),
-              code: _flow.errorCode,
+              code: state.errorCode,
             ),
           ],
         );

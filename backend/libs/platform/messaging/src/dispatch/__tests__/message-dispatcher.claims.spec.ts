@@ -1,23 +1,29 @@
-import { defineEvent, PlatformErrorCode } from '@contracts/platform';
+import { defineEvent } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { type ClaimRequest, ClaimState, Deadline } from '@platform/primitives';
+import {
+  ClaimState,
+  Deadline,
+  BackoffStrategy,
+  RetryPolicy,
+} from '@platform/primitives';
 import { z } from 'zod';
-import { createEnvelope } from '../../envelope/message-envelope.js';
 import { QueueDef } from '../../topology/queue-def.js';
-import { RetryPolicy } from '../../topology/retry-policy.js';
 import { Route } from '../../topology/route.js';
 import { TopicDef } from '../../topology/topic-def.js';
 import { Topology } from '../../topology/topology.js';
+import { ClaimGuard } from '../claim-guard.js';
+import { MessageDispatcher } from '../message-dispatcher.js';
+import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
+import { EnvelopeBuilder } from '../../__tests__/utils/index.js';
+import { DispatchOutcome } from '../dispatch-outcome.enum.js';
+import { DispatchResults } from '../dispatch-results.js';
+import { ProcessedMessageKey } from '../processed-message-key.js';
 import {
-  DEFAULT_CLAIM_LEASE_MS,
-  DispatchOutcome,
-  MessageDispatcher,
-  requiresRedelivery,
-} from '../message-dispatcher.js';
-import {
-  InMemoryProcessedMessageStore,
-  processedMessageKey,
-} from '../processed-message-store.js';
+  FailingProcessedMessageStore,
+  RecordingMessageHandler,
+  RecordingProcessedMessageStore,
+  StoreOperation,
+} from './utils/index.js';
 
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
@@ -25,24 +31,24 @@ const TaskUpdated = defineEvent({
   description: 'Mensaje de prueba.',
 });
 
-const policy = RetryPolicy.exponential({
-  maxAttempts: 5,
-  baseMs: 100,
-  maxMs: 10_000,
-  jitter: false,
-});
+const policy = new RetryPolicy(5, 100, 10_000, BackoffStrategy.None);
+const KEY = ProcessedMessageKey.of('notifications', 'msg-1');
 
 function envelopeFor(data: unknown, id = 'msg-1'): unknown {
-  return createEnvelope(
-    { type: 'tasks.task.updated.v1', source: '/test', data },
-    { newId: () => id },
-  );
+  return EnvelopeBuilder.anEnvelope({
+    id,
+    type: 'tasks.task.updated.v1',
+    data,
+  });
 }
 
-/** Lets pending promise callbacks run. */
+/** Deja correr las callbacks de promesas pendientes. */
 const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-/** A promise the test resolves by hand, to keep a handler running. */
+/** Promesa que nunca se resuelve: un manejador que se queda corriendo. */
+const neverSettles = () => new Promise<void>(() => undefined);
+
+/** Promesa que el test resuelve a mano, para mantener un manejador en curso. */
 function gate(): { promise: Promise<void>; open: () => void } {
   let open = (): void => undefined;
   const promise = new Promise<void>((resolve) => {
@@ -53,7 +59,7 @@ function gate(): { promise: Promise<void>; open: () => void } {
 
 function setup(minLeaseMs?: number) {
   const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
-  const store = new InMemoryProcessedMessageStore(
+  const store = new RecordingProcessedMessageStore(
     clock,
     new SequentialIdGenerator(),
   );
@@ -70,15 +76,15 @@ describe('MessageDispatcher three-state claims', () => {
   it('leaves a redelivery for later while the first handler still runs, then reports a duplicate', async () => {
     const { dispatcher } = setup();
     const running = gate();
-    const handler = jest.fn(() => running.promise);
-    dispatcher.register(TaskUpdated, handler);
+    const handler = new RecordingMessageHandler({ gates: [running.promise] });
+    dispatcher.register(TaskUpdated, handler.handle);
     const raw = envelopeFor({ id: 't1' });
 
     const first = dispatcher.dispatch(raw, {
       receiveCount: 1,
       retryPolicy: policy,
     });
-    // Let the first delivery claim and enter the handler.
+    // Deja que la primera entrega tome el claim y entre al manejador.
     await flush();
 
     const redelivery = await dispatcher.dispatch(raw, {
@@ -90,8 +96,8 @@ describe('MessageDispatcher three-state claims', () => {
       id: 'msg-1',
       delayMs: expect.any(Number),
     });
-    expect(requiresRedelivery(redelivery)).toBe(true);
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(DispatchResults.requiresRedelivery(redelivery)).toBe(true);
+    expect(handler.calls).toHaveLength(1);
 
     running.open();
     expect(await first).toEqual({
@@ -100,13 +106,16 @@ describe('MessageDispatcher three-state claims', () => {
     });
     const later = await dispatcher.dispatch(raw, { receiveCount: 3 });
     expect(later).toEqual({ outcome: DispatchOutcome.Duplicate, id: 'msg-1' });
-    expect(requiresRedelivery(later)).toBe(false);
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(DispatchResults.requiresRedelivery(later)).toBe(false);
+    expect(handler.calls).toHaveLength(1);
   });
 
   it('never dead-letters an in-progress redelivery, even past maxAttempts', async () => {
     const { dispatcher } = setup();
-    dispatcher.register(TaskUpdated, () => gate().promise);
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({ gates: [neverSettles()] }).handle,
+    );
     const raw = envelopeFor({ id: 't1' });
     void dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy });
     await flush();
@@ -118,11 +127,12 @@ describe('MessageDispatcher three-state claims', () => {
 
   it('dead-letters a delivery whose claim is held with different content', async () => {
     const { dispatcher, store, clock } = setup();
-    dispatcher.register(TaskUpdated, jest.fn());
-    await store.claim(processedMessageKey('notifications', 'msg-1'), {
+    dispatcher.register(TaskUpdated, new RecordingMessageHandler().handle);
+    await store.claim(KEY, {
       fingerprint: 'other-delivery',
       deadline: Deadline.after(60_000, clock),
     });
+
     expect(
       await dispatcher.dispatch(envelopeFor({ id: 't1' }), {
         receiveCount: 1,
@@ -130,62 +140,55 @@ describe('MessageDispatcher three-state claims', () => {
       }),
     ).toMatchObject({
       outcome: DispatchOutcome.DeadLetter,
-      code: PlatformErrorCode.MessagingIdempotencyConflict,
+      code: MessagingErrorCode.IdempotencyConflict,
     });
   });
 
-  it('asks for a lease of at least the visibility timeout', async () => {
+  it('asks for a lease of at least the visibility timeout of the queue, and of the delivery when it is longer', async () => {
     const topic = new TopicDef('events');
     const queue = new QueueDef('notifications')
       .subscribesTo(topic)
       .visibilityTimeout(120)
       .deadLetter({ maxReceiveCount: 5 });
-    function withQueue(): Topology {
-      const topics = [topic];
-      const queues = [queue];
-      const routes = [Route.event(TaskUpdated).to(topic)];
-      return new Topology({ topics, queues, routes });
-    }
+    const topology = new Topology({
+      topics: [topic],
+      queues: [queue],
+      routes: [Route.event(TaskUpdated).to(topic)],
+    });
     const clock = new FixedClock();
-    const store = new InMemoryProcessedMessageStore(
+    const store = new RecordingProcessedMessageStore(
       clock,
       new SequentialIdGenerator(),
     );
-    const claim = jest.spyOn(store, 'claim');
     const dispatcher = new MessageDispatcher({
       consumer: 'notifications',
       processed: store,
-      topology: withQueue(),
+      topology,
       clock,
     });
-    dispatcher.register(TaskUpdated, () => undefined);
+    dispatcher.register(TaskUpdated, new RecordingMessageHandler().handle);
 
-    await dispatcher.dispatch(envelopeFor({ id: 't1' }, 'a'), {
-      receiveCount: 1,
-    });
-    const fromTopology = claim.mock.calls[0]?.[1] as ClaimRequest;
-    expect(fromTopology.minLeaseMs).toBe(120_000);
+    await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
+    expect(store.claims[0]).toMatchObject({ minLeaseMs: 120_000 });
 
-    // The transport can report a longer, extended visibility timeout.
-    await dispatcher.dispatch(envelopeFor({ id: 't1' }, 'b'), {
+    // La entrega reporta un visibility timeout extendido más largo.
+    await dispatcher.dispatch(envelopeFor({ id: 't1' }), {
       receiveCount: 1,
       visibilityTimeoutMs: 600_000,
     });
-    const extended = claim.mock.calls[1]?.[1] as ClaimRequest;
-    expect(extended.minLeaseMs).toBe(600_000);
-    expect(extended.deadline.atMs).toBeGreaterThanOrEqual(
+    expect(store.claims[1]).toMatchObject({ minLeaseMs: 600_000 });
+    expect(store.claims[1]?.deadline.atMs).toBeGreaterThanOrEqual(
       clock.now().getTime() + 600_000,
     );
   });
 
   it('defaults the lease to the SQS default visibility timeout and rejects invalid leases', async () => {
     const { dispatcher, store } = setup();
-    const claim = jest.spyOn(store, 'claim');
-    dispatcher.register(TaskUpdated, () => undefined);
+    dispatcher.register(TaskUpdated, new RecordingMessageHandler().handle);
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
-    expect((claim.mock.calls[0]?.[1] as ClaimRequest).minLeaseMs).toBe(
-      DEFAULT_CLAIM_LEASE_MS,
-    );
+    expect(store.claims[0]).toMatchObject({
+      minLeaseMs: ClaimGuard.DEFAULT_LEASE_MS,
+    });
 
     expect(
       () =>
@@ -196,26 +199,28 @@ describe('MessageDispatcher three-state claims', () => {
         }),
     ).toThrow(
       expect.objectContaining({
-        code: PlatformErrorCode.MessagingInvalidOptions,
+        code: MessagingErrorCode.InvalidOptions,
       }),
     );
   });
 
   it('takes over a claim whose lease expired (the first consumer crashed)', async () => {
     const { dispatcher, store, clock } = setup(30_000);
-    const handler = jest.fn();
-    dispatcher.register(TaskUpdated, handler);
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
     const raw = envelopeFor({ id: 't1' });
 
-    // A consumer claimed with the same content and died without completing.
-    const crashed = jest.fn(() => new Promise<void>(() => undefined));
-    const other = new MessageDispatcher({
+    // Un consumidor tomó el claim con el mismo contenido y murió sin completarlo.
+    const crashed = new MessageDispatcher({
       consumer: 'notifications',
       processed: store,
       clock,
       minLeaseMs: 30_000,
-    }).register(TaskUpdated, crashed);
-    void other.dispatch(raw, { receiveCount: 1 });
+    }).register(
+      TaskUpdated,
+      new RecordingMessageHandler({ gates: [neverSettles()] }).handle,
+    );
+    void crashed.dispatch(raw, { receiveCount: 1 });
     await flush();
 
     expect((await dispatcher.dispatch(raw, { receiveCount: 2 })).outcome).toBe(
@@ -227,17 +232,17 @@ describe('MessageDispatcher three-state claims', () => {
       outcome: DispatchOutcome.Processed,
       id: 'msg-1',
     });
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.calls).toHaveLength(1);
   });
 
   it('completes with the claim token: a handler that outlived its lease cannot complete', async () => {
     const { dispatcher, clock } = setup(1_000);
     const slow = gate();
-    let calls = 0;
-    dispatcher.register(TaskUpdated, async () => {
-      calls++;
-      if (calls === 1) await slow.promise;
-    });
+    // La primera llamada espera a `slow`; la segunda termina de inmediato.
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({ gates: [slow.promise] }).handle,
+    );
     const raw = envelopeFor({ id: 't1' });
 
     const first = dispatcher.dispatch(raw, {
@@ -246,7 +251,7 @@ describe('MessageDispatcher three-state claims', () => {
     });
     await flush();
 
-    // The lease ends; a redelivery takes over and finishes first.
+    // Vence el lease; una reentrega toma el claim y termina primero.
     clock.advance(10_000);
     expect(
       (await dispatcher.dispatch(raw, { receiveCount: 2, retryPolicy: policy }))
@@ -254,8 +259,8 @@ describe('MessageDispatcher three-state claims', () => {
     ).toBe(DispatchOutcome.Processed);
 
     slow.open();
-    // The stale completion is rejected and reported for redelivery,
-    // which then sees the completed claim.
+    // La completión vencida se rechaza y se informa para reentrega, que
+    // entonces ve el claim completado.
     expect(await first).toMatchObject({
       outcome: DispatchOutcome.RetryLater,
       code: 'PLATFORM.PRIMITIVES.STALE_CLAIM',
@@ -268,29 +273,30 @@ describe('MessageDispatcher three-state claims', () => {
 
   it('releases the claim with its token when the handler fails', async () => {
     const { dispatcher, store, clock } = setup();
-    const release = jest.spyOn(store, 'release');
-    dispatcher.register(TaskUpdated, () => {
-      throw Object.assign(new Error('busy'), { retryable: true });
-    });
+    dispatcher.register(
+      TaskUpdated,
+      new RecordingMessageHandler({
+        error: Object.assign(new Error('busy'), { retryable: true }),
+      }).handle,
+    );
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), {
       receiveCount: 1,
       retryPolicy: policy,
     });
-    expect(release).toHaveBeenCalledWith(
-      processedMessageKey('notifications', 'msg-1'),
-      expect.any(String),
-    );
-    const claim = await store.claim(
-      processedMessageKey('notifications', 'msg-1'),
-      { fingerprint: 'probe', deadline: Deadline.after(1_000, clock) },
-    );
-    expect(claim.state).toBe(ClaimState.Acquired);
+
+    expect(store.releases).toBe(1);
+    expect(
+      await store.claim(KEY, {
+        fingerprint: 'probe',
+        deadline: Deadline.after(1_000, clock),
+      }),
+    ).toMatchObject({ state: ClaimState.Acquired });
   });
 
   it('dead-letters a message id reused with different content', async () => {
     const { dispatcher } = setup();
-    const handler = jest.fn();
-    dispatcher.register(TaskUpdated, handler);
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
 
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
     expect(
@@ -299,29 +305,34 @@ describe('MessageDispatcher three-state claims', () => {
       outcome: DispatchOutcome.DeadLetter,
       id: 'msg-1',
       error: 'message id was already used with different content',
-      code: PlatformErrorCode.MessagingIdempotencyConflict,
+      code: MessagingErrorCode.IdempotencyConflict,
     });
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.calls).toHaveLength(1);
   });
 
-  it('retries when completing the claim fails', async () => {
-    const { dispatcher, store } = setup();
-    jest
-      .spyOn(store, 'complete')
-      .mockRejectedValueOnce(new Error('connection reset'));
-    const release = jest.spyOn(store, 'release');
-    const handler = jest.fn();
-    dispatcher.register(TaskUpdated, handler);
+  it('retries when completing the claim fails, then processes the redelivery', async () => {
+    const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
+    const dispatcher = new MessageDispatcher({
+      consumer: 'notifications',
+      processed: new FailingProcessedMessageStore(
+        StoreOperation.Complete,
+        new Error('connection reset'),
+        1,
+        clock,
+      ),
+      clock,
+    });
+    const handler = new RecordingMessageHandler();
+    dispatcher.register(TaskUpdated, handler.handle);
     const raw = envelopeFor({ id: 't1' });
 
     expect(
       await dispatcher.dispatch(raw, { receiveCount: 1, retryPolicy: policy }),
     ).toMatchObject({ outcome: DispatchOutcome.RetryLater });
-    expect(release).toHaveBeenCalledTimes(1);
     expect(
       (await dispatcher.dispatch(raw, { receiveCount: 2, retryPolicy: policy }))
         .outcome,
     ).toBe(DispatchOutcome.Processed);
-    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.calls).toHaveLength(2);
   });
 });

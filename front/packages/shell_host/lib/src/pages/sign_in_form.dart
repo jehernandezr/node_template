@@ -4,7 +4,10 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import 'mfa_widgets.dart';
+import 'mfa_code_entry.dart';
+import 'mfa_error_text.dart';
+import 'mfa_method_picker.dart';
+import 'mfa_state_step.dart';
 
 /// Real sign-in against identity. Draws the state of a [SignInFlow]: email
 /// and password, then the method of the second factor, then its code.
@@ -33,7 +36,7 @@ class _SignInFormState extends State<SignInForm> {
 
   /// A challenge that the flow dropped takes its code with it.
   void _clearDeadCode() {
-    if (_flow.challenge == null) _code.clear();
+    if (_flow.state.challenge == null) _code.clear();
   }
 
   @override
@@ -64,53 +67,60 @@ class _SignInFormState extends State<SignInForm> {
     return ListenableBuilder(
       listenable: _flow,
       builder: (context, _) {
-        final pending = _flow.pending;
-        final challenge = _flow.challenge;
+        final state = _flow.state;
+        final busy = state.isBusy;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (pending == null) ...[
-              TextField(
-                key: const ValueKey('sign-in-email'),
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-                maxLength: IdentityLimits.emailMaxLength,
-                decoration: InputDecoration(labelText: l10n.signInEmail),
+            switch (state.step) {
+              MfaIdle() => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    key: const ValueKey('sign-in-email'),
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
+                    maxLength: IdentityLimits.emailMaxLength,
+                    decoration: InputDecoration(labelText: l10n.signInEmail),
+                  ),
+                  TextField(
+                    key: const ValueKey('sign-in-password'),
+                    controller: _password,
+                    obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
+                    maxLength: IdentityLimits.passwordMaxLength,
+                    decoration: InputDecoration(labelText: l10n.signInPassword),
+                    onSubmitted: (_) => busy ? null : _signIn(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppButton(
+                    label: l10n.actionSignIn,
+                    loading: busy,
+                    onPressed: _signIn,
+                  ),
+                ],
               ),
-              TextField(
-                key: const ValueKey('sign-in-password'),
-                controller: _password,
-                obscureText: true,
-                autofillHints: const [AutofillHints.password],
-                maxLength: IdentityLimits.passwordMaxLength,
-                decoration: InputDecoration(labelText: l10n.signInPassword),
-                onSubmitted: (_) => _flow.busy ? null : _signIn(),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppButton(
-                label: l10n.actionSignIn,
-                loading: _flow.busy,
-                onPressed: _signIn,
-              ),
-            ] else if (challenge == null)
-              MfaMethodPicker(
+              MfaAwaitingMethod() => MfaMethodPicker(
                 methods: _flow.methods,
-                busy: _flow.busy,
+                busy: busy,
                 onPick: _flow.requestChallenge,
-              )
-            else
-              MfaCodeEntry(
+              ),
+              MfaAwaitingCode(:final challenge) => MfaCodeEntry(
                 fieldKey: const ValueKey('sign-in-code'),
                 controller: _code,
                 challenge: challenge,
-                busy: _flow.busy,
+                busy: busy,
                 onVerify: _verify,
               ),
+            },
             MfaErrorText(
               textKey: const ValueKey('sign-in-error'),
-              code: _flow.errorCode,
+              code: state.errorCode,
             ),
           ],
         );

@@ -1,51 +1,27 @@
-import {
-  type Clock,
-  type IdGenerator,
-  SystemClock,
-  UuidV7IdGenerator,
-} from '@platform/kernel';
-import {
-  canonicalJson,
-  type IdempotencyStore,
-  InMemoryIdempotencyStore,
-} from '@platform/primitives';
+import { IdempotencyStore } from '@platform/kernel';
 
-/** Result stored when a consumer finishes a message. */
+/** Resultado que se guarda cuando un consumidor termina un mensaje. */
 export interface ProcessedMessage {
-  /** Epoch milliseconds at which the handler finished. */
+  /** Milisegundos epoch en que terminó el manejador. */
   readonly processedAt: number;
 }
 
 /**
- * Port for consumer idempotency: the three-state `IdempotencyStore` of
- * `@platform/primitives`, keyed by {@link processedMessageKey}.
+ * Puerto de idempotencia de los consumidores: el `IdempotencyStore` de tres
+ * estados del kernel, con la llave de {@link ProcessedMessageKey}, más la
+ * retención de lo terminado.
  *
- * - `claim` answers `acquired` (with a claim token and a lease), `in-progress`
- *   (another delivery is running the handler) or `completed`.
- * - The dispatcher asks for a lease of at least the queue visibility timeout
- *   (`minLeaseMs`), so a redelivery while the first handler still runs finds the
- *   claim `in-progress` and is left for redelivery instead of acked.
- * - `complete` and `release` only accept the current claim token.
+ * - `claim` responde `acquired` (con token y lease), `in-progress` (otro reparto
+ *   corre el manejador) o `completed`.
+ * - El dispatcher pide un lease de al menos el visibility timeout de la cola
+ *   (`minLeaseMs`), así un reparto repetido mientras el primero sigue corriendo
+ *   encuentra el claim `in-progress` y se deja para reentrega en vez de confirmarse.
+ * - `complete` y `release` solo aceptan el token vigente.
  *
- * A real adapter should `complete` in the same transaction as the handler's
- * effects, using the dispatcher's `runInContext`.
+ * Un adaptador real debe hacer `complete` en la misma transacción que los
+ * efectos del manejador, con el `runInContext` del dispatcher.
  */
-export type ProcessedMessageStore = IdempotencyStore<ProcessedMessage>;
-
-/** Idempotency key of `(consumer, message id)`: a canonical JSON array, so no separator can collide. */
-export function processedMessageKey(consumer: string, id: string): string {
-  return canonicalJson([consumer, id]);
-}
-
-/** In-memory adapter, suitable for tests and local runs. */
-export class InMemoryProcessedMessageStore
-  extends InMemoryIdempotencyStore<ProcessedMessage>
-  implements ProcessedMessageStore
-{
-  constructor(
-    clock: Clock = new SystemClock(),
-    ids: IdGenerator = new UuidV7IdGenerator(),
-  ) {
-    super(clock, ids);
-  }
+export abstract class ProcessedMessageStore extends IdempotencyStore<ProcessedMessage> {
+  /** Borra los mensajes terminados antes de `before`. Devuelve cuántos eliminó. */
+  abstract purgeCompleted(before: Date): Promise<number>;
 }

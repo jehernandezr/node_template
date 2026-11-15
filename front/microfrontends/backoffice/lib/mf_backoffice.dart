@@ -34,52 +34,52 @@ final MicrofrontendManifest backofficeManifest = MicrofrontendManifest(
     ),
   ],
   screens: [
-    ScreenRoute(
-      path: BackofficePaths.root,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) => screens.overviewPage(scope),
+    ScreenRoute.deferred(
+      BackofficePaths.root,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.BackofficeScreens.overview(scope),
       routes: [
-        ScreenRoute(
-          path: BackofficePaths.tenantsSegment,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) => screens.tenantsPage(scope),
+        ScreenRoute.deferred(
+          BackofficePaths.tenantsSegment,
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.BackofficeScreens.tenants(scope),
           routes: [
-            ScreenRoute(
-              path: ':${BackofficePaths.idParam}',
-              loadLibrary: screens.loadLibrary,
-              builder: (scope, {params = const {}}) => screens.tenantDetailPage(
+            ScreenRoute.deferred(
+              ':${BackofficePaths.idParam}',
+              library: screens.loadLibrary,
+              build: (scope, params) => screens.BackofficeScreens.tenantDetail(
                 scope,
-                params[BackofficePaths.idParam] ?? '',
+                params.require(BackofficePaths.idParam),
               ),
             ),
           ],
         ),
-        ScreenRoute(
-          path: BackofficePaths.sagasSegment,
+        ScreenRoute.deferred(
+          BackofficePaths.sagasSegment,
           access: backofficeOperationsReadAccess,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) => screens.sagasPage(scope),
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.BackofficeScreens.sagas(scope),
           routes: [
-            ScreenRoute(
-              path: ':${BackofficePaths.idParam}',
-              loadLibrary: screens.loadLibrary,
-              builder: (scope, {params = const {}}) => screens.sagaDetailPage(
+            ScreenRoute.deferred(
+              ':${BackofficePaths.idParam}',
+              library: screens.loadLibrary,
+              build: (scope, params) => screens.BackofficeScreens.sagaDetail(
                 scope,
-                params[BackofficePaths.idParam] ?? '',
+                params.require(BackofficePaths.idParam),
               ),
             ),
           ],
         ),
-        ScreenRoute(
-          path: BackofficePaths.dlqSegment,
+        ScreenRoute.deferred(
+          BackofficePaths.dlqSegment,
           access: backofficeOperationsReadAccess,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) => screens.dlqPage(scope),
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.BackofficeScreens.dlq(scope),
           routes: [
-            ScreenRoute(
-              path: ':${BackofficePaths.queueParam}',
-              loadLibrary: screens.loadLibrary,
-              builder: (scope, {params = const {}}) => screens.dlqPage(
+            ScreenRoute.deferred(
+              ':${BackofficePaths.queueParam}',
+              library: screens.loadLibrary,
+              build: (scope, params) => screens.BackofficeScreens.dlq(
                 scope,
                 queue: params[BackofficePaths.queueParam],
               ),

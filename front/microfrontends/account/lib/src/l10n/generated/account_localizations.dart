@@ -444,6 +444,12 @@ abstract class AccountLocalizations {
   /// **'Al aceptar confirmas que revisaste este documento.'**
   String get reviewNotice;
 
+  /// No description provided for @reviewDialogMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Versión {version}. Al aceptar confirmas que revisaste este documento.'**
+  String reviewDialogMessage(String version);
+
   /// No description provided for @agreementAccepted.
   ///
   /// In es, this message translates to:

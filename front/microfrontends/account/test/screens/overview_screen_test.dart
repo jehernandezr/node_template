@@ -1,13 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mf_account/src/shared/types/account_types.dart';
 import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/screens.dart';
+import 'package:mf_account/src/screens/widgets/account_widgets.dart';
+import 'package:mf_account/src/shared/types/account_types.dart';
+import 'package:test_utils/test_utils.dart';
 import 'package:ui/ui.dart';
 
 import '../utils/test_app.dart';
 
 class _FailingRepository extends FakeAccountRepository {
-  _FailingRepository(this.error) : super(delay: Duration.zero);
+  _FailingRepository(this.error) : super();
 
   final Object error;
 
@@ -60,6 +62,7 @@ void main() {
   testWidgets('un ApiErrorException muestra el código y la traza', (
     tester,
   ) async {
+    final es = await loadEs();
     final shared = await loadSharedEs();
     await tester.pumpWidget(
       testApp(
@@ -71,7 +74,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(ErrorView), findsOneWidget);
-    expect(find.text(shared.error_platform_auth_forbidden), findsOneWidget);
+    expect(find.text(es.loadError), findsOneWidget);
     expect(
       find.textContaining('${shared.errorCodeLabel}: PLATFORM.AUTH.FORBIDDEN'),
       findsOneWidget,
@@ -88,7 +91,7 @@ void main() {
     await tester.pumpWidget(
       testApp(
         AccountOverviewScreen(
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
           onSignOut: () async => signOuts++,
         ),
       ),
@@ -98,5 +101,44 @@ void main() {
     await tester.tap(find.text(shared.actionSignOut));
     await tester.pumpAndSettle();
     expect(signOuts, 1);
+  });
+
+  testWidgets('meets the accessibility guidelines', (tester) async {
+    await tester.pumpWidget(
+      testApp(
+        AccountOverviewScreen(
+          repository: FakeAccountRepository(),
+          onSignOut: () async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await expectAccessible(tester);
+  });
+
+  testWidgets('keeps the list centered and narrow on wide windows', (
+    tester,
+  ) async {
+    await pumpAtWidths(
+      tester,
+      testApp(
+        AccountOverviewScreen(
+          repository: FakeAccountRepository(),
+          onSignOut: () async {},
+        ),
+      ),
+      widths: const [320, 800, 1280],
+      check: (width) async {
+        await tester.pumpAndSettle();
+        final card = find.byType(AccountRowCard).first;
+        expect(
+          tester.getSize(card).width,
+          lessThanOrEqualTo(AppLayout.readingWidth),
+        );
+        if (width == 1280) {
+          expect(tester.getCenter(card).dx, closeTo(640, 1));
+        }
+      },
+    );
   });
 }

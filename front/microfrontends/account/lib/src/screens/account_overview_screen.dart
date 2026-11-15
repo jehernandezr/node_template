@@ -8,11 +8,12 @@ import '../l10n/generated/account_localizations.dart';
 import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 import '../shared/utils/account_paths.dart';
+import 'account_overview_controller.dart';
 import 'widgets/account_widgets.dart';
 
-/// Resumen del perfil con enlaces a las secciones de la cuenta y cierre de
-/// sesión. El perfil y las secciones que el repositorio no sirve no aparecen.
-class AccountOverviewScreen extends StatefulWidget {
+/// Profile summary with links to the account sections and sign-out. The
+/// profile and the sections the repository does not serve are left out.
+class AccountOverviewScreen extends StatelessWidget {
   const AccountOverviewScreen({
     super.key,
     required this.repository,
@@ -21,111 +22,115 @@ class AccountOverviewScreen extends StatefulWidget {
 
   final AccountRepository repository;
 
-  /// Cierra la sesión del usuario. La implementa el shell.
+  /// Signs the user out. The shell implements it.
   final Future<void> Function() onSignOut;
 
   @override
-  State<AccountOverviewScreen> createState() => _AccountOverviewScreenState();
+  Widget build(BuildContext context) =>
+      ControllerBuilder<AccountOverviewController>(
+        create: (context) => AccountOverviewController(repository)..start(),
+        builder: (context, controller) => AppPage(
+          title: AccountLocalizations.of(context).overviewTitle,
+          body: AsyncValueView<AccountProfile?>(
+            value: controller.profile,
+            errorMessage: AccountLocalizations.of(context).loadError,
+            onRetry: controller.start,
+            data: (profile) => _OverviewList(
+              profile: profile,
+              showSecurity: controller.can(AccountCapability.security),
+              showAgreements: controller.can(AccountCapability.agreements),
+              onSignOut: onSignOut,
+            ),
+          ),
+        ),
+      );
 }
 
-class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
-  AsyncValue<AccountProfile?> _profile = const AsyncValue.loading();
+class _OverviewList extends StatelessWidget {
+  const _OverviewList({
+    required this.profile,
+    required this.showSecurity,
+    required this.showAgreements,
+    required this.onSignOut,
+  });
 
-  bool _can(AccountCapability capability) =>
-      widget.repository.capabilities.contains(capability);
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    if (!_can(AccountCapability.profile)) {
-      setState(() => _profile = const AsyncValue.data(null));
-      return;
-    }
-    final result = await AsyncValue.guard<AccountProfile?>(
-      widget.repository.loadProfile,
-    );
-    if (!mounted) return;
-    setState(() => _profile = result);
-  }
-
-  void _reload() {
-    setState(() => _profile = const AsyncValue.loading());
-    _load();
-  }
+  final AccountProfile? profile;
+  final bool showSecurity;
+  final bool showAgreements;
+  final Future<void> Function() onSignOut;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AccountLocalizations.of(context);
-    return AppPage(
-      title: l10n.overviewTitle,
-      body: PlatformScreen(
-        compact: (_) => AccountAsyncView<AccountProfile?>(
-          value: _profile,
-          onRetry: _reload,
-          data: (profile) => ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            children: [
-              if (profile != null) ...[
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        profile.name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(profile.email),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        l10n.organizationLine(profile.tenantName),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-              Text(
-                l10n.manageSection,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _SectionLink(
-                title: l10n.sessionsTitle,
-                message: l10n.sessionsLinkMessage,
-                section: AccountSection.sessions,
-              ),
-              _SectionLink(
-                title: l10n.devicesLinkTitle,
-                message: l10n.devicesLinkMessage,
-                section: AccountSection.devices,
-              ),
-              if (_can(AccountCapability.security))
-                _SectionLink(
-                  title: l10n.securityLinkTitle,
-                  message: l10n.securityLinkMessage,
-                  section: AccountSection.security,
-                ),
-              if (_can(AccountCapability.agreements))
-                _SectionLink(
-                  title: l10n.agreementsLinkTitle,
-                  message: l10n.agreementsLinkMessage,
-                  section: AccountSection.agreements,
-                ),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: AppLocalizations.of(context).actionSignOut,
-                variant: AppButtonVariant.secondary,
-                onPressed: () => widget.onSignOut(),
-              ),
-            ],
+    return ContentColumn(
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          if (profile case final profile?) ...[
+            _ProfileCard(profile: profile),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          Text(
+            l10n.manageSection,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        ),
+          const SizedBox(height: AppSpacing.sm),
+          _SectionLink(
+            title: l10n.sessionsTitle,
+            message: l10n.sessionsLinkMessage,
+            section: AccountSection.sessions,
+          ),
+          _SectionLink(
+            title: l10n.devicesLinkTitle,
+            message: l10n.devicesLinkMessage,
+            section: AccountSection.devices,
+          ),
+          if (showSecurity)
+            _SectionLink(
+              title: l10n.securityLinkTitle,
+              message: l10n.securityLinkMessage,
+              section: AccountSection.security,
+            ),
+          if (showAgreements)
+            _SectionLink(
+              title: l10n.agreementsLinkTitle,
+              message: l10n.agreementsLinkMessage,
+              section: AccountSection.agreements,
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: AppLocalizations.of(context).actionSignOut,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => onSignOut(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.profile});
+
+  final AccountProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(profile.name, style: theme.textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Text(profile.email),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            AccountLocalizations.of(context)
+                .organizationLine(profile.tenantName),
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }

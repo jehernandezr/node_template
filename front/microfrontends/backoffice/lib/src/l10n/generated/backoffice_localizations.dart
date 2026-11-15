@@ -138,12 +138,6 @@ abstract class BackofficeLocalizations {
   /// **'No encontramos este registro.'**
   String get notFound;
 
-  /// No description provided for @filterAll.
-  ///
-  /// In es, this message translates to:
-  /// **'Todos'**
-  String get filterAll;
-
   /// No description provided for @filterStatus.
   ///
   /// In es, this message translates to:
@@ -155,30 +149,6 @@ abstract class BackofficeLocalizations {
   /// In es, this message translates to:
   /// **'Región'**
   String get filterRegion;
-
-  /// No description provided for @actor.
-  ///
-  /// In es, this message translates to:
-  /// **'Actor'**
-  String get actor;
-
-  /// No description provided for @action.
-  ///
-  /// In es, this message translates to:
-  /// **'Acción'**
-  String get action;
-
-  /// No description provided for @entity.
-  ///
-  /// In es, this message translates to:
-  /// **'Entidad'**
-  String get entity;
-
-  /// No description provided for @traceId.
-  ///
-  /// In es, this message translates to:
-  /// **'Trace ID'**
-  String get traceId;
 
   /// No description provided for @auditTitle.
   ///
@@ -252,30 +222,6 @@ abstract class BackofficeLocalizations {
   /// **'Detalle del tenant'**
   String get tenantDetailTitle;
 
-  /// No description provided for @tenantPlan.
-  ///
-  /// In es, this message translates to:
-  /// **'Plan'**
-  String get tenantPlan;
-
-  /// No description provided for @tenantShardGroup.
-  ///
-  /// In es, this message translates to:
-  /// **'Grupo de shards'**
-  String get tenantShardGroup;
-
-  /// No description provided for @tenantUsers.
-  ///
-  /// In es, this message translates to:
-  /// **'Usuarios'**
-  String get tenantUsers;
-
-  /// No description provided for @tenantRegion.
-  ///
-  /// In es, this message translates to:
-  /// **'Región'**
-  String get tenantRegion;
-
   /// No description provided for @tenantStatusActive.
   ///
   /// In es, this message translates to:
@@ -336,30 +282,6 @@ abstract class BackofficeLocalizations {
   /// **'Detalle de la saga'**
   String get sagaDetailTitle;
 
-  /// No description provided for @sagaType.
-  ///
-  /// In es, this message translates to:
-  /// **'Tipo'**
-  String get sagaType;
-
-  /// No description provided for @sagaTenant.
-  ///
-  /// In es, this message translates to:
-  /// **'Tenant'**
-  String get sagaTenant;
-
-  /// No description provided for @sagaCurrentStep.
-  ///
-  /// In es, this message translates to:
-  /// **'Último paso'**
-  String get sagaCurrentStep;
-
-  /// No description provided for @sagaUpdated.
-  ///
-  /// In es, this message translates to:
-  /// **'Actualizada'**
-  String get sagaUpdated;
-
   /// No description provided for @sagaSteps.
   ///
   /// In es, this message translates to:
@@ -371,12 +293,6 @@ abstract class BackofficeLocalizations {
   /// In es, this message translates to:
   /// **'La saga aún no ha ejecutado pasos.'**
   String get sagaStepsEmpty;
-
-  /// No description provided for @sagaErrorCode.
-  ///
-  /// In es, this message translates to:
-  /// **'Código de error'**
-  String get sagaErrorCode;
 
   /// No description provided for @sagaManualActions.
   ///
@@ -528,12 +444,6 @@ abstract class BackofficeLocalizations {
   /// **'No hay colas configuradas.'**
   String get dlqEmpty;
 
-  /// No description provided for @dlqMessagesTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Mensajes'**
-  String get dlqMessagesTitle;
-
   /// No description provided for @dlqSelectQueue.
   ///
   /// In es, this message translates to:
@@ -545,24 +455,6 @@ abstract class BackofficeLocalizations {
   /// In es, this message translates to:
   /// **'La cola no tiene mensajes.'**
   String get dlqMessagesEmpty;
-
-  /// No description provided for @dlqMessageType.
-  ///
-  /// In es, this message translates to:
-  /// **'Tipo'**
-  String get dlqMessageType;
-
-  /// No description provided for @dlqFirstError.
-  ///
-  /// In es, this message translates to:
-  /// **'Primer error'**
-  String get dlqFirstError;
-
-  /// No description provided for @dlqSentAt.
-  ///
-  /// In es, this message translates to:
-  /// **'Enviado'**
-  String get dlqSentAt;
 
   /// No description provided for @dlqRedrive.
   ///
@@ -599,6 +491,132 @@ abstract class BackofficeLocalizations {
   /// In es, this message translates to:
   /// **'{count, plural, =1{1 mensaje redistribuido.} other{{count} mensajes redistribuidos.}}'**
   String dlqRedriveDone(int count);
+
+  /// No description provided for @navSectionsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Secciones del backoffice'**
+  String get navSectionsLabel;
+
+  /// No description provided for @valueNone.
+  ///
+  /// In es, this message translates to:
+  /// **'-'**
+  String get valueNone;
+
+  /// No description provided for @filterStatusAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get filterStatusAll;
+
+  /// No description provided for @filterRegionAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas'**
+  String get filterRegionAll;
+
+  /// No description provided for @auditActorLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Actor: {actor}'**
+  String auditActorLine(String actor);
+
+  /// No description provided for @auditEntityLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Entidad: {entity}'**
+  String auditEntityLine(String entity);
+
+  /// No description provided for @traceIdLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Trace ID: {traceId}'**
+  String traceIdLine(String traceId);
+
+  /// No description provided for @overviewCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count}'**
+  String overviewCount(int count);
+
+  /// No description provided for @tenantPlanLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan: {plan}'**
+  String tenantPlanLine(String plan);
+
+  /// No description provided for @tenantRegionLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Región: {region}'**
+  String tenantRegionLine(String region);
+
+  /// No description provided for @tenantShardGroupLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Grupo de shards: {shardGroup}'**
+  String tenantShardGroupLine(String shardGroup);
+
+  /// No description provided for @tenantUsersLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuarios: {count}'**
+  String tenantUsersLine(int count);
+
+  /// No description provided for @sagaTypeLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo: {type}'**
+  String sagaTypeLine(String type);
+
+  /// No description provided for @sagaTenantLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Tenant: {tenantId}'**
+  String sagaTenantLine(String tenantId);
+
+  /// No description provided for @sagaCurrentStepLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Último paso: {operation}'**
+  String sagaCurrentStepLine(String operation);
+
+  /// No description provided for @sagaUpdatedLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizada: {updatedAt}'**
+  String sagaUpdatedLine(String updatedAt);
+
+  /// No description provided for @sagaErrorCodeLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de error: {code}'**
+  String sagaErrorCodeLine(String code);
+
+  /// No description provided for @dlqMessagesHeading.
+  ///
+  /// In es, this message translates to:
+  /// **'Mensajes: {queue}'**
+  String dlqMessagesHeading(String queue);
+
+  /// No description provided for @dlqMessageTypeLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo: {type}'**
+  String dlqMessageTypeLine(String type);
+
+  /// No description provided for @dlqFirstErrorLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer error: {error}'**
+  String dlqFirstErrorLine(String error);
+
+  /// No description provided for @dlqSentAtLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviado: {sentAt}'**
+  String dlqSentAtLine(String sentAt);
 }
 
 class _BackofficeLocalizationsDelegate

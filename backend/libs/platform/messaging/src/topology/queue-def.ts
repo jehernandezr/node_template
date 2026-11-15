@@ -1,29 +1,29 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { MessagingError } from '../errors/messaging-error.js';
-import { RetryPolicy } from './retry-policy.js';
 import type { TopicDef } from './topic-def.js';
+import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 
-/** A queue's subscription to a topic. An empty `filterTypes` delivers every type. */
+/** Suscripción de una cola a un tópico. Una lista de tipos vacía entrega todos los tipos. */
 export interface Subscription {
   readonly topic: TopicDef;
   readonly filterTypes: readonly string[];
 }
 
-/** Options for {@link QueueDef.subscribesTo}. */
+/** Opciones de {@link QueueDef.subscribesTo}. */
 export interface SubscriptionOptions {
-  /** Message types to deliver; omitted or empty means every type on the topic. */
+  /** Tipos de mensaje a entregar; si se omite o está vacía, entran todos los del tópico. */
   readonly types?: readonly string[];
 }
 
-/** Options for {@link QueueDef.deadLetter}. Every queue needs a dead-letter queue. */
+/** Opciones de {@link QueueDef.deadLetter}. Toda cola necesita su cola de errores. */
 export interface DeadLetterOptions {
-  /** Receives after which the message moves to the DLQ. Must be >= the retry attempts. */
+  /** Recepciones tras las cuales el mensaje pasa a la cola de errores. Debe ser al menos los intentos de reintento. */
   readonly maxReceiveCount: number;
-  /** 1 to 14. Defaults to 14. */
+  /** Entre 1 y 14. Por defecto, 14. */
   readonly retentionDays?: number;
 }
 
-/** Resolved dead-letter configuration of a queue. */
+/** Configuración resuelta de la cola de errores de una cola. */
 export interface DeadLetterConfig {
   readonly maxReceiveCount: number;
   readonly retentionDays: number;
@@ -32,15 +32,15 @@ export interface DeadLetterConfig {
 const DEFAULT_VISIBILITY_TIMEOUT_SECONDS = 30;
 const DEFAULT_DLQ_RETENTION_DAYS = 14;
 
-/** Retry policy of queues that do not call `retry()`. */
-export const DEFAULT_RETRY_POLICY = RetryPolicy.exponential({
-  maxAttempts: 5,
-  baseMs: 1_000,
-  maxMs: 300_000,
-  jitter: true,
-});
+/** Política de reintento de las colas que no llaman a `retry()`. */
+export const DEFAULT_RETRY_POLICY = new RetryPolicy(
+  5,
+  1_000,
+  300_000,
+  BackoffStrategy.FullJitter,
+);
 
-/** Declares a queue with its subscriptions, retry and dead-letter settings. Fluent. */
+/** Declara una cola con sus suscripciones, reintentos y cola de errores. API fluida. */
 export class QueueDef {
   readonly name: string;
 
@@ -54,26 +54,26 @@ export class QueueDef {
     this.name = name;
   }
 
-  /** Subscribes this queue to a topic, optionally only for some message types. */
+  /** Suscribe la cola a un tópico, opcionalmente solo para algunos tipos de mensaje. */
   subscribesTo(topic: TopicDef, options: SubscriptionOptions = {}): this {
     this.subs.push({ topic, filterTypes: [...(options.types ?? [])] });
     return this;
   }
 
-  /** Sets the retry policy used when handlers fail transiently. */
+  /** Fija la política de reintento que se usa cuando un manejador falla de forma transitoria. */
   retry(policy: RetryPolicy): this {
     this.policy = policy;
     return this;
   }
 
-  /** Configures the dead-letter queue (`<name>-dlq`). */
+  /** Configura la cola de errores (`<nombre>-dlq`). */
   deadLetter(options: DeadLetterOptions): this {
     if (
       !Number.isInteger(options.maxReceiveCount) ||
       options.maxReceiveCount < 1
     ) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingInvalidTopology,
+        MessagingErrorCode.InvalidTopology,
         `queue "${this.name}": maxReceiveCount must be an integer >= 1`,
       );
     }
@@ -84,17 +84,17 @@ export class QueueDef {
     return this;
   }
 
-  /** Marks the queue as ordered (FIFO). */
+  /** Marca la cola como ordenada (FIFO). */
   fifo(): this {
     this.fifoEnabled = true;
     return this;
   }
 
-  /** Sets the visibility timeout in seconds. Range is checked by topology validation. */
+  /** Fija el visibility timeout en segundos. El rango lo revisa la validación de la topología. */
   visibilityTimeout(seconds: number): this {
     if (!(seconds > 0) || !Number.isFinite(seconds)) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingInvalidTopology,
+        MessagingErrorCode.InvalidTopology,
         `queue "${this.name}": visibility timeout must be > 0 seconds`,
       );
     }
@@ -110,17 +110,17 @@ export class QueueDef {
     return this.visibilitySeconds;
   }
 
-  /** Explicit policy, or {@link DEFAULT_RETRY_POLICY} when none was set. */
+  /** Política explícita, o {@link DEFAULT_RETRY_POLICY} si no se fijó ninguna. */
   get retryPolicy(): RetryPolicy {
     return this.policy ?? DEFAULT_RETRY_POLICY;
   }
 
-  /** Dead-letter configuration, or `null` when missing (a validation error). */
+  /** Configuración de la cola de errores, o `null` si falta (error de validación). */
   get deadLetterConfig(): DeadLetterConfig | null {
     return this.dlq;
   }
 
-  /** Name of the dead-letter queue, before any `.fifo` suffix handling. */
+  /** Nombre de la cola de errores, antes de tratar el sufijo `.fifo`. */
   get dlqName(): string {
     return `${this.name}-dlq`;
   }

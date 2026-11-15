@@ -6,18 +6,21 @@ import 'package:mf_backoffice/src/shared/enums/backoffice_enums.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'utils/harness.dart';
+import 'utils/backoffice_harness.dart';
 
 final _es = lookupBackofficeLocalizations(const Locale('es'));
 
 void main() {
-  setUp(resetDeferredPageCache);
+  late BackofficeHarness harness;
+
+  setUp(() => harness = BackofficeHarness());
 
   test('each scope gets its own repository and keeps its own writes', () async {
-    final first = newScope();
-    final second = newScope();
+    final first = harness.newScope();
+    final second = harness.newScope();
 
-    BackofficeRepository create(ShellServices _) => FakeBackofficeRepository();
+    BackofficeRepository create(ShellServices _) =>
+        FakeBackofficeRepository(behavior: DemoBehavior());
     final repoFirst = first.get<BackofficeRepository>(create);
     final repoSecond = second.get<BackofficeRepository>(create);
 
@@ -40,8 +43,8 @@ void main() {
   test(
     'closing the scope disposes its repository as a ScopedResource',
     () async {
-      final scope = newScope();
-      final repository = FakeBackofficeRepository();
+      final scope = harness.newScope();
+      final repository = FakeBackofficeRepository(behavior: DemoBehavior());
       scope.get<BackofficeRepository>((_) => repository);
       expect(repository.isDisposed, isFalse);
 
@@ -49,8 +52,9 @@ void main() {
 
       expect(repository.isDisposed, isTrue);
       expect(
-        () =>
-            scope.get<BackofficeRepository>((_) => FakeBackofficeRepository()),
+        () => scope.get<BackofficeRepository>(
+          (_) => FakeBackofficeRepository(behavior: DemoBehavior()),
+        ),
         throwsStateError,
       );
     },
@@ -59,8 +63,8 @@ void main() {
   testWidgets('a page built with a new scope does not see the previous one', (
     tester,
   ) async {
-    final previous = newScope();
-    final resolved = FakeBackofficeRepository();
+    final previous = harness.newScope();
+    final resolved = FakeBackofficeRepository(behavior: DemoBehavior());
     previous.get<BackofficeRepository>((_) => resolved);
     await resolved.applySagaAction(
       sagaId: 's-102',
@@ -68,17 +72,17 @@ void main() {
       reason: 'Resuelto',
     );
 
-    await pumpBackoffice(
+    await harness.pump(
       tester,
       location: '/backoffice/sagas/s-102',
       scope: previous,
     );
     expect(find.text(_es.sagaStatusCompleted), findsOneWidget);
 
-    await pumpBackoffice(
+    await harness.pump(
       tester,
       location: '/backoffice/sagas/s-102',
-      scope: newScope(),
+      scope: harness.newScope(),
     );
     expect(find.text(_es.sagaStatusCompleted), findsNothing);
     expect(find.text(_es.sagaStatusRequiresIntervention), findsOneWidget);

@@ -209,6 +209,11 @@ class AccountLocalizationsEn extends AccountLocalizations {
       'By accepting you confirm that you reviewed this document.';
 
   @override
+  String reviewDialogMessage(String version) {
+    return 'Version $version. By accepting you confirm that you reviewed this document.';
+  }
+
+  @override
   String get agreementAccepted => 'Agreement accepted.';
 
   @override

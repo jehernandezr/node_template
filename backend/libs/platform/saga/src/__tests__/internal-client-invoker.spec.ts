@@ -8,19 +8,19 @@ import { context as otelContext } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import {
   ContractRegistry,
-  InMemoryProcessedOperationStore,
-  InProcessTransport,
-  InternalClient,
-  InternalRouter,
+  OperationHandler,
   type CallMeta,
+  type HandlerResult,
+  type OperationOutputOf,
 } from '@platform/internal-api';
+import { InProcessInternalApi } from '@platform/internal-api/test-utils';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import {
   contextFromTraceparent,
   currentTraceparent,
   parseTraceparent,
 } from '@platform/observability';
-import { CallOutcome, type ClaimRequest } from '@platform/primitives';
+import { CallOutcome } from '@platform/primitives';
 import { z } from 'zod';
 import { SagaDefinition } from '../definition/saga-definition.js';
 import type { SagaFlow } from '../definition/saga-flow.js';
@@ -73,6 +73,21 @@ const Notify = defineOperation({
   ...FAST,
 });
 
+/** Answers each call with what the test scripts, so a test can count or change it. */
+class ScriptedHandler<
+  S extends OperationDefinition,
+> extends OperationHandler<S> {
+  constructor(
+    private readonly answer: () => Promise<CallOutcome<OperationOutputOf<S>>>,
+  ) {
+    super();
+  }
+
+  async handle(): Promise<HandlerResult<OperationOutputOf<S>>> {
+    return { outcome: await this.answer() };
+  }
+}
+
 interface State {
   name: string;
   accountId?: string;
@@ -103,31 +118,33 @@ const context = {
 
 function wire() {
   const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
-  const processed = new InMemoryProcessedOperationStore(
+  const api = new InProcessInternalApi({
     clock,
-    new SequentialIdGenerator(),
-  );
-  const claims = jest.spyOn(processed, 'claim');
-  const router = new InternalRouter({ processed, clock });
+    ids: new SequentialIdGenerator(),
+    operations: [CreateAccount, RemoveAccount, Notify],
+  });
+  const claims = jest.spyOn(api.store, 'claim');
   const created = jest.fn(async () =>
     CallOutcome.success({ accountId: 'acc-1' }),
   );
-  router.register(CreateAccount, created);
-  router.register(RemoveAccount, async () =>
-    CallOutcome.success({ removed: true }),
+  api.router.register(
+    CreateAccount,
+    new ScriptedHandler<typeof CreateAccount>(created),
+  );
+  api.router.register(
+    RemoveAccount,
+    new ScriptedHandler<typeof RemoveAccount>(async () =>
+      CallOutcome.success({ removed: true }),
+    ),
   );
   const notified = jest.fn(async () => CallOutcome.success({ sent: true }));
-  router.register(Notify, notified);
+  api.router.register(Notify, new ScriptedHandler<typeof Notify>(notified));
 
-  const registry = new ContractRegistry();
-  registry.register(CreateAccount, RemoveAccount, Notify);
-  const transport = new InProcessTransport(router);
-  const sent = jest.spyOn(transport, 'invoke');
-  /** A new client per process, as after a restart. */
+  const registry = api.registry;
+  const sent = jest.spyOn(api.transport, 'invoke');
+  /** A new invoker per process, as after a restart. */
   const invoker = (): InternalClientInvoker =>
-    new InternalClientInvoker(
-      new InternalClient({ transport, registry, clock }),
-    );
+    new InternalClientInvoker(api.client);
 
   const store = new CrashingSagaStore();
   const sagas = new Map<string, SagaDefinition<unknown>>([
@@ -156,10 +173,10 @@ function wire() {
 }
 
 function keysOf(
-  claims: jest.SpyInstance<unknown, [string, ClaimRequest]>,
+  calls: readonly (readonly [string, ...unknown[]])[],
   operationId: string,
 ): string[] {
-  return claims.mock.calls
+  return calls
     .map(([key]) => key)
     .filter((key) => (JSON.parse(key) as string[])[1] === operationId);
 }
@@ -187,7 +204,7 @@ describe('InternalClientInvoker with SagaEngine', () => {
 
     expect(report.resumed).toEqual(['s1']);
     expect((await store.get('s1'))?.status).toBe(SagaStatus.Completed);
-    const keys = keysOf(claims, CreateAccount.id);
+    const keys = keysOf(claims.mock.calls, CreateAccount.id);
     expect(keys).toEqual([
       '["t-1","acct.create.v1","s1:0:forward"]',
       '["t-1","acct.create.v1","s1:0:forward"]',
@@ -239,6 +256,15 @@ describe('InternalClientInvoker with SagaEngine', () => {
   });
 });
 
+/** Client that only exposes a catalogue: startup validation never calls it. */
+class StaticClient {
+  constructor(readonly contracts: ContractRegistry) {}
+
+  callById(): Promise<CallOutcome<unknown>> {
+    return Promise.resolve(CallOutcome.success({}));
+  }
+}
+
 /** Reads the issue codes of the `SagaError` thrown by `build`. */
 function issueCodes(build: () => unknown): unknown[] {
   try {
@@ -288,15 +314,10 @@ describe('SagaEngine startup validation against the contracts', () => {
     const clock = new FixedClock(new Date('2026-01-01T00:00:00.000Z'));
     const registry = new ContractRegistry();
     registry.register(...registered);
-    const client = new InternalClient({
-      transport: { invoke: async () => CallOutcome.success({}) },
-      registry,
-      clock,
-    });
     return () =>
       new SagaEngine({
         store: new InMemorySagaStore(),
-        invoker: new InternalClientInvoker(client),
+        invoker: new InternalClientInvoker(new StaticClient(registry)),
         registry: new Map([[saga.type, saga]]),
         owner: 'node-1',
         clock,
@@ -317,12 +338,7 @@ describe('SagaEngine startup validation against the contracts', () => {
     const build = () =>
       new SagaEngine({
         store: new InMemorySagaStore(),
-        invoker: new InternalClientInvoker(
-          new InternalClient({
-            transport: { invoke: async () => CallOutcome.success({}) },
-            registry,
-          }),
-        ),
+        invoker: new InternalClientInvoker(new StaticClient(registry)),
         registry: new Map([['onboarding', new OnboardingSaga()]]),
         owner: 'node-1',
         maxStepDurationMs: 2_000,
@@ -391,12 +407,7 @@ describe('SagaEngine startup validation against the contracts', () => {
     try {
       new SagaEngine({
         store: new InMemorySagaStore(),
-        invoker: new InternalClientInvoker(
-          new InternalClient({
-            transport: { invoke: async () => CallOutcome.success({}) },
-            registry,
-          }),
-        ),
+        invoker: new InternalClientInvoker(new StaticClient(registry)),
         registry: new Map([['welcome', new OnboardingSaga()]]),
         owner: 'node-1',
         maxStepDurationMs: 2_000,

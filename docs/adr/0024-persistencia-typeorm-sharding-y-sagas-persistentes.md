@@ -24,6 +24,18 @@ La revisión del 14 de noviembre dejó `@platform/persistence` solo sobre el dri
 - Las lecturas van a la réplica, salvo dentro de una transacción o con `readPrimary()`. Una transacción toca un solo shard: `ShardScope` con `requireScope` y el error `CROSS_SHARD_TX` lo hacen cumplir.
 - Las migraciones son por servicio, en `migrations/shard` y `migrations/catalog`. Se generan con la CLI de TypeORM y las aplica el binario `migrate` con `ShardedMigrationRunner` bajo `pg_advisory_lock`. Cada migración tiene `up` y `down`.
 
+### Cableado y API
+
+- Los repositorios usan una API asíncrona: `this.read(fn)`, `this.readPrimary(fn)` y `this.write(fn)` reciben una función que recibe el `EntityManager` y devuelve su resultado. `this.tenantId()` da el tenant dueño de las consultas propias del repositorio. El `this.manager()` síncrono del ejemplo del diseño no existe, porque el router resuelve el shard de forma asíncrona.
+- `RepositoryKit` reúne lo que un repositorio necesita además de su mapper: la declaración del módulo (`PersistenceFeature`), el proveedor de managers, el escritor optimista, el contexto y el `ShardScope`. `PersistenceModule.forFeature` arma la declaración con `entities` y `sharding` y la entrega al repositorio por inyección.
+- `ShardLister` es el puerto que lista los shards lógicos del servicio con su instancia. Lo implementa el directorio, y `forRoot` lo exige: sin él no arranca.
+- `requireScope` hace obligatorio un `ShardScope` activo. Sin scope, cada resolución falla con `PLATFORM.SHARDING.KEY_MISSING`. Con scope, la llave del bloque manda sobre el tenant del contexto.
+- La configuración `DB_*` cubre `DB_USER` y `DB_PASSWORD` (secreto) para todas las conexiones, `DB_SSL`, `DB_POOL_MAX`, `DB_STATEMENT_TIMEOUT_MS`, `DB_CATALOG_NAME` y `DB_CATALOG_INSTANCE` para el catálogo, y `DB_INSTANCES`, un objeto JSON que asocia cada instancia con su primario y sus réplicas de lectura.
+- El nombre de la base es el id del shard lógico. El catálogo se llama como indique `DB_CATALOG_NAME`.
+- El target `migration-generate` crea una base temporal, le aplica las migraciones existentes y compara el resultado con las entidades. La migración nueva contiene solo la diferencia.
+- Los patrones `like` e `ilike` del criterio llegan a la base sin escapar: quien llama escapa `%` y `_` con su utilidad.
+- El código viejo sobre `pg` vive en `persistence/src/legacy/` hasta que las tablas de la plataforma pasen a TypeORM.
+
 ## Consecuencias
 
 ### Positivas

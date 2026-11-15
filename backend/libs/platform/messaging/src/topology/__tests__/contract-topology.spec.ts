@@ -4,12 +4,13 @@ import {
   defineQueue,
   defineServiceContract,
   defineTopic,
-  PlatformErrorCode,
 } from '@contracts/platform';
+import { BackoffStrategy } from '@platform/primitives';
 import { z } from 'zod';
 import { MessageKind } from '../../contracts/message-contract.js';
 import { topologyFromContracts } from '../contract-topology.js';
-import { TargetKind } from '../route.js';
+import { TargetKind } from '../target-kind.enum.js';
+import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
 
 const TaskCreated = defineEvent({
   type: 'tasks.task.created.v1',
@@ -83,6 +84,7 @@ describe('topologyFromContracts', () => {
       maxAttempts: 3,
       baseMs: 500,
       maxMs: 10_000,
+      strategy: BackoffStrategy.FullJitter,
     });
     expect(queue?.deadLetterConfig).toEqual({
       maxReceiveCount: 4,
@@ -137,7 +139,7 @@ describe('topologyFromContracts', () => {
   it('fails when a sent command has no queue in the given contracts', () => {
     expect(() => topologyFromContracts([tasks, notifications])).toThrow(
       expect.objectContaining({
-        code: PlatformErrorCode.MessagingInvalidTopology,
+        code: MessagingErrorCode.InvalidTopology,
         message: expect.stringContaining('reports.report.generate.v1'),
       }),
     );

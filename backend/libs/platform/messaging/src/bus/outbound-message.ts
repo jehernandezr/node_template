@@ -1,11 +1,14 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import {
   type Clock,
   type IdGenerator,
   SystemClock,
   UuidV7IdGenerator,
 } from '@platform/kernel';
-import { currentTraceparent } from '@platform/observability';
+import {
+  Redactor,
+  TraceContextRestorer,
+  Tracing,
+} from '@platform/observability';
 import {
   type CommandDefinition,
   type EventDefinition,
@@ -13,54 +16,53 @@ import {
   type MessageInput,
   type MessageOutput,
 } from '../contracts/message-contract.js';
-import {
-  type MessageEnvelope,
-  createEnvelope,
-  toWireEnvelope,
-} from '../envelope/message-envelope.js';
+import { EnvelopeFactory } from '../envelope/envelope-factory.js';
+import { EnvelopeValidator } from '../envelope/envelope-validator.js';
+import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import { MessagingError } from '../errors/messaging-error.js';
 import type { OutboundTarget } from '../outbox/outbox.js';
-import type { RouteDef } from '../topology/route.js';
+import type { RouteDef } from '../topology/route-def.js';
 import type { Topology } from '../topology/topology.js';
 import {
   MAX_SEND_DELAY_MS,
   type PublishOptions,
   type SendOptions,
 } from './message-bus.js';
+import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 
-/** Longest `groupId` accepted by SNS and SQS FIFO. */
+/** Longitud máxima de `groupId` que aceptan SNS y SQS FIFO. */
 export const MAX_GROUP_ID_LENGTH = 128;
 
-/** SNS/SQS `MessageGroupId`: 1 to 128 printable ASCII characters, no spaces. */
+/** `MessageGroupId` de SNS y SQS: de 1 a 128 caracteres ASCII imprimibles, sin espacios. */
 const GROUP_ID = /^[\x21-\x7E]+$/;
 
-/** A validated message ready for a transport or the outbox. */
+/** Mensaje validado, listo para un transporte o para el outbox. */
 export interface OutboundMessage<T = unknown> {
   readonly envelope: MessageEnvelope<T>;
   readonly route: RouteDef;
   readonly target: OutboundTarget;
   readonly groupId?: string;
-  /** Only for commands. */
+  /** Solo en comandos. */
   readonly delayMs?: number;
 }
 
-/** Options of {@link OutboundMessageFactory}. */
+/** Opciones de {@link OutboundMessageFactory}. */
 export interface OutboundMessageFactoryOptions {
-  /** Value of the envelope `source` attribute. */
+  /** Valor del atributo `source` del sobre. */
   readonly source: string;
-  /** Clock for envelope times. Defaults to the system clock. */
+  /** Reloj de los tiempos del sobre. Por defecto, el del sistema. */
   readonly clock?: Clock;
-  /** Id generator for envelopes. Defaults to UUIDv7. */
+  /** Generador de ids de los sobres. Por defecto, UUIDv7. */
   readonly ids?: IdGenerator;
-  /** Source of the default `traceparent`. Defaults to `currentTraceparent()`. */
+  /** Fuente del `traceparent` por defecto. Por defecto, el del span activo. */
   readonly traceparent?: () => string | undefined;
 }
 
 /**
- * Builds the envelope of an event or command after checking everything a
- * transport would reject later: the route and its kind, the payload against
- * the contract, the FIFO group id, the delay and the size limit. Every
- * `MessageBus` adapter (memory, outbox, SNS/SQS) shares it.
+ * Arma el sobre de un evento o comando después de revisar todo lo que un
+ * transporte rechazaría más tarde: la ruta y su tipo, el payload contra el
+ * contrato, el id de grupo FIFO, la espera y el límite de tamaño. Lo comparten
+ * todos los adaptadores de `MessageBus` (memoria, outbox, SNS y SQS).
  */
 export class OutboundMessageFactory {
   private readonly topology: Topology;
@@ -68,16 +70,20 @@ export class OutboundMessageFactory {
   private readonly clock: Clock;
   private readonly ids: IdGenerator;
   private readonly traceparent: () => string | undefined;
+  private readonly envelopes: EnvelopeFactory;
+  private readonly validator = new EnvelopeValidator();
 
   constructor(topology: Topology, options: OutboundMessageFactoryOptions) {
     this.topology = topology;
     this.options = options;
     this.clock = options.clock ?? new SystemClock();
     this.ids = options.ids ?? new UuidV7IdGenerator();
-    this.traceparent = options.traceparent ?? currentTraceparent;
+    const restorer = new TraceContextRestorer(new Tracing(new Redactor()));
+    this.traceparent = options.traceparent ?? (() => restorer.current());
+    this.envelopes = new EnvelopeFactory(this.clock, this.ids);
   }
 
-  /** Validates and builds an event. */
+  /** Valida y arma un evento. */
   event<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
@@ -86,7 +92,7 @@ export class OutboundMessageFactory {
     return this.build(event, data, options, undefined);
   }
 
-  /** Validates and builds a command. */
+  /** Valida y arma un comando. */
   command<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,
@@ -108,23 +114,20 @@ export class OutboundMessageFactory {
     const parsed = contract.schema.safeParse(data);
     if (!parsed.success) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingInvalidPayload,
+        MessagingErrorCode.InvalidPayload,
         `invalid payload for "${contract.type}": ${parsed.error.message}`,
       );
     }
-    const envelope = toWireEnvelope(
-      createEnvelope(
-        {
-          type: contract.type,
-          source: this.options.source,
-          data: parsed.data as MessageOutput<M>,
-          subject: options.subject,
-          traceparent: options.traceparent ?? this.traceparent(),
-          tenantId: options.tenantId,
-          actorId: options.actorId,
-        },
-        { clock: this.clock, ids: this.ids },
-      ),
+    const envelope = this.validator.toWire(
+      this.envelopes.create({
+        type: contract.type,
+        source: this.options.source,
+        data: parsed.data as MessageOutput<M>,
+        subject: options.subject,
+        traceparent: options.traceparent ?? this.traceparent(),
+        tenantId: options.tenantId,
+        actorId: options.actorId,
+      }),
     );
     return {
       envelope,
@@ -143,7 +146,7 @@ export class OutboundMessageFactory {
     const route = this.topology.routeFor(contract.type);
     if (!route || route.kind !== contract.kind) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingUnknownRoute,
+        MessagingErrorCode.UnknownRoute,
         `no ${contract.kind} route for type "${contract.type}"`,
       );
     }
@@ -157,7 +160,7 @@ export class OutboundMessageFactory {
     if (groupId === undefined) {
       if (route.fifo) {
         throw new MessagingError(
-          PlatformErrorCode.MessagingInvalidOptions,
+          MessagingErrorCode.InvalidOptions,
           `"${route.type}" goes to the FIFO ${route.targetKind} "${route.target.name}" and needs a groupId`,
         );
       }
@@ -165,7 +168,7 @@ export class OutboundMessageFactory {
     }
     if (groupId.length > MAX_GROUP_ID_LENGTH || !GROUP_ID.test(groupId)) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingInvalidOptions,
+        MessagingErrorCode.InvalidOptions,
         `groupId must be 1 to ${MAX_GROUP_ID_LENGTH} printable ASCII characters without spaces`,
       );
     }
@@ -179,13 +182,13 @@ export class OutboundMessageFactory {
       delayMs > MAX_SEND_DELAY_MS
     ) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingInvalidOptions,
+        MessagingErrorCode.InvalidOptions,
         `delayMs must be between 0 and ${MAX_SEND_DELAY_MS}; longer delays need the scheduler`,
       );
     }
     if (delayMs > 0 && route.fifo) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingInvalidOptions,
+        MessagingErrorCode.InvalidOptions,
         `FIFO queue "${route.target.name}" does not support per-message delays`,
       );
     }

@@ -1,6 +1,9 @@
-import { PlatformErrorCode } from '@contracts/platform';
-import { type Clock, SystemClock } from '@platform/kernel';
-import type { TransactionManager, UnitOfWork } from '@platform/primitives';
+import {
+  type Clock,
+  SystemClock,
+  type TransactionManager,
+  type UnitOfWork,
+} from '@platform/kernel';
 import type {
   CommandDefinition,
   EventDefinition,
@@ -9,7 +12,6 @@ import type {
 } from '../contracts/message-contract.js';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import { MessagingError } from '../errors/messaging-error.js';
-import type { OutboxWriter } from '../outbox/outbox.js';
 import type { Topology } from '../topology/topology.js';
 import type { MessageBus, PublishOptions, SendOptions } from './message-bus.js';
 import {
@@ -17,35 +19,38 @@ import {
   OutboundMessageFactory,
   type OutboundMessageFactoryOptions,
 } from './outbound-message.js';
+import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
+import { type OutboxWriter } from '../outbox/outbox-writer.js';
 
-/** Dependencies of {@link OutboxMessageBus}. */
+/** Dependencias de {@link OutboxMessageBus}. */
 export interface OutboxMessageBusOptions extends OutboundMessageFactoryOptions {
   readonly topology: Topology;
   readonly writer: OutboxWriter;
-  /** Transactions of the service: each message is stored in the open one. */
+  /** Transacciones del servicio: cada mensaje se guarda en la que esté abierta. */
   readonly transactions: TransactionManager;
   /**
-   * Runs once after the commit of each transaction that appended messages, for
-   * example to wake the relay (`() => relay.relayOnce()`). If it fails, the
-   * transaction is already committed and the periodic relay publishes anyway.
+   * Corre una vez después del commit de cada transacción que agregó mensajes.
+   * `MessagingModule` lo cablea a `JobRunner.trigger(MessagingJob.OutboxRelay)`
+   * para despertar al relay. Si falla, la transacción ya quedó confirmada y el
+   * relay periódico publica igual.
    */
   readonly onCommitted?: () => void | Promise<void>;
 }
 
 /**
- * `MessageBus` backed by the outbox. Validates the message against its contract
- * and its route (with the same rules as every other bus), builds the envelope
- * and stores it in the open transaction, so the message exists if and only if
- * the business change was committed. The `OutboxRelay` publishes it after the
- * commit.
+ * `MessageBus` respaldado por el outbox. Valida el mensaje contra su contrato y
+ * su ruta (con las mismas reglas que cualquier otro bus), arma el sobre y lo
+ * guarda en la transacción abierta, así el mensaje existe si y solo si el cambio
+ * de negocio se confirmó. El `OutboxRelay` lo publica después del commit.
  *
- * Outside a transaction it throws `PLATFORM.MESSAGING.TRANSACTION_REQUIRED`:
- * publishing without one is exactly what the outbox prevents.
+ * Fuera de una transacción lanza `PLATFORM.MESSAGING.TRANSACTION_REQUIRED`:
+ * publicar sin una es justo lo que evita el outbox.
  */
 export class OutboxMessageBus implements MessageBus {
   private readonly options: OutboxMessageBusOptions;
   private readonly factory: OutboundMessageFactory;
   private readonly clock: Clock;
+  /** Unidades de trabajo que ya tienen registrado el aviso de commit. */
   private readonly notified = new WeakSet<UnitOfWork>();
 
   constructor(options: OutboxMessageBusOptions) {
@@ -80,7 +85,7 @@ export class OutboxMessageBus implements MessageBus {
     const uow = this.options.transactions.current();
     if (!uow) {
       throw new MessagingError(
-        PlatformErrorCode.MessagingTransactionRequired,
+        MessagingErrorCode.TransactionRequired,
         `"${type}" must be published inside a transaction (runInTransaction)`,
       );
     }

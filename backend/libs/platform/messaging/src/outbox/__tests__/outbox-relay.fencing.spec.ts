@@ -1,16 +1,25 @@
-import { defineEvent, PlatformErrorCode } from '@contracts/platform';
+import { defineEvent } from '@contracts/platform';
 import { z } from 'zod';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { BackoffStrategy } from '@platform/primitives';
-import { createEnvelope } from '../../envelope/message-envelope.js';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { QueueDef } from '../../topology/queue-def.js';
 import { Route } from '../../topology/route.js';
 import { TopicDef } from '../../topology/topic-def.js';
 import { Topology } from '../../topology/topology.js';
-import { InMemoryOutboxStore } from '../in-memory-outbox-store.js';
-import type { EnvelopePublisher } from '../outbox.js';
-import { OutboxStatus } from '../outbox.js';
+import {
+  OutboxStatus,
+  type OutboundTarget,
+  type PublishOutboxOptions,
+} from '../outbox.js';
 import { OutboxRelay, type OutboxRelayOptions } from '../outbox-relay.js';
+import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
+import { type EnvelopePublisher } from '../envelope-publisher.js';
+import type { MessageEnvelope } from '../../envelope/message-envelope.js';
+import {
+  EnvelopeBuilder,
+  RecordingEnvelopePublisher,
+} from '../../__tests__/utils/index.js';
+import { RecordingOutboxStore } from './utils/recording-outbox-store.js';
 
 const events = new TopicDef('orders-events');
 
@@ -34,49 +43,50 @@ function testTopology(): Topology {
 const t0 = new Date('2026-01-01T00:00:00.000Z');
 const at = (ms: number) => new Date(t0.getTime() + ms);
 
-/** Lets pending promise callbacks run. */
+/** Deja correr las promesas pendientes. */
 const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-function envelope(id: string) {
-  return createEnvelope(
-    { type: 'orders.order.changed.v1', source: '/test', data: { id } },
-    { newId: () => id, now: () => t0 },
-  );
+function envelope(id: string): MessageEnvelope {
+  return EnvelopeBuilder.anEnvelope({
+    id,
+    type: 'orders.order.changed.v1',
+    source: '/test',
+    data: { id },
+  });
+}
+
+/** Publicador que avanza el reloj al publicar el primer sobre, como si fuera lento. */
+class SlowFirstPublisher extends RecordingEnvelopePublisher {
+  constructor(private readonly clock: FixedClock) {
+    super();
+  }
+
+  override publish(
+    sent: MessageEnvelope,
+    target: OutboundTarget,
+    options: PublishOutboxOptions,
+  ): Promise<void> {
+    if (sent.id === 'm1') this.clock.advance(2_000);
+    return super.publish(sent, target, options);
+  }
 }
 
 function setup() {
   const clock = new FixedClock(t0);
   const ids = new SequentialIdGenerator(t0);
-  const store = new InMemoryOutboxStore({ clock });
-  const published: string[] = [];
-  const failing = new Set<string>();
-  const publisher: EnvelopePublisher = {
-    publish: (message) => {
-      if (failing.has(message.id))
-        return Promise.reject(
-          Object.assign(new Error(`broker rejected ${message.id}`), {
-            retryable: true,
-          }),
-        );
-      published.push(message.id);
-      return Promise.resolve();
-    },
-  };
+  const store = new RecordingOutboxStore(clock);
+  const publisher = new RecordingEnvelopePublisher();
   const relay = (extra: Partial<OutboxRelayOptions> = {}) =>
     new OutboxRelay({
       store,
       publisher,
       topology: testTopology(),
-      backoff: {
-        strategy: BackoffStrategy.None,
-        baseMs: 1_000,
-        maxMs: 60_000,
-      },
+      retryPolicy: new RetryPolicy(10, 1_000, 60_000, BackoffStrategy.None),
       clock,
       ids,
       ...extra,
     });
-  return { clock, store, published, failing, relay };
+  return { clock, store, publisher, relay };
 }
 
 describe('OutboxRelay fencing', () => {
@@ -92,37 +102,49 @@ describe('OutboxRelay fencing', () => {
   it('leases records with the instance owner and a fresh token per pass', async () => {
     const { store, relay } = setup();
     store.add(envelope('m1'));
-    const claim = jest.spyOn(store, 'claimPending');
     const instance = relay();
     await instance.relayOnce();
     await instance.relayOnce();
 
-    const [first, second] = claim.mock.calls.map(([request]) => request.lease);
+    const [first, second] = store.claims.map((request) => request.lease);
     expect(first?.owner).toBe(instance.ownerId);
     expect(second?.owner).toBe(instance.ownerId);
     expect(first?.token).not.toBe(second?.token);
   });
 
+  it('gives two relays distinct owners, and each pass its own token', async () => {
+    const { store, relay } = setup();
+    store.add(envelope('m1'));
+    const a = relay();
+    const b = relay();
+    await a.relayOnce();
+    await b.relayOnce();
+
+    const [first, second] = store.claims.map((request) => request.lease);
+    expect(first?.owner).not.toBe(second?.owner);
+    expect(first?.token).not.toBe(second?.token);
+  });
+
   it('a stale owner cannot mark a record another relay took over', async () => {
-    const { clock, store, published, relay } = setup();
+    const { clock, store, publisher, relay } = setup();
     store.add(envelope('m1'));
 
-    // Relay A leases m1, then stalls inside publish past its lease.
+    // El relay A toma m1 y se queda en publish más allá de su lease.
     let release = (): void => undefined;
     const stalled = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const slowPublisher: EnvelopePublisher = {
+    const stallingPublisher: EnvelopePublisher = {
       publish: () => stalled,
     };
-    const a = relay({ publisher: slowPublisher, leaseMs: 1_000 });
+    const a = relay({ publisher: stallingPublisher, leaseMs: 1_000 });
     const passA = a.relayOnce();
     await flush();
 
     clock.advance(5_000);
     const b = relay({ leaseMs: 1_000 });
     expect(await b.relayOnce()).toMatchObject({ claimed: 1, published: 1 });
-    expect(published).toEqual(['m1']);
+    expect(publisher.published.map((p) => p.envelope.id)).toEqual(['m1']);
 
     release();
     expect(await passA).toMatchObject({ published: 0, stale: 1 });
@@ -133,23 +155,17 @@ describe('OutboxRelay fencing', () => {
   });
 
   it('does not publish a record whose lease already expired', async () => {
-    const { clock, store, published, relay } = setup();
+    const { clock, store, relay } = setup();
     store.add(envelope('m1'));
     store.add(envelope('m2'));
-    // The first publish is slow enough to outlive the lease of the second record.
-    const slowFirst: EnvelopePublisher = {
-      publish: (message) => {
-        if (message.id === 'm1') clock.advance(2_000);
-        published.push(message.id);
-        return Promise.resolve();
-      },
-    };
+    // La primera publicación tarda más que el lease del segundo registro.
+    const slowFirst = new SlowFirstPublisher(clock);
 
     const report = await relay({
       publisher: slowFirst,
       leaseMs: 1_000,
     }).relayOnce();
-    expect(published).toEqual(['m1']);
+    expect(slowFirst.published.map((p) => p.envelope.id)).toEqual(['m1']);
     expect(report).toMatchObject({ claimed: 2, published: 1, stale: 1 });
     expect(store.get('m2')?.status).toBe(OutboxStatus.Pending);
   });
@@ -158,12 +174,12 @@ describe('OutboxRelay fencing', () => {
     const { relay } = setup();
     expect(() => relay({ leaseMs: 0 })).toThrow(
       expect.objectContaining({
-        code: PlatformErrorCode.MessagingInvalidOptions,
+        code: MessagingErrorCode.InvalidOptions,
       }),
     );
     expect(() => relay({ batchSize: 1.5 })).toThrow(
       expect.objectContaining({
-        code: PlatformErrorCode.MessagingInvalidOptions,
+        code: MessagingErrorCode.InvalidOptions,
       }),
     );
   });
@@ -171,14 +187,15 @@ describe('OutboxRelay fencing', () => {
 
 describe('OutboxRelay FIFO per groupId', () => {
   it('does not publish later records of a group after one fails, in that pass or the next', async () => {
-    const { clock, store, published, failing, relay } = setup();
+    const { clock, store, publisher, relay } = setup();
     store.add(envelope('a1'), { now: at(0), groupId: 'order-1' });
     store.add(envelope('a2'), { now: at(1), groupId: 'order-1' });
     store.add(envelope('b1'), { now: at(2), groupId: 'order-2' });
     store.add(envelope('free'), { now: at(3) });
-    failing.add('a1');
+    publisher.failing.add('a1');
     clock.set(at(10));
     const instance = relay();
+    const ids = () => publisher.published.map((p) => p.envelope.id);
 
     expect(await instance.relayOnce()).toEqual({
       claimed: 4,
@@ -188,56 +205,61 @@ describe('OutboxRelay FIFO per groupId', () => {
       deferred: 1,
       stale: 0,
     });
-    expect(published).toEqual(['b1', 'free']);
+    expect(ids()).toEqual(['b1', 'free']);
     expect(store.get('a2')).toMatchObject({
       status: OutboxStatus.Pending,
       attempts: 0,
       leaseOwner: undefined,
     });
 
-    // a2 is due, but a1 is not: the group waits.
+    // a2 vence, pero a1 no: el grupo espera.
     clock.advance(500);
     expect(await instance.relayOnce()).toMatchObject({
       claimed: 0,
       published: 0,
     });
 
-    failing.delete('a1');
+    publisher.failing.delete('a1');
     clock.advance(1_000);
     expect(await instance.relayOnce()).toMatchObject({
       claimed: 2,
       published: 2,
     });
-    expect(published).toEqual(['b1', 'free', 'a1', 'a2']);
+    expect(ids()).toEqual(['b1', 'free', 'a1', 'a2']);
   });
 
   it('lets a group continue after its head goes Dead', async () => {
-    const { store, published, failing, relay } = setup();
+    const { store, publisher, relay, clock } = setup();
     store.add(envelope('a1'), { now: at(0), groupId: 'order-1' });
     store.add(envelope('a2'), { now: at(1), groupId: 'order-1' });
-    failing.add('a1');
+    publisher.failing.add('a1');
+    clock.set(at(10));
 
-    expect(await relay({ maxAttempts: 1 }).relayOnce(at(10))).toMatchObject({
+    expect(
+      await relay({
+        retryPolicy: new RetryPolicy(1, 1_000, 60_000, BackoffStrategy.None),
+      }).relayOnce(),
+    ).toMatchObject({
       published: 1,
       dead: 1,
       deferred: 0,
     });
-    expect(published).toEqual(['a2']);
+    expect(publisher.published.map((p) => p.envelope.id)).toEqual(['a2']);
     expect(store.get('a1')?.status).toBe(OutboxStatus.Dead);
   });
 
   it('blocks the group of a record whose mark was rejected', async () => {
-    const { clock, store, published, relay } = setup();
+    const { clock, store, publisher, relay } = setup();
     store.add(envelope('a1'), { now: at(0), groupId: 'order-1' });
     store.add(envelope('a2'), { now: at(1), groupId: 'order-1' });
     clock.set(at(10));
-    jest.spyOn(store, 'markPublished').mockResolvedValueOnce(false);
+    store.rejectNextPublishedMarks(1);
 
     expect(await relay().relayOnce()).toMatchObject({
       published: 0,
       stale: 1,
       deferred: 1,
     });
-    expect(published).toEqual(['a1']);
+    expect(publisher.published.map((p) => p.envelope.id)).toEqual(['a1']);
   });
 });

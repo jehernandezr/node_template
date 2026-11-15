@@ -1,0 +1,135 @@
+import { resolve } from 'node:path';
+import type { DatabaseSetDefinition } from '../model/database-set-definition.js';
+import type { MigrationGenerator } from '../migration-generator.js';
+
+/** Opciones que acepta el comando, con el nombre con que se escriben en la línea de comandos. */
+enum CliOption {
+  Name = 'name',
+  Definition = 'definition',
+  Out = 'out',
+}
+
+/** Variables de entorno con la conexión al servidor donde se crea la base temporal. */
+enum CliEnv {
+  Host = 'MIGRATION_DB_HOST',
+  Port = 'MIGRATION_DB_PORT',
+  User = 'MIGRATION_DB_USER',
+  Password = 'MIGRATION_DB_PASSWORD',
+}
+
+const USAGE =
+  'Uso: migration-generate --name=<Nombre> --definition=<modulo con export default DatabaseSetDefinition> --out=<carpeta> (conexion en MIGRATION_DB_HOST, MIGRATION_DB_PORT, MIGRATION_DB_USER, MIGRATION_DB_PASSWORD)';
+
+const EXIT_OK = 0;
+const EXIT_ERROR = 1;
+const EXIT_USAGE = 2;
+
+/** Argumentos ya validados de la línea de comandos. */
+interface CliArguments {
+  readonly name: string;
+  readonly definition: string;
+  readonly out: string;
+}
+
+/** Comando de la CLI `migration-generate`: lee los argumentos, carga la definición y llama al generador. */
+export class MigrationGenerateCommand {
+  constructor(
+    private readonly generator: MigrationGenerator,
+    private readonly env: Readonly<Record<string, string | undefined>>,
+    private readonly write: (text: string) => void,
+  ) {}
+
+  /** @returns el código de salida: 0 con éxito o sin cambios, 1 con un error, 2 con un uso incorrecto. */
+  async run(argv: readonly string[]): Promise<number> {
+    const options = this.parse(argv);
+    const user = this.env[CliEnv.User];
+    const password = this.env[CliEnv.Password];
+    if (options === undefined || user === undefined || password === undefined) {
+      this.write(USAGE);
+      return EXIT_USAGE;
+    }
+
+    try {
+      const definition = await this.loadDefinition(options.definition);
+      if (definition === undefined) {
+        this.write(
+          'La definicion no exporta por defecto un DatabaseSetDefinition',
+        );
+        return EXIT_USAGE;
+      }
+      const path = await this.generator.generate({
+        name: options.name,
+        outputDir: options.out,
+        definition,
+        server: {
+          host: this.env[CliEnv.Host] ?? 'localhost',
+          port: Number(this.env[CliEnv.Port] ?? '5432'),
+        },
+        user,
+        password,
+      });
+      if (path === null) {
+        this.write('Sin cambios: las entidades coinciden con las migraciones');
+        return EXIT_OK;
+      }
+      this.write(`Migracion generada: ${path}`);
+      return EXIT_OK;
+    } catch (error) {
+      this.write(
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return EXIT_ERROR;
+    }
+  }
+
+  /** Los argumentos son `--clave=valor`, exactamente una vez cada uno; cualquier otro dato es un error de uso. */
+  private parse(argv: readonly string[]): CliArguments | undefined {
+    const values = new Map<string, string>();
+    for (const arg of argv) {
+      const match = /^--(name|definition|out)=(.+)$/.exec(arg);
+      if (match === null || match[1] === undefined || match[2] === undefined) {
+        return undefined;
+      }
+      values.set(match[1], match[2]);
+    }
+    const name = values.get(CliOption.Name);
+    const definition = values.get(CliOption.Definition);
+    const out = values.get(CliOption.Out);
+    if (name === undefined || definition === undefined || out === undefined) {
+      return undefined;
+    }
+    return { name, definition, out };
+  }
+
+  /** Toma el `default` del módulo, o `undefined` si no tiene la forma de un `DatabaseSetDefinition`. */
+  private async loadDefinition(
+    path: string,
+  ): Promise<DatabaseSetDefinition | undefined> {
+    const loaded: unknown = await import(resolve(path));
+    const fallback = MigrationGenerateCommand.isModuleWithDefault(loaded)
+      ? loaded.default
+      : undefined;
+    return MigrationGenerateCommand.isDatabaseSetDefinition(fallback)
+      ? fallback
+      : undefined;
+  }
+
+  private static isModuleWithDefault(
+    value: unknown,
+  ): value is { default: unknown } {
+    return typeof value === 'object' && value !== null && 'default' in value;
+  }
+
+  private static isDatabaseSetDefinition(
+    value: unknown,
+  ): value is DatabaseSetDefinition {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'entities' in value &&
+      Array.isArray(value.entities) &&
+      'migrations' in value &&
+      Array.isArray(value.migrations)
+    );
+  }
+}

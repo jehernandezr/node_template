@@ -211,6 +211,11 @@ class AccountLocalizationsEs extends AccountLocalizations {
       'Al aceptar confirmas que revisaste este documento.';
 
   @override
+  String reviewDialogMessage(String version) {
+    return 'Versión $version. Al aceptar confirmas que revisaste este documento.';
+  }
+
+  @override
   String get agreementAccepted => 'Acuerdo aceptado.';
 
   @override

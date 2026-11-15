@@ -6,49 +6,50 @@ import type {
 } from '../contracts/message-contract.js';
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 
-/** Optional attributes copied into the envelope. */
+/** Atributos opcionales que se copian al sobre. */
 export interface PublishOptions {
   readonly subject?: string;
-  /** W3C `traceparent`. Defaults to the active span (`currentTraceparent()`). */
+  /** `traceparent` W3C. Por defecto, el del span activo. */
   readonly traceparent?: string;
   readonly tenantId?: string;
   readonly actorId?: string;
   /**
-   * Ordering group, usually the aggregate id. Required when the route targets
-   * a FIFO topic or queue (it becomes the SNS/SQS `MessageGroupId`); the outbox
-   * also publishes the records of one group in order.
+   * Grupo de orden, normalmente el id del agregado. Es obligatorio cuando la
+   * ruta apunta a un tópico o cola FIFO (se convierte en el `MessageGroupId` de
+   * SNS y SQS); el outbox también publica los registros de un grupo en orden.
    */
   readonly groupId?: string;
 }
 
-/** Options for sending a command. */
+/** Opciones para enviar un comando. */
 export interface SendOptions extends PublishOptions {
   /**
-   * Delay before the message becomes visible to the consumer, up to
-   * {@link MAX_SEND_DELAY_MS} (the SQS limit). FIFO queues do not support it.
+   * Espera antes de que el mensaje sea visible para el consumidor, hasta
+   * {@link MAX_SEND_DELAY_MS} (el límite de SQS). Las colas FIFO no lo soportan.
    */
   readonly delayMs?: number;
 }
 
 /**
- * Port used by business code to emit events and commands. Contracts are the
- * `defineEvent` and `defineCommand` descriptors of `@contracts/platform`, and
- * routing is resolved from the topology.
+ * Puerto que usa el código de negocio para emitir eventos y comandos. Los
+ * contratos son los descriptores `defineEvent` y `defineCommand` de
+ * `@contracts/platform`, y el destino sale de la topología.
  */
-export interface MessageBus {
-  /** Publishes an event to the topic its route points to. */
-  publish<M extends EventDefinition>(
+export abstract class MessageBus {
+  /** Publica un evento en el tópico al que apunta su ruta. */
+  abstract publish<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
     options?: PublishOptions,
   ): Promise<MessageEnvelope<MessageOutput<M>>>;
-  /** Sends a command to the queue its route points to. */
-  send<M extends CommandDefinition>(
+
+  /** Envía un comando a la cola a la que apunta su ruta. */
+  abstract send<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,
     options?: SendOptions,
   ): Promise<MessageEnvelope<MessageOutput<M>>>;
 }
 
-/** Longest delay of `send` (15 minutes, the SQS `DelaySeconds` limit). */
+/** Espera máxima de `send` (15 minutos, el límite `DelaySeconds` de SQS). */
 export const MAX_SEND_DELAY_MS = 15 * 60 * 1000;

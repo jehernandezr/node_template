@@ -1,35 +1,36 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { MESSAGING_NAME_PATTERN } from '@contracts/platform';
 import {
   type MessageDefinition,
   MessageKind,
 } from '../contracts/message-contract.js';
-import { MessagingError } from '../errors/messaging-error.js';
 import type { QueueDef } from './queue-def.js';
-import { type RouteDef, TargetKind } from './route.js';
+import type { RouteDef } from './route-def.js';
+import { TargetKind } from './target-kind.enum.js';
 import type { TopicDef } from './topic-def.js';
+import { MessagingError } from '../errors/messaging-error.js';
+import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
+import { TopologyError } from '../errors/topology.error.js';
 
-/** Upper bound of a retry backoff delay (12 h), matching SQS limits. */
+/** Límite superior de la espera de un reintento (12 h), igual que los límites de SQS. */
 export const MAX_RETRY_DELAY_MS = 12 * 60 * 60 * 1000;
-/** Visibility timeout range in seconds (1 s to 12 h). */
+/** Rango del visibility timeout en segundos (de 1 s a 12 h). */
 export const MIN_VISIBILITY_TIMEOUT_SECONDS = 1;
 export const MAX_VISIBILITY_TIMEOUT_SECONDS = 12 * 60 * 60;
-/** Dead-letter retention range in days. */
+/** Rango de retención de la cola de errores, en días. */
 export const MIN_RETENTION_DAYS = 1;
 export const MAX_RETENTION_DAYS = 14;
-/** Longest queue name including the `-dlq` and `.fifo` suffixes. */
+/** Largo máximo del nombre de una cola, con los sufijos `-dlq` y `.fifo`. */
 export const MAX_QUEUE_NAME_LENGTH = 80;
-/** Characters SNS and SQS accept in a name (the `.fifo` suffix is added by the transport). */
-export const MESSAGING_RESOURCE_NAME = /^[A-Za-z0-9_-]+$/;
 
 const SECONDS_PER_DAY = 86_400;
 
-/** Error issues make the topology invalid; warnings are reported only. */
+/** Los problemas de error vuelven inválida la topología; las advertencias solo se informan. */
 export enum TopologySeverity {
   Error = 'error',
   Warning = 'warning',
 }
 
-/** Structural problems detected by {@link Topology.validate}. */
+/** Problemas estructurales que detecta {@link Topology.validate}. */
 export enum TopologyIssueKind {
   DuplicateTopic = 'duplicate-topic',
   DuplicateQueue = 'duplicate-queue',
@@ -45,46 +46,34 @@ export enum TopologyIssueKind {
   NameTooLong = 'name-too-long',
   UnproducedFilterType = 'unproduced-filter-type',
   RouteWithoutContract = 'route-without-contract',
-  /** The route contract is an event routed as a command, or the reverse. */
+  /** El contrato de la ruta es un evento enrutado como comando, o al revés. */
   ContractKindMismatch = 'contract-kind-mismatch',
-  /** A topic or queue name has characters SNS or SQS reject. */
+  /** El nombre de un tópico o de una cola no cumple el patrón de nombres de mensajería. */
   InvalidName = 'invalid-name',
+  /** Un evento se publica en un tópico sin colas suscritas. */
   NoSubscribers = 'no-subscribers',
 }
 
-/** One structural problem of a topology. */
+/** Un problema estructural de la topología. */
 export interface TopologyIssue {
   readonly kind: TopologyIssueKind;
   readonly severity: TopologySeverity;
   readonly message: string;
 }
 
-/** Options for {@link Topology.validate}. */
+/** Opciones de {@link Topology.validate}. */
 export interface ValidateOptions {
   /**
-   * Contracts for routes declared with a bare type string. Every route needs a
-   * contract, either its own or one of these.
+   * Contratos de las rutas declaradas con solo el tipo como texto. Cada ruta
+   * necesita un contrato, el suyo o uno de estos.
    */
   readonly contracts?: readonly MessageDefinition[];
 }
 
-/** Thrown by {@link Topology.assertValid} with every error issue found. */
-export class TopologyError extends MessagingError {
-  readonly issues: readonly TopologyIssue[];
-
-  constructor(issues: readonly TopologyIssue[]) {
-    super(
-      PlatformErrorCode.MessagingInvalidTopology,
-      `invalid topology: ${issues.map((issue) => issue.message).join('; ')}`,
-    );
-    this.issues = issues;
-  }
-}
-
 /**
- * JSON view of a topology with stable ordering. Infrastructure is provisioned
- * from the contracts export (`contracts-export`), not from this document; it
- * serves tests that create the same resources in LocalStack.
+ * Vista JSON de la topología con orden estable. La infraestructura se aprovisiona
+ * desde la exportación de contratos (`contracts-export`), no desde este
+ * documento; sirve a las pruebas que crean los mismos recursos en LocalStack.
  */
 export interface TopologyDocument {
   readonly topics: readonly { readonly name: string; readonly fifo: boolean }[];
@@ -111,13 +100,13 @@ export interface TopologyDocument {
   }[];
 }
 
-/** Byte-order string comparison, so exports do not depend on the locale. */
+/** Comparación de textos por orden de bytes, para que las exportaciones no dependan del idioma. */
 export function compareText(a: string, b: string): number {
   if (a < b) return -1;
   return a > b ? 1 : 0;
 }
 
-/** Topics, queues and routes a {@link Topology} indexes. */
+/** Tópicos, colas y rutas que indexa una {@link Topology}. */
 export interface TopologyParts {
   readonly topics: readonly TopicDef[];
   readonly queues: readonly QueueDef[];
@@ -135,11 +124,12 @@ function duplicatesOf(names: readonly string[]): string[] {
 }
 
 /**
- * Read-only routing index of a service: where each message type goes and how
- * each queue retries. Services build it from their contracts with
- * `topologyFromContracts`, the same source the infrastructure export reads, so
- * runtime routing and the provisioned resources cannot diverge. Call
- * {@link Topology.assertValid} at startup.
+ * Índice de enrutamiento de solo lectura de un servicio: a dónde va cada tipo de
+ * mensaje y cómo reintenta cada cola. Los servicios lo construyen desde sus
+ * contratos con `topologyFromContracts`, la misma fuente que lee la exportación
+ * de infraestructura, así el enrutamiento en ejecución y los recursos
+ * aprovisionados no pueden divergir. Llamar a {@link Topology.assertValid} al
+ * arrancar.
  */
 export class Topology {
   readonly topics: readonly TopicDef[];
@@ -152,7 +142,7 @@ export class Topology {
     this.topics = Object.freeze([...parts.topics]);
     this.queues = Object.freeze([...parts.queues]);
     this.routes = Object.freeze([...parts.routes]);
-    // The first declaration wins; duplicates are reported by `validate`.
+    // Gana la primera declaración; los duplicados los reporta `validate`.
     for (const route of this.routes) {
       if (!this.routesByType.has(route.type)) {
         this.routesByType.set(route.type, route);
@@ -165,7 +155,7 @@ export class Topology {
     }
   }
 
-  /** Returns every structural problem, errors and warnings. */
+  /** Devuelve todos los problemas estructurales, de error y de advertencia. */
   validate(options: ValidateOptions = {}): TopologyIssue[] {
     const issues: TopologyIssue[] = [];
     const error = (kind: TopologyIssueKind, message: string) =>
@@ -224,10 +214,10 @@ export class Topology {
     }
 
     for (const def of [...this.topics, ...this.queues]) {
-      if (!MESSAGING_RESOURCE_NAME.test(def.name)) {
+      if (!MESSAGING_NAME_PATTERN.test(def.name)) {
         error(
           TopologyIssueKind.InvalidName,
-          `"${def.name}" is not a valid SNS/SQS name (letters, digits, "-" and "_")`,
+          `"${def.name}" is not a valid SNS/SQS name (lowercase letters, digits and "-")`,
         );
       }
     }
@@ -294,7 +284,7 @@ export class Topology {
             `queue "${queue.name}" subscribes to undeclared topic "${subscription.topic.name}"`,
           );
         } else if (queue.isFifo && !fifo) {
-          // SNS FIFO topics may feed standard queues; a FIFO queue needs a FIFO topic.
+          // Los tópicos FIFO de SNS pueden alimentar colas estándar; una cola FIFO necesita un tópico FIFO.
           error(
             TopologyIssueKind.FifoMismatch,
             `fifo queue "${queue.name}" cannot subscribe to standard topic "${subscription.topic.name}"`,
@@ -333,7 +323,7 @@ export class Topology {
     return issues;
   }
 
-  /** Throws a {@link TopologyError} listing every error issue. Warnings do not throw. */
+  /** Lanza un {@link TopologyError} con cada problema de error. Las advertencias no lanzan. */
   assertValid(options: ValidateOptions = {}): void {
     const errors = this.validate(options).filter(
       (issue) => issue.severity === TopologySeverity.Error,
@@ -341,17 +331,17 @@ export class Topology {
     if (errors.length > 0) throw new TopologyError(errors);
   }
 
-  /** Returns the route for a message type, if any. */
+  /** Devuelve la ruta de un tipo de mensaje, si existe. */
   routeFor(type: string): RouteDef | undefined {
     return this.routesByType.get(type);
   }
 
-  /** Returns a queue by name, if declared. */
+  /** Devuelve una cola por nombre, si está declarada. */
   queueFor(name: string): QueueDef | undefined {
     return this.queuesByName.get(name);
   }
 
-  /** Exports the topology with stable ordering. Validates first. */
+  /** Exporta la topología con orden estable. Valida antes. */
   toJSON(): TopologyDocument {
     this.assertValid();
 
@@ -366,7 +356,7 @@ export class Topology {
         const dlq = queue.deadLetterConfig;
         if (dlq === null) {
           throw new MessagingError(
-            PlatformErrorCode.MessagingInvalidTopology,
+            MessagingErrorCode.InvalidTopology,
             `queue "${queue.name}" has no dead-letter queue`,
           );
         }

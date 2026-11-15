@@ -1,141 +1,90 @@
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
-import type { TargetKind } from '../topology/route.js';
+import type { TargetKind } from '../topology/target-kind.enum.js';
 
-/** Delivery state of an outbox record. */
+/** Estado de entrega de un registro del outbox. */
 export enum OutboxStatus {
-  /** Never attempted. */
+  /** Nunca se intentó. */
   Pending = 'pending',
-  /** Published successfully. */
+  /** Publicado con éxito. */
   Published = 'published',
-  /** The last attempt failed; eligible again at `nextAttemptAt`. */
+  /** El último intento falló; vuelve a ser elegible en `nextAttemptAt`. */
   Failed = 'failed',
-  /** Given up: max attempts reached, unknown route, or payload too large. Kept for inspection. */
+  /** Abandonado: se llegó al máximo de intentos, no hay ruta o el payload es demasiado grande. Se conserva para inspección. */
   Dead = 'dead',
 }
 
-/** An envelope waiting to be published. Written in the same transaction as the business change. */
+/** Sobre pendiente de publicar. Se escribe en la misma transacción que el cambio de negocio. */
 export interface OutboxRecord {
   readonly id: string;
   readonly envelope: MessageEnvelope;
   readonly status: OutboxStatus;
-  /** Relay passes that tried this record. */
+  /** Pasadas del relay que intentaron este registro. */
   readonly attempts: number;
   readonly nextAttemptAt: Date;
   readonly createdAt: Date;
   /**
-   * Ordering group (usually the aggregate id). Records of one group are published
-   * in `createdAt` order, and FIFO targets receive it as the message group id.
+   * Grupo de orden (normalmente el id del agregado). Los registros de un grupo se
+   * publican en orden de `createdAt`, y los destinos FIFO lo reciben como id de grupo.
    */
   readonly groupId?: string;
   /**
-   * Delivery delay of a command, counted from `createdAt`. The relay passes
-   * what is left of it to the transport.
+   * Espera de entrega de un comando, contada desde `createdAt`. El relay pasa al
+   * transporte lo que le queda.
    */
   readonly delayMs?: number;
   readonly lastError?: string;
   readonly leaseOwner?: string;
-  /** Fencing token of the current lease; changes on every claim. */
+  /** Token de fencing del lease vigente; cambia en cada reclamo. */
   readonly leaseToken?: string;
   readonly leaseExpiresAt?: Date;
 }
 
 /**
- * Lease held by one relay pass. `owner` identifies the relay instance and
- * `token` the claim; marks are applied only while both are still current.
+ * Lease que tiene una pasada del relay. `owner` identifica la instancia del relay
+ * y `token` el reclamo; las marcas se aplican solo mientras ambos sigan vigentes.
  */
 export interface OutboxLease {
   readonly owner: string;
   readonly token: string;
 }
 
-/** Arguments of {@link OutboxStore.claimPending}. */
+/** Argumentos de {@link OutboxStore.claimPending}. */
 export interface ClaimOutboxRequest {
   readonly now: Date;
   readonly limit: number;
   readonly lease: OutboxLease;
-  /** Lease duration in milliseconds. */
+  /** Duración del lease en milisegundos. */
   readonly leaseMs: number;
 }
 
-/** Destination of a published envelope, resolved from the topology. */
+/** Destino de un sobre publicado, resuelto desde la topología. */
 export interface OutboundTarget {
   readonly kind: TargetKind;
   readonly name: string;
-  /** FIFO topic or queue: the transport sends `groupId` as `MessageGroupId`. */
+  /** Tópico o cola FIFO: el transporte envía `groupId` como `MessageGroupId`. */
   readonly fifo?: boolean;
 }
 
-/** Extra publishing hints. */
+/** Indicaciones extra de publicación. */
 export interface PublishOutboxOptions {
   readonly groupId?: string;
-  /** Delay before a command becomes visible in its queue. */
+  /** Espera antes de que un comando sea visible en su cola. */
   readonly delayMs?: number;
 }
 
-/** A record to append to the outbox with the business change. */
+/** Registro que se agrega al outbox junto con el cambio de negocio. */
 export interface OutboxAppend {
   readonly envelope: MessageEnvelope;
   readonly groupId?: string;
   readonly delayMs?: number;
-  /** Creation time and first due time. */
+  /** Hora de creación y primera hora de vencimiento. */
   readonly createdAt: Date;
 }
 
-/**
- * Write side of the outbox. `append` stores the record in the transaction that
- * is open in the current async context, so it commits or rolls back with the
- * business change. The adapter finds that transaction through its own
- * transaction manager. Use it through `OutboxMessageBus`.
- */
-export interface OutboxWriter {
-  append(record: OutboxAppend): Promise<void>;
-}
-
-/**
- * Port for outbox persistence.
- *
- * Fencing: every mark is conditional on the record still holding the given
- * lease (`leaseOwner = owner AND leaseToken = token`). A relay whose lease was
- * taken over cannot overwrite the new owner's state; the mark returns `false`.
- */
-export interface OutboxStore {
-  /**
-   * Atomically leases up to `limit` due records, oldest `createdAt` first, and
-   * stamps them with `lease` until `now + leaseMs`. A record is due when it is
-   * Pending or Failed, `nextAttemptAt <= now` and it has no active lease.
-   *
-   * FIFO per `groupId`: once a Pending or Failed record of a group is not due
-   * (scheduled later, or leased by someone else), no later record of that group
-   * is returned. Published and Dead records do not block their group.
-   */
-  claimPending(request: ClaimOutboxRequest): Promise<OutboxRecord[]>;
-  /** Marks one record published and clears its lease. `false` when the lease is no longer held. */
-  markPublished(id: string, lease: OutboxLease): Promise<boolean>;
-  /**
-   * Stores the failure, increments `attempts`, schedules the next attempt and
-   * clears the lease. `false` when the lease is no longer held.
-   */
-  markFailed(
-    id: string,
-    lease: OutboxLease,
-    error: string,
-    nextAttemptAt: Date,
-  ): Promise<boolean>;
-  /** Stores a terminal failure, increments `attempts` and clears the lease. `false` when the lease is no longer held. */
-  markDead(id: string, lease: OutboxLease, error: string): Promise<boolean>;
-  /**
-   * Clears the lease without counting an attempt, so the record is due again
-   * right away. Used for records of a group that is blocked in this pass.
-   * `false` when the lease is no longer held.
-   */
-  releaseLease(id: string, lease: OutboxLease): Promise<boolean>;
-}
-
-/** Port that sends one envelope to a topic or queue. */
-export interface EnvelopePublisher {
-  publish(
-    envelope: MessageEnvelope,
-    target: OutboundTarget,
-    options: PublishOutboxOptions,
-  ): Promise<void>;
+/** Opciones de {@link OutboxStore.purge}. */
+export interface PurgeOutboxOptions {
+  /** Borra lo terminado antes de este instante. */
+  readonly before: Date;
+  /** También borra los muertos. Por defecto se conservan para inspección. */
+  readonly includeDead?: boolean;
 }

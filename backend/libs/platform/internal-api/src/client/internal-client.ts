@@ -1,0 +1,167 @@
+import type { OperationDefinition } from '@contracts/platform';
+import { validateContract } from '@contracts/platform';
+import { CallOutcome, Deadline } from '@platform/primitives';
+import type { ContractRegistry } from '../contract/contract-registry.js';
+import { IdempotencyKeyPolicy } from '../contract/idempotency-key-policy.js';
+import { InputViolation } from '../contract/input-violation.js';
+import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
+import type {
+  CallInputOf,
+  OperationOutputOf,
+} from '../contract/operation-io.type.js';
+import type { OperationDescriptor } from '../contract/operation-descriptor.js';
+import { InternalApiError } from '../errors/internal-api-error.js';
+import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js';
+import { CallAttempt } from './call-attempt.js';
+import type { CallOptions } from './call-options.js';
+import type { InternalClientCollaborators } from './internal-client-collaborators.js';
+
+/**
+ * Cliente tipado de las operaciones internas. Valida antes de enviar y deja
+ * los reintentos, los tiempos y el breaker al `ResilienceRegistry`. Nunca lanza
+ * por problemas de contrato: todo resultado es un `CallOutcome`.
+ * - Entrada inválida: error de negocio `PLATFORM.VALIDATION.INVALID_INPUT` con
+ *   `details.fieldErrors` (`InputViolationOutcome`), sin llamar al transporte. El
+ *   router responde la misma entrada con el mismo resultado.
+ * - Salida inválida o demasiado grande, o un código de negocio no declarado: `protocol-violation`.
+ * - Error de negocio declarado: `business-error`, nunca se reintenta.
+ * - Excepciones del transporte: se clasifican con `FailureClassifier`.
+ * - Intento vencido o cancelado: `uncertain`.
+ * Una operación idempotente reintenta `transient-failure` y `uncertain` dentro
+ * del plazo; el servidor deduplica por llave de idempotencia.
+ */
+export class InternalClient {
+  constructor(private readonly collaborators: InternalClientCollaborators) {}
+
+  /** Catálogo de las operaciones que este cliente puede llamar, si se le dio uno. */
+  get contracts(): ContractRegistry | undefined {
+    return this.collaborators.registry;
+  }
+
+  /**
+   * Llama a una operación declarada con `defineOperation`. Una operación que
+   * no se resuelve (`InvalidOperation`) o que no está en el catálogo
+   * (`UnknownOperation`) no lanza: el `InternalApiError` pasa por
+   * `translator.translate(error, { started: false })`, que lo convierte en
+   * `protocol-violation` con su código.
+   */
+  async call<S extends OperationDefinition>(
+    operation: S,
+    input: CallInputOf<S>,
+    options: CallOptions,
+  ): Promise<CallOutcome<OperationOutputOf<S>>> {
+    let descriptor: OperationDescriptor;
+    try {
+      descriptor = this.descriptorFor(operation);
+    } catch (error) {
+      // El traductor convierte el error de contrato en su resultado; su salida no tiene el tipo de la operación.
+      return this.collaborators.translator.translate(error, {
+        started: false,
+      }) as CallOutcome<OperationOutputOf<S>>;
+    }
+    // La salida ya pasó por `descriptor.output`, así que su forma coincide con la de la operación.
+    return (await this.callDescriptor(
+      descriptor,
+      input,
+      options,
+    )) as CallOutcome<OperationOutputOf<S>>;
+  }
+
+  /** Llama a una operación registrada por su id. Lo usan llamadores genéricos como el motor de sagas. */
+  callById(
+    operationId: string,
+    input: unknown,
+    options: CallOptions,
+  ): Promise<CallOutcome<unknown>> {
+    const registered = this.collaborators.registry?.get(operationId);
+    if (registered === undefined) {
+      return Promise.resolve(
+        CallOutcome.protocolViolation(
+          InternalApiReason.UnknownOperation,
+          InternalApiErrorCode.UnknownOperation,
+        ),
+      );
+    }
+    return this.callDescriptor(registered.descriptor, input, options);
+  }
+
+  private descriptorFor(operation: OperationDefinition): OperationDescriptor {
+    const descriptor = this.collaborators.resolver.resolve(operation);
+    const registry = this.collaborators.registry;
+    if (registry === undefined) {
+      return descriptor;
+    }
+    const registered = registry.get(descriptor.id);
+    if (registered === undefined) {
+      throw new InternalApiError(
+        InternalApiErrorCode.UnknownOperation,
+        `Operation "${descriptor.id}" is not in the client catalogue`,
+      );
+    }
+    return registered.descriptor;
+  }
+
+  private async callDescriptor(
+    descriptor: OperationDescriptor,
+    input: unknown,
+    options: CallOptions,
+  ): Promise<CallOutcome<unknown>> {
+    const {
+      payload,
+      checker,
+      restorer,
+      transport,
+      resilience,
+      policies,
+      translator,
+      clock,
+    } = this.collaborators;
+    if (
+      !IdempotencyKeyPolicy.isValid(options.idempotencyKey, options.tenantId)
+    ) {
+      return CallOutcome.protocolViolation(
+        InternalApiReason.InvalidIdempotencyKey,
+        InternalApiErrorCode.InvalidIdempotencyKey,
+      );
+    }
+    const validation = validateContract(descriptor.input, input);
+    if (!validation.ok) {
+      return InputViolation.outcome(descriptor.id, validation.errors);
+    }
+    if (!payload.fits(input)) {
+      return CallOutcome.protocolViolation(
+        InternalApiReason.PayloadTooLarge,
+        InternalApiErrorCode.PayloadTooLarge,
+      );
+    }
+    const metadata = descriptor.metadata;
+    const deadline =
+      options.deadline ?? Deadline.after(metadata.callBudgetMs(), clock);
+    const attempt = new CallAttempt(
+      transport,
+      checker,
+      restorer,
+      descriptor,
+      input,
+      options,
+    );
+    try {
+      return await resilience.execute(
+        policies.resolve(metadata),
+        (signal, current) => attempt.run(signal, current),
+        {
+          // El breaker es por servicio dueño de la operación; el reintento lo decide el registro con `idempotent`.
+          idempotent: metadata.idempotent,
+          deadline,
+          dependencyKey: metadata.service(),
+          ...(options.signal !== undefined && { signal: options.signal }),
+        },
+      );
+    } catch (error) {
+      return translator.translate(error, {
+        started: attempt.started,
+        ...(options.signal !== undefined && { signal: options.signal }),
+      });
+    }
+  }
+}

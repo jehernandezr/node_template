@@ -1,158 +1,121 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import {
   type Clock,
+  ErrorDescriptor,
   type IdGenerator,
+  type RandomSource,
   SystemClock,
+  SystemRandomSource,
   UuidV7IdGenerator,
 } from '@platform/kernel';
-import {
-  type BackoffOptions,
-  BackoffStrategy,
-  validateBackoffOptions,
-} from '@platform/primitives';
-import { describeError } from '../errors/describe-error.js';
-import { MessagingError } from '../errors/messaging-error.js';
-import {
-  MAX_ENVELOPE_BYTES,
-  envelopeSizeBytes,
-} from '../envelope/message-envelope.js';
-import { messagingBackoffDelay } from '../topology/retry-policy.js';
+import { Backoff, type RetryPolicy } from '@platform/primitives';
+import { MessagingGuard } from '../errors/messaging-guard.js';
+import { EnvelopeValidator } from '../envelope/envelope-validator.js';
 import type { Topology } from '../topology/topology.js';
-import type {
-  EnvelopePublisher,
-  OutboundTarget,
-  OutboxLease,
-  OutboxRecord,
-  OutboxStore,
-} from './outbox.js';
+import type { OutboundTarget, OutboxLease, OutboxRecord } from './outbox.js';
+import { EnvelopeLimits } from '../envelope/envelope-limits.js';
+import { type EnvelopePublisher } from './envelope-publisher.js';
+import { type OutboxStore } from './outbox-store.js';
 
-/**
- * Earlier backoff shape: exponential with full jitter when `jitter` is true.
- * @deprecated Use `BackoffOptions` of `@platform/primitives`.
- */
-export interface LegacyBackoffOptions {
-  readonly baseMs: number;
-  readonly maxMs: number;
-  readonly jitter?: boolean;
-}
-
-function toBackoffOptions(
-  options: BackoffOptions | LegacyBackoffOptions,
-): BackoffOptions {
-  if ('strategy' in options) return options;
-  return {
-    strategy: options.jitter
-      ? BackoffStrategy.FullJitter
-      : BackoffStrategy.None,
-    baseMs: options.baseMs,
-    maxMs: options.maxMs,
-  };
-}
-
-/** Dependencies and tuning of the relay. */
+/** Dependencias y ajustes del relay. */
 export interface OutboxRelayOptions {
   readonly store: OutboxStore;
   readonly publisher: EnvelopePublisher;
   readonly topology: Topology;
-  /** Backoff applied between failed attempts. */
-  readonly backoff: BackoffOptions | LegacyBackoffOptions;
-  /** Records leased per pass. Defaults to 100. */
-  readonly batchSize?: number;
-  /** Attempts before a record is marked Dead. Defaults to 10. */
-  readonly maxAttempts?: number;
   /**
-   * Label of the lease owner. Each relay instance appends its own id from `ids`,
-   * so replicas never share an owner. Defaults to `outbox-relay`.
+   * Intentos antes de marcar un registro como Dead (`maxAttempts`) y la espera
+   * entre intentos fallidos.
+   */
+  readonly retryPolicy: RetryPolicy;
+  /** Registros tomados con lease por pasada. Por defecto, 100. */
+  readonly batchSize?: number;
+  /**
+   * Etiqueta del dueño del lease. Cada instancia del relay agrega su propio id
+   * tomado de `ids`, así las réplicas nunca comparten dueño. Por defecto,
+   * `outbox-relay`.
    */
   readonly owner?: string;
-  /** Lease duration in milliseconds. Defaults to 30 seconds. */
+  /** Duración del lease en milisegundos. Por defecto, 30 segundos. */
   readonly leaseMs?: number;
-  /** Source of time. Defaults to the system clock. */
+  /** Fuente del tiempo. Por defecto, el reloj del sistema. */
   readonly clock?: Clock;
-  /** Source of the instance id and of the per-pass lease tokens. Defaults to UUIDv7. */
+  /** Fuente del id de la instancia y de los tokens de lease de cada pasada. Por defecto, UUIDv7. */
   readonly ids?: IdGenerator;
+  /** Fuente del jitter de la espera entre intentos. Por defecto, la aleatoria del sistema. */
+  readonly random?: RandomSource;
 }
 
-/** Counts of one {@link OutboxRelay.relayOnce} pass. */
+/** Conteos de una pasada de {@link OutboxRelay.relayOnce}. */
 export interface RelayReport {
   readonly claimed: number;
   readonly published: number;
-  /** Failed attempts that were rescheduled. */
+  /** Intentos fallidos que se reprogramaron. */
   readonly failed: number;
-  /** Records given up on in this pass. */
+  /** Registros que se dieron por muertos en esta pasada. */
   readonly dead: number;
   /**
-   * Records not published because an older record of their group failed or
-   * was lost in this pass. Their lease is released; order is kept.
+   * Registros que no se publicaron porque un registro anterior de su grupo
+   * falló o se perdió en esta pasada. Se libera su lease y se conserva el orden.
    */
   readonly deferred: number;
   /**
-   * Records whose lease was lost (expired before publishing, or a mark was
-   * rejected because another relay took the record over).
+   * Registros cuyo lease se perdió (venció antes de publicar, o una marca se
+   * rechazó porque otro relay tomó el registro).
    */
   readonly stale: number;
 }
 
 const DEFAULT_BATCH_SIZE = 100;
-const DEFAULT_MAX_ATTEMPTS = 10;
 const DEFAULT_OWNER = 'outbox-relay';
 const DEFAULT_LEASE_MS = 30_000;
 
-function assertPositiveInteger(name: string, value: number | undefined): void {
-  if (value !== undefined && (!Number.isInteger(value) || value < 1)) {
-    throw new MessagingError(
-      PlatformErrorCode.MessagingInvalidOptions,
-      `${name} must be an integer >= 1`,
-    );
-  }
-}
-
 /**
- * Publishes due outbox records, one at a time and in `createdAt` order. Each
- * record is marked right after its publish. Delivery is at-least-once: a crash
- * between publish and mark can duplicate a message, which idempotent consumers absorb.
+ * Publica los registros del outbox que ya están vencidos, uno a uno y en orden
+ * de `createdAt`. Cada registro se marca justo después de su publicación. La
+ * entrega es al menos una vez: una caída entre la publicación y la marca puede
+ * duplicar un mensaje, que los consumidores idempotentes absorben.
  *
- * Fencing: each relay instance has its own owner id, and each pass leases its
- * records with a fresh token. Marks only apply while that lease is current, and
- * a record whose lease has already expired is not published.
+ * Fencing: cada instancia del relay tiene su propio id de dueño, y cada pasada
+ * toma sus registros con un token nuevo. Las marcas solo se aplican mientras ese
+ * lease sigue vigente, y un registro cuyo lease ya venció no se publica.
  *
- * FIFO per `groupId`: when a record of a group fails (or its lease is lost), the
- * later records of that group are not published in that pass; their lease is
- * released so they keep their place behind the failed one.
+ * FIFO por `groupId`: cuando un registro de un grupo falla (o se pierde su
+ * lease), los registros posteriores de ese grupo no se publican en esa pasada;
+ * su lease se libera para que conserven su lugar detrás del fallido.
  */
 export class OutboxRelay {
-  /** Lease owner of this relay instance: `<owner label>:<instance id>`. */
+  /** Dueño del lease de esta instancia del relay: `<etiqueta>:<id de instancia>`. */
   readonly ownerId: string;
 
   private readonly options: OutboxRelayOptions;
   private readonly clock: Clock;
   private readonly ids: IdGenerator;
-  private readonly backoff: BackoffOptions;
+  private readonly backoff: Backoff;
+  private readonly validator = new EnvelopeValidator();
 
   constructor(options: OutboxRelayOptions) {
     options.topology.assertValid();
-    this.backoff = toBackoffOptions(options.backoff);
-    validateBackoffOptions(this.backoff);
-    assertPositiveInteger('batchSize', options.batchSize);
-    assertPositiveInteger('maxAttempts', options.maxAttempts);
-    assertPositiveInteger('leaseMs', options.leaseMs);
+    const guard = MessagingGuard.instance;
+    if (options.batchSize !== undefined) {
+      guard.positiveInteger('batchSize', options.batchSize);
+    }
+    if (options.leaseMs !== undefined) {
+      guard.positiveInteger('leaseMs', options.leaseMs);
+    }
+    this.backoff = new Backoff(
+      options.retryPolicy,
+      options.random ?? new SystemRandomSource(),
+    );
     this.options = options;
     this.clock = options.clock ?? new SystemClock();
     this.ids = options.ids ?? new UuidV7IdGenerator();
     this.ownerId = `${options.owner ?? DEFAULT_OWNER}:${this.ids.next().toString()}`;
   }
 
-  /**
-   * Runs one pass over the records due now.
-   * @param now Deprecated: pass a `clock` in the options instead. When given, it
-   *   is the pass start time, and lease expiry is measured from it with the clock.
-   */
-  async relayOnce(now?: Date): Promise<RelayReport> {
+  /** Corre una pasada sobre los registros vencidos a esta hora. */
+  async relayOnce(): Promise<RelayReport> {
     const { store, publisher } = this.options;
-    const startedAt = this.clock.now().getTime();
-    const passStart = now?.getTime() ?? startedAt;
-    const current = (): number =>
-      passStart + (this.clock.now().getTime() - startedAt);
+    const passStart = this.clock.now().getTime();
+    const current = (): number => this.clock.now().getTime();
 
     const lease: OutboxLease = {
       owner: this.ownerId,
@@ -164,7 +127,7 @@ export class OutboxRelay {
       lease,
       leaseMs: this.options.leaseMs ?? DEFAULT_LEASE_MS,
     });
-    const maxAttempts = this.options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+    const maxAttempts = this.options.retryPolicy.maxAttempts;
 
     const blockedGroups = new Set<string>();
     const block = (record: OutboxRecord): void => {
@@ -185,7 +148,7 @@ export class OutboxRelay {
 
       const target = this.targetFor(record);
       if (typeof target === 'string') {
-        // Dead records do not block their group.
+        // Un registro Dead no bloquea a su grupo.
         if (await store.markDead(record.id, lease, target)) dead++;
         else {
           stale++;
@@ -196,7 +159,7 @@ export class OutboxRelay {
 
       const expiresAt = record.leaseExpiresAt?.getTime();
       if (expiresAt !== undefined && current() >= expiresAt) {
-        // Another relay may own it now: publishing could reorder the group.
+        // Otro relay puede tenerlo ahora: publicar podría desordenar el grupo.
         stale++;
         block(record);
         continue;
@@ -209,7 +172,7 @@ export class OutboxRelay {
           ...(delayMs > 0 ? { delayMs } : {}),
         });
       } catch (err) {
-        const message = describeError(err);
+        const message = ErrorDescriptor.describe(err).message;
         if (record.attempts + 1 >= maxAttempts) {
           if (await store.markDead(record.id, lease, message)) dead++;
           else {
@@ -217,9 +180,8 @@ export class OutboxRelay {
             block(record);
           }
         } else {
-          const delay = messagingBackoffDelay(
-            record.attempts + 1,
-            this.backoff,
+          const delay = this.backoff.delay(
+            Math.min(record.attempts + 1, Backoff.MAX_ATTEMPT),
           );
           const marked = await store.markFailed(
             record.id,
@@ -251,25 +213,25 @@ export class OutboxRelay {
     };
   }
 
-  /** What is left of a command delay, counted from the record creation. */
+  /** Lo que resta de la espera de un comando, contada desde la creación del registro. */
   private remainingDelay(record: OutboxRecord, now: number): number {
     if (!record.delayMs) return 0;
     return Math.max(0, record.createdAt.getTime() + record.delayMs - now);
   }
 
   /**
-   * Resolves the destination, or returns the reason the record is permanently
-   * undeliverable: no route, an envelope over the size limit, a payload that
-   * breaks the route contract (it would die in the DLQ of every consumer) or a
-   * FIFO target without group id.
+   * Resuelve el destino, o devuelve el motivo por el que el registro no se puede
+   * entregar nunca: no hay ruta, el sobre supera el límite de tamaño, el payload
+   * rompe el contrato de la ruta (moriría en la DLQ de todos los consumidores) o
+   * el destino es FIFO y el registro no tiene id de grupo.
    */
   private targetFor(record: OutboxRecord): OutboundTarget | string {
     const { type } = record.envelope;
     const route = this.options.topology.routeFor(type);
     if (!route) return `no route for type "${type}"`;
-    const size = envelopeSizeBytes(record.envelope);
-    if (size > MAX_ENVELOPE_BYTES)
-      return `payload is ${size} bytes, limit is ${MAX_ENVELOPE_BYTES}`;
+    const size = this.validator.sizeBytes(record.envelope);
+    if (size > EnvelopeLimits.MAX_BYTES)
+      return `payload is ${size} bytes, limit is ${EnvelopeLimits.MAX_BYTES}`;
     if (!route.contract) return `route "${type}" has no contract`;
     const parsed = route.contract.schema.safeParse(record.envelope.data);
     if (!parsed.success) {

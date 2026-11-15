@@ -139,3 +139,21 @@ class BackofficeOverview {
   final int sagasNeedingIntervention;
   final int deadLetterMessages;
 }
+
+/// A saga with its audit log, loaded together by the detail screen.
+final class SagaWithAudit {
+  const SagaWithAudit({required this.saga, required this.audit});
+
+  /// Null when the saga does not exist.
+  final Saga? saga;
+  final List<AuditEntry> audit;
+}
+
+/// A tenant with its audit log, loaded together by the detail screen.
+final class TenantWithAudit {
+  const TenantWithAudit({required this.tenant, required this.audit});
+
+  /// Null when the tenant does not exist.
+  final Tenant? tenant;
+  final List<AuditEntry> audit;
+}

@@ -1,16 +1,13 @@
 import { defineCommand, defineEvent } from '@contracts/platform';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { z } from 'zod';
 import { MessageKind } from '../../contracts/message-contract.js';
 import { QueueDef } from '../queue-def.js';
-import { RetryPolicy } from '../retry-policy.js';
-import { Route, TargetKind } from '../route.js';
+import { Route } from '../route.js';
+import { TargetKind } from '../target-kind.enum.js';
 import { TopicDef } from '../topic-def.js';
-import {
-  Topology,
-  TopologyError,
-  TopologyIssueKind,
-  TopologySeverity,
-} from '../topology.js';
+import { TopologyError } from '../../errors/topology.error.js';
+import { Topology, TopologyIssueKind, TopologySeverity } from '../topology.js';
 
 const TaskUpdated = defineEvent({
   type: 'tasks.task.updated.v1',
@@ -30,7 +27,7 @@ const GenerateReport = defineCommand({
   description: 'Mensaje de prueba.',
 });
 
-/** Generic contracts for the targeted validation tests. */
+/** Contratos genéricos para las pruebas de validación puntuales. */
 const RunJob = defineCommand({
   type: 'tests.job.run.v1',
   payload: z.object({}),
@@ -43,7 +40,7 @@ const ThingHappened = defineEvent({
   description: 'Mensaje de prueba.',
 });
 
-/** The canonical test topology. Its toJSON() export is asserted in the JSON test below. */
+/** Topología canónica de prueba. La prueba de JSON de más abajo comprueba su `toJSON()`. */
 function platformTopology(): Topology {
   const topics = [
     new TopicDef('tasks-events'),
@@ -52,14 +49,7 @@ function platformTopology(): Topology {
   const queues = [
     new QueueDef('notifications')
       .subscribesTo(topics[0], { types: ['tasks.task.updated.v1'] })
-      .retry(
-        RetryPolicy.exponential({
-          maxAttempts: 6,
-          baseMs: 2_000,
-          maxMs: 600_000,
-          jitter: true,
-        }),
-      )
+      .retry(new RetryPolicy(6, 2_000, 600_000, BackoffStrategy.FullJitter))
       .deadLetter({ maxReceiveCount: 6 }),
     new QueueDef('audit')
       .subscribesTo(topics[0])
@@ -82,7 +72,7 @@ function platformTopology(): Topology {
   return new Topology({ topics, queues, routes });
 }
 
-/** Builds a topology with one queue, for targeted validation tests. */
+/** Arma una topología con una cola, para las pruebas de validación puntuales. */
 function singleQueue(queue: QueueDef, topics: TopicDef[] = []): Topology {
   return new Topology({
     topics,
@@ -105,14 +95,14 @@ describe('Topology.validate', () => {
 
   it('reports duplicate names and duplicate route types', () => {
     function broken(): Topology {
-      const topics = [new TopicDef('a'), new TopicDef('a')];
+      const topics = [new TopicDef('alpha'), new TopicDef('alpha')];
       const queues = [
-        new QueueDef('q').deadLetter({ maxReceiveCount: 5 }),
-        new QueueDef('q').deadLetter({ maxReceiveCount: 5 }),
+        new QueueDef('queue-a').deadLetter({ maxReceiveCount: 5 }),
+        new QueueDef('queue-a').deadLetter({ maxReceiveCount: 5 }),
       ];
       const routes = [
-        Route.event(ThingHappened).to(new TopicDef('a')),
-        Route.event(ThingHappened).to(new TopicDef('a')),
+        Route.event(ThingHappened).to(new TopicDef('alpha')),
+        Route.event(ThingHappened).to(new TopicDef('alpha')),
       ];
       return new Topology({ topics, queues, routes });
     }
@@ -129,7 +119,7 @@ describe('Topology.validate', () => {
     function broken(): Topology {
       const topics = [new TopicDef('declared')];
       const queues = [
-        new QueueDef('q')
+        new QueueDef('queue-a')
           .subscribesTo(new TopicDef('ghost'))
           .deadLetter({ maxReceiveCount: 5 }),
       ];
@@ -170,35 +160,38 @@ describe('Topology.validate', () => {
   });
 
   it('requires a dead-letter queue on every queue', () => {
-    expect(kindsOf(singleQueue(new QueueDef('q')))).toEqual([
+    expect(kindsOf(singleQueue(new QueueDef('queue-a')))).toEqual([
       TopologyIssueKind.MissingDeadLetter,
     ]);
   });
 
   it('requires maxReceiveCount to be at least the retry maxAttempts', () => {
-    // Default policy has 5 attempts.
+    // La política por defecto tiene 5 intentos.
     expect(
       kindsOf(
-        singleQueue(new QueueDef('q').deadLetter({ maxReceiveCount: 4 })),
+        singleQueue(new QueueDef('queue-a').deadLetter({ maxReceiveCount: 4 })),
       ),
     ).toEqual([TopologyIssueKind.DeadLetterBelowMaxAttempts]);
     expect(
       kindsOf(
-        singleQueue(new QueueDef('q').deadLetter({ maxReceiveCount: 5 })),
+        singleQueue(new QueueDef('queue-a').deadLetter({ maxReceiveCount: 5 })),
       ),
     ).toEqual([]);
   });
 
   it('caps the retry delay at 12 hours', () => {
-    const tooLong = RetryPolicy.exponential({
-      maxAttempts: 3,
-      baseMs: 1_000,
-      maxMs: 12 * 3_600_000 + 1,
-    });
+    const tooLong = new RetryPolicy(
+      3,
+      1_000,
+      12 * 3_600_000 + 1,
+      BackoffStrategy.FullJitter,
+    );
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('q').retry(tooLong).deadLetter({ maxReceiveCount: 3 }),
+          new QueueDef('queue-a')
+            .retry(tooLong)
+            .deadLetter({ maxReceiveCount: 3 }),
         ),
       ),
     ).toEqual([TopologyIssueKind.RetryDelayTooLong]);
@@ -208,7 +201,7 @@ describe('Topology.validate', () => {
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('q')
+          new QueueDef('queue-a')
             .visibilityTimeout(43_201)
             .deadLetter({ maxReceiveCount: 5 }),
         ),
@@ -217,7 +210,7 @@ describe('Topology.validate', () => {
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('q')
+          new QueueDef('queue-a')
             .visibilityTimeout(43_200)
             .deadLetter({ maxReceiveCount: 5 }),
         ),
@@ -229,7 +222,7 @@ describe('Topology.validate', () => {
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('q').deadLetter({
+          new QueueDef('queue-a').deadLetter({
             maxReceiveCount: 5,
             retentionDays: 15,
           }),
@@ -239,7 +232,7 @@ describe('Topology.validate', () => {
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('q').deadLetter({
+          new QueueDef('queue-a').deadLetter({
             maxReceiveCount: 5,
             retentionDays: 0,
           }),
@@ -249,7 +242,7 @@ describe('Topology.validate', () => {
   });
 
   it('limits queue names to 80 characters including -dlq and .fifo', () => {
-    // 76 + "-dlq" = 80: allowed. 77 + "-dlq" = 81: rejected.
+    // 76 + "-dlq" = 80: se acepta. 77 + "-dlq" = 81: se rechaza.
     expect(
       kindsOf(
         singleQueue(
@@ -264,7 +257,7 @@ describe('Topology.validate', () => {
         ),
       ),
     ).toEqual([TopologyIssueKind.NameTooLong]);
-    // A FIFO queue adds ".fifo" (5 characters) to the longest name: 71 + 4 + 5 = 80 allowed, 72 rejected.
+    // Una cola FIFO suma ".fifo" (5 caracteres) al nombre más largo: 71 + 4 + 5 = 80 se acepta, 72 se rechaza.
     expect(
       kindsOf(
         singleQueue(
@@ -290,7 +283,7 @@ describe('Topology.validate', () => {
     function broken(): Topology {
       const topics = [topic];
       const queues = [
-        new QueueDef('q')
+        new QueueDef('queue-a')
           .subscribesTo(topic, { types: ['never.produced.v1'] })
           .deadLetter({ maxReceiveCount: 5 }),
       ];
@@ -362,20 +355,33 @@ describe('Topology.validate', () => {
     ).toEqual([TopologyIssueKind.ContractKindMismatch]);
   });
 
-  it('rejects topic and queue names that SNS or SQS would refuse', () => {
-    const topic = new TopicDef('tasks.events');
+  it.each(['Jobs_1-a', 'jobs queue', 'a', 'ends-'])(
+    'rejects the queue name "%s", which does not match the messaging name pattern',
+    (name) => {
+      expect(
+        kindsOf(
+          singleQueue(new QueueDef(name).deadLetter({ maxReceiveCount: 5 })),
+        ),
+      ).toEqual([TopologyIssueKind.InvalidName]);
+    },
+  );
+
+  it('rejects a topic name that does not match the messaging name pattern', () => {
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('jobs queue').deadLetter({ maxReceiveCount: 5 }),
-          [topic],
+          new QueueDef('jobs-queue').deadLetter({ maxReceiveCount: 5 }),
+          [new TopicDef('tasks.events')],
         ),
       ),
-    ).toEqual([TopologyIssueKind.InvalidName, TopologyIssueKind.InvalidName]);
+    ).toEqual([TopologyIssueKind.InvalidName]);
+  });
+
+  it('accepts names of lowercase letters, digits and hyphens', () => {
     expect(
       kindsOf(
         singleQueue(
-          new QueueDef('Jobs_1-a').deadLetter({ maxReceiveCount: 5 }),
+          new QueueDef('jobs-queue-2').deadLetter({ maxReceiveCount: 5 }),
         ),
       ),
     ).toEqual([]);
@@ -383,7 +389,7 @@ describe('Topology.validate', () => {
 
   it('assertValid throws a TopologyError carrying every error issue', () => {
     function broken(): Topology {
-      const topics = [new TopicDef('a'), new TopicDef('a')];
+      const topics = [new TopicDef('alpha'), new TopicDef('alpha')];
       const queues: QueueDef[] = [];
       const routes: never[] = [];
       return new Topology({ topics, queues, routes });
@@ -495,7 +501,7 @@ describe('Topology routing and export', () => {
     );
 
     function broken(): Topology {
-      const topics = [new TopicDef('a'), new TopicDef('a')];
+      const topics = [new TopicDef('alpha'), new TopicDef('alpha')];
       const queues: QueueDef[] = [];
       const routes: never[] = [];
       return new Topology({ topics, queues, routes });

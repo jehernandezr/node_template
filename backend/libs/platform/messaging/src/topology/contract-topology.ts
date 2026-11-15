@@ -4,14 +4,16 @@ import type {
   ServiceContract,
   TopicDefinition,
 } from '@contracts/platform';
-import { PlatformErrorCode } from '@contracts/platform';
+import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 import { MessagingError } from '../errors/messaging-error.js';
 import { QueueDef } from './queue-def.js';
-import { RetryPolicy } from './retry-policy.js';
-import { Route, type RouteDef } from './route.js';
+import { Route } from './route.js';
+import type { RouteDef } from './route-def.js';
 import { TopicDef } from './topic-def.js';
 import { Topology } from './topology.js';
+import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 
+/** Traduce una cola del contrato a su definición de topología. */
 function queueDefOf(
   queue: QueueDefinition,
   topicDef: (topic: TopicDefinition) => TopicDef,
@@ -19,12 +21,12 @@ function queueDefOf(
   const def = new QueueDef(queue.name)
     .visibilityTimeout(queue.visibilityTimeoutSeconds)
     .retry(
-      RetryPolicy.exponential({
-        maxAttempts: queue.retry.maxAttempts,
-        baseMs: queue.retry.baseMs,
-        maxMs: queue.retry.maxMs,
-        jitter: true,
-      }),
+      new RetryPolicy(
+        queue.retry.maxAttempts,
+        queue.retry.baseMs,
+        queue.retry.maxMs,
+        BackoffStrategy.FullJitter,
+      ),
     )
     .deadLetter({
       maxReceiveCount: queue.deadLetter.maxReceiveCount,
@@ -40,19 +42,20 @@ function queueDefOf(
 }
 
 /**
- * Builds the runtime topology of a service from the contracts.
+ * Construye la topología en tiempo de ejecución de un servicio a partir de sus
+ * contratos.
  *
- * Pass the service's own contract and those of the services it talks to: the
- * owners of the commands it sends (`sends`) and of the topics its queues
- * subscribe to. The topics of a subscription are included even when their
- * contract is missing, because the definition travels with the subscription; a
- * command in `sends` needs the contract that declares its queue.
+ * Se pasan el contrato del propio servicio y los de los servicios con los que
+ * habla: los dueños de los comandos que envía (`sends`) y de los tópicos a los
+ * que se suscriben sus colas. Los tópicos de una suscripción entran aunque falte
+ * su contrato, porque la definición viaja con la suscripción; un comando de
+ * `sends` necesita el contrato que declara su cola.
  *
- * Each event gets the route to its topic and each command the route to its
- * queue, with the contract of the kit, so the bus and the relay validate the
- * payload and the dispatcher knows whether a type without a handler is an event
- * (ignored) or a command. The topology is validated before it is returned
- * (`TopologyError` when invalid).
+ * Cada evento obtiene la ruta a su tópico y cada comando la ruta a su cola, con
+ * el contrato del kit, así el bus y el relay validan el payload y el
+ * dispatcher sabe si un tipo sin manejador es un evento (se ignora) o un
+ * comando. La topología se valida antes de devolverse (`TopologyError` si no es
+ * válida).
  */
 export function topologyFromContracts(
   contracts: readonly ServiceContract[],
@@ -91,7 +94,7 @@ export function topologyFromContracts(
     for (const command of contract.sends) {
       if (!commandQueues.has(command)) {
         throw new MessagingError(
-          PlatformErrorCode.MessagingInvalidTopology,
+          MessagingErrorCode.InvalidTopology,
           `${contract.service} sends "${command.type}", but none of the given contracts declares its queue`,
         );
       }

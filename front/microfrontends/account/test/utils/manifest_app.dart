@@ -6,12 +6,13 @@ import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_account/mf_account.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
 import 'test_app.dart';
 
-/// Monta las rutas reales del manifiesto en un [GoRouter] simple, sobre un
-/// [ShellAccessScope] con [session]. `/step-up` y `/forbidden` son páginas
-/// de marcador.
+/// Pumps the real manifest routes in a plain [GoRouter], over a
+/// [ShellAccessScope] with [session]. `/step-up` and `/forbidden` are
+/// placeholder pages.
 Future<GoRouter> pumpAccountRoutes(
   WidgetTester tester, {
   required String location,
@@ -22,7 +23,10 @@ Future<GoRouter> pumpAccountRoutes(
   final router = GoRouter(
     initialLocation: location,
     routes: [
-      ...accountManifest.buildRoutes(deferredPage, () => ownScope),
+      ...accountManifest.buildRoutes(
+        DeferredLibraryLoader().page,
+        () => ownScope,
+      ),
       GoRoute(path: '/step-up', builder: (_, _) => const Text('step-up page')),
       GoRoute(path: '/forbidden', builder: (_, _) => const Text('forbidden')),
     ],
@@ -31,6 +35,7 @@ Future<GoRouter> pumpAccountRoutes(
   await tester.pumpWidget(
     ShellAccessScope(
       session: ValueNotifier(session ?? testSession()),
+      clock: FakeClock().now,
       paths: const ShellPaths(stepUp: '/step-up'),
       child: MaterialApp.router(
         routerConfig: router,
@@ -48,6 +53,6 @@ Future<GoRouter> pumpAccountRoutes(
   return router;
 }
 
-/// Ruta actual del [router].
+/// Current path of [router].
 String currentPath(GoRouter router) =>
     router.routerDelegate.currentConfiguration.uri.path;

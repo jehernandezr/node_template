@@ -8,9 +8,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
 import 'src/screens/screens.dart' deferred as screens;
+import 'src/shared/constants/account_access.dart';
 import 'src/shared/constants/account_constants.dart';
 import 'src/shared/enums/account_enums.dart';
-import 'src/shared/constants/account_access.dart';
 
 /// Manifest registered by the shells. Routes live under `/account`.
 ///
@@ -31,36 +31,31 @@ final MicrofrontendManifest accountManifest = MicrofrontendManifest(
     ),
   ],
   screens: [
-    ScreenRoute(
-      path: accountBasePath,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) =>
-          screens.buildAccountOverviewScreen(scope),
+    ScreenRoute.deferred(
+      accountBasePath,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.AccountScreens.overview(scope),
       routes: [
-        ScreenRoute(
-          path: AccountSection.sessions.segment,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) =>
-              screens.buildAccountSessionsScreen(scope),
+        ScreenRoute.deferred(
+          AccountSection.sessions.segment,
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.AccountScreens.sessions(scope),
         ),
-        ScreenRoute(
-          path: AccountSection.devices.segment,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) =>
-              screens.buildAccountDevicesScreen(scope),
+        ScreenRoute.deferred(
+          AccountSection.devices.segment,
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.AccountScreens.devices(scope),
         ),
-        ScreenRoute(
-          path: AccountSection.security.segment,
-          loadLibrary: screens.loadLibrary,
+        ScreenRoute.deferred(
+          AccountSection.security.segment,
+          library: screens.loadLibrary,
           access: accountStepUpRule,
-          builder: (scope, {params = const {}}) =>
-              screens.buildAccountSecurityScreen(scope),
+          build: (scope, params) => screens.AccountScreens.security(scope),
         ),
-        ScreenRoute(
-          path: AccountSection.agreements.segment,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) =>
-              screens.buildAccountAgreementsScreen(scope),
+        ScreenRoute.deferred(
+          AccountSection.agreements.segment,
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.AccountScreens.agreements(scope),
         ),
       ],
     ),

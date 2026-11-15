@@ -1,17 +1,11 @@
 import { PlatformErrorCode, platformErrorCatalog } from '@contracts/platform';
 import { isErrorCode } from '@platform/kernel';
 import { classifyFailure, FailureKind } from '@platform/primitives';
-import { ActorType, RequestContext } from '@platform/observability';
-import {
-  EMPTY_PERSISTENCE_CONTEXT,
-  requestContextProvider,
-} from '../context/persistence-context.js';
 import {
   OptimisticLockError,
   PersistenceError,
   toPersistenceError,
 } from '../errors.js';
-import { sqlComment, withSqlComment } from '../sql/sql-comment.js';
 
 const persistenceCodes = Object.values(PlatformErrorCode).filter((code) =>
   code.startsWith('PLATFORM.PERSISTENCE.'),
@@ -77,54 +71,5 @@ describe('errors', () => {
       new PersistenceError(PlatformErrorCode.PersistenceTenantRequired, 'x')
         .failureKind,
     ).toBe(FailureKind.ProtocolViolation);
-  });
-});
-
-describe('sql comment', () => {
-  it('carries traceId and tenantId', () => {
-    expect(
-      withSqlComment('SELECT 1', { traceId: 'abc-1', tenantId: 't-1' }),
-    ).toBe('/* traceId=abc-1 tenantId=t-1 */ SELECT 1');
-    expect(sqlComment({})).toBe('');
-  });
-
-  it('cannot be closed or abused by an external value', () => {
-    const comment = sqlComment({
-      traceId: 'x */ DROP TABLE users; /*',
-      tenantId: "t'1",
-    });
-    expect(comment).toBe('/* traceId=xDROPTABLEusers tenantId=t1 */ ');
-    expect(sqlComment({ traceId: 'a'.repeat(500) })).toHaveLength(
-      '/* traceId= */ '.length + 64,
-    );
-  });
-});
-
-describe('requestContextProvider', () => {
-  it('reads trace, tenant, actor and user from RequestContext', () => {
-    const context = RequestContext.run(
-      {
-        traceId: '0193f1c2-0000-7000-8000-00000000c0de',
-        spanId: '00f067aa0ba902b7',
-        tenantId: 'tenant-1',
-        actorId: 'svc-billing',
-        actorType: ActorType.ServiceAccount,
-        userId: 'user-1',
-        debugSampled: false,
-      },
-      () => requestContextProvider(),
-    );
-    // RequestContext normaliza el traceId al formato W3C de 32 hex.
-    expect(context).toEqual({
-      traceId: '0193f1c200007000800000000000c0de',
-      tenantId: 'tenant-1',
-      actorId: 'svc-billing',
-      actorType: ActorType.ServiceAccount,
-      userId: 'user-1',
-    });
-  });
-
-  it('is empty outside a request', () => {
-    expect(requestContextProvider()).toBe(EMPTY_PERSISTENCE_CONTEXT);
   });
 });
