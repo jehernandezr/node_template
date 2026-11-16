@@ -1,7 +1,8 @@
 import type { Type } from '@nestjs/common';
 import type { OperationDefinition } from '@contracts/platform';
 import type { PurgeableStore } from '@platform/kernel';
-import type { FinalOutcome, IdempotencyStore } from '@platform/primitives';
+import type { FinalOutcome } from '@platform/primitives';
+import { IdempotencyStore } from '@platform/kernel';
 import type { InternalTransportKind } from './internal-transport-kind.enum.js';
 
 /** Cómo se llega por HTTP a otros servicios y cómo se firman y verifican las llamadas. */

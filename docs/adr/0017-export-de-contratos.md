@@ -26,7 +26,7 @@ Además, la auditoría del 12 de noviembre encontró que los enums de acceso sol
 
 Esquemas transversales: `Id` (UUIDv7), `Timestamp` (ISO 8601 en UTC), `Cursor` y `PageLimit` acotados por `Pagination`, `PageQuery`, `pageOf(item)`, `CurrencyCode`, `MoneyAmount` (entero en unidades menores), `FieldError`, `ProblemDetails` y `Empty`.
 
-El catálogo de plataforma cubre todo código `PLATFORM.*` declarado en `backend/libs/platform`; una prueba falla si aparece uno nuevo sin entrada. Las librerías no repiten el texto de sus códigos: `InternalApiErrorCode` y `SagaErrorCode` toman cada valor de `PlatformErrorCode`.
+El catálogo central solo guarda los códigos públicos y transversales de `PlatformErrorCode`. Cada librería de `backend/libs/platform` declara en su propio enum los códigos internos y su catálogo; el servicio compone el central con los de las librerías que usa, y `ErrorCatalog.register` acepta una entrada repetida solo si define lo mismo. Una prueba de `platform-smoke` exige que ningún código que existía antes de la limpieza se pierda.
 
 ### Contratos por servicio
 

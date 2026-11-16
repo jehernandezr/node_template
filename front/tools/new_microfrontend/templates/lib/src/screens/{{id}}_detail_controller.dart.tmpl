@@ -1,0 +1,33 @@
+import 'package:flutter/foundation.dart';
+import 'package:ui/ui.dart';
+
+import '../data/{{id}}_repository.dart';
+import '../shared/types/{{id}}_item.dart';
+
+/// State of one {{id}} item.
+final class {{Pascal}}DetailController extends ChangeNotifier {
+  /// Controller over [repository] for the item [itemId]. Call [start] once.
+  {{Pascal}}DetailController(
+    {{Pascal}}Repository repository, {
+    required this.itemId,
+  }) : _loader = AsyncLoader<{{Pascal}}Item>(() => repository.get(itemId)) {
+    _loader.addListener(notifyListeners);
+  }
+
+  /// Id of the item shown.
+  final String itemId;
+
+  final AsyncLoader<{{Pascal}}Item> _loader;
+
+  /// The item, or the state of the load.
+  AsyncValue<{{Pascal}}Item> get value => _loader.value;
+
+  /// Loads the item. Call it again to retry after an error.
+  Future<void> start() => _loader.load();
+
+  @override
+  void dispose() {
+    _loader.dispose();
+    super.dispose();
+  }
+}

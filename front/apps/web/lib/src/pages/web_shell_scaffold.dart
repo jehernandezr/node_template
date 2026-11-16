@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_host/shell_host.dart';
@@ -28,31 +30,37 @@ class WebShellScaffold extends StatelessWidget {
       listenable: Listenable.merge([host.session, host.badges]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
-        final locale = Localizations.localeOf(context);
         final entries = host.menu;
-        final current = host.registry.manifestForPath(location)?.id;
-        final selected = entries.indexWhere(
-          (entry) => host.registry.manifestForPath(entry.path)?.id == current,
+        // The web rail shows every entry: there is no "More" slot.
+        final menu = ShellMenuModel(
+          entries: entries,
+          location: location,
+          languageCode: Localizations.localeOf(context).languageCode,
+          badgeFor: host.badgeFor,
+          maxPrimary: entries.length,
         );
         // No top bar here: each screen draws its own with AppPage, and gets
         // the sign-out action from ShellChrome where the rail is not shown.
         return ShellChrome(
-          selectedIndex: selected < 0 ? 0 : selected,
-          onSelected: (index) => host.router.go(entries[index].path),
+          selectedIndex: menu.selectedIndex < 0 ? 0 : menu.selectedIndex,
+          onSelected: (index) {
+            final path = menu.pathAt(index);
+            if (path != null) host.router.go(path);
+          },
           destinations: [
-            for (final entry in entries)
+            for (final destination in menu.primary)
               AdaptiveDestination(
-                label: entry.label.resolve(locale),
-                icon: entry.icon,
-                selectedIcon: entry.selectedIcon,
-                badgeCount: host.badgeFor(entry),
+                label: destination.label,
+                icon: destination.icon,
+                selectedIcon: destination.selectedIcon,
+                badgeCount: destination.badge,
               ),
           ],
           actions: [
             IconButton(
               tooltip: l10n.actionSignOut,
               icon: const Icon(Icons.logout),
-              onPressed: () => host.signOut(),
+              onPressed: () => unawaited(host.signOut()),
             ),
           ],
           body: child,

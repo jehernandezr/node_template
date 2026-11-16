@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PrimitivesErrorCode } from '../../errors/primitives-error-code.enum.js';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { CallOutcome, type FinalOutcome } from '../../call-outcome.js';
 import { Deadline } from '../../deadline.js';
@@ -9,14 +9,11 @@ import {
 } from '../../index.js';
 import {
   ClaimState,
-  computeLeaseUntil,
-  DEFAULT_LEASE_MARGIN_MS,
-  MAX_FINGERPRINT_LENGTH,
-  MAX_IDEMPOTENCY_KEY_LENGTH,
   type AcquiredClaim,
   type ClaimRequest,
   type ClaimResult,
-} from '../idempotency-store.js';
+} from '@platform/kernel';
+import { ClaimRules } from '../claim-rules.js';
 import { InMemoryIdempotencyStore } from '../in-memory-idempotency-store.js';
 
 type Result = FinalOutcome<{ readonly orderId: string }>;
@@ -55,7 +52,7 @@ describe('InMemoryIdempotencyStore', () => {
       const claim = expectAcquired(await store.claim(KEY, request(1_000)));
       expect(claim.claimToken).toMatch(/^[0-9a-f-]{36}$/);
       expect(claim.leaseUntil).toBe(
-        START.getTime() + 1_000 + DEFAULT_LEASE_MARGIN_MS,
+        START.getTime() + 1_000 + ClaimRules.DEFAULT_LEASE_MARGIN_MS,
       );
       expect(claim.fingerprint).toBe('fp-1');
       expect(claim.takeover).toBe(false);
@@ -146,9 +143,13 @@ describe('InMemoryIdempotencyStore', () => {
 
     it.each<[string, string, string]>([
       ['an empty key', '', 'fp'],
-      ['an overlong key', 'k'.repeat(MAX_IDEMPOTENCY_KEY_LENGTH + 1), 'fp'],
+      ['an overlong key', 'k'.repeat(ClaimRules.MAX_KEY_LENGTH + 1), 'fp'],
       ['an empty fingerprint', 'k', ''],
-      ['an overlong fingerprint', 'k', 'f'.repeat(MAX_FINGERPRINT_LENGTH + 1)],
+      [
+        'an overlong fingerprint',
+        'k',
+        'f'.repeat(ClaimRules.MAX_FINGERPRINT_LENGTH + 1),
+      ],
     ])('rejects %s', async (_label, key, fingerprint) => {
       await expect(
         store.claim(key, request(1_000, { fingerprint })),
@@ -173,7 +174,7 @@ describe('InMemoryIdempotencyStore', () => {
       expect(second.takeover).toBe(true);
       expect(second.claimToken).not.toBe(first.claimToken);
       expect(second.leaseUntil).toBe(
-        first.leaseUntil + 2_000 + DEFAULT_LEASE_MARGIN_MS,
+        first.leaseUntil + 2_000 + ClaimRules.DEFAULT_LEASE_MARGIN_MS,
       );
       // La huella es la del primer claim, para detectar reusos de la llave.
       expect(second.fingerprint).toBe('fp-1');
@@ -191,7 +192,7 @@ describe('InMemoryIdempotencyStore', () => {
       );
       await expect(late).rejects.toBeInstanceOf(StaleClaimError);
       await expect(late).rejects.toMatchObject({
-        code: PlatformErrorCode.PrimitivesStaleClaim,
+        code: PrimitivesErrorCode.StaleClaim,
       });
 
       // El dueño nuevo sí completa, y su resultado es el que queda.
@@ -302,13 +303,16 @@ describe('computeLeaseUntil', () => {
 
   it('is the deadline plus the default margin', () => {
     expect(
-      computeLeaseUntil({ deadline: Deadline.after(1_000, clock) }, now),
-    ).toBe(now + 1_000 + DEFAULT_LEASE_MARGIN_MS);
+      ClaimRules.computeLeaseUntil(
+        { deadline: Deadline.after(1_000, clock) },
+        now,
+      ),
+    ).toBe(now + 1_000 + ClaimRules.DEFAULT_LEASE_MARGIN_MS);
   });
 
   it('is at least minLeaseMs from now', () => {
     expect(
-      computeLeaseUntil(
+      ClaimRules.computeLeaseUntil(
         { deadline: Deadline.after(1_000, clock), minLeaseMs: 60_000 },
         now,
       ),
@@ -321,7 +325,7 @@ describe('computeLeaseUntil', () => {
     { minLeaseMs: Number.POSITIVE_INFINITY },
   ])('rejects %p', (override) => {
     expect(() =>
-      computeLeaseUntil(
+      ClaimRules.computeLeaseUntil(
         { deadline: Deadline.after(1, clock), ...override },
         now,
       ),

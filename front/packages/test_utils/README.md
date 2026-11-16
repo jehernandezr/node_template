@@ -13,6 +13,11 @@ Dobles y utilitarios de prueba que comparten varios paquetes del front. Solo se 
 - `pumpAtWidths`: monta una pantalla a cada ancho y llama a una comprobación con cada uno.
 - `pumpAtTextScale`: monta una pantalla con la escala de texto de accesibilidad (2x por defecto).
 - `DeferredLibrariesPreloader`: carga en `setUpAll` las librerías diferidas de los manifiestos, sus pantallas y su ciclo de vida.
-- `DeferredLibrariesLoader`: legado que delega en `DeferredLibrariesPreloader`; se retira cuando sus llamadores migren.
+- `ShellFixture` y `ShellUnderTest`: lo que la suite de escenarios pide a cada app para montarla y observarla.
+- `ShellScenarioSetup`: manifiestos, reloj, sesión inicial, conexión real y ruta inicial de un escenario.
+- `defineShellScenarios`: registra en un grupo los escenarios compartidos de sesión, paso adicional e identidad de shell.
+- `ScenarioProbe` y `ScenarioIdentity`: microfrontend de sonda y conexión real sobre `FakeAuthRepository`, para los escenarios.
+- `RuntimeSettler`: espera en una prueba de widgets a que el runtime del shell termine su cola, alternando el reloj falso y el ciclo de eventos real.
+- `RoutePaths`: todas las rutas de un árbol de `go_router` y las que aparecen repetidas.
 
 Lo que solo usan las pruebas de un paquete va en el `test/utils/` de ese paquete.

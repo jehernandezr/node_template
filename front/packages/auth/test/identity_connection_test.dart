@@ -14,6 +14,8 @@ SessionAccess _access(List<Permission> permissions) => SessionAccess(
   tenantId: '0193f1c2-0000-7000-8000-0000000000b1',
   sessionId: '0193f1c2-0000-7000-8000-0000000000c1',
   permissions: permissions,
+  roles: const <String>[],
+  permissionVersion: '1.1',
   platformRoles: const [],
   features: const [PlanFeature.billing],
   flags: const [],
@@ -213,6 +215,28 @@ void main() {
       'code': code.code,
     });
 
+    String platformProblem(PlatformErrorCode code) => jsonEncode({
+      'type': 'about:blank',
+      'title': code.code,
+      'status': code.httpStatus,
+      'code': code.code,
+    });
+
+    TransportResponse refreshed(String access) => TransportResponse(
+      statusCode: 200,
+      body: jsonEncode(
+        SessionTokens(
+          accessToken: access,
+          accessExpiresAt: DateTime.now().add(const Duration(hours: 1)),
+          sessionToken: 'session-$access',
+        ).toJson(),
+      ),
+    );
+
+    int refreshCalls() => transport.requests
+        .where((request) => request.uri.path == '/v1/auth/refresh')
+        .length;
+
     Future<void> signIn() async {
       await real.sessionManager.signIn(
         const SignInRequest(email: 'ana@example.com', password: 'secret'),
@@ -337,6 +361,79 @@ void main() {
         transport.requests.last.headers['authorization'],
         'Bearer real-token',
       );
+    });
+
+    test('an expired access token refreshes once and retries the route '
+        'with the new token', () async {
+      transport.answer = base;
+      await signIn();
+      var accessCalls = 0;
+      transport.answer = (request) => switch (request.uri.path) {
+        '/v1/me/access' =>
+          ++accessCalls == 1
+              ? TransportResponse(
+                  statusCode: PlatformErrorCode.authTokenExpired.httpStatus,
+                  body: platformProblem(PlatformErrorCode.authTokenExpired),
+                )
+              : TransportResponse(
+                  statusCode: 200,
+                  body: jsonEncode(_access([Permission.tasksWrite]).toJson()),
+                ),
+        '/v1/auth/refresh' => refreshed('real-token-2'),
+        _ => base(request),
+      };
+
+      final access = await real.apiClient.send(
+        IdentityRoutes.getSessionAccess,
+        const Empty(),
+      );
+
+      expect(access.permissions, [Permission.tasksWrite]);
+      expect(refreshCalls(), 1);
+      expect(real.sessionManager.state, AuthState.signedIn);
+      expect(
+        transport.requests
+            .where((request) => request.uri.path == '/v1/me/access')
+            .last
+            .headers['authorization'],
+        'Bearer real-token-2',
+      );
+    });
+
+    test('an access token that is still expired after the refresh fails '
+        'the call once, without a second refresh', () async {
+      transport.answer = base;
+      await signIn();
+      var accessCalls = 0;
+      transport.answer = (request) => switch (request.uri.path) {
+        '/v1/me/access' =>
+          ++accessCalls <= 2
+              ? TransportResponse(
+                  statusCode: PlatformErrorCode.authTokenExpired.httpStatus,
+                  body: platformProblem(PlatformErrorCode.authTokenExpired),
+                )
+              : TransportResponse(
+                  statusCode: 200,
+                  body: jsonEncode(_access([Permission.tasksRead]).toJson()),
+                ),
+        '/v1/auth/refresh' => refreshed('real-token-2'),
+        _ => base(request),
+      };
+
+      await expectLater(
+        real.apiClient.send(IdentityRoutes.getSessionAccess, const Empty()),
+        throwsA(
+          isA<ApiErrorException>().having(
+            (error) => error.problem.code,
+            'code',
+            PlatformErrorCode.authTokenExpired.code,
+          ),
+        ),
+      );
+
+      expect(refreshCalls(), 1);
+      expect(real.sessionManager.state, AuthState.signedIn);
+      expect(real.access.value, isNotNull);
     });
 
     test('dispose closes the transport it owns', () async {

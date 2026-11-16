@@ -1,9 +1,6 @@
 import type { Clock, IdGenerator } from '@platform/kernel';
-import type {
-  ClaimRequest,
-  ClaimResult,
-  FinalOutcome,
-} from '@platform/primitives';
+import type { FinalOutcome } from '@platform/primitives';
+import { ClaimRequest, ClaimResult } from '@platform/kernel';
 import { ProcessedOperationStore } from '../../processed-operation-store.js';
 import { RecordingProcessedOperationStore } from './recording-processed-operation-store.js';
 

@@ -1,29 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { ErrorAudience } from '../../enums/error-audience.enum.js';
 import { PlatformErrorCode } from '../../enums/platform-error-code.enum.js';
 import { ERROR_CODE_PATTERN, messageKeyFor } from '../../kit/error-catalog.js';
 import { platformErrorCatalog } from '../platform-error-catalog.js';
-
-/** Carpetas generadas o de terceros que no declaran códigos propios. */
-const SKIPPED_SEGMENT = /(^|\/)(node_modules|dist)(\/|$)/;
-
-/**
- * Archivos `.ts` de producción (sin specs) bajo `dir`. Los enums de códigos de
- * cada librería (`*-error-code.enum.ts`) quedan fuera: cada librería declara su
- * propio catálogo.
- */
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    .filter(
-      (path) =>
-        !SKIPPED_SEGMENT.test(path) &&
-        path.endsWith('.ts') &&
-        !path.endsWith('.spec.ts') &&
-        !path.endsWith('-error-code.enum.ts'),
-    )
-    .map((path) => join(dir, path));
-}
 
 describe('platformErrorCatalog', () => {
   const values = Object.values(PlatformErrorCode);
@@ -89,20 +67,9 @@ describe('platformErrorCatalog', () => {
     expect(entry).toMatchObject({ httpStatus: 503, retryable: true });
   });
 
-  it('covers every PLATFORM code declared in libs/platform', () => {
-    const root = join(__dirname, '..', '..', '..', '..', '..', 'platform');
-    const declared = new Set(
-      sourceFiles(root).flatMap((file) =>
-        [
-          ...readFileSync(file, 'utf8').matchAll(
-            /'(PLATFORM\.[A-Z_]+\.[A-Z_]+)'/g,
-          ),
-        ].map((match) => match[1]),
-      ),
-    );
-    expect(declared.size).toBeGreaterThan(0);
-    const catalogued = new Set<string>(values);
-    const missing = [...declared].filter((code) => !catalogued.has(code));
-    expect(missing).toEqual([]);
+  it('only declares public codes', () => {
+    for (const entry of platformErrorCatalog) {
+      expect(entry.audience).toBe(ErrorAudience.Public);
+    }
   });
 });

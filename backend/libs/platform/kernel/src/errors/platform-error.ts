@@ -1,19 +1,4 @@
-import { ErrorCode } from './error-code.js';
 import { FailureKind } from './failure-kind.js';
-
-/**
- * Forma de un código de error estable: `SERVICIO.SUBMODULO.ERROR`.
- * @deprecated Usa `ErrorCode.PATTERN`.
- */
-export const ERROR_CODE_PATTERN = ErrorCode.PATTERN;
-
-/**
- * Indica si `code` cumple el formato `SERVICIO.SUBMODULO.ERROR`.
- * @deprecated Usa `ErrorCode.isValid`.
- */
-export function isErrorCode(code: unknown): code is string {
-  return ErrorCode.isValid(code);
-}
 
 /** Opciones comunes al construir un `PlatformError`. */
 export interface PlatformErrorOptions {
@@ -77,12 +62,4 @@ export abstract class PlatformError extends Error {
   static is(value: unknown): value is PlatformError {
     return value instanceof PlatformError;
   }
-}
-
-/**
- * Indica si `value` es un `PlatformError`.
- * @deprecated Usa `PlatformError.is`.
- */
-export function isPlatformError(value: unknown): value is PlatformError {
-  return PlatformError.is(value);
 }

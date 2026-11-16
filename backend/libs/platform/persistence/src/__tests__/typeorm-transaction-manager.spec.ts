@@ -1,6 +1,6 @@
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import type { DataSource, QueryRunner, ReplicationMode } from 'typeorm';
 import { IsolationLevel } from '@platform/kernel';
-import { PlatformErrorCode } from '@contracts/platform';
 import { ShardKey, ShardingErrorCode } from '@platform/sharding';
 import { DataSourceFactory } from '../ports/data-source-factory.js';
 import type { DatabaseTarget } from '../model/database-target.js';
@@ -129,7 +129,7 @@ describe('TypeOrmTransactionManager', () => {
       await expect(
         transactions.runInTransaction(() => Promise.resolve('never returned')),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.PersistenceQueryFailed,
+        code: PersistenceErrorCode.QueryFailed,
       });
 
       expect(factory.created[0].runners[0].calls).toEqual([

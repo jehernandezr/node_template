@@ -11,14 +11,14 @@ Donde el plan y un ADR se contradicen, manda el ADR. Por eso el inicio de sesió
 
 ## 1. Punto de partida
 
-| Pieza                  | Estado hoy                                                                                                                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@contracts/identity`  | 13 rutas (sign-in, MFA, refresh, sign-out, step-up, `me/access`, sesiones, dispositivos), 2 operaciones internas, 2 eventos, 15 códigos. El front (`front/packages/auth`) ya consume 9 rutas.                            |
-| `@contracts/platform`  | `defineRoute`, `Access`, `decodeQuery`, `validateContract`, `toProblemDetails`, catálogo `PLATFORM.*`.                                                                                                                   |
-| `@platform/*`          | kernel, primitives, config, observability (`RequestContext`, `setupTelemetry`), persistence (`createPersistence`, `BaseRepository`, migraciones SQL), sharding, cache, bloom, resilience, internal-api, messaging, saga. |
-| `@platform/adapters-*` | Valkey (caché, ruteo, Bloom, canal de directorio), Postgres (outbox, `processed_messages`), AWS (SNS y SQS).                                                                                                             |
-| `backend/apps`         | No existe. NestJS no está en el workspace.                                                                                                                                                                               |
-| Entorno local          | `catalog`, `identity_shard_0` e `identity_shard_1` en Postgres; Valkey con el módulo de Bloom; Mailpit.                                                                                                                  |
+| Pieza                  | Estado hoy                                                                                                                                                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@contracts/identity`  | 13 rutas (sign-in, MFA, refresh, sign-out, step-up, `me/access`, sesiones, dispositivos), 2 operaciones internas, 2 eventos, 15 códigos. El front (`front/packages/auth`) ya consume 9 rutas.                                                                       |
+| `@contracts/platform`  | `defineRoute`, `Access`, `decodeQuery`, `validateContract`, `toProblemDetails`, catálogo `PLATFORM.*`.                                                                                                                                                              |
+| `@platform/*`          | kernel, primitives, config, observability (`RequestContext`, `setupTelemetry`), persistence (`ShardResolver`, `ShardScope`, `ShardedRepository`, `ShardedMigrationRunner`, migraciones TypeORM), sharding, cache, bloom, resilience, internal-api, messaging, saga. |
+| `@platform/adapters-*` | Valkey (caché, ruteo, Bloom, canal de directorio), Postgres (outbox, `processed_messages`), AWS (SNS y SQS).                                                                                                                                                        |
+| `backend/apps`         | No existe. NestJS no está en el workspace.                                                                                                                                                                                                                          |
+| Entorno local          | `catalog`, `identity_shard_0` e `identity_shard_1` en Postgres; Valkey con el módulo de Bloom; Mailpit.                                                                                                                                                             |
 
 Faltan cuatro piezas de plataforma (entrada HTTP, verificación de tokens, límites de tasa y arranque del servicio), un ajuste a la persistencia (`ShardScope`) y el servicio completo.
 
@@ -38,14 +38,14 @@ La persistencia de esta tabla es la capa sobre `pg`. Antes de que arranque F4 se
 
 ### 3.1 Mapa
 
-| Librería                              | Carpeta                                   | Tags                              | Depende de                                                                                                                                                |
-| ------------------------------------- | ----------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@platform/auth`                      | `backend/libs/platform/auth`              | `type:platform`, `scope:platform` | kernel, primitives, bloom, observability, `@contracts/platform`, `@contracts/identity` (excepción de límites, ADR 0022), zod                              |
-| `@platform/rate-limit`                | `backend/libs/platform/rate-limit`        | `type:platform`, `scope:platform` | kernel, primitives                                                                                                                                        |
-| `@platform/http`                      | `backend/libs/platform/http`              | `type:platform`, `scope:platform` | auth, rate-limit, observability, internal-api, `@contracts/platform`, `@contracts/identity`, `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express` |
-| `@platform/service`                   | `backend/libs/platform/service`           | `type:platform`, `scope:platform` | http, config, observability, persistence, sharding, cache, bloom, resilience, messaging, internal-api, adapters valkey, postgres y aws                    |
-| Cambio en `@platform/persistence`     | `persistence/src/sharding/shard-scope.ts` | sin cambio                        | sharding                                                                                                                                                  |
-| Cambio en `@platform/adapters-valkey` | `src/auth/` y `src/rate-limit/`           | sin cambio                        | auth, rate-limit                                                                                                                                          |
+| Librería                              | Carpeta                            | Tags                              | Depende de                                                                                                                                                |
+| ------------------------------------- | ---------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@platform/auth`                      | `backend/libs/platform/auth`       | `type:platform`, `scope:platform` | kernel, primitives, bloom, observability, `@contracts/platform`, `@contracts/identity` (excepción de límites, ADR 0022), zod                              |
+| `@platform/rate-limit`                | `backend/libs/platform/rate-limit` | `type:platform`, `scope:platform` | kernel, primitives (ya existe, sin cambios en F4)                                                                                                         |
+| `@platform/http`                      | `backend/libs/platform/http`       | `type:platform`, `scope:platform` | auth, rate-limit, observability, internal-api, `@contracts/platform`, `@contracts/identity`, `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express` |
+| `@platform/service`                   | `backend/libs/platform/service`    | `type:platform`, `scope:platform` | http, config, observability, persistence, sharding, cache, bloom, resilience, messaging, internal-api, adapters valkey, postgres y aws                    |
+| Cambio en `@platform/persistence`     | `persistence/src/shard-scope.ts`   | ya entregado                      | sharding                                                                                                                                                  |
+| Cambio en `@platform/adapters-valkey` | `src/auth/` y `src/rate-limit/`    | sin cambio                        | auth, rate-limit                                                                                                                                          |
 
 Ninguna de estas librerías importa código de `backend/apps`. `@platform/auth` y `@platform/rate-limit` no importan NestJS: los puede usar un worker, una Lambda o el gateway de tiempo real.
 
@@ -176,32 +176,7 @@ Los adaptadores `ValkeyAuthStateReader` y `ValkeyAuthStateWriter` viven en `back
 
 ### 3.3 `@platform/rate-limit`
 
-```ts
-export interface RateLimitRule {
-  readonly name: string;
-  readonly limit: number;
-  readonly windowMs: number;
-}
-export interface RateLimitResult {
-  readonly allowed: boolean;
-  readonly count: number;
-  readonly remaining: number;
-  readonly retryAfterMs: number;
-}
-export abstract class RateLimiter {
-  abstract consume(
-    key: string,
-    rule: RateLimitRule,
-    cost?: number,
-  ): Promise<RateLimitResult>;
-  abstract peek(key: string, rule: RateLimitRule): Promise<RateLimitResult>;
-  abstract reset(key: string, rule: RateLimitRule): Promise<void>;
-}
-```
-
-- `InMemoryRateLimiter`: ventana deslizante aproximada con dos ventanas fijas ponderadas.
-- `DegradingRateLimiter`: usa el limitador de Valkey y, si falla, uno local con el límite dividido por `localDivisor` (degradación elegante del plan).
-- `ValkeyRateLimiter` (en `adapters/valkey/src/rate-limit/`): script Lua con `INCR` y `PEXPIRE` sobre dos ventanas, llamado con `EVALSHA`.
+La librería ya existe: `RateLimiter`, `InMemoryRateLimiter`, `DegradingRateLimiter`, `RateLimitModule` y `ValkeyRateLimiter` en `@platform/adapters-valkey`. F4 no la construye. Lo único que aporta es el mapeo de `RateLimitTier` a reglas (`RateLimitRule`), que vive en `@platform/http`.
 
 El bloqueo exponencial por intentos fallidos no vive aquí: es una regla de negocio de identity que usa estos contadores (sección 5.3).
 
@@ -247,16 +222,16 @@ Enums: `AuthMethod` (`Jwt`, `ApiKey`), `RateLimitTier` (`Auth`, `Sensitive`, `St
 
 | Orden | Pieza de Nest                                  | Clase                        | Responsabilidad                                                                                                                                                                                                                                                |
 | ----- | ---------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Middleware                                     | `RequestContextMiddleware`   | `traceId` (del `traceparent` o UUIDv7 nuevo), `externalTraceId`, `RequestContext.run`, header `x-trace-id`.                                                                                                                                                    |
+| 1     | Middleware                                     | `RequestContextMiddleware`   | Es de `@platform/observability/nest`; `@platform/http` lo importa. Fija `traceId` (del `traceparent` o UUIDv7 nuevo), `externalTraceId`, `RequestContextStore.run`, header `x-trace-id`.                                                                       |
 | 2     | Middleware                                     | `SecurityHeadersMiddleware`  | `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'`, `Cache-Control: no-store` en rutas de `/v1/auth`.                                                                        |
 | 3     | Middleware                                     | `OriginPolicyMiddleware`     | Lee `Origin`; si viene y no está en `WEB_ORIGINS`, responde `PLATFORM.AUTH.ORIGIN_REJECTED` (403). Fija `ClientChannel`: `Native` si la petición trae `Authorization: Bearer` con session token o `X-Session-Transport: bearer`, `Web` en cualquier otro caso. |
 | 4     | Guard                                          | `EndpointGuard`              | Autenticación (JWT con `AccessTokenVerifier` o API key con `ApiKeyAuthenticator`), tenant, rate limit, `AccessGrant` y `evaluateAccess`, sunset (410 `PLATFORM.API.VERSION_SUNSET`).                                                                           |
 | 5     | Interceptor                                    | `EndpointContextInterceptor` | Abre un `RequestContext` nuevo con tenant y actor, aplica `timeoutMs`, resuelve `Api-Version`, agrega `Deprecation`, `Sunset` y `Link`, y maneja la cookie de sesión.                                                                                          |
 | 6     | Pipe                                           | `ContractInputPipe`          | Arma la entrada y la valida con `validateContract(route.request, …)`. Falla con `PLATFORM.VALIDATION.INVALID_INPUT` y `errors` por campo.                                                                                                                      |
 | 7     | Interceptor (fuera de producción y en pruebas) | `ContractOutputInterceptor`  | Valida la respuesta contra `route.response`. Un desvío es un error del servidor.                                                                                                                                                                               |
-| 8     | Filtro                                         | `ProblemDetailsFilter`       | `PlatformError` a Problem Details con `ErrorCatalogRegistry` y `toProblemDetails`; `Retry-After` desde `details.retryAfterSeconds`; lo desconocido es `PLATFORM.INTERNAL.UNEXPECTED`.                                                                          |
+| 8     | Filtro                                         | `ProblemDetailsFilter`       | `PlatformError` a Problem Details con `ProblemDetailsFactory`, que compone el catálogo del servicio con los de las librerías; `Retry-After` desde `details.retryAfterSeconds`; lo desconocido es `PLATFORM.INTERNAL.UNEXPECTED`.                               |
 
-`ErrorCatalogRegistry` reúne `platformErrorCatalog` y los catálogos del servicio. Falla al arrancar si un código declarado en una ruta no tiene entrada.
+`ErrorCatalogRegistry` reúne `platformErrorCatalog`, los catálogos de las librerías y los del servicio. Falla al arrancar si un código declarado en una ruta no tiene entrada.
 
 **Versión por petición.** `ApiVersionPolicy` lee `Api-Version` (fecha `AAAA-MM-DD`). Sin header usa la versión fijada a la API key o al tenant y, si no hay, la actual. Una versión desconocida responde `PLATFORM.API.UNSUPPORTED_VERSION` (400). En F4 existe una sola versión (`2026-11-01`) y ningún transformador; la interfaz `VersionTransformer` queda lista.
 
@@ -266,9 +241,10 @@ Enums: `AuthMethod` (`Jwt`, `ApiKey`), `RateLimitTier` (`Auth`, `Sensitive`, `St
 
 #### 3.4.3 API interna por HTTP
 
-- `InternalApiController`: `POST /internal/operations/:operationId`, delega en `InternalRouter`. No pasa por `EndpointGuard`.
-- `InternalCallAuthenticator` (puerto): en local, `HmacInternalCallAuthenticator` con firma HMAC-SHA256 del método, path, hora y hash del cuerpo (header `x-internal-signature`, ventana de 60 s). El adaptador SigV4 de AWS llega en F12.
-- `HttpInternalTransport implements Transport`: usa `fetch`, firma con `InternalCallSigner` y propaga `traceparent`, tenant, actor e idempotencia.
+`InternalApiController`, `HttpTransport` y las clases HMAC (`HmacInternalCallAuthenticator`, `HmacInternalCallSigner`) son de `@platform/internal-api`. `@platform/http` solo monta el controller, sin pasar por `EndpointGuard`, en `POST /internal/operations/:operationId`.
+
+- Autenticación en local: firma HMAC-SHA256 del método, path, hora y hash del cuerpo (header `x-internal-signature`, ventana de 60 s). El adaptador SigV4 de AWS llega en F12.
+- `HttpTransport` firma la llamada y propaga `traceparent`, tenant, actor e idempotencia.
 
 ### 3.5 `@platform/service`: arranque
 
@@ -279,8 +255,8 @@ export interface ServiceDefinition<C extends BaseConfig> {
   readonly rootModule: Type<unknown>;
   readonly contract: ServiceContract;
   readonly migrations: {
-    readonly catalog: readonly SqlMigration[];
-    readonly shard: readonly SqlMigration[];
+    readonly catalog: readonly DataSource[]; // DataSource de referencia, de donde se generan las migraciones TypeORM
+    readonly shard: readonly DataSource[];
   };
   readonly sharding?: {
     readonly defaultKey: ShardKey;
@@ -300,22 +276,24 @@ export function runMigrations(
 ): Promise<MigrationReport>; // Catalog, Shards, All
 ```
 
-| Pieza                             | Qué hace                                                                                                                                                                                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `instrumentation.ts` del servicio | Primera importación de `main.ts`: carga la config base y llama `setupTelemetry(telemetryOptionsFromConfig(...))` antes de importar NestJS, `pg` o `iovalkey`.                                                                               |
-| `PlatformRuntimeModule`           | Módulo global de Nest con `Clock`, `IdGenerator`, `LoggerPort`, `MetricsPort`, `TransactionManager`, `DatabaseResolver`, `CachePort`, `RateLimiter`, `MessageBus` (`OutboxMessageBus`), `InternalRouter`, `ShardRouter`, `AuthStateReader`. |
-| `databaseConfigSchema`            | `DB_PROXY_HOST`, `DB_READER_HOSTS`, `DB_PORT`, `DB_DATABASES` (JSON `{ shards, catalog }`), `DB_CREDENTIALS`. Mismos nombres que el stack `service` de Terraform.                                                                           |
-| `valkeyConfigSchema`              | `VALKEY_URL` en local, o `VALKEY_HOST`, `VALKEY_PORT`, `VALKEY_USER` y `VALKEY_KEY_PREFIX`.                                                                                                                                                 |
-| `UseCaseRunner`                   | `run(useCase, input, { transaction?: boolean })`: span, métricas de latencia y error, transacción opcional con el `TransactionManager`. Lo usan HTTP, consumidores y operaciones internas.                                                  |
-| `OutboxRelayWorker`               | Recorre `databases.all()` (todos los shards) con `OutboxRelay` y publica después de cada commit y cada 5 s.                                                                                                                                 |
-| `IntervalJob`                     | Job periódico con candado `SET NX PX` en Valkey. Puente hasta `@ScheduledJob` de F5.                                                                                                                                                        |
-| `HealthEndpoints`                 | `GET /health/live` y `GET /health/ready` (Postgres de cada shard, catálogo, Valkey) sobre el adaptador HTTP, fuera del contrato.                                                                                                            |
-| `runMigrations`                   | Migra primero el catálogo (`catalogMigrations` de la plataforma más las del servicio) y luego cada shard en paralelo con límite 4 (`shardMigrations` más las del servicio), con `applyMigrations`.                                          |
-| Cierre ordenado                   | `SIGTERM`: deja de aceptar, espera las peticiones en curso (10 s), detiene el relay, cierra persistencia, Valkey y telemetría.                                                                                                              |
+| Pieza                             | Qué hace                                                                                                                                                                                                                     |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `instrumentation.ts` del servicio | Primera importación de `main.ts`: carga la config base y llama `setupTelemetry(telemetryOptionsFromConfig(...))` antes de importar NestJS, `pg` o `iovalkey`.                                                                |
+| `PlatformRuntimeModule`           | Composición de los módulos de librería (guía de cableado del plan del backend, sección 6) más `AuthStateReader`. No redefine lo que ya provee cada módulo.                                                                   |
+| `databaseConfigSchema`            | Es la sección `DatabaseConfig` de `@platform/persistence`: `DB_PROXY_HOST`, `DB_READER_HOSTS`, `DB_PORT`, `DB_DATABASES` (JSON `{ shards, catalog }`), `DB_CREDENTIALS`. Mismos nombres que el stack `service` de Terraform. |
+| `valkeyConfigSchema`              | Es la sección `ValkeyConfig` de `@platform/adapters-valkey`: `VALKEY_URL` en local, o `VALKEY_HOST`, `VALKEY_PORT`, `VALKEY_USER` y `VALKEY_KEY_PREFIX`.                                                                     |
+| `UseCaseRunner`                   | `run(useCase, input, { transaction?: boolean })`: span, métricas de latencia y error, transacción opcional con el `TransactionManager`. Lo usan HTTP, consumidores y operaciones internas.                                   |
+| `OutboxRelayJob`                  | Es de `@platform/messaging` y reemplaza a `OutboxRelayWorker`. Recorre todos los shards con `OutboxRelay` como `ScheduledJob`.                                                                                               |
+| `ScheduledJob`                    | Los jobs periódicos usan `ScheduledJob` y `JobRunner` de `@platform/scheduling`, con `ValkeyJobLock`. Reemplaza a `IntervalJob`.                                                                                             |
+| `HealthEndpoints`                 | `GET /health/live` y `GET /health/ready` sobre `HealthRegistry` de observability (Postgres de cada shard, catálogo, Valkey), fuera del contrato.                                                                             |
+| `runMigrations`                   | Delega en `ShardedMigrationRunner`: migra primero el catálogo y luego cada shard en paralelo con límite 4, con las migraciones de la plataforma más las del servicio.                                                        |
+| Cierre ordenado                   | `SIGTERM`: deja de aceptar, espera las peticiones en curso (10 s), detiene el relay, cierra persistencia, Valkey y telemetría.                                                                                               |
 
 Los puertos que ven los casos de uso son clases abstractas sin decoradores, así sirven de token de inyección sin que el dominio importe NestJS.
 
 ### 3.6 `ShardScope` en `@platform/persistence`
+
+Se entrega en `@platform/persistence` con la opción `requireScope` y el error `CROSS_SHARD_TX`; sale del alcance de WP4. Esta sección describe su comportamiento.
 
 Hoy `ShardedDatabaseResolver` toma el tenant del contexto y el usuario del actor. En identity eso no alcanza: el usuario que se consulta casi nunca es el actor (inicio de sesión anónimo, un admin que revoca sesiones de otro) y los datos de usuario se enrutan por su tenant de origen, no por el tenant activo.
 
@@ -403,7 +381,7 @@ Convenciones de esta sección:
 - `UserRef = { userId, homeTenantId }`. Todo caso de uso sobre datos de usuario corre dentro de `inUserShard(ref, fn)` (`shared/utils/shard-scopes.ts`); los de tenant, dentro de `inTenantShard(tenantId, fn)`.
 - Todas las tablas de shard llevan `created_at`, `updated_at`, `created_by`, `updated_by` y `version` salvo que se diga otra cosa. Las marcadas "auditada" llevan el trigger de `audit_log`.
 - Las tablas de tenant declaran `tenant_id` como columna de tenant de `TableDefinition` y tienen RLS. Las de usuario no declaran columna de tenant.
-- Las migraciones de cada módulo usan su rango de timestamps (sección 6.3).
+- Las migraciones de cada módulo son de TypeORM y usan su rango de timestamps (sección 6.3).
 - Los códigos nuevos se listan en la sección 7.
 
 ### 5.1 `users`
@@ -585,7 +563,7 @@ En F4 el push que despierta la app es un fake; la app consulta al abrirse. El av
 | Eventos      | `identity.tenant.created.v1`, `identity.tenant.suspended.v1`, `identity.tenant.reactivated.v1`                                                                                                                                                                |
 | Errores      | `IDENTITY.TENANT.NOT_FOUND` (interno), `IDENTITY.TENANT.SLUG_TAKEN`, `IDENTITY.TENANT.SUSPENDED`, `IDENTITY.TENANT.NOT_MEMBER`                                                                                                                                |
 
-- `CreateTenant` reserva el slug, ubica el tenant en shards de su región, crea la fila, los roles y grupos de sistema, y la membresía `Owner` del creador. En F4 corre como caso de uso directo. La saga `TenantOnboarding` de F7 usará las operaciones `create` y `discard`.
+- `CreateTenant` reserva el slug, ubica el tenant en shards de su región, crea la fila, los roles y grupos de sistema, y la membresía `Owner` del creador. En F4 corre como caso de uso directo. Las operaciones de `TenantOnboarding` usan `SagaModule.forFeature`: la saga de F7 usará las operaciones `create` y `discard`.
 - Los tenants `Platform` y `SharedCustomers` de cada región se crean con `nx run identity:seed`, con ids fijos de la config.
 - Suspender escribe `auth:epoch:tenant:{id}` con `suspended: true`. La suspensión por facturación llamará la operación desde `billing` en F8.
 
@@ -679,8 +657,7 @@ flowchart LR
   subgraph O1["Ola 1 · Plataforma y contrato"]
     WP1["WP1 · platform-auth"]
     WP2["WP2 · platform-http"]
-    WP3["WP3 · platform-rate-limit"]
-    WP4["WP4 · platform-service y ShardScope"]
+    WP4["WP4 · platform-service"]
     WP5["WP5 · contrato identity"]
     WP6["WP6 · esqueleto identity"]
   end
@@ -698,7 +675,6 @@ flowchart LR
     WP15["WP15 · e2e, matriz de acceso y docs"]
   end
   WP1 --> WP2
-  WP3 --> WP2
   WP2 --> WP6
   WP4 --> WP6
   WP5 --> WP6
@@ -708,7 +684,7 @@ flowchart LR
   O2 --> WP15
 ```
 
-- WP1, WP3, WP4 y WP5 arrancan el mismo día. WP2 arranca con las interfaces de WP1 y WP3 de este documento y usa sus fakes hasta que lleguen las implementaciones. WP6 arranca cuando WP2 y WP4 publican sus interfaces y termina cuando la ola 1 está integrada.
+- WP3 ya no existe: `@platform/rate-limit` está construido. WP1, WP4 y WP5 arrancan el mismo día. WP2 arranca con las interfaces de WP1 de este documento y usa sus fakes hasta que llegue la implementación. WP6 arranca cuando WP2 y WP4 publican sus interfaces y termina cuando la ola 1 está integrada.
 - En la ola 2, cada WP programa contra las fachadas de los demás (sección 6.4) con los fakes de `modules/<m>/__tests__/utils/`. WP13 y WP14 integran con `access` real al final de la ola.
 - Cada WP se integra a `feat/f4-identity` con su propio PR. Una ola empieza cuando la anterior está integrada y en verde.
 
@@ -717,9 +693,9 @@ flowchart LR
 | WP   | Carpetas exclusivas                                                                                                                                                                                                                                                                                                                          | Entrega                                                                                                                                          | Depende de                     |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
 | WP1  | `backend/libs/platform/auth/**`, `backend/libs/platform/adapters/valkey/src/auth/**`, `backend/infra/terraform/stacks/data/main.tf` (ACL de `auth:*`)                                                                                                                                                                                        | Sección 3.2, ACL de Valkey del ADR 0022 con su `terraform test`                                                                                  | WP5 (esquema de claims, día 1) |
-| WP2  | `backend/libs/platform/http/**`                                                                                                                                                                                                                                                                                                              | Sección 3.4, incluida la API interna por HTTP                                                                                                    | WP1, WP3 (interfaces)          |
-| WP3  | `backend/libs/platform/rate-limit/**`, `backend/libs/platform/adapters/valkey/src/rate-limit/**`                                                                                                                                                                                                                                             | Sección 3.3                                                                                                                                      | Ninguna                        |
-| WP4  | `backend/libs/platform/service/**`, `backend/libs/platform/persistence/src/sharding/**`                                                                                                                                                                                                                                                      | Secciones 3.5 y 3.6                                                                                                                              | Ninguna                        |
+| WP2  | `backend/libs/platform/http/**`                                                                                                                                                                                                                                                                                                              | Sección 3.4, incluida la API interna por HTTP                                                                                                    | WP1 (interfaces)               |
+| WP3  | Desaparece: `@platform/rate-limit` ya existe. Queda solo el mapeo de `RateLimitTier` a reglas, que entrega WP2                                                                                                                                                                                                                               | Sección 3.3                                                                                                                                      | Ninguna                        |
+| WP4  | `backend/libs/platform/service/**`                                                                                                                                                                                                                                                                                                           | Sección 3.5                                                                                                                                      | Ninguna                        |
 | WP5  | `backend/libs/contracts/identity/**`, `backend/libs/contracts/platform/src/{enums,errors}/**`, `front/packages/contracts/lib/src/{platform,identity}/**`, ARB de `front/packages/i18n`, manejo de `TOKEN_EXPIRED` en `front/packages/auth`                                                                                                   | Sección 7 completa, `contracts-export:check` y `contracts_gen --check` en verde                                                                  | Ninguna                        |
 | WP6  | `backend/apps/identity/*` (raíz del proyecto), `src/{main,worker,migrate,instrumentation,identity.service,app.module}.ts`, `src/config/**`, `src/database/**`, `src/messaging/**`, `src/shared/**`, `src/__tests__/utils/**`, stubs de cada `modules/<m>/{index.ts,presentation/<m>.module.ts,application/<m>.facade.ts,__tests__/utils/**}` | App que arranca con todos los módulos vacíos, migra catálogo y dos shards, health en verde, harness de pruebas, dependencias externas instaladas | WP2, WP4, WP5                  |
 | WP7  | `modules/tokens/**`, `modules/sessions/**`                                                                                                                                                                                                                                                                                                   | Secciones 5.7 y 5.8                                                                                                                              | Ola 1                          |
@@ -746,7 +722,7 @@ Las rutas de `modules/` son relativas a `backend/apps/identity/src/`.
 | `src/config/identity.config.ts`, `backend/.env.example`                         | WP6                                                    | Todas las variables de la sección 5.14 existen desde la ola 1.                                                                                                                                                                                                                                     |
 | `src/messaging/identity.consumers.ts`                                           | WP6                                                    | Registra los consumidores que exporta cada `presentation/<m>.module.ts`.                                                                                                                                                                                                                           |
 | `backend/libs/contracts/identity/**` y Dart generado                            | WP5 en la ola 1, luego WP15                            | En la ola 2 un cambio de contrato es un PR pequeño aparte, revisado por el integrador, con export y Dart regenerados.                                                                                                                                                                              |
-| `backend/libs/platform/adapters/valkey/src/index.ts`                            | WP1                                                    | WP3 agrega una línea `export * from './lib/rate-limit/index.js'`; el conflicto es de una línea.                                                                                                                                                                                                    |
+| `backend/libs/platform/adapters/valkey/src/index.ts`                            | WP1                                                    | WP3 ya no existe, así que nadie más agrega líneas.                                                                                                                                                                                                                                                 |
 | `backend/eslint.config.mjs`                                                     | WP1                                                    | Agrega la excepción `platform-auth` y `platform-http` hacia `contracts-identity` (ADR 0022).                                                                                                                                                                                                       |
 | `package.json` de cada proyecto y `pnpm-lock.yaml`                              | WP2 (Nest en `@platform/http`), WP6 (identity)         | Todas las dependencias externas entran en la ola 1. En la ola 2 no se agregan dependencias.                                                                                                                                                                                                        |
 | `backend/infra/terraform/topology.json`, `backend/libs/contracts/asyncapi.json` | WP5                                                    | Se regeneran con `contracts-export`.                                                                                                                                                                                                                                                               |
@@ -907,8 +883,8 @@ Todos entran en la ola 1, con `export/contract.json`, el Dart de `front/packages
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | WP1  | Codec JWT con vectores de RFC 7515 y tokens alterados (`alg: none`, `alg: HS256` con la clave pública, firma DER, `kid` desconocido), orden de los nueve pasos, `evaluateAccess`, Bloom con reconstrucción | `ValkeyAuthStateReader` y `Writer`: TTL, zset, pub/sub, caída del servidor con caché local                               |
 | WP2  | Decoradores, registro de rutas desde el contrato, pipe con `decodeQuery`, filtro con códigos internos y públicos, cookie, `Origin`, versión y sunset                                                       | App Nest mínima con un contrato de prueba contra `fetch` (sin supertest): pipeline completo, API interna firmada         |
-| WP3  | Ventana deslizante con reloj determinista, degradación a local                                                                                                                                             | `ValkeyRateLimiter` con concurrencia                                                                                     |
-| WP4  | `ShardScope` anidado, `requireScope`, cruce de shard en transacción, `UseCaseRunner`                                                                                                                       | `runMigrations` sobre catálogo y dos shards, reintento después de una falla parcial, relay sobre dos shards              |
+| WP3  | Desaparece                                                                                                                                                                                                 | Desaparece                                                                                                               |
+| WP4  | `UseCaseRunner` y la composición de módulos                                                                                                                                                                | `runMigrations` sobre catálogo y dos shards, reintento después de una falla parcial, relay sobre dos shards              |
 | WP5  | `contract.spec.ts`: ids únicos, compensaciones existentes, códigos con catálogo, esquemas JSON-safe                                                                                                        | `contracts-export:check`, `dart run contracts_gen --check`, prueba ARB del front                                         |
 | WP6  | Config: rechaza el mailer de consola en producción                                                                                                                                                         | La app arranca, migra, responde health y cada ruta del contrato tiene handler (stubs con `PLATFORM.INTERNAL.UNEXPECTED`) |
 | WP7  | Rotación, gracia y reuso, ventanas de expiración, claims, anillo de claves                                                                                                                                 | Refresh concurrente, revocación con Valkey real, outbox de eventos                                                       |
@@ -1001,7 +977,7 @@ Respaldo, sin instalar: si al construir WP8 la API `crypto.argon2` de la versió
 | Saga `TenantOnboarding`                                 | `CreateTenant` directo; las operaciones `create` y `discard` quedan listas.                                 | F7        |
 | Planes y entitlements                                   | `EntitlementsProvider` con features fijas por `TenantKind`.                                                 | F8        |
 | Feature flags                                           | Lista fija en la config; `flags` de `UserAccess` sale de ahí.                                               | F5        |
-| `@ScheduledJob` y `JobScheduler`                        | `IntervalJob` con candado en Valkey dentro de `worker.ts`.                                                  | F5        |
+| `@ScheduledJob` y `JobScheduler`                        | `ScheduledJob` con `ValkeyJobLock` dentro de `worker.ts`.                                                   | F5        |
 | Entrada Lambda (`lambda.ts`) y SigV4 interno            | `main.ts` y `worker.ts` en contenedor; HMAC en la API interna local.                                        | F12       |
 | OpenAPI, Scalar y portal                                | El contrato exportado es la fuente; la generación de OpenAPI desde `contract.json` va con la documentación. | F11       |
 | Lista completa de Have I Been Pwned                     | Bloom con una lista de prueba.                                                                              | Posterior |

@@ -111,6 +111,22 @@ enum PlatformErrorCode {
     messageKey: 'error_platform_auth_forbidden',
   ),
 
+  /// El access token venció. El cliente refresca la sesión y reintenta.
+  authTokenExpired(
+    'PLATFORM.AUTH.TOKEN_EXPIRED',
+    httpStatus: 401,
+    retryable: true,
+    messageKey: 'error_platform_auth_token_expired',
+  ),
+
+  /// El origen de la solicitud no está permitido.
+  authOriginRejected(
+    'PLATFORM.AUTH.ORIGIN_REJECTED',
+    httpStatus: 403,
+    retryable: false,
+    messageKey: 'error_platform_auth_origin_rejected',
+  ),
+
   /// Se superó el límite de solicitudes. Intenta de nuevo más tarde.
   rateLimitExceeded(
     'PLATFORM.RATE_LIMIT.EXCEEDED',
@@ -125,6 +141,38 @@ enum PlatformErrorCode {
     httpStatus: 410,
     retryable: false,
     messageKey: 'error_platform_api_version_sunset',
+  ),
+
+  /// La versión de la API pedida no es compatible.
+  apiUnsupportedVersion(
+    'PLATFORM.API.UNSUPPORTED_VERSION',
+    httpStatus: 400,
+    retryable: false,
+    messageKey: 'error_platform_api_unsupported_version',
+  ),
+
+  /// El cuerpo de la solicitud supera el tamaño permitido.
+  httpPayloadTooLarge(
+    'PLATFORM.HTTP.PAYLOAD_TOO_LARGE',
+    httpStatus: 413,
+    retryable: false,
+    messageKey: 'error_platform_http_payload_too_large',
+  ),
+
+  /// El tipo de contenido de la solicitud no es compatible.
+  httpUnsupportedMediaType(
+    'PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE',
+    httpStatus: 415,
+    retryable: false,
+    messageKey: 'error_platform_http_unsupported_media_type',
+  ),
+
+  /// El cuerpo de la solicitud no es un JSON válido.
+  httpMalformedBody(
+    'PLATFORM.HTTP.MALFORMED_BODY',
+    httpStatus: 400,
+    retryable: false,
+    messageKey: 'error_platform_http_malformed_body',
   ),
 
   /// El recurso solicitado no existe.

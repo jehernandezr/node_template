@@ -40,3 +40,19 @@ export enum RevocationScope {
   User = 'user',
   Tenant = 'tenant',
 }
+
+/** Métodos con los que se autenticó una sesión (claim `amr` del access token). */
+export enum AuthMethodReference {
+  Password = 'pwd',
+  Passkey = 'passkey',
+  Device = 'device',
+  EmailOtp = 'email_otp',
+  Totp = 'totp',
+  RecoveryCode = 'recovery_code',
+}
+
+/** Destinatario de un access token: valores del claim `aud`. */
+export enum TokenAudience {
+  Api = 'api',
+  Backoffice = 'backoffice',
+}

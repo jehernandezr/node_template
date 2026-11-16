@@ -10,13 +10,64 @@
   "channels": {
     "identity-events": {
       "address": "identity-events",
-      "description": "Tópico de identity. Eventos de identity: sesiones y tokens revocados. Cada servicio suscribe su propia cola.",
+      "description": "Tópico de identity. Eventos de identity: usuarios, dispositivos, tenants, membresías, API keys, sesiones y alertas. Cada servicio suscribe su propia cola.",
       "messages": {
         "identity.session.revoked.v1": {
           "$ref": "#/components/messages/identity.session.revoked.v1"
         },
         "identity.tokens.revoked.v1": {
           "$ref": "#/components/messages/identity.tokens.revoked.v1"
+        },
+        "identity.user.registered.v1": {
+          "$ref": "#/components/messages/identity.user.registered.v1"
+        },
+        "identity.user.suspended.v1": {
+          "$ref": "#/components/messages/identity.user.suspended.v1"
+        },
+        "identity.user.reactivated.v1": {
+          "$ref": "#/components/messages/identity.user.reactivated.v1"
+        },
+        "identity.user.email-changed.v1": {
+          "$ref": "#/components/messages/identity.user.email-changed.v1"
+        },
+        "identity.device.registered.v1": {
+          "$ref": "#/components/messages/identity.device.registered.v1"
+        },
+        "identity.device.removed.v1": {
+          "$ref": "#/components/messages/identity.device.removed.v1"
+        },
+        "identity.tenant.created.v1": {
+          "$ref": "#/components/messages/identity.tenant.created.v1"
+        },
+        "identity.tenant.suspended.v1": {
+          "$ref": "#/components/messages/identity.tenant.suspended.v1"
+        },
+        "identity.tenant.reactivated.v1": {
+          "$ref": "#/components/messages/identity.tenant.reactivated.v1"
+        },
+        "identity.membership.changed.v1": {
+          "$ref": "#/components/messages/identity.membership.changed.v1"
+        },
+        "identity.permissions.changed.v1": {
+          "$ref": "#/components/messages/identity.permissions.changed.v1"
+        },
+        "identity.api-key.created.v1": {
+          "$ref": "#/components/messages/identity.api-key.created.v1"
+        },
+        "identity.api-key.revoked.v1": {
+          "$ref": "#/components/messages/identity.api-key.revoked.v1"
+        },
+        "identity.security-alert.raised.v1": {
+          "$ref": "#/components/messages/identity.security-alert.raised.v1"
+        }
+      }
+    },
+    "identity-access-projection": {
+      "address": "identity-access-projection",
+      "description": "Cola de identity. Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía.",
+      "messages": {
+        "identity.membership.changed.v1": {
+          "$ref": "#/components/messages/identity.membership.changed.v1"
         }
       }
     }
@@ -32,9 +83,62 @@
         },
         {
           "$ref": "#/channels/identity-events/messages/identity.tokens.revoked.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.user.registered.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.user.suspended.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.user.reactivated.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.user.email-changed.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.device.registered.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.device.removed.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.tenant.created.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.tenant.suspended.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.tenant.reactivated.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.membership.changed.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.permissions.changed.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.api-key.created.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.api-key.revoked.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.security-alert.raised.v1"
         }
       ],
       "x-producers": ["identity"]
+    },
+    "identity-access-projection.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/identity-access-projection" },
+      "summary": "identity consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/identity-access-projection/messages/identity.membership.changed.v1"
+        }
+      ],
+      "x-consumer": "identity"
     }
   },
   "components": {
@@ -58,6 +162,174 @@
         "contentType": "application/json",
         "payload": {
           "$ref": "identity/export/contract.json#/schemas/TokensRevokedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.user.registered.v1": {
+        "name": "identity.user.registered.v1",
+        "title": "identity.user.registered.v1",
+        "summary": "Se registró un usuario nuevo.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/UserRegisteredPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.user.suspended.v1": {
+        "name": "identity.user.suspended.v1",
+        "title": "identity.user.suspended.v1",
+        "summary": "Se suspendió un usuario y se revocaron sus sesiones.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/UserSuspendedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.user.reactivated.v1": {
+        "name": "identity.user.reactivated.v1",
+        "title": "identity.user.reactivated.v1",
+        "summary": "Se reactivó un usuario suspendido.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/UserReactivatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.user.email-changed.v1": {
+        "name": "identity.user.email-changed.v1",
+        "title": "identity.user.email-changed.v1",
+        "summary": "Cambió el email de un usuario. No incluye direcciones.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/UserEmailChangedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.device.registered.v1": {
+        "name": "identity.device.registered.v1",
+        "title": "identity.device.registered.v1",
+        "summary": "Se registró un dispositivo que puede aprobar acciones sensibles.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/DeviceRegisteredPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.device.removed.v1": {
+        "name": "identity.device.removed.v1",
+        "title": "identity.device.removed.v1",
+        "summary": "Se quitó un dispositivo de la cuenta.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/DeviceRemovedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.tenant.created.v1": {
+        "name": "identity.tenant.created.v1",
+        "title": "identity.tenant.created.v1",
+        "summary": "Se creó un tenant.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/TenantCreatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.tenant.suspended.v1": {
+        "name": "identity.tenant.suspended.v1",
+        "title": "identity.tenant.suspended.v1",
+        "summary": "Se suspendió un tenant y se revocaron sus tokens.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/TenantSuspendedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.tenant.reactivated.v1": {
+        "name": "identity.tenant.reactivated.v1",
+        "title": "identity.tenant.reactivated.v1",
+        "summary": "Se reactivó un tenant suspendido.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/TenantReactivatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.membership.changed.v1": {
+        "name": "identity.membership.changed.v1",
+        "title": "identity.membership.changed.v1",
+        "summary": "Cambió la membresía de un usuario en un tenant.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/MembershipChangedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.permissions.changed.v1": {
+        "name": "identity.permissions.changed.v1",
+        "title": "identity.permissions.changed.v1",
+        "summary": "Cambiaron los permisos de un usuario o de un tenant. Sin userId afecta a todo el tenant.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/PermissionsChangedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.api-key.created.v1": {
+        "name": "identity.api-key.created.v1",
+        "title": "identity.api-key.created.v1",
+        "summary": "Se creó una API key. No incluye el secreto.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/ApiKeyCreatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.api-key.revoked.v1": {
+        "name": "identity.api-key.revoked.v1",
+        "title": "identity.api-key.revoked.v1",
+        "summary": "Se revocó una API key.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/ApiKeyRevokedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "identity.security-alert.raised.v1": {
+        "name": "identity.security-alert.raised.v1",
+        "title": "identity.security-alert.raised.v1",
+        "summary": "Se levantó una alerta de seguridad sobre una cuenta. Notifica al usuario por su canal.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/SecurityAlertRaisedPayload"
         },
         "x-kind": "event",
         "x-version": 1,

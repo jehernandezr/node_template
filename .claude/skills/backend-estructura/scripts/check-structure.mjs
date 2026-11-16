@@ -46,6 +46,35 @@ class BackendStructureCheck {
       pattern: /^backend\/tools\/[^/]+\/src\/main\.ts$/,
       reason: 'main() de las herramientas',
     },
+    {
+      pattern:
+        /^backend\/libs\/contracts\/platform\/src\/kit\/field-errors\.ts$/,
+      reason: 'utilidades del DSL de contratos',
+    },
+    {
+      pattern:
+        /^backend\/libs\/contracts\/platform\/src\/kit\/message-definition\.ts$/,
+      reason: 'utilidades del DSL de contratos',
+    },
+    {
+      pattern:
+        /^backend\/libs\/contracts\/platform\/src\/schemas\/pagination\.schema\.ts$/,
+      reason: 'esquema zod parametrizado del DSL de contratos',
+    },
+    {
+      pattern: /^backend\/libs\/platform\/primitives\/src\/call-outcome\.ts$/,
+      reason: 'guardas de tipo puras',
+    },
+    {
+      pattern:
+        /^backend\/libs\/platform\/messaging\/src\/topology\/contract-topology\.ts$/,
+      reason: 'fábrica declarativa de topología sobre contratos',
+    },
+    {
+      pattern:
+        /^backend\/libs\/platform\/persistence\/src\/metadata\/entity-metadata\.ts$/,
+      reason: 'decorador Audited y su lector',
+    },
   ];
   static LOOSE_EXPORTED_FUNCTION =
     /^export\s+(async\s+)?function\s+\w+|^export\s+const\s+\w+\s*(:[^=]+)?=\s*(async\s+)?(\([^)]*\)|\w+)\s*=>/m;

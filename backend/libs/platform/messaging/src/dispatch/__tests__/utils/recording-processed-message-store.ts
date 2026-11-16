@@ -1,4 +1,4 @@
-import type { ClaimRequest } from '@platform/primitives';
+import { ClaimRequest } from '@platform/kernel';
 import { InMemoryProcessedMessageStore } from '../../../__tests__/utils/in-memory-processed-message-store.js';
 
 /** Almacén en memoria que anota cada reclamo y cada liberación. */

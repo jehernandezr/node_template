@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:utils/utils.dart';
 
 import 'access_rule.dart';
-import 'deferred_page.dart';
+import 'deferred_library_loader.dart';
 import 'enums.dart';
 import 'microfrontend.dart';
 import 'microfrontend_scope.dart';

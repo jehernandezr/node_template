@@ -102,21 +102,43 @@ export class ErrorCatalog {
   /**
    * Registra entradas. Valida todas antes de guardar ninguna, así un lote
    * inválido no deja el catálogo a medias.
+   *
+   * Las librerías repiten los códigos públicos del catálogo central para ser
+   * autónomas, y el servicio registra el central y el de cada librería que usa.
+   * Por eso una entrada repetida es válida si define lo mismo, y solo se
+   * rechaza cuando cambia el estado HTTP, el reintento o la audiencia.
    */
   register(entries: readonly ErrorCatalogEntry[]): void {
-    const batch = new Set<string>();
+    const batch = new Map<string, ErrorCatalogEntry>();
     for (const entry of entries) {
       if (!ERROR_CODE_PATTERN.test(entry.code)) {
         throw new Error(`Código de error inválido: ${entry.code}`);
       }
-      if (this.entries.has(entry.code) || batch.has(entry.code)) {
-        throw new Error(`Código de error duplicado: ${entry.code}`);
+      const stored = this.entries.get(entry.code) ?? batch.get(entry.code);
+      if (stored === undefined) {
+        batch.set(entry.code, entry);
+        continue;
       }
-      batch.add(entry.code);
+      if (!ErrorCatalog.sameDefinition(stored, entry)) {
+        throw new Error(
+          `Código de error duplicado con otra definición: ${entry.code}`,
+        );
+      }
     }
-    for (const entry of entries) {
+    for (const entry of batch.values()) {
       this.entries.set(entry.code, entry);
     }
+  }
+
+  private static sameDefinition(
+    stored: ErrorCatalogEntry,
+    entry: ErrorCatalogEntry,
+  ): boolean {
+    return (
+      stored.httpStatus === entry.httpStatus &&
+      stored.retryable === entry.retryable &&
+      stored.audience === entry.audience
+    );
   }
 
   get(code: string): ErrorCatalogEntry | undefined {

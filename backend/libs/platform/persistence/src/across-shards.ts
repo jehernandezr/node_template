@@ -5,7 +5,7 @@ import {
   type TransactionManager,
 } from '@platform/kernel';
 import { ShardingError, ShardingErrorCode } from '@platform/sharding';
-import { invalidConfiguration } from './errors.js';
+import { PersistenceError } from './errors/persistence-error.js';
 import type { AcrossShardsOptions } from './model/across-shards-options.js';
 import type { AcrossShardsResult } from './model/across-shards-result.js';
 import type { ShardConnection } from './model/shard-connection.js';
@@ -40,10 +40,16 @@ export class AcrossShards {
     const timeoutMs =
       options?.shardTimeoutMs ?? AcrossShards.DEFAULT_SHARD_TIMEOUT_MS;
     if (!Number.isInteger(concurrency) || concurrency < 1) {
-      throw invalidConfiguration('concurrency', 'an integer >= 1');
+      throw PersistenceError.invalidConfiguration(
+        'concurrency',
+        'an integer >= 1',
+      );
     }
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
-      throw invalidConfiguration('shardTimeoutMs', 'an integer >= 1');
+      throw PersistenceError.invalidConfiguration(
+        'shardTimeoutMs',
+        'an integer >= 1',
+      );
     }
     if (this.transactions.isInTransaction()) {
       throw new ShardingError(

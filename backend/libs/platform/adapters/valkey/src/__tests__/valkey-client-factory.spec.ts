@@ -96,7 +96,7 @@ describe('ValkeyClientFactory', () => {
 
       const registry = new ResilienceRegistry();
       const events: ResilienceEventKind[] = [];
-      registry.onEvent((event) => {
+      registry.subscribe((event) => {
         events.push(event.kind);
       });
       const aside = new CacheAside(cache, new VersionedKeyspace(cache), {

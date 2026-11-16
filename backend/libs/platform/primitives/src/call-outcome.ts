@@ -1,6 +1,3 @@
-import { CallOutcomeFactory } from './call-outcome-factory.js';
-import { FailureClassifier } from './failure/failure-classifier.js';
-
 /** Discriminante de `CallOutcome`. */
 export enum CallOutcomeKind {
   Success = 'success',
@@ -98,14 +95,6 @@ function uncertain(reason: string, cause?: unknown): UncertainOutcome {
     : { kind: CallOutcomeKind.Uncertain, reason, cause };
 }
 
-/**
- * Convierte un valor lanzado en un `CallOutcome` con el clasificador por defecto.
- * @deprecated Usa `CallOutcomeFactory`, que recibe el `FailureClassifier` con las reglas de cada adaptador.
- */
-function fromError(error: unknown): CallOutcome<never> {
-  return new CallOutcomeFactory(new FailureClassifier()).fromError(error);
-}
-
 /** Constructores de `CallOutcome`. */
 export const CallOutcome = {
   success,
@@ -113,7 +102,6 @@ export const CallOutcome = {
   protocolViolation,
   transientFailure,
   uncertain,
-  fromError,
 } as const;
 
 /** Indica si la llamada devolvió un valor. */

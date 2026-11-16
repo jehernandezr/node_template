@@ -1,9 +1,12 @@
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { OutboxStatus } from '@platform/messaging';
-import { ManagerIntent, type ShardConnection } from '@platform/persistence';
+import {
+  ManagerIntent,
+  type ShardConnection,
+  PersistenceErrorCode,
+} from '@platform/persistence';
 import { ShardedTestDatabase } from '@platform/persistence/test-utils';
 import { ShardingErrorCode } from '@platform/sharding';
-import { PlatformErrorCode } from '@contracts/platform';
 import type { EntityManager } from 'typeorm';
 import { OutboxEntity } from '../entities/outbox.entity.js';
 import { PlatformTestDatabase } from './utils/index.js';
@@ -171,7 +174,7 @@ runtime.describeIfAvailable('PlatformEntityManagers over PostgreSQL', () => {
           return 0;
         }),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.PersistenceQueryFailed,
+        code: PersistenceErrorCode.QueryFailed,
         details: { shards: [PlatformTestDatabase.SHARD_B] },
       });
     });

@@ -1,5 +1,4 @@
-// Identificadores de las reglas. Son las claves de front/tools/structure-baseline.json, así que
-// cambiar uno deja huérfanas sus entradas en la línea base.
+// Identificadores de las reglas. Aparecen entre corchetes al final de cada violación del informe.
 export class RuleId {
   static TEST_HELPERS_FOLDER = 'test-helpers-folder';
   static LIB_TESTING = 'lib-testing';

@@ -1,6 +1,9 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import { RelayScopes } from '@platform/messaging';
-import { type AcrossShards, PersistenceError } from '@platform/persistence';
+import {
+  type AcrossShards,
+  PersistenceError,
+  PersistenceErrorCode,
+} from '@platform/persistence';
 import type { ShardBinding } from '../database/shard-binding.js';
 import type { ShardedRelayScopesOptions } from '../model/sharded-relay-scopes-options.js';
 
@@ -35,7 +38,7 @@ export class ShardedRelayScopes extends RelayScopes {
     );
     if (outcome.partial) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceQueryFailed,
+        PersistenceErrorCode.QueryFailed,
         'The relay pass failed in some shards',
         {
           details: {

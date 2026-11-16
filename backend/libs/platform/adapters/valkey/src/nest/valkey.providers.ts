@@ -11,6 +11,9 @@ import {
 import { ServiceConfig, type ServiceSettings } from '@platform/config';
 import { LoggerPort } from '@platform/observability';
 import type { Valkey } from 'iovalkey';
+import { ValkeyAuthRevocationFeed } from '../auth/valkey-auth-revocation-feed.js';
+import { ValkeyAuthStateReader } from '../auth/valkey-auth-state-reader.js';
+import { ValkeyAuthStateWriter } from '../auth/valkey-auth-state-writer.js';
 import { ValkeyAuthTokenProvider } from '../valkey-auth-token-provider.js';
 import { ValkeyBloomFilterFactory } from '../valkey-bloom-filter-factory.js';
 import { ValkeyCache } from '../valkey-cache.js';
@@ -151,6 +154,31 @@ export class ValkeyProviders {
         ],
       },
       {
+        provide: ValkeyAuthStateReader,
+        useFactory: (executor: ValkeyCommandExecutor, clock: Clock) =>
+          new ValkeyAuthStateReader(executor, clock),
+        inject: [ValkeyCommandExecutor, Clock],
+      },
+      {
+        provide: ValkeyAuthStateWriter,
+        useFactory: (executor: ValkeyCommandExecutor, clock: Clock) =>
+          new ValkeyAuthStateWriter(executor, clock),
+        inject: [ValkeyCommandExecutor, Clock],
+      },
+      {
+        provide: ValkeyAuthRevocationFeed,
+        useFactory: (
+          subscribers: ValkeySubscriberSource,
+          logger: LoggerPort | undefined,
+        ) =>
+          new ValkeyAuthRevocationFeed(subscribers, (error) =>
+            logger?.error('auth revocation not delivered', {
+              error: ErrorDescriptor.describe(error),
+            }),
+          ),
+        inject: [ValkeySubscriberSource, { token: LoggerPort, optional: true }],
+      },
+      {
         provide: ValkeyBloomFilterFactory,
         useFactory: (
           executor: ValkeyCommandExecutor,
@@ -189,6 +217,9 @@ export class ValkeyProviders {
       ValkeyRateLimiter,
       ValkeyRoutingCache,
       ValkeyShardDirectoryChannel,
+      ValkeyAuthStateReader,
+      ValkeyAuthStateWriter,
+      ValkeyAuthRevocationFeed,
       ValkeyBloomFilterFactory,
       ValkeyJobLock,
       ValkeyHealthIndicator,

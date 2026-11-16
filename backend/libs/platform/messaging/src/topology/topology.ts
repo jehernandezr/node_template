@@ -101,7 +101,7 @@ export interface TopologyDocument {
 }
 
 /** Comparación de textos por orden de bytes, para que las exportaciones no dependan del idioma. */
-export function compareText(a: string, b: string): number {
+function compareText(a: string, b: string): number {
   if (a < b) return -1;
   return a > b ? 1 : 0;
 }

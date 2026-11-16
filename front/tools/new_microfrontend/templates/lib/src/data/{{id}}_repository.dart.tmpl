@@ -1,0 +1,14 @@
+import 'package:shell_core/shell_core.dart';
+
+import '../shared/types/{{id}}_item.dart';
+
+/// Access to {{id}} items. Screens depend only on this interface.
+///
+/// The scope of the identity disposes it (see `ScopedResource`).
+abstract interface class {{Pascal}}Repository implements ScopedResource {
+  /// Every item, in the order the source gives them.
+  Future<List<{{Pascal}}Item>> list();
+
+  /// Throws `{{Pascal}}NotFoundException` when the id is unknown.
+  Future<{{Pascal}}Item> get(String id);
+}

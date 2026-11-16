@@ -1,0 +1,51 @@
+/// Microfrontend `{{id}}`: manifest consumed by the web and mobile shells.
+///
+/// This file imports nothing from `data/`, `screens/` or `l10n/` except
+/// through the deferred import, so those load on demand.
+library;
+
+import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
+
+import 'src/screens/screens.dart' deferred as screens;
+import 'src/shared/constants/{{id}}_access.dart';
+import 'src/shared/constants/{{id}}_paths.dart';
+
+/// Manifest registered by the shells. Routes live under `/{{id}}`.
+///
+/// Data is not created here: the deferred screens get it from the scope of
+/// the current identity.
+///
+/// Demo only until the domain has a contract.
+final MicrofrontendManifest {{id}}Manifest = MicrofrontendManifest(
+  id: {{id}}Id,
+  platforms: {AppPlatform.web, AppPlatform.mobile},
+  access: {{Pascal}}Access.read,
+  modes: const {ShellMode.demo},
+  menu: const [
+    MenuEntry(
+      label: {{id}}MenuLabel,
+      path: {{Pascal}}Paths.list,
+      order: 100,
+      icon: Icons.folder_outlined,
+      selectedIcon: Icons.folder,
+    ),
+  ],
+  screens: [
+    ScreenRoute.deferred(
+      {{Pascal}}Paths.list,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.{{Pascal}}Screens.list(scope),
+      routes: [
+        ScreenRoute.deferred(
+          {{Pascal}}Paths.idSegment,
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.{{Pascal}}Screens.detail(
+            scope,
+            itemId: params.require({{Pascal}}Paths.idParam),
+          ),
+        ),
+      ],
+    ),
+  ],
+);

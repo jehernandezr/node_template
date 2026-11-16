@@ -1,6 +1,14 @@
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// Builds a page whose library loads on demand. Passed to manifest route builders.
+typedef ScreenLoader = Widget Function({
+  required Future<void> Function() loadLibrary,
+  required Widget Function() builder,
+  Widget? loading,
+  Widget Function(Object error, VoidCallback retry)? errorBuilder,
+});
+
 /// Loads deferred libraries once per instance and builds the page that waits
 /// for them. The cache lives in the instance, so tests and shells that create
 /// their own loader never share state.

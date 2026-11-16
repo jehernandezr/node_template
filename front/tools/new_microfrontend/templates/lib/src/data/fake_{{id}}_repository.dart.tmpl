@@ -1,0 +1,58 @@
+import 'package:shell_core/shell_core.dart';
+
+import '../shared/enums/{{id}}_operation.dart';
+import '../shared/types/{{id}}_item.dart';
+import '../shared/types/{{id}}_not_found_exception.dart';
+import '{{id}}_repository.dart';
+
+/// In-memory {{Pascal}}Repository for the demo mode. Latency and programmed
+/// failures come from `DemoBehavior`, which each instance receives.
+final class Fake{{Pascal}}Repository implements {{Pascal}}Repository {
+  /// Creates the repository. Without a [seed] it holds [demoItems].
+  Fake{{Pascal}}Repository({DemoBehavior? behavior, Iterable<{{Pascal}}Item>? seed})
+    : _behavior = behavior ?? DemoBehavior(),
+      _items = List.of(seed ?? demoItems);
+
+  /// Items used when no seed is given.
+  static const List<{{Pascal}}Item> demoItems = [
+    {{Pascal}}Item(
+      id: '1',
+      title: 'Ventas del mes',
+      description: 'Cifras de ventas por región.',
+    ),
+    {{Pascal}}Item(
+      id: '2',
+      title: 'Inventario',
+      description: 'Existencias al cierre de la semana.',
+    ),
+    {{Pascal}}Item(
+      id: '3',
+      title: 'Cobranza',
+      description: 'Facturas pendientes de pago.',
+    ),
+  ];
+
+  final DemoBehavior _behavior;
+  final List<{{Pascal}}Item> _items;
+
+  /// Whether the scope already released this repository.
+  bool get isDisposed => _behavior.isDisposed;
+
+  @override
+  Future<List<{{Pascal}}Item>> list() => _behavior.respond(
+    () => List.unmodifiable(_items),
+    operation: {{Pascal}}Operation.list,
+  );
+
+  @override
+  Future<{{Pascal}}Item> get(String id) => _behavior.respond(
+    () => _items.firstWhere(
+      (item) => item.id == id,
+      orElse: () => throw {{Pascal}}NotFoundException(id),
+    ),
+    operation: {{Pascal}}Operation.get,
+  );
+
+  @override
+  void dispose() => _behavior.dispose();
+}

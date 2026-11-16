@@ -1,9 +1,9 @@
-import { ErrorDescriptor, type RandomSource } from '@platform/kernel';
 import {
-  Backoff,
-  type FailureClassifier,
+  ErrorDescriptor,
   FailureKind,
-} from '@platform/primitives';
+  type RandomSource,
+} from '@platform/kernel';
+import { Backoff, type FailureClassifier } from '@platform/primitives';
 import type { DispatchOptions } from './dispatch-options.js';
 import type { DispatchResult } from './dispatch-result.js';
 import { DispatchOutcome } from './dispatch-outcome.enum.js';

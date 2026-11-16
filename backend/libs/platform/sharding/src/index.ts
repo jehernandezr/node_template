@@ -40,9 +40,3 @@ export * from './sharding-feature.js';
 export * from './sharding-strategy.js';
 export * from './tenant-placer.js';
 export * from './transaction-shard-guard.js';
-export * from './utils/deprecated-sharding-functions.js';
-
-// Transitorio: las pruebas de persistence y de los adaptadores todavía lo importan de aquí.
-// Se retira cuando esas librerías pasen a `@platform/sharding/test-utils`.
-/** @deprecated Usa `InMemoryDirectoryStore` de `@platform/sharding/test-utils`. */
-export { InMemoryDirectoryStore } from './__tests__/utils/in-memory-directory-store.js';

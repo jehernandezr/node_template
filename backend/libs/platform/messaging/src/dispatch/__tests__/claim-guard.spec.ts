@@ -1,5 +1,6 @@
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { ClaimState, Deadline } from '@platform/primitives';
+import { Deadline } from '@platform/primitives';
+import { ClaimState } from '@platform/kernel';
 import { EnvelopeBuilder } from '../../__tests__/utils/index.js';
 import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
 import { MessagingGuard } from '../../errors/messaging-guard.js';

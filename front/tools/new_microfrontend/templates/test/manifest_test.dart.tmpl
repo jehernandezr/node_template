@@ -1,0 +1,98 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mf_{{id}}/mf_{{id}}.dart';
+import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
+
+import 'utils/{{id}}_test_app.dart';
+
+void main() {
+  test('manifest id matches package', () {
+    expect({{id}}Manifest.id, const MicrofrontendId('{{id}}'));
+    expect({{id}}Manifest.modes, {ShellMode.demo});
+  });
+
+  test('every route lives under /{{id}}', () {
+    final paths = _absolutePaths(
+      {{id}}Manifest.buildRoutes(
+        DeferredLibraryLoader().page,
+        () => {{Pascal}}TestApp.newScope(),
+      ),
+    );
+    expect(paths, containsAll(['/{{id}}', '/{{id}}/:id']));
+    for (final path in paths) {
+      expect(path, startsWith('/{{id}}'));
+    }
+  });
+
+  test('declares screens and no lifecycle', () {
+    expect({{id}}Manifest.screens, hasLength(1));
+    expect({{id}}Manifest.hasLifecycle, isFalse);
+  });
+
+  test('requires a signed-in session', () {
+    final now = DateTime.utc(2026, 1, 1);
+    expect(
+      {{id}}Manifest.access.allows(UserSession.anonymous(), now: now),
+      isFalse,
+    );
+    expect(
+      {{id}}Manifest.access.allows(SessionBuilder().build(), now: now),
+      isTrue,
+    );
+  });
+
+  test('the manifest does not import data, screens or l10n eagerly', () {
+    final pending = [File('lib/mf_{{id}}.dart')];
+    final seen = <String>{};
+    while (pending.isNotEmpty) {
+      final file = pending.removeLast();
+      if (!seen.add(file.path)) continue;
+      for (final uri in _eagerImports(file.readAsStringSync())) {
+        if (uri.startsWith('package:mf_{{id}}/')) {
+          pending.add(
+            File('lib/${uri.substring('package:mf_{{id}}/'.length)}'),
+          );
+        } else if (!uri.contains(':')) {
+          pending.add(File.fromUri(file.uri.resolve(uri)));
+        }
+      }
+    }
+    expect(seen, contains('lib/mf_{{id}}.dart'));
+    for (final path in seen) {
+      for (final forbidden in ['/data/', '/screens/', '/l10n/']) {
+        expect(path, isNot(contains(forbidden)), reason: path);
+      }
+    }
+  });
+
+  test('screens are imported as deferred', () {
+    final source = File('lib/mf_{{id}}.dart').readAsStringSync();
+    expect(source, contains("screens.dart' deferred as screens"));
+  });
+}
+
+/// URIs of the imports and exports of [source] that are not deferred.
+Iterable<String> _eagerImports(String source) sync* {
+  final directive = RegExp(
+    r'''^\s*(?:import|export)\s+['"]([^'"]+)['"]([^;]*);''',
+    multiLine: true,
+  );
+  for (final match in directive.allMatches(source)) {
+    if ((match.group(2) ?? '').contains('deferred')) continue;
+    yield match.group(1)!;
+  }
+}
+
+/// Absolute paths of [routes] and their children. Nested paths are relative.
+List<String> _absolutePaths(List<RouteBase> routes, [String parent = '']) => [
+  for (final route in routes.whereType<GoRoute>()) ...[
+    _join(parent, route.path),
+    ..._absolutePaths(route.routes, _join(parent, route.path)),
+  ],
+];
+
+String _join(String parent, String path) =>
+    path.startsWith('/') ? path : '$parent/$path';

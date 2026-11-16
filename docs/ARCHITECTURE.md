@@ -44,7 +44,7 @@ front/                         pub workspace de Flutter
   apps/{web,mobile}/           shells
   microfrontends/              account, assistant, backoffice, billing, notifications, tasks, verifier
   packages/                    api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
-  tools/                       contracts_gen, nx-plugin, check_deferred_chunks.dart y check_microfrontend_boundaries.dart
+  tools/                       contracts_gen, new_microfrontend, nx-plugin, check_deferred_chunks.dart y check_microfrontend_boundaries.dart
 docs/                          arquitectura, plan (plan/), ADR, diseños por fase (design/) y auditorías (audits/)
 .claude/                       skills de backend y front, hooks y agentes para las herramientas de IA
 nx.json  package.json  pnpm-workspace.yaml  pnpm-lock.yaml  .nvmrc  tsconfig.json
@@ -103,20 +103,20 @@ backend/apps/<servicio>/migrations/{shard,catalog}/   migraciones de TypeORM
 - Entre proyectos manda la regla `@nx/enforce-module-boundaries` de `backend/eslint.config.mjs`, por tags: `type:contracts` depende solo de `type:contracts`; `type:util` de `type:util` y `type:contracts`; `type:platform` de `type:platform`, `type:util` y `type:contracts`; `type:tool` de contratos, utilidades y plataforma. `pnpm nx affected -t lint` la verifica.
 - Una app de servicio (`type:app`) importa de otro servicio solo su paquete `@contracts/<servicio>`, nunca su código interno.
 - Dentro de un módulo, `domain` depende solo de `kernel`; `application` depende de `domain`; `infrastructure` y `presentation` dependen de los dos. Estas capas se verifican en CI con `dependency-cruiser` cuando llega el primer servicio, `identity` (ADR 0020).
-- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); una regla `no-restricted-imports` lo impide en el resto. Trae `SnsSqsEnvelopePublisher` (lo usa el relay del outbox), `SnsSqsMessageBus` y `SqsDeliveryRunner` (Lambda con fallos parciales por lote o long polling), que aplica `ChangeMessageVisibility` y envía a la DLQ los fallos permanentes. La topología de ejecución sale de los contratos con `topologyFromContracts`.
-- Los puertos de transacción (`TransactionManager`, `UnitOfWork`) viven en `@platform/primitives`, así `messaging` e `internal-api` usan la transacción sin depender de `@platform/persistence`.
-- Los adaptadores PostgreSQL de los puertos de otras librerías viven en `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `PostgresOutboxStore` escribe el outbox en la misma transacción que el cambio de negocio y lo reclama con `FOR UPDATE SKIP LOCKED`, lease con fencing y orden FIFO por grupo; `PostgresProcessedMessageStore` guarda la idempotencia de los consumidores en `processed_messages`; `PostgresIdempotencyStore` guarda la de la API interna y `PostgresDirectoryStore` el directorio de shards. La librería exporta `shardMigrations` y `catalogMigrations` con sus tablas. Con el [diseño de persistencia](design/persistencia-typeorm-y-sagas.md), estas tablas pasan a entidades y migraciones de TypeORM, junto con la bitácora de sagas.
+- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); una regla `no-restricted-imports` lo impide en el resto. Trae `SnsSqsEnvelopePublisher` (lo usa el relay del outbox), `SnsSqsMessageBus`, `SqsPoller` (long polling, dentro de `SqsConsumerModule`, que no es global para cerrarse antes que `AwsModule`) y `SqsLambdaHandler` (Lambda con fallos parciales por lote). Ambos usan `SqsDeliveryProcessor`, que aplica `ChangeMessageVisibility` y envía a la DLQ los fallos permanentes. La topología de ejecución sale de los contratos con `topologyFromContracts`.
+- Los puertos de transacción (`TransactionManager`, `UnitOfWork`) y de idempotencia (`IdempotencyStore`) viven en `@platform/kernel`, así `messaging` e `internal-api` usan la transacción sin depender de `@platform/persistence`.
+- Los adaptadores PostgreSQL de los puertos de otras librerías viven en `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `TypeOrmOutboxStore` escribe el outbox en la misma transacción que el cambio de negocio y lo reclama con `FOR UPDATE SKIP LOCKED`, lease con fencing y orden FIFO por grupo; `TypeOrmProcessedMessageStore` guarda la idempotencia de los consumidores en `processed_messages`; `TypeOrmIdempotencyStore` guarda la de la API interna y `TypeOrmDirectoryStore` el directorio de shards. Sus tablas son entidades y migraciones de TypeORM (`platformShardEntities`, `platformCatalogEntities` y sus migraciones), junto con la bitácora de sagas ([diseño de persistencia](design/persistencia-typeorm-y-sagas.md)).
 
 ## Front: shells y microfrontends
 
 `front/` reúne todo el cliente en un pub workspace de Flutter ([ADR 0012](adr/0012-front-flutter-shells-microfrontends.md)). Dos shells, `web` y `mobile`, componen los mismos microfrontends: un dominio se escribe una vez y aparece en las dos plataformas. Nx orquesta el workspace con el plugin propio `front/tools/nx-plugin/index.cjs`.
 
-| Pieza                    | Qué es                                                                                                                                                               |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `front/apps/web`         | Shell web (`web_shell`). `WebShell` registra los microfrontends, crea el `ShellRuntime` y arma el router con `buildShellRouter`, con página de step-up en `/step-up` |
-| `front/apps/mobile`      | Shell para iOS y Android (`mobile_shell`), con su registro, su router y deep links                                                                                   |
-| `front/microfrontends/*` | Un paquete por dominio (`mf_<dominio>`) con su manifiesto, pantallas, datos y textos                                                                                 |
-| `front/packages/*`       | Piezas compartidas por los shells y los microfrontends                                                                                                               |
+| Pieza                    | Qué es                                                                                                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `front/apps/web`         | Shell web (`web_shell`). `WebShell` registra los microfrontends, crea el `ShellRuntime` y arma el router con `ShellRouterFactory`, con página de step-up en `/step-up` |
+| `front/apps/mobile`      | Shell para iOS y Android (`mobile_shell`), con su registro, su router y deep links                                                                                     |
+| `front/microfrontends/*` | Un paquete por dominio (`mf_<dominio>`) con su manifiesto, pantallas, datos y textos                                                                                   |
+| `front/packages/*`       | Piezas compartidas por los shells y los microfrontends                                                                                                                 |
 
 | Microfrontend   | Web | Móvil | Contenido                                             |
 | --------------- | --- | ----- | ----------------------------------------------------- |
@@ -132,7 +132,7 @@ Cada shell registra solo los microfrontends que declaran su plataforma en el man
 
 **Contrato de microfrontend**
 
-Cada microfrontend exporta un `MicrofrontendManifest` de `shell_core` y cumple el contrato del [ADR 0018](adr/0018-contrato-de-microfrontend.md). Un manifiesto con el contrato completo se ve así:
+Cada microfrontend exporta un `MicrofrontendManifest` de `shell_core` y cumple el contrato del [ADR 0018](adr/0018-contrato-de-microfrontend.md). Así se ve el de `tasks`, recortado:
 
 ```dart
 final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
@@ -141,40 +141,56 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
   access: tasksReadRule,
   modes: const {ShellMode.demo},
   menu: const [
-    MenuEntry(label: tasksMenuLabel, path: TasksPaths.list, order: 20, icon: Icons.check_circle_outline),
+    MenuEntry(
+      label: tasksMenuLabel,
+      path: TasksPaths.list,
+      order: 20,
+      icon: Icons.check_circle_outline,
+      selectedIcon: Icons.check_circle,
+    ),
   ],
   deepLinks: _deepLink,
   screens: [
-    ScreenRoute(
-      path: TasksPaths.list,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) => screens.buildTasksList(scope),
+    ScreenRoute.deferred(
+      TasksPaths.list,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.TasksScreens.list(scope),
+      routes: [
+        // Ruta `new` y ruta `:id` con su hija `edit`, recortadas.
+        ScreenRoute.deferred(
+          ':${TasksPaths.idParam}',
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.TasksScreens.detail(
+            scope,
+            taskId: params.require(TasksPaths.idParam),
+          ),
+        ),
+      ],
     ),
   ],
-  lifecycleFactory: () => MiLifecycle(),
 );
 ```
 
-- **Pantallas:** `screens: [ScreenRoute(...)]` con `path`, el `loadLibrary` del import diferido y un builder `(scope, {params})` sin `BuildContext`. `params` une query y path; gana el path. Las subrutas se protegen con `ScreenRoute(access: ...)`.
-- **Identidad:** `ShellRuntime.identityEpoch` sube con cada cambio de usuario o tenant. `buildShellRouter` envuelve cada página en un `KeyedSubtree` con ese valor y la pantalla se reconstruye desde cero para la nueva identidad.
+- **Pantallas:** `screens: [ScreenRoute.deferred(path, library: ..., build: (scope, params) => ...)]`. `library` es el `loadLibrary` del import diferido y `build` recibe el `MicrofrontendScope` y los `params`, que unen query y path (gana el path). `TasksScreens` es una clase estática que arma cada pantalla con su repositorio y con `DeferredLocalizations`. Las subrutas van en `routes` y se protegen con `access`.
+- **Identidad:** `ShellRuntime.identityEpoch` sube con cada cambio de usuario o tenant. `ShellRouterFactory` envuelve cada página en un `KeyedSubtree` con ese valor y la pantalla se reconstruye desde cero para la nueva identidad.
 - **Ciclo de vida:** `lifecycleFactory` crea una instancia por activación. Los eventos salen con `ShellContext.emit` y se escuchan con `ShellContext.listen`; al rotar la identidad el contexto se cancela.
 - **Recursos:** los repositorios implementan `ScopedResource` y el scope los cierra.
 - **Acceso:** `AccessRule.mfa(maxAge)` exige un segundo factor reciente. Las acciones se protegen con `AccessGate` o `context.can(regla)`.
 - **Layout:** cada pantalla es dueña de su única barra superior con `AppPage` de `ui`. El shell usa `ShellChrome`.
-- **Estados y errores:** `AsyncValueView` para carga, error y datos; `showActionError` para el error de una acción.
+- **Estados y errores:** cada pantalla tiene un controlador (`ChangeNotifier`) probado sin widgets. La carga la compone un `AsyncLoader` y las acciones un `ActionRunner`; la pantalla es un `StatelessWidget` que crea el controlador con `ControllerBuilder`. Los errores de una acción se muestran con `showActionResult`.
 
 Los siete manifiestos usan `screens:`, y `notifications` crea su ciclo de vida con `lifecycleFactory`. Las API anteriores (`routes:`, `lifecycle:`, `ShellContext.eventBus` y `AdaptiveScaffold.compactActions`) se eliminaron.
 
 **Carga diferida**
 
-El manifiesto se importa de forma inmediata: el shell lo lee al arrancar para armar rutas, menú y visibilidad. Las pantallas, los datos y los textos viven detrás de `deferred as` y se descargan cuando alguien navega a ellas. Así la web de un cliente sin acceso al backoffice nunca ejecuta su código.
+El manifiesto se importa de forma inmediata: el shell lo lee al arrancar para armar rutas, menú y visibilidad. Las pantallas, los datos y los textos viven detrás de `deferred as` y se descargan cuando alguien navega a ellas. `DeferredLibraryLoader` de `shell_core` carga cada biblioteca una vez por instancia y muestra la página mientras espera. Así la web de un cliente sin acceso al backoffice nunca ejecuta su código.
 
 `front/tools/check_deferred_chunks.dart` lo comprueba después de `flutter build web --release --source-maps`, desde `front/apps/web`. Falla si:
 
 1. `main.dart.js.map` lista fuentes de `microfrontends/*/lib/src/{data,screens,l10n}`.
 2. Algún texto ARB del backoffice de 12 caracteres o más aparece en `main.dart.js`.
 
-El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto, así que carga `src/data` con `deferred as` a través de un puente (`lifecycle/unread_counts.dart`). En la VM, las pruebas cargan las librerías diferidas una vez en `setUpAll` con `DeferredLibrariesLoader` del paquete `test_utils`.
+El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto, así que carga `src/data` con `deferred as` a través de un puente (`lifecycle/unread_counts.dart`). En la VM, las pruebas cargan las librerías diferidas de los manifiestos una vez en `setUpAll` con `DeferredLibrariesPreloader` del paquete `test_utils`.
 
 **Reglas**
 
@@ -186,18 +202,22 @@ El ciclo de vida de `notifications` viaja en el bundle inicial con el manifiesto
 
 **Paquetes compartidos** (`front/packages`)
 
-| Paquete      | Qué contiene                                                                                                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell_host` | Lo común de los dos shells: arranque, sesión, login, step-up, página de acceso denegado y modo demo                                                                                         |
-| `shell_core` | `MicrofrontendManifest`, `ScreenRoute`, registro, `ShellRuntime`, `ShellContext`, router (`buildShellRouter`) y reglas de acceso                                                            |
-| `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores                                                      |
-| `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                                                                            |
-| `utils`      | Funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                                                                           |
-| `auth`       | Puertos, modelos y `SessionManager` de la sesión                                                                                                                                            |
-| `ui`         | Widgets adaptativos, layout (`AppPage`, `ShellChrome`, `PlatformScreen`) y tema                                                                                                             |
-| `test_utils` | Dobles de `auth` y `DeferredLibrariesLoader`, compartidos por las pruebas de varios paquetes; solo en `dev_dependencies`. Lo que usan las pruebas de un solo paquete va en su `test/utils/` |
-| `tokens`     | Colores y escalas de diseño en Dart                                                                                                                                                         |
-| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores                                                                                                            |
+| Paquete      | Qué contiene                                                                                                                                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell_host` | Lo común de los dos shells: arranque, sesión, login, step-up, página de acceso denegado y modo demo                                                                                                                                                                                               |
+| `shell_core` | `MicrofrontendManifest`, `ScreenRoute` con `ScreenRoute.deferred`, registro, `ShellRuntime`, `ShellContext`, `ShellNavigator` y `ShellRouterFactory` (router), `DeferredLibraryLoader`, `RepositoryBinding`, `DemoBehavior`, `DeferredLocalizations` con `showLocalizedDialog` y reglas de acceso |
+| `api`        | `ApiClient` con un `HttpTransport` inyectable: valida la petición contra el contrato antes de llamar y decodifica respuestas y errores                                                                                                                                                            |
+| `contracts`  | `lib/src/core` escrito a mano y `lib/src/<servicio>` generado por `contracts_gen` desde `backend/libs/contracts`                                                                                                                                                                                  |
+| `utils`      | `Clock` y `systemClock`, el único lugar con `DateTime.now()`; funciones puras sobre los tipos de `contracts`: montos, fechas y errores de campo                                                                                                                                                   |
+| `auth`       | Puertos, modelos y `SessionManager` de la sesión                                                                                                                                                                                                                                                  |
+| `ui`         | Widgets adaptativos, `AsyncValue`, `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors` (`context.statusColors`), layout (`AppPage`, `ShellChrome`, `PlatformScreen`, `ContentColumn`) y tema                                                                                       |
+| `test_utils` | `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `FakeClock`, `DeferredLibrariesPreloader`, `expectAccessible`, `pumpAtWidths` y `pumpAtTextScale`, y los dobles de `auth`. Solo en `dev_dependencies`. Lo que usan las pruebas de un solo paquete va en su `test/utils/`             |
+| `tokens`     | Colores y escalas de diseño en Dart                                                                                                                                                                                                                                                               |
+| `i18n`       | Textos en español e inglés (ARB), incluidos los mensajes del catálogo de errores, y `ErrorPresenter` con `ErrorDetails` para describir un error                                                                                                                                                   |
+
+**Crear un microfrontend nuevo**
+
+`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"` crea `front/microfrontends/reports` con su manifiesto, sus pantallas diferidas, su repositorio de demostración y sus pruebas, y agrega el miembro a `front/pubspec.yaml`. Imprime las líneas que cada app necesita. Los pasos a mano y la lista de lo que se escribe están en la [skill front-nuevo-microfrontend](../.claude/skills/front-nuevo-microfrontend/SKILL.md).
 
 El cliente de tiempo real del front llega con el servicio `realtime`, con adaptadores SSE y Socket.IO.
 
@@ -292,23 +312,23 @@ Cada error tiene un código único y legible con la forma `SERVICIO.SUBMÓDULO.E
 
 Los códigos se declaran como enums, nunca como literales sueltos:
 
-- Cada librería de `backend/libs/platform` nombra sus códigos con prefijo `PLATFORM.` tomando el valor de `PlatformErrorCode` (por ejemplo `SagaErrorCode.UncertainOutcome = PlatformErrorCode.SagaUncertainOutcome`). Un código con audiencia interna nunca llega al cliente: `toProblemDetails` responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId`.
-- `@contracts/platform` reúne todos los códigos de plataforma en `PlatformErrorCode`.
+- Cada librería de `backend/libs/platform` declara sus códigos en su propio enum, con prefijo `PLATFORM.` (por ejemplo `SagaErrorCode.UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME'`) y su catálogo con `defineErrorCatalog`. Un código con audiencia interna nunca llega al cliente: `toProblemDetails` responde `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId`.
+- `@contracts/platform` guarda en `PlatformErrorCode` solo los códigos públicos y transversales, los que el cliente ve y el front traduce.
 - Cada servicio declara los suyos en su paquete de contratos, como `IdentityErrorCode` en `backend/libs/contracts/identity/src/enums`.
 
-`PlatformError` de `@platform/kernel` es la base de todos los errores: lleva `code`, `retryable` y `details`. `DomainError` la extiende para las reglas de negocio y por defecto no es reintentable. `ERROR_CODE_PATTERN` e `isErrorCode` validan el formato del código.
+`PlatformError` de `@platform/kernel` es la base de todos los errores: lleva `code`, `retryable` y `details`. `DomainError` la extiende para las reglas de negocio y por defecto no es reintentable. `ErrorCode.PATTERN` y `ErrorCode.isValid` validan el formato del código, y `PlatformError.is` reconoce un error de plataforma.
 
 **Catálogos**
 
 `defineErrorCatalog` de `@contracts/platform` crea una entrada por cada valor del enum, con `httpStatus`, `retryable`, `audience` (`public` o `internal`), `description` y `messageKey`. `messageKey` se deriva del código con la misma regla del front: `PLATFORM.AUTH.FORBIDDEN` da `error_platform_auth_forbidden`.
 
-- `platformErrorCatalog` cubre los códigos de plataforma. Su prueba falla si un código se repite, si no cumple el formato o si aparece un código `PLATFORM.*` en `backend/libs/platform` sin entrada.
+- `platformErrorCatalog` cubre solo los códigos públicos y transversales de plataforma. Su prueba falla si un código se repite, si no cumple el formato o si declara uno interno. Cada librería de `backend/libs/platform` tiene su propio catálogo para los suyos, y el servicio los compone con `ErrorCatalog.register`.
 - `identityErrorCatalog` cubre los códigos de identity.
 - Los códigos públicos llegan al front generados, con su `messageKey`. Una prueba de `front/packages/contracts` exige el mensaje en español y en inglés de cada uno en los ARB de `front/packages/i18n`. Los internos nunca llegan al cliente.
 
 **Clasificación de fallas**
 
-`FailureKind` vive en `@platform/kernel` y `classifyFailure` en `@platform/primitives`. Los comparten resilience, cache, messaging, sharding, internal-api y saga:
+`FailureKind` vive en `@platform/kernel` y `FailureClassifier` en `@platform/primitives`. Los comparten resilience, cache, messaging, sharding, internal-api y saga:
 
 | `FailureKind`       | Significado                                                         |
 | ------------------- | ------------------------------------------------------------------- |
@@ -318,7 +338,7 @@ Los códigos se declaran como enums, nunca como literales sueltos:
 | `Timeout`           | Se agotó el tiempo; el efecto pudo aplicarse o no                   |
 | `Cancelled`         | Quien llama abortó; el efecto pudo aplicarse o no                   |
 
-`classifyFailure` recorre el error y hasta tres niveles de `cause`, y usa la primera señal explícita, en este orden:
+`FailureClassifier.classify` recorre el error y hasta tres niveles de `cause`, y usa la primera señal explícita, en este orden:
 
 1. Una propiedad `failureKind`. Es la forma en que cada adaptador traduce los errores de su proveedor (Postgres, AWS, Valkey), y la que declaran `DomainError` y los errores de la plataforma.
 2. `name` igual a `AbortError` (cancelado) o `TimeoutError` (tiempo agotado).
@@ -381,7 +401,7 @@ export class SessionsController {
 
 **Pipeline de cada request**
 
-1. Middleware: `traceId` y contexto de request con `AsyncLocalStorage` (`RequestContext`), cabeceras de seguridad y política de `Origin`, que fija el canal web o nativo.
+1. Middleware: `traceId` y contexto de request con `AsyncLocalStorage` (`RequestContextStore`), cabeceras de seguridad y política de `Origin`, que fija el canal web o nativo.
 2. Guard: autenticación (JWT o API key), tenant, rate limit, acceso y fecha de cierre de la versión.
 3. Interceptores: contexto con tenant y actor, timeout, `Api-Version`, cabeceras de deprecación y cookie de sesión.
 4. Pipe: valida la entrada contra el esquema zod de la ruta (`PLATFORM.VALIDATION.INVALID_INPUT` con errores por campo).
@@ -695,15 +715,17 @@ export class CreateTaskTool extends UseCaseTool<CreateTaskUseCase> {}
 
 ## Resiliencia y Bloom filters
 
-`backend/libs/platform/resilience` aplica políticas con nombre (`ResiliencePolicyName`: `Database`, `Cache`, `ExternalApi`, `Ai`, `AiStreaming`, `Email`, `Queue`) a cada adaptador de salida. El circuit breaker y el bulkhead son propios, sobre el puerto `Clock`, sin librerías externas.
+`backend/libs/platform/resilience` aplica políticas con nombre (`PolicyName`) a cada adaptador de salida. La librería trae `PolicyName.Cache` y `PolicyName.Database`, y cada servicio registra las suyas con `PolicyName.of` y `ResilienceModule.forFeature`. El circuit breaker y el bulkhead son propios, sobre el puerto `Clock`, sin librerías externas.
 
 ```ts
 export class VoyageEmbeddingAdapter implements EmbeddingProvider {
+  static readonly POLICY = PolicyName.of('voyage');
+
   constructor(private readonly resilience: ResilienceRegistry) {}
 
   embed(texts: string[]): Promise<number[][]> {
     return this.resilience.execute(
-      ResiliencePolicyName.ExternalApi,
+      VoyageEmbeddingAdapter.POLICY,
       (signal) => this.callVoyage(texts, signal),
       { idempotent: true, dependencyKey: 'voyage' },
     );
@@ -986,7 +1008,7 @@ const outcome = await client.call(RevokeUserSessionsOperation, input, {
 - `InternalRouter` es el lado servidor: valida la entrada, aplica idempotencia por tenant, operación y llave con un claim de tres estados, revisa plazos y resultados contra el contrato y despacha al handler.
 - `InternalClient` es el lado cliente: aplica reintentos, backoff y presupuesto de tiempo. Solo reintenta operaciones `idempotent: true`, y solo ante `transient-failure` o `uncertain`.
 - El resultado es siempre un `CallOutcome`: `success`, `business-error` (código declarado en el contrato), `transient-failure`, `uncertain` o `protocol-violation`. Quien llama decide qué hacer con cada caso.
-- La idempotencia del servidor tiene dos almacenes: `InMemoryProcessedOperationStore` para pruebas y `PostgresIdempotencyStore` de `@platform/adapters-postgres`. `InternalRouter` recibe el `TransactionManager` del servicio y guarda el resultado en la misma transacción que los efectos del handler.
+- La idempotencia del servidor tiene dos almacenes: `InMemoryProcessedOperationStore` para pruebas y `TypeOrmIdempotencyStore` de `@platform/adapters-postgres`. `InternalRouter` recibe el `TransactionManager` del servicio y guarda el resultado en la misma transacción que los efectos del handler.
 
 Hoy existe el transporte en proceso (`InProcessTransport`). El transporte HTTP, `POST /internal/operations/:operationId`, se suma a `@platform/internal-api` con `HttpTransport` e `InternalApiController` (paquete WP-08 del [plan del backend](plan/backend.md)), con firma HMAC en local y SigV4 en AWS con la fase F12.
 

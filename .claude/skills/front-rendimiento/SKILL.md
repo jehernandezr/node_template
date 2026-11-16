@@ -28,7 +28,7 @@ Se optimiza lo que se mide y se evita lo que casi siempre sale mal. Estas reglas
 
 - Pantallas, datos y textos de un microfrontend van en un chunk diferido (`deferred as`). El manifiesto solo importa constantes, enums y el ciclo de vida, y `check_deferred_chunks` lo vigila sobre el build web.
 - Una dependencia pesada que solo usa un microfrontend (gráficas, editor) se importa desde su chunk, no desde un paquete compartido que todos cargan.
-- La carga de un chunk muestra un estado (el `deferredPage` de `shell_core` ya lo hace) y un reintento si falla.
+- La carga de un chunk muestra un estado y un reintento si falla. `ScreenRoute.deferred` lo hace con `DeferredLibraryLoader.page` de `shell_core`, que acepta un `loading` y un `errorBuilder` propios. Cada biblioteca se carga una vez por instancia del cargador, y un fallo se olvida para poder reintentarlo.
 
 ## Cómo se mide
 

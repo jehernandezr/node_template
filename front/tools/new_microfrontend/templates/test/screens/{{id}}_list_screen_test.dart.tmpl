@@ -1,0 +1,126 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:mf_{{id}}/mf_{{id}}.dart';
+import 'package:mf_{{id}}/src/data/fake_{{id}}_repository.dart';
+import 'package:mf_{{id}}/src/screens/screens.dart';
+import 'package:mf_{{id}}/src/shared/enums/{{id}}_operation.dart';
+import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
+
+import '../utils/scripted_{{id}}_repository.dart';
+import '../utils/{{id}}_test_app.dart';
+
+void main() {
+  setUpAll(() async {
+    await const DeferredLibrariesPreloader().load([{{id}}Manifest]);
+  });
+
+  group({{Pascal}}ListScreen, () {
+    testWidgets('shows a loading indicator while the list loads', (
+      tester,
+    ) async {
+      final repository = Scripted{{Pascal}}Repository();
+      await {{Pascal}}TestApp.pumpScreen(
+        tester,
+        {{Pascal}}ListScreen(repository: repository),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows the items', (tester) async {
+      final repository = Fake{{Pascal}}Repository();
+      addTearDown(repository.dispose);
+      await {{Pascal}}TestApp.pump(tester, repository);
+      await tester.pumpAndSettle();
+
+      final first = Fake{{Pascal}}Repository.demoItems.first;
+      expect(find.text(first.title), findsOneWidget);
+      expect(find.text(first.description), findsOneWidget);
+    });
+
+    testWidgets('shows the empty state when there are no items', (
+      tester,
+    ) async {
+      final repository = Fake{{Pascal}}Repository(seed: const []);
+      addTearDown(repository.dispose);
+      await {{Pascal}}TestApp.pump(tester, repository);
+      await tester.pumpAndSettle();
+
+      expect(find.text({{Pascal}}TestApp.es.emptyTitle), findsOneWidget);
+      expect(find.byType(ListTile), findsNothing);
+    });
+
+    testWidgets('shows an error with retry when loading fails', (tester) async {
+      final repository = Fake{{Pascal}}Repository(
+        behavior: DemoBehavior()
+          ..failNext(const FakeFailure(), operation: {{Pascal}}Operation.list),
+      );
+      addTearDown(repository.dispose);
+      await {{Pascal}}TestApp.pump(tester, repository);
+      await tester.pumpAndSettle();
+      expect(find.text({{Pascal}}TestApp.es.loadError), findsOneWidget);
+
+      await tester.tap(find.text('Reintentar'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(Fake{{Pascal}}Repository.demoItems.first.title),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('lays out at compact and wide widths', (tester) async {
+      final repository = Fake{{Pascal}}Repository();
+      addTearDown(repository.dispose);
+      final app = {{Pascal}}TestApp().wrap({{Pascal}}TestApp.scopeWith(repository));
+
+      await pumpAtWidths(
+        tester,
+        app,
+        widths: const [320, 1280],
+        check: (width) async {
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: 'width $width');
+        },
+      );
+    });
+
+    testWidgets('is accessible', (tester) async {
+      final repository = Fake{{Pascal}}Repository();
+      addTearDown(repository.dispose);
+      await {{Pascal}}TestApp.pump(tester, repository);
+      await tester.pumpAndSettle();
+
+      await expectAccessible(tester);
+    });
+
+    testWidgets('does not throw at twice the text scale', (tester) async {
+      final repository = Fake{{Pascal}}Repository();
+      addTearDown(repository.dispose);
+      final app = {{Pascal}}TestApp().wrap({{Pascal}}TestApp.scopeWith(repository));
+
+      await pumpAtTextScale(tester, app);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('tapping an item opens its detail and back returns', (
+      tester,
+    ) async {
+      final repository = Fake{{Pascal}}Repository();
+      addTearDown(repository.dispose);
+      await {{Pascal}}TestApp.pump(tester, repository);
+      await tester.pumpAndSettle();
+
+      final first = Fake{{Pascal}}Repository.demoItems.first;
+      await tester.tap(find.text(first.title));
+      await tester.pumpAndSettle();
+      expect(find.byType({{Pascal}}DetailScreen), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.byType({{Pascal}}ListScreen), findsOneWidget);
+    });
+  });
+}

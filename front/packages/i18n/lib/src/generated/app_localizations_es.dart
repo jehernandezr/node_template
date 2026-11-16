@@ -265,6 +265,30 @@ class AppLocalizationsEs extends AppLocalizations {
       'El servicio está ocupado. Intenta en unos instantes.';
 
   @override
+  String get error_platform_auth_token_expired =>
+      'Tu acceso venció. Actualizando la sesión.';
+
+  @override
+  String get error_platform_auth_origin_rejected =>
+      'Esta solicitud no viene de un origen permitido.';
+
+  @override
+  String get error_platform_api_unsupported_version =>
+      'Esta versión de la aplicación no es compatible. Actualízala.';
+
+  @override
+  String get error_platform_http_payload_too_large =>
+      'Lo que enviaste es demasiado grande.';
+
+  @override
+  String get error_platform_http_unsupported_media_type =>
+      'No se pudo enviar ese tipo de contenido.';
+
+  @override
+  String get error_platform_http_malformed_body =>
+      'No se pudo leer lo que enviaste. Inténtalo de nuevo.';
+
+  @override
   String get error_identity_auth_invalid_credentials =>
       'El email o la contraseña no son correctos.';
 
@@ -318,6 +342,104 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get error_identity_tenant_suspended =>
       'Tu organización está suspendida. Contacta al soporte.';
+
+  @override
+  String get error_identity_auth_email_not_verified =>
+      'Verifica tu correo para continuar. Revisa el enlace que te enviamos.';
+
+  @override
+  String get error_identity_user_email_verification_invalid =>
+      'El enlace de verificación no es válido o venció. Solicita uno nuevo.';
+
+  @override
+  String get error_identity_password_policy_violation =>
+      'La contraseña debe tener entre 12 y 128 caracteres y ser distinta de tu correo.';
+
+  @override
+  String get error_identity_password_breached =>
+      'Esa contraseña apareció en filtraciones conocidas. Elige otra.';
+
+  @override
+  String get error_identity_password_current_invalid =>
+      'La contraseña actual no es correcta.';
+
+  @override
+  String get error_identity_password_reset_invalid =>
+      'El enlace para restablecer la contraseña no es válido o venció. Solicita uno nuevo.';
+
+  @override
+  String get error_identity_device_signature_invalid =>
+      'No se pudo comprobar este dispositivo.';
+
+  @override
+  String get error_identity_device_key_invalid =>
+      'La clave de este dispositivo no es válida.';
+
+  @override
+  String get error_identity_mfa_recovery_not_ready =>
+      'La recuperación todavía no está disponible. Vuelve a intentarlo cuando termine la espera.';
+
+  @override
+  String get error_identity_mfa_factor_already_enrolled =>
+      'Ese método de verificación ya está activo.';
+
+  @override
+  String get error_identity_mfa_factor_not_enrolled =>
+      'Ese método de verificación no está activo.';
+
+  @override
+  String get error_identity_passkey_verification_failed =>
+      'No se pudo verificar la passkey.';
+
+  @override
+  String get error_identity_passkey_challenge_expired =>
+      'La verificación de la passkey venció. Inténtalo de nuevo.';
+
+  @override
+  String get error_identity_tenant_slug_taken =>
+      'Ese identificador ya está en uso. Elige otro.';
+
+  @override
+  String get error_identity_tenant_not_member =>
+      'No eres miembro de esa organización.';
+
+  @override
+  String get error_identity_access_last_owner =>
+      'La organización debe conservar al menos un propietario.';
+
+  @override
+  String get error_identity_access_system_role_immutable =>
+      'Los roles del sistema no se pueden modificar ni borrar.';
+
+  @override
+  String get error_identity_access_name_taken =>
+      'Ya existe un grupo o rol con ese nombre.';
+
+  @override
+  String get error_identity_invitation_invalid =>
+      'La invitación no es válida, venció o ya se usó.';
+
+  @override
+  String get error_identity_invitation_email_mismatch =>
+      'El correo verificado de tu cuenta no coincide con el de la invitación.';
+
+  @override
+  String get error_identity_api_key_invalid => 'La API key no es válida.';
+
+  @override
+  String get error_identity_api_key_expired => 'La API key venció.';
+
+  @override
+  String get error_identity_api_key_ip_not_allowed =>
+      'La API key no puede usarse desde esta dirección IP.';
+
+  @override
+  String get error_identity_api_key_permission_not_grantable =>
+      'No puedes otorgar permisos que tu cuenta no tiene.';
+
+  @override
+  String get error_identity_service_account_disabled =>
+      'La cuenta de servicio está deshabilitada.';
 
   @override
   String get errorFallback => 'Algo salió mal. Intenta de nuevo.';

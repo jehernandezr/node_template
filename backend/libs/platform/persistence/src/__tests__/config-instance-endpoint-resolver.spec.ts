@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import { ConfigInstanceEndpointResolver } from '../config-instance-endpoint-resolver.js';
 
 const INSTANCES = {
@@ -26,7 +26,7 @@ describe('ConfigInstanceEndpointResolver', () => {
         await expect(
           Promise.resolve().then(() => resolver.resolve(instance)),
         ).rejects.toMatchObject({
-          code: PlatformErrorCode.PersistenceInvalidConfig,
+          code: PersistenceErrorCode.InvalidConfig,
         });
       },
     );

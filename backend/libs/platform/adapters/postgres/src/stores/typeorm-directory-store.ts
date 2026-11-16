@@ -1,8 +1,5 @@
 import type { Clock } from '@platform/kernel';
-import {
-  invalidConfiguration,
-  type ShardLocation,
-} from '@platform/persistence';
+import { PersistenceError, type ShardLocation } from '@platform/persistence';
 import {
   DirectoryWriteResult,
   ShardingError,
@@ -54,7 +51,10 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
   /** Siempre del primario: la política de ubicación no tolera datos atrasados. */
   async listPlacements(region: string): Promise<readonly TenantPlacement[]> {
     if (typeof region !== 'string' || region.length === 0) {
-      throw invalidConfiguration('region', 'a non-empty string');
+      throw PersistenceError.invalidConfiguration(
+        'region',
+        'a non-empty string',
+      );
     }
     const entities = await this.catalog.readPrimary((manager) =>
       manager.find(ShardDirectoryEntity, {
@@ -78,7 +78,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
       expectedVersion !== undefined &&
       (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0)
     ) {
-      throw invalidConfiguration(
+      throw PersistenceError.invalidConfiguration(
         'expectedVersion',
         'a non-negative integer or undefined',
       );
@@ -155,10 +155,16 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
   /** Registra o mueve un shard lógico a una instancia física. */
   async setInstance(logicalShard: string, instance: string): Promise<void> {
     if (typeof logicalShard !== 'string' || logicalShard.length === 0) {
-      throw invalidConfiguration('logicalShard', 'a non-empty string');
+      throw PersistenceError.invalidConfiguration(
+        'logicalShard',
+        'a non-empty string',
+      );
     }
     if (typeof instance !== 'string' || instance.length === 0) {
-      throw invalidConfiguration('instance', 'a non-empty string');
+      throw PersistenceError.invalidConfiguration(
+        'instance',
+        'a non-empty string',
+      );
     }
     await this.catalog.write((manager) =>
       manager

@@ -10,7 +10,7 @@ paths:
 
 # Navegación
 
-`go_router` ya lo usa el shell (`shell_core`). Los microfrontends no crean un `GoRouter` ni usan `Navigator` directamente: declaran `ScreenRoute` en su manifiesto (ADR 0018) y `buildShellRouter` arma el árbol.
+`go_router` ya lo usa el shell (`shell_core`). Los microfrontends no crean un `GoRouter` ni usan `Navigator` directamente: declaran `ScreenRoute.deferred` en su manifiesto (ADR 0018), y `ShellRouterFactory` de `shell_core` arma el router. `ShellNavigator` del mismo paquete resuelve la página de inicio y el destino tras cerrar sesión.
 
 ## Reglas
 
@@ -28,22 +28,23 @@ paths:
 
 ## Ejemplo
 
+El controlador devuelve el resultado de la acción y la pantalla decide la navegación (ver `front-codigo`). Ejemplo ilustrativo:
+
 ```dart
 Future<void> _save() async {
-  try {
-    final task = await widget.controller.save();
-    if (!mounted) return;
-    context.go(TasksPaths.detail(task.id));
-  } on Exception catch (error) {
-    if (!mounted) return;
-    showActionError(context, error);
+  final result = await widget.controller.save();
+  if (!mounted) return;
+  if (result is ActionSucceeded<String>) {
+    context.go(TasksPaths.detail(result.value));
+    return;
   }
+  showActionResult(context, result);
 }
 ```
 
 ## Pruebas
 
-Las pantallas se prueban montando `manifest.buildRoutes(...)` en un `GoRouter` de prueba (ver `tasks_screens_test.dart`), y se verifica la ubicación final con `router.routeInformationProvider.value.uri`. Las redirecciones y guardias se prueban contra un `ShellAccessScope`.
+Las rutas de un microfrontend se prueban montando su manifiesto en un `GoRouter` de prueba sobre `TestApp.wrapRouter` de `test_utils`, como en `TasksTestApp` (`test/utils/tasks_app.dart`). La ubicación final se lee de `router.routeInformationProvider.value.uri`. Las redirecciones y guardias se prueban con la sesión que da `SessionBuilder`, con permisos o sin ellos.
 
 ## Descartado de las guías públicas
 

@@ -25,6 +25,7 @@ workspace:
   - packages/ui
   - packages/utils
   - tools/contracts_gen
+  - tools/new_microfrontend
 
 dev_dependencies:
   contracts_gen:

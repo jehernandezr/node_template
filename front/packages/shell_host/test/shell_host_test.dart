@@ -3,7 +3,6 @@ import 'package:auth/auth.dart';
 import 'package:test_utils/test_utils.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:shell_host/shell_host.dart';
@@ -77,8 +76,6 @@ IdentityConnection _connection(_Transport transport) => IdentityConnection(
 );
 
 void main() {
-  setUp(resetDeferredPageCache);
-
   group('safeReturnLocation', () {
     test('keeps in-app paths and rejects external targets', () {
       expect(safeReturnLocation(null), '/');
@@ -203,41 +200,5 @@ void main() {
 
     host.session.value = UserSession(userId: 'u2', tenantId: 't1');
     expect(host.badgeFor(entry), 0);
-  });
-
-  testWidgets('the screen loader shows a localized error and retries', (
-    tester,
-  ) async {
-    var attempts = 0;
-    Future<void> loadLibrary() async {
-      attempts++;
-      if (attempts == 1) throw StateError('network down');
-    }
-
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('es'),
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          ...GlobalMaterialLocalizations.delegates,
-        ],
-        supportedLocales: supportedLocales,
-        home: shellScreenLoader(
-          loadLibrary: loadLibrary,
-          builder: () => const Text('screen'),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final l10n = lookupAppLocalizations(const Locale('es'));
-    expect(find.text(l10n.errorFallback), findsOneWidget);
-    expect(find.text('screen'), findsNothing);
-
-    await tester.tap(find.text(l10n.actionRetry));
-    await tester.pumpAndSettle();
-
-    expect(attempts, 2);
-    expect(find.text('screen'), findsOneWidget);
   });
 }

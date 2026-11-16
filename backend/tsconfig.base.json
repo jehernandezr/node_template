@@ -33,11 +33,22 @@
       "@platform/adapters-postgres/nest": [
         "./libs/platform/adapters/postgres/src/nest/index.ts"
       ],
+      "@platform/adapters-postgres/test-utils": [
+        "./libs/platform/adapters/postgres/src/__tests__/utils/index.ts"
+      ],
       "@platform/adapters-valkey": [
         "./libs/platform/adapters/valkey/src/index.ts"
       ],
       "@platform/adapters-valkey/nest": [
         "./libs/platform/adapters/valkey/src/nest/index.ts"
+      ],
+      "@platform/adapters-valkey/test-utils": [
+        "./libs/platform/adapters/valkey/src/__tests__/utils/index.ts"
+      ],
+      "@platform/auth": ["./libs/platform/auth/src/index.ts"],
+      "@platform/auth/nest": ["./libs/platform/auth/src/nest/index.ts"],
+      "@platform/auth/test-utils": [
+        "./libs/platform/auth/src/__tests__/utils/index.ts"
       ],
       "@platform/bloom": ["./libs/platform/bloom/src/index.ts"],
       "@platform/bloom/nest": ["./libs/platform/bloom/src/nest/index.ts"],
@@ -107,6 +118,11 @@
       "@platform/scheduling": ["./libs/platform/scheduling/src/index.ts"],
       "@platform/scheduling/nest": [
         "./libs/platform/scheduling/src/nest/index.ts"
+      ],
+      "@platform/service": ["./libs/platform/service/src/index.ts"],
+      "@platform/service/nest": ["./libs/platform/service/src/nest/index.ts"],
+      "@platform/service/test-utils": [
+        "./libs/platform/service/src/__tests__/utils/index.ts"
       ],
       "@platform/sharding": ["./libs/platform/sharding/src/index.ts"],
       "@platform/sharding/nest": ["./libs/platform/sharding/src/nest/index.ts"],

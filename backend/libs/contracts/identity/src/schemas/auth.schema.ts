@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { IdSchema, TimestampSchema } from '@contracts/platform';
 import { IdentityLimits } from '../constants/identity.constants.js';
-import { MfaFactor, SignInStatus } from '../enums/auth.enum.js';
+import {
+  AuthMethodReference,
+  MfaFactor,
+  SignInStatus,
+} from '../enums/auth.enum.js';
 import type {
   MfaChallenge,
   MfaChallengeRequest,
@@ -22,12 +26,12 @@ const SessionTokenFieldSchema = z
   .min(1)
   .max(IdentityLimits.tokenMaxLength);
 
-const MfaTokenFieldSchema = z
+export const MfaTokenFieldSchema = z
   .string()
   .min(1)
   .max(IdentityLimits.mfaTokenMaxLength);
 
-const MfaCodeFieldSchema = z
+export const MfaCodeFieldSchema = z
   .string()
   .min(IdentityLimits.mfaCodeMinLength)
   .max(IdentityLimits.mfaCodeMaxLength)
@@ -36,6 +40,12 @@ const MfaCodeFieldSchema = z
 export const MfaFactorSchema = z
   .enum(MfaFactor)
   .describe('Método de segundo factor.') satisfies z.ZodType<MfaFactor>;
+
+export const AuthMethodReferenceSchema = z
+  .enum(AuthMethodReference)
+  .describe(
+    'Método con el que se autenticó la sesión (amr).',
+  ) satisfies z.ZodType<AuthMethodReference>;
 
 export const SignInStatusSchema = z
   .enum(SignInStatus)

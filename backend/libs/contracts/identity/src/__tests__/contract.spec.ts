@@ -43,13 +43,21 @@ import { SessionRevokedEvent } from '../events/identity.events.js';
 import { RevokeUserSessionsOperation } from '../internal/identity.operations.js';
 
 describe('identity access enums', () => {
-  it('keep exactly the wire values the front already uses', () => {
+  it('keep the wire values the front already uses and add the identity ones', () => {
     expect(Object.values(Permission)).toEqual([
       'tasks:read',
       'tasks:write',
       'billing:read',
       'billing:write',
       'backoffice:access',
+      'identity:members:read',
+      'identity:members:manage',
+      'identity:groups:manage',
+      'identity:roles:manage',
+      'identity:invitations:manage',
+      'identity:service-accounts:manage',
+      'identity:api-keys:manage',
+      'identity:tenant:manage',
     ]);
     expect(Object.values(PlatformRole)).toEqual([
       'super_admin',
@@ -168,6 +176,8 @@ describe('identity routes', () => {
         tenantId: '0190f2a4-7b3c-7d4e-8f00-000000000002',
         sessionId: '0190f2a4-7b3c-7d4e-8f00-000000000003',
         permissions: ['billing:write'],
+        roles: ['admin'],
+        permissionVersion: '3.1',
         platformRoles: [],
         features: ['billing'],
         flags: [],

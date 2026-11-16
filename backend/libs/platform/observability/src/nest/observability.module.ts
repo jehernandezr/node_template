@@ -69,11 +69,9 @@ import { TelemetryShutdownHook } from './telemetry-shutdown.hook.js';
       inject: [Redactor],
     },
     {
-      // La misma instancia que lee el `RequestContext` estático: mientras haya
-      // consumidores sin migrar, un contexto abierto por el middleware debe
-      // verse desde ambos lados.
       provide: RequestContextStore,
-      useFactory: () => RequestContextStore.shared(),
+      useFactory: (tracing: Tracing) => new RequestContextStore(tracing),
+      inject: [Tracing],
     },
     {
       provide: TraceContextCodec,

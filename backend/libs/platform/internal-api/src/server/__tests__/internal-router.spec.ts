@@ -1,8 +1,4 @@
-import {
-  defineOperation,
-  PlatformErrorCode,
-  type OperationDefinition,
-} from '@contracts/platform';
+import { defineOperation, type OperationDefinition } from '@contracts/platform';
 import { context as otelContext } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { CallOutcome } from '@platform/primitives';
@@ -112,7 +108,7 @@ describe('InternalRouter', () => {
       ).resolves.toEqual(
         CallOutcome.protocolViolation(
           InternalApiReason.UnknownOperation,
-          PlatformErrorCode.InternalApiUnknownOperation,
+          InternalApiErrorCode.UnknownOperation,
         ),
       );
     });

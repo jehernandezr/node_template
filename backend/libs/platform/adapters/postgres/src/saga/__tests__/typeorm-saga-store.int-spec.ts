@@ -1,6 +1,5 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
-import { PersistenceError } from '@platform/persistence';
+import { PersistenceError, PersistenceErrorCode } from '@platform/persistence';
 import { ShardedTestDatabase } from '@platform/persistence/test-utils';
 import {
   SagaError,
@@ -263,7 +262,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
 
         expect(error).toBeInstanceOf(PersistenceError);
         expect((error as PersistenceError).code).toBe(
-          PlatformErrorCode.PersistenceTenantMismatch,
+          PersistenceErrorCode.TenantMismatch,
         );
       });
 

@@ -95,23 +95,37 @@ export interface CacheModuleOptions {
 | `PersistenceModule`      | `TransactionManager`, `EntityManagerProvider`, `ShardResolver`, `ShardScope`, `AcrossShards`                                                                                   | `OnModuleDestroy` (cierra los `DataSource`)           |
 | `PostgresPlatformModule` | `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`, `TypeOrmIdempotencyStore`, `TypeOrmDirectoryStore`                                                                       | ninguno                                               |
 | `SagaModule`             | `Sagas`, `SagaEngine`, `SagaRecoveryJob`, `SagaRetentionJob`; `forFeature([definiciones])`                                                                                     | ninguno                                               |
-| `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `SqsPoller`                                                                                         | `OnModuleDestroy`, `BeforeApplicationShutdown`        |
+| `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `AwsMessagingNames`, `AwsErrorTranslator`                                                           | `OnModuleDestroy`                                     |
+| `SqsConsumerModule`      | `SqsPoller`, `SqsDeliveryProcessor`, `SqsDeadLetterRedriver`; no es global                                                                                                     | `OnApplicationBootstrap`, `OnModuleDestroy`           |
 | `ValkeyModule`           | `VALKEY_CLIENT`, `ValkeyCache`, `ValkeyRateLimiter`, `ValkeyRoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilterFactory`, `ValkeyJobLock`, `ValkeyHealthIndicator` | `OnModuleDestroy` (`quit`)                            |
 
 ```ts
 @Module({
   imports: [
     // Configuración propia del servicio. Las librerías traen sus secciones.
-    ConfigModule.forRoot({ schema: identityConfigSchema }),
+    ConfigModule.forRoot({ env: process.env }),
 
-    ObservabilityModule.forRoot(),
+    ObservabilityModule.forRoot({ telemetry }),
     ResilienceModule.forRoot(),
-    SchedulingModule.forRoot({ mode: SchedulingMode.InProcess }),
+    SchedulingModule.forRoot({
+      mode: SchedulingMode.InProcess,
+      logger: LoggerPort,
+      metrics: MetricsPort,
+    }),
 
     // Adaptadores de infraestructura.
-    ValkeyModule.forRoot(),
-    AwsModule.forRoot(),
-    PersistenceModule.forRoot(),
+    ValkeyModule.forRoot({ connectionName: SERVICE_NAME }),
+    AwsModule.forRoot({
+      messaging: { topology: identityTopology, source: SERVICE_NAME },
+    }),
+    PersistenceModule.forRoot({
+      shard: { entities: shardEntities, migrations: shardMigrations },
+      catalog: {
+        entities: platformCatalogEntities,
+        migrations: platformCatalogMigrations,
+      },
+      shardLister: DirectoryShardLister,
+    }),
     PostgresPlatformModule.forRoot(),
 
     // Núcleo, con el adaptador elegido por `Type<Port>`.
@@ -120,23 +134,37 @@ export interface CacheModuleOptions {
       channel: ValkeyShardDirectoryChannel,
       directory: TypeOrmDirectoryStore,
     }),
-    CacheModule.forRoot({ store: ValkeyCache }),
+    CacheModule.forRoot({ store: ValkeyCache, metrics: MetricsPort }),
     RateLimitModule.forRoot({
       limiter: ValkeyRateLimiter,
       degradeLocally: true,
     }),
     MessagingModule.forRoot({
+      source: SERVICE_NAME,
+      consumer: QueueName.Orders,
       topology: identityTopology,
       outboxStore: TypeOrmOutboxStore,
       processedStore: TypeOrmProcessedMessageStore,
+      publisher: SnsSqsEnvelopePublisher,
       bus: SnsSqsMessageBus,
       relay: true, // registra OutboxRelayJob y las retenciones
+      relayScopes: ShardedRelayScopes,
+    }),
+    // No es global: se destruye antes que AwsModule y detiene el sondeo antes de cerrar los clientes.
+    SqsConsumerModule.forRoot({
+      topology: identityTopology,
+      queue: QueueName.Orders,
     }),
     InternalApiModule.forRoot({
+      operations: identityOperations,
       transport: InternalTransportKind.Http,
       processedStore: TypeOrmIdempotencyStore,
     }),
-    SagaModule.forRoot({ store: TypeOrmSagaStore }),
+    SagaPostgresModule,
+    SagaModule.forRoot({
+      store: TypeOrmSagaStore,
+      scopes: ShardedSagaScopes,
+    }),
 
     // Módulos de negocio.
     UsersModule,
@@ -209,7 +237,7 @@ Un módulo se comunica con otro por su fachada (`UsersFacade`) o por eventos. La
 ## Ciclo de vida y apagado
 
 - `main.ts` importa primero `./instrumentation.js`, que llama a `TelemetryBootstrap.start(process.env)` de `@platform/observability/setup`, y después crea la app con NestJS y llama `app.enableShutdownHooks()`.
-- Nest 12 apaga en este orden: todos los `onModuleDestroy`, luego `beforeApplicationShutdown` y al final `onApplicationShutdown`. Por eso lo que genera trabajo (`JobRunner`, `SqsPoller`, suscripciones) se detiene en `onModuleDestroy`, y los módulos que cierran recursos (clientes SNS y SQS, Valkey con `quit`, `DataSource`) son globales y se importan antes en `AppModule`, para que su `onModuleDestroy` corra después: Nest destruye los módulos en orden inverso al de importación. `onApplicationShutdown` vacía la telemetría.
+- Nest 12 apaga en este orden: todos los `onModuleDestroy`, luego `beforeApplicationShutdown` y al final `onApplicationShutdown`. Por eso lo que genera trabajo (`JobRunner`, `SqsPoller`, suscripciones) se detiene en `onModuleDestroy`, y los módulos que cierran recursos (clientes SNS y SQS, Valkey con `quit`, `DataSource`) son globales y se importan antes en `AppModule`, para que su `onModuleDestroy` corra después: Nest destruye los módulos en orden inverso al de importación. `SqsPoller` vive en `SqsConsumerModule`, que no es global, para cerrarse antes que `AwsModule`, que solo implementa `OnModuleDestroy`. `onApplicationShutdown` vacía la telemetría.
 - `onApplicationBootstrap` corre cuando todos los módulos ya iniciaron: ahí van las validaciones cruzadas (`InternalApiModule` llama `assertComplete`, `MessagingExplorer` registra los consumidores).
 - La salud la reúne `HealthRegistry` de observability: cada adaptador de red implementa `HealthCheckable` del kernel y se registra en su `onModuleInit`.
 - Los hooks de inicio son asíncronos y fallan fuerte: si la config o la base no están, el proceso no arranca.

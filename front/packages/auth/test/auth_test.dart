@@ -205,6 +205,24 @@ void main() {
     expect(manager.state, AuthState.signedOut);
   });
 
+  test('a refresh answered with TOKEN_EXPIRED keeps the session', () async {
+    await signIn(tokens('old', t0.add(const Duration(minutes: 1))));
+    const code = PlatformErrorCode.authTokenExpired;
+    repo.refreshError = ApiErrorException(
+      ProblemDetails(
+        type: 'about:blank',
+        title: 'Token expired',
+        status: code.httpStatus,
+        code: code.code,
+      ),
+    );
+
+    await expectLater(manager.accessToken(), throwsA(isA<ApiErrorException>()));
+
+    expect(manager.state, AuthState.signedIn);
+    expect(store.sessionToken, isNotNull);
+  });
+
   test(
     'an identity error that is not an invalidation keeps the session',
     () async {
@@ -345,6 +363,19 @@ void main() {
   });
 
   group('rejected access tokens', () {
+    test('an expired access token keeps the session', () async {
+      await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
+
+      final closed = await manager.handleRejectedToken(
+        accessToken: 'access-1',
+        code: PlatformErrorCode.authTokenExpired.code,
+      );
+
+      expect(closed, isFalse);
+      expect(manager.state, AuthState.signedIn);
+      expect(store.sessionToken, isNotNull);
+    });
+
     test('an invalidation code on the current token signs out', () async {
       await signIn(tokens('access-1', t0.add(const Duration(minutes: 15))));
 

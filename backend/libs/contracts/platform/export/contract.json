@@ -56,11 +56,32 @@
           "value": "PLATFORM.AUTH.UNAUTHENTICATED"
         },
         { "name": "AuthForbidden", "value": "PLATFORM.AUTH.FORBIDDEN" },
+        { "name": "AuthTokenExpired", "value": "PLATFORM.AUTH.TOKEN_EXPIRED" },
+        {
+          "name": "AuthOriginRejected",
+          "value": "PLATFORM.AUTH.ORIGIN_REJECTED"
+        },
         {
           "name": "RateLimitExceeded",
           "value": "PLATFORM.RATE_LIMIT.EXCEEDED"
         },
         { "name": "ApiVersionSunset", "value": "PLATFORM.API.VERSION_SUNSET" },
+        {
+          "name": "ApiUnsupportedVersion",
+          "value": "PLATFORM.API.UNSUPPORTED_VERSION"
+        },
+        {
+          "name": "HttpPayloadTooLarge",
+          "value": "PLATFORM.HTTP.PAYLOAD_TOO_LARGE"
+        },
+        {
+          "name": "HttpUnsupportedMediaType",
+          "value": "PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE"
+        },
+        {
+          "name": "HttpMalformedBody",
+          "value": "PLATFORM.HTTP.MALFORMED_BODY"
+        },
         { "name": "ResourceNotFound", "value": "PLATFORM.RESOURCE.NOT_FOUND" },
         {
           "name": "ConflictVersionMismatch",
@@ -82,18 +103,6 @@
         {
           "name": "ShardingTenantNotWritable",
           "value": "PLATFORM.SHARDING.TENANT_NOT_WRITABLE"
-        },
-        {
-          "name": "ShardingUnknownTenant",
-          "value": "PLATFORM.SHARDING.UNKNOWN_TENANT"
-        },
-        {
-          "name": "ShardingUnknownShard",
-          "value": "PLATFORM.SHARDING.UNKNOWN_SHARD"
-        },
-        {
-          "name": "ShardingWrongRegion",
-          "value": "PLATFORM.SHARDING.WRONG_REGION"
         },
         {
           "name": "CriteriaUnknownField",
@@ -119,264 +128,6 @@
         {
           "name": "ResilienceOverloaded",
           "value": "PLATFORM.RESILIENCE.OVERLOADED"
-        },
-        {
-          "name": "InternalApiInvalidOutput",
-          "value": "PLATFORM.INTERNAL_API.INVALID_OUTPUT"
-        },
-        {
-          "name": "InternalApiUnknownOperation",
-          "value": "PLATFORM.INTERNAL_API.UNKNOWN_OPERATION"
-        },
-        {
-          "name": "InternalApiDuplicateOperation",
-          "value": "PLATFORM.INTERNAL_API.DUPLICATE_OPERATION"
-        },
-        {
-          "name": "InternalApiMissingCompensation",
-          "value": "PLATFORM.INTERNAL_API.MISSING_COMPENSATION"
-        },
-        {
-          "name": "InternalApiMissingHandler",
-          "value": "PLATFORM.INTERNAL_API.MISSING_HANDLER"
-        },
-        {
-          "name": "InternalApiNonJsonSafeSchema",
-          "value": "PLATFORM.INTERNAL_API.NON_JSON_SAFE_SCHEMA"
-        },
-        {
-          "name": "InternalApiInvalidOperation",
-          "value": "PLATFORM.INTERNAL_API.INVALID_OPERATION"
-        },
-        {
-          "name": "InternalApiInvalidIdempotencyKey",
-          "value": "PLATFORM.INTERNAL_API.INVALID_IDEMPOTENCY_KEY"
-        },
-        {
-          "name": "InternalApiIdempotencyKeyReuse",
-          "value": "PLATFORM.INTERNAL_API.IDEMPOTENCY_KEY_REUSE"
-        },
-        {
-          "name": "InternalApiPayloadTooLarge",
-          "value": "PLATFORM.INTERNAL_API.PAYLOAD_TOO_LARGE"
-        },
-        {
-          "name": "InternalApiInvalidHandlerResult",
-          "value": "PLATFORM.INTERNAL_API.INVALID_HANDLER_RESULT"
-        },
-        {
-          "name": "InternalApiCallBudgetExceeded",
-          "value": "PLATFORM.INTERNAL_API.CALL_BUDGET_EXCEEDED"
-        },
-        {
-          "name": "MessagingInvalidEnvelope",
-          "value": "PLATFORM.MESSAGING.INVALID_ENVELOPE"
-        },
-        {
-          "name": "MessagingInvalidPayload",
-          "value": "PLATFORM.MESSAGING.INVALID_PAYLOAD"
-        },
-        {
-          "name": "MessagingInvalidRetryPolicy",
-          "value": "PLATFORM.MESSAGING.INVALID_RETRY_POLICY"
-        },
-        {
-          "name": "MessagingInvalidTopology",
-          "value": "PLATFORM.MESSAGING.INVALID_TOPOLOGY"
-        },
-        {
-          "name": "MessagingUnknownRoute",
-          "value": "PLATFORM.MESSAGING.UNKNOWN_ROUTE"
-        },
-        {
-          "name": "MessagingUnknownQueue",
-          "value": "PLATFORM.MESSAGING.UNKNOWN_QUEUE"
-        },
-        {
-          "name": "MessagingDuplicateHandler",
-          "value": "PLATFORM.MESSAGING.DUPLICATE_HANDLER"
-        },
-        {
-          "name": "MessagingPermanentError",
-          "value": "PLATFORM.MESSAGING.PERMANENT_ERROR"
-        },
-        {
-          "name": "MessagingPayloadTooLarge",
-          "value": "PLATFORM.MESSAGING.PAYLOAD_TOO_LARGE"
-        },
-        { "name": "SagaNotFound", "value": "PLATFORM.SAGA.NOT_FOUND" },
-        {
-          "name": "SagaDuplicateSaga",
-          "value": "PLATFORM.SAGA.DUPLICATE_SAGA"
-        },
-        {
-          "name": "SagaUnknownDefinition",
-          "value": "PLATFORM.SAGA.UNKNOWN_DEFINITION"
-        },
-        {
-          "name": "SagaInvalidDefinition",
-          "value": "PLATFORM.SAGA.INVALID_DEFINITION"
-        },
-        {
-          "name": "SagaInvalidConfiguration",
-          "value": "PLATFORM.SAGA.INVALID_CONFIGURATION"
-        },
-        { "name": "SagaInvalidState", "value": "PLATFORM.SAGA.INVALID_STATE" },
-        {
-          "name": "SagaMissingCompensation",
-          "value": "PLATFORM.SAGA.MISSING_COMPENSATION"
-        },
-        {
-          "name": "SagaConcurrentModification",
-          "value": "PLATFORM.SAGA.CONCURRENT_MODIFICATION"
-        },
-        {
-          "name": "SagaLeaseNotAcquired",
-          "value": "PLATFORM.SAGA.LEASE_NOT_ACQUIRED"
-        },
-        { "name": "SagaLeaseLost", "value": "PLATFORM.SAGA.LEASE_LOST" },
-        {
-          "name": "SagaTransientFailure",
-          "value": "PLATFORM.SAGA.TRANSIENT_FAILURE"
-        },
-        {
-          "name": "SagaProtocolViolation",
-          "value": "PLATFORM.SAGA.PROTOCOL_VIOLATION"
-        },
-        {
-          "name": "SagaUncertainOutcome",
-          "value": "PLATFORM.SAGA.UNCERTAIN_OUTCOME"
-        },
-        {
-          "name": "SagaStateUpdateFailed",
-          "value": "PLATFORM.SAGA.STATE_UPDATE_FAILED"
-        },
-        {
-          "name": "SagaInputBuildFailed",
-          "value": "PLATFORM.SAGA.INPUT_BUILD_FAILED"
-        },
-        {
-          "name": "SagaIdempotencyKeyConflict",
-          "value": "PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT"
-        },
-        {
-          "name": "SagaDeadlineExceeded",
-          "value": "PLATFORM.SAGA.DEADLINE_EXCEEDED"
-        },
-        {
-          "name": "BloomInvalidParameters",
-          "value": "PLATFORM.BLOOM.INVALID_PARAMETERS"
-        },
-        {
-          "name": "BloomCorruptedData",
-          "value": "PLATFORM.BLOOM.CORRUPTED_DATA"
-        },
-        {
-          "name": "BloomIncompatibleFilters",
-          "value": "PLATFORM.BLOOM.INCOMPATIBLE_FILTERS"
-        },
-        {
-          "name": "CacheInvalidArgument",
-          "value": "PLATFORM.CACHE.INVALID_ARGUMENT"
-        },
-        { "name": "CacheKeyTooLong", "value": "PLATFORM.CACHE.KEY_TOO_LONG" },
-        {
-          "name": "CacheValueTooLarge",
-          "value": "PLATFORM.CACHE.VALUE_TOO_LARGE"
-        },
-        { "name": "CacheTimeout", "value": "PLATFORM.CACHE.TIMEOUT" },
-        {
-          "name": "CacheCorruptEntry",
-          "value": "PLATFORM.CACHE.CORRUPT_ENTRY"
-        },
-        { "name": "ConfigInvalid", "value": "PLATFORM.CONFIG.INVALID" },
-        {
-          "name": "MessagingTenantMismatch",
-          "value": "PLATFORM.MESSAGING.TENANT_MISMATCH"
-        },
-        {
-          "name": "MessagingIdempotencyConflict",
-          "value": "PLATFORM.MESSAGING.IDEMPOTENCY_CONFLICT"
-        },
-        {
-          "name": "MessagingInvalidOptions",
-          "value": "PLATFORM.MESSAGING.INVALID_OPTIONS"
-        },
-        {
-          "name": "PrimitivesInvalidArgument",
-          "value": "PLATFORM.PRIMITIVES.INVALID_ARGUMENT"
-        },
-        {
-          "name": "PrimitivesNonJsonValue",
-          "value": "PLATFORM.PRIMITIVES.NON_JSON_VALUE"
-        },
-        {
-          "name": "PrimitivesDeadlineExceeded",
-          "value": "PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED"
-        },
-        {
-          "name": "PrimitivesStaleClaim",
-          "value": "PLATFORM.PRIMITIVES.STALE_CLAIM"
-        },
-        {
-          "name": "PersistenceQueryFailed",
-          "value": "PLATFORM.PERSISTENCE.QUERY_FAILED"
-        },
-        {
-          "name": "PersistenceInvalidConfig",
-          "value": "PLATFORM.PERSISTENCE.INVALID_CONFIG"
-        },
-        {
-          "name": "PersistenceTransactionRequired",
-          "value": "PLATFORM.PERSISTENCE.TRANSACTION_REQUIRED"
-        },
-        {
-          "name": "PersistenceTenantRequired",
-          "value": "PLATFORM.PERSISTENCE.TENANT_REQUIRED"
-        },
-        {
-          "name": "PersistenceTenantMismatch",
-          "value": "PLATFORM.PERSISTENCE.TENANT_MISMATCH"
-        },
-        {
-          "name": "PersistenceCorruptRow",
-          "value": "PLATFORM.PERSISTENCE.CORRUPT_ROW"
-        },
-        {
-          "name": "PersistenceContention",
-          "value": "PLATFORM.PERSISTENCE.CONTENTION"
-        },
-        {
-          "name": "ResilienceUnknownPolicy",
-          "value": "PLATFORM.RESILIENCE.UNKNOWN_POLICY"
-        },
-        {
-          "name": "ShardingInvalidConfig",
-          "value": "PLATFORM.SHARDING.INVALID_CONFIG"
-        },
-        {
-          "name": "ShardingInvalidKey",
-          "value": "PLATFORM.SHARDING.INVALID_KEY"
-        },
-        {
-          "name": "ShardingInvalidTenantId",
-          "value": "PLATFORM.SHARDING.INVALID_TENANT_ID"
-        },
-        {
-          "name": "ValkeyCommandFailed",
-          "value": "PLATFORM.VALKEY.COMMAND_FAILED"
-        },
-        {
-          "name": "ValkeyUnexpectedReply",
-          "value": "PLATFORM.VALKEY.UNEXPECTED_REPLY"
-        },
-        {
-          "name": "MessagingTransactionRequired",
-          "value": "PLATFORM.MESSAGING.TRANSACTION_REQUIRED"
-        },
-        {
-          "name": "MessagingTransportFailed",
-          "value": "PLATFORM.MESSAGING.TRANSPORT_FAILED"
         }
       ]
     },
@@ -647,6 +398,24 @@
         "description": "No tienes permiso para realizar esta acción."
       },
       {
+        "name": "AuthTokenExpired",
+        "code": "PLATFORM.AUTH.TOKEN_EXPIRED",
+        "httpStatus": 401,
+        "retryable": true,
+        "audience": "public",
+        "messageKey": "error_platform_auth_token_expired",
+        "description": "El access token venció. El cliente refresca la sesión y reintenta."
+      },
+      {
+        "name": "AuthOriginRejected",
+        "code": "PLATFORM.AUTH.ORIGIN_REJECTED",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_auth_origin_rejected",
+        "description": "El origen de la solicitud no está permitido."
+      },
+      {
         "name": "RateLimitExceeded",
         "code": "PLATFORM.RATE_LIMIT.EXCEEDED",
         "httpStatus": 429,
@@ -663,6 +432,42 @@
         "audience": "public",
         "messageKey": "error_platform_api_version_sunset",
         "description": "Esta versión de la API ya no está disponible."
+      },
+      {
+        "name": "ApiUnsupportedVersion",
+        "code": "PLATFORM.API.UNSUPPORTED_VERSION",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_api_unsupported_version",
+        "description": "La versión de la API pedida no es compatible."
+      },
+      {
+        "name": "HttpPayloadTooLarge",
+        "code": "PLATFORM.HTTP.PAYLOAD_TOO_LARGE",
+        "httpStatus": 413,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_http_payload_too_large",
+        "description": "El cuerpo de la solicitud supera el tamaño permitido."
+      },
+      {
+        "name": "HttpUnsupportedMediaType",
+        "code": "PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE",
+        "httpStatus": 415,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_http_unsupported_media_type",
+        "description": "El tipo de contenido de la solicitud no es compatible."
+      },
+      {
+        "name": "HttpMalformedBody",
+        "code": "PLATFORM.HTTP.MALFORMED_BODY",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_http_malformed_body",
+        "description": "El cuerpo de la solicitud no es un JSON válido."
       },
       {
         "name": "ResourceNotFound",
@@ -728,33 +533,6 @@
         "description": "El tenant está en solo lectura por mantenimiento. Intenta más tarde."
       },
       {
-        "name": "ShardingUnknownTenant",
-        "code": "PLATFORM.SHARDING.UNKNOWN_TENANT",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_sharding_unknown_tenant",
-        "description": "El tenant no está en el directorio de fragmentos."
-      },
-      {
-        "name": "ShardingUnknownShard",
-        "code": "PLATFORM.SHARDING.UNKNOWN_SHARD",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_sharding_unknown_shard",
-        "description": "El fragmento indicado no existe en la configuración."
-      },
-      {
-        "name": "ShardingWrongRegion",
-        "code": "PLATFORM.SHARDING.WRONG_REGION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_sharding_wrong_region",
-        "description": "El tenant pertenece a otra región; la petición debió enrutarse allá."
-      },
-      {
         "name": "CriteriaUnknownField",
         "code": "PLATFORM.CRITERIA.UNKNOWN_FIELD",
         "httpStatus": 400,
@@ -816,627 +594,6 @@
         "audience": "public",
         "messageKey": "error_platform_resilience_overloaded",
         "description": "El servicio está sobrecargado. Intenta de nuevo en unos instantes."
-      },
-      {
-        "name": "InternalApiInvalidOutput",
-        "code": "PLATFORM.INTERNAL_API.INVALID_OUTPUT",
-        "httpStatus": 502,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_invalid_output",
-        "description": "La salida de una operación interna no cumple su contrato."
-      },
-      {
-        "name": "InternalApiUnknownOperation",
-        "code": "PLATFORM.INTERNAL_API.UNKNOWN_OPERATION",
-        "httpStatus": 404,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_unknown_operation",
-        "description": "La operación interna no está registrada."
-      },
-      {
-        "name": "InternalApiDuplicateOperation",
-        "code": "PLATFORM.INTERNAL_API.DUPLICATE_OPERATION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_duplicate_operation",
-        "description": "Dos operaciones internas usan el mismo identificador."
-      },
-      {
-        "name": "InternalApiMissingCompensation",
-        "code": "PLATFORM.INTERNAL_API.MISSING_COMPENSATION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_missing_compensation",
-        "description": "Una operación que modifica datos no declara su compensación."
-      },
-      {
-        "name": "InternalApiMissingHandler",
-        "code": "PLATFORM.INTERNAL_API.MISSING_HANDLER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_missing_handler",
-        "description": "La operación interna no tiene manejador."
-      },
-      {
-        "name": "InternalApiNonJsonSafeSchema",
-        "code": "PLATFORM.INTERNAL_API.NON_JSON_SAFE_SCHEMA",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_non_json_safe_schema",
-        "description": "El esquema de la operación interna no se puede serializar a JSON."
-      },
-      {
-        "name": "InternalApiInvalidOperation",
-        "code": "PLATFORM.INTERNAL_API.INVALID_OPERATION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_invalid_operation",
-        "description": "El valor recibido no es una operación declarada con defineOperation ni con @Operation."
-      },
-      {
-        "name": "InternalApiInvalidIdempotencyKey",
-        "code": "PLATFORM.INTERNAL_API.INVALID_IDEMPOTENCY_KEY",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_invalid_idempotency_key",
-        "description": "La llave de idempotencia o el tenant de la llamada interna falta o supera la longitud máxima."
-      },
-      {
-        "name": "InternalApiIdempotencyKeyReuse",
-        "code": "PLATFORM.INTERNAL_API.IDEMPOTENCY_KEY_REUSE",
-        "httpStatus": 409,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_idempotency_key_reuse",
-        "description": "La llave de idempotencia de la operación interna ya se usó con otra entrada."
-      },
-      {
-        "name": "InternalApiPayloadTooLarge",
-        "code": "PLATFORM.INTERNAL_API.PAYLOAD_TOO_LARGE",
-        "httpStatus": 413,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_payload_too_large",
-        "description": "La entrada o la salida de la operación interna supera el tamaño máximo."
-      },
-      {
-        "name": "InternalApiInvalidHandlerResult",
-        "code": "PLATFORM.INTERNAL_API.INVALID_HANDLER_RESULT",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_invalid_handler_result",
-        "description": "El manejador de la operación interna devolvió un resultado que no es un CallOutcome."
-      },
-      {
-        "name": "InternalApiCallBudgetExceeded",
-        "code": "PLATFORM.INTERNAL_API.CALL_BUDGET_EXCEEDED",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_call_budget_exceeded",
-        "description": "Una operación interna puede tardar más que el presupuesto de una llamada, reintentos incluidos."
-      },
-      {
-        "name": "MessagingInvalidEnvelope",
-        "code": "PLATFORM.MESSAGING.INVALID_ENVELOPE",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_invalid_envelope",
-        "description": "El sobre del mensaje no cumple el formato CloudEvents esperado."
-      },
-      {
-        "name": "MessagingInvalidPayload",
-        "code": "PLATFORM.MESSAGING.INVALID_PAYLOAD",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_invalid_payload",
-        "description": "El payload del mensaje no cumple su contrato."
-      },
-      {
-        "name": "MessagingInvalidRetryPolicy",
-        "code": "PLATFORM.MESSAGING.INVALID_RETRY_POLICY",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_invalid_retry_policy",
-        "description": "La política de reintentos del consumidor es inválida."
-      },
-      {
-        "name": "MessagingInvalidTopology",
-        "code": "PLATFORM.MESSAGING.INVALID_TOPOLOGY",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_invalid_topology",
-        "description": "La topología de mensajería es inválida."
-      },
-      {
-        "name": "MessagingUnknownRoute",
-        "code": "PLATFORM.MESSAGING.UNKNOWN_ROUTE",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_unknown_route",
-        "description": "No hay ruta configurada para el tipo de mensaje."
-      },
-      {
-        "name": "MessagingUnknownQueue",
-        "code": "PLATFORM.MESSAGING.UNKNOWN_QUEUE",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_unknown_queue",
-        "description": "La cola indicada no existe en la topología."
-      },
-      {
-        "name": "MessagingDuplicateHandler",
-        "code": "PLATFORM.MESSAGING.DUPLICATE_HANDLER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_duplicate_handler",
-        "description": "Dos manejadores atienden el mismo tipo de mensaje en la misma cola."
-      },
-      {
-        "name": "MessagingPermanentError",
-        "code": "PLATFORM.MESSAGING.PERMANENT_ERROR",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_permanent_error",
-        "description": "El manejador falló de forma permanente; el mensaje va a la cola de errores."
-      },
-      {
-        "name": "MessagingPayloadTooLarge",
-        "code": "PLATFORM.MESSAGING.PAYLOAD_TOO_LARGE",
-        "httpStatus": 413,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_payload_too_large",
-        "description": "El mensaje supera el tamaño máximo permitido."
-      },
-      {
-        "name": "SagaNotFound",
-        "code": "PLATFORM.SAGA.NOT_FOUND",
-        "httpStatus": 404,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_not_found",
-        "description": "La saga no existe."
-      },
-      {
-        "name": "SagaDuplicateSaga",
-        "code": "PLATFORM.SAGA.DUPLICATE_SAGA",
-        "httpStatus": 409,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_duplicate_saga",
-        "description": "Ya existe una saga con ese identificador."
-      },
-      {
-        "name": "SagaUnknownDefinition",
-        "code": "PLATFORM.SAGA.UNKNOWN_DEFINITION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_unknown_definition",
-        "description": "La definición de saga no está registrada."
-      },
-      {
-        "name": "SagaInvalidDefinition",
-        "code": "PLATFORM.SAGA.INVALID_DEFINITION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_invalid_definition",
-        "description": "La definición de saga es inválida."
-      },
-      {
-        "name": "SagaInvalidConfiguration",
-        "code": "PLATFORM.SAGA.INVALID_CONFIGURATION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_invalid_configuration",
-        "description": "La configuración del orquestador de sagas es inválida."
-      },
-      {
-        "name": "SagaInvalidState",
-        "code": "PLATFORM.SAGA.INVALID_STATE",
-        "httpStatus": 409,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_invalid_state",
-        "description": "La saga no está en un estado que permita la acción."
-      },
-      {
-        "name": "SagaMissingCompensation",
-        "code": "PLATFORM.SAGA.MISSING_COMPENSATION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_missing_compensation",
-        "description": "Un paso de la saga modifica datos y no declara compensación."
-      },
-      {
-        "name": "SagaConcurrentModification",
-        "code": "PLATFORM.SAGA.CONCURRENT_MODIFICATION",
-        "httpStatus": 409,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_concurrent_modification",
-        "description": "Otro proceso modificó la saga al mismo tiempo."
-      },
-      {
-        "name": "SagaLeaseNotAcquired",
-        "code": "PLATFORM.SAGA.LEASE_NOT_ACQUIRED",
-        "httpStatus": 409,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_lease_not_acquired",
-        "description": "Otro proceso tiene el turno de la saga."
-      },
-      {
-        "name": "SagaLeaseLost",
-        "code": "PLATFORM.SAGA.LEASE_LOST",
-        "httpStatus": 409,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_lease_lost",
-        "description": "El proceso perdió el turno de la saga durante la ejecución."
-      },
-      {
-        "name": "SagaTransientFailure",
-        "code": "PLATFORM.SAGA.TRANSIENT_FAILURE",
-        "httpStatus": 503,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_transient_failure",
-        "description": "Un paso de la saga falló de forma transitoria."
-      },
-      {
-        "name": "SagaProtocolViolation",
-        "code": "PLATFORM.SAGA.PROTOCOL_VIOLATION",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_protocol_violation",
-        "description": "Un paso de la saga devolvió una respuesta fuera de su contrato."
-      },
-      {
-        "name": "SagaUncertainOutcome",
-        "code": "PLATFORM.SAGA.UNCERTAIN_OUTCOME",
-        "httpStatus": 504,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_uncertain_outcome",
-        "description": "No se sabe si un paso de la saga se aplicó; se reintenta con la misma llave."
-      },
-      {
-        "name": "SagaStateUpdateFailed",
-        "code": "PLATFORM.SAGA.STATE_UPDATE_FAILED",
-        "httpStatus": 500,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_state_update_failed",
-        "description": "No se pudo guardar el estado de la saga."
-      },
-      {
-        "name": "SagaInputBuildFailed",
-        "code": "PLATFORM.SAGA.INPUT_BUILD_FAILED",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_input_build_failed",
-        "description": "No se pudo construir la entrada de un paso de la saga."
-      },
-      {
-        "name": "SagaIdempotencyKeyConflict",
-        "code": "PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT",
-        "httpStatus": 409,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_idempotency_key_conflict",
-        "description": "La clave de idempotencia ya se usó con otra entrada."
-      },
-      {
-        "name": "SagaDeadlineExceeded",
-        "code": "PLATFORM.SAGA.DEADLINE_EXCEEDED",
-        "httpStatus": 504,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_deadline_exceeded",
-        "description": "La saga superó su plazo máximo."
-      },
-      {
-        "name": "BloomInvalidParameters",
-        "code": "PLATFORM.BLOOM.INVALID_PARAMETERS",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_invalid_parameters",
-        "description": "Los parámetros del filtro de Bloom son inválidos."
-      },
-      {
-        "name": "BloomCorruptedData",
-        "code": "PLATFORM.BLOOM.CORRUPTED_DATA",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_corrupted_data",
-        "description": "Los datos serializados del filtro de Bloom están corruptos."
-      },
-      {
-        "name": "BloomIncompatibleFilters",
-        "code": "PLATFORM.BLOOM.INCOMPATIBLE_FILTERS",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_incompatible_filters",
-        "description": "Los filtros de Bloom no tienen los mismos parámetros."
-      },
-      {
-        "name": "CacheInvalidArgument",
-        "code": "PLATFORM.CACHE.INVALID_ARGUMENT",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_invalid_argument",
-        "description": "Argumento inválido al usar la caché."
-      },
-      {
-        "name": "CacheKeyTooLong",
-        "code": "PLATFORM.CACHE.KEY_TOO_LONG",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_key_too_long",
-        "description": "La llave de caché supera la longitud máxima."
-      },
-      {
-        "name": "CacheValueTooLarge",
-        "code": "PLATFORM.CACHE.VALUE_TOO_LARGE",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_value_too_large",
-        "description": "El valor supera el tamaño máximo que se guarda en caché."
-      },
-      {
-        "name": "CacheTimeout",
-        "code": "PLATFORM.CACHE.TIMEOUT",
-        "httpStatus": 504,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_timeout",
-        "description": "La caché no respondió dentro del plazo."
-      },
-      {
-        "name": "CacheCorruptEntry",
-        "code": "PLATFORM.CACHE.CORRUPT_ENTRY",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_corrupt_entry",
-        "description": "Una entrada de caché tiene un formato inválido."
-      },
-      {
-        "name": "ConfigInvalid",
-        "code": "PLATFORM.CONFIG.INVALID",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_config_invalid",
-        "description": "La configuración del proceso no es válida."
-      },
-      {
-        "name": "MessagingTenantMismatch",
-        "code": "PLATFORM.MESSAGING.TENANT_MISMATCH",
-        "httpStatus": 403,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_tenant_mismatch",
-        "description": "El tenant del mensaje no coincide con el esperado."
-      },
-      {
-        "name": "MessagingIdempotencyConflict",
-        "code": "PLATFORM.MESSAGING.IDEMPOTENCY_CONFLICT",
-        "httpStatus": 409,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_idempotency_conflict",
-        "description": "Se reutilizó el id de un mensaje con otro contenido."
-      },
-      {
-        "name": "MessagingInvalidOptions",
-        "code": "PLATFORM.MESSAGING.INVALID_OPTIONS",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_invalid_options",
-        "description": "Las opciones de mensajería no son válidas."
-      },
-      {
-        "name": "PrimitivesInvalidArgument",
-        "code": "PLATFORM.PRIMITIVES.INVALID_ARGUMENT",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_primitives_invalid_argument",
-        "description": "Argumento inválido en una primitiva de plataforma."
-      },
-      {
-        "name": "PrimitivesNonJsonValue",
-        "code": "PLATFORM.PRIMITIVES.NON_JSON_VALUE",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_primitives_non_json_value",
-        "description": "Un valor no se puede serializar como JSON canónico."
-      },
-      {
-        "name": "PrimitivesDeadlineExceeded",
-        "code": "PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED",
-        "httpStatus": 504,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_primitives_deadline_exceeded",
-        "description": "Se agotó el plazo de la operación."
-      },
-      {
-        "name": "PrimitivesStaleClaim",
-        "code": "PLATFORM.PRIMITIVES.STALE_CLAIM",
-        "httpStatus": 409,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_primitives_stale_claim",
-        "description": "El claim de idempotencia ya pertenece a otro dueño."
-      },
-      {
-        "name": "PersistenceQueryFailed",
-        "code": "PLATFORM.PERSISTENCE.QUERY_FAILED",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_query_failed",
-        "description": "Falló una sentencia en la base de datos."
-      },
-      {
-        "name": "PersistenceInvalidConfig",
-        "code": "PLATFORM.PERSISTENCE.INVALID_CONFIG",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_invalid_config",
-        "description": "La configuración de persistencia no es válida."
-      },
-      {
-        "name": "PersistenceTransactionRequired",
-        "code": "PLATFORM.PERSISTENCE.TRANSACTION_REQUIRED",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_transaction_required",
-        "description": "La operación exige una transacción abierta."
-      },
-      {
-        "name": "PersistenceTenantRequired",
-        "code": "PLATFORM.PERSISTENCE.TENANT_REQUIRED",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_tenant_required",
-        "description": "La operación exige un tenant en el contexto."
-      },
-      {
-        "name": "PersistenceTenantMismatch",
-        "code": "PLATFORM.PERSISTENCE.TENANT_MISMATCH",
-        "httpStatus": 403,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_tenant_mismatch",
-        "description": "La fila pertenece a otro tenant."
-      },
-      {
-        "name": "PersistenceCorruptRow",
-        "code": "PLATFORM.PERSISTENCE.CORRUPT_ROW",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_corrupt_row",
-        "description": "Una fila leída no tiene el formato esperado."
-      },
-      {
-        "name": "PersistenceContention",
-        "code": "PLATFORM.PERSISTENCE.CONTENTION",
-        "httpStatus": 503,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_persistence_contention",
-        "description": "Hay contención sobre el mismo registro; reintentar."
-      },
-      {
-        "name": "ResilienceUnknownPolicy",
-        "code": "PLATFORM.RESILIENCE.UNKNOWN_POLICY",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_resilience_unknown_policy",
-        "description": "No existe la política de resiliencia pedida."
-      },
-      {
-        "name": "ShardingInvalidConfig",
-        "code": "PLATFORM.SHARDING.INVALID_CONFIG",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_sharding_invalid_config",
-        "description": "La configuración de sharding no es válida."
-      },
-      {
-        "name": "ShardingInvalidKey",
-        "code": "PLATFORM.SHARDING.INVALID_KEY",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_sharding_invalid_key",
-        "description": "La llave de enrutamiento no es válida."
-      },
-      {
-        "name": "ShardingInvalidTenantId",
-        "code": "PLATFORM.SHARDING.INVALID_TENANT_ID",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_sharding_invalid_tenant_id",
-        "description": "El id del tenant no tiene el formato esperado."
-      },
-      {
-        "name": "ValkeyCommandFailed",
-        "code": "PLATFORM.VALKEY.COMMAND_FAILED",
-        "httpStatus": 503,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_valkey_command_failed",
-        "description": "Falló un comando de Valkey."
-      },
-      {
-        "name": "ValkeyUnexpectedReply",
-        "code": "PLATFORM.VALKEY.UNEXPECTED_REPLY",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_valkey_unexpected_reply",
-        "description": "Valkey respondió con una forma inesperada."
-      },
-      {
-        "name": "MessagingTransactionRequired",
-        "code": "PLATFORM.MESSAGING.TRANSACTION_REQUIRED",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_transaction_required",
-        "description": "El outbox exige una transacción abierta para guardar el mensaje."
-      },
-      {
-        "name": "MessagingTransportFailed",
-        "code": "PLATFORM.MESSAGING.TRANSPORT_FAILED",
-        "httpStatus": 503,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_messaging_transport_failed",
-        "description": "El transporte de mensajería (SNS o SQS) no respondió o rechazó la llamada."
       }
     ]
   }

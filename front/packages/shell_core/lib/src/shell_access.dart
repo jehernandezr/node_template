@@ -51,12 +51,6 @@ final class ShellPaths {
   }
 }
 
-/// Where [decision] sends a request for [location], or null to let it through.
-///
-/// Superseded by [ShellPaths.redirectFor].
-String? redirectFor(AccessDecision decision, Uri location, ShellPaths paths) =>
-    paths.redirectFor(decision, location);
-
 /// Access environment of a shell: the session, the clock and the redirect
 /// pages. Read it with [ShellAccessScope.of] or `context.can(rule)`.
 ///

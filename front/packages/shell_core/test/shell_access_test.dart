@@ -92,15 +92,14 @@ Future<GoRouter> _pump(
   String? stepUpPath = '/step-up',
 }) async {
   final registry = _registry();
-  final router = buildShellRouter(
+  final router = ShellRouterFactory(
     registry: registry,
     platform: AppPlatform.web,
     runtime: fakeRuntime(registry: registry, session: session),
-    routes: _shellPages,
-    shellBuilder: passThroughShell,
+    loader: DeferredLibraryLoader(),
     paths: ShellPaths(stepUp: stepUpPath),
     clock: _clock,
-  );
+  ).build(routes: _shellPages, shellBuilder: passThroughShell);
   addTearDown(router.dispose);
   await tester.pumpWidget(
     WidgetsApp.router(color: const Color(0xFF000000), routerConfig: router),
@@ -119,8 +118,6 @@ Widget _scoped(ValueNotifier<UserSession> session, Widget child) =>
     );
 
 void main() {
-  setUp(resetDeferredPageCache);
-
   group('MFA routing', () {
     testWidgets('a stale second factor goes to the step-up page with from', (
       tester,
@@ -186,17 +183,16 @@ void main() {
     test('a stepUpPath inside a microfrontend segment fails at startup', () {
       final registry = _registry();
       expect(
-        () => buildShellRouter(
+        () => ShellRouterFactory(
           registry: registry,
           platform: AppPlatform.web,
           runtime: fakeRuntime(
             registry: registry,
             session: ValueNotifier(UserSession.anonymous()),
           ),
-          routes: _shellPages,
-          shellBuilder: passThroughShell,
+          loader: DeferredLibraryLoader(),
           paths: ShellPaths(stepUp: '/backoffice/step-up'),
-        ),
+        ).build(routes: _shellPages, shellBuilder: passThroughShell),
         throwsStateError,
       );
     });
@@ -294,18 +290,6 @@ void main() {
         ),
         '/forbidden?from=%2Fbackoffice',
       );
-    });
-
-    test('redirectFor gives the same answer as ShellPaths.redirectFor', () {
-      const paths = ShellPaths(stepUp: '/step-up');
-      final location = Uri.parse('/backoffice');
-      for (final decision in AccessDecision.values) {
-        expect(
-          redirectFor(decision, location, paths),
-          paths.redirectFor(decision, location),
-          reason: decision.name,
-        );
-      }
     });
   });
 
@@ -409,13 +393,12 @@ void main() {
             ],
           ),
         );
-      final router = buildShellRouter(
+      final router = ShellRouterFactory(
         registry: registry,
         platform: AppPlatform.web,
         runtime: fakeRuntime(registry: registry, session: session),
-        routes: _shellPages,
-        shellBuilder: passThroughShell,
-      );
+        loader: DeferredLibraryLoader(),
+      ).build(routes: _shellPages, shellBuilder: passThroughShell);
       addTearDown(router.dispose);
       await tester.pumpWidget(
         WidgetsApp.router(color: const Color(0xFF000000), routerConfig: router),

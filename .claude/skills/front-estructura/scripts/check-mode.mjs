@@ -2,10 +2,9 @@
 export class CheckMode {
   static CHANGED = '--changed';
   static ALL = '--all';
-  static UPDATE_BASELINE = '--update-baseline';
 
   static values() {
-    return [CheckMode.CHANGED, CheckMode.ALL, CheckMode.UPDATE_BASELINE];
+    return [CheckMode.CHANGED, CheckMode.ALL];
   }
 
   static isValid(flag) {

@@ -1,0 +1,52 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mf_{{id}}/src/data/fake_{{id}}_repository.dart';
+import 'package:mf_{{id}}/src/shared/enums/{{id}}_operation.dart';
+import 'package:mf_{{id}}/src/shared/types/{{id}}_item.dart';
+import 'package:mf_{{id}}/src/shared/types/{{id}}_not_found_exception.dart';
+import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
+
+void main() {
+  test('list returns the demo items when no seed is given', () async {
+    final repository = Fake{{Pascal}}Repository();
+    addTearDown(repository.dispose);
+
+    expect(await repository.list(), Fake{{Pascal}}Repository.demoItems);
+  });
+
+  test('list returns the seed when one is given', () async {
+    const seed = [{{Pascal}}Item(id: 'x', title: 'X', description: '')];
+    final repository = Fake{{Pascal}}Repository(seed: seed);
+    addTearDown(repository.dispose);
+
+    expect(await repository.list(), seed);
+  });
+
+  test('get of an unknown id throws the not found exception', () async {
+    final repository = Fake{{Pascal}}Repository();
+    addTearDown(repository.dispose);
+
+    await expectLater(
+      repository.get('no-existe'),
+      throwsA(isA<{{Pascal}}NotFoundException>()),
+    );
+  });
+
+  test('a failure targets only the operation given', () async {
+    final behavior = DemoBehavior()
+      ..failNext(const FakeFailure(), operation: {{Pascal}}Operation.list);
+    final repository = Fake{{Pascal}}Repository(behavior: behavior);
+    addTearDown(repository.dispose);
+
+    await expectLater(repository.list(), throwsA(isA<FakeFailure>()));
+    expect(await repository.get('1'), Fake{{Pascal}}Repository.demoItems.first);
+  });
+
+  test('after dispose the repository refuses calls', () async {
+    final repository = Fake{{Pascal}}Repository();
+    repository.dispose();
+
+    expect(repository.isDisposed, isTrue);
+    await expectLater(repository.list(), throwsA(isA<DemoDisposedException>()));
+  });
+}

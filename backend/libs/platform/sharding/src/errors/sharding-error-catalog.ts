@@ -2,8 +2,8 @@ import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { ShardingErrorCode } from './sharding-error-code.enum.js';
 
 /**
- * Catálogo de los códigos de `@platform/sharding`. Repite el estado HTTP y la
- * audiencia que hoy tiene el catálogo central, así que ningún código observable cambia.
+ * Catálogo de los códigos de `@platform/sharding`. Los públicos repiten los del
+ * catálogo central, que solo guarda los transversales.
  */
 export const shardingErrorCatalog = defineErrorCatalog(ShardingErrorCode, {
   [ShardingErrorCode.KeyMissing]: ErrorSpecs.pub(

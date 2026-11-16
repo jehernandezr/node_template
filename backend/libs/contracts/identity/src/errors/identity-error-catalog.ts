@@ -101,4 +101,166 @@ export const identityErrorCatalog = defineErrorCatalog(C, {
     description:
       'El tenant está suspendido. Las sesiones en él quedan cerradas hasta que se reactive.',
   },
+  [C.AuthEmailNotVerified]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El email todavía no está verificado. Confirma el enlace que enviamos a tu correo.',
+  },
+  [C.UserEmailVerificationInvalid]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El enlace de verificación del email no es válido o venció. Solicita uno nuevo.',
+  },
+  [C.PasswordPolicyViolation]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'La contraseña no cumple la política: de 12 a 128 caracteres y distinta del email.',
+  },
+  [C.PasswordBreached]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La contraseña aparece en filtraciones conocidas. Elige otra.',
+  },
+  [C.PasswordCurrentInvalid]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La contraseña actual no es correcta.',
+  },
+  [C.PasswordResetInvalid]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El enlace para restablecer la contraseña no es válido o venció. Solicita uno nuevo.',
+  },
+  [C.DeviceSignatureInvalid]: {
+    httpStatus: 401,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La firma del dispositivo no es válida.',
+  },
+  [C.DeviceKeyInvalid]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La clave pública del dispositivo no es válida.',
+  },
+  [C.MfaRecoveryNotReady]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'La recuperación del segundo factor todavía no está disponible. Intenta de nuevo cuando termine la espera.',
+  },
+  [C.MfaFactorAlreadyEnrolled]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'Ese segundo factor ya está activo.',
+  },
+  [C.MfaFactorNotEnrolled]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'Ese segundo factor no está activo.',
+  },
+  [C.PasskeyVerificationFailed]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'No se pudo verificar la passkey.',
+  },
+  [C.PasskeyChallengeExpired]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'El desafío de la passkey venció. Inténtalo de nuevo.',
+  },
+  [C.TenantNotFound]: {
+    httpStatus: 404,
+    retryable: false,
+    audience: ErrorAudience.Internal,
+    description: 'El tenant no existe.',
+  },
+  [C.TenantSlugTaken]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'El identificador del tenant ya está en uso. Elige otro.',
+  },
+  [C.TenantNotMember]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'No eres miembro de ese tenant.',
+  },
+  [C.AccessLastOwner]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'El tenant debe conservar al menos un propietario.',
+  },
+  [C.AccessSystemRoleImmutable]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'Los roles de sistema no se pueden modificar ni borrar.',
+  },
+  [C.AccessNameTaken]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'Ya existe un grupo o rol con ese nombre.',
+  },
+  [C.InvitationInvalid]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La invitación no es válida, venció o ya se usó.',
+  },
+  [C.InvitationEmailMismatch]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description:
+      'El email verificado de tu cuenta no coincide con el de la invitación.',
+  },
+  [C.ApiKeyInvalid]: {
+    httpStatus: 401,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La API key no es válida.',
+  },
+  [C.ApiKeyExpired]: {
+    httpStatus: 401,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La API key venció.',
+  },
+  [C.ApiKeyIpNotAllowed]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La API key no puede usarse desde esta dirección IP.',
+  },
+  [C.ApiKeyPermissionNotGrantable]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'No puedes otorgar permisos que tu cuenta no tiene.',
+  },
+  [C.ServiceAccountDisabled]: {
+    httpStatus: 403,
+    retryable: false,
+    audience: ErrorAudience.Public,
+    description: 'La cuenta de servicio está deshabilitada.',
+  },
 });

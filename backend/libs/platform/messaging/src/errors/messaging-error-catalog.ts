@@ -2,9 +2,8 @@ import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { MessagingErrorCode } from './messaging-error-code.enum.js';
 
 /**
- * Catálogo de los códigos de `@platform/messaging`. Repite el estado HTTP, la
- * audiencia y el texto que hoy tiene el catálogo central, así que ningún código
- * observable cambia.
+ * Catálogo de los códigos de `@platform/messaging`. Los códigos son internos: el
+ * catálogo central no los declara.
  */
 export const messagingErrorCatalog = defineErrorCatalog(MessagingErrorCode, {
   [MessagingErrorCode.InvalidEnvelope]: ErrorSpecs.internal(

@@ -1,0 +1,15 @@
+import 'package:shell_core/shell_core.dart';
+
+import '../shared/constants/{{id}}_demo.dart';
+import 'fake_{{id}}_repository.dart';
+import '{{id}}_repository.dart';
+
+/// How the {{id}} repository is created. Only demo mode for now.
+abstract final class {{Pascal}}Data {
+  static final RepositoryBinding<{{Pascal}}Repository> repository =
+      RepositoryBinding<{{Pascal}}Repository>.demoOnly(
+        demo: (services) => Fake{{Pascal}}Repository(
+          behavior: DemoBehavior(delay: {{id}}DemoDelay),
+        ),
+      );
+}

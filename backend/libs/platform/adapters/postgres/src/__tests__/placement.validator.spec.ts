@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '@platform/persistence';
 import { PlacementBuilder } from '@platform/sharding/test-utils';
 import { PlacementValidator } from '../stores/placement.validator.js';
 
@@ -61,7 +61,7 @@ describe('PlacementValidator', () => {
 
       expect(() => PlacementValidator.assert(placement)).toThrow(
         expect.objectContaining({
-          code: PlatformErrorCode.PersistenceInvalidConfig,
+          code: PersistenceErrorCode.InvalidConfig,
           message,
         }),
       );

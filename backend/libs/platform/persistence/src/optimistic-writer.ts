@@ -5,7 +5,7 @@ import {
   type EntityTarget,
   type QueryDeepPartialEntity,
 } from 'typeorm';
-import { OptimisticLockError } from './errors.js';
+import { OptimisticLockError } from './errors/optimistic-lock.error.js';
 import type { VersionedEntity } from './entities/versioned-entity.js';
 
 /**

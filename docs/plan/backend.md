@@ -358,7 +358,7 @@ export abstract class AppConfig {
 **Ciclo de vida.** Nest 12 llama primero todos los `onModuleDestroy`, luego `beforeApplicationShutdown` y al final `onApplicationShutdown` (verificado en la ola 1):
 
 1. `onModuleDestroy` de los que generan trabajo (`JobRunner`, `SqsPoller`, suscripciones de Pub/Sub): se detienen primero porque sus módulos se importan después en `AppModule` (Nest destruye en orden inverso al de importación).
-2. `onModuleDestroy` de los recursos (`SNSClient`, `SQSClient`, cliente de Valkey con `quit`, `DataSource` de TypeORM), en módulos globales importados antes: `ValkeyModule`, `AwsModule` y `PersistenceModule` van antes que `SchedulingModule` y los consumidores.
+2. `onModuleDestroy` de los recursos (`SNSClient`, `SQSClient`, cliente de Valkey con `quit`, `DataSource` de TypeORM), en módulos globales importados antes: `ValkeyModule`, `AwsModule` y `PersistenceModule` van antes que `SchedulingModule` y los consumidores. `SqsPoller` vive en `SqsConsumerModule`, que no es global: así Nest lo destruye antes que los clientes de `AwsModule`, que solo implementa `OnModuleDestroy`.
 3. `onApplicationShutdown`: se vacía la telemetría.
 
 **Salud.** `HealthRegistry` vive en observability (`register(check: HealthCheckable)`, `checkAll()`). Cada adaptador de red se registra en su `onModuleInit`. Los endpoints `/health/live` y `/health/ready` los monta F4 en `@platform/http` sobre `HealthRegistry`.
@@ -378,7 +378,8 @@ export abstract class AppConfig {
 | persistence       | `PersistenceModule`      | `TransactionManager`, `EntityManagerProvider`, `ShardResolver`, `ShardScope`, `AcrossShards`                                                                                   | `OnModuleDestroy` (cierra los `DataSource`)           |
 | adapters-postgres | `PostgresPlatformModule` | `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`, `TypeOrmIdempotencyStore`, `TypeOrmDirectoryStore`                                                                       | ninguno                                               |
 | saga              | `SagaModule`             | `Sagas`, `SagaEngine`, `SagaRecoveryJob`, `SagaRetentionJob`; `forFeature([definiciones])`                                                                                     | ninguno                                               |
-| adapters-aws      | `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `SqsPoller`                                                                                         | `OnModuleDestroy`, `BeforeApplicationShutdown`        |
+| adapters-aws      | `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `AwsMessagingNames`, `AwsErrorTranslator`                                                           | `OnModuleDestroy`                                     |
+| adapters-aws      | `SqsConsumerModule`      | `SqsPoller`, `SqsDeliveryProcessor`, `SqsDeadLetterRedriver`; no es global                                                                                                     | `OnApplicationBootstrap`, `OnModuleDestroy`           |
 | adapters-valkey   | `ValkeyModule`           | `VALKEY_CLIENT`, `ValkeyCache`, `ValkeyRateLimiter`, `ValkeyRoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilterFactory`, `ValkeyJobLock`, `ValkeyHealthIndicator` | `OnModuleDestroy` (`quit`)                            |
 
 La telemetría se arranca temprano, fuera de Nest (corrección de OBS-3):
@@ -952,7 +953,7 @@ Las tres tropas parten de la ola 0 integrada y no comparten carpetas. Los jobs d
 - **Consume:** `MessageBus`, `EnvelopePublisher`, `MessageDispatcher` y los puertos de messaging (WP-07), `CachePort`, `RateLimiter`, `RoutingCache`, `ShardDirectoryChange*`, `BloomFilter`, `JobLock`, `HealthCheckable`, `ResilienceRegistry`, `FailureClassifier`, `ContainerRuntime`.
 - **Produce:** `AwsModule`, `SNS_CLIENT`, `SQS_CLIENT`, `AwsMessagingNames`, `AwsErrorTranslator`, `ElastiCacheIamAuthTokenProvider`, `SqsDeliveryProcessor`, `SqsPoller`, `SqsLambdaHandler`, `SqsDeadLetterRedriver`, `SqsConsumerConfig`, `FakeSqsClient`, `FakeSnsClient`, `ValkeyModule`, `ValkeyClientFactory`, `ValkeyCommandExecutor`, `ValkeyKeyspace`, `ValkeyErrorTranslator`, `ValkeyJobLock`, `ValkeyHealthIndicator`, `ValkeyBloomFilterFactory`. Los `*.integration.spec.ts` pasan a `*.int-spec.ts`.
 - **Aceptación específica:**
-  - `AwsModule` cierra ambos clientes en `onModuleDestroy` y `SqsPoller` se detiene en su `onModuleDestroy`, antes que los clientes (prueba con `app.close()` y un cliente fake que cuenta cierres).
+  - `AwsModule` cierra ambos clientes en `onModuleDestroy` y `SqsPoller`, que vive en `SqsConsumerModule`, se detiene en su `onModuleDestroy`, antes que los clientes (prueba con `app.close()` y un cliente fake que cuenta cierres).
   - Sin `if (name === 'GetQueueUrlCommand')` en pruebas.
   - `ValkeyModule` hace `quit` al cerrar y registra su `ValkeyHealthIndicator`; `ValkeyJobLock` impide que dos instancias tomen el mismo job (integración con Valkey real).
   - La prueba de contrato corre `runCachePortContract` y `runRateLimiterContract` contra `InMemory*` y contra Valkey; el script Lua y `SlidingWindow` dan el mismo resultado para la misma secuencia.
@@ -1016,7 +1017,7 @@ La ola 1 de F4 arranca sobre la nueva base en dos tiempos.
 
 ### 4.3 Ajustes que este plan obliga a hacer en el diseño de F4
 
-Se aplican en WP-13.
+Se aplicaron en WP-13 al [diseño de F4](../design/f4-identity.md).
 
 | Sección de F4                                      | Ajuste                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1042,7 +1043,7 @@ Se aplican en WP-13.
 | La telemetría no instrumenta si se carga después de `http`, `pg` o `iovalkey`                                      | Trazas vacías                                            | `@platform/observability/setup` se mantiene como primera importación (D3) y WP-13 lo verifica en la prueba de humo.                                                                                                                    |
 | El cron propio tiene errores de calendario                                                                         | Un job corre a deshora                                   | Cuatro casos de borde en `it.each` (cambio de año, 29 de febrero, domingo, segundos) y solo UTC.                                                                                                                                       |
 | Postgres de contenedor vuelve lentas las pruebas                                                                   | CI más largo                                             | `ContainerRuntime` en modo `skip` por defecto en local; CI usa `require`; las pruebas de integración se limitan a los contratos de los stores y a la prueba de humo.                                                                   |
-| Orden de apagado de Nest (los hooks de módulos hermanos no tienen orden garantizado)                               | Un cliente se cierra antes que su consumidor             | Detener productores en `beforeApplicationShutdown` y cerrar recursos en `onModuleDestroy` (D3); la prueba de humo lo comprueba.                                                                                                        |
+| Orden de apagado de Nest (los hooks de módulos hermanos no tienen orden garantizado)                               | Un cliente se cierra antes que su consumidor             | Detener a los que generan trabajo en `onModuleDestroy` de módulos no globales y cerrar recursos en `onModuleDestroy` de módulos globales importados antes (D3); la prueba de humo lo comprueba.                                        |
 | El cableado de módulos solo se prueba de verdad en la ola 4                                                        | Errores tardíos de composición                           | Cada ola 1 a 3 cierra con una prueba de arranque de los módulos ya integrados, y WP-13 reserva tiempo para correcciones.                                                                                                               |
 | Doble regla de patrón de código                                                                                    | Un código válido en un sitio y no en otro                | Prueba de consistencia en `primitives` que recorre todos los catálogos.                                                                                                                                                                |
 | Tres tropas editan el mismo `index.ts` de una librería                                                             | Conflictos                                               | Cada librería tiene un solo dueño por ola; `index.ts` lo edita su dueño.                                                                                                                                                               |
@@ -1100,22 +1101,35 @@ await app.listen(3000);
 
 ### 6.2 `AppModule` de ejemplo
 
-El servicio nombra los adaptadores que quiere; las librerías del núcleo nunca los importan. Quitar una línea quita una capacidad.
+El servicio nombra los adaptadores que quiere; las librerías del núcleo nunca los importan. Quitar una línea quita una capacidad. `backend/tools/platform-smoke` compila y ejecuta esta composición con su prueba de integración.
 
 ```ts
 @Module({
   imports: [
     // Configuración propia del servicio. Las librerías traen sus secciones.
-    ConfigModule.forRoot({ schema: identityConfigSchema }),
+    ConfigModule.forRoot({ env: process.env }),
 
-    ObservabilityModule.forRoot(),
+    ObservabilityModule.forRoot({ telemetry }),
     ResilienceModule.forRoot(),
-    SchedulingModule.forRoot({ mode: SchedulingMode.InProcess }),
+    SchedulingModule.forRoot({
+      mode: SchedulingMode.InProcess,
+      logger: LoggerPort,
+      metrics: MetricsPort,
+    }),
 
     // Adaptadores de infraestructura.
-    ValkeyModule.forRoot(),
-    AwsModule.forRoot(),
-    PersistenceModule.forRoot(),
+    ValkeyModule.forRoot({ connectionName: SERVICE_NAME }),
+    AwsModule.forRoot({
+      messaging: { topology: identityTopology, source: SERVICE_NAME },
+    }),
+    PersistenceModule.forRoot({
+      shard: { entities: shardEntities, migrations: shardMigrations },
+      catalog: {
+        entities: platformCatalogEntities,
+        migrations: platformCatalogMigrations,
+      },
+      shardLister: DirectoryShardLister,
+    }),
     PostgresPlatformModule.forRoot(),
 
     // Núcleo, con el adaptador elegido por `Type<Port>`.
@@ -1124,23 +1138,37 @@ El servicio nombra los adaptadores que quiere; las librerías del núcleo nunca 
       channel: ValkeyShardDirectoryChannel,
       directory: TypeOrmDirectoryStore,
     }),
-    CacheModule.forRoot({ store: ValkeyCache }),
+    CacheModule.forRoot({ store: ValkeyCache, metrics: MetricsPort }),
     RateLimitModule.forRoot({
       limiter: ValkeyRateLimiter,
       degradeLocally: true,
     }),
     MessagingModule.forRoot({
+      source: SERVICE_NAME,
+      consumer: QueueName.Orders,
       topology: identityTopology,
       outboxStore: TypeOrmOutboxStore,
       processedStore: TypeOrmProcessedMessageStore,
+      publisher: SnsSqsEnvelopePublisher,
       bus: SnsSqsMessageBus,
       relay: true, // registra OutboxRelayJob y las retenciones
+      relayScopes: ShardedRelayScopes,
+    }),
+    // No es global: se destruye antes que AwsModule y detiene el sondeo antes de cerrar los clientes.
+    SqsConsumerModule.forRoot({
+      topology: identityTopology,
+      queue: QueueName.Orders,
     }),
     InternalApiModule.forRoot({
+      operations: identityOperations,
       transport: InternalTransportKind.Http,
       processedStore: TypeOrmIdempotencyStore,
     }),
-    SagaModule.forRoot({ store: TypeOrmSagaStore }),
+    SagaPostgresModule,
+    SagaModule.forRoot({
+      store: TypeOrmSagaStore,
+      scopes: ShardedSagaScopes,
+    }),
 
     // Módulos de negocio.
     UsersModule,

@@ -185,6 +185,60 @@ describe('check-structure.mjs', () => {
       assert.equal(repo.check().status, 1);
     });
 
+    it('acepta las utilidades del DSL de field-errors de contracts', () => {
+      repo.write(
+        'backend/libs/contracts/platform/src/kit/field-errors.ts',
+        LOOSE_FUNCTION,
+      );
+
+      assert.equal(repo.check().status, 0);
+    });
+
+    it('acepta las utilidades del DSL de message-definition de contracts', () => {
+      repo.write(
+        'backend/libs/contracts/platform/src/kit/message-definition.ts',
+        LOOSE_FUNCTION,
+      );
+
+      assert.equal(repo.check().status, 0);
+    });
+
+    it('acepta el esquema parametrizado de paginación de contracts', () => {
+      repo.write(
+        'backend/libs/contracts/platform/src/schemas/pagination.schema.ts',
+        LOOSE_FUNCTION,
+      );
+
+      assert.equal(repo.check().status, 0);
+    });
+
+    it('acepta las guardas de call-outcome.ts', () => {
+      repo.write(
+        'backend/libs/platform/primitives/src/call-outcome.ts',
+        LOOSE_FUNCTION,
+      );
+
+      assert.equal(repo.check().status, 0);
+    });
+
+    it('acepta la fábrica de topología de messaging', () => {
+      repo.write(
+        'backend/libs/platform/messaging/src/topology/contract-topology.ts',
+        LOOSE_FUNCTION,
+      );
+
+      assert.equal(repo.check().status, 0);
+    });
+
+    it('acepta el decorador Audited de persistence', () => {
+      repo.write(
+        'backend/libs/platform/persistence/src/metadata/entity-metadata.ts',
+        LOOSE_FUNCTION,
+      );
+
+      assert.equal(repo.check().status, 0);
+    });
+
     it('rechaza una función suelta en un archivo kit que no es define*', () => {
       repo.write(
         'backend/libs/contracts/platform/src/kit/query-params.ts',

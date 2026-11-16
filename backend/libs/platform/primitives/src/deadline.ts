@@ -45,11 +45,6 @@ export class Deadline {
     return Math.max(0, this.atMs - this.clock.now().getTime());
   }
 
-  /** @deprecated Usa `remainingMs`. */
-  remaining(): number {
-    return this.remainingMs();
-  }
-
   /** Indica si el límite ya pasó. */
   isExpired(): boolean {
     return this.remainingMs() === 0;
