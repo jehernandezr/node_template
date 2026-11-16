@@ -5,6 +5,14 @@ export enum Permission {
   BillingRead = 'billing:read',
   BillingWrite = 'billing:write',
   BackofficeAccess = 'backoffice:access',
+  IdentityMembersRead = 'identity:members:read',
+  IdentityMembersManage = 'identity:members:manage',
+  IdentityGroupsManage = 'identity:groups:manage',
+  IdentityRolesManage = 'identity:roles:manage',
+  IdentityInvitationsManage = 'identity:invitations:manage',
+  IdentityServiceAccountsManage = 'identity:service-accounts:manage',
+  IdentityApiKeysManage = 'identity:api-keys:manage',
+  IdentityTenantManage = 'identity:tenant:manage',
 }
 
 /** Roles de la plataforma, fuera de cualquier tenant. */

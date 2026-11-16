@@ -27,6 +27,28 @@ void main() {
         expect(details.traceId, 'trace-1');
       });
 
+      for (final language in const ['es', 'en']) {
+        test('an expired access token gives its $language text and code', () {
+          final languageL10n = lookupAppLocalizations(Locale(language));
+          const problem = ProblemDetails(
+            type: 'about:blank',
+            title: 'Unauthorized',
+            detail: 'Server text, never shown',
+            status: 401,
+            code: 'PLATFORM.AUTH.TOKEN_EXPIRED',
+            traceId: 'trace-2',
+          );
+          final details = ErrorPresenter(languageL10n)
+              .describe(const ApiErrorException(problem));
+          expect(
+            details.message,
+            errorMessage(languageL10n, 'PLATFORM.AUTH.TOKEN_EXPIRED'),
+          );
+          expect(details.code, 'PLATFORM.AUTH.TOKEN_EXPIRED');
+          expect(details.traceId, 'trace-2');
+        });
+      }
+
       test('a request that failed validation gives the invalid input text', () {
         final details = presenter.describe(
           const ContractViolationException(routeId: 'x', errors: []),

@@ -10,11 +10,11 @@ import {
 } from '@platform/observability';
 import {
   BackoffStrategy,
-  ClaimState,
   Deadline,
   FailureClassifier,
   RetryPolicy,
 } from '@platform/primitives';
+import { ClaimState } from '@platform/kernel';
 import { EnvelopeBuilder } from '../../__tests__/utils/index.js';
 import { MessagingGuard } from '../../errors/messaging-guard.js';
 import { PermanentMessageError } from '../../errors/permanent-message.error.js';

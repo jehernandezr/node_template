@@ -7,11 +7,82 @@
       "fifo": false,
       "owner": "identity",
       "producers": ["identity"],
-      "description": "Eventos de identity: sesiones y tokens revocados. Cada servicio suscribe su propia cola."
+      "description": "Eventos de identity: usuarios, dispositivos, tenants, membresías, API keys, sesiones y alertas. Cada servicio suscribe su propia cola."
     }
   ],
-  "queues": [],
+  "queues": [
+    {
+      "name": "identity-access-projection",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "identity-access-projection-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "identity-events",
+          "filterTypes": ["identity.membership.changed.v1"]
+        }
+      ],
+      "consumer": "identity",
+      "producers": [],
+      "description": "Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía."
+    }
+  ],
   "routes": [
+    {
+      "type": "identity.api-key.created.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.api-key.revoked.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.device.registered.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.device.removed.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.membership.changed.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.permissions.changed.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.security-alert.raised.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
     {
       "type": "identity.session.revoked.v1",
       "kind": "event",
@@ -20,7 +91,56 @@
       "owner": "identity"
     },
     {
+      "type": "identity.tenant.created.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.tenant.reactivated.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.tenant.suspended.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
       "type": "identity.tokens.revoked.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.user.email-changed.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.user.reactivated.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.user.registered.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
+      "type": "identity.user.suspended.v1",
       "kind": "event",
       "target": "identity-events",
       "targetKind": "topic",

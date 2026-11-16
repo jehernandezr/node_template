@@ -1,11 +1,7 @@
 import { defineEvent } from '@contracts/platform';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import {
-  ClaimState,
-  Deadline,
-  BackoffStrategy,
-  RetryPolicy,
-} from '@platform/primitives';
+import { Deadline, BackoffStrategy, RetryPolicy } from '@platform/primitives';
+import { ClaimState } from '@platform/kernel';
 import { z } from 'zod';
 import { QueueDef } from '../../topology/queue-def.js';
 import { Route } from '../../topology/route.js';

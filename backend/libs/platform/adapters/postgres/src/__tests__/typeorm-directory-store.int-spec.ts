@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '@platform/persistence';
 import { ContainerRuntime, FixedClock } from '@platform/kernel/test-utils';
 import {
   DirectoryWriteResult,
@@ -129,7 +129,7 @@ runtime.describeIfAvailable('TypeOrmDirectoryStore over PostgreSQL', () => {
   describe('when the input is invalid', () => {
     it('listPlacements rejects an empty region', async () => {
       await expect(directory().listPlacements('')).rejects.toMatchObject({
-        code: PlatformErrorCode.PersistenceInvalidConfig,
+        code: PersistenceErrorCode.InvalidConfig,
       });
     });
 

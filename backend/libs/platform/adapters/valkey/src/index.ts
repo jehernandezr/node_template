@@ -32,3 +32,4 @@ export * from './valkey-bloom-filter.js';
 export * from './valkey-bloom-filter-factory.js';
 export * from './valkey-job-lock.js';
 export * from './valkey-health-indicator.js';
+export * from './auth/index.js';

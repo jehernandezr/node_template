@@ -1,9 +1,5 @@
-import {
-  ERROR_CODE_PATTERN,
-  PlatformErrorCode,
-  platformErrorCatalog,
-} from '@contracts/platform';
-import { ErrorCode, KernelErrorCode } from '@platform/kernel';
+import { ERROR_CODE_PATTERN, platformErrorCatalog } from '@contracts/platform';
+import { ErrorCode } from '@platform/kernel';
 import { kernelErrorCatalog } from '../kernel-error-catalog.js';
 import { primitivesErrorCatalog } from '../primitives-error-catalog.js';
 import { PrimitivesErrorCode } from '../primitives-error-code.enum.js';
@@ -34,23 +30,19 @@ describe('code patterns', () => {
   });
 });
 
-describe('library codes that already existed in the platform contract', () => {
+describe('primitives codes keep their observable values', () => {
   it.each([
-    [KernelErrorCode.InvalidId, PlatformErrorCode.KernelInvalidId],
     [
       PrimitivesErrorCode.InvalidArgument,
-      PlatformErrorCode.PrimitivesInvalidArgument,
+      'PLATFORM.PRIMITIVES.INVALID_ARGUMENT',
     ],
-    [
-      PrimitivesErrorCode.NonJsonValue,
-      PlatformErrorCode.PrimitivesNonJsonValue,
-    ],
+    [PrimitivesErrorCode.NonJsonValue, 'PLATFORM.PRIMITIVES.NON_JSON_VALUE'],
     [
       PrimitivesErrorCode.DeadlineExceeded,
-      PlatformErrorCode.PrimitivesDeadlineExceeded,
+      'PLATFORM.PRIMITIVES.DEADLINE_EXCEEDED',
     ],
-    [PrimitivesErrorCode.StaleClaim, PlatformErrorCode.PrimitivesStaleClaim],
-  ])('keep the observable value %s', (libraryCode, platformCode) => {
-    expect(libraryCode).toBe(platformCode);
+    [PrimitivesErrorCode.StaleClaim, 'PLATFORM.PRIMITIVES.STALE_CLAIM'],
+  ])('keep the observable value of %s', (libraryCode, expected) => {
+    expect(libraryCode).toBe(expected);
   });
 });

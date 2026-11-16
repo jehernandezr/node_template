@@ -4,7 +4,7 @@ import type { LoggerPort } from '@platform/observability';
 import { ShardAccess, TransactionShardGuard } from '@platform/sharding';
 import type { QueryRunner } from 'typeorm';
 import type { PersistenceContextProvider } from './context/persistence-context-provider.js';
-import { toPersistenceError } from './errors.js';
+import { PersistenceErrorTranslator } from './errors/persistence-error-translator.js';
 import { SessionSetting } from './enums.js';
 import type { ShardHandle } from './model/shard-handle.js';
 import type { ShardedTransactionOptions } from './model/sharded-transaction-options.js';
@@ -98,7 +98,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
         active = true;
         await this.applySession(qr, options);
       } catch (error) {
-        throw toPersistenceError(error);
+        throw PersistenceErrorTranslator.toPersistenceError(error);
       }
       uow = new TypeOrmUnitOfWork(shard, qr.manager, qr);
       const opened = uow;
@@ -106,7 +106,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
       try {
         await qr.commitTransaction();
       } catch (error) {
-        throw toPersistenceError(error);
+        throw PersistenceErrorTranslator.toPersistenceError(error);
       }
       active = false;
       hooks = opened.takeCommitHooks();

@@ -1,0 +1,57 @@
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:ui/ui.dart';
+
+import '../data/{{id}}_repository.dart';
+import '../l10n/generated/{{id}}_localizations.dart';
+import '../shared/constants/{{id}}_paths.dart';
+import '../shared/types/{{id}}_item.dart';
+import '{{id}}_list_controller.dart';
+
+/// Route `/{{id}}`: the items, and a tap opens the detail of one.
+class {{Pascal}}ListScreen extends StatelessWidget {
+  /// Creates the list backed by [repository].
+  const {{Pascal}}ListScreen({super.key, required this.repository});
+
+  /// Source of the items.
+  final {{Pascal}}Repository repository;
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) => ControllerBuilder<{{Pascal}}ListController>(
+    // The repository is part of the key: a new identity gets a new controller.
+    key: ObjectKey(repository),
+    create: (_) => {{Pascal}}ListController(repository)..start(),
+    builder: (context, controller) {
+      final l10n = {{Pascal}}Localizations.of(context);
+      return AppPage(
+        title: l10n.screenTitle,
+        body: AsyncValueView<List<{{Pascal}}Item>>(
+          value: controller.value,
+          errorMessage: l10n.loadError,
+          onRetry: controller.start,
+          data: (items) => items.isEmpty
+              ? EmptyState(
+                  icon: Icons.folder_off_outlined,
+                  title: l10n.emptyTitle,
+                  message: l10n.emptyMessage,
+                )
+              : ListView.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return ListTile(
+                      key: ValueKey(item.id),
+                      title: Text(item.title),
+                      subtitle: Text(item.description),
+                      onTap: () => context.go({{Pascal}}Paths.detail(item.id)),
+                    );
+                  },
+                ),
+        ),
+      );
+    },
+  );
+}

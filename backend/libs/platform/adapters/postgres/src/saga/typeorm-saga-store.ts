@@ -1,4 +1,3 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import type { LoggerPort } from '@platform/observability';
 import {
   AcrossShards,
@@ -8,6 +7,7 @@ import {
   PersistenceError,
   PersistenceFeature,
   ShardScope,
+  PersistenceErrorCode,
 } from '@platform/persistence';
 import {
   SagaError,
@@ -94,7 +94,7 @@ export class TypeOrmSagaStore extends SagaStore {
     const tenantId = this.tenantId();
     if (instance.tenantId !== null && instance.tenantId !== tenantId) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceTenantMismatch,
+        PersistenceErrorCode.TenantMismatch,
         'The saga belongs to another tenant',
       );
     }
@@ -447,7 +447,7 @@ export class TypeOrmSagaStore extends SagaStore {
       this.deps.context.current().tenantId;
     if (tenantId === undefined) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceTenantRequired,
+        PersistenceErrorCode.TenantRequired,
         'The request context has no tenant',
       );
     }

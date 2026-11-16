@@ -4,7 +4,6 @@ import 'package:utils/utils.dart';
 
 import 'access_rule.dart';
 import 'deferred_library_loader.dart';
-import 'deferred_page.dart';
 import 'enums.dart';
 import 'microfrontend_manifest.dart';
 import 'microfrontend_registry.dart';
@@ -49,29 +48,14 @@ import 'shell_runtime.dart';
 final class ShellRouterFactory {
   /// Creates a factory. [clock] defaults to [ShellRuntime.clock].
   ShellRouterFactory({
-    required MicrofrontendRegistry registry,
-    required AppPlatform platform,
-    required ShellRuntime runtime,
-    required DeferredLibraryLoader loader,
-    ShellPaths paths = const ShellPaths(),
-    Clock? clock,
-  }) : this._(
-         registry: registry,
-         platform: platform,
-         runtime: runtime,
-         load: loader.page,
-         paths: paths,
-         clock: clock,
-       );
-
-  ShellRouterFactory._({
     required this._registry,
     required this._platform,
     required this._runtime,
-    required this._load,
-    required this._paths,
+    required DeferredLibraryLoader loader,
+    this._paths = const ShellPaths(),
     Clock? clock,
-  }) : _clock = clock ?? _runtime.clock;
+  }) : _load = loader.page,
+       _clock = clock ?? _runtime.clock;
 
   final MicrofrontendRegistry _registry;
   final AppPlatform _platform;
@@ -170,25 +154,6 @@ final class ShellRouterFactory {
     return _paths.redirectFor(decision, location);
   }
 }
-
-/// Superseded by [ShellRouterFactory].
-GoRouter buildShellRouter({
-  required MicrofrontendRegistry registry,
-  required AppPlatform platform,
-  required ShellRuntime runtime,
-  required List<RouteBase> routes,
-  required ShellRouteBuilder shellBuilder,
-  ScreenLoader load = deferredPage,
-  ShellPaths paths = const ShellPaths(),
-  Clock? clock,
-}) => ShellRouterFactory._(
-  registry: registry,
-  platform: platform,
-  runtime: runtime,
-  load: load,
-  paths: paths,
-  clock: clock,
-).build(routes: routes, shellBuilder: shellBuilder);
 
 /// Wraps the pages and redirects of manifest routes. See [ShellRouterFactory].
 final class _PageWrapper {

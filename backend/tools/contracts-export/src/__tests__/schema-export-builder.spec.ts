@@ -95,14 +95,14 @@ describe('SchemaExportBuilder', () => {
     it('exports enums, constants, routes, operations, events and errors', () => {
       const identity = exported.get('identity') as Obj;
 
-      expect((identity['enums'] as Obj)['Permission']).toEqual({
-        values: [
+      expect((identity['enums'] as Obj)['Permission']).toMatchObject({
+        values: expect.arrayContaining([
           { name: 'TasksRead', value: 'tasks:read' },
           { name: 'TasksWrite', value: 'tasks:write' },
           { name: 'BillingRead', value: 'billing:read' },
           { name: 'BillingWrite', value: 'billing:write' },
           { name: 'BackofficeAccess', value: 'backoffice:access' },
-        ],
+        ]),
       });
       expect((identity['constants'] as Obj)['MfaRules']).toMatchObject({
         deviceCodeLength: 8,

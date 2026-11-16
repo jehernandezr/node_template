@@ -60,6 +60,10 @@ export interface GetUserAccessInput {
 /** Acceso efectivo de un usuario en un tenant. */
 export interface UserAccess {
   permissions: Permission[];
+  /** Nombres de los roles del usuario en el tenant. */
+  roles: string[];
+  /** Versión de permisos `<versión del tenant>.<versión del usuario>`: el claim `pv`. */
+  permissionVersion: string;
   platformRoles: PlatformRole[];
   features: PlanFeature[];
   flags: FeatureFlag[];

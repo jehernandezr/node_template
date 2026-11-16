@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PrimitivesErrorCode } from '../errors/primitives-error-code.enum.js';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { Deadline } from '../deadline.js';
 import { DeadlineExceededError, InvalidArgumentError } from '../index.js';
@@ -16,12 +16,12 @@ describe('Deadline', () => {
     it('after() is now plus the budget', () => {
       const deadline = Deadline.after(1_000, clock);
       expect(deadline.atMs).toBe(START.getTime() + 1_000);
-      expect(deadline.remaining()).toBe(1_000);
+      expect(deadline.remainingMs()).toBe(1_000);
     });
 
     it('at() keeps the absolute instant', () => {
       const deadline = Deadline.at(START.getTime() + 250, clock);
-      expect(deadline.remaining()).toBe(250);
+      expect(deadline.remainingMs()).toBe(250);
     });
 
     it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])(
@@ -50,13 +50,13 @@ describe('Deadline', () => {
     it('counts down with the clock and never goes below zero', () => {
       const deadline = Deadline.after(1_000, clock);
       clock.advance(400);
-      expect(deadline.remaining()).toBe(600);
+      expect(deadline.remainingMs()).toBe(600);
       expect(deadline.isExpired()).toBe(false);
       clock.advance(600);
-      expect(deadline.remaining()).toBe(0);
+      expect(deadline.remainingMs()).toBe(0);
       expect(deadline.isExpired()).toBe(true);
       clock.advance(5_000);
-      expect(deadline.remaining()).toBe(0);
+      expect(deadline.remainingMs()).toBe(0);
     });
 
     it('throwIfExpired throws DeadlineExceededError only once expired', () => {
@@ -66,7 +66,7 @@ describe('Deadline', () => {
       expect(() => deadline.throwIfExpired()).toThrow(DeadlineExceededError);
       expect(() => deadline.throwIfExpired()).toThrow(
         expect.objectContaining({
-          code: PlatformErrorCode.PrimitivesDeadlineExceeded,
+          code: PrimitivesErrorCode.DeadlineExceeded,
         }),
       );
     });
@@ -88,7 +88,7 @@ describe('Deadline', () => {
       expect(parent.child(5_000).atMs).toBe(parent.atMs);
       clock.advance(900);
       expect(parent.child(500).atMs).toBe(parent.atMs);
-      expect(parent.child(500).remaining()).toBe(100);
+      expect(parent.child(500).remainingMs()).toBe(100);
     });
 
     it('is expired when the parent is expired', () => {

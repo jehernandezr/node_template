@@ -5,7 +5,7 @@ import {
   PageQuerySchema,
   PlatformErrorCode,
 } from '@contracts/platform';
-import { IdentityRoute } from '../enums/identifiers.enum.js';
+import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
 import {
   DevicePageSchema,
   SessionAccessSchema,
@@ -13,6 +13,8 @@ import {
   RevokeSessionRequestSchema,
   SessionPageSchema,
 } from '../schemas/session.schema.js';
+import { SessionTokensSchema } from '../schemas/auth.schema.js';
+import { SwitchTenantRequestSchema } from '../schemas/tenant.schema.js';
 import { SessionGuardErrors } from './session-guard.errors.js';
 
 /** `GET /v1/me/access`: acceso de la sesión actual, para llenar la sesión del front. */
@@ -71,4 +73,20 @@ export const ListDevicesRoute = defineRoute({
   errors: SessionGuardErrors,
   access: Access.authenticated(),
   description: 'Lista los dispositivos del usuario con confianza vigente.',
+});
+
+/**
+ * `POST /v1/me/tenant-switch`: cambia el tenant de la sesión abierta. Responde
+ * tokens nuevos del tenant elegido.
+ */
+export const SwitchTenantRoute = defineRoute({
+  id: IdentityRoute.SwitchTenant,
+  method: HttpMethod.Post,
+  path: '/v1/me/tenant-switch',
+  request: SwitchTenantRequestSchema,
+  response: SessionTokensSchema,
+  errors: [...SessionGuardErrors, IdentityErrorCode.TenantNotMember],
+  access: Access.authenticated(),
+  description:
+    'Cambia el tenant de la sesión abierta y devuelve tokens del tenant elegido.',
 });

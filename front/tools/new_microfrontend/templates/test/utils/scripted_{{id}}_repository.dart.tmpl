@@ -1,0 +1,31 @@
+import 'dart:async';
+
+import 'package:mf_{{id}}/src/data/{{id}}_repository.dart';
+import 'package:mf_{{id}}/src/shared/types/{{id}}_item.dart';
+
+/// Repository whose answers finish when the test completes them, so a test
+/// can answer calls out of order or after it disposes the controller.
+final class Scripted{{Pascal}}Repository implements {{Pascal}}Repository {
+  /// One completer per call to `list`, in call order.
+  final List<Completer<List<{{Pascal}}Item>>> lists = [];
+
+  /// One completer per call to `get`, in call order.
+  final List<Completer<{{Pascal}}Item>> gets = [];
+
+  @override
+  Future<List<{{Pascal}}Item>> list() {
+    final completer = Completer<List<{{Pascal}}Item>>();
+    lists.add(completer);
+    return completer.future;
+  }
+
+  @override
+  Future<{{Pascal}}Item> get(String id) {
+    final completer = Completer<{{Pascal}}Item>();
+    gets.add(completer);
+    return completer.future;
+  }
+
+  @override
+  void dispose() {}
+}

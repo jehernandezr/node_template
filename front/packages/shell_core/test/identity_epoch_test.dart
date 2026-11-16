@@ -49,16 +49,22 @@ Future<GoRouter> _pump(
   // Not started and not disposed: its futures belong to the test's fake zone,
   // so awaiting them from a tear-down would never finish.
   final runtime = fakeRuntime(registry: registry, session: session);
-  final router = buildShellRouter(
-    registry: registry,
-    platform: AppPlatform.web,
-    runtime: runtime,
-    routes: [
-      GoRoute(path: '/login', builder: (_, _) => const Text('login')),
-      GoRoute(path: '/forbidden', builder: (_, _) => const Text('forbidden')),
-    ],
-    shellBuilder: (context, state, child) => child,
-  );
+  final router =
+      ShellRouterFactory(
+        registry: registry,
+        platform: AppPlatform.web,
+        runtime: runtime,
+        loader: DeferredLibraryLoader(),
+      ).build(
+        routes: [
+          GoRoute(path: '/login', builder: (_, _) => const Text('login')),
+          GoRoute(
+            path: '/forbidden',
+            builder: (_, _) => const Text('forbidden'),
+          ),
+        ],
+        shellBuilder: (context, state, child) => child,
+      );
   addTearDown(router.dispose);
   // MaterialApp animates page exits, so a removed page stays mounted (and
   // can rebuild) during its exit transition.
@@ -76,8 +82,6 @@ Future<GoRouter> _pump(
 }
 
 void main() {
-  setUp(resetDeferredPageCache);
-
   testWidgets('a mounted screen route shows fresh data after a user switch', (
     tester,
   ) async {

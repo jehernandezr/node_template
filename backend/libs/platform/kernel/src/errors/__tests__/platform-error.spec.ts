@@ -1,10 +1,6 @@
 import { KernelErrorCode } from '../../errors/kernel-error-code.enum.js';
-import {
-  ERROR_CODE_PATTERN,
-  isErrorCode,
-  isPlatformError,
-  PlatformError,
-} from '../platform-error.js';
+import { ErrorCode } from '../error-code.js';
+import { PlatformError } from '../platform-error.js';
 
 class UpstreamUnavailableError extends PlatformError {
   override readonly code = 'PLATFORM.TEST.UPSTREAM_UNAVAILABLE';
@@ -42,15 +38,15 @@ describe('PlatformError', () => {
     expect(new UpstreamUnavailableError('x', { cause: 0 }).cause).toBe(0);
   });
 
-  it('is recognised by isPlatformError', () => {
-    expect(isPlatformError(new UpstreamUnavailableError('x'))).toBe(true);
-    expect(isPlatformError(new Error('x'))).toBe(false);
-    expect(isPlatformError({ code: 'A.B.C', retryable: false })).toBe(false);
-    expect(isPlatformError(undefined)).toBe(false);
+  it('is recognised by PlatformError.is', () => {
+    expect(PlatformError.is(new UpstreamUnavailableError('x'))).toBe(true);
+    expect(PlatformError.is(new Error('x'))).toBe(false);
+    expect(PlatformError.is({ code: 'A.B.C', retryable: false })).toBe(false);
+    expect(PlatformError.is(undefined)).toBe(false);
   });
 });
 
-describe('isErrorCode', () => {
+describe('ErrorCode.isValid', () => {
   it.each([
     'SALES.STOCK.NOT_ENOUGH',
     'PLATFORM.INTERNAL_API.INVALID_INPUT',
@@ -58,8 +54,8 @@ describe('isErrorCode', () => {
     'S3.UPLOAD.TOO_LARGE',
     KernelErrorCode.InvalidId,
   ])('accepts %s', (code) => {
-    expect(isErrorCode(code)).toBe(true);
-    expect(ERROR_CODE_PATTERN.test(code)).toBe(true);
+    expect(ErrorCode.isValid(code)).toBe(true);
+    expect(ErrorCode.PATTERN.test(code)).toBe(true);
   });
 
   it.each([
@@ -71,11 +67,11 @@ describe('isErrorCode', () => {
     ['trailing dot', 'SALES.STOCK.'],
     ['empty', ''],
   ])('rejects %s', (_label, code) => {
-    expect(isErrorCode(code)).toBe(false);
+    expect(ErrorCode.isValid(code)).toBe(false);
   });
 
   it('rejects non-strings', () => {
-    expect(isErrorCode(42)).toBe(false);
-    expect(isErrorCode(undefined)).toBe(false);
+    expect(ErrorCode.isValid(42)).toBe(false);
+    expect(ErrorCode.isValid(undefined)).toBe(false);
   });
 });

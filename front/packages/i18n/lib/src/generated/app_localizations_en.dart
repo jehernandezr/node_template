@@ -262,6 +262,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'The service is busy. Try again in a moment.';
 
   @override
+  String get error_platform_auth_token_expired =>
+      'Your access expired. Refreshing the session.';
+
+  @override
+  String get error_platform_auth_origin_rejected =>
+      'This request does not come from an allowed origin.';
+
+  @override
+  String get error_platform_api_unsupported_version =>
+      'This version of the app is not supported. Update it.';
+
+  @override
+  String get error_platform_http_payload_too_large =>
+      'What you sent is too large.';
+
+  @override
+  String get error_platform_http_unsupported_media_type =>
+      'That type of content cannot be sent.';
+
+  @override
+  String get error_platform_http_malformed_body =>
+      'What you sent could not be read. Try again.';
+
+  @override
   String get error_identity_auth_invalid_credentials =>
       'The email or password is not correct.';
 
@@ -315,6 +339,104 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get error_identity_tenant_suspended =>
       'Your organization is suspended. Contact support.';
+
+  @override
+  String get error_identity_auth_email_not_verified =>
+      'Verify your email to continue. Check the link we sent you.';
+
+  @override
+  String get error_identity_user_email_verification_invalid =>
+      'The verification link is invalid or expired. Request a new one.';
+
+  @override
+  String get error_identity_password_policy_violation =>
+      'The password must be 12 to 128 characters long and different from your email.';
+
+  @override
+  String get error_identity_password_breached =>
+      'That password appeared in known data leaks. Choose another one.';
+
+  @override
+  String get error_identity_password_current_invalid =>
+      'The current password is not correct.';
+
+  @override
+  String get error_identity_password_reset_invalid =>
+      'The password reset link is invalid or expired. Request a new one.';
+
+  @override
+  String get error_identity_device_signature_invalid =>
+      'This device could not be verified.';
+
+  @override
+  String get error_identity_device_key_invalid =>
+      'This device key is not valid.';
+
+  @override
+  String get error_identity_mfa_recovery_not_ready =>
+      'Recovery is not available yet. Try again when the wait ends.';
+
+  @override
+  String get error_identity_mfa_factor_already_enrolled =>
+      'That verification method is already active.';
+
+  @override
+  String get error_identity_mfa_factor_not_enrolled =>
+      'That verification method is not active.';
+
+  @override
+  String get error_identity_passkey_verification_failed =>
+      'The passkey could not be verified.';
+
+  @override
+  String get error_identity_passkey_challenge_expired =>
+      'The passkey check expired. Try again.';
+
+  @override
+  String get error_identity_tenant_slug_taken =>
+      'That identifier is already in use. Choose another one.';
+
+  @override
+  String get error_identity_tenant_not_member =>
+      'You are not a member of that organization.';
+
+  @override
+  String get error_identity_access_last_owner =>
+      'The organization must keep at least one owner.';
+
+  @override
+  String get error_identity_access_system_role_immutable =>
+      'System roles cannot be changed or deleted.';
+
+  @override
+  String get error_identity_access_name_taken =>
+      'A group or role with that name already exists.';
+
+  @override
+  String get error_identity_invitation_invalid =>
+      'The invitation is invalid, expired or already used.';
+
+  @override
+  String get error_identity_invitation_email_mismatch =>
+      'The verified email of your account does not match the invitation.';
+
+  @override
+  String get error_identity_api_key_invalid => 'The API key is not valid.';
+
+  @override
+  String get error_identity_api_key_expired => 'The API key expired.';
+
+  @override
+  String get error_identity_api_key_ip_not_allowed =>
+      'The API key cannot be used from this IP address.';
+
+  @override
+  String get error_identity_api_key_permission_not_grantable =>
+      'You cannot grant permissions your account does not have.';
+
+  @override
+  String get error_identity_service_account_disabled =>
+      'The service account is disabled.';
 
   @override
   String get errorFallback => 'Something went wrong. Try again.';

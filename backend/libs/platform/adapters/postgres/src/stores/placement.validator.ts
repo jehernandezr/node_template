@@ -1,5 +1,5 @@
 import { TenantStatus, type TenantPlacement } from '@platform/sharding';
-import { invalidConfiguration } from '@platform/persistence';
+import { PersistenceError } from '@platform/persistence';
 
 /** Valida un `TenantPlacement` que llega de quien escribe el directorio, antes de tocar la base. */
 export class PlacementValidator {
@@ -11,10 +11,16 @@ export class PlacementValidator {
     const { tenantId, region, shardGroup, status, version, dedicated } =
       placement;
     if (typeof tenantId !== 'string' || tenantId.length === 0) {
-      throw invalidConfiguration('placement.tenantId', 'a non-empty string');
+      throw PersistenceError.invalidConfiguration(
+        'placement.tenantId',
+        'a non-empty string',
+      );
     }
     if (typeof region !== 'string' || region.length === 0) {
-      throw invalidConfiguration('placement.region', 'a non-empty string');
+      throw PersistenceError.invalidConfiguration(
+        'placement.region',
+        'a non-empty string',
+      );
     }
     if (
       !Array.isArray(shardGroup) ||
@@ -23,19 +29,28 @@ export class PlacementValidator {
         (shard: unknown) => typeof shard === 'string' && shard.length > 0,
       )
     ) {
-      throw invalidConfiguration(
+      throw PersistenceError.invalidConfiguration(
         'placement.shardGroup',
         'a non-empty list of shard ids',
       );
     }
     if (!PlacementValidator.STATUSES.includes(status)) {
-      throw invalidConfiguration('placement.status', 'a TenantStatus');
+      throw PersistenceError.invalidConfiguration(
+        'placement.status',
+        'a TenantStatus',
+      );
     }
     if (!Number.isSafeInteger(version) || version < 0) {
-      throw invalidConfiguration('placement.version', 'a non-negative integer');
+      throw PersistenceError.invalidConfiguration(
+        'placement.version',
+        'a non-negative integer',
+      );
     }
     if (typeof dedicated !== 'boolean') {
-      throw invalidConfiguration('placement.dedicated', 'a boolean');
+      throw PersistenceError.invalidConfiguration(
+        'placement.dedicated',
+        'a boolean',
+      );
     }
   }
 }

@@ -1,5 +1,5 @@
 import { PartitionBy, PartitionInterval } from '../enums.js';
-import { invalidConfiguration } from '../errors.js';
+import { PersistenceError } from '../errors/persistence-error.js';
 import {
   auditedOptionsOf,
   type EntityClass,
@@ -20,7 +20,7 @@ const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function identifier(value: string, what: string): string {
   if (typeof value !== 'string' || !IDENTIFIER.test(value)) {
-    throw invalidConfiguration(what, 'a plain SQL identifier');
+    throw PersistenceError.invalidConfiguration(what, 'a plain SQL identifier');
   }
   return value;
 }
@@ -79,7 +79,10 @@ export function auditTriggerSqlFor(
 ): string[] {
   const audited = auditedOptionsOf(entity);
   if (audited === undefined) {
-    throw invalidConfiguration('entity', 'decorated with @Audited');
+    throw PersistenceError.invalidConfiguration(
+      'entity',
+      'decorated with @Audited',
+    );
   }
   return auditTriggerSql(table, { idColumn, exclude: audited.exclude });
 }
@@ -95,7 +98,10 @@ export function partitionClause(options: PartitionedOptions): string {
     case PartitionBy.Hash:
       return `PARTITION BY HASH ("${column}")`;
     default:
-      throw invalidConfiguration('partition by', 'a PartitionBy');
+      throw PersistenceError.invalidConfiguration(
+        'partition by',
+        'a PartitionBy',
+      );
   }
 }
 
@@ -140,10 +146,16 @@ export function createRangePartitionsSql(
 ): string[] {
   const name = identifier(table, 'partitioned table');
   if (!Object.values(PartitionInterval).includes(interval)) {
-    throw invalidConfiguration('partition interval', 'a PartitionInterval');
+    throw PersistenceError.invalidConfiguration(
+      'partition interval',
+      'a PartitionInterval',
+    );
   }
   if (!Number.isInteger(ahead) || ahead < 0 || ahead > 120) {
-    throw invalidConfiguration('ahead', 'an integer from 0 to 120');
+    throw PersistenceError.invalidConfiguration(
+      'ahead',
+      'an integer from 0 to 120',
+    );
   }
   return [
     `SELECT platform_ensure_partitions(${literal(name)}, ${literal(interval)}, ${ahead})`,
@@ -157,7 +169,10 @@ export function createRangePartitionsSql(
 export function uuidV7LowerBound(at: Date): string {
   const ms = at.getTime();
   if (!Number.isSafeInteger(ms) || ms < 0 || ms >= 2 ** 48) {
-    throw invalidConfiguration('at', 'a date inside the UUIDv7 range');
+    throw PersistenceError.invalidConfiguration(
+      'at',
+      'a date inside the UUIDv7 range',
+    );
   }
   const hex = ms.toString(16).padStart(12, '0');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-0000-0000-000000000000`;

@@ -18,3 +18,9 @@ export { SdkResponderTable } from './sdk-responder-table.js';
 export { StaticCredentialsProvider } from './static-credentials-provider.js';
 export type { SdkCommand, SdkCommandClass } from './sdk-responder-table.js';
 export { ThrowingLogger } from './throwing-logger.js';
+export { PublishCommand } from '@aws-sdk/client-sns';
+export {
+  DeleteMessageBatchCommand,
+  GetQueueUrlCommand,
+  ReceiveMessageCommand,
+} from '@aws-sdk/client-sqs';

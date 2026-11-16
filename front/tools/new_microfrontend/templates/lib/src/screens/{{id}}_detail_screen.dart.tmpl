@@ -1,0 +1,58 @@
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:ui/ui.dart';
+
+import '../data/{{id}}_repository.dart';
+import '../l10n/generated/{{id}}_localizations.dart';
+import '../shared/constants/{{id}}_paths.dart';
+import '../shared/types/{{id}}_item.dart';
+import '{{id}}_detail_controller.dart';
+
+/// Route `/{{id}}/:id`: one item on its own page.
+class {{Pascal}}DetailScreen extends StatelessWidget {
+  /// Creates the page of the item [itemId].
+  const {{Pascal}}DetailScreen({
+    super.key,
+    required this.repository,
+    required this.itemId,
+  });
+
+  /// Source of the item.
+  final {{Pascal}}Repository repository;
+
+  /// Id of the item shown.
+  final String itemId;
+
+  @override
+  Widget build(BuildContext context) =>
+      ControllerBuilder<{{Pascal}}DetailController>(
+        key: ValueKey((repository, itemId)),
+        create: (_) =>
+            {{Pascal}}DetailController(repository, itemId: itemId)..start(),
+        builder: (context, controller) {
+          final l10n = {{Pascal}}Localizations.of(context);
+          final theme = Theme.of(context);
+          return AppPage(
+            title: l10n.detailTitle,
+            // A deep link has nothing to pop: go to the list.
+            onBack: () => context.go({{Pascal}}Paths.list),
+            body: AsyncValueView<{{Pascal}}Item>(
+              value: controller.value,
+              errorMessage: l10n.loadError,
+              onRetry: controller.start,
+              data: (item) => Padding(
+                padding: const EdgeInsetsDirectional.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: theme.textTheme.headlineSmall),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(item.description, style: theme.textTheme.bodyLarge),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+}

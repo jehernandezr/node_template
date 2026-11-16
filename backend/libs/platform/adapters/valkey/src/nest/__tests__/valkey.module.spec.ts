@@ -5,6 +5,9 @@ import { ConfigValidationError } from '@platform/config';
 import { HealthRegistry } from '@platform/observability';
 import { HealthState, JobLock } from '@platform/kernel';
 import type { Valkey } from 'iovalkey';
+import { ValkeyAuthRevocationFeed } from '../../auth/valkey-auth-revocation-feed.js';
+import { ValkeyAuthStateReader } from '../../auth/valkey-auth-state-reader.js';
+import { ValkeyAuthStateWriter } from '../../auth/valkey-auth-state-writer.js';
 import { ValkeyAuthMode } from '../../valkey-auth-mode.enum.js';
 import { ValkeyBloomFilterFactory } from '../../valkey-bloom-filter-factory.js';
 import { ValkeyCache } from '../../valkey-cache.js';
@@ -72,6 +75,20 @@ describe('ValkeyModule', () => {
     await app.close();
     apps.splice(apps.indexOf(app), 1);
   }
+
+  it('provides the auth state reader, writer and revocation feed', async () => {
+    const app = await appWith(ValkeyModule.forRoot());
+
+    expect(app.get(ValkeyAuthStateReader)).toBeInstanceOf(
+      ValkeyAuthStateReader,
+    );
+    expect(app.get(ValkeyAuthStateWriter)).toBeInstanceOf(
+      ValkeyAuthStateWriter,
+    );
+    expect(app.get(ValkeyAuthRevocationFeed)).toBeInstanceOf(
+      ValkeyAuthRevocationFeed,
+    );
+  });
 
   it('registers its health indicator, which pings the client', async () => {
     const app = await appWith(ValkeyModule.forRoot());

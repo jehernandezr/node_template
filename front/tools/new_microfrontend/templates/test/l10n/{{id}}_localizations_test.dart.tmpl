@@ -1,0 +1,30 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+import '../utils/{{id}}_test_app.dart';
+
+Set<String> _keysOf(String path) =>
+    (jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>).keys
+        .where((key) => !key.startsWith('@'))
+        .toSet();
+
+void main() {
+  test('es and en declare the same keys', () {
+    expect(
+      _keysOf('lib/src/l10n/app_en.arb'),
+      _keysOf('lib/src/l10n/app_es.arb'),
+    );
+  });
+
+  test('the Spanish strings come from {{Pascal}}Localizations', () {
+    expect({{Pascal}}TestApp.es.screenTitle, isNotEmpty);
+    expect({{Pascal}}TestApp.es.loadError, isNotEmpty);
+  });
+
+  test('the English strings come from {{Pascal}}Localizations', () {
+    expect({{Pascal}}TestApp.en.screenTitle, isNotEmpty);
+    expect({{Pascal}}TestApp.en.loadError, isNot({{Pascal}}TestApp.es.loadError));
+  });
+}

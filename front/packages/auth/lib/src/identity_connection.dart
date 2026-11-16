@@ -53,8 +53,7 @@ final class IdentityConnection {
       baseUri: baseUri,
       accessToken: () => sessionManager.accessToken(),
       sessionRefresh: SessionRefreshPolicy(
-        appliesTo: (problem) =>
-            refreshCodes.contains(IdentityErrorCode.fromCode(problem.code)),
+        appliesTo: (problem) => refreshCodes.contains(problem.code),
         refresh: () => sessionManager.refresh(),
       ),
       defaultHeaders: defaultHeaders,
@@ -92,9 +91,13 @@ final class IdentityConnection {
   }
 
   /// Códigos con los que una ruta autenticada pide refrescar la sesión y
-  /// reintentar una vez: el token es válido pero quedó desactualizado.
-  static const Set<IdentityErrorCode> refreshCodes = {
-    IdentityErrorCode.tokenStalePermissions,
+  /// reintentar una vez. `IDENTITY.TOKEN.STALE_PERMISSIONS` llega con un token
+  /// válido cuyos permisos cambiaron. `PLATFORM.AUTH.TOKEN_EXPIRED` llega con
+  /// un access token vencido: el refresh cambia el token, pero no cierra la
+  /// sesión, así que no está en la lista de invalidación.
+  static final Set<String> refreshCodes = {
+    IdentityErrorCode.tokenStalePermissions.code,
+    PlatformErrorCode.authTokenExpired.code,
   };
 
   /// Sesión y tokens.

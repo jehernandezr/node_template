@@ -99,12 +99,12 @@ describe('guards', () => {
   });
 });
 
-describe('CallOutcome.fromError', () => {
-  it('maps like a factory with the default classifier', () => {
+describe('CallOutcomeFactory.fromError', () => {
+  it('maps a business error with the default classifier', () => {
     const error = new OutOfStockError('No stock', { sku: 'A1' });
 
-    expect(CallOutcome.fromError(error)).toEqual(
+    expect(
       new CallOutcomeFactory(new FailureClassifier()).fromError(error),
-    );
+    ).toEqual(expect.objectContaining({ kind: CallOutcomeKind.BusinessError }));
   });
 });

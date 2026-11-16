@@ -1,5 +1,4 @@
-import { type Clock, SystemClock } from '@platform/kernel';
-import type { ClaimRequest } from '@platform/primitives';
+import { type Clock, SystemClock, ClaimRequest } from '@platform/kernel';
 import { InMemoryProcessedMessageStore } from '../../../__tests__/utils/in-memory-processed-message-store.js';
 import { StoreOperation } from './store-operation.enum.js';
 

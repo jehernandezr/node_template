@@ -13,6 +13,8 @@ SessionAccess _access() => SessionAccess(
   tenantId: '0193f1c2-0000-7000-8000-0000000000b1',
   sessionId: '0193f1c2-0000-7000-8000-0000000000c1',
   permissions: const [Permission.tasksRead],
+  roles: const <String>[],
+  permissionVersion: '1.1',
   platformRoles: const [],
   features: const [],
   flags: const [],
@@ -86,8 +88,8 @@ void main() {
 
       expect(done, isTrue);
       expect(accessLoads, 1);
-      expect(flow.busy, isFalse);
-      expect(flow.errorCode, isNull);
+      expect(flow.state.isBusy, isFalse);
+      expect(flow.state.errorCode, isNull);
     });
 
     test('asks for a second factor and offers only code methods', () async {
@@ -100,7 +102,7 @@ void main() {
       final done = await flow.signIn(email: 'ana@example.com', password: 'x');
 
       expect(done, isFalse);
-      expect(flow.pending, _pending);
+      expect(flow.state.pending, _pending);
       expect(flow.methods, [MfaFactor.totp, MfaFactor.emailOtp]);
     });
 
@@ -116,7 +118,7 @@ void main() {
         final flow = SignInFlow(connection);
         await flow.signIn(email: 'ana@example.com', password: 'x');
         await flow.requestChallenge(MfaFactor.totp);
-        expect(flow.challenge, _challenge);
+        expect(flow.state.challenge, _challenge);
 
         repo.verifyError = FakeAuthRepository.apiError(
           IdentityErrorCode.mfaCodeExpired,
@@ -125,9 +127,9 @@ void main() {
         final done = await flow.verify('12345678');
 
         expect(done, isFalse);
-        expect(flow.errorCode, IdentityErrorCode.mfaCodeExpired.code);
-        expect(flow.pending, _pending);
-        expect(flow.challenge, isNull);
+        expect(flow.state.errorCode, IdentityErrorCode.mfaCodeExpired.code);
+        expect(flow.state.pending, _pending);
+        expect(flow.state.challenge, isNull);
       },
     );
 
@@ -142,9 +144,9 @@ void main() {
       // Without a configured challenge the fake answers MFA.TOKEN_INVALID.
       await flow.requestChallenge(MfaFactor.totp);
 
-      expect(flow.errorCode, IdentityErrorCode.mfaTokenInvalid.code);
-      expect(flow.pending, isNull);
-      expect(flow.challenge, isNull);
+      expect(flow.state.errorCode, IdentityErrorCode.mfaTokenInvalid.code);
+      expect(flow.state.pending, isNull);
+      expect(flow.state.challenge, isNull);
     });
 
     test('a network failure shows the generic message', () async {
@@ -165,8 +167,8 @@ void main() {
       );
 
       expect(done, isFalse);
-      expect(flow.errorCode, PlatformErrorCode.internalUnexpected.code);
-      expect(flow.busy, isFalse);
+      expect(flow.state.errorCode, PlatformErrorCode.internalUnexpected.code);
+      expect(flow.state.isBusy, isFalse);
     });
 
     test('a programming error is not turned into a message', () async {
@@ -176,7 +178,7 @@ void main() {
         flow.requestChallenge(MfaFactor.totp),
         throwsA(isA<StateError>()),
       );
-      expect(flow.busy, isFalse);
+      expect(flow.state.isBusy, isFalse);
     });
   });
 
@@ -200,7 +202,7 @@ void main() {
           mfaVerifiedAt: t0,
         );
       final flow = StepUpFlow(manager);
-      expect(flow.busy, isTrue);
+      expect(flow.state.isBusy, isTrue);
 
       await flow.start();
       await flow.requestChallenge(MfaFactor.totp);
@@ -218,9 +220,9 @@ void main() {
       // Without a configured challenge the fake answers METHOD_UNAVAILABLE.
       await flow.requestChallenge(MfaFactor.emailOtp);
 
-      expect(flow.errorCode, IdentityErrorCode.mfaMethodUnavailable.code);
-      expect(flow.pending, _pending);
-      expect(flow.challenge, isNull);
+      expect(flow.state.errorCode, IdentityErrorCode.mfaMethodUnavailable.code);
+      expect(flow.state.pending, _pending);
+      expect(flow.state.challenge, isNull);
     });
   });
 

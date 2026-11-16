@@ -72,8 +72,8 @@ Sin la opción, el módulo obtiene el modo local. Las demás opciones siguen el 
 
 Hay tres momentos, en este orden de apagado:
 
-1. `BeforeApplicationShutdown` detiene lo que genera trabajo: `JobRunner`, `SqsPoller` y las suscripciones.
-2. `OnModuleDestroy` cierra los recursos: clientes SNS y SQS, Valkey con `quit` y el `DataSource` de TypeORM.
+1. `OnModuleDestroy` de lo que genera trabajo: `JobRunner`, `SqsPoller` y las suscripciones. Sus módulos no son globales y se importan después, así que Nest los destruye primero.
+2. `OnModuleDestroy` de los recursos, en módulos globales importados antes: clientes SNS y SQS (`AwsModule`, que solo implementa este hook), Valkey con `quit` y el `DataSource` de TypeORM.
 3. `OnApplicationShutdown` vacía la telemetría.
 
 ### Salud
@@ -111,7 +111,7 @@ Los dobles salen por `@platform/<lib>/test-utils`, no por el índice público. C
 | persistence       | `PersistenceModule`      | `TransactionManager`, `EntityManagerProvider`, `ShardResolver`, `ShardScope`, `AcrossShards`                                                                                   |
 | adapters-postgres | `PostgresPlatformModule` | `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`, `TypeOrmIdempotencyStore`, `TypeOrmDirectoryStore`                                                                       |
 | saga              | `SagaModule`             | `Sagas`, `SagaEngine`, `SagaRecoveryJob`, `SagaRetentionJob`; `forFeature([definiciones])`                                                                                     |
-| adapters-aws      | `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `SqsPoller`                                                                                         |
+| adapters-aws      | `AwsModule`              | `SNS_CLIENT`, `SQS_CLIENT`, `SnsSqsMessageBus`, `SnsSqsEnvelopePublisher`, `AwsMessagingNames`, `AwsErrorTranslator`; `SqsConsumerModule` (no global) provee `SqsPoller`       |
 | adapters-valkey   | `ValkeyModule`           | `VALKEY_CLIENT`, `ValkeyCache`, `ValkeyRateLimiter`, `ValkeyRoutingCache`, `ValkeyShardDirectoryChannel`, `ValkeyBloomFilterFactory`, `ValkeyJobLock`, `ValkeyHealthIndicator` |
 
 ## Consecuencias
@@ -127,7 +127,7 @@ Los dobles salen por `@platform/<lib>/test-utils`, no por el índice público. C
 
 - Cada librería suma una carpeta `src/nest` y una sub-entrada en `tsconfig.base.json`.
 - Dependencias nuevas: `@nestjs/common`, `@nestjs/core`, `@nestjs/testing`, `reflect-metadata` y `rxjs`.
-- Hay que migrar los consumidores de las interfaces anteriores. Mientras tanto se conservan reexportes marcados `@deprecated`.
+- Hay que migrar los consumidores de las interfaces anteriores. Los reexportes de compatibilidad ya se retiraron.
 
 ## Alternativas consideradas
 

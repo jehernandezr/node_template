@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-smoke",
+  "sourceRoot": "backend/tools/platform-smoke/src",
+  "projectType": "library",
+  "tags": ["type:tool", "scope:shared"],
+  "targets": {
+    "typecheck": {}
+  }
+}

@@ -1,5 +1,6 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
+import 'package:shell_host/shell_host.dart' show IdentityConnectionFactory;
 
 /// Base URL of the API, from `--dart-define=API_BASE_URL=https://...`.
 ///
@@ -14,11 +15,9 @@ const String apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 /// again. There is no device key either: without a Secure Enclave or Keystore
 /// adapter the sign-in does not register the device, and no fake key ever
 /// reaches a real server.
-IdentityConnection? mobileIdentityConnection([String baseUrl = apiBaseUrl]) {
-  if (baseUrl.isEmpty) return null;
-  return IdentityConnection(
-    transport: PackageHttpTransport(),
-    baseUri: Uri.parse(baseUrl),
-    tokenStore: InMemoryTokenStore(),
-  );
-}
+IdentityConnection? mobileIdentityConnection([String baseUrl = apiBaseUrl]) =>
+    IdentityConnectionFactory(
+      baseUrl: baseUrl,
+      transport: () => PackageHttpTransport(),
+      tokenStore: () => InMemoryTokenStore(),
+    ).create();

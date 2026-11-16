@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import {
   SystemClock,
   TransactionManager,
@@ -6,7 +6,7 @@ import {
 } from '@platform/kernel';
 import { ShardingErrorCode } from '@platform/sharding';
 import { AcrossShards } from '../across-shards.js';
-import { PersistenceError } from '../errors.js';
+import { PersistenceError } from '../errors/persistence-error.js';
 import type { ShardLocation } from '../model/shard-location.js';
 import { ShardDataSources } from '../shard-data-sources.js';
 import { FakeDataSourceFactory } from './utils/fake-data-source-factory.js';
@@ -111,10 +111,7 @@ describe('AcrossShards', () => {
       const result = await buildAcross().run(({ location }) => {
         if (location.logicalShard === 'svc_shard_2') {
           return Promise.reject(
-            new PersistenceError(
-              PlatformErrorCode.PersistenceQueryFailed,
-              'failed',
-            ),
+            new PersistenceError(PersistenceErrorCode.QueryFailed, 'failed'),
           );
         }
         return Promise.resolve(location.logicalShard);
@@ -124,7 +121,7 @@ describe('AcrossShards', () => {
         {
           shard: 'svc_shard_2',
           timedOut: false,
-          code: PlatformErrorCode.PersistenceQueryFailed,
+          code: PersistenceErrorCode.QueryFailed,
         },
       ]);
       expect(result.results.map((entry) => entry.shard)).toEqual([
@@ -185,7 +182,7 @@ describe('AcrossShards', () => {
         await expect(
           buildAcross().run(() => Promise.resolve(1), options),
         ).rejects.toMatchObject({
-          code: PlatformErrorCode.PersistenceInvalidConfig,
+          code: PersistenceErrorCode.InvalidConfig,
         });
       },
     );

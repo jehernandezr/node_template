@@ -1,6 +1,7 @@
 import { BloomFilter } from '../bloom-filter.js';
 import { BloomHashScheme } from '../bloom-hash-scheme.enum.js';
 import { BloomErrorCode } from '../errors/bloom-error-code.enum.js';
+import type { SerializedBloomFilter } from '../serialized-bloom-filter.js';
 import { BloomFixtures } from './utils/bloom-fixtures.js';
 
 const INSERTED = 10_000;
@@ -39,6 +40,21 @@ describe('BloomFilter', () => {
     expect(filter.approximateCount()).toBe(0);
     expect(filter.estimatedFalsePositiveRate()).toBe(0);
     expect(filter.mightContain('anything')).toBe(false);
+  });
+
+  it('reads a payload in the original v1 format', () => {
+    const legacy = {
+      version: 1,
+      scheme: 'fnv1a32+murmur3_32/edh',
+      bits: 64,
+      hashes: 3,
+      data: 'gAAAAiAJAQA=',
+    } as SerializedBloomFilter;
+    const filter = BloomFilter.deserialize(legacy);
+    expect(filter.mightContain('alpha')).toBe(true);
+    expect(filter.mightContain('beta')).toBe(true);
+    expect(filter.mightContain('gamma-missing-item')).toBe(false);
+    expect(filter.serialize()).toEqual(legacy);
   });
 
   it('round-trips through serialize and deserialize', () => {

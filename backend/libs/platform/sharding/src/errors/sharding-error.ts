@@ -1,5 +1,4 @@
-import { PlatformError } from '@platform/kernel';
-import { FailureKind } from '@platform/primitives';
+import { FailureKind, PlatformError } from '@platform/kernel';
 import { ShardingErrorCode } from './sharding-error-code.enum.js';
 
 /**

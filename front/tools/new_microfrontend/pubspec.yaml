@@ -1,0 +1,13 @@
+name: new_microfrontend
+description: Crea el paquete de un microfrontend nuevo en front/microfrontends desde las plantillas de templates/.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.14.0
+
+dev_dependencies:
+  lints: 6.1.0
+  test: 1.32.0
+
+resolution: workspace

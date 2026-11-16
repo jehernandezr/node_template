@@ -20,12 +20,14 @@ front/
 ├── apps/            web y mobile: solo el shell de cada plataforma y su marco
 ├── packages/        api, auth, contracts, i18n, shell_core, shell_host, test_utils, tokens, ui, utils
 ├── microfrontends/  account, assistant, backoffice, billing, notifications, tasks, verifier
-└── tools/           contracts_gen y las comprobaciones de CI
+└── tools/           contracts_gen, new_microfrontend y las comprobaciones de CI
 ```
 
 - Dentro de cada paquete o microfrontend, el código público va en `lib/<paquete>.dart` y el privado en `lib/src/`. Lo que está en `lib/src` no se importa desde otro paquete (convención de Dart).
 - `lib/<paquete>.dart` exporta con `export 'src/x.dart' show A, B;` solo lo que otros paquetes necesitan. Exportar un archivo entero filtra detalles de implementación.
 - Los dobles y utilitarios de prueba que usan varios paquetes viven en el paquete `front/packages/test_utils`, que solo se declara en `dev_dependencies`. Ningún paquete expone un `lib/testing.dart` ni una carpeta `testing/`.
+- `test_utils` exporta `TestApp`, `SessionBuilder`, `ProblemFixtures`, `TestScope`, `FakeClock`, `FakeFailure`, `FakeAuthRepository`, `expectAccessible`, `pumpAtWidths`, `pumpAtTextScale` y `DeferredLibrariesPreloader`. Cada pieza y cómo se usa está en `front-pruebas`.
+- `tools/new_microfrontend.dart` crea un microfrontend nuevo con su estructura y su prueba. Ver la skill `front-nuevo-microfrontend`.
 
 ## Capas dentro de un microfrontend
 

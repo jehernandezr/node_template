@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '@platform/persistence';
 import { ContainerRuntime, FixedClock } from '@platform/kernel/test-utils';
 import { OutboxStatus } from '@platform/messaging';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
@@ -109,7 +109,7 @@ runtime.describeIfAvailable('ShardedRelayScopes over PostgreSQL', () => {
         await visit();
       }),
     ).rejects.toMatchObject({
-      code: PlatformErrorCode.PersistenceQueryFailed,
+      code: PersistenceErrorCode.QueryFailed,
       details: { shards: [PlatformTestDatabase.SHARD_B] },
     });
     expect(visits).toContainEqual({
@@ -143,7 +143,7 @@ runtime.describeIfAvailable('ShardedRelayScopes over PostgreSQL', () => {
       scopes.forEach(async () => {
         throw new Error('shard down');
       }),
-    ).rejects.toMatchObject({ code: PlatformErrorCode.PersistenceQueryFailed });
+    ).rejects.toMatchObject({ code: PersistenceErrorCode.QueryFailed });
 
     const clock = new FixedClock(T0);
     const store = new TypeOrmOutboxStore(

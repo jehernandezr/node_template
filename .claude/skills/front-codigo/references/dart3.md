@@ -72,19 +72,18 @@ Con el SDK 3.14 están habilitados. En código nuevo se pueden usar para elimina
 final class TaskSummary(final String id, final String title);
 ```
 
-Dejan de valer la pena si la clase necesita validar, asignar por defecto algo calculado o documentar cada campo por separado. El código existente (`MicrofrontendScope(this._services, {this._eventBus})`) se queda como está.
+Dejan de valer la pena si la clase necesita validar, asignar por defecto algo calculado o documentar cada campo por separado. El código existente que usa parámetros `this._campo` se queda como está; se reescribe solo al tocarlo.
 
 ## Enums con datos
 
 Un enum con campos y métodos reemplaza un `switch` repetido por un mapa de constantes:
 
 ```dart
-enum TaskStatus {
-  open('open'),
-  inProgress('in_progress'),
-  done('done');
+enum ReportPeriod {
+  daily('day'),
+  monthly('month');
 
-  const TaskStatus(this.wire);
+  const ReportPeriod(this.wire);
   final String wire;
 }
 ```

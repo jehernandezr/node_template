@@ -19,22 +19,10 @@ abstract base class MfaFlow extends ChangeNotifier {
   /// What the flow is doing now.
   MfaState get state => _state;
 
-  /// Legacy getter derived from [state]; read [state] instead.
-  PendingMfa? get pending => _state.pending;
-
-  /// Legacy getter derived from [state]; read [state] instead.
-  MfaChallenge? get challenge => _state.challenge;
-
-  /// Legacy getter derived from [state]; read [state] instead.
-  String? get errorCode => _state.errorCode;
-
-  /// Legacy getter derived from [state]; read [state] instead.
-  bool get busy => _state.isBusy;
-
   /// Methods of the pending challenge that this flow can complete, in the
   /// server's order.
   List<MfaFactor> get methods => [
-    for (final method in pending?.methods ?? const <MfaFactor>[])
+    for (final method in _state.pending?.methods ?? const <MfaFactor>[])
       if (codeMfaMethods.contains(method)) method,
   ];
 

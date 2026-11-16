@@ -8,6 +8,7 @@ import 'package:mf_notifications/mf_notifications.dart'
 import 'package:mf_tasks/mf_tasks.dart' show tasksManifest;
 import 'package:shell_core/shell_core.dart';
 import 'package:shell_host/shell_host.dart';
+import 'package:utils/utils.dart';
 
 import 'pages/web_shell_scaffold.dart';
 
@@ -25,14 +26,16 @@ final List<MicrofrontendManifest> webManifests = [
 ///
 /// With a [connection] (the app runs with `API_BASE_URL`) the shell is live;
 /// without one it runs on the demo profiles. Tests may pass their own
-/// [manifests].
+/// [manifests] and a [clock].
 ShellHost buildWebHost({
   IdentityConnection? connection,
   List<MicrofrontendManifest>? manifests,
+  Clock clock = systemClock,
 }) => ShellHost(
   platform: AppPlatform.web,
   manifests: manifests ?? webManifests,
   connection: connection,
+  clock: clock,
   demoProfiles: const [
     DemoProfile.customer,
     DemoProfile.tenantAdmin,

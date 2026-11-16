@@ -111,6 +111,13 @@ export const GetUserAccessInputSchema = z
 export const UserAccessSchema = z
   .object({
     permissions: z.array(PermissionSchema),
+    roles: z
+      .array(z.string().min(1).max(IdentityLimits.roleNameMaxLength))
+      .max(IdentityLimits.maxRolesPerUser),
+    permissionVersion: z
+      .string()
+      .max(IdentityLimits.permissionVersionMaxLength)
+      .regex(/^\d+\.\d+$/),
     platformRoles: z.array(PlatformRoleSchema),
     features: z.array(PlanFeatureSchema),
     flags: z.array(FeatureFlagSchema),

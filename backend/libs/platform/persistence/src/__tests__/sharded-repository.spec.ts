@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import { Criteria, CursorCodec } from '@platform/criteria';
 import { ActorType } from '@platform/observability';
 import { ShardKey, ShardRouter } from '@platform/sharding';
@@ -148,7 +148,7 @@ describe('ShardedRepository', () => {
       await expect(
         repository.save(new Probe(ID, 'first', 0, 0)),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.PersistenceTenantRequired,
+        code: PersistenceErrorCode.TenantRequired,
       });
     });
 
@@ -158,7 +158,7 @@ describe('ShardedRepository', () => {
       await expect(
         repository.save(new Probe(ID, 'first', 0, 0)),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.PersistenceTenantMismatch,
+        code: PersistenceErrorCode.TenantMismatch,
       });
     });
   });

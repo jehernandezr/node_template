@@ -3,6 +3,7 @@ import { PlatformErrorCode } from '../../enums/platform-error-code.enum.js';
 import { platformErrorCatalog } from '../../errors/platform-error-catalog.js';
 import { ProblemDetailsSchema } from '../../schemas/problem-details.schema.js';
 import type { ErrorCatalogEntry } from '../../types/error-catalog-entry.type.js';
+import { defineErrorCatalog, ErrorSpecs } from '../error-catalog.js';
 import { ProblemDetailsFactory } from '../problem-details-factory.js';
 
 const typeBaseUrl = 'https://docs.example.com';
@@ -11,9 +12,19 @@ const validationEntry = platformErrorCatalog.find(
   (e) => e.code === PlatformErrorCode.ValidationRequired,
 ) as ErrorCatalogEntry;
 
-const sagaEntry = platformErrorCatalog.find(
-  (e) => e.code === PlatformErrorCode.SagaLeaseLost,
-) as ErrorCatalogEntry;
+enum SpecErrorCode {
+  Hidden = 'PLATFORM.SPEC.HIDDEN',
+}
+
+const hiddenCatalog = defineErrorCatalog(SpecErrorCode, {
+  [SpecErrorCode.Hidden]: ErrorSpecs.internal(
+    500,
+    false,
+    'Error interno de prueba.',
+  ),
+});
+
+const internalEntry = hiddenCatalog[0] as ErrorCatalogEntry;
 
 describe('ProblemDetailsFactory', () => {
   describe('create', () => {
@@ -65,7 +76,7 @@ describe('ProblemDetailsFactory', () => {
       const factory = new ProblemDetailsFactory(typeBaseUrl);
 
       const problem = factory.create({
-        entry: sagaEntry,
+        entry: internalEntry,
         title: 'Lease lost',
         detail: 'Saga 0193 lost its lease',
         instance: '/v1/tenants',
@@ -86,7 +97,7 @@ describe('ProblemDetailsFactory', () => {
 
     it('answers an internal code with the status and title of the custom unexpected entry', () => {
       const unexpected: ErrorCatalogEntry = {
-        ...sagaEntry,
+        ...internalEntry,
         code: 'DEMO.INTERNAL.CRASH',
         httpStatus: 503,
         description: 'Servicio caído',
@@ -94,7 +105,7 @@ describe('ProblemDetailsFactory', () => {
       const factory = new ProblemDetailsFactory(typeBaseUrl, unexpected);
 
       const problem = factory.create({
-        entry: sagaEntry,
+        entry: internalEntry,
         title: 'Lease lost',
         traceId: '0193f1c2-abcd',
       });

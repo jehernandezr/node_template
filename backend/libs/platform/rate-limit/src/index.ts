@@ -20,4 +20,3 @@ export * from './rate-limit-metric-attribute.enum.js';
 export * from './errors/rate-limit-error-code.enum.js';
 export * from './errors/rate-limit-error-catalog.js';
 export * from './errors/rate-limit-exceeded.error.js';
-export * from './deprecated-exports.js';

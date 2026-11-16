@@ -31,7 +31,8 @@ Cada pantalla que se escriba sin estos patrones agrega una copia más que luego 
 - `check-structure.mjs` del front suma reglas sobre colores, `catch` sin `on` (salvo la marca `// catch-all:`), `Text('` y `widget.repository.` en pantallas, direccionalidad, interpolación de `l10n`, `DateTime.now()` y versiones con `^`, con línea base en `front/tools/structure-baseline.json`.
 - Versiones exactas: cada `pubspec.yaml` fija el número exacto y el script lo vigila, porque pub no tiene un catálogo único de versiones.
 - Tamaño mínimo: 48 de alto en todos los botones y campos del tema.
-- Orden de migración: primero lo aditivo; lo legado no lleva `@Deprecated`, lleva el comentario `/// Legacy: removed in wave 4.` y se retira en una fase propia al final.
+- Orden de migración: primero lo aditivo; lo legado no lleva `@Deprecated`, lleva un comentario `/// Legacy` y se retira en una fase propia al final.
+- `front/tools/new_microfrontend.dart` crea un microfrontend nuevo. Sus plantillas viven en `front/tools/new_microfrontend/templates/` como archivos `.tmpl`, que el formateador y el analizador no leen. El generador es un paquete del pub workspace con pruebas propias; formatea el paquete que crea y no edita las apps, solo imprime las dos piezas que cada app necesita. La skill `front-nuevo-microfrontend` describe su uso.
 
 ## Consecuencias
 
@@ -47,6 +48,7 @@ Cada pantalla que se escriba sin estos patrones agrega una copia más que luego 
 - La API vieja y la nueva conviven hasta el retiro, y `i18n` pasa a depender de `contracts`.
 - Los botones de 48 de alto también aparecen en escritorio.
 - La línea base de `check-structure.mjs` hay que vaciarla y borrarla al final.
+- Las plantillas `.tmpl` no pasan por el formateador ni por el analizador: su calidad la cubren las pruebas del paquete del generador y un microfrontend de prueba que se genera, se valida y se borra en cada cambio de plantilla.
 - Cada controlador es una clase más por pantalla, a cambio de pruebas que no necesitan widgets.
 - Endurecer `analysis_options.yaml` queda fuera de esta decisión, como cambio aparte.
 
@@ -61,3 +63,5 @@ Cada pantalla que se escriba sin estos patrones agrega una copia más que luego 
 - La suite de escenarios en `shell_host/test`: un paquete no puede importar el `test/` de otro.
 - `StepUpGate` en `shell_core`: solo `account` lo usa hoy; si otro microfrontend lo necesita, sube sin cambiar su firma.
 - Reglas del script al final en lugar de con línea base: nada protegería el código escrito mientras tanto.
+- Plantillas como cadenas en código Dart: el código de generación se vuelve ilegible y las plantillas no se leen ni se revisan como archivos.
+- Un script suelto, sin paquete ni pruebas: nada lo protege cuando cambia el contrato del microfrontend.

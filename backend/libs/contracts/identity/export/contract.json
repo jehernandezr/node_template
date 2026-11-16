@@ -3,7 +3,7 @@
   "formatVersion": 2,
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "service": "identity",
-  "description": "Identidad: inicio y cierre de sesión, refresh, MFA, paso adicional, sesiones, dispositivos y enums de acceso.",
+  "description": "Identidad: registro, contraseñas, perfil, sesiones, dispositivos, MFA, passkeys, tenants, membresías, invitaciones y API keys.",
   "enums": {
     "Permission": {
       "values": [
@@ -11,7 +11,24 @@
         { "name": "TasksWrite", "value": "tasks:write" },
         { "name": "BillingRead", "value": "billing:read" },
         { "name": "BillingWrite", "value": "billing:write" },
-        { "name": "BackofficeAccess", "value": "backoffice:access" }
+        { "name": "BackofficeAccess", "value": "backoffice:access" },
+        { "name": "IdentityMembersRead", "value": "identity:members:read" },
+        { "name": "IdentityMembersManage", "value": "identity:members:manage" },
+        { "name": "IdentityGroupsManage", "value": "identity:groups:manage" },
+        { "name": "IdentityRolesManage", "value": "identity:roles:manage" },
+        {
+          "name": "IdentityInvitationsManage",
+          "value": "identity:invitations:manage"
+        },
+        {
+          "name": "IdentityServiceAccountsManage",
+          "value": "identity:service-accounts:manage"
+        },
+        {
+          "name": "IdentityApiKeysManage",
+          "value": "identity:api-keys:manage"
+        },
+        { "name": "IdentityTenantManage", "value": "identity:tenant:manage" }
       ]
     },
     "PlatformRole": {
@@ -73,6 +90,105 @@
         { "name": "Tenant", "value": "tenant" }
       ]
     },
+    "AuthMethodReference": {
+      "values": [
+        { "name": "Password", "value": "pwd" },
+        { "name": "Passkey", "value": "passkey" },
+        { "name": "Device", "value": "device" },
+        { "name": "EmailOtp", "value": "email_otp" },
+        { "name": "Totp", "value": "totp" },
+        { "name": "RecoveryCode", "value": "recovery_code" }
+      ]
+    },
+    "TokenAudience": {
+      "values": [
+        { "name": "Api", "value": "api" },
+        { "name": "Backoffice", "value": "backoffice" }
+      ]
+    },
+    "TenantRole": {
+      "values": [
+        { "name": "Owner", "value": "owner" },
+        { "name": "Admin", "value": "admin" },
+        { "name": "Member", "value": "member" },
+        { "name": "Billing", "value": "billing" }
+      ]
+    },
+    "TenantKind": {
+      "values": [
+        { "name": "Organization", "value": "organization" },
+        { "name": "SharedCustomers", "value": "shared_customers" },
+        { "name": "Platform", "value": "platform" }
+      ]
+    },
+    "TenantLifecycle": {
+      "values": [
+        { "name": "Provisioning", "value": "provisioning" },
+        { "name": "Active", "value": "active" },
+        { "name": "Suspended", "value": "suspended" },
+        { "name": "Deleting", "value": "deleting" }
+      ]
+    },
+    "InvitationStatus": {
+      "values": [
+        { "name": "Pending", "value": "pending" },
+        { "name": "Accepted", "value": "accepted" },
+        { "name": "Revoked", "value": "revoked" },
+        { "name": "Expired", "value": "expired" }
+      ]
+    },
+    "MembershipChangeKind": {
+      "values": [
+        { "name": "Added", "value": "added" },
+        { "name": "Removed", "value": "removed" },
+        { "name": "GroupsChanged", "value": "groups_changed" }
+      ]
+    },
+    "UserStatus": {
+      "values": [
+        { "name": "PendingVerification", "value": "pending_verification" },
+        { "name": "Active", "value": "active" },
+        { "name": "Suspended", "value": "suspended" },
+        { "name": "Deleted", "value": "deleted" }
+      ]
+    },
+    "SecurityAlertType": {
+      "values": [
+        { "name": "NewDeviceSignIn", "value": "new_device_sign_in" },
+        { "name": "VerifierRegistered", "value": "verifier_registered" },
+        { "name": "PasswordChanged", "value": "password_changed" },
+        { "name": "PasswordRecovered", "value": "password_recovered" },
+        { "name": "MfaRecoveryStarted", "value": "mfa_recovery_started" },
+        { "name": "MfaRecoveryCompleted", "value": "mfa_recovery_completed" },
+        { "name": "EmailChanged", "value": "email_changed" },
+        { "name": "MfaFactorRemoved", "value": "mfa_factor_removed" },
+        { "name": "RecoveryCodeUsed", "value": "recovery_code_used" },
+        { "name": "ApiKeyCreated", "value": "api_key_created" },
+        { "name": "ApiKeyRevoked", "value": "api_key_revoked" },
+        { "name": "AccountLocked", "value": "account_locked" },
+        { "name": "ProtectedModeEnabled", "value": "protected_mode_enabled" },
+        { "name": "DeviceApprovalDenied", "value": "device_approval_denied" }
+      ]
+    },
+    "ApiKeyEnvironment": {
+      "values": [
+        { "name": "Live", "value": "live" },
+        { "name": "Test", "value": "test" }
+      ]
+    },
+    "ApiKeyStatus": {
+      "values": [
+        { "name": "Active", "value": "active" },
+        { "name": "Rotated", "value": "rotated" },
+        { "name": "Revoked", "value": "revoked" }
+      ]
+    },
+    "ServiceAccountStatus": {
+      "values": [
+        { "name": "Active", "value": "active" },
+        { "name": "Disabled", "value": "disabled" }
+      ]
+    },
     "IdentityErrorCode": {
       "values": [
         {
@@ -104,7 +220,81 @@
         { "name": "TokenRevoked", "value": "IDENTITY.TOKEN.REVOKED" },
         { "name": "UserNotFound", "value": "IDENTITY.USER.NOT_FOUND" },
         { "name": "UserSuspended", "value": "IDENTITY.USER.SUSPENDED" },
-        { "name": "TenantSuspended", "value": "IDENTITY.TENANT.SUSPENDED" }
+        { "name": "TenantSuspended", "value": "IDENTITY.TENANT.SUSPENDED" },
+        {
+          "name": "AuthEmailNotVerified",
+          "value": "IDENTITY.AUTH.EMAIL_NOT_VERIFIED"
+        },
+        {
+          "name": "UserEmailVerificationInvalid",
+          "value": "IDENTITY.USER.EMAIL_VERIFICATION_INVALID"
+        },
+        {
+          "name": "PasswordPolicyViolation",
+          "value": "IDENTITY.PASSWORD.POLICY_VIOLATION"
+        },
+        { "name": "PasswordBreached", "value": "IDENTITY.PASSWORD.BREACHED" },
+        {
+          "name": "PasswordCurrentInvalid",
+          "value": "IDENTITY.PASSWORD.CURRENT_INVALID"
+        },
+        {
+          "name": "PasswordResetInvalid",
+          "value": "IDENTITY.PASSWORD.RESET_INVALID"
+        },
+        {
+          "name": "DeviceSignatureInvalid",
+          "value": "IDENTITY.DEVICE.SIGNATURE_INVALID"
+        },
+        { "name": "DeviceKeyInvalid", "value": "IDENTITY.DEVICE.KEY_INVALID" },
+        {
+          "name": "MfaRecoveryNotReady",
+          "value": "IDENTITY.MFA.RECOVERY_NOT_READY"
+        },
+        {
+          "name": "MfaFactorAlreadyEnrolled",
+          "value": "IDENTITY.MFA.FACTOR_ALREADY_ENROLLED"
+        },
+        {
+          "name": "MfaFactorNotEnrolled",
+          "value": "IDENTITY.MFA.FACTOR_NOT_ENROLLED"
+        },
+        {
+          "name": "PasskeyVerificationFailed",
+          "value": "IDENTITY.PASSKEY.VERIFICATION_FAILED"
+        },
+        {
+          "name": "PasskeyChallengeExpired",
+          "value": "IDENTITY.PASSKEY.CHALLENGE_EXPIRED"
+        },
+        { "name": "TenantNotFound", "value": "IDENTITY.TENANT.NOT_FOUND" },
+        { "name": "TenantSlugTaken", "value": "IDENTITY.TENANT.SLUG_TAKEN" },
+        { "name": "TenantNotMember", "value": "IDENTITY.TENANT.NOT_MEMBER" },
+        { "name": "AccessLastOwner", "value": "IDENTITY.ACCESS.LAST_OWNER" },
+        {
+          "name": "AccessSystemRoleImmutable",
+          "value": "IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE"
+        },
+        { "name": "AccessNameTaken", "value": "IDENTITY.ACCESS.NAME_TAKEN" },
+        { "name": "InvitationInvalid", "value": "IDENTITY.INVITATION.INVALID" },
+        {
+          "name": "InvitationEmailMismatch",
+          "value": "IDENTITY.INVITATION.EMAIL_MISMATCH"
+        },
+        { "name": "ApiKeyInvalid", "value": "IDENTITY.API_KEY.INVALID" },
+        { "name": "ApiKeyExpired", "value": "IDENTITY.API_KEY.EXPIRED" },
+        {
+          "name": "ApiKeyIpNotAllowed",
+          "value": "IDENTITY.API_KEY.IP_NOT_ALLOWED"
+        },
+        {
+          "name": "ApiKeyPermissionNotGrantable",
+          "value": "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE"
+        },
+        {
+          "name": "ServiceAccountDisabled",
+          "value": "IDENTITY.SERVICE_ACCOUNT.DISABLED"
+        }
       ]
     },
     "IdentityRoute": {
@@ -130,7 +320,134 @@
           "name": "RevokeOtherSessions",
           "value": "identity.sessions.revoke-others"
         },
-        { "name": "ListDevices", "value": "identity.devices.list" }
+        { "name": "ListDevices", "value": "identity.devices.list" },
+        { "name": "SignUp", "value": "identity.auth.sign-up" },
+        {
+          "name": "ResendEmailVerification",
+          "value": "identity.auth.email-verification-resend"
+        },
+        {
+          "name": "ConfirmEmailVerification",
+          "value": "identity.auth.email-verification-confirm"
+        },
+        { "name": "ChangePassword", "value": "identity.me.password-change" },
+        {
+          "name": "RequestPasswordReset",
+          "value": "identity.auth.password-reset-request"
+        },
+        {
+          "name": "ConfirmPasswordReset",
+          "value": "identity.auth.password-reset-confirm"
+        },
+        { "name": "GetProfile", "value": "identity.me.profile" },
+        { "name": "UpdateProfile", "value": "identity.me.profile-update" },
+        { "name": "RequestEmailChange", "value": "identity.me.email-change" },
+        {
+          "name": "ConfirmEmailChange",
+          "value": "identity.me.email-change-confirm"
+        },
+        { "name": "GetJwks", "value": "identity.auth.jwks" },
+        { "name": "RemoveDevice", "value": "identity.devices.remove" },
+        { "name": "UntrustDevice", "value": "identity.devices.untrust" },
+        { "name": "UpdatePushToken", "value": "identity.devices.push-token" },
+        {
+          "name": "PullDeviceApprovals",
+          "value": "identity.device-approvals.pull"
+        },
+        {
+          "name": "DenyDeviceApproval",
+          "value": "identity.device-approvals.deny"
+        },
+        { "name": "StartTotpEnrollment", "value": "identity.mfa.totp-start" },
+        {
+          "name": "ConfirmTotpEnrollment",
+          "value": "identity.mfa.totp-confirm"
+        },
+        { "name": "RemoveTotp", "value": "identity.mfa.totp-remove" },
+        {
+          "name": "RegenerateRecoveryCodes",
+          "value": "identity.mfa.recovery-codes"
+        },
+        {
+          "name": "StartMfaRecovery",
+          "value": "identity.auth.mfa-recovery-start"
+        },
+        {
+          "name": "ConfirmMfaRecovery",
+          "value": "identity.auth.mfa-recovery-confirm"
+        },
+        {
+          "name": "PasskeySignInOptions",
+          "value": "identity.auth.passkey-options"
+        },
+        {
+          "name": "PasskeySignInVerify",
+          "value": "identity.auth.passkey-verify"
+        },
+        {
+          "name": "PasskeyMfaOptions",
+          "value": "identity.auth.mfa-passkey-options"
+        },
+        {
+          "name": "PasskeyMfaVerify",
+          "value": "identity.auth.mfa-passkey-verify"
+        },
+        {
+          "name": "PasskeyStepUpOptions",
+          "value": "identity.step-up.passkey-options"
+        },
+        {
+          "name": "PasskeyStepUpVerify",
+          "value": "identity.step-up.passkey-verify"
+        },
+        { "name": "ListPasskeys", "value": "identity.passkeys.list" },
+        {
+          "name": "PasskeyRegistrationOptions",
+          "value": "identity.passkeys.registration-options"
+        },
+        { "name": "RegisterPasskey", "value": "identity.passkeys.register" },
+        { "name": "RemovePasskey", "value": "identity.passkeys.remove" },
+        { "name": "SwitchTenant", "value": "identity.sessions.switch-tenant" },
+        { "name": "CreateTenant", "value": "identity.tenants.create" },
+        { "name": "GetTenant", "value": "identity.tenant.get" },
+        { "name": "UpdateTenant", "value": "identity.tenant.update" },
+        { "name": "ListMyTenants", "value": "identity.me.tenants" },
+        { "name": "ListMembers", "value": "identity.members.list" },
+        { "name": "RemoveMember", "value": "identity.members.remove" },
+        { "name": "SetMemberGroups", "value": "identity.members.set-groups" },
+        { "name": "ListGroups", "value": "identity.groups.list" },
+        { "name": "CreateGroup", "value": "identity.groups.create" },
+        { "name": "UpdateGroup", "value": "identity.groups.update" },
+        { "name": "DeleteGroup", "value": "identity.groups.delete" },
+        { "name": "SetGroupRoles", "value": "identity.groups.set-roles" },
+        { "name": "ListRoles", "value": "identity.roles.list" },
+        { "name": "CreateRole", "value": "identity.roles.create" },
+        { "name": "UpdateRole", "value": "identity.roles.update" },
+        { "name": "DeleteRole", "value": "identity.roles.delete" },
+        { "name": "InviteUser", "value": "identity.invitations.create" },
+        { "name": "ListInvitations", "value": "identity.invitations.list" },
+        { "name": "RevokeInvitation", "value": "identity.invitations.revoke" },
+        { "name": "AcceptInvitation", "value": "identity.invitations.accept" },
+        {
+          "name": "ListServiceAccounts",
+          "value": "identity.service-accounts.list"
+        },
+        {
+          "name": "CreateServiceAccount",
+          "value": "identity.service-accounts.create"
+        },
+        {
+          "name": "UpdateServiceAccount",
+          "value": "identity.service-accounts.update"
+        },
+        {
+          "name": "DeleteServiceAccount",
+          "value": "identity.service-accounts.delete"
+        },
+        { "name": "ListApiKeys", "value": "identity.api-keys.list" },
+        { "name": "CreateApiKey", "value": "identity.api-keys.create" },
+        { "name": "RotateApiKey", "value": "identity.api-keys.rotate" },
+        { "name": "RevokeApiKey", "value": "identity.api-keys.revoke" }
       ]
     },
     "IdentityOperation": {
@@ -139,17 +456,68 @@
           "name": "RevokeUserSessions",
           "value": "identity.sessions.revoke-for-user.v1"
         },
-        { "name": "GetUserAccess", "value": "identity.users.get-access.v1" }
+        { "name": "GetUserAccess", "value": "identity.users.get-access.v1" },
+        { "name": "SuspendUser", "value": "identity.users.suspend.v1" },
+        { "name": "ReactivateUser", "value": "identity.users.reactivate.v1" },
+        { "name": "GetUserProfile", "value": "identity.users.get-profile.v1" },
+        { "name": "CreateTenant", "value": "identity.tenants.create.v1" },
+        { "name": "DiscardTenant", "value": "identity.tenants.discard.v1" },
+        { "name": "SuspendTenant", "value": "identity.tenants.suspend.v1" },
+        {
+          "name": "ReactivateTenant",
+          "value": "identity.tenants.reactivate.v1"
+        },
+        {
+          "name": "AuthenticateApiKey",
+          "value": "identity.api-keys.authenticate.v1"
+        }
       ]
     },
     "IdentityEvent": {
       "values": [
         { "name": "SessionRevoked", "value": "identity.session.revoked.v1" },
-        { "name": "TokensRevoked", "value": "identity.tokens.revoked.v1" }
+        { "name": "TokensRevoked", "value": "identity.tokens.revoked.v1" },
+        { "name": "UserRegistered", "value": "identity.user.registered.v1" },
+        { "name": "UserSuspended", "value": "identity.user.suspended.v1" },
+        { "name": "UserReactivated", "value": "identity.user.reactivated.v1" },
+        {
+          "name": "UserEmailChanged",
+          "value": "identity.user.email-changed.v1"
+        },
+        {
+          "name": "DeviceRegistered",
+          "value": "identity.device.registered.v1"
+        },
+        { "name": "DeviceRemoved", "value": "identity.device.removed.v1" },
+        { "name": "TenantCreated", "value": "identity.tenant.created.v1" },
+        { "name": "TenantSuspended", "value": "identity.tenant.suspended.v1" },
+        {
+          "name": "TenantReactivated",
+          "value": "identity.tenant.reactivated.v1"
+        },
+        {
+          "name": "MembershipChanged",
+          "value": "identity.membership.changed.v1"
+        },
+        {
+          "name": "PermissionsChanged",
+          "value": "identity.permissions.changed.v1"
+        },
+        { "name": "ApiKeyCreated", "value": "identity.api-key.created.v1" },
+        { "name": "ApiKeyRevoked", "value": "identity.api-key.revoked.v1" },
+        {
+          "name": "SecurityAlertRaised",
+          "value": "identity.security-alert.raised.v1"
+        }
       ]
     },
     "IdentityTopic": {
       "values": [{ "name": "Events", "value": "identity-events" }]
+    },
+    "IdentityQueue": {
+      "values": [
+        { "name": "AccessProjection", "value": "identity-access-projection" }
+      ]
     }
   },
   "constants": {
@@ -162,7 +530,50 @@
       "mfaTokenMaxLength": 2048,
       "mfaCodeMinLength": 6,
       "mfaCodeMaxLength": 64,
-      "tokenMaxLength": 8192
+      "tokenMaxLength": 8192,
+      "roleNameMaxLength": 80,
+      "maxRolesPerUser": 50,
+      "permissionVersionMaxLength": 32,
+      "displayNameMaxLength": 120,
+      "localeMinLength": 2,
+      "localeMaxLength": 35,
+      "actionTokenMaxLength": 512,
+      "reasonMaxLength": 200,
+      "groupNameMaxLength": 80,
+      "maxGroupsPerMember": 50,
+      "maxPermissionsPerRole": 100,
+      "passkeyNameMaxLength": 120,
+      "passkeyOptionsMaxLength": 8192,
+      "passkeyCredentialMaxLength": 16384,
+      "totpSecretMaxLength": 128,
+      "otpauthUriMaxLength": 512,
+      "totpCodeMinLength": 6,
+      "totpCodeMaxLength": 8,
+      "recoveryCodesMax": 20,
+      "recoveryCodeMinLength": 8,
+      "recoveryCodeMaxLength": 64,
+      "devicePushTokenMaxLength": 512,
+      "deviceNonceMinLength": 16,
+      "deviceNonceMaxLength": 128,
+      "deviceSignatureMaxLength": 256,
+      "maxDeviceApprovals": 20,
+      "approvalCodeMinLength": 6,
+      "approvalCodeMaxLength": 64,
+      "approvalContextMaxLength": 120,
+      "tenantSlugMinLength": 3,
+      "tenantSlugMaxLength": 63,
+      "tenantNameMaxLength": 120,
+      "regionMaxLength": 32,
+      "serviceAccountNameMaxLength": 120,
+      "apiKeyPrefixLength": 12,
+      "apiKeySecretMaxLength": 128,
+      "apiKeyInputMaxLength": 256,
+      "apiKeyCidrMaxLength": 64,
+      "maxApiKeyCidrs": 20,
+      "pinnedApiVersionMaxLength": 16,
+      "clientIpMaxLength": 64,
+      "jwkFieldMaxLength": 256,
+      "maxJwks": 10
     },
     "MfaRules": {
       "deviceCodeLength": 8,
@@ -173,7 +584,8 @@
       "deviceCodeTtlSeconds": 180,
       "emailCodeTtlSeconds": 300,
       "stepUpMaxAgeMinutes": 10
-    }
+    },
+    "AccessTokenRules": { "minLifetimeSeconds": 600, "maxLifetimeSeconds": 900 }
   },
   "schemas": {
     "Permission": {
@@ -183,7 +595,15 @@
         "tasks:write",
         "billing:read",
         "billing:write",
-        "backoffice:access"
+        "backoffice:access",
+        "identity:members:read",
+        "identity:members:manage",
+        "identity:groups:manage",
+        "identity:roles:manage",
+        "identity:invitations:manage",
+        "identity:service-accounts:manage",
+        "identity:api-keys:manage",
+        "identity:tenant:manage"
       ],
       "description": "Permiso dentro de un tenant."
     },
@@ -232,6 +652,161 @@
       "type": "string",
       "enum": ["session", "user", "tenant"],
       "description": "Alcance de una revocación de tokens."
+    },
+    "AuthMethodReference": {
+      "type": "string",
+      "enum": [
+        "pwd",
+        "passkey",
+        "device",
+        "email_otp",
+        "totp",
+        "recovery_code"
+      ],
+      "description": "Método con el que se autenticó la sesión (amr)."
+    },
+    "TokenAudience": {
+      "type": "string",
+      "enum": ["api", "backoffice"],
+      "description": "Destinatario de un access token."
+    },
+    "AccessTokenClaims": {
+      "type": "object",
+      "properties": {
+        "iss": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "aud": { "$ref": "#/schemas/TokenAudience" },
+        "sub": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "tid": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "htid": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "sid": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "did": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "amr": {
+          "minItems": 1,
+          "maxItems": 6,
+          "type": "array",
+          "items": { "$ref": "#/schemas/AuthMethodReference" }
+        },
+        "auth_time": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "roles": {
+          "maxItems": 64,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "proles": {
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["super_admin", "support", "finance", "read_only"]
+          }
+        },
+        "pv": { "type": "string", "pattern": "^\\d{1,15}\\.\\d{1,15}$" },
+        "rgn": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "sxp": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "iat": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "exp": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "jti": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": [
+        "iss",
+        "aud",
+        "sub",
+        "tid",
+        "htid",
+        "sid",
+        "amr",
+        "auth_time",
+        "roles",
+        "proles",
+        "pv",
+        "rgn",
+        "sxp",
+        "iat",
+        "exp",
+        "jti"
+      ],
+      "description": "Claims del access token JWT."
+    },
+    "TenantRole": {
+      "type": "string",
+      "enum": ["owner", "admin", "member", "billing"],
+      "description": "Rol de sistema de un tenant."
+    },
+    "TenantKind": {
+      "type": "string",
+      "enum": ["organization", "shared_customers", "platform"],
+      "description": "Tipo de tenant."
+    },
+    "TenantLifecycle": {
+      "type": "string",
+      "enum": ["provisioning", "active", "suspended", "deleting"],
+      "description": "Ciclo de vida de un tenant."
+    },
+    "InvitationStatus": {
+      "type": "string",
+      "enum": ["pending", "accepted", "revoked", "expired"],
+      "description": "Estado de una invitación."
+    },
+    "MembershipChangeKind": {
+      "type": "string",
+      "enum": ["added", "removed", "groups_changed"],
+      "description": "Qué cambió en la membresía de un usuario."
+    },
+    "UserStatus": {
+      "type": "string",
+      "enum": ["pending_verification", "active", "suspended", "deleted"],
+      "description": "Estado de la cuenta de un usuario."
+    },
+    "SecurityAlertType": {
+      "type": "string",
+      "enum": [
+        "new_device_sign_in",
+        "verifier_registered",
+        "password_changed",
+        "password_recovered",
+        "mfa_recovery_started",
+        "mfa_recovery_completed",
+        "email_changed",
+        "mfa_factor_removed",
+        "recovery_code_used",
+        "api_key_created",
+        "api_key_revoked",
+        "account_locked",
+        "protected_mode_enabled",
+        "device_approval_denied"
+      ],
+      "description": "Alerta de seguridad sobre una cuenta."
+    },
+    "ApiKeyEnvironment": {
+      "type": "string",
+      "enum": ["live", "test"],
+      "description": "Entorno de una API key."
+    },
+    "ApiKeyStatus": {
+      "type": "string",
+      "enum": ["active", "rotated", "revoked"],
+      "description": "Estado de una API key."
+    },
+    "ServiceAccountStatus": {
+      "type": "string",
+      "enum": ["active", "disabled"],
+      "description": "Estado de una service account."
     },
     "SignInRequest": {
       "type": "object",
@@ -489,6 +1064,16 @@
           "type": "array",
           "items": { "$ref": "#/schemas/Permission" }
         },
+        "roles": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "permissionVersion": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^\\d+\\.\\d+$"
+        },
         "platformRoles": {
           "type": "array",
           "items": { "$ref": "#/schemas/PlatformRole" }
@@ -502,7 +1087,14 @@
           "items": { "$ref": "#/schemas/FeatureFlag" }
         }
       },
-      "required": ["permissions", "platformRoles", "features", "flags"],
+      "required": [
+        "permissions",
+        "roles",
+        "permissionVersion",
+        "platformRoles",
+        "features",
+        "flags"
+      ],
       "description": "Acceso efectivo de un usuario en un tenant."
     },
     "SessionAccess": {
@@ -518,6 +1110,16 @@
         "permissions": {
           "type": "array",
           "items": { "$ref": "#/schemas/Permission" }
+        },
+        "roles": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "permissionVersion": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^\\d+\\.\\d+$"
         },
         "platformRoles": {
           "type": "array",
@@ -545,6 +1147,8 @@
         "tenantId",
         "sessionId",
         "permissions",
+        "roles",
+        "permissionVersion",
         "platformRoles",
         "features",
         "flags",
@@ -583,6 +1187,1651 @@
       },
       "required": ["scope", "subjectId", "revokedBefore"],
       "description": "Se revocaron tokens de una sesión, un usuario o un tenant."
+    },
+    "SignUpRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "password": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 35,
+          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+        },
+        "invitationToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": ["email", "password", "displayName", "locale"],
+      "additionalProperties": false,
+      "description": "Alta de un usuario con email, contraseña, nombre e idioma."
+    },
+    "EmailVerificationRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        }
+      },
+      "required": ["email"],
+      "additionalProperties": false,
+      "description": "Pedido de un email de verificación."
+    },
+    "EmailVerificationConfirmRequest": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["token"],
+      "additionalProperties": false,
+      "description": "Confirmación de la verificación del email."
+    },
+    "UserProfile": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "emailVerifiedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 35,
+          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+        },
+        "status": { "$ref": "#/schemas/UserStatus" },
+        "homeTenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "lastTenantId": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "emailVerifiedAt",
+        "displayName",
+        "locale",
+        "status",
+        "homeTenantId",
+        "lastTenantId"
+      ],
+      "description": "Perfil del usuario autenticado."
+    },
+    "UpdateProfileRequest": {
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 35,
+          "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Cambios parciales del perfil."
+    },
+    "EmailChangeRequest": {
+      "type": "object",
+      "properties": {
+        "newEmail": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        }
+      },
+      "required": ["newEmail"],
+      "additionalProperties": false,
+      "description": "Pedido de cambio de email a una dirección nueva."
+    },
+    "EmailChangeConfirmRequest": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["token"],
+      "additionalProperties": false,
+      "description": "Confirmación del cambio de email."
+    },
+    "SuspendUserInput": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "required": ["userId"],
+      "additionalProperties": false,
+      "description": "Suspende a un usuario y revoca sus sesiones."
+    },
+    "ReactivateUserInput": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["userId"],
+      "additionalProperties": false,
+      "description": "Reactiva a un usuario suspendido."
+    },
+    "UserOperationResult": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "status": { "$ref": "#/schemas/UserStatus" }
+      },
+      "required": ["userId", "status"],
+      "description": "Resultado de suspender o reactivar a un usuario."
+    },
+    "GetUserProfileInput": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["userId"],
+      "additionalProperties": false,
+      "description": "Usuario a consultar."
+    },
+    "ChangePasswordRequest": {
+      "type": "object",
+      "properties": {
+        "currentPassword": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "newPassword": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": ["currentPassword", "newPassword"],
+      "additionalProperties": false,
+      "description": "Cambio de contraseña con la contraseña actual."
+    },
+    "PasswordResetRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        }
+      },
+      "required": ["email"],
+      "additionalProperties": false,
+      "description": "Pedido de un correo para restablecer la contraseña."
+    },
+    "PasswordResetConfirmRequest": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "newPassword": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": ["token", "newPassword"],
+      "additionalProperties": false,
+      "description": "Restablecimiento de la contraseña con el token del correo."
+    },
+    "RemoveDeviceRequest": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["deviceId"],
+      "additionalProperties": false,
+      "description": "Dispositivo a quitar de la cuenta."
+    },
+    "UntrustDeviceRequest": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["deviceId"],
+      "additionalProperties": false,
+      "description": "Dispositivo al que se le quita la confianza."
+    },
+    "PushTokenRequest": {
+      "type": "object",
+      "properties": {
+        "pushToken": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["pushToken"],
+      "additionalProperties": false,
+      "description": "Token de notificaciones push del dispositivo actual."
+    },
+    "PullDeviceApprovalsRequest": {
+      "type": "object",
+      "properties": {
+        "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "timestamp": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "nonce": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": ["deviceId", "timestamp", "nonce", "signature"],
+      "additionalProperties": false,
+      "description": "Pedido de aprobaciones pendientes firmado por el dispositivo."
+    },
+    "DenyDeviceApprovalRequest": {
+      "type": "object",
+      "properties": {
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "timestamp": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "nonce": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [
+        "challengeId",
+        "deviceId",
+        "timestamp",
+        "nonce",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "description": "Rechazo de una aprobación pendiente firmado por el dispositivo."
+    },
+    "ApprovalContext": {
+      "type": "object",
+      "properties": {
+        "browser": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "os": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "ip": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "city": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "description": "Contexto de la solicitud de aprobación que el usuario revisa."
+    },
+    "DeviceApproval": {
+      "type": "object",
+      "properties": {
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "code": { "type": "string", "minLength": 6, "maxLength": 64 },
+        "requestedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "expiresAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "context": { "$ref": "#/schemas/ApprovalContext" }
+      },
+      "required": [
+        "challengeId",
+        "code",
+        "requestedAt",
+        "expiresAt",
+        "context"
+      ],
+      "description": "Aprobación pendiente de un dispositivo."
+    },
+    "DeviceApprovals": {
+      "type": "object",
+      "properties": {
+        "approvals": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "$ref": "#/schemas/DeviceApproval" }
+        }
+      },
+      "required": ["approvals"],
+      "description": "Aprobaciones pendientes de un dispositivo."
+    },
+    "TotpEnrollment": {
+      "type": "object",
+      "properties": {
+        "secret": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "otpauthUri": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["secret", "otpauthUri"],
+      "description": "Secreto TOTP y URI para la app autenticadora."
+    },
+    "TotpConfirmRequest": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 8,
+          "pattern": "^[0-9]+$"
+        }
+      },
+      "required": ["code"],
+      "additionalProperties": false,
+      "description": "Primer código de la app autenticadora para confirmar el TOTP."
+    },
+    "RecoveryCodes": {
+      "type": "object",
+      "properties": {
+        "codes": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "type": "string", "minLength": 8, "maxLength": 64 }
+        }
+      },
+      "required": ["codes"],
+      "description": "Códigos de recuperación, que se muestran una sola vez."
+    },
+    "MfaRecoveryStartRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      },
+      "required": ["mfaToken"],
+      "additionalProperties": false,
+      "description": "Inicio de la recuperación de una cuenta sin factores disponibles."
+    },
+    "MfaRecoveryStarted": {
+      "type": "object",
+      "properties": {
+        "availableAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["availableAt"],
+      "description": "Recuperación iniciada."
+    },
+    "MfaRecoveryConfirmRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "token": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "devicePublicKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": ["mfaToken", "token"],
+      "additionalProperties": false,
+      "description": "Confirmación de la recuperación con el token enviado por email."
+    },
+    "PasskeyOptions": {
+      "type": "object",
+      "properties": {
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "optionsJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": ["challengeId", "optionsJson"],
+      "description": "Opciones de WebAuthn y el desafío que las identifica."
+    },
+    "PasskeySignInVerifyRequest": {
+      "type": "object",
+      "properties": {
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "credentialJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "deviceId": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["challengeId", "credentialJson"],
+      "additionalProperties": false,
+      "description": "Verificación de un inicio de sesión con passkey."
+    },
+    "PasskeyMfaOptionsRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      },
+      "required": ["mfaToken"],
+      "additionalProperties": false,
+      "description": "Opciones de passkey como segundo factor de un login pendiente."
+    },
+    "PasskeyMfaVerifyRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "credentialJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "devicePublicKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": ["mfaToken", "challengeId", "credentialJson"],
+      "additionalProperties": false,
+      "description": "Verificación de passkey como segundo factor de un login pendiente."
+    },
+    "PasskeyStepUpOptionsRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      },
+      "required": ["mfaToken"],
+      "additionalProperties": false,
+      "description": "Opciones de passkey para el paso adicional de una sesión abierta."
+    },
+    "PasskeyStepUpVerifyRequest": {
+      "type": "object",
+      "properties": {
+        "mfaToken": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "credentialJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": ["mfaToken", "challengeId", "credentialJson"],
+      "additionalProperties": false,
+      "description": "Verificación de passkey para el paso adicional de una sesión abierta."
+    },
+    "PasskeySummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "lastUsedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "backedUp": { "type": "boolean" }
+      },
+      "required": ["id", "name", "createdAt", "lastUsedAt", "backedUp"],
+      "description": "Passkey registrada del usuario."
+    },
+    "PasskeyPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/PasskeySummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de passkeys."
+    },
+    "RegisterPasskeyRequest": {
+      "type": "object",
+      "properties": {
+        "challengeId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "credentialJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "required": ["challengeId", "credentialJson", "name"],
+      "additionalProperties": false,
+      "description": "Registro de una passkey con la respuesta del autenticador."
+    },
+    "RemovePasskeyRequest": {
+      "type": "object",
+      "properties": {
+        "passkeyId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["passkeyId"],
+      "additionalProperties": false,
+      "description": "Passkey a quitar."
+    },
+    "TenantSlug": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 63,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador legible del tenant."
+    },
+    "TenantSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "slug": { "$ref": "#/schemas/TenantSlug" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "region": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "kind": { "$ref": "#/schemas/TenantKind" },
+        "status": { "$ref": "#/schemas/TenantLifecycle" }
+      },
+      "required": ["id", "slug", "name", "region", "kind", "status"],
+      "description": "Tenant visible para sus miembros."
+    },
+    "CreateTenantRequest": {
+      "type": "object",
+      "properties": {
+        "slug": { "$ref": "#/schemas/TenantSlug" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "region": { "type": "string", "minLength": 1, "maxLength": 32 }
+      },
+      "required": ["slug", "name"],
+      "additionalProperties": false,
+      "description": "Alta de un tenant del usuario."
+    },
+    "UpdateTenantRequest": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "additionalProperties": false,
+      "description": "Cambios parciales del tenant actual."
+    },
+    "MyTenantSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "slug": { "$ref": "#/schemas/TenantSlug" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "kind": { "$ref": "#/schemas/TenantKind" },
+        "status": { "$ref": "#/schemas/TenantLifecycle" },
+        "joinedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["id", "slug", "name", "kind", "status", "joinedAt"],
+      "description": "Tenant del usuario con la fecha en que se unió."
+    },
+    "MyTenantPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/MyTenantSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de tenants del usuario."
+    },
+    "SwitchTenantRequest": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Tenant al que cambia la sesión abierta."
+    },
+    "TenantOperationResult": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "status": { "$ref": "#/schemas/TenantLifecycle" }
+      },
+      "required": ["tenantId", "status"],
+      "description": "Resultado de una operación sobre el ciclo de vida de un tenant."
+    },
+    "CreateTenantInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "slug": { "$ref": "#/schemas/TenantSlug" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "region": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "kind": { "$ref": "#/schemas/TenantKind" },
+        "ownerUserId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId", "slug", "name", "region", "kind", "ownerUserId"],
+      "additionalProperties": false,
+      "description": "Crea un tenant en aprovisionamiento con su dueño."
+    },
+    "TenantRefInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Tenant a consultar o cambiar."
+    },
+    "SuspendTenantInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Suspende un tenant y revoca sus tokens."
+    },
+    "MemberSummary": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "groupIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        },
+        "joinedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "email", "displayName", "groupIds", "joinedAt"],
+      "description": "Miembro del tenant con sus grupos."
+    },
+    "MemberPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/MemberSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de miembros."
+    },
+    "RemoveMemberRequest": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["userId"],
+      "additionalProperties": false,
+      "description": "Miembro a quitar del tenant."
+    },
+    "SetMemberGroupsRequest": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "groupIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        }
+      },
+      "required": ["userId", "groupIds"],
+      "additionalProperties": false,
+      "description": "Reemplazo de los grupos de un miembro."
+    },
+    "GroupSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "system": { "type": "boolean" },
+        "roleIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        },
+        "memberCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["id", "name", "system", "roleIds", "memberCount"],
+      "description": "Grupo del tenant."
+    },
+    "GroupPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/GroupSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de grupos."
+    },
+    "CreateGroupRequest": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 }
+      },
+      "required": ["name"],
+      "additionalProperties": false,
+      "description": "Alta de un grupo."
+    },
+    "UpdateGroupRequest": {
+      "type": "object",
+      "properties": {
+        "groupId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 }
+      },
+      "required": ["groupId", "name"],
+      "additionalProperties": false,
+      "description": "Cambio de nombre de un grupo."
+    },
+    "DeleteGroupRequest": {
+      "type": "object",
+      "properties": {
+        "groupId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["groupId"],
+      "additionalProperties": false,
+      "description": "Borrado de un grupo."
+    },
+    "SetGroupRolesRequest": {
+      "type": "object",
+      "properties": {
+        "groupId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "roleIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        }
+      },
+      "required": ["groupId", "roleIds"],
+      "additionalProperties": false,
+      "description": "Reemplazo de los roles de un grupo."
+    },
+    "RoleSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "systemRole": {
+          "anyOf": [{ "$ref": "#/schemas/TenantRole" }, { "type": "null" }]
+        },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "tasks:read",
+              "tasks:write",
+              "billing:read",
+              "billing:write",
+              "backoffice:access",
+              "identity:members:read",
+              "identity:members:manage",
+              "identity:groups:manage",
+              "identity:roles:manage",
+              "identity:invitations:manage",
+              "identity:service-accounts:manage",
+              "identity:api-keys:manage",
+              "identity:tenant:manage"
+            ]
+          }
+        }
+      },
+      "required": ["id", "name", "systemRole", "permissions"],
+      "description": "Rol del tenant con sus permisos."
+    },
+    "RolePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/RoleSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de roles."
+    },
+    "CreateRoleRequest": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "tasks:read",
+              "tasks:write",
+              "billing:read",
+              "billing:write",
+              "backoffice:access",
+              "identity:members:read",
+              "identity:members:manage",
+              "identity:groups:manage",
+              "identity:roles:manage",
+              "identity:invitations:manage",
+              "identity:service-accounts:manage",
+              "identity:api-keys:manage",
+              "identity:tenant:manage"
+            ]
+          }
+        }
+      },
+      "required": ["name", "permissions"],
+      "additionalProperties": false,
+      "description": "Alta de un rol personalizado."
+    },
+    "UpdateRoleRequest": {
+      "type": "object",
+      "properties": {
+        "roleId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "tasks:read",
+              "tasks:write",
+              "billing:read",
+              "billing:write",
+              "backoffice:access",
+              "identity:members:read",
+              "identity:members:manage",
+              "identity:groups:manage",
+              "identity:roles:manage",
+              "identity:invitations:manage",
+              "identity:service-accounts:manage",
+              "identity:api-keys:manage",
+              "identity:tenant:manage"
+            ]
+          }
+        }
+      },
+      "required": ["roleId"],
+      "additionalProperties": false,
+      "description": "Cambios parciales de un rol."
+    },
+    "DeleteRoleRequest": {
+      "type": "object",
+      "properties": {
+        "roleId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["roleId"],
+      "additionalProperties": false,
+      "description": "Borrado de un rol."
+    },
+    "InvitationSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "groupIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        },
+        "status": { "$ref": "#/schemas/InvitationStatus" },
+        "expiresAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "invitedBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "groupIds",
+        "status",
+        "expiresAt",
+        "invitedBy"
+      ],
+      "description": "Invitación a un tenant."
+    },
+    "InvitationPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/InvitationSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de invitaciones."
+    },
+    "InviteUserRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "groupIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        }
+      },
+      "required": ["email", "groupIds"],
+      "additionalProperties": false,
+      "description": "Invitación de un email a los grupos indicados."
+    },
+    "RevokeInvitationRequest": {
+      "type": "object",
+      "properties": {
+        "invitationId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["invitationId"],
+      "additionalProperties": false,
+      "description": "Invitación pendiente a revocar."
+    },
+    "AcceptInvitationRequest": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["token"],
+      "additionalProperties": false,
+      "description": "Aceptación de una invitación con el token del correo."
+    },
+    "ServiceAccountSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Permission" }
+        },
+        "status": { "$ref": "#/schemas/ServiceAccountStatus" },
+        "pinnedApiVersion": {
+          "anyOf": [
+            { "type": "string", "minLength": 1, "maxLength": 16 },
+            { "type": "null" }
+          ]
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "permissions",
+        "status",
+        "pinnedApiVersion",
+        "createdAt"
+      ],
+      "description": "Identidad no humana del tenant que usa API keys."
+    },
+    "ServiceAccountPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ServiceAccountSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de service accounts."
+    },
+    "CreateServiceAccountRequest": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Permission" }
+        },
+        "pinnedApiVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        }
+      },
+      "required": ["name", "permissions"],
+      "additionalProperties": false,
+      "description": "Alta de una service account."
+    },
+    "UpdateServiceAccountRequest": {
+      "type": "object",
+      "properties": {
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Permission" }
+        }
+      },
+      "required": ["serviceAccountId"],
+      "additionalProperties": false,
+      "description": "Cambios parciales de una service account."
+    },
+    "DeleteServiceAccountRequest": {
+      "type": "object",
+      "properties": {
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["serviceAccountId"],
+      "additionalProperties": false,
+      "description": "Borrado de una service account con sus API keys."
+    },
+    "ApiKeySummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "prefix": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 12,
+          "pattern": "^[A-Z2-7]+$"
+        },
+        "environment": { "$ref": "#/schemas/ApiKeyEnvironment" },
+        "status": { "$ref": "#/schemas/ApiKeyStatus" },
+        "expiresAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "validUntil": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "allowedCidrs": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "lastUsedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "serviceAccountId",
+        "prefix",
+        "environment",
+        "status",
+        "expiresAt",
+        "validUntil",
+        "allowedCidrs",
+        "lastUsedAt",
+        "createdAt"
+      ],
+      "description": "API key sin secreto."
+    },
+    "ApiKeyPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ApiKeySummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de API keys."
+    },
+    "ListApiKeysRequest": {
+      "type": "object",
+      "properties": {
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "required": ["serviceAccountId"],
+      "additionalProperties": false,
+      "description": "Listado de las API keys de una service account."
+    },
+    "CreateApiKeyRequest": {
+      "type": "object",
+      "properties": {
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "environment": { "$ref": "#/schemas/ApiKeyEnvironment" },
+        "expiresAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "allowedCidrs": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        }
+      },
+      "required": ["serviceAccountId", "environment"],
+      "additionalProperties": false,
+      "description": "Alta de una API key."
+    },
+    "CreatedApiKey": {
+      "type": "object",
+      "properties": {
+        "apiKey": { "$ref": "#/schemas/ApiKeySummary" },
+        "secret": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "required": ["apiKey", "secret"],
+      "description": "API key creada. El secreto aparece solo en esta respuesta."
+    },
+    "RotateApiKeyRequest": {
+      "type": "object",
+      "properties": {
+        "apiKeyId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["apiKeyId"],
+      "additionalProperties": false,
+      "description": "Rotación de una API key."
+    },
+    "RevokeApiKeyRequest": {
+      "type": "object",
+      "properties": {
+        "apiKeyId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["apiKeyId"],
+      "additionalProperties": false,
+      "description": "Revocación inmediata de una API key."
+    },
+    "AuthenticateApiKeyInput": {
+      "type": "object",
+      "properties": {
+        "apiKey": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "clientIp": { "type": "string", "minLength": 1, "maxLength": 64 }
+      },
+      "required": ["apiKey"],
+      "additionalProperties": false,
+      "description": "Valida una API key presentada por un cliente."
+    },
+    "ApiKeyPrincipal": {
+      "type": "object",
+      "properties": {
+        "apiKeyId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "permissions": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Permission" }
+        },
+        "environment": { "$ref": "#/schemas/ApiKeyEnvironment" },
+        "expiresAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "pinnedApiVersion": {
+          "anyOf": [
+            { "type": "string", "minLength": 1, "maxLength": 16 },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "apiKeyId",
+        "serviceAccountId",
+        "tenantId",
+        "permissions",
+        "environment",
+        "expiresAt",
+        "pinnedApiVersion"
+      ],
+      "description": "Principal que resulta de validar una API key."
+    },
+    "Jwk": {
+      "type": "object",
+      "properties": {
+        "kty": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "crv": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "kid": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "use": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "alg": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "x": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "y": { "type": "string", "minLength": 1, "maxLength": 256 }
+      },
+      "required": ["kty", "crv", "kid", "use", "alg", "x", "y"],
+      "description": "Clave pública del conjunto JWKS."
+    },
+    "Jwks": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Jwk" }
+        }
+      },
+      "required": ["keys"],
+      "description": "Claves públicas vigentes para verificar access tokens."
+    },
+    "UserRegisteredPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "homeTenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "registeredAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "homeTenantId", "registeredAt"],
+      "description": "Se registró un usuario."
+    },
+    "UserSuspendedPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "suspendedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "suspendedAt"],
+      "description": "Se suspendió un usuario."
+    },
+    "UserReactivatedPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "reactivatedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "reactivatedAt"],
+      "description": "Se reactivó un usuario."
+    },
+    "UserEmailChangedPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "changedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "changedAt"],
+      "description": "Cambió el email de un usuario."
+    },
+    "DeviceRegisteredPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "deviceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["ios", "android", "web", "macos", "windows", "linux"]
+        },
+        "verifier": { "type": "boolean" },
+        "registeredAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "userId",
+        "deviceId",
+        "platform",
+        "verifier",
+        "registeredAt"
+      ],
+      "description": "Se registró un dispositivo verificador."
+    },
+    "DeviceRemovedPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "deviceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "removedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "deviceId", "removedAt"],
+      "description": "Se quitó un dispositivo de la cuenta."
+    },
+    "TenantCreatedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "slug": { "type": "string", "minLength": 3, "maxLength": 63 },
+        "kind": {
+          "type": "string",
+          "enum": ["organization", "shared_customers", "platform"]
+        },
+        "region": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "ownerUserId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "slug",
+        "kind",
+        "region",
+        "ownerUserId",
+        "createdAt"
+      ],
+      "description": "Se creó un tenant."
+    },
+    "TenantSuspendedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "suspendedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "suspendedAt"],
+      "description": "Se suspendió un tenant."
+    },
+    "TenantReactivatedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "reactivatedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "reactivatedAt"],
+      "description": "Se reactivó un tenant."
+    },
+    "MembershipChangedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "kind": {
+          "type": "string",
+          "enum": ["added", "removed", "groups_changed"]
+        },
+        "groupIds": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+        },
+        "changedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "userId", "kind", "groupIds", "changedAt"],
+      "description": "Cambió la membresía de un usuario en un tenant."
+    },
+    "PermissionsChangedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "permissionVersion": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^\\d+\\.\\d+$"
+        },
+        "changedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "permissionVersion", "changedAt"],
+      "description": "Cambiaron los permisos de un usuario o de un tenant."
+    },
+    "ApiKeyCreatedPayload": {
+      "type": "object",
+      "properties": {
+        "apiKeyId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "serviceAccountId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "prefix": { "type": "string", "minLength": 12, "maxLength": 12 },
+        "environment": { "type": "string", "enum": ["live", "test"] },
+        "createdBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "apiKeyId",
+        "serviceAccountId",
+        "tenantId",
+        "prefix",
+        "environment",
+        "createdBy",
+        "createdAt"
+      ],
+      "description": "Se creó una API key. No incluye el secreto."
+    },
+    "ApiKeyRevokedPayload": {
+      "type": "object",
+      "properties": {
+        "apiKeyId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "prefix": { "type": "string", "minLength": 12, "maxLength": 12 },
+        "revokedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["apiKeyId", "tenantId", "prefix", "revokedAt"],
+      "description": "Se revocó una API key."
+    },
+    "SecurityAlertRaisedPayload": {
+      "type": "object",
+      "properties": {
+        "alertId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "type": { "$ref": "#/schemas/SecurityAlertType" },
+        "raisedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["alertId", "userId", "type", "raisedAt"],
+      "description": "Se levantó una alerta de seguridad sobre una cuenta."
     }
   },
   "routes": [
@@ -898,6 +3147,1561 @@
       ],
       "access": { "kind": "authenticated" },
       "description": "Lista los dispositivos del usuario con confianza vigente."
+    },
+    {
+      "name": "signUp",
+      "id": "identity.auth.sign-up",
+      "method": "POST",
+      "path": "/v1/auth/sign-up",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/SignUpRequest" },
+      "response": null,
+      "successStatus": 202,
+      "errors": [
+        "IDENTITY.PASSWORD.POLICY_VIOLATION",
+        "IDENTITY.PASSWORD.BREACHED",
+        "IDENTITY.INVITATION.INVALID",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Registra un usuario y envía el email de verificación. Responde aceptado sin revelar si el email ya existe."
+    },
+    {
+      "name": "resendEmailVerification",
+      "id": "identity.auth.email-verification-resend",
+      "method": "POST",
+      "path": "/v1/auth/email-verifications",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/EmailVerificationRequest" },
+      "response": null,
+      "successStatus": 202,
+      "errors": ["PLATFORM.RATE_LIMIT.EXCEEDED"],
+      "access": { "kind": "public" },
+      "description": "Envía un nuevo email de verificación. Responde aceptado aunque el email no exista."
+    },
+    {
+      "name": "confirmEmailVerification",
+      "id": "identity.auth.email-verification-confirm",
+      "method": "POST",
+      "path": "/v1/auth/email-verifications/confirm",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/EmailVerificationConfirmRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.USER.EMAIL_VERIFICATION_INVALID",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Marca el email del usuario como verificado con el token recibido."
+    },
+    {
+      "name": "changePassword",
+      "id": "identity.me.password-change",
+      "method": "POST",
+      "path": "/v1/me/password",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/ChangePasswordRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.PASSWORD.CURRENT_INVALID",
+        "IDENTITY.PASSWORD.POLICY_VIOLATION",
+        "IDENTITY.PASSWORD.BREACHED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Cambia la contraseña y cierra las demás sesiones del usuario."
+    },
+    {
+      "name": "requestPasswordReset",
+      "id": "identity.auth.password-reset-request",
+      "method": "POST",
+      "path": "/v1/auth/password-resets",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasswordResetRequest" },
+      "response": null,
+      "successStatus": 202,
+      "errors": ["PLATFORM.RATE_LIMIT.EXCEEDED"],
+      "access": { "kind": "public" },
+      "description": "Envía el correo para restablecer la contraseña. Responde aceptado aunque el email no exista."
+    },
+    {
+      "name": "confirmPasswordReset",
+      "id": "identity.auth.password-reset-confirm",
+      "method": "POST",
+      "path": "/v1/auth/password-resets/confirm",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasswordResetConfirmRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.PASSWORD.RESET_INVALID",
+        "IDENTITY.PASSWORD.POLICY_VIOLATION",
+        "IDENTITY.PASSWORD.BREACHED",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Restablece la contraseña con el token del correo y cierra las sesiones del usuario."
+    },
+    {
+      "name": "getProfile",
+      "id": "identity.me.profile",
+      "method": "GET",
+      "path": "/v1/me",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/UserProfile" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Devuelve el perfil del usuario autenticado."
+    },
+    {
+      "name": "updateProfile",
+      "id": "identity.me.profile-update",
+      "method": "PATCH",
+      "path": "/v1/me",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UpdateProfileRequest" },
+      "response": { "$ref": "#/schemas/UserProfile" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Cambia el nombre o el idioma del perfil y devuelve el perfil nuevo."
+    },
+    {
+      "name": "requestEmailChange",
+      "id": "identity.me.email-change",
+      "method": "POST",
+      "path": "/v1/me/email-changes",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/EmailChangeRequest" },
+      "response": null,
+      "successStatus": 202,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Envía un token a la dirección nueva para confirmar el cambio de email."
+    },
+    {
+      "name": "confirmEmailChange",
+      "id": "identity.me.email-change-confirm",
+      "method": "POST",
+      "path": "/v1/me/email-changes/confirm",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/EmailChangeConfirmRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.USER.EMAIL_VERIFICATION_INVALID"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Aplica el cambio de email con el token enviado a la dirección nueva."
+    },
+    {
+      "name": "getJwks",
+      "id": "identity.auth.jwks",
+      "method": "GET",
+      "path": "/v1/auth/jwks",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/Jwks" },
+      "successStatus": 200,
+      "errors": ["PLATFORM.RATE_LIMIT.EXCEEDED"],
+      "access": { "kind": "public" },
+      "description": "Devuelve las claves públicas vigentes en formato JWKS para verificar access tokens."
+    },
+    {
+      "name": "removeDevice",
+      "id": "identity.devices.remove",
+      "method": "DELETE",
+      "path": "/v1/me/devices/{deviceId}",
+      "version": 1,
+      "pathParams": ["deviceId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RemoveDeviceRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Quita un dispositivo de la cuenta y cierra sus sesiones."
+    },
+    {
+      "name": "untrustDevice",
+      "id": "identity.devices.untrust",
+      "method": "POST",
+      "path": "/v1/me/devices/{deviceId}/untrust",
+      "version": 1,
+      "pathParams": ["deviceId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UntrustDeviceRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Quita la confianza de un dispositivo sin borrar su registro."
+    },
+    {
+      "name": "updatePushToken",
+      "id": "identity.devices.push-token",
+      "method": "PUT",
+      "path": "/v1/me/devices/current/push-token",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PushTokenRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Guarda o reemplaza el token push del dispositivo actual."
+    },
+    {
+      "name": "pullDeviceApprovals",
+      "id": "identity.device-approvals.pull",
+      "method": "POST",
+      "path": "/v1/auth/device-approvals/pull",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PullDeviceApprovalsRequest" },
+      "response": { "$ref": "#/schemas/DeviceApprovals" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.DEVICE.SIGNATURE_INVALID",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Devuelve las aprobaciones pendientes del dispositivo que firma la petición."
+    },
+    {
+      "name": "denyDeviceApproval",
+      "id": "identity.device-approvals.deny",
+      "method": "POST",
+      "path": "/v1/auth/device-approvals/{challengeId}/deny",
+      "version": 1,
+      "pathParams": ["challengeId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/DenyDeviceApprovalRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.DEVICE.SIGNATURE_INVALID",
+        "PLATFORM.RESOURCE.NOT_FOUND",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Rechaza una aprobación pendiente desde el dispositivo que firma la petición."
+    },
+    {
+      "name": "startTotpEnrollment",
+      "id": "identity.mfa.totp-start",
+      "method": "POST",
+      "path": "/v1/me/mfa/totp",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/TotpEnrollment" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.MFA.FACTOR_ALREADY_ENROLLED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Crea el secreto TOTP y su URI. El factor queda activo al confirmarlo."
+    },
+    {
+      "name": "confirmTotpEnrollment",
+      "id": "identity.mfa.totp-confirm",
+      "method": "POST",
+      "path": "/v1/me/mfa/totp/confirm",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/TotpConfirmRequest" },
+      "response": { "$ref": "#/schemas/RecoveryCodes" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.CODE_INVALID",
+        "IDENTITY.MFA.CODE_EXPIRED",
+        "IDENTITY.MFA.TOO_MANY_ATTEMPTS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Confirma el TOTP con el primer código y devuelve los códigos de recuperación."
+    },
+    {
+      "name": "removeTotp",
+      "id": "identity.mfa.totp-remove",
+      "method": "DELETE",
+      "path": "/v1/me/mfa/totp",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.MFA.FACTOR_NOT_ENROLLED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Quita el TOTP de la cuenta y avisa por alerta de seguridad."
+    },
+    {
+      "name": "regenerateRecoveryCodes",
+      "id": "identity.mfa.recovery-codes",
+      "method": "POST",
+      "path": "/v1/me/mfa/recovery-codes",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/RecoveryCodes" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.MFA.FACTOR_NOT_ENROLLED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Reemplaza los códigos de recuperación y devuelve los nuevos una sola vez."
+    },
+    {
+      "name": "startMfaRecovery",
+      "id": "identity.auth.mfa-recovery-start",
+      "method": "POST",
+      "path": "/v1/auth/mfa/recoveries",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/MfaRecoveryStartRequest" },
+      "response": { "$ref": "#/schemas/MfaRecoveryStarted" },
+      "successStatus": 202,
+      "errors": [
+        "IDENTITY.MFA.TOKEN_INVALID",
+        "IDENTITY.MFA.RECOVERY_NOT_READY",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Inicia la recuperación de MFA y envía el token por email. Se confirma después de la espera indicada."
+    },
+    {
+      "name": "confirmMfaRecovery",
+      "id": "identity.auth.mfa-recovery-confirm",
+      "method": "POST",
+      "path": "/v1/auth/mfa/recoveries/confirm",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/MfaRecoveryConfirmRequest" },
+      "response": { "$ref": "#/schemas/SignInResponse" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.MFA.TOKEN_INVALID",
+        "IDENTITY.MFA.RECOVERY_NOT_READY",
+        "IDENTITY.MFA.CODE_INVALID",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Confirma la recuperación de MFA, desactiva los factores anteriores y crea la sesión."
+    },
+    {
+      "name": "passkeySignInOptions",
+      "id": "identity.auth.passkey-options",
+      "method": "POST",
+      "path": "/v1/auth/passkeys/options",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/PasskeyOptions" },
+      "successStatus": 201,
+      "errors": ["PLATFORM.RATE_LIMIT.EXCEEDED"],
+      "access": { "kind": "public" },
+      "description": "Crea el desafío de un inicio de sesión con passkey."
+    },
+    {
+      "name": "passkeySignInVerify",
+      "id": "identity.auth.passkey-verify",
+      "method": "POST",
+      "path": "/v1/auth/passkeys/verify",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasskeySignInVerifyRequest" },
+      "response": { "$ref": "#/schemas/SignInResponse" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.PASSKEY.VERIFICATION_FAILED",
+        "IDENTITY.PASSKEY.CHALLENGE_EXPIRED",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Verifica la respuesta de la passkey y devuelve tokens o un desafío MFA."
+    },
+    {
+      "name": "passkeyMfaOptions",
+      "id": "identity.auth.mfa-passkey-options",
+      "method": "POST",
+      "path": "/v1/auth/mfa/passkey/options",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasskeyMfaOptionsRequest" },
+      "response": { "$ref": "#/schemas/PasskeyOptions" },
+      "successStatus": 201,
+      "errors": ["IDENTITY.MFA.TOKEN_INVALID", "PLATFORM.RATE_LIMIT.EXCEEDED"],
+      "access": { "kind": "public" },
+      "description": "Crea el desafío de passkey para el segundo factor de un login pendiente."
+    },
+    {
+      "name": "passkeyMfaVerify",
+      "id": "identity.auth.mfa-passkey-verify",
+      "method": "POST",
+      "path": "/v1/auth/mfa/passkey/verify",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasskeyMfaVerifyRequest" },
+      "response": { "$ref": "#/schemas/SignInResponse" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.MFA.TOKEN_INVALID",
+        "IDENTITY.PASSKEY.VERIFICATION_FAILED",
+        "IDENTITY.PASSKEY.CHALLENGE_EXPIRED",
+        "PLATFORM.RATE_LIMIT.EXCEEDED"
+      ],
+      "access": { "kind": "public" },
+      "description": "Verifica la passkey como segundo factor y crea la sesión."
+    },
+    {
+      "name": "passkeyStepUpOptions",
+      "id": "identity.step-up.passkey-options",
+      "method": "POST",
+      "path": "/v1/me/step-up/passkey/options",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasskeyStepUpOptionsRequest" },
+      "response": { "$ref": "#/schemas/PasskeyOptions" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.TOKEN_INVALID"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Crea el desafío de passkey para el paso adicional de una sesión abierta."
+    },
+    {
+      "name": "passkeyStepUpVerify",
+      "id": "identity.step-up.passkey-verify",
+      "method": "POST",
+      "path": "/v1/me/step-up/passkey/verify",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/PasskeyStepUpVerifyRequest" },
+      "response": { "$ref": "#/schemas/StepUpResult" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.TOKEN_INVALID",
+        "IDENTITY.PASSKEY.VERIFICATION_FAILED",
+        "IDENTITY.PASSKEY.CHALLENGE_EXPIRED"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Verifica la passkey del paso adicional y devuelve un access token con el MFA nuevo."
+    },
+    {
+      "name": "listPasskeys",
+      "id": "identity.passkeys.list",
+      "method": "GET",
+      "path": "/v1/me/passkeys",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/PasskeyPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Lista las passkeys registradas del usuario."
+    },
+    {
+      "name": "passkeyRegistrationOptions",
+      "id": "identity.passkeys.registration-options",
+      "method": "POST",
+      "path": "/v1/me/passkeys/registration-options",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/PasskeyOptions" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Crea el desafío para registrar una passkey nueva."
+    },
+    {
+      "name": "registerPasskey",
+      "id": "identity.passkeys.register",
+      "method": "POST",
+      "path": "/v1/me/passkeys",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RegisterPasskeyRequest" },
+      "response": { "$ref": "#/schemas/PasskeySummary" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.PASSKEY.VERIFICATION_FAILED",
+        "IDENTITY.PASSKEY.CHALLENGE_EXPIRED"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Registra una passkey nueva con la respuesta del autenticador."
+    },
+    {
+      "name": "removePasskey",
+      "id": "identity.passkeys.remove",
+      "method": "DELETE",
+      "path": "/v1/me/passkeys/{passkeyId}",
+      "version": 1,
+      "pathParams": ["passkeyId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RemovePasskeyRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Quita una passkey de la cuenta."
+    },
+    {
+      "name": "switchTenant",
+      "id": "identity.sessions.switch-tenant",
+      "method": "POST",
+      "path": "/v1/me/tenant-switch",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/SwitchTenantRequest" },
+      "response": { "$ref": "#/schemas/SessionTokens" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.TENANT.NOT_MEMBER"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Cambia el tenant de la sesión abierta y devuelve tokens del tenant elegido."
+    },
+    {
+      "name": "createTenant",
+      "id": "identity.tenants.create",
+      "method": "POST",
+      "path": "/v1/tenants",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateTenantRequest" },
+      "response": { "$ref": "#/schemas/TenantSummary" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.TENANT.SLUG_TAKEN"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Crea un tenant y deja al usuario autenticado como dueño."
+    },
+    {
+      "name": "getTenant",
+      "id": "identity.tenant.get",
+      "method": "GET",
+      "path": "/v1/tenant",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/TenantSummary" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Devuelve el tenant de la sesión actual."
+    },
+    {
+      "name": "updateTenant",
+      "id": "identity.tenant.update",
+      "method": "PATCH",
+      "path": "/v1/tenant",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UpdateTenantRequest" },
+      "response": { "$ref": "#/schemas/TenantSummary" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:tenant:manage"]
+      },
+      "description": "Cambia el nombre del tenant de la sesión actual."
+    },
+    {
+      "name": "listMyTenants",
+      "id": "identity.me.tenants",
+      "method": "GET",
+      "path": "/v1/me/tenants",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/MyTenantPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Lista los tenants a los que pertenece el usuario."
+    },
+    {
+      "name": "listMembers",
+      "id": "identity.members.list",
+      "method": "GET",
+      "path": "/v1/tenant/members",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/MemberPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:members:read"]
+      },
+      "description": "Lista los miembros del tenant con sus grupos."
+    },
+    {
+      "name": "removeMember",
+      "id": "identity.members.remove",
+      "method": "DELETE",
+      "path": "/v1/tenant/members/{userId}",
+      "version": 1,
+      "pathParams": ["userId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RemoveMemberRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.ACCESS.LAST_OWNER",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:members:manage"]
+      },
+      "description": "Quita a un miembro del tenant y revoca sus sesiones en él."
+    },
+    {
+      "name": "setMemberGroups",
+      "id": "identity.members.set-groups",
+      "method": "PUT",
+      "path": "/v1/tenant/members/{userId}/groups",
+      "version": 1,
+      "pathParams": ["userId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/SetMemberGroupsRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:members:manage"]
+      },
+      "description": "Reemplaza los grupos de un miembro del tenant."
+    },
+    {
+      "name": "listGroups",
+      "id": "identity.groups.list",
+      "method": "GET",
+      "path": "/v1/tenant/groups",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/GroupPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:members:read"]
+      },
+      "description": "Lista los grupos del tenant."
+    },
+    {
+      "name": "createGroup",
+      "id": "identity.groups.create",
+      "method": "POST",
+      "path": "/v1/tenant/groups",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateGroupRequest" },
+      "response": { "$ref": "#/schemas/GroupSummary" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.ACCESS.NAME_TAKEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:groups:manage"]
+      },
+      "description": "Crea un grupo en el tenant."
+    },
+    {
+      "name": "updateGroup",
+      "id": "identity.groups.update",
+      "method": "PATCH",
+      "path": "/v1/tenant/groups/{groupId}",
+      "version": 1,
+      "pathParams": ["groupId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UpdateGroupRequest" },
+      "response": { "$ref": "#/schemas/GroupSummary" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.ACCESS.NAME_TAKEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:groups:manage"]
+      },
+      "description": "Cambia el nombre de un grupo del tenant."
+    },
+    {
+      "name": "deleteGroup",
+      "id": "identity.groups.delete",
+      "method": "DELETE",
+      "path": "/v1/tenant/groups/{groupId}",
+      "version": 1,
+      "pathParams": ["groupId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/DeleteGroupRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:groups:manage"]
+      },
+      "description": "Borra un grupo del tenant y quita sus miembros del grupo."
+    },
+    {
+      "name": "setGroupRoles",
+      "id": "identity.groups.set-roles",
+      "method": "PUT",
+      "path": "/v1/tenant/groups/{groupId}/roles",
+      "version": 1,
+      "pathParams": ["groupId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/SetGroupRolesRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:groups:manage"]
+      },
+      "description": "Reemplaza los roles de un grupo del tenant."
+    },
+    {
+      "name": "listRoles",
+      "id": "identity.roles.list",
+      "method": "GET",
+      "path": "/v1/tenant/roles",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/RolePage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:members:read"]
+      },
+      "description": "Lista los roles del tenant con sus permisos."
+    },
+    {
+      "name": "createRole",
+      "id": "identity.roles.create",
+      "method": "POST",
+      "path": "/v1/tenant/roles",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateRoleRequest" },
+      "response": { "$ref": "#/schemas/RoleSummary" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.ACCESS.NAME_TAKEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:roles:manage"]
+      },
+      "description": "Crea un rol personalizado con sus permisos."
+    },
+    {
+      "name": "updateRole",
+      "id": "identity.roles.update",
+      "method": "PATCH",
+      "path": "/v1/tenant/roles/{roleId}",
+      "version": 1,
+      "pathParams": ["roleId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UpdateRoleRequest" },
+      "response": { "$ref": "#/schemas/RoleSummary" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.ACCESS.NAME_TAKEN",
+        "IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:roles:manage"]
+      },
+      "description": "Cambia el nombre o los permisos de un rol del tenant."
+    },
+    {
+      "name": "deleteRole",
+      "id": "identity.roles.delete",
+      "method": "DELETE",
+      "path": "/v1/tenant/roles/{roleId}",
+      "version": 1,
+      "pathParams": ["roleId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/DeleteRoleRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:roles:manage"]
+      },
+      "description": "Borra un rol personalizado del tenant. Los roles de sistema no se borran."
+    },
+    {
+      "name": "inviteUser",
+      "id": "identity.invitations.create",
+      "method": "POST",
+      "path": "/v1/tenant/invitations",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/InviteUserRequest" },
+      "response": { "$ref": "#/schemas/InvitationSummary" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:invitations:manage"]
+      },
+      "description": "Invita a un email a unirse al tenant en los grupos indicados."
+    },
+    {
+      "name": "listInvitations",
+      "id": "identity.invitations.list",
+      "method": "GET",
+      "path": "/v1/tenant/invitations",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/InvitationPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:invitations:manage"]
+      },
+      "description": "Lista las invitaciones del tenant con su estado."
+    },
+    {
+      "name": "revokeInvitation",
+      "id": "identity.invitations.revoke",
+      "method": "DELETE",
+      "path": "/v1/tenant/invitations/{invitationId}",
+      "version": 1,
+      "pathParams": ["invitationId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RevokeInvitationRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.INVITATION.INVALID",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:invitations:manage"]
+      },
+      "description": "Revoca una invitación pendiente."
+    },
+    {
+      "name": "acceptInvitation",
+      "id": "identity.invitations.accept",
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/AcceptInvitationRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.INVITATION.INVALID",
+        "IDENTITY.INVITATION.EMAIL_MISMATCH",
+        "IDENTITY.AUTH.EMAIL_NOT_VERIFIED"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado."
+    },
+    {
+      "name": "listServiceAccounts",
+      "id": "identity.service-accounts.list",
+      "method": "GET",
+      "path": "/v1/tenant/service-accounts",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/ServiceAccountPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:service-accounts:manage"]
+      },
+      "description": "Lista las service accounts del tenant."
+    },
+    {
+      "name": "createServiceAccount",
+      "id": "identity.service-accounts.create",
+      "method": "POST",
+      "path": "/v1/tenant/service-accounts",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateServiceAccountRequest" },
+      "response": { "$ref": "#/schemas/ServiceAccountSummary" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:service-accounts:manage"]
+      },
+      "description": "Crea una service account con los permisos indicados."
+    },
+    {
+      "name": "updateServiceAccount",
+      "id": "identity.service-accounts.update",
+      "method": "PATCH",
+      "path": "/v1/tenant/service-accounts/{serviceAccountId}",
+      "version": 1,
+      "pathParams": ["serviceAccountId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UpdateServiceAccountRequest" },
+      "response": { "$ref": "#/schemas/ServiceAccountSummary" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:service-accounts:manage"]
+      },
+      "description": "Cambia el nombre o los permisos de una service account."
+    },
+    {
+      "name": "deleteServiceAccount",
+      "id": "identity.service-accounts.delete",
+      "method": "DELETE",
+      "path": "/v1/tenant/service-accounts/{serviceAccountId}",
+      "version": 1,
+      "pathParams": ["serviceAccountId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/DeleteServiceAccountRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:service-accounts:manage"]
+      },
+      "description": "Borra una service account y revoca sus API keys."
+    },
+    {
+      "name": "listApiKeys",
+      "id": "identity.api-keys.list",
+      "method": "GET",
+      "path": "/v1/tenant/service-accounts/{serviceAccountId}/api-keys",
+      "version": 1,
+      "pathParams": ["serviceAccountId"],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": { "$ref": "#/schemas/ListApiKeysRequest" },
+      "response": { "$ref": "#/schemas/ApiKeyPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:api-keys:manage"]
+      },
+      "description": "Lista las API keys de una service account sin sus secretos."
+    },
+    {
+      "name": "createApiKey",
+      "id": "identity.api-keys.create",
+      "method": "POST",
+      "path": "/v1/tenant/service-accounts/{serviceAccountId}/api-keys",
+      "version": 1,
+      "pathParams": ["serviceAccountId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateApiKeyRequest" },
+      "response": { "$ref": "#/schemas/CreatedApiKey" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE",
+        "IDENTITY.SERVICE_ACCOUNT.DISABLED",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:api-keys:manage"],
+        "mfaMaxAgeMinutes": 10
+      },
+      "description": "Crea una API key. El secreto aparece solo en esta respuesta."
+    },
+    {
+      "name": "rotateApiKey",
+      "id": "identity.api-keys.rotate",
+      "method": "POST",
+      "path": "/v1/tenant/api-keys/{apiKeyId}/rotate",
+      "version": 1,
+      "pathParams": ["apiKeyId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RotateApiKeyRequest" },
+      "response": { "$ref": "#/schemas/CreatedApiKey" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "IDENTITY.MFA.STEP_UP_REQUIRED",
+        "IDENTITY.SERVICE_ACCOUNT.DISABLED",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:api-keys:manage"],
+        "mfaMaxAgeMinutes": 10
+      },
+      "description": "Rota una API key: la nueva aparece una vez y la anterior sigue válida hasta su vencimiento."
+    },
+    {
+      "name": "revokeApiKey",
+      "id": "identity.api-keys.revoke",
+      "method": "DELETE",
+      "path": "/v1/tenant/api-keys/{apiKeyId}",
+      "version": 1,
+      "pathParams": ["apiKeyId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/RevokeApiKeyRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.AUTH.FORBIDDEN",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["identity:api-keys:manage"]
+      },
+      "description": "Revoca una API key de inmediato."
     }
   ],
   "operations": [
@@ -925,6 +4729,115 @@
       "mutating": false,
       "errors": ["IDENTITY.USER.NOT_FOUND"],
       "description": "Devuelve permisos, roles, funcionalidades y flags de un usuario en un tenant."
+    },
+    {
+      "name": "suspendUser",
+      "id": "identity.users.suspend.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/SuspendUserInput" },
+      "output": { "$ref": "#/schemas/UserOperationResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.users.reactivate.v1",
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Suspende a un usuario y revoca sus sesiones."
+    },
+    {
+      "name": "reactivateUser",
+      "id": "identity.users.reactivate.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/ReactivateUserInput" },
+      "output": { "$ref": "#/schemas/UserOperationResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.users.suspend.v1",
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Reactiva a un usuario suspendido."
+    },
+    {
+      "name": "getUserProfile",
+      "id": "identity.users.get-profile.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/GetUserProfileInput" },
+      "output": { "$ref": "#/schemas/UserProfile" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Devuelve el perfil de un usuario."
+    },
+    {
+      "name": "createTenant",
+      "id": "identity.tenants.create.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/CreateTenantInput" },
+      "output": { "$ref": "#/schemas/TenantSummary" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.tenants.discard.v1",
+      "errors": ["IDENTITY.TENANT.SLUG_TAKEN"],
+      "timeoutMs": 3000,
+      "description": "Crea un tenant en aprovisionamiento con su dueño."
+    },
+    {
+      "name": "discardTenant",
+      "id": "identity.tenants.discard.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/TenantRefInput" },
+      "output": { "$ref": "#/schemas/TenantOperationResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo borra un tenant en aprovisionamiento, que no tiene datos de negocio que restaurar.",
+      "errors": ["IDENTITY.TENANT.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Descarta un tenant en aprovisionamiento."
+    },
+    {
+      "name": "suspendTenant",
+      "id": "identity.tenants.suspend.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/SuspendTenantInput" },
+      "output": { "$ref": "#/schemas/TenantOperationResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.tenants.reactivate.v1",
+      "errors": ["IDENTITY.TENANT.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Suspende un tenant y revoca sus tokens."
+    },
+    {
+      "name": "reactivateTenant",
+      "id": "identity.tenants.reactivate.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/TenantRefInput" },
+      "output": { "$ref": "#/schemas/TenantOperationResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.tenants.suspend.v1",
+      "errors": ["IDENTITY.TENANT.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Reactiva un tenant suspendido."
+    },
+    {
+      "name": "authenticateApiKey",
+      "id": "identity.api-keys.authenticate.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/AuthenticateApiKeyInput" },
+      "output": { "$ref": "#/schemas/ApiKeyPrincipal" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": [
+        "IDENTITY.API_KEY.INVALID",
+        "IDENTITY.API_KEY.EXPIRED",
+        "IDENTITY.API_KEY.IP_NOT_ALLOWED",
+        "IDENTITY.SERVICE_ACCOUNT.DISABLED",
+        "IDENTITY.TENANT.SUSPENDED"
+      ],
+      "timeoutMs": 3000,
+      "description": "Valida una API key y devuelve su principal."
     }
   ],
   "events": [
@@ -943,6 +4856,118 @@
       "version": 1,
       "payload": { "$ref": "#/schemas/TokensRevokedPayload" },
       "description": "Se revocaron los tokens de una sesión, un usuario o un tenant. Cada servicio actualiza su caché."
+    },
+    {
+      "name": "userRegistered",
+      "type": "identity.user.registered.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/UserRegisteredPayload" },
+      "description": "Se registró un usuario nuevo."
+    },
+    {
+      "name": "userSuspended",
+      "type": "identity.user.suspended.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/UserSuspendedPayload" },
+      "description": "Se suspendió un usuario y se revocaron sus sesiones."
+    },
+    {
+      "name": "userReactivated",
+      "type": "identity.user.reactivated.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/UserReactivatedPayload" },
+      "description": "Se reactivó un usuario suspendido."
+    },
+    {
+      "name": "userEmailChanged",
+      "type": "identity.user.email-changed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/UserEmailChangedPayload" },
+      "description": "Cambió el email de un usuario. No incluye direcciones."
+    },
+    {
+      "name": "deviceRegistered",
+      "type": "identity.device.registered.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/DeviceRegisteredPayload" },
+      "description": "Se registró un dispositivo que puede aprobar acciones sensibles."
+    },
+    {
+      "name": "deviceRemoved",
+      "type": "identity.device.removed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/DeviceRemovedPayload" },
+      "description": "Se quitó un dispositivo de la cuenta."
+    },
+    {
+      "name": "tenantCreated",
+      "type": "identity.tenant.created.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TenantCreatedPayload" },
+      "description": "Se creó un tenant."
+    },
+    {
+      "name": "tenantSuspended",
+      "type": "identity.tenant.suspended.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TenantSuspendedPayload" },
+      "description": "Se suspendió un tenant y se revocaron sus tokens."
+    },
+    {
+      "name": "tenantReactivated",
+      "type": "identity.tenant.reactivated.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TenantReactivatedPayload" },
+      "description": "Se reactivó un tenant suspendido."
+    },
+    {
+      "name": "membershipChanged",
+      "type": "identity.membership.changed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/MembershipChangedPayload" },
+      "description": "Cambió la membresía de un usuario en un tenant."
+    },
+    {
+      "name": "permissionsChanged",
+      "type": "identity.permissions.changed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/PermissionsChangedPayload" },
+      "description": "Cambiaron los permisos de un usuario o de un tenant. Sin userId afecta a todo el tenant."
+    },
+    {
+      "name": "apiKeyCreated",
+      "type": "identity.api-key.created.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/ApiKeyCreatedPayload" },
+      "description": "Se creó una API key. No incluye el secreto."
+    },
+    {
+      "name": "apiKeyRevoked",
+      "type": "identity.api-key.revoked.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/ApiKeyRevokedPayload" },
+      "description": "Se revocó una API key."
+    },
+    {
+      "name": "securityAlertRaised",
+      "type": "identity.security-alert.raised.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/SecurityAlertRaisedPayload" },
+      "description": "Se levantó una alerta de seguridad sobre una cuenta. Notifica al usuario por su canal."
     }
   ],
   "commands": [],
@@ -1082,6 +5107,240 @@
         "audience": "public",
         "messageKey": "error_identity_tenant_suspended",
         "description": "El tenant está suspendido. Las sesiones en él quedan cerradas hasta que se reactive."
+      },
+      {
+        "name": "AuthEmailNotVerified",
+        "code": "IDENTITY.AUTH.EMAIL_NOT_VERIFIED",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_auth_email_not_verified",
+        "description": "El email todavía no está verificado. Confirma el enlace que enviamos a tu correo."
+      },
+      {
+        "name": "UserEmailVerificationInvalid",
+        "code": "IDENTITY.USER.EMAIL_VERIFICATION_INVALID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_user_email_verification_invalid",
+        "description": "El enlace de verificación del email no es válido o venció. Solicita uno nuevo."
+      },
+      {
+        "name": "PasswordPolicyViolation",
+        "code": "IDENTITY.PASSWORD.POLICY_VIOLATION",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_password_policy_violation",
+        "description": "La contraseña no cumple la política: de 12 a 128 caracteres y distinta del email."
+      },
+      {
+        "name": "PasswordBreached",
+        "code": "IDENTITY.PASSWORD.BREACHED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_password_breached",
+        "description": "La contraseña aparece en filtraciones conocidas. Elige otra."
+      },
+      {
+        "name": "PasswordCurrentInvalid",
+        "code": "IDENTITY.PASSWORD.CURRENT_INVALID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_password_current_invalid",
+        "description": "La contraseña actual no es correcta."
+      },
+      {
+        "name": "PasswordResetInvalid",
+        "code": "IDENTITY.PASSWORD.RESET_INVALID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_password_reset_invalid",
+        "description": "El enlace para restablecer la contraseña no es válido o venció. Solicita uno nuevo."
+      },
+      {
+        "name": "DeviceSignatureInvalid",
+        "code": "IDENTITY.DEVICE.SIGNATURE_INVALID",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_device_signature_invalid",
+        "description": "La firma del dispositivo no es válida."
+      },
+      {
+        "name": "DeviceKeyInvalid",
+        "code": "IDENTITY.DEVICE.KEY_INVALID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_device_key_invalid",
+        "description": "La clave pública del dispositivo no es válida."
+      },
+      {
+        "name": "MfaRecoveryNotReady",
+        "code": "IDENTITY.MFA.RECOVERY_NOT_READY",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_recovery_not_ready",
+        "description": "La recuperación del segundo factor todavía no está disponible. Intenta de nuevo cuando termine la espera."
+      },
+      {
+        "name": "MfaFactorAlreadyEnrolled",
+        "code": "IDENTITY.MFA.FACTOR_ALREADY_ENROLLED",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_factor_already_enrolled",
+        "description": "Ese segundo factor ya está activo."
+      },
+      {
+        "name": "MfaFactorNotEnrolled",
+        "code": "IDENTITY.MFA.FACTOR_NOT_ENROLLED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_mfa_factor_not_enrolled",
+        "description": "Ese segundo factor no está activo."
+      },
+      {
+        "name": "PasskeyVerificationFailed",
+        "code": "IDENTITY.PASSKEY.VERIFICATION_FAILED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_passkey_verification_failed",
+        "description": "No se pudo verificar la passkey."
+      },
+      {
+        "name": "PasskeyChallengeExpired",
+        "code": "IDENTITY.PASSKEY.CHALLENGE_EXPIRED",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_passkey_challenge_expired",
+        "description": "El desafío de la passkey venció. Inténtalo de nuevo."
+      },
+      {
+        "name": "TenantNotFound",
+        "code": "IDENTITY.TENANT.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_identity_tenant_not_found",
+        "description": "El tenant no existe."
+      },
+      {
+        "name": "TenantSlugTaken",
+        "code": "IDENTITY.TENANT.SLUG_TAKEN",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_tenant_slug_taken",
+        "description": "El identificador del tenant ya está en uso. Elige otro."
+      },
+      {
+        "name": "TenantNotMember",
+        "code": "IDENTITY.TENANT.NOT_MEMBER",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_tenant_not_member",
+        "description": "No eres miembro de ese tenant."
+      },
+      {
+        "name": "AccessLastOwner",
+        "code": "IDENTITY.ACCESS.LAST_OWNER",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_access_last_owner",
+        "description": "El tenant debe conservar al menos un propietario."
+      },
+      {
+        "name": "AccessSystemRoleImmutable",
+        "code": "IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_access_system_role_immutable",
+        "description": "Los roles de sistema no se pueden modificar ni borrar."
+      },
+      {
+        "name": "AccessNameTaken",
+        "code": "IDENTITY.ACCESS.NAME_TAKEN",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_access_name_taken",
+        "description": "Ya existe un grupo o rol con ese nombre."
+      },
+      {
+        "name": "InvitationInvalid",
+        "code": "IDENTITY.INVITATION.INVALID",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_invitation_invalid",
+        "description": "La invitación no es válida, venció o ya se usó."
+      },
+      {
+        "name": "InvitationEmailMismatch",
+        "code": "IDENTITY.INVITATION.EMAIL_MISMATCH",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_invitation_email_mismatch",
+        "description": "El email verificado de tu cuenta no coincide con el de la invitación."
+      },
+      {
+        "name": "ApiKeyInvalid",
+        "code": "IDENTITY.API_KEY.INVALID",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_api_key_invalid",
+        "description": "La API key no es válida."
+      },
+      {
+        "name": "ApiKeyExpired",
+        "code": "IDENTITY.API_KEY.EXPIRED",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_api_key_expired",
+        "description": "La API key venció."
+      },
+      {
+        "name": "ApiKeyIpNotAllowed",
+        "code": "IDENTITY.API_KEY.IP_NOT_ALLOWED",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_api_key_ip_not_allowed",
+        "description": "La API key no puede usarse desde esta dirección IP."
+      },
+      {
+        "name": "ApiKeyPermissionNotGrantable",
+        "code": "IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_api_key_permission_not_grantable",
+        "description": "No puedes otorgar permisos que tu cuenta no tiene."
+      },
+      {
+        "name": "ServiceAccountDisabled",
+        "code": "IDENTITY.SERVICE_ACCOUNT.DISABLED",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_identity_service_account_disabled",
+        "description": "La cuenta de servicio está deshabilitada."
       }
     ]
   }

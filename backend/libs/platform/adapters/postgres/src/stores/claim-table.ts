@@ -1,4 +1,3 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import {
   ClaimState,
   type ClaimRequest,
@@ -11,7 +10,11 @@ import {
   DeadlineExceededError,
   StaleClaimError,
 } from '@platform/primitives';
-import { ManagerIntent, PersistenceError } from '@platform/persistence';
+import {
+  ManagerIntent,
+  PersistenceError,
+  PersistenceErrorCode,
+} from '@platform/persistence';
 import type {
   EntityManager,
   EntityTarget,
@@ -172,7 +175,7 @@ export class ClaimTable<R> {
     }
     // La fila se liberó o venció entre las dos sentencias: quien llama reintenta.
     throw new PersistenceError(
-      PlatformErrorCode.PersistenceContention,
+      PersistenceErrorCode.Contention,
       'Idempotency key changed while claiming it',
     );
   }
@@ -196,13 +199,13 @@ export class ClaimTable<R> {
     }
     if (row.state !== ClaimState.InProgress) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceCorruptRow,
+        PersistenceErrorCode.CorruptRow,
         'Idempotency row has an unknown state',
       );
     }
     if (row.leaseUntil === null) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceCorruptRow,
+        PersistenceErrorCode.CorruptRow,
         'Idempotency row has an invalid lease',
       );
     }

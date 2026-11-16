@@ -1,0 +1,9 @@
+import 'package:shell_core/shell_core.dart';
+
+/// Access to the {{id}} microfrontend and its screens. Any signed-in user can
+/// read it for now; replace it with `AccessRule.permissions` when the domain
+/// has its own permission.
+abstract final class {{Pascal}}Access {
+  /// Rule to see the list and the detail.
+  static final AccessRule read = AccessRule.authenticated();
+}

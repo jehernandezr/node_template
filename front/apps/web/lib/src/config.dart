@@ -1,5 +1,6 @@
 import 'package:api/api.dart';
 import 'package:auth/auth.dart';
+import 'package:shell_host/shell_host.dart' show IdentityConnectionFactory;
 
 /// Base URL of the API, from `--dart-define=API_BASE_URL=https://...`.
 ///
@@ -12,11 +13,9 @@ const String apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 /// [CookieTokenStore] and the browser client sends credentials to the API
 /// origin. There is no [DeviceKeyPort] on the web yet, so the sign-in does
 /// not register the browser as a device.
-IdentityConnection? webIdentityConnection([String baseUrl = apiBaseUrl]) {
-  if (baseUrl.isEmpty) return null;
-  return IdentityConnection(
-    transport: PackageHttpTransport(withCredentials: true),
-    baseUri: Uri.parse(baseUrl),
-    tokenStore: const CookieTokenStore(),
-  );
-}
+IdentityConnection? webIdentityConnection([String baseUrl = apiBaseUrl]) =>
+    IdentityConnectionFactory(
+      baseUrl: baseUrl,
+      transport: () => PackageHttpTransport(withCredentials: true),
+      tokenStore: () => const CookieTokenStore(),
+    ).create();

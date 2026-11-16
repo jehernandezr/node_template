@@ -30,8 +30,17 @@ String errorMessageFor(AppLocalizations l10n, String code) {
     'PLATFORM.INTERNAL.UNEXPECTED' => l10n.error_platform_internal_unexpected,
     'PLATFORM.AUTH.UNAUTHENTICATED' => l10n.error_platform_auth_unauthenticated,
     'PLATFORM.AUTH.FORBIDDEN' => l10n.error_platform_auth_forbidden,
+    'PLATFORM.AUTH.TOKEN_EXPIRED' => l10n.error_platform_auth_token_expired,
+    'PLATFORM.AUTH.ORIGIN_REJECTED' => l10n.error_platform_auth_origin_rejected,
     'PLATFORM.RATE_LIMIT.EXCEEDED' => l10n.error_platform_rate_limit_exceeded,
     'PLATFORM.API.VERSION_SUNSET' => l10n.error_platform_api_version_sunset,
+    'PLATFORM.API.UNSUPPORTED_VERSION' =>
+      l10n.error_platform_api_unsupported_version,
+    'PLATFORM.HTTP.PAYLOAD_TOO_LARGE' =>
+      l10n.error_platform_http_payload_too_large,
+    'PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE' =>
+      l10n.error_platform_http_unsupported_media_type,
+    'PLATFORM.HTTP.MALFORMED_BODY' => l10n.error_platform_http_malformed_body,
     'PLATFORM.RESOURCE.NOT_FOUND' => l10n.error_platform_resource_not_found,
     'PLATFORM.CONFLICT.VERSION_MISMATCH' =>
       l10n.error_platform_conflict_version_mismatch,
@@ -74,6 +83,47 @@ String errorMessageFor(AppLocalizations l10n, String code) {
     'IDENTITY.TOKEN.REVOKED' => l10n.error_identity_token_revoked,
     'IDENTITY.USER.SUSPENDED' => l10n.error_identity_user_suspended,
     'IDENTITY.TENANT.SUSPENDED' => l10n.error_identity_tenant_suspended,
+    'IDENTITY.AUTH.EMAIL_NOT_VERIFIED' =>
+      l10n.error_identity_auth_email_not_verified,
+    'IDENTITY.USER.EMAIL_VERIFICATION_INVALID' =>
+      l10n.error_identity_user_email_verification_invalid,
+    'IDENTITY.PASSWORD.POLICY_VIOLATION' =>
+      l10n.error_identity_password_policy_violation,
+    'IDENTITY.PASSWORD.BREACHED' => l10n.error_identity_password_breached,
+    'IDENTITY.PASSWORD.CURRENT_INVALID' =>
+      l10n.error_identity_password_current_invalid,
+    'IDENTITY.PASSWORD.RESET_INVALID' =>
+      l10n.error_identity_password_reset_invalid,
+    'IDENTITY.DEVICE.SIGNATURE_INVALID' =>
+      l10n.error_identity_device_signature_invalid,
+    'IDENTITY.DEVICE.KEY_INVALID' => l10n.error_identity_device_key_invalid,
+    'IDENTITY.MFA.RECOVERY_NOT_READY' =>
+      l10n.error_identity_mfa_recovery_not_ready,
+    'IDENTITY.MFA.FACTOR_ALREADY_ENROLLED' =>
+      l10n.error_identity_mfa_factor_already_enrolled,
+    'IDENTITY.MFA.FACTOR_NOT_ENROLLED' =>
+      l10n.error_identity_mfa_factor_not_enrolled,
+    'IDENTITY.PASSKEY.VERIFICATION_FAILED' =>
+      l10n.error_identity_passkey_verification_failed,
+    'IDENTITY.PASSKEY.CHALLENGE_EXPIRED' =>
+      l10n.error_identity_passkey_challenge_expired,
+    'IDENTITY.TENANT.SLUG_TAKEN' => l10n.error_identity_tenant_slug_taken,
+    'IDENTITY.TENANT.NOT_MEMBER' => l10n.error_identity_tenant_not_member,
+    'IDENTITY.ACCESS.LAST_OWNER' => l10n.error_identity_access_last_owner,
+    'IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE' =>
+      l10n.error_identity_access_system_role_immutable,
+    'IDENTITY.ACCESS.NAME_TAKEN' => l10n.error_identity_access_name_taken,
+    'IDENTITY.INVITATION.INVALID' => l10n.error_identity_invitation_invalid,
+    'IDENTITY.INVITATION.EMAIL_MISMATCH' =>
+      l10n.error_identity_invitation_email_mismatch,
+    'IDENTITY.API_KEY.INVALID' => l10n.error_identity_api_key_invalid,
+    'IDENTITY.API_KEY.EXPIRED' => l10n.error_identity_api_key_expired,
+    'IDENTITY.API_KEY.IP_NOT_ALLOWED' =>
+      l10n.error_identity_api_key_ip_not_allowed,
+    'IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE' =>
+      l10n.error_identity_api_key_permission_not_grantable,
+    'IDENTITY.SERVICE_ACCOUNT.DISABLED' =>
+      l10n.error_identity_service_account_disabled,
     _ => l10n.errorFallback,
   };
 }

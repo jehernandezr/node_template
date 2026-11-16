@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
@@ -195,5 +196,77 @@ void main() {
 
       expect(find.text('content'), findsOneWidget);
     });
+
+    testWidgets(
+      'the default error view uses the localized texts and never the raw error',
+      (tester) async {
+        final loader = DeferredLibraryLoader();
+        Future<void> loadLibrary() async => throw StateError('network down');
+
+        await tester.pumpWidget(
+          Localizations(
+            locale: const Locale('en'),
+            delegates: const [
+              AppLocalizations.delegate,
+              DefaultWidgetsLocalizations.delegate,
+            ],
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: loader.page(
+                loadLibrary: loadLibrary,
+                builder: () => const Text('screen'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        expect(find.text(l10n.errorFallback), findsOneWidget);
+        expect(find.text(l10n.actionRetry), findsOneWidget);
+        expect(find.textContaining('network down'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a page errorBuilder wins over the loader one, gets the error and retries',
+      (tester) async {
+        final loader = DeferredLibraryLoader(
+          errorBuilder: (error, retry) => const Text('shell error'),
+        );
+        var attempts = 0;
+        Future<void> loadLibrary() async {
+          attempts++;
+          if (attempts == 1) throw StateError('boom');
+        }
+
+        Object? seen;
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: loader.page(
+              loadLibrary: loadLibrary,
+              builder: () => const Text('screen'),
+              errorBuilder: (error, retry) {
+                seen = error;
+                return TextButton(
+                  onPressed: retry,
+                  child: const Text('try again'),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(seen, isA<StateError>());
+        expect(find.text('shell error'), findsNothing);
+        await tester.tap(find.text('try again'));
+        await tester.pumpAndSettle();
+
+        expect(attempts, 2);
+        expect(find.text('screen'), findsOneWidget);
+      },
+    );
   });
 }

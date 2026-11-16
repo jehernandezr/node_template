@@ -531,6 +531,42 @@ abstract class AppLocalizations {
   /// **'El servicio está ocupado. Intenta en unos instantes.'**
   String get error_platform_resilience_overloaded;
 
+  /// No description provided for @error_platform_auth_token_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu acceso venció. Actualizando la sesión.'**
+  String get error_platform_auth_token_expired;
+
+  /// No description provided for @error_platform_auth_origin_rejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta solicitud no viene de un origen permitido.'**
+  String get error_platform_auth_origin_rejected;
+
+  /// No description provided for @error_platform_api_unsupported_version.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta versión de la aplicación no es compatible. Actualízala.'**
+  String get error_platform_api_unsupported_version;
+
+  /// No description provided for @error_platform_http_payload_too_large.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que enviaste es demasiado grande.'**
+  String get error_platform_http_payload_too_large;
+
+  /// No description provided for @error_platform_http_unsupported_media_type.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo enviar ese tipo de contenido.'**
+  String get error_platform_http_unsupported_media_type;
+
+  /// No description provided for @error_platform_http_malformed_body.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo leer lo que enviaste. Inténtalo de nuevo.'**
+  String get error_platform_http_malformed_body;
+
   /// No description provided for @error_identity_auth_invalid_credentials.
   ///
   /// In es, this message translates to:
@@ -614,6 +650,156 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu organización está suspendida. Contacta al soporte.'**
   String get error_identity_tenant_suspended;
+
+  /// No description provided for @error_identity_auth_email_not_verified.
+  ///
+  /// In es, this message translates to:
+  /// **'Verifica tu correo para continuar. Revisa el enlace que te enviamos.'**
+  String get error_identity_auth_email_not_verified;
+
+  /// No description provided for @error_identity_user_email_verification_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'El enlace de verificación no es válido o venció. Solicita uno nuevo.'**
+  String get error_identity_user_email_verification_invalid;
+
+  /// No description provided for @error_identity_password_policy_violation.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña debe tener entre 12 y 128 caracteres y ser distinta de tu correo.'**
+  String get error_identity_password_policy_violation;
+
+  /// No description provided for @error_identity_password_breached.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa contraseña apareció en filtraciones conocidas. Elige otra.'**
+  String get error_identity_password_breached;
+
+  /// No description provided for @error_identity_password_current_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña actual no es correcta.'**
+  String get error_identity_password_current_invalid;
+
+  /// No description provided for @error_identity_password_reset_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'El enlace para restablecer la contraseña no es válido o venció. Solicita uno nuevo.'**
+  String get error_identity_password_reset_invalid;
+
+  /// No description provided for @error_identity_device_signature_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo comprobar este dispositivo.'**
+  String get error_identity_device_signature_invalid;
+
+  /// No description provided for @error_identity_device_key_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La clave de este dispositivo no es válida.'**
+  String get error_identity_device_key_invalid;
+
+  /// No description provided for @error_identity_mfa_recovery_not_ready.
+  ///
+  /// In es, this message translates to:
+  /// **'La recuperación todavía no está disponible. Vuelve a intentarlo cuando termine la espera.'**
+  String get error_identity_mfa_recovery_not_ready;
+
+  /// No description provided for @error_identity_mfa_factor_already_enrolled.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese método de verificación ya está activo.'**
+  String get error_identity_mfa_factor_already_enrolled;
+
+  /// No description provided for @error_identity_mfa_factor_not_enrolled.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese método de verificación no está activo.'**
+  String get error_identity_mfa_factor_not_enrolled;
+
+  /// No description provided for @error_identity_passkey_verification_failed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo verificar la passkey.'**
+  String get error_identity_passkey_verification_failed;
+
+  /// No description provided for @error_identity_passkey_challenge_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'La verificación de la passkey venció. Inténtalo de nuevo.'**
+  String get error_identity_passkey_challenge_expired;
+
+  /// No description provided for @error_identity_tenant_slug_taken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese identificador ya está en uso. Elige otro.'**
+  String get error_identity_tenant_slug_taken;
+
+  /// No description provided for @error_identity_tenant_not_member.
+  ///
+  /// In es, this message translates to:
+  /// **'No eres miembro de esa organización.'**
+  String get error_identity_tenant_not_member;
+
+  /// No description provided for @error_identity_access_last_owner.
+  ///
+  /// In es, this message translates to:
+  /// **'La organización debe conservar al menos un propietario.'**
+  String get error_identity_access_last_owner;
+
+  /// No description provided for @error_identity_access_system_role_immutable.
+  ///
+  /// In es, this message translates to:
+  /// **'Los roles del sistema no se pueden modificar ni borrar.'**
+  String get error_identity_access_system_role_immutable;
+
+  /// No description provided for @error_identity_access_name_taken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya existe un grupo o rol con ese nombre.'**
+  String get error_identity_access_name_taken;
+
+  /// No description provided for @error_identity_invitation_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La invitación no es válida, venció o ya se usó.'**
+  String get error_identity_invitation_invalid;
+
+  /// No description provided for @error_identity_invitation_email_mismatch.
+  ///
+  /// In es, this message translates to:
+  /// **'El correo verificado de tu cuenta no coincide con el de la invitación.'**
+  String get error_identity_invitation_email_mismatch;
+
+  /// No description provided for @error_identity_api_key_invalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La API key no es válida.'**
+  String get error_identity_api_key_invalid;
+
+  /// No description provided for @error_identity_api_key_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'La API key venció.'**
+  String get error_identity_api_key_expired;
+
+  /// No description provided for @error_identity_api_key_ip_not_allowed.
+  ///
+  /// In es, this message translates to:
+  /// **'La API key no puede usarse desde esta dirección IP.'**
+  String get error_identity_api_key_ip_not_allowed;
+
+  /// No description provided for @error_identity_api_key_permission_not_grantable.
+  ///
+  /// In es, this message translates to:
+  /// **'No puedes otorgar permisos que tu cuenta no tiene.'**
+  String get error_identity_api_key_permission_not_grantable;
+
+  /// No description provided for @error_identity_service_account_disabled.
+  ///
+  /// In es, this message translates to:
+  /// **'La cuenta de servicio está deshabilitada.'**
+  String get error_identity_service_account_disabled;
 
   /// No description provided for @errorFallback.
   ///

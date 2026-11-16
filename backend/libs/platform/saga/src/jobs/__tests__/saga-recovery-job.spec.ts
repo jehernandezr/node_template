@@ -124,10 +124,8 @@ describe('SagaRecoveryJob', () => {
     expect(report.failed).toEqual([
       {
         sagaId: 'ghost',
-        errorCode: PlatformErrorCode.SagaUnknownDefinition,
-        detail: expect.stringContaining(
-          PlatformErrorCode.SagaUnknownDefinition,
-        ),
+        errorCode: SagaErrorCode.UnknownDefinition,
+        detail: expect.stringContaining(SagaErrorCode.UnknownDefinition),
       },
     ]);
   });
@@ -185,9 +183,7 @@ describe('SagaRecoveryJob', () => {
 
     const report = await job.runOnce(10);
 
-    expect(report.failed[0]?.errorCode).toBe(
-      PlatformErrorCode.SagaInvalidState,
-    );
+    expect(report.failed[0]?.errorCode).toBe(SagaErrorCode.InvalidState);
     expect(report.failed[0]?.errorCode).not.toBe(
       PlatformErrorCode.InternalUnexpected,
     );

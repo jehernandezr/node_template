@@ -24,4 +24,3 @@ export * from './bloom-filter-assembler.js';
 export * from './bloom-rebuild-source-provider.js';
 export * from './bloom-job.enum.js';
 export * from './bloom-rebuild-job.js';
-export * from './deprecated-exports.js';

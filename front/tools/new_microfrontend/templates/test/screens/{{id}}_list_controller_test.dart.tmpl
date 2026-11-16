@@ -1,0 +1,80 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mf_{{id}}/src/screens/{{id}}_list_controller.dart';
+import 'package:mf_{{id}}/src/shared/types/{{id}}_item.dart';
+import 'package:test_utils/test_utils.dart';
+import 'package:ui/ui.dart';
+
+import '../utils/scripted_{{id}}_repository.dart';
+
+const List<{{Pascal}}Item> _items = [
+  {{Pascal}}Item(id: '1', title: 'Uno', description: 'Primero'),
+];
+
+void main() {
+  late Scripted{{Pascal}}Repository repository;
+
+  setUp(() {
+    repository = Scripted{{Pascal}}Repository();
+    addTearDown(repository.dispose);
+  });
+
+  test('starts loading and then shows the data', () async {
+    final controller = {{Pascal}}ListController(repository);
+    addTearDown(controller.dispose);
+    expect(controller.value, isA<AsyncLoading<List<{{Pascal}}Item>>>());
+
+    unawaited(controller.start());
+    repository.lists.single.complete(_items);
+    await pumpEventQueue();
+
+    expect(controller.value.valueOrNull, _items);
+  });
+
+  test('an older answer does not replace a newer one', () async {
+    final controller = {{Pascal}}ListController(repository);
+    addTearDown(controller.dispose);
+    const newer = [
+      {{Pascal}}Item(id: '2', title: 'Dos', description: 'Segundo'),
+    ];
+
+    unawaited(controller.start());
+    unawaited(controller.start());
+    repository.lists[1].complete(newer);
+    await pumpEventQueue();
+    repository.lists[0].complete(_items);
+    await pumpEventQueue();
+
+    expect(controller.value.valueOrNull, newer);
+  });
+
+  test('a failed load shows the error and starting again recovers', () async {
+    final controller = {{Pascal}}ListController(repository);
+    addTearDown(controller.dispose);
+
+    unawaited(controller.start());
+    repository.lists.single.completeError(const FakeFailure());
+    await pumpEventQueue();
+    expect(controller.value, isA<AsyncError<List<{{Pascal}}Item>>>());
+
+    unawaited(controller.start());
+    repository.lists[1].complete(_items);
+    await pumpEventQueue();
+    expect(controller.value.valueOrNull, _items);
+  });
+
+  test('an answer that arrives after dispose does not notify', () async {
+    final controller = {{Pascal}}ListController(repository);
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+
+    unawaited(controller.start());
+    final beforeDispose = notifications;
+    controller.dispose();
+    repository.lists.single.complete(_items);
+    await pumpEventQueue();
+
+    expect(notifications, beforeDispose);
+  });
+}

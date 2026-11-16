@@ -67,7 +67,7 @@ GoRouter _build({
   AppPlatform platform = AppPlatform.web,
   ShellRouteBuilder shellBuilder = passThroughShell,
   ShellPaths paths = const ShellPaths(),
-}) => buildShellRouter(
+}) => ShellRouterFactory(
   registry: registry,
   platform: platform,
   runtime: fakeRuntime(
@@ -75,10 +75,9 @@ GoRouter _build({
     session: session,
     platform: platform,
   ),
-  routes: _shellPages,
-  shellBuilder: shellBuilder,
+  loader: DeferredLibraryLoader(),
   paths: paths,
-);
+).build(routes: _shellPages, shellBuilder: shellBuilder);
 
 Future<GoRouter> _pump(
   WidgetTester tester, {

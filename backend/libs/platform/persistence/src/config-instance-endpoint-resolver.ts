@@ -1,6 +1,6 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import type { DatabaseSettings } from './config/database.config.js';
-import { PersistenceError } from './errors.js';
+import { PersistenceError } from './errors/persistence-error.js';
+import { PersistenceErrorCode } from './errors/persistence-error-code.enum.js';
 import type { InstanceEndpoints } from './model/instance-endpoints.js';
 import { InstanceEndpointResolver } from './ports/instance-endpoint-resolver.js';
 
@@ -16,7 +16,7 @@ export class ConfigInstanceEndpointResolver extends InstanceEndpointResolver {
       return this.instances[instance];
     }
     throw new PersistenceError(
-      PlatformErrorCode.PersistenceInvalidConfig,
+      PersistenceErrorCode.InvalidConfig,
       'Unknown database instance',
       { details: { instance } },
     );

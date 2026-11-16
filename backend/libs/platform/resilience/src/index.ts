@@ -8,7 +8,6 @@ export * from './errors/bulkhead-full.error.js';
 export * from './errors/unknown-policy.error.js';
 export * from './errors/invalid-policy.error.js';
 export * from './policy/policy-name.js';
-export * from './policy/resilience-policy-name.enum.js';
 export * from './policy/timeout-strategy.enum.js';
 export * from './policy/resilience-policy-config.js';
 export * from './policy/default-policies.js';
