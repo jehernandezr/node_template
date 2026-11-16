@@ -1,0 +1,117 @@
+name: Mobile release
+
+# Las compilaciones release de Android necesitan gen_snapshot, que Flutter solo publica para
+# hosts x86_64 (flutter/flutter#168980). Por eso se compilan aquí y no en máquinas Linux ARM64.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'mobile-v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (APK y AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      # Sin estos secretos el release queda firmado con la clave de debug: sirve para probar,
+      # no para publicar en Play Store.
+      - name: Preparar la firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: front/apps/mobile/android
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Sin ANDROID_KEYSTORE_BASE64: se firma con la clave de debug."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > app/release.jks
+          {
+            echo "storeFile=release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > key.properties
+
+      - run: flutter pub get
+        working-directory: front
+
+      - run: flutter build apk --release
+        working-directory: front/apps/mobile
+
+      - run: flutter build appbundle --release
+        working-directory: front/apps/mobile
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-release
+          path: |
+            front/apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+            front/apps/mobile/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+  ios:
+    name: iOS (sin firmar)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - run: flutter pub get
+        working-directory: front
+
+      # Firmar para App Store necesita certificado y perfil de Apple; mientras no existan,
+      # se compila sin firma para comprobar que el proyecto de iOS sigue construyendo.
+      - run: flutter build ios --release --no-codesign
+        working-directory: front/apps/mobile
+
+      - name: Empaquetar Runner.app
+        working-directory: front/apps/mobile/build/ios/iphoneos
+        run: zip -qr Runner.app.zip Runner.app
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ios-unsigned
+          path: front/apps/mobile/build/ios/iphoneos/Runner.app.zip
+          if-no-files-found: error
