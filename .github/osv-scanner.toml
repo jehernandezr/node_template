@@ -1,0 +1,17 @@
+# Avisos aceptados con su motivo. Cada uno vence: al pasar la fecha, OSV-Scanner vuelve a
+# fallar y se revisa si ya hay versión corregida compatible.
+
+# minimatch 10.x: denegación de servicio con un patrón controlado por un atacante. Solo llega
+# como dependencia de desarrollo (Nx y test-exclude de Jest), con patrones del propio
+# repositorio. La corrección es minimatch 11, que Nx 24 no declara.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-02-15
+reason = "Dependencia de desarrollo de Nx y test-exclude; los patrones vienen del repositorio."
+
+# deepmerge 4.3.1: contaminación de prototipo al mezclar objetos de un atacante. Solo lo usa
+# jest-config para mezclar la configuración del repositorio. No hay versión corregida.
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2027-02-15
+reason = "Solo jest-config lo usa, con la configuración del repositorio; no hay versión corregida."

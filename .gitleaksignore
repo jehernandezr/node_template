@@ -4,3 +4,7 @@
 # chore/opus-audit-2026-11-12, que sigue en origin.
 13f606f69c60a879bc4adac17c9a8e5763c27d7b:backend/libs/platform/observability/src/lib/redaction.spec.ts:jwt:78
 04a391402791a7ea904be6efc7dc854179fc4e65:backend/libs/platform/observability/src/lib/redaction.spec.ts:jwt:83
+
+# Llave de idempotencia de prueba ('greet-invalid-1') en la prueba e2e de internal-api; la
+# regla generic-api-key la confunde con una credencial por el nombre del campo.
+3dde07d1729f2f9d1a732671bb7d139a529d3eed:backend/libs/platform/internal-api/src/nest/__tests__/internal-api.e2e.spec.ts:generic-api-key:123
