@@ -1,53 +1,67 @@
-import { SagaInstance, StepLogEntry } from '../model.js';
+import type { SagaInstance } from '../model/saga-instance.js';
+import type { StepLogEntry } from '../model/step-log-entry.js';
+import type { DispatchWrite } from './dispatch-write.js';
+import type { FencedWrite } from './fenced-write.js';
+import type { SagaPurge } from './saga-purge.js';
 
-/** A write that is accepted only if the version and the lease token still match. */
-export interface FencedWrite {
-  /** New instance state. Its `version` field is ignored; the store bumps it. */
-  readonly instance: SagaInstance;
-  readonly expectedVersion: number;
-  readonly leaseToken: string;
-  /** Step log entry to write together with the instance, if any. */
-  readonly step?: StepLogEntry;
-}
+/**
+ * Puerto que persiste las instancias de saga y su bitácora de pasos. Toda
+ * implementación pasa `runSagaStoreContract` de `@platform/saga/test-utils`.
+ */
+export abstract class SagaStore {
+  /** Sagas que `purge` borra por llamada si no se pide otro límite: lotes cortos que no bloquean la tabla. */
+  static readonly DEFAULT_PURGE_LIMIT = 500;
 
-/** A fenced write that records the dispatch of a step. */
-export interface DispatchWrite extends FencedWrite {
-  readonly step: StepLogEntry;
-}
+  /** Inserta una instancia nueva. @throws SagaError `DuplicateSaga` si el id o la llave de idempotencia ya existen. */
+  abstract create(instance: SagaInstance): Promise<void>;
 
-/** Port that persists saga instances and their step log. */
-export interface SagaStore {
-  /** Inserts a new instance. Throws `DuplicateSaga` if the id or the idempotency key exists. */
-  create(instance: SagaInstance): Promise<void>;
-  /** Returns the instance or null. */
-  get(id: string): Promise<SagaInstance | null>;
-  /** Returns the instance with this idempotency key, or null. */
-  findByIdempotencyKey(key: string): Promise<SagaInstance | null>;
+  /** Devuelve la instancia o `null`. */
+  abstract get(id: string): Promise<SagaInstance | null>;
+
+  /** Devuelve la instancia con esta llave de idempotencia, o `null`. */
+  abstract findByIdempotencyKey(key: string): Promise<SagaInstance | null>;
+
   /**
-   * Atomically checks the lease token and the version, then writes the
-   * instance and the optional step entry together. Throws `LeaseLost` on a
-   * token mismatch and `ConcurrentModification` on a version mismatch; in both
-   * cases nothing is written. Returns the stored instance.
+   * Comprueba de forma atómica el token del lease y la versión, y escribe
+   * juntas la instancia y la entrada de bitácora opcional. La entrada que ya
+   * existe para el mismo paso y dirección se reemplaza. Devuelve la instancia
+   * guardada, con la versión subida en uno.
+   * @throws SagaError `NotFound` si la saga no existe, `LeaseLost` si el token
+   *   no coincide y `ConcurrentModification` si la versión no coincide; en los
+   *   tres casos no se escribe nada.
    */
-  commitStep(write: FencedWrite): Promise<SagaInstance>;
-  /** Fenced write of a `Dispatched` step entry together with the instance. */
-  dispatchStep(write: DispatchWrite): Promise<SagaInstance>;
-  /** Returns the step log of a saga. */
-  steps(sagaId: string): Promise<StepLogEntry[]>;
+  abstract commitStep(write: FencedWrite): Promise<SagaInstance>;
+
   /**
-   * Returns instances that need a worker: Running or Compensating with an
-   * expired lease, or Suspended with `nextAttemptAt <= now`.
+   * Escritura protegida de una entrada `Dispatched` junto con la instancia.
+   * @throws SagaError `InvalidState` si la entrada no está en `Dispatched`, y los de `commitStep`.
    */
-  findRecoverable(now: Date, limit: number): Promise<SagaInstance[]>;
-  /** Takes the lease for `token` until `until` if it is free or expired. */
-  tryAcquireLease(
+  abstract dispatchStep(write: DispatchWrite): Promise<SagaInstance>;
+
+  /** Bitácora de una saga, ordenada por índice de paso y, dentro de él, hacia delante antes que compensar. */
+  abstract steps(sagaId: string): Promise<StepLogEntry[]>;
+
+  /**
+   * Instancias que necesitan una corrida: `Running` o `Compensating` con el
+   * lease vencido, o `Suspended` con `nextAttemptAt <= now`. Las más antiguas
+   * primero (`updatedAt`, luego `id`). Con varios shards recorre todos.
+   */
+  abstract findRecoverable(now: Date, limit: number): Promise<SagaInstance[]>;
+
+  /** Toma el lease para `token` hasta `until` si está libre o vencido. */
+  abstract tryAcquireLease(
     id: string,
     token: string,
     until: Date,
     now: Date,
   ): Promise<boolean>;
-  /** Extends the lease if `token` still holds it. Returns false when it was lost. */
-  renewLease(id: string, token: string, until: Date): Promise<boolean>;
-  /** Releases the lease if `token` holds it. */
-  releaseLease(id: string, token: string): Promise<void>;
+
+  /** Extiende el lease si `token` aún lo tiene. Devuelve `false` si se perdió. */
+  abstract renewLease(id: string, token: string, until: Date): Promise<boolean>;
+
+  /** Suelta el lease si `token` lo tiene. */
+  abstract releaseLease(id: string, token: string): Promise<void>;
+
+  /** Borra las sagas terminadas con éxito (`Completed`, `Compensated`) y su bitácora. Devuelve cuántas. */
+  abstract purge(options: SagaPurge): Promise<number>;
 }

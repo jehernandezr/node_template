@@ -161,3 +161,14 @@ final class Invoice {
     currency: currency.code,
   );
 }
+
+/// What the plan page shows: the subscription and the usage of each quota.
+final class PlanOverview {
+  const PlanOverview({required this.subscription, required this.usage});
+
+  /// Subscription of the tenant.
+  final Subscription subscription;
+
+  /// Usage of every quota of the plan in force.
+  final List<QuotaUsage> usage;
+}

@@ -86,4 +86,12 @@ class VerifierLocalizationsEn extends VerifierLocalizations {
 
   @override
   String get denyFailed => 'We could not block the attempt. Try again.';
+
+  @override
+  String expiresSoonAnnouncement(int seconds) {
+    return 'The code expires in $seconds seconds';
+  }
+
+  @override
+  String get codeExpiredAnnouncement => 'The code expired';
 }

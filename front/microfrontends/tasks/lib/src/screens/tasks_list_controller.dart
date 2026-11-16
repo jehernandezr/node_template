@@ -14,7 +14,9 @@ import '../shared/types/task.dart';
 /// they can be tested without widgets.
 final class TasksListController extends ChangeNotifier {
   /// Controller over [repository]. Call [start] once.
-  TasksListController(this._repository, {this.searchDelay = searchDebounce});
+  TasksListController(this._repository, {this.searchDelay = searchDebounce}) {
+    _more.addListener(_notify);
+  }
 
   /// Wait after the last keystroke before searching.
   static const Duration searchDebounce = Duration(milliseconds: 300);
@@ -23,6 +25,9 @@ final class TasksListController extends ChangeNotifier {
 
   /// Wait applied by [search].
   final Duration searchDelay;
+
+  /// Runs the next-page loads. Its [ActionRunner.isRunning] is the spinner.
+  final ActionRunner _more = ActionRunner();
 
   StreamSubscription<void>? _changes;
   Timer? _debounce;
@@ -36,7 +41,7 @@ final class TasksListController extends ChangeNotifier {
   String _query = '';
   AsyncValue<List<Task>> _items = const AsyncValue.loading();
   String? _nextCursor;
-  bool _loadingMore = false;
+  String? _selectedId;
 
   /// Status filter, or null for every status.
   TaskStatus? get status => _status;
@@ -54,7 +59,18 @@ final class TasksListController extends ChangeNotifier {
   bool get hasMore => _nextCursor != null;
 
   /// Whether the next page is loading.
-  bool get loadingMore => _loadingMore;
+  bool get loadingMore => _more.isRunning;
+
+  /// Id of the task shown beside the list on wide screens, or null.
+  String? get selectedId => _selectedId;
+
+  /// Chooses the task shown beside the list. Selecting the same id again does
+  /// nothing.
+  void select(String? id) {
+    if (id == _selectedId) return;
+    _selectedId = id;
+    _notify();
+  }
 
   /// Loads the first page and reloads whenever the repository changes.
   void start() {
@@ -66,7 +82,6 @@ final class TasksListController extends ChangeNotifier {
   Future<void> reload() async {
     final request = ++_requestId;
     _items = const AsyncValue.loading();
-    _loadingMore = false;
     _notify();
     String? next;
     final result = await AsyncValue.guard<List<Task>>(() async {
@@ -81,26 +96,25 @@ final class TasksListController extends ChangeNotifier {
     _notify();
   }
 
-  /// Appends the next page. A failure leaves the list as it was and is
-  /// rethrown for the screen to report.
-  Future<void> loadMore() async {
+  /// Appends the next page. A failure leaves the list as it was and comes
+  /// back as [ActionFailed]. A failure of a page that belongs to a list that
+  /// was already replaced is dropped as [ActionSkipped].
+  Future<ActionResult<void>> loadMore() async {
     final cursor = _nextCursor;
     final current = _items.valueOrNull;
-    if (cursor == null || current == null || _loadingMore) return;
+    if (cursor == null || current == null) return const ActionSkipped<void>();
     final request = _requestId;
-    _loadingMore = true;
-    _notify();
-    try {
+    final result = await _more.run<void>(() async {
       final page = await _repository.list(status: _status, cursor: cursor);
       if (_disposed || request != _requestId) return;
       _items = AsyncValue.data([...current, ...page.items]);
       _nextCursor = page.nextCursor;
-    } finally {
-      if (!_disposed && request == _requestId) {
-        _loadingMore = false;
-        _notify();
-      }
+      _notify();
+    });
+    if (result is ActionFailed<void> && request != _requestId) {
+      return const ActionSkipped<void>();
     }
+    return result;
   }
 
   /// Shows only tasks in [status], or every task when null.
@@ -130,6 +144,7 @@ final class TasksListController extends ChangeNotifier {
     _disposed = true;
     _debounce?.cancel();
     unawaited(_changes?.cancel());
+    _more.dispose();
     super.dispose();
   }
 }

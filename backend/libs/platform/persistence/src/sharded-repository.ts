@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import type { Criteria, CursorOptions, Page } from '@platform/criteria';
+import type { Criteria, CursorCodec, Page } from '@platform/criteria';
 import {
   type EntityManager,
   type EntityTarget,
@@ -148,12 +148,13 @@ export abstract class ShardedRepository<
   }
 
   /**
-   * Una página según el criterio, del tenant del contexto, con paginación por cursor.
+   * Una página según el criterio, del tenant del contexto, con paginación por cursor. El `codec` firma el cursor
+   * siguiente; sin él, el cursor no va firmado.
    * @throws CriteriaError `UnknownField` si el criterio nombra un campo que la entidad no tiene.
    */
   async findByCriteria(
     criteria: Criteria<TEntity>,
-    cursorOptions?: CursorOptions,
+    codec?: CursorCodec,
   ): Promise<Page<TAggregate>> {
     const tenantId = this.tenantId();
     const ast = criteria.toAst();
@@ -169,7 +170,7 @@ export abstract class ShardedRepository<
         .createQueryBuilder(this.entityClass, 'e')
         .where('e.tenantId = :tenantId', { tenantId });
       translator.apply(qb, ast);
-      const page = translator.toPage(await qb.getMany(), ast, cursorOptions);
+      const page = translator.toPage(await qb.getMany(), ast, codec);
       return {
         items: page.items.map((entity) => this.mapper.toDomain(entity)),
         nextCursor: page.nextCursor,

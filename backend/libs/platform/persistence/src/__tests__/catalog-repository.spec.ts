@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { Criteria } from '@platform/criteria';
+import { Criteria, CursorCodec } from '@platform/criteria';
 import type { ReplicationMode, QueryRunner } from 'typeorm';
 import { CatalogDataSource } from '../catalog-data-source.js';
 import { CatalogRepository } from '../catalog-repository.js';
@@ -203,9 +203,10 @@ describe('CatalogRepository', () => {
       );
       const criteria = Criteria.for<ProbeEntity>().orderBy('name').limit(1);
 
-      const page = await repository.findByCriteria(criteria, {
-        secret: 'test-secret',
-      });
+      const page = await repository.findByCriteria(
+        criteria,
+        new CursorCodec('test-secret'),
+      );
 
       expect(page.items).toHaveLength(1);
       expect(page.items[0]).toMatchObject({ id: ID, name: 'first' });

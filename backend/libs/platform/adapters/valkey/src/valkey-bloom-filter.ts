@@ -1,51 +1,24 @@
 import {
-  DEFAULT_FALSE_POSITIVE_RATE,
-  requiredBits,
+  BloomSizing,
   type BloomRebuildSource,
   type RebuildableBloomFilter,
 } from '@platform/bloom';
-import { UuidV7IdGenerator, type IdGenerator } from '@platform/kernel';
-import {
-  batches,
-  bloomKey,
-  REBUILD_KEY_TTL_MS,
-  rebuildKey,
-  SWAP_REBUILT,
-} from './bloom-keys.js';
-import {
-  integerReply,
-  runCommand,
-  ValkeyCommand,
-  type ValkeyArgument,
-  type ValkeyCommandRunner,
-} from './valkey-client.js';
-import type { ValkeyKeyspace } from './valkey-keyspace.js';
-
-/** Options of {@link ValkeyBloomFilter}. */
-export interface ValkeyBloomFilterOptions {
-  /** Filter name, usually a value of the caller's filter enum. */
-  readonly name: string;
-  readonly expectedItems: number;
-  /** Default {@link DEFAULT_FALSE_POSITIVE_RATE} (1 %). */
-  readonly falsePositiveRate?: number;
-  /**
-   * When false (default), the module adds sub-filters as the filter grows past `expectedItems`, keeping the
-   * rate. When true, the filter refuses to grow past its capacity.
-   */
-  readonly nonScaling?: boolean;
-  /** The filter lives at `<prefix>:bloom:{name}`, inside the ACL of the service user. */
-  readonly keyspace: ValkeyKeyspace;
-  /** Names the temporary keys of a rebuild. Default UUIDv7. */
-  readonly ids?: IdGenerator;
-}
+import type { IdGenerator } from '@platform/kernel';
+import { BloomKeys } from './bloom-keys.js';
+import type { ValkeyArgument } from './valkey-argument.js';
+import { ValkeyCommand } from './valkey-command.enum.js';
+import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
+import type { ValkeyBloomFilterOptions } from './valkey-bloom-filter.options.js';
 
 /**
- * Bloom filter held by the Valkey bloom module (`valkey-bloom`, commands `BF.*`). The filter is created on
- * the first insert with the declared capacity and rate, so every process agrees on its shape.
+ * Filtro de Bloom que guarda el módulo de bloom de Valkey (`valkey-bloom`,
+ * comandos `BF.*`). El filtro se crea en la primera inserción con la capacidad
+ * y la tasa declaradas, así todos los procesos coinciden en su forma.
  *
- * Needs a server with the module (the `valkey/valkey-bundle` image, or ElastiCache for Valkey 8.1 or
- * later; Terraform pins major version 8). The module caps each filter's memory
- * (`bf.bloom-memory-usage-limit`, 128 MiB by default): split very large sets with `PartitionedBloomFilter`.
+ * Necesita un servidor con el módulo (la imagen `valkey/valkey-bundle` o
+ * ElastiCache para Valkey 8.1 o posterior; Terraform fija la versión mayor 8).
+ * El módulo acota la memoria de cada filtro (`bf.bloom-memory-usage-limit`, 128 MiB
+ * por defecto): un conjunto muy grande se reparte con `PartitionedBloomFilter`.
  */
 export class ValkeyBloomFilter implements RebuildableBloomFilter {
   readonly key: string;
@@ -54,18 +27,19 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
   private readonly nonScaling: boolean;
   private readonly ids: IdGenerator;
 
-  /** @throws InvalidParameters (`@platform/bloom`) for a bad name, size or rate. */
+  /** @throws InvalidParametersError (`@platform/bloom`) con un nombre, un tamaño o una tasa inválidos. */
   constructor(
-    private readonly client: ValkeyCommandRunner,
+    private readonly executor: ValkeyCommandExecutor,
     options: ValkeyBloomFilterOptions,
   ) {
-    this.key = bloomKey(options.keyspace, options.name);
+    this.key = BloomKeys.filter(options.keyspace, options.name);
     this.capacity = options.expectedItems;
-    this.rate = options.falsePositiveRate ?? DEFAULT_FALSE_POSITIVE_RATE;
-    // Same validation as the in-memory sizing.
-    requiredBits(this.capacity, this.rate);
+    this.rate =
+      options.falsePositiveRate ?? BloomSizing.DEFAULT_FALSE_POSITIVE_RATE;
+    // La misma validación que el dimensionado en memoria.
+    BloomSizing.requiredBits(this.capacity, this.rate);
     this.nonScaling = options.nonScaling ?? false;
-    this.ids = options.ids ?? new UuidV7IdGenerator();
+    this.ids = options.ids;
   }
 
   add(item: string): Promise<void> {
@@ -73,8 +47,8 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
   }
 
   async addMany(items: readonly string[]): Promise<void> {
-    for (const batch of batches(items)) {
-      await runCommand(this.client, ValkeyCommand.BloomInsert, [
+    for (const batch of BloomKeys.batches(items)) {
+      await this.executor.run(ValkeyCommand.BloomInsert, [
         this.key,
         ...this.shape(),
         'ITEMS',
@@ -84,33 +58,34 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
   }
 
   async mightContain(item: string): Promise<boolean> {
-    const reply = await runCommand(this.client, ValkeyCommand.BloomExists, [
+    const reply = await this.executor.run(ValkeyCommand.BloomExists, [
       this.key,
       item,
     ]);
-    return integerReply(ValkeyCommand.BloomExists, reply) === 1;
+    return this.executor.integer(ValkeyCommand.BloomExists, reply) === 1;
   }
 
   /**
-   * Fills a fresh filter under a temporary key and swaps it in with one atomic rename. If the job dies, the
-   * temporary key expires after {@link REBUILD_KEY_TTL_MS}.
+   * Llena un filtro nuevo bajo una llave temporal y lo intercambia con un
+   * renombrado atómico. Si el job muere, la llave temporal vence a las
+   * `BloomKeys.REBUILD_KEY_TTL_MS`.
    */
   async rebuild(source: BloomRebuildSource): Promise<void> {
-    const temporary = rebuildKey(this.key, this.ids);
+    const temporary = BloomKeys.rebuild(this.key, this.ids);
     const reserve: ValkeyArgument[] = [temporary, this.rate, this.capacity];
     if (this.nonScaling) {
       reserve.push('NONSCALING');
     }
     try {
-      await runCommand(this.client, ValkeyCommand.BloomReserve, reserve);
-      await runCommand(this.client, ValkeyCommand.Pexpire, [
+      await this.executor.run(ValkeyCommand.BloomReserve, reserve);
+      await this.executor.run(ValkeyCommand.Pexpire, [
         temporary,
-        REBUILD_KEY_TTL_MS,
+        BloomKeys.REBUILD_KEY_TTL_MS,
       ]);
       for await (const chunk of source) {
-        for (const batch of batches(chunk)) {
-          // NOCREATE: if the temporary filter expired, fail instead of building a partial one.
-          await runCommand(this.client, ValkeyCommand.BloomInsert, [
+        for (const batch of BloomKeys.batches(chunk)) {
+          // NOCREATE: si el filtro temporal venció, falla en vez de armar uno parcial.
+          await this.executor.run(ValkeyCommand.BloomInsert, [
             temporary,
             'NOCREATE',
             'ITEMS',
@@ -118,11 +93,15 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
           ]);
         }
       }
-      await SWAP_REBUILT.run(this.client, [temporary, this.key], []);
-    } catch (error) {
-      await runCommand(this.client, ValkeyCommand.Del, [temporary]).catch(
-        () => undefined,
+      await this.executor.script(
+        BloomKeys.SWAP_REBUILT,
+        [temporary, this.key],
+        [],
       );
+    } catch (error) {
+      await this.executor
+        .run(ValkeyCommand.Del, [temporary])
+        .catch(() => undefined);
       throw error;
     }
   }

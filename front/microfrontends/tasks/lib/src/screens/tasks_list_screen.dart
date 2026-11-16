@@ -19,107 +19,105 @@ import 'tasks_list_controller.dart';
 /// Compact widths open a task's route; wide widths show the selected task
 /// beside the list. The list state lives in a [TasksListController]; this
 /// screen draws it and forwards the input.
-class TasksListScreen extends StatefulWidget {
+class TasksListScreen extends StatelessWidget {
   /// Creates the list backed by [repository].
   const TasksListScreen({super.key, required this.repository});
 
   final TasksRepository repository;
 
   @override
-  State<TasksListScreen> createState() => _TasksListScreenState();
-}
-
-class _TasksListScreenState extends State<TasksListScreen> {
-  final _searchController = TextEditingController();
-  late final TasksListController _list;
-  String? _selectedId;
-
-  @override
-  void initState() {
-    super.initState();
-    _list = TasksListController(widget.repository)..start();
-  }
-
-  @override
-  void dispose() {
-    _list.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadMore() async {
-    try {
-      await _list.loadMore();
-    } on Exception catch (error) {
-      if (!mounted) return;
-      showActionError(
-        context,
-        error,
-        message: TasksLocalizations.of(context).loadError,
-      );
-    }
-  }
-
-  void _openTask(Task task) => context.go(TasksPaths.detail(task.id));
-
-  void _createTask() => context.go(TasksPaths.create);
-
-  void _select(Task task) => setState(() => _selectedId = task.id);
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = TasksLocalizations.of(context);
-    return AppPage(
-      title: l10n.screenTitle,
+  Widget build(BuildContext context) => ControllerBuilder<TasksListController>(
+    // The repository is part of the key: a new identity gets a new controller.
+    key: ObjectKey(repository),
+    create: (_) => TasksListController(repository)..start(),
+    builder: (context, controller) => AppPage(
+      title: TasksLocalizations.of(context).screenTitle,
       floatingActionButton: AccessGate(
         rule: tasksWriteRule,
         child: FloatingActionButton.extended(
-          onPressed: _createTask,
+          onPressed: () => context.go(TasksPaths.create),
           icon: const Icon(Icons.add),
-          label: Text(l10n.newTask),
+          label: Text(TasksLocalizations.of(context).newTask),
         ),
       ),
       body: PlatformScreen(
-        compact: (ctx) => _buildList(onOpen: _openTask),
-        expanded: (ctx) => Row(
+        compact: (context) => _TasksListPane(
+          controller: controller,
+          onOpen: (task) => context.go(TasksPaths.detail(task.id)),
+        ),
+        expanded: (context) => Row(
           children: [
-            SizedBox(width: 360, child: _buildList(onOpen: _select)),
+            SizedBox(
+              width: AppLayout.listPaneWidth,
+              child: _TasksListPane(
+                controller: controller,
+                onOpen: (task) => controller.select(task.id),
+              ),
+            ),
             const VerticalDivider(width: 1),
-            Expanded(child: _buildDetailPane(l10n)),
+            Expanded(
+              child: _DetailPane(
+                repository: repository,
+                controller: controller,
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildDetailPane(TasksLocalizations l10n) {
-    final selected = _selectedId;
+/// The selected task beside the list, or a hint to pick one.
+class _DetailPane extends StatelessWidget {
+  const _DetailPane({required this.repository, required this.controller});
+
+  final TasksRepository repository;
+  final TasksListController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = controller.selectedId;
     if (selected == null) {
-      return EmptyState(icon: Icons.task_alt, title: l10n.selectTask);
+      return EmptyState(
+        icon: Icons.task_alt,
+        title: TasksLocalizations.of(context).selectTask,
+      );
     }
     return TaskDetailView(
       key: ValueKey(selected),
-      repository: widget.repository,
+      repository: repository,
       taskId: selected,
-      onDeleted: () => setState(() => _selectedId = null),
+      onDeleted: () => controller.select(null),
     );
   }
+}
 
-  Widget _buildList({required ValueChanged<Task> onOpen}) {
+/// Search field, status filters and the tasks. [onOpen] decides what a tap
+/// on a task does for the current width.
+class _TasksListPane extends StatelessWidget {
+  const _TasksListPane({required this.controller, required this.onOpen});
+
+  final TasksListController controller;
+  final ValueChanged<Task> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = TasksLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.sm,
-            AppSpacing.md,
-            0,
+          padding: const EdgeInsetsDirectional.only(
+            start: AppSpacing.md,
+            end: AppSpacing.md,
+            top: AppSpacing.sm,
           ),
-          child: TextField(
-            controller: _searchController,
-            onChanged: _list.search,
+          // A width change rebuilds this field from scratch: starting from
+          // the current query brings back what the user searched for.
+          child: TextFormField(
+            initialValue: controller.query,
+            onChanged: controller.search,
             decoration: InputDecoration(
               hintText: l10n.searchHint,
               prefixIcon: const Icon(Icons.search),
@@ -127,41 +125,35 @@ class _TasksListScreenState extends State<TasksListScreen> {
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsetsDirectional.only(
+            start: AppSpacing.md,
+            end: AppSpacing.md,
+            top: AppSpacing.sm,
+            bottom: AppSpacing.sm,
+          ),
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final (status, label) in _statusFilters(l10n))
+                ChoiceChip(
+                  label: Text(label),
+                  selected: controller.status == status,
+                  onSelected: (_) => controller.filter(status),
+                ),
+            ],
+          ),
+        ),
         Expanded(
-          child: ListenableBuilder(
-            listenable: _list,
-            builder: (context, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.sm,
-                    AppSpacing.md,
-                    AppSpacing.sm,
-                  ),
-                  child: Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      for (final (status, label) in _statusFilters(l10n))
-                        ChoiceChip(
-                          label: Text(label),
-                          selected: _list.status == status,
-                          onSelected: (_) => _list.filter(status),
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: AsyncValueView<List<Task>>(
-                    value: _list.items,
-                    errorMessage: l10n.loadError,
-                    onRetry: _list.reload,
-                    data: (items) => _buildItems(items, onOpen, l10n),
-                  ),
-                ),
-              ],
+          child: AsyncValueView<List<Task>>(
+            value: controller.items,
+            errorMessage: l10n.loadError,
+            onRetry: controller.reload,
+            data: (items) => _TaskItems(
+              controller: controller,
+              items: items,
+              onOpen: onOpen,
             ),
           ),
         ),
@@ -169,20 +161,33 @@ class _TasksListScreenState extends State<TasksListScreen> {
     );
   }
 
-  List<(TaskStatus?, String)> _statusFilters(TasksLocalizations l10n) => [
-    (null, l10n.filterAll),
-    (TaskStatus.open, l10n.filterOpen),
-    (TaskStatus.inProgress, l10n.filterInProgress),
-    (TaskStatus.done, l10n.filterDone),
-  ];
+  static List<(TaskStatus?, String)> _statusFilters(TasksLocalizations l10n) =>
+      [
+        (null, l10n.filterAll),
+        (TaskStatus.open, l10n.filterOpen),
+        (TaskStatus.inProgress, l10n.filterInProgress),
+        (TaskStatus.done, l10n.filterDone),
+      ];
+}
 
-  Widget _buildItems(
-    List<Task> items,
-    ValueChanged<Task> onOpen,
-    TasksLocalizations l10n,
-  ) {
+/// The loaded tasks, with "load more" at the end while there are more pages,
+/// or the empty state of the list or of the search.
+class _TaskItems extends StatelessWidget {
+  const _TaskItems({
+    required this.controller,
+    required this.items,
+    required this.onOpen,
+  });
+
+  final TasksListController controller;
+  final List<Task> items;
+  final ValueChanged<Task> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = TasksLocalizations.of(context);
     if (items.isEmpty) {
-      return _list.searching
+      return controller.searching
           ? EmptyState(
               icon: Icons.search_off,
               title: l10n.emptySearchTitle,
@@ -194,33 +199,51 @@ class _TasksListScreenState extends State<TasksListScreen> {
               message: l10n.emptyMessage,
             );
     }
-    final hasMore = _list.hasMore;
+    final hasMore = controller.hasMore;
     return ListView.separated(
       itemCount: items.length + (hasMore ? 1 : 0),
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        if (index == items.length) {
-          return Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Center(
-              child: _list.loadingMore
-                  ? const CircularProgressIndicator()
-                  : OutlinedButton(
-                      onPressed: _loadMore,
-                      child: Text(AppLocalizations.of(context).loadMore),
-                    ),
-            ),
-          );
-        }
+        if (index == items.length) return _LoadMore(controller: controller);
         final task = items[index];
         return ListTile(
           key: ValueKey(task.id),
-          selected: task.id == _selectedId,
+          selected: task.id == controller.selectedId,
           title: Text(task.title),
           subtitle: Text(taskStatusLabel(l10n, task.status)),
           onTap: () => onOpen(task),
         );
       },
+    );
+  }
+}
+
+/// Button that appends the next page, or a spinner while it loads.
+class _LoadMore extends StatelessWidget {
+  const _LoadMore({required this.controller});
+
+  final TasksListController controller;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(AppSpacing.md),
+    child: Center(
+      child: controller.loadingMore
+          ? const CircularProgressIndicator()
+          : OutlinedButton(
+              onPressed: () => _loadMore(context),
+              child: Text(AppLocalizations.of(context).loadMore),
+            ),
+    ),
+  );
+
+  Future<void> _loadMore(BuildContext context) async {
+    final result = await controller.loadMore();
+    if (!context.mounted) return;
+    showActionResult(
+      context,
+      result,
+      failure: TasksLocalizations.of(context).loadError,
     );
   }
 }

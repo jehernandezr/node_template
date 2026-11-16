@@ -6,7 +6,6 @@
 
   "currentPlan": "Plan actual",
   "subscriptionStatus": "Estado de la suscripción",
-  "currentPeriod": "Periodo actual",
   "usageTitle": "Uso del periodo",
   "quotaUsers": "Usuarios",
   "quotaApiCalls": "Llamadas API",
@@ -22,7 +21,6 @@
   "changePlanError": "No pudimos cambiar el plan.",
   "viewInvoices": "Ver facturas",
 
-  "invoicePeriod": "Periodo",
   "charges": "Cargos",
   "total": "Total",
   "fixedFee": "Cargo fijo",
@@ -49,7 +47,15 @@
   "invoiceFailed": "Fallida",
   "invoiceVoided": "Anulada",
 
+  "planPrice": "{price} / {periodicity}",
+  "currentPeriodLine": "Periodo actual: {period}",
+  "invoicePeriodLine": "Periodo: {period}",
+  "usageAmounts": "{used} / {limit}",
   "periodRange": "{start} a {end}",
 
+  "@planPrice": {"placeholders": {"price": {"type": "String"}, "periodicity": {"type": "String"}}},
+  "@currentPeriodLine": {"placeholders": {"period": {"type": "String"}}},
+  "@invoicePeriodLine": {"placeholders": {"period": {"type": "String"}}},
+  "@usageAmounts": {"placeholders": {"used": {"type": "String"}, "limit": {"type": "String"}}},
   "@periodRange": {"placeholders": {"start": {"type": "String"}, "end": {"type": "String"}}}
 }

@@ -7,7 +7,7 @@ library;
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'src/screens/verifier_screen.dart' deferred as screens;
+import 'src/screens/screens.dart' deferred as screens;
 import 'src/shared/constants/verifier_constants.dart';
 
 /// Manifest registered by the shells. Routes live under `/verifier`.
@@ -32,11 +32,10 @@ final MicrofrontendManifest verifierManifest = MicrofrontendManifest(
   ],
   deepLinks: _deepLink,
   screens: [
-    ScreenRoute(
-      path: verifierPath,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) =>
-          screens.buildVerifierScreen(scope),
+    ScreenRoute.deferred(
+      verifierPath,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.VerifierScreens.main(scope),
     ),
   ],
 );

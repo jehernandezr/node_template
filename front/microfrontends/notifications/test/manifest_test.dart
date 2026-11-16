@@ -15,7 +15,7 @@ void main() {
 
   test('declares screens', () {
     final built = notificationsManifest.buildRoutes(
-      deferredPage,
+      DeferredLibraryLoader().page,
       () => throw StateError('unused'),
     );
     expect(built, hasLength(notificationsManifest.screens.length));
@@ -30,7 +30,7 @@ void main() {
 
   test('buildRoutes nests preferences under the inbox', () {
     final routes = notificationsManifest.buildRoutes(
-      deferredPage,
+      DeferredLibraryLoader().page,
       () => throw StateError('unused'),
     );
     final inbox = routes.single;

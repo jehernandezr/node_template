@@ -27,5 +27,8 @@
   "quietHoursStart": "Inicio",
   "quietHoursEnd": "Fin",
   "quietHoursStartPicker": "Hora de inicio",
-  "quietHoursEndPicker": "Hora de fin"
+  "quietHoursEndPicker": "Hora de fin",
+
+  "preferenceSwitchLabel": "{type}, canal {channel}",
+  "@preferenceSwitchLabel": {"placeholders": {"type": {"type": "String"}, "channel": {"type": "String"}}}
 }

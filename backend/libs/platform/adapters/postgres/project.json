@@ -5,6 +5,22 @@
   "projectType": "library",
   "tags": ["type:platform", "scope:platform"],
   "targets": {
-    "typecheck": {}
+    "typecheck": {},
+    "migration-generate-shard": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig backend/libs/platform/adapters/postgres/tsconfig.migration.json backend/libs/platform/persistence/src/cli/migration-generate.entry.ts --definition=backend/libs/platform/adapters/postgres/src/migrations/shard.definition.ts --out=backend/libs/platform/adapters/postgres/src/migrations/shard",
+        "cwd": "{workspaceRoot}",
+        "forwardAllArgs": true
+      }
+    },
+    "migration-generate-catalog": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig backend/libs/platform/adapters/postgres/tsconfig.migration.json backend/libs/platform/persistence/src/cli/migration-generate.entry.ts --definition=backend/libs/platform/adapters/postgres/src/migrations/catalog.definition.ts --out=backend/libs/platform/adapters/postgres/src/migrations/catalog",
+        "cwd": "{workspaceRoot}",
+        "forwardAllArgs": true
+      }
+    }
   }
 }

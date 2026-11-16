@@ -29,3 +29,6 @@ String formatCountdown(int seconds) {
   final rest = (safe % 60).toString().padLeft(2, '0');
   return '$minutes:$rest';
 }
+
+/// Spells a code digit by digit for a screen reader, e.g. `1 2 3 4 5 6 7 8`.
+String spokenCode(String code) => code.split('').join(' ');

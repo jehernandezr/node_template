@@ -5,105 +5,49 @@ import '../data/notifications_repository.dart';
 import '../l10n/generated/notifications_localizations.dart';
 import '../l10n/notification_labels.dart';
 import '../shared/types/types.dart';
+import 'preferences_controller.dart';
 
-/// Preferencias: matriz de tipos por canales y horario de silencio.
-class NotificationsPreferencesScreen extends StatefulWidget {
+/// Preferences: a matrix of types by channels and the quiet hours. The screen
+/// only builds the view; [PreferencesController] holds the state.
+class NotificationsPreferencesScreen extends StatelessWidget {
   const NotificationsPreferencesScreen({super.key, required this.repository});
 
   final NotificationsRepository repository;
 
   @override
-  State<NotificationsPreferencesScreen> createState() =>
-      _NotificationsPreferencesScreenState();
+  Widget build(BuildContext context) =>
+      ControllerBuilder<PreferencesController>(
+        create: (_) => PreferencesController(repository)..start(),
+        builder: (context, controller) {
+          final l10n = NotificationsLocalizations.of(context);
+          return AppPage(
+            title: l10n.preferencesTitle,
+            body: AsyncValueView<NotificationPreferences>(
+              value: controller.preferences,
+              errorMessage: l10n.loadError,
+              onRetry: controller.start,
+              data: (preferences) => _PreferencesForm(
+                preferences: preferences,
+                controller: controller,
+              ),
+            ),
+          );
+        },
+      );
 }
 
-class _NotificationsPreferencesScreenState
-    extends State<NotificationsPreferencesScreen> {
-  AsyncValue<NotificationPreferences> _preferences = const AsyncValue.loading();
+final class _PreferencesForm extends StatelessWidget {
+  const _PreferencesForm({required this.preferences, required this.controller});
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  // Fits the longest channel name and a switch side by side.
+  static const double _channelColumnWidth = 72;
 
-  Future<void> _load() async {
-    final result = await AsyncValue.guard(widget.repository.fetchPreferences);
-    if (!mounted) return;
-    setState(() => _preferences = result);
-  }
-
-  void _retry() {
-    setState(() => _preferences = const AsyncValue.loading());
-    _load();
-  }
-
-  /// Muestra [next] al instante. Si el guardado falla, vuelve a la versión
-  /// anterior y avisa con [showActionError].
-  Future<void> _update(NotificationPreferences next) async {
-    final previous = _preferences;
-    setState(() => _preferences = AsyncValue.data(next));
-    try {
-      await widget.repository.savePreferences(next);
-    } on Exception catch (error) {
-      if (!mounted) return;
-      setState(() => _preferences = previous);
-      showActionError(
-        context,
-        error,
-        message: NotificationsLocalizations.of(context).saveError,
-      );
-    }
-  }
-
-  Future<void> _setChannel(
-    NotificationType type,
-    NotificationChannel channel,
-    bool on,
-  ) async {
-    final current = _preferences.valueOrNull;
-    if (current == null) return;
-    await _update(current.withChannel(type, channel, on));
-  }
-
-  Future<void> _pickQuietTime({required bool start}) async {
-    final current = _preferences.valueOrNull;
-    if (current == null) return;
-    final l10n = NotificationsLocalizations.of(context);
-    final initial = start ? current.quietStart : current.quietEnd;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: initial.hour, minute: initial.minute),
-      helpText: start ? l10n.quietHoursStartPicker : l10n.quietHoursEndPicker,
-    );
-    if (picked == null || !mounted) return;
-    final time = ClockTime(picked.hour, picked.minute);
-    await _update(
-      start
-          ? current.withQuietHours(start: time)
-          : current.withQuietHours(end: time),
-    );
-  }
+  final NotificationPreferences preferences;
+  final PreferencesController controller;
 
   @override
   Widget build(BuildContext context) {
     final l10n = NotificationsLocalizations.of(context);
-    return AppPage(
-      title: l10n.preferencesTitle,
-      body: AsyncValueView<NotificationPreferences>(
-        value: _preferences,
-        errorMessage: l10n.loadError,
-        onRetry: _retry,
-        data: (preferences) => _buildForm(context, l10n, preferences),
-      ),
-    );
-  }
-
-  Widget _buildForm(
-    BuildContext context,
-    NotificationsLocalizations l10n,
-    NotificationPreferences preferences,
-  ) {
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -115,7 +59,7 @@ class _NotificationsPreferencesScreenState
             ),
             for (final channel in NotificationChannel.values)
               SizedBox(
-                width: 72,
+                width: _channelColumnWidth,
                 child: Text(
                   l10n.channelLabel(channel),
                   textAlign: TextAlign.center,
@@ -145,14 +89,31 @@ class _NotificationsPreferencesScreenState
                 ),
                 for (final channel in NotificationChannel.values)
                   SizedBox(
-                    width: 72,
+                    width: _channelColumnWidth,
                     child: Center(
-                      child: Switch(
-                        key: ValueKey('pref-${type.name}-${channel.name}'),
-                        value: preferences.isEnabled(type, channel),
-                        onChanged: type.isMandatory
-                            ? null
-                            : (on) => _setChannel(type, channel, on),
+                      // Switch has no label of its own: the type and the
+                      // channel name it, so a screen reader tells them apart.
+                      child: MergeSemantics(
+                        child: Semantics(
+                          label: l10n.preferenceSwitchLabel(
+                            l10n.typeLabel(type),
+                            l10n.channelLabel(channel),
+                          ),
+                          child: Switch(
+                            key: ValueKey('pref-${type.name}-${channel.name}'),
+                            value: preferences.isEnabled(type, channel),
+                            onChanged: type.isMandatory
+                                ? null
+                                : (on) => _show(
+                                    context,
+                                    controller.setChannel(
+                                      type,
+                                      channel,
+                                      enabled: on,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -165,15 +126,48 @@ class _NotificationsPreferencesScreenState
           key: const ValueKey('quiet-start'),
           title: Text(l10n.quietHoursStart),
           trailing: Text(preferences.quietStart.toString()),
-          onTap: () => _pickQuietTime(start: true),
+          onTap: () =>
+              _pickQuietTime(context, controller, preferences, start: true),
         ),
         ListTile(
           key: const ValueKey('quiet-end'),
           title: Text(l10n.quietHoursEnd),
           trailing: Text(preferences.quietEnd.toString()),
-          onTap: () => _pickQuietTime(start: false),
+          onTap: () =>
+              _pickQuietTime(context, controller, preferences, start: false),
         ),
       ],
     );
+  }
+
+  static Future<void> _pickQuietTime(
+    BuildContext context,
+    PreferencesController controller,
+    NotificationPreferences current, {
+    required bool start,
+  }) async {
+    final l10n = NotificationsLocalizations.of(context);
+    final initial = start ? current.quietStart : current.quietEnd;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initial.hour, minute: initial.minute),
+      helpText: start ? l10n.quietHoursStartPicker : l10n.quietHoursEndPicker,
+    );
+    if (picked == null || !context.mounted) return;
+    final time = ClockTime(picked.hour, picked.minute);
+    await _show(
+      context,
+      start ? controller.setQuietStart(time) : controller.setQuietEnd(time),
+    );
+  }
+
+  static Future<void> _show(
+    BuildContext context,
+    Future<ActionResult<void>> action,
+  ) async {
+    final failure = NotificationsLocalizations.of(context).saveError;
+    final result = await action;
+    if (!context.mounted) return;
+    showActionResult(context, result, failure: failure);
   }
 }

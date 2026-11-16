@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:contracts/contracts.dart';
+import 'package:shell_core/shell_core.dart';
 
 import '../shared/constants/assistant_constants.dart';
+import '../shared/enums/assistant_operation.dart';
 import '../shared/enums/assistant_role.dart';
 import '../shared/types/assistant_types.dart';
 import 'assistant_repository.dart';
@@ -14,42 +16,49 @@ import 'assistant_repository.dart';
 /// - `cuota`: fails with `BILLING.QUOTA.EXCEEDED` as an [ApiErrorException].
 /// - `tarea`: streams text, then asks to confirm a tool before continuing.
 /// - anything else: streams text, then citations and token usage.
+///
+/// Latency of list, create, history and the start of an answer, and the
+/// failures a test programs, come from [DemoBehavior]; [chunkDelay] only
+/// paces the chunks of an answer.
 base class FakeAssistantRepository implements AssistantRepository {
-  FakeAssistantRepository({this.chunkDelay = const Duration(milliseconds: 60)})
-    : _conversations = [
-        const Conversation(
-          id: 'c1',
-          title: 'Plan de la semana',
-          lastMessage: 'Esta semana tienes tres entregas.',
-        ),
-        const Conversation(
-          id: 'c2',
-          title: 'Facturas del trimestre',
-          lastMessage: 'Encontré tres facturas pendientes.',
-        ),
-      ],
-      _messages = {
-        'c1': [
-          const ChatMessage(
-            id: 'seed-1',
-            role: AssistantRole.user,
-            text: 'Qué tengo esta semana?',
-          ),
-          const ChatMessage(
-            id: 'seed-2',
-            role: AssistantRole.assistant,
-            text: 'Esta semana tienes tres entregas.',
-          ),
-        ],
-      };
+  FakeAssistantRepository({
+    DemoBehavior? behavior,
+    this.chunkDelay = const Duration(milliseconds: 60),
+  }) : _behavior = behavior ?? DemoBehavior(),
+       _conversations = [
+         const Conversation(
+           id: 'c1',
+           title: 'Plan de la semana',
+           lastMessage: 'Esta semana tienes tres entregas.',
+         ),
+         const Conversation(
+           id: 'c2',
+           title: 'Facturas del trimestre',
+           lastMessage: 'Encontré tres facturas pendientes.',
+         ),
+       ],
+       _messages = {
+         'c1': [
+           const ChatMessage(
+             id: 'seed-1',
+             role: AssistantRole.user,
+             text: 'Qué tengo esta semana?',
+           ),
+           const ChatMessage(
+             id: 'seed-2',
+             role: AssistantRole.assistant,
+             text: 'Esta semana tienes tres entregas.',
+           ),
+         ],
+       };
 
   /// Pause between chunks, so the stream is visible in the UI.
   final Duration chunkDelay;
 
+  final DemoBehavior _behavior;
   final List<Conversation> _conversations;
   final Map<String, List<ChatMessage>> _messages;
   final Set<_ActiveAnswer> _active = {};
-  bool _disposed = false;
   int _nextConversation = 3;
 
   // Scripted server content, kept here because it simulates what the API sends.
@@ -72,26 +81,33 @@ base class FakeAssistantRepository implements AssistantRepository {
   static const TokenUsage _usage = TokenUsage(input: 412, output: 48);
 
   @override
-  Future<List<Conversation>> listConversations() async =>
-      List.unmodifiable(_conversations);
+  Future<List<Conversation>> listConversations() => _behavior.respond(
+    () => List.unmodifiable(_conversations),
+    operation: AssistantOperation.listConversations,
+  );
 
   @override
-  Future<Conversation> createConversation() async {
+  Future<Conversation> createConversation() => _behavior.respond(() {
     final conversation = Conversation(
       id: 'c${_nextConversation++}',
       title: 'Nueva conversación',
     );
     _conversations.insert(0, conversation);
     return conversation;
-  }
+  }, operation: AssistantOperation.createConversation);
 
   @override
-  Future<List<ChatMessage>> loadMessages(String conversationId) async =>
-      List.unmodifiable(_messages[conversationId] ?? const <ChatMessage>[]);
+  Future<List<ChatMessage>> loadMessages(String conversationId) =>
+      _behavior.respond(
+        () => List.unmodifiable(
+          _messages[conversationId] ?? const <ChatMessage>[],
+        ),
+        operation: AssistantOperation.loadMessages,
+      );
 
   @override
   Stream<AssistantChunk> ask(String conversationId, String message) {
-    if (_disposed) return const Stream.empty();
+    if (_behavior.isDisposed) return const Stream.empty();
     final answer = _ActiveAnswer(_script(message), _active.remove);
     _active.add(answer);
     return answer.stream;
@@ -100,7 +116,7 @@ base class FakeAssistantRepository implements AssistantRepository {
   /// Cancels every answer in progress. Their streams end without more chunks.
   @override
   void dispose() {
-    _disposed = true;
+    _behavior.dispose();
     for (final answer in _active.toList()) {
       answer.close();
     }
@@ -109,9 +125,9 @@ base class FakeAssistantRepository implements AssistantRepository {
 
   Stream<AssistantChunk> _script(String message) async* {
     final text = message.toLowerCase();
+    await _behavior.respond<void>(() {}, operation: AssistantOperation.ask);
 
     if (text.contains('cuota')) {
-      await Future<void>.delayed(chunkDelay);
       throw const ApiErrorException(
         ProblemDetails(
           type: 'about:blank',

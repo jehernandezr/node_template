@@ -1,22 +1,25 @@
+import 'dart:async';
+
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatMoney;
 
-import '../shared/constants/billing_access.dart';
-import '../l10n/billing_labels.dart';
-import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
+import '../l10n/billing_labels.dart';
 import '../l10n/generated/billing_localizations.dart';
-import 'widgets/billing_colors.dart';
+import '../shared/constants/billing_access.dart';
+import '../shared/constants/billing_paths.dart';
+import '../shared/types/billing_types.dart';
+import '../shared/utils/billing_tones.dart';
+import 'billing_plan_controller.dart';
 import 'widgets/change_plan_sheet.dart';
 import 'widgets/status_chip.dart';
 import 'widgets/usage_meter.dart';
-import '../shared/constants/billing_paths.dart';
 
 /// `/billing`: current plan, subscription status and usage of each quota.
-class BillingPlanScreen extends StatefulWidget {
+class BillingPlanScreen extends StatelessWidget {
   /// Creates the screen backed by [repository].
   const BillingPlanScreen({super.key, required this.repository});
 
@@ -24,86 +27,60 @@ class BillingPlanScreen extends StatefulWidget {
   final BillingRepository repository;
 
   @override
-  State<BillingPlanScreen> createState() => _BillingPlanScreenState();
-}
+  Widget build(BuildContext context) =>
+      ControllerBuilder<BillingPlanController>(
+        create: (_) => BillingPlanController(repository)..start(),
+        builder: (context, controller) {
+          final l10n = BillingLocalizations.of(context);
+          return AppPage(
+            title: l10n.billingPageTitle,
+            body: AsyncValueView<PlanOverview>(
+              value: controller.overview,
+              errorMessage: l10n.loadError,
+              onRetry: controller.start,
+              data: (overview) => _PlanContent(
+                overview: overview,
+                onChangePlan: () => _openChangePlan(
+                  context,
+                  repository: repository,
+                  controller: controller,
+                  currentPlanId: overview.subscription.plan.id,
+                ),
+              ),
+            ),
+          );
+        },
+      );
 
-class _PlanData {
-  const _PlanData({required this.subscription, required this.usage});
-
-  final Subscription subscription;
-  final List<QuotaUsage> usage;
-}
-
-class _BillingPlanScreenState extends State<BillingPlanScreen> {
-  AsyncValue<_PlanData> _state = const AsyncValue.loading();
-  int _generation = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<_PlanData> _fetch() async {
-    final subscription = await widget.repository.currentSubscription();
-    final usage = await widget.repository.currentUsage();
-    return _PlanData(subscription: subscription, usage: usage);
-  }
-
-  Future<void> _load() async {
-    final generation = ++_generation;
-    final result = await AsyncValue.guard(_fetch);
-    if (!mounted || generation != _generation) return;
-    setState(() => _state = result);
-  }
-
-  void _reload() {
-    setState(() => _state = const AsyncValue.loading());
-    _load();
-  }
-
-  Future<void> _openChangePlan(String currentPlanId) async {
-    final changed = await showModalBottomSheet<bool>(
-      context: context,
+  /// Opens the sheet over the screen. The plan reloads only when the change
+  /// was saved.
+  static Future<void> _openChangePlan(
+    BuildContext context, {
+    required BillingRepository repository,
+    required BillingPlanController controller,
+    required String currentPlanId,
+  }) async {
+    final changed = await context.showLocalizedSheet<bool>(
       isScrollControlled: true,
-      builder: (_) => ChangePlanSheet(
-        repository: widget.repository,
-        currentPlanId: currentPlanId,
-      ),
+      builder: (_) =>
+          ChangePlanSheet(repository: repository, currentPlanId: currentPlanId),
     );
-    if (!mounted) return;
-    if (changed == true) _reload();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = BillingLocalizations.of(context);
-    return AppPage(
-      title: l10n.billingPageTitle,
-      body: AsyncValueView<_PlanData>(
-        value: _state,
-        errorMessage: l10n.loadError,
-        onRetry: _reload,
-        data: (data) => _PlanContent(
-          data: data,
-          onChangePlan: () => _openChangePlan(data.subscription.plan.id),
-        ),
-      ),
-    );
+    if (!context.mounted) return;
+    if (changed == true) unawaited(controller.start());
   }
 }
 
 class _PlanContent extends StatelessWidget {
-  const _PlanContent({required this.data, required this.onChangePlan});
+  const _PlanContent({required this.overview, required this.onChangePlan});
 
-  final _PlanData data;
+  final PlanOverview overview;
   final VoidCallback onChangePlan;
 
   @override
   Widget build(BuildContext context) {
     final l10n = BillingLocalizations.of(context);
     final theme = Theme.of(context);
-    final subscription = data.subscription;
+    final subscription = overview.subscription;
     final plan = subscription.plan;
     final period = subscription.period;
     return ListView(
@@ -118,8 +95,10 @@ class _PlanContent extends StatelessWidget {
               Text(plan.name, style: theme.textTheme.headlineSmall),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                '${formatMoney(plan.price, locale: localeTag(context))} / '
-                '${periodicityLabel(l10n, plan.periodicity)}',
+                l10n.planPrice(
+                  formatMoney(plan.price, locale: context.localeTag),
+                  periodicityLabel(l10n, plan.periodicity),
+                ),
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -133,13 +112,15 @@ class _PlanContent extends StatelessWidget {
                   ),
                   StatusChip(
                     label: subscriptionStatusLabel(l10n, subscription.status),
-                    color: subscriptionStatusColor(subscription.status),
+                    tone: BillingTones.subscription(subscription.status),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '${l10n.currentPeriod}: ${formatPeriod(l10n, period, locale: localeTag(context))}',
+                l10n.currentPeriodLine(
+                  formatPeriod(l10n, period, locale: context.localeTag),
+                ),
                 style: theme.textTheme.bodySmall,
               ),
             ],
@@ -149,12 +130,12 @@ class _PlanContent extends StatelessWidget {
         Text(l10n.usageTitle, style: theme.textTheme.titleMedium),
         const SizedBox(height: AppSpacing.sm),
         AppCard(
-          child: data.usage.isEmpty
+          child: overview.usage.isEmpty
               ? Text(l10n.noQuotas)
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final usage in data.usage) ...[
+                    for (final usage in overview.usage) ...[
                       UsageMeter(usage: usage),
                       const SizedBox(height: AppSpacing.md),
                     ],
@@ -165,7 +146,7 @@ class _PlanContent extends StatelessWidget {
         AccessGate(
           rule: billingWriteRule,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsetsDirectional.only(bottom: AppSpacing.sm),
             child: AppButton(label: l10n.changePlan, onPressed: onChangePlan),
           ),
         ),

@@ -1,98 +1,68 @@
 import {
-  decodeShardDirectoryChanged,
-  encodeShardDirectoryChanged,
+  ShardDirectoryChangeCodec,
+  ShardDirectoryChannel,
   type ShardDirectoryChangeHandler,
-  type ShardDirectoryChangePublisher,
-  type ShardDirectoryChangeSubscriber,
   type ShardDirectoryChanged,
 } from '@platform/sharding';
-import {
-  runCommand,
-  ValkeyCommand,
-  type ValkeyCommandRunner,
-} from './valkey-client.js';
-import { ValkeyUnexpectedReplyError } from './valkey-error.js';
+import { ValkeyCommand } from './valkey-command.enum.js';
+import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
-
-/** Channel of directory changes inside a keyspace: `<prefix>:sharding:directory-changed`. */
-export function shardDirectoryChannel(keyspace: ValkeyKeyspace): string {
-  return keyspace.key('sharding', 'directory-changed');
-}
-
-/** Listener of a subscriber connection: channel and message. */
-export type ValkeyMessageListener = (channel: string, message: string) => void;
+import type {
+  ValkeyMessageListener,
+  ValkeySubscriberConnection,
+} from './valkey-subscriber-connection.js';
+import type { ValkeySubscriberSource } from './valkey-subscriber-source.js';
+import { ValkeyUnexpectedReplyError } from './valkey-unexpected-reply.error.js';
 
 /**
- * The part of a dedicated subscriber connection the channel uses. An iovalkey client in subscriber mode
- * (`client.duplicate()`) satisfies it.
+ * `ShardingEvent.ShardDirectoryChanged` sobre el pub/sub de Valkey. La entrega
+ * es como máximo una vez y solo a los procesos conectados en ese momento, que
+ * es lo que pide una invalidación de caché: un proceso que pierde un mensaje
+ * igual encuentra la lápida en el caché compartido y suelta su copia al vencer
+ * `localTtlMs`. El bus de mensajería puede implementar los mismos puertos
+ * cuando se quiere entrega durable.
+ *
+ * El canal es `<prefijo>:sharding:directory-changed`: uno por servicio los
+ * mantiene separados y queda dentro de la ACL de canales `&<prefijo>:*` del
+ * usuario del servicio. Los mensajes malformados y las fallas de los handlers
+ * van a `onError` y nunca detienen el canal.
  */
-export interface ValkeySubscriberConnection {
-  subscribe(...channels: string[]): Promise<unknown>;
-  unsubscribe(...channels: string[]): Promise<unknown>;
-  on(event: 'message', listener: ValkeyMessageListener): unknown;
-  off(event: 'message', listener: ValkeyMessageListener): unknown;
-}
-
-/** Options of {@link ValkeyShardDirectoryChannel}. */
-export interface ValkeyShardDirectoryChannelOptions {
-  /** Connection that publishes (any regular client). */
-  readonly publisher: ValkeyCommandRunner;
-  /** Dedicated connection in subscriber mode. */
-  readonly subscriber: ValkeySubscriberConnection;
-  /**
-   * The channel is {@link shardDirectoryChannel} of this keyspace: one channel per service keeps services
-   * apart and stays inside the `&<prefix>:*` channel ACL of the service user.
-   */
-  readonly keyspace: ValkeyKeyspace;
-  /** Receives malformed messages and handler failures. They never stop the channel. */
-  readonly onError?: (error: unknown) => void;
-}
-
-/**
- * `ShardingEvent.ShardDirectoryChanged` over Valkey pub/sub. Delivery is at most once and only to processes
- * connected at the time, which is what a cache invalidation needs: a process that misses a message still
- * finds the tombstone in the shared cache and drops its copy after `localTtlMs`. The messaging bus can
- * implement the same ports when durable delivery is wanted.
- */
-export class ValkeyShardDirectoryChannel
-  implements ShardDirectoryChangePublisher, ShardDirectoryChangeSubscriber
-{
-  private readonly publisher: ValkeyCommandRunner;
-  private readonly subscriber: ValkeySubscriberConnection;
+export class ValkeyShardDirectoryChannel extends ShardDirectoryChannel {
   private readonly channel: string;
-  private readonly onError: (error: unknown) => void;
   private readonly handlers = new Set<ShardDirectoryChangeHandler>();
   private readonly listener: ValkeyMessageListener;
+  private subscription: ValkeySubscriberConnection | undefined;
 
-  constructor(options: ValkeyShardDirectoryChannelOptions) {
-    this.publisher = options.publisher;
-    this.subscriber = options.subscriber;
-    this.channel = shardDirectoryChannel(options.keyspace);
-    this.onError = options.onError ?? (() => undefined);
+  constructor(
+    private readonly executor: ValkeyCommandExecutor,
+    private readonly subscribers: ValkeySubscriberSource,
+    keyspace: ValkeyKeyspace,
+    private readonly onError: (error: unknown) => void = () => undefined,
+  ) {
+    super();
+    this.channel = keyspace.key('sharding', 'directory-changed');
     this.listener = (channel, message) => this.deliver(channel, message);
   }
 
   async publish(event: ShardDirectoryChanged): Promise<void> {
-    await runCommand(this.publisher, ValkeyCommand.Publish, [
+    await this.executor.run(ValkeyCommand.Publish, [
       this.channel,
-      encodeShardDirectoryChanged(event),
+      ShardDirectoryChangeCodec.encode(event),
     ]);
   }
 
   async subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>> {
-    // Wrap so the same handler can be subscribed twice and removed once.
+    // Se envuelve para poder suscribir el mismo handler dos veces y darlo de baja una sola.
     const entry: ShardDirectoryChangeHandler = (event) => handler(event);
     const first = this.handlers.size === 0;
     this.handlers.add(entry);
     if (first) {
-      this.subscriber.on('message', this.listener);
       try {
-        await this.subscriber.subscribe(this.channel);
+        await this.listen();
       } catch (error) {
         this.handlers.delete(entry);
-        this.subscriber.off('message', this.listener);
         throw error;
       }
     }
@@ -100,16 +70,37 @@ export class ValkeyShardDirectoryChannel
       if (!this.handlers.delete(entry) || this.handlers.size > 0) {
         return;
       }
-      this.subscriber.off('message', this.listener);
-      await this.subscriber.unsubscribe(this.channel);
+      await this.stopListening();
     };
+  }
+
+  private async listen(): Promise<void> {
+    const connection = await this.subscribers.connection();
+    connection.on('message', this.listener);
+    try {
+      await connection.subscribe(this.channel);
+    } catch (error) {
+      connection.off('message', this.listener);
+      throw error;
+    }
+    this.subscription = connection;
+  }
+
+  private async stopListening(): Promise<void> {
+    const connection = this.subscription;
+    this.subscription = undefined;
+    if (connection === undefined) {
+      return;
+    }
+    connection.off('message', this.listener);
+    await connection.unsubscribe(this.channel);
   }
 
   private deliver(channel: string, message: string): void {
     if (channel !== this.channel) {
       return;
     }
-    const event = decodeShardDirectoryChanged(message);
+    const event = ShardDirectoryChangeCodec.decode(message);
     if (event === undefined) {
       this.onError(
         new ValkeyUnexpectedReplyError(

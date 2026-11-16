@@ -31,5 +31,15 @@
   "denyConfirm": "Sí, bloquear",
   "blockedTitle": "Intento bloqueado",
   "blockedBody": "Bloqueamos el intento y enviamos una alerta a tus canales de contacto. Revisa tu seguridad si no reconoces esta actividad.",
-  "denyFailed": "No pudimos bloquear el intento. Inténtalo de nuevo."
+  "denyFailed": "No pudimos bloquear el intento. Inténtalo de nuevo.",
+  "expiresSoonAnnouncement": "El código caduca en {seconds} segundos",
+  "@expiresSoonAnnouncement": {
+    "description": "Announced once when the code is about to expire.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "codeExpiredAnnouncement": "El código caducó"
 }

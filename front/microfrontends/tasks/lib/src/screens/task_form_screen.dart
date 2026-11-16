@@ -1,26 +1,22 @@
-import 'dart:async';
-
-import 'package:contracts/contracts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
-import 'package:utils/utils.dart';
 
 import '../data/tasks_repository.dart';
 import '../l10n/generated/tasks_localizations.dart';
-import '../shared/enums/task_status.dart';
-import '../shared/types/task.dart';
-import 'task_status_label.dart';
 import '../shared/constants/tasks_paths.dart';
+import '../shared/types/task.dart';
+import 'task_form_controller.dart';
+import 'task_form_state.dart';
+import 'widgets/task_form_fields.dart';
 
 /// Route `/tasks/new` (create) and `/tasks/:id/edit` (edit).
 ///
 /// Saving calls the repository and navigates with `go`: to the list after a
-/// create, to the task's page after an edit. A request that breaks the
-/// contract shows its field errors under the fields; any other failure shows
-/// a snack bar and keeps the form.
-class TaskFormScreen extends StatefulWidget {
+/// create, to the task's page after an edit. A failed save shows a snack bar
+/// and keeps the form; one that breaks the contract also shows its field
+/// errors under the fields.
+class TaskFormScreen extends StatelessWidget {
   /// Creates the form. A null [taskId] creates a new task.
   const TaskFormScreen({super.key, required this.repository, this.taskId});
 
@@ -28,183 +24,57 @@ class TaskFormScreen extends StatefulWidget {
   final String? taskId;
 
   @override
-  State<TaskFormScreen> createState() => _TaskFormScreenState();
-}
-
-class _TaskFormScreenState extends State<TaskFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _title = TextEditingController();
-  final _description = TextEditingController();
-  TaskStatus _status = TaskStatus.open;
-  bool _saving = false;
-
-  /// Error codes of the last save, by field, from a contract violation.
-  Map<String, List<String>> _fieldErrors = const {};
-
-  /// State of the load of the task being edited. Data when creating.
-  late AsyncValue<Task?> _loaded = _editing
-      ? const AsyncValue.loading()
-      : const AsyncValue.data(null);
-
-  bool get _editing => widget.taskId != null;
-
-  @override
-  void initState() {
-    super.initState();
-    if (_editing) unawaited(_load());
-  }
-
-  @override
-  void dispose() {
-    _title.dispose();
-    _description.dispose();
-    super.dispose();
-  }
-
-  /// Loads the task being edited into the controllers.
-  Future<void> _load() async {
-    final result = await AsyncValue.guard<Task?>(
-      () => widget.repository.get(widget.taskId!),
-    );
-    if (!mounted) return;
-    if (result case AsyncData<Task?>(:final value?)) {
-      _title.text = value.title;
-      _description.text = value.description;
-      _status = value.status;
-    }
-    setState(() => _loaded = result);
-  }
-
-  void _retry() {
-    setState(() => _loaded = const AsyncValue.loading());
-    unawaited(_load());
-  }
-
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    final draft = TaskDraft(
-      title: _title.text.trim(),
-      description: _description.text.trim(),
-      status: _status,
-    );
-    final id = widget.taskId;
-    setState(() {
-      _saving = true;
-      _fieldErrors = const {};
-    });
-    try {
-      if (id == null) {
-        await widget.repository.create(draft);
-      } else {
-        await widget.repository.update(id, draft);
+  Widget build(BuildContext context) => ControllerBuilder<TaskFormController>(
+    // The repository is part of the key: a new identity gets a new controller.
+    key: ValueKey((repository, taskId)),
+    create: (_) => TaskFormController(repository, taskId: taskId)..start(),
+    builder: (context, controller) {
+      final l10n = TasksLocalizations.of(context);
+      final id = taskId;
+      Future<void> submit(TaskDraft draft) async {
+        final result = await controller.save(draft);
+        if (!context.mounted) return;
+        showActionResult(
+          context,
+          result,
+          failure: TasksLocalizations.of(context).saveError,
+        );
+        if (controller.state is TaskFormSaved) {
+          context.go(id == null ? TasksPaths.list : TasksPaths.detail(id));
+        }
       }
-    } on ContractViolationException catch (error) {
-      if (mounted) {
-        setState(() => _fieldErrors = fieldErrorsByField(error.errors));
-      }
-      _saveFailed(error);
-      return;
-    } on Exception catch (error) {
-      // API, network or not found.
-      _saveFailed(error);
-      return;
-    }
-    if (!mounted) return;
-    context.go(id == null ? TasksPaths.list : TasksPaths.detail(id));
-  }
 
-  void _saveFailed(Object error) {
-    if (!mounted) return;
-    setState(() => _saving = false);
-    showActionError(
-      context,
-      error,
-      message: TasksLocalizations.of(context).saveError,
-    );
-  }
-
-  /// Message of the first contract error of [field], or null.
-  String? _fieldError(String field, AppLocalizations shared) {
-    final codes = _fieldErrors[field];
-    if (codes == null || codes.isEmpty) return null;
-    return errorMessage(shared, codes.first);
-  }
-
-  Widget _form(BuildContext context) {
-    final l10n = TasksLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
-    return Form(
-      key: _formKey,
-      child: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          TextFormField(
-            controller: _title,
-            autofocus: !_editing,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: l10n.titleLabel,
-              border: const OutlineInputBorder(),
-              errorText: _fieldError('title', shared),
-            ),
-            validator: (value) =>
-                (value ?? '').trim().isEmpty ? l10n.titleRequired : null,
+      return AppPage(
+        title: id == null ? l10n.newTask : l10n.editTaskTitle,
+        onBack: () =>
+            context.go(id == null ? TasksPaths.list : TasksPaths.detail(id)),
+        body: switch (controller.state) {
+          TaskFormLoading() => const LoadingView(),
+          TaskFormLoadFailed(:final error) => ErrorView.fromException(
+            error,
+            fallbackMessage: error is TaskNotFoundException
+                ? l10n.detailNotFound
+                : l10n.detailError,
+            onRetry: error is TaskNotFoundException ? null : controller.start,
           ),
-          const SizedBox(height: AppSpacing.md),
-          TextFormField(
-            controller: _description,
-            minLines: 3,
-            maxLines: 6,
-            decoration: InputDecoration(
-              labelText: l10n.descriptionLabel,
-              border: const OutlineInputBorder(),
-              errorText: _fieldError('description', shared),
-            ),
+          // The same widget at the same place for the three states, so the
+          // text typed before a save survives it.
+          TaskFormEditing(:final task, :final fieldErrors) => TaskFormFields(
+            key: const ValueKey('task-form-fields'),
+            task: task,
+            fieldErrors: fieldErrors,
+            saving: false,
+            onSubmit: submit,
           ),
-          const SizedBox(height: AppSpacing.md),
-          Text(l10n.statusLabel, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: AppSpacing.sm),
-          SegmentedButton<TaskStatus>(
-            segments: [
-              for (final status in TaskStatus.values)
-                ButtonSegment<TaskStatus>(
-                  value: status,
-                  label: Text(taskStatusLabel(l10n, status)),
-                ),
-            ],
-            selected: {_status},
-            onSelectionChanged: (selection) =>
-                setState(() => _status = selection.first),
+          TaskFormSaving() || TaskFormSaved() => TaskFormFields(
+            key: const ValueKey('task-form-fields'),
+            task: null,
+            fieldErrors: const {},
+            saving: true,
+            onSubmit: submit,
           ),
-          const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            label: shared.actionSave,
-            loading: _saving,
-            onPressed: _save,
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = TasksLocalizations.of(context);
-    final id = widget.taskId;
-    final notFound = switch (_loaded) {
-      AsyncError<Task?>(:final error) => error is TaskNotFoundException,
-      _ => false,
-    };
-    return AppPage(
-      title: _editing ? l10n.editTaskTitle : l10n.newTask,
-      onBack: () =>
-          context.go(id == null ? TasksPaths.list : TasksPaths.detail(id)),
-      body: AsyncValueView<Task?>(
-        value: _loaded,
-        errorMessage: notFound ? l10n.detailNotFound : l10n.detailError,
-        onRetry: notFound ? null : _retry,
-        data: (_) => _form(context),
-      ),
-    );
-  }
+        },
+      );
+    },
+  );
 }

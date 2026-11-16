@@ -132,12 +132,6 @@ abstract class BillingLocalizations {
   /// **'Estado de la suscripción'**
   String get subscriptionStatus;
 
-  /// No description provided for @currentPeriod.
-  ///
-  /// In es, this message translates to:
-  /// **'Periodo actual'**
-  String get currentPeriod;
-
   /// No description provided for @usageTitle.
   ///
   /// In es, this message translates to:
@@ -215,12 +209,6 @@ abstract class BillingLocalizations {
   /// In es, this message translates to:
   /// **'Ver facturas'**
   String get viewInvoices;
-
-  /// No description provided for @invoicePeriod.
-  ///
-  /// In es, this message translates to:
-  /// **'Periodo'**
-  String get invoicePeriod;
 
   /// No description provided for @charges.
   ///
@@ -353,6 +341,30 @@ abstract class BillingLocalizations {
   /// In es, this message translates to:
   /// **'Anulada'**
   String get invoiceVoided;
+
+  /// No description provided for @planPrice.
+  ///
+  /// In es, this message translates to:
+  /// **'{price} / {periodicity}'**
+  String planPrice(String price, String periodicity);
+
+  /// No description provided for @currentPeriodLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Periodo actual: {period}'**
+  String currentPeriodLine(String period);
+
+  /// No description provided for @invoicePeriodLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Periodo: {period}'**
+  String invoicePeriodLine(String period);
+
+  /// No description provided for @usageAmounts.
+  ///
+  /// In es, this message translates to:
+  /// **'{used} / {limit}'**
+  String usageAmounts(String used, String limit);
 
   /// No description provided for @periodRange.
   ///

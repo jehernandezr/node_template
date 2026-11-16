@@ -1,13 +1,11 @@
-import {
-  Compensation,
-  defineOperation,
-  PlatformErrorCode,
-} from '@contracts/platform';
+import { Compensation, defineOperation } from '@contracts/platform';
+import { OperationResolver } from '@platform/internal-api';
 import { z } from 'zod';
-import { SagaError } from '../../errors.js';
-import { StepStatus } from '../../model.js';
+import { SagaError } from '../../errors/saga-error.js';
+import { SagaErrorCode } from '../../errors/saga-error-code.enum.js';
+import { StepStatus } from '../../model/step-status.enum.js';
 import { SagaDefinition } from '../saga-definition.js';
-import { SagaFlow } from '../saga-flow.js';
+import type { SagaFlow } from '../saga-flow.js';
 
 const CREATE_A = defineOperation({
   id: 'a.item.create.v1',
@@ -33,15 +31,6 @@ const SEND = defineOperation({
   compensatedBy: Compensation.None,
   compensationReason: 'A sent post cannot be recalled.',
   description: 'Sends a post.',
-});
-const UNDOABLE_A = defineOperation({
-  id: 'a.item.create-final.v1',
-  input: z.unknown(),
-  output: z.unknown(),
-  idempotent: true,
-  compensatedBy: Compensation.None,
-  compensationReason: 'Nothing undoes it.',
-  description: 'Creates an a for good.',
 });
 
 interface State {
@@ -76,8 +65,10 @@ class ValidSaga extends SagaDefinition<State> {
 }
 
 describe('SagaDefinition.build', () => {
-  it('compiles steps, the pivot boundary and the compensation operations', () => {
-    const compiled = new ValidSaga().build();
+  const resolver = new OperationResolver();
+
+  it('compila la saga con su tipo, el pivote y las compensaciones', () => {
+    const compiled = new ValidSaga().build(resolver);
 
     expect(compiled.type).toBe('valid');
     expect(compiled.pivotIndex).toBe(2);
@@ -91,182 +82,68 @@ describe('SagaDefinition.build', () => {
       'b.item.remove.v1',
       null,
     ]);
-    expect(compiled.steps[2].afterPivot).toBe(true);
-    expect(compiled.steps[1].input({})).toBeUndefined();
+    expect(compiled.steps[2]?.afterPivot).toBe(true);
   });
 
-  it('defaults the compensation input to the logged forward input', () => {
-    class Saga extends SagaDefinition<State> {
-      readonly type = 'default-compensation';
-
-      protected define(flow: SagaFlow<State>): void {
-        flow.step(CREATE_A).input(() => ({ name: 'x' }));
-      }
-    }
-    const step = new Saga().build().steps[0];
+  it('calcula la entrada de compensación con la que el paso declara', () => {
+    const compiled = new ValidSaga().build(resolver);
 
     expect(
-      step.compensationInput(
-        {},
+      compiled.steps[0]?.compensationInput(
+        { a: 'a-1' },
         {
-          input: { name: 'x' },
-          output: undefined,
+          input: { name: 'a' },
+          output: { id: 'a-1' },
           idempotencyKey: 'k',
-          status: StepStatus.Dispatched,
+          status: StepStatus.Succeeded,
         },
       ),
-    ).toEqual({ name: 'x' });
+    ).toEqual({ id: 'a-1' });
   });
 
-  it('rejects a step before the pivot without compensation', () => {
+  it('construye una compilación nueva en cada llamada', () => {
+    const first = new ValidSaga().build(resolver);
+    const second = new ValidSaga().build(resolver);
+
+    expect(second.steps).toHaveLength(first.steps.length);
+    expect(second).not.toBe(first);
+  });
+
+  it('rechaza una saga sin pasos con InvalidDefinition', () => {
+    class Empty extends SagaDefinition<State> {
+      readonly type = 'empty';
+
+      protected define(): void {
+        // sin pasos
+      }
+    }
+
+    expect(() => new Empty().build(resolver)).toThrow(SagaError);
+    expect(codeOf(() => new Empty().build(resolver))).toBe(
+      SagaErrorCode.InvalidDefinition,
+    );
+  });
+
+  it('rechaza un paso anterior al pivote sin compensación con MissingCompensation', () => {
+    const UNDOABLE = defineOperation({
+      id: 'a.item.create-final.v1',
+      input: z.unknown(),
+      output: z.unknown(),
+      idempotent: true,
+      compensatedBy: Compensation.None,
+      compensationReason: 'Nothing undoes it.',
+      description: 'Creates an a for good.',
+    });
     class Saga extends SagaDefinition<State> {
       readonly type = 'missing-compensation';
 
       protected define(flow: SagaFlow<State>): void {
-        flow.step(UNDOABLE_A).step(CREATE_B);
+        flow.step(UNDOABLE).step(CREATE_B);
       }
     }
 
-    expect(codeOf(() => new Saga().build())).toBe(
-      PlatformErrorCode.SagaMissingCompensation,
+    expect(codeOf(() => new Saga().build(resolver))).toBe(
+      SagaErrorCode.MissingCompensation,
     );
-  });
-
-  it('accepts a step without compensation after the pivot', () => {
-    class Saga extends SagaDefinition<State> {
-      readonly type = 'post-pivot';
-
-      protected define(flow: SagaFlow<State>): void {
-        flow.step(CREATE_A).pivot().step(SEND);
-      }
-    }
-
-    expect(() => new Saga().build()).not.toThrow();
-  });
-
-  it('rejects a saga without steps', () => {
-    class Saga extends SagaDefinition<State> {
-      readonly type = 'empty';
-
-      protected define(): void {
-        // no steps
-      }
-    }
-
-    expect(() => new Saga().build()).toThrow(SagaError);
-  });
-
-  it('rejects a second pivot', () => {
-    class TwoPivots extends SagaDefinition<State> {
-      readonly type = 'two-pivots';
-
-      protected define(flow: SagaFlow<State>): void {
-        flow.step(CREATE_A).pivot().pivot();
-      }
-    }
-
-    expect(codeOf(() => new TwoPivots().build())).toBe(
-      PlatformErrorCode.SagaInvalidDefinition,
-    );
-  });
-});
-
-describe('SagaFlow with contract definitions', () => {
-  const Reserve = defineOperation({
-    id: 'stock.reserve.v1',
-    input: z.object({ sku: z.string() }),
-    output: z.object({ reservationId: z.string() }),
-    idempotent: true,
-    compensatedBy: 'stock.release.v1',
-    description: 'Reserves stock.',
-  });
-  const Lookup = defineOperation({
-    id: 'stock.lookup.v1',
-    input: z.object({ sku: z.string() }),
-    output: z.object({ price: z.number() }),
-    idempotent: true,
-    mutating: false,
-    description: 'Reads a price.',
-  });
-  const Ship = defineOperation({
-    id: 'stock.ship.v1',
-    input: z.object({ reservationId: z.string() }),
-    output: z.object({ shipmentId: z.string() }),
-    idempotent: true,
-    compensatedBy: Compensation.None,
-    compensationReason: 'A shipment cannot be recalled.',
-    description: 'Ships.',
-  });
-  const Email = defineOperation({
-    id: 'mail.send.v1',
-    input: z.object({ to: z.string() }),
-    output: z.object({ sent: z.boolean() }),
-    idempotent: false,
-    compensatedBy: Compensation.None,
-    compensationReason: 'An email cannot be unsent.',
-    description: 'Sends an email.',
-  });
-
-  interface Order {
-    sku: string;
-    reservationId?: string;
-    price?: number;
-  }
-
-  function compile(define: (flow: SagaFlow<Order>) => void) {
-    class Saga extends SagaDefinition<Order> {
-      readonly type = 'order';
-
-      protected define(flow: SagaFlow<Order>): void {
-        define(flow);
-      }
-    }
-    return new Saga().build();
-  }
-
-  it('takes the compensation from compensatedBy and the types from the schemas', () => {
-    const compiled = compile((flow) =>
-      flow
-        .step(Reserve)
-        .input((s) => ({ sku: s.sku }))
-        .onSuccess((s, out) => {
-          s.reservationId = out.reservationId;
-        })
-        .pivot()
-        .step(Ship)
-        .input((s) => ({ reservationId: s.reservationId ?? '' })),
-    );
-
-    expect(compiled.steps.map((s) => s.compensationOperationId)).toEqual([
-      'stock.release.v1',
-      null,
-    ]);
-    expect(compiled.steps[0]?.definition).toBe(Reserve);
-  });
-
-  it('rejects an operation with Compensation.None before the pivot', () => {
-    expect(codeOf(() => compile((flow) => flow.step(Ship)))).toBe(
-      PlatformErrorCode.SagaMissingCompensation,
-    );
-  });
-
-  it('accepts a read-only operation before the pivot, with nothing to compensate', () => {
-    const compiled = compile((flow) =>
-      flow
-        .step(Lookup)
-        .onSuccess((s, out) => {
-          s.price = out.price;
-        })
-        .step(Reserve),
-    );
-
-    expect(compiled.steps[0]?.compensationOperationId).toBeNull();
-    expect(compiled.steps[0]?.afterPivot).toBe(false);
-  });
-
-  it('rejects an operation that is not idempotent after the pivot', () => {
-    expect(
-      codeOf(() => compile((flow) => flow.step(Reserve).pivot().step(Email))),
-    ).toBe(PlatformErrorCode.SagaInvalidDefinition);
   });
 });

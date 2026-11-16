@@ -1,10 +1,10 @@
 import 'package:shell_core/shell_core.dart';
 
-/// Id del microfrontend y primer segmento de sus rutas.
+/// Id of the microfrontend and first segment of its routes.
 const MicrofrontendId notificationsId = MicrofrontendId('notifications');
 
-/// Etiqueta del menú. El shell la dibuja antes de cargar el microfrontend,
-/// así que viaja con el manifiesto y no en los ARB diferidos.
+/// Menu label. The shell draws it before the microfrontend loads, so it ships
+/// with the manifest and not in the deferred ARB files.
 const MenuLabel notificationsMenuLabel = MenuLabel({
   'es': 'Notificaciones',
   'en': 'Notifications',

@@ -27,9 +27,6 @@ class BillingLocalizationsEs extends BillingLocalizations {
   String get subscriptionStatus => 'Estado de la suscripción';
 
   @override
-  String get currentPeriod => 'Periodo actual';
-
-  @override
   String get usageTitle => 'Uso del periodo';
 
   @override
@@ -68,9 +65,6 @@ class BillingLocalizationsEs extends BillingLocalizations {
 
   @override
   String get viewInvoices => 'Ver facturas';
-
-  @override
-  String get invoicePeriod => 'Periodo';
 
   @override
   String get charges => 'Cargos';
@@ -139,6 +133,26 @@ class BillingLocalizationsEs extends BillingLocalizations {
 
   @override
   String get invoiceVoided => 'Anulada';
+
+  @override
+  String planPrice(String price, String periodicity) {
+    return '$price / $periodicity';
+  }
+
+  @override
+  String currentPeriodLine(String period) {
+    return 'Periodo actual: $period';
+  }
+
+  @override
+  String invoicePeriodLine(String period) {
+    return 'Periodo: $period';
+  }
+
+  @override
+  String usageAmounts(String used, String limit) {
+    return '$used / $limit';
+  }
 
   @override
   String periodRange(String start, String end) {

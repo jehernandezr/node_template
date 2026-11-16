@@ -22,9 +22,9 @@ export default [
     },
   },
   {
-    // El driver `pg` y la capa antigua solo se tocan desde `src/legacy/`; el código nuevo va sobre TypeORM.
+    // El driver `pg` no se importa: la capa va sobre TypeORM.
     files: ['src/**/*.ts'],
-    ignores: ['src/legacy/**', 'src/index.ts'],
+    ignores: ['src/index.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -38,13 +38,7 @@ export default [
             },
             {
               group: ['pg', 'pg/*'],
-              message:
-                'El driver pg solo se importa dentro de src/legacy/; usa TypeORM.',
-            },
-            {
-              group: ['**/legacy/**', '**/legacy'],
-              message:
-                'src/legacy/ se retira con las tablas de la plataforma; el código nuevo no depende de él.',
+              message: 'El driver pg no se importa directamente; usa TypeORM.',
             },
           ],
         },

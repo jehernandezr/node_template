@@ -3,17 +3,18 @@ import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatMoney;
 
-import '../l10n/billing_labels.dart';
-import '../shared/types/billing_types.dart';
 import '../data/billing_repository.dart';
+import '../l10n/billing_labels.dart';
 import '../l10n/generated/billing_localizations.dart';
-import 'widgets/billing_colors.dart';
-import 'widgets/status_chip.dart';
 import '../shared/constants/billing_paths.dart';
+import '../shared/types/billing_types.dart';
+import '../shared/utils/billing_tones.dart';
+import 'invoice_detail_controller.dart';
+import 'widgets/status_chip.dart';
 
 /// `/billing/invoices/:id`: invoice header, its charges and a download
 /// placeholder.
-class InvoiceDetailScreen extends StatefulWidget {
+class InvoiceDetailScreen extends StatelessWidget {
   /// Creates the detail for [invoiceId].
   const InvoiceDetailScreen({
     super.key,
@@ -28,55 +29,32 @@ class InvoiceDetailScreen extends StatefulWidget {
   final String invoiceId;
 
   @override
-  State<InvoiceDetailScreen> createState() => _InvoiceDetailScreenState();
-}
-
-class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
-  AsyncValue<Invoice?> _state = const AsyncValue.loading();
-  int _generation = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final generation = ++_generation;
-    final result = await AsyncValue.guard(
-      () => widget.repository.invoice(widget.invoiceId),
-    );
-    if (!mounted || generation != _generation) return;
-    setState(() => _state = result);
-  }
-
-  void _reload() {
-    setState(() => _state = const AsyncValue.loading());
-    _load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = BillingLocalizations.of(context);
-    return AppPage(
-      title: l10n.invoiceTitle,
-      onBack: () => context.go(BillingPaths.invoices),
-      body: AsyncValueView<Invoice?>(
-        value: _state,
-        errorMessage: l10n.loadError,
-        onRetry: _reload,
-        data: (invoice) {
-          if (invoice == null) {
-            return EmptyState(
-              icon: Icons.search_off,
-              title: l10n.invoiceNotFound,
-            );
-          }
-          return _InvoiceContent(invoice: invoice);
+  Widget build(BuildContext context) =>
+      ControllerBuilder<InvoiceDetailController>(
+        create: (_) =>
+            InvoiceDetailController(repository, invoiceId: invoiceId)..start(),
+        builder: (context, controller) {
+          final l10n = BillingLocalizations.of(context);
+          return AppPage(
+            title: l10n.invoiceTitle,
+            onBack: () => context.go(BillingPaths.invoices),
+            body: AsyncValueView<Invoice?>(
+              value: controller.invoice,
+              errorMessage: l10n.loadError,
+              onRetry: controller.start,
+              data: (invoice) {
+                if (invoice == null) {
+                  return EmptyState(
+                    icon: Icons.search_off,
+                    title: l10n.invoiceNotFound,
+                  );
+                }
+                return _InvoiceContent(invoice: invoice);
+              },
+            ),
+          );
         },
-      ),
-    );
-  }
+      );
 }
 
 class _InvoiceContent extends StatelessWidget {
@@ -105,13 +83,15 @@ class _InvoiceContent extends StatelessWidget {
                   ),
                   StatusChip(
                     label: invoiceStatusLabel(l10n, invoice.status),
-                    color: invoiceStatusColor(invoice.status),
+                    tone: BillingTones.invoice(invoice.status),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '${l10n.invoicePeriod}: ${formatPeriod(l10n, invoice.period, locale: localeTag(context))}',
+                l10n.invoicePeriodLine(
+                  formatPeriod(l10n, invoice.period, locale: context.localeTag),
+                ),
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -140,9 +120,7 @@ class _InvoiceContent extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Text(
-                        formatMoney(line.amount, locale: localeTag(context)),
-                      ),
+                      Text(formatMoney(line.amount, locale: context.localeTag)),
                     ],
                   ),
                 ),
@@ -153,7 +131,7 @@ class _InvoiceContent extends StatelessWidget {
                     child: Text(l10n.total, style: theme.textTheme.titleSmall),
                   ),
                   Text(
-                    formatMoney(invoice.total, locale: localeTag(context)),
+                    formatMoney(invoice.total, locale: context.localeTag),
                     style: theme.textTheme.titleSmall,
                   ),
                 ],

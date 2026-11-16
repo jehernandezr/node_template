@@ -1,110 +1,123 @@
 import 'dart:async';
 
+import 'package:contracts/contracts.dart';
 import 'package:flutter/foundation.dart';
-
 import 'package:ui/ui.dart';
 
 import '../data/assistant_repository.dart';
+import '../shared/constants/assistant_constants.dart';
 import '../shared/enums/assistant_role.dart';
+import '../shared/enums/chat_failure_kind.dart';
+import '../shared/types/answer_state.dart';
 import '../shared/types/assistant_types.dart';
+import '../shared/types/chat_state.dart';
 
 /// Holds the messages of one conversation and the state of the current answer.
 final class AssistantChatController extends ChangeNotifier {
-  AssistantChatController({
-    required this.repository,
-    required this.conversationId,
-  });
+  AssistantChatController(this._repository, {required this._conversationId});
 
-  final AssistantRepository repository;
-  final String conversationId;
+  final AssistantRepository _repository;
+  final String _conversationId;
 
-  List<ChatMessage> _messages = const [];
-  AsyncValue<List<ChatMessage>> _loadState = const AsyncValue.loading();
-  Object? _error;
+  ChatState _state = const ChatLoading();
+  int _requestId = 0;
   StreamSubscription<AssistantChunk>? _subscription;
-  String? _streamingId;
+  Object? _pendingError;
+  ChatMessage? _finishedAnswer;
   int _sequence = 0;
   bool _disposed = false;
 
-  List<ChatMessage> get messages => _messages;
-  bool get isStreaming => _subscription != null;
+  /// What the screen shows: loading, the messages with the state of the
+  /// answer, or a failed load.
+  ChatState get state => _state;
 
-  /// State of the initial load of the conversation.
-  AsyncValue<List<ChatMessage>> get loadState => _loadState;
+  /// Whether an answer is arriving.
+  bool get isStreaming => switch (_state) {
+    ChatReady(:final answer) => answer is AnswerStreaming,
+    _ => false,
+  };
 
-  /// Error of the last answer: an `ApiErrorException` or any other object.
-  Object? get error => _error;
-
-  /// Loads the history. Ignored result if the controller was disposed meanwhile.
+  /// Loads the history, dropping the answer in progress. The result of an
+  /// older call is dropped when a newer one started.
   Future<void> load() async {
-    _loadState = const AsyncValue.loading();
-    _notify();
+    final id = ++_requestId;
+    _cancelAnswer();
+    _emit(const ChatLoading());
     final result = await AsyncValue.guard(
-      () => repository.loadMessages(conversationId),
+      () => _repository.loadMessages(_conversationId),
     );
-    if (_disposed) return;
-    _loadState = result;
-    _messages = result.valueOrNull ?? _messages;
-    _notify();
+    if (_disposed || id != _requestId) return;
+    _emit(
+      result.when(
+        loading: () => const ChatLoading(),
+        data: (messages) => ChatReady(messages, const AnswerIdle()),
+        error: ChatFailed.new,
+      ),
+    );
   }
 
-  /// Adds the user message and starts the answer. Ignored while streaming.
+  /// Adds the user message and starts the answer. Ignored while the history
+  /// is not loaded, while an answer is arriving and for a blank [text].
   void send(String text) {
+    final current = _state;
     final trimmed = text.trim();
-    if (trimmed.isEmpty || isStreaming) return;
+    if (trimmed.isEmpty || current is! ChatReady || isStreaming) return;
 
     final assistantId = _nextId();
-    _error = null;
-    _streamingId = assistantId;
-    _messages = [
-      ..._messages,
-      ChatMessage(id: _nextId(), role: AssistantRole.user, text: trimmed),
-      ChatMessage(
-        id: assistantId,
-        role: AssistantRole.assistant,
-        isStreaming: true,
-      ),
-    ];
-    _subscription = repository
-        .ask(conversationId, trimmed)
+    _pendingError = null;
+    _finishedAnswer = null;
+    _emit(
+      ChatReady([
+        ...current.messages,
+        ChatMessage(id: _nextId(), role: AssistantRole.user, text: trimmed),
+        ChatMessage(
+          id: assistantId,
+          role: AssistantRole.assistant,
+          isStreaming: true,
+        ),
+      ], AnswerStreaming(assistantId)),
+    );
+    _subscription = _repository
+        .ask(_conversationId, trimmed)
         .listen(
           (chunk) => _onChunk(assistantId, chunk),
           onError: (Object error) => _fail(assistantId, error),
           onDone: () => _finish(assistantId),
           cancelOnError: true,
         );
-    _notify();
   }
 
   /// Cancels the answer in progress and keeps the text received so far.
   void stop() {
-    final subscription = _subscription;
-    final id = _streamingId;
-    if (subscription == null || id == null) return;
+    final current = _state;
+    if (current is! ChatReady) return;
+    final answer = current.answer;
+    if (answer is! AnswerStreaming) return;
 
-    final pending = _messages
-        .where((message) => message.id == id)
-        .firstOrNull
-        ?.toolRequest;
-    final hasPending = pending != null && !pending.isResolved;
-    if (hasPending) pending.reject();
-
-    _subscription = null;
-    _streamingId = null;
-    subscription.cancel();
-    _update(
-      id,
-      (message) => message.copyWith(
-        isStreaming: false,
-        wasStopped: true,
-        toolApproved: hasPending ? false : null,
+    final hasPending =
+        _pendingRequest(current.messages, answer.messageId) != null;
+    _cancelAnswer();
+    _emit(
+      ChatReady(
+        _replace(
+          current.messages,
+          answer.messageId,
+          (message) => message.copyWith(
+            isStreaming: false,
+            wasStopped: true,
+            toolApproved: hasPending ? false : null,
+          ),
+        ),
+        const AnswerIdle(),
       ),
     );
   }
 
-  /// Answers a tool confirmation shown in [messageId].
+  /// Answers the tool confirmation shown in [messageId].
   void respondToTool({required String messageId, required bool approved}) {
-    final request = _messages
+    final current = _state;
+    if (current is! ChatReady) return;
+    final request = current.messages
         .where((message) => message.id == messageId)
         .firstOrNull
         ?.toolRequest;
@@ -115,77 +128,141 @@ final class AssistantChatController extends ChangeNotifier {
     } else {
       request.reject();
     }
-    _update(messageId, (message) => message.copyWith(toolApproved: approved));
+    _emit(
+      ChatReady(
+        _replace(
+          current.messages,
+          messageId,
+          (message) => message.copyWith(toolApproved: approved),
+        ),
+        current.answer,
+      ),
+    );
+  }
+
+  /// The error of the last failed answer, once. The next call returns null
+  /// until another answer fails. [state] tells the [ChatFailureKind].
+  Object? takeError() {
+    final error = _pendingError;
+    _pendingError = null;
+    return error;
+  }
+
+  /// The last answer that finished by itself, once. A stopped or failed
+  /// answer is not returned.
+  ChatMessage? takeFinishedAnswer() {
+    final message = _finishedAnswer;
+    _finishedAnswer = null;
+    return message;
   }
 
   void _onChunk(String assistantId, AssistantChunk chunk) {
-    switch (chunk) {
-      case AssistantTextChunk(:final text):
-        _update(
-          assistantId,
-          (message) => message.copyWith(text: message.text + text),
-        );
-      case AssistantFinalChunk(:final citations, :final usage):
-        _update(
-          assistantId,
-          (message) => message.copyWith(citations: citations, usage: usage),
-        );
-      case ToolConfirmationRequest():
-        _update(assistantId, (message) => message.copyWith(toolRequest: chunk));
-    }
+    if (!_isStreamingOf(assistantId)) return;
+    final change = switch (chunk) {
+      AssistantTextChunk(:final text) => (
+        ChatMessage message,
+      ) => message.copyWith(text: message.text + text),
+      AssistantFinalChunk(:final citations, :final usage) => (
+        ChatMessage message,
+      ) => message.copyWith(citations: citations, usage: usage),
+      ToolConfirmationRequest() => (ChatMessage message) => message.copyWith(
+        toolRequest: chunk,
+      ),
+    };
+    final current = _state as ChatReady;
+    _emit(
+      ChatReady(
+        _replace(current.messages, assistantId, change),
+        current.answer,
+      ),
+    );
   }
 
   void _finish(String assistantId) {
+    if (!_isStreamingOf(assistantId)) return;
     _subscription = null;
-    _streamingId = null;
-    _update(assistantId, (message) => message.copyWith(isStreaming: false));
+    final current = _state as ChatReady;
+    final messages = _replace(
+      current.messages,
+      assistantId,
+      (message) => message.copyWith(isStreaming: false),
+    );
+    final finished = messages.where((m) => m.id == assistantId).first;
+    if (finished.text.isNotEmpty) _finishedAnswer = finished;
+    _emit(ChatReady(messages, const AnswerIdle()));
   }
 
   void _fail(String assistantId, Object error) {
+    if (!_isStreamingOf(assistantId)) return;
     _subscription = null;
-    _streamingId = null;
-    _error = error;
-    // An empty answer has nothing to show next to the error view.
-    _messages = [
-      for (final message in _messages)
+    _pendingError = error;
+    final current = _state as ChatReady;
+    // An empty answer has nothing to show next to the error.
+    final messages = [
+      for (final message in current.messages)
         if (message.id != assistantId)
           message
         else if (message.text.isNotEmpty)
           message.copyWith(isStreaming: false),
     ];
-    _notify();
+    _emit(ChatReady(messages, AnswerFailed(_kindOf(error))));
   }
 
-  void _update(String id, ChatMessage Function(ChatMessage) change) {
-    _messages = [
-      for (final message in _messages)
-        message.id == id ? change(message) : message,
-    ];
-    _notify();
+  ChatFailureKind _kindOf(Object error) =>
+      error is ApiErrorException && error.problem.code == quotaExceededCode
+      ? ChatFailureKind.quotaExceeded
+      : ChatFailureKind.generic;
+
+  bool _isStreamingOf(String assistantId) => switch (_state) {
+    ChatReady(:final answer) =>
+      answer is AnswerStreaming && answer.messageId == assistantId,
+    _ => false,
+  };
+
+  ToolConfirmationRequest? _pendingRequest(
+    List<ChatMessage> messages,
+    String messageId,
+  ) {
+    final request = messages
+        .where((message) => message.id == messageId)
+        .firstOrNull
+        ?.toolRequest;
+    return request != null && !request.isResolved ? request : null;
   }
+
+  /// Rejects a tool confirmation nobody will answer and cancels the stream.
+  void _cancelAnswer() {
+    final current = _state;
+    if (current is ChatReady && current.answer is AnswerStreaming) {
+      final answer = current.answer as AnswerStreaming;
+      _pendingRequest(current.messages, answer.messageId)?.reject();
+    }
+    final subscription = _subscription;
+    _subscription = null;
+    unawaited(subscription?.cancel());
+  }
+
+  List<ChatMessage> _replace(
+    List<ChatMessage> messages,
+    String id,
+    ChatMessage Function(ChatMessage) change,
+  ) => [
+    for (final message in messages)
+      message.id == id ? change(message) : message,
+  ];
 
   String _nextId() => 'local-${_sequence++}';
 
-  void _notify() {
-    if (!_disposed) notifyListeners();
+  void _emit(ChatState next) {
+    if (_disposed) return;
+    _state = next;
+    notifyListeners();
   }
 
   @override
   void dispose() {
     _disposed = true;
-    final subscription = _subscription;
-    final id = _streamingId;
-    _subscription = null;
-    _streamingId = null;
-    // Unblock a producer that waits for a tool answer nobody will give now.
-    final pending = id == null
-        ? null
-        : _messages
-              .where((message) => message.id == id)
-              .firstOrNull
-              ?.toolRequest;
-    if (pending != null && !pending.isResolved) pending.reject();
-    subscription?.cancel();
+    _cancelAnswer();
     super.dispose();
   }
 }

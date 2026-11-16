@@ -31,5 +31,15 @@
   "denyConfirm": "Yes, block it",
   "blockedTitle": "Attempt blocked",
   "blockedBody": "We blocked the attempt and sent an alert to your contact channels. Check your security if you do not recognize this activity.",
-  "denyFailed": "We could not block the attempt. Try again."
+  "denyFailed": "We could not block the attempt. Try again.",
+  "expiresSoonAnnouncement": "The code expires in {seconds} seconds",
+  "@expiresSoonAnnouncement": {
+    "description": "Announced once when the code is about to expire.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "codeExpiredAnnouncement": "The code expired"
 }

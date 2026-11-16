@@ -1,8 +1,3 @@
-import type { OperationDefinition } from '@contracts/platform';
-import type { OperationDescriptor } from './contract/operation-descriptor.js';
-import type { OperationMetadata } from './contract/operation-metadata.js';
-import { OperationResolver } from './contract/operation-resolver.js';
-
 export * from './errors/internal-api-error.js';
 export * from './errors/internal-api-error-catalog.js';
 export * from './errors/internal-api-error-code.enum.js';
@@ -64,20 +59,3 @@ export * from './server/operation-route.js';
 export * from './server/processed-operation-retention-job.js';
 export * from './server/processed-operation-store.js';
 export * from './server/unit-of-work-runner.js';
-
-/** @deprecated Usa `OperationMetadata.compensation`. */
-export function compensationOf(metadata: OperationMetadata): string | null {
-  return metadata.compensation();
-}
-
-/** @deprecated Usa `OperationMetadata.callBudgetMs`. */
-export function defaultCallBudgetMs(metadata: OperationMetadata): number {
-  return metadata.callBudgetMs();
-}
-
-/** @deprecated Inyecta `OperationResolver` y usa `resolve`. */
-export function resolveOperation(
-  definition: OperationDefinition,
-): OperationDescriptor {
-  return new OperationResolver().resolve(definition);
-}

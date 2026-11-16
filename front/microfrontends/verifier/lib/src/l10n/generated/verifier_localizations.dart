@@ -239,6 +239,18 @@ abstract class VerifierLocalizations {
   /// In es, this message translates to:
   /// **'No pudimos bloquear el intento. Inténtalo de nuevo.'**
   String get denyFailed;
+
+  /// Announced once when the code is about to expire.
+  ///
+  /// In es, this message translates to:
+  /// **'El código caduca en {seconds} segundos'**
+  String expiresSoonAnnouncement(int seconds);
+
+  /// No description provided for @codeExpiredAnnouncement.
+  ///
+  /// In es, this message translates to:
+  /// **'El código caducó'**
+  String get codeExpiredAnnouncement;
 }
 
 class _VerifierLocalizationsDelegate

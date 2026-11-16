@@ -1,4 +1,5 @@
-/// Hora del día sin fecha ni zona, por ejemplo 22:00 para el inicio del silencio.
+/// Time of day without date or zone, such as 22:00 for the start of the
+/// quiet hours.
 final class ClockTime {
   const ClockTime(this.hour, this.minute)
     : assert(hour >= 0 && hour < 24),

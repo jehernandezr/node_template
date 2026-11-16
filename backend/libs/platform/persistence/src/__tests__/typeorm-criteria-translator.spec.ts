@@ -1,10 +1,9 @@
 import {
   CriteriaErrorCode,
   Criteria,
+  CursorCodec,
   Operator,
   SortDirection,
-  decodeCursor,
-  encodeCursor,
 } from '@platform/criteria';
 import type { SelectQueryBuilder } from 'typeorm';
 import { CriteriaFieldMap } from '../criteria-field-map.js';
@@ -17,6 +16,7 @@ const ID = '0193f1c2-0000-7000-8000-0000000000c3';
 const OTHER_ID = '0193f1c2-0000-7000-8000-0000000000c4';
 const NEEDLE = 'needle-value-7';
 const SECRET = 'test-secret';
+const CODEC = new CursorCodec(SECRET);
 const FIELDS = new CriteriaFieldMap('e', [
   'id',
   'name',
@@ -278,10 +278,10 @@ describe('TypeOrmCriteriaTranslator', () => {
   describe('keyset cursor', () => {
     it('compares rows when every term has the same direction', async () => {
       const qb = await newQueryBuilder();
-      const cursor = encodeCursor({ values: [2], id: ID });
+      const cursor = CODEC.encode({ values: [2], id: ID });
       const criteria = Criteria.for<ProbeEntity>()
         .orderBy('priority')
-        .after(cursor);
+        .after(cursor, CODEC);
 
       translator.apply(qb, criteria.toAst());
       const [sql, parameters] = qb.getQueryAndParameters();
@@ -292,11 +292,11 @@ describe('TypeOrmCriteriaTranslator', () => {
 
     it('expands mixed directions into an OR chain', async () => {
       const qb = await newQueryBuilder();
-      const cursor = encodeCursor({ values: [2, 'b'], id: ID });
+      const cursor = CODEC.encode({ values: [2, 'b'], id: ID });
       const criteria = Criteria.for<ProbeEntity>()
         .orderBy('priority', SortDirection.Asc)
         .orderBy('name', SortDirection.Desc)
-        .after(cursor);
+        .after(cursor, CODEC);
 
       translator.apply(qb, criteria.toAst());
       const [sql] = qb.getQueryAndParameters();
@@ -308,10 +308,10 @@ describe('TypeOrmCriteriaTranslator', () => {
 
     it('rejects a cursor whose value count does not match the ordering', async () => {
       const qb = await newQueryBuilder();
-      const cursor = encodeCursor({ values: [2, 'extra'], id: ID });
+      const cursor = CODEC.encode({ values: [2, 'extra'], id: ID });
       const criteria = Criteria.for<ProbeEntity>()
         .orderBy('priority')
-        .after(cursor);
+        .after(cursor, CODEC);
 
       await expect(async () =>
         translator.apply(qb, criteria.toAst()),
@@ -359,7 +359,7 @@ describe('TypeOrmCriteriaTranslator', () => {
         .toAst();
       const rows = [probeRow(ID, 1), probeRow(OTHER_ID, 2)];
 
-      const page = translator.toPage(rows, ast, { secret: SECRET });
+      const page = translator.toPage(rows, ast, new CursorCodec(SECRET));
 
       expect(page).toEqual({ items: rows, nextCursor: null });
     });
@@ -375,11 +375,11 @@ describe('TypeOrmCriteriaTranslator', () => {
         probeRow('0193f1c2-0000-7000-8000-0000000000c5', 3),
       ];
 
-      const page = translator.toPage(rows, ast, { secret: SECRET });
+      const page = translator.toPage(rows, ast, new CursorCodec(SECRET));
 
       expect(page.items).toEqual([rows[0], rows[1]]);
       expect(page.nextCursor).not.toBeNull();
-      expect(decodeCursor(page.nextCursor ?? '', { secret: SECRET })).toEqual({
+      expect(new CursorCodec(SECRET).decode(page.nextCursor ?? '')).toEqual({
         values: [2],
         id: OTHER_ID,
       });
