@@ -1,19 +1,22 @@
-import { CompiledSaga, SagaFlow } from './saga-flow.js';
+import type { OperationResolver } from '@platform/internal-api';
+import type { CompiledSaga } from './compiled-saga.js';
+import { SagaFlow } from './saga-flow.js';
 
 /**
- * Base class of a saga. Subclasses declare a unique `type` and describe their
- * steps in `define`.
+ * Clase base de una saga. Las subclases declaran un `type` único y describen
+ * sus pasos en `define`. Una subclase concreta es el identificador con el que
+ * un caso de uso arranca la saga (`Sagas.start(CreateTenantSaga, ...)`).
  */
 export abstract class SagaDefinition<TState = unknown> {
-  /** Unique name of the saga, stored with every instance. */
+  /** Nombre único de la saga, guardado con cada instancia. */
   abstract readonly type: string;
 
-  /** Describes the steps of the saga. */
+  /** Describe los pasos de la saga. */
   protected abstract define(flow: SagaFlow<TState>): void;
 
-  /** Runs `define` and validates the result. Throws `SagaError` when invalid. */
-  build(): CompiledSaga<TState> {
-    const flow = new SagaFlow<TState>();
+  /** Corre `define` y valida el resultado. Lanza `SagaError` si es inválida. */
+  build(resolver: OperationResolver): CompiledSaga<TState> {
+    const flow = new SagaFlow<TState>(resolver);
     this.define(flow);
     return flow.compile(this.type);
   }

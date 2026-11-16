@@ -1,6 +1,6 @@
 import '../enums/notification_enums.dart';
 
-/// Notificación de la bandeja.
+/// A notification of the inbox.
 final class AppNotification {
   const AppNotification({
     required this.id,

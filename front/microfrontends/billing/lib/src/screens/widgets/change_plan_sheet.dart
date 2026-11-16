@@ -3,15 +3,18 @@ import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatMoney;
 
-import '../../l10n/billing_labels.dart';
-import '../../shared/types/billing_types.dart';
 import '../../data/billing_repository.dart';
+import '../../l10n/billing_labels.dart';
 import '../../l10n/generated/billing_localizations.dart';
+import '../../shared/constants/billing_constants.dart';
+import '../../shared/types/billing_types.dart';
+import '../change_plan_controller.dart';
+import '../change_plan_state.dart';
 
 /// Bottom sheet that lists plans and switches the subscription.
 ///
 /// Pops with `true` after a change is confirmed, otherwise with nothing.
-class ChangePlanSheet extends StatefulWidget {
+class ChangePlanSheet extends StatelessWidget {
   /// Creates the sheet for the subscription on [currentPlanId].
   const ChangePlanSheet({
     super.key,
@@ -26,130 +29,149 @@ class ChangePlanSheet extends StatefulWidget {
   final String currentPlanId;
 
   @override
-  State<ChangePlanSheet> createState() => _ChangePlanSheetState();
-}
+  Widget build(BuildContext context) => ControllerBuilder<ChangePlanController>(
+    create: (_) =>
+        ChangePlanController(repository, currentPlanId: currentPlanId)..start(),
+    builder: (context, controller) {
+      final l10n = BillingLocalizations.of(context);
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(
+            start: AppSpacing.md,
+            top: AppSpacing.md,
+            end: AppSpacing.md,
+            bottom: AppSpacing.lg,
+          ),
+          child: switch (controller.state) {
+            ChangePlanLoading() => ConstrainedBox(
+              constraints: BoxConstraints(minHeight: billingSheetMinHeight),
+              child: const LoadingView(),
+            ),
+            ChangePlanFailed(plans: [], :final error) =>
+              ErrorView.fromException(
+                error,
+                fallbackMessage: l10n.loadError,
+                onRetry: controller.start,
+              ),
+            ChangePlanChoosing(:final plans, :final selectedId) => _PlanList(
+              plans: plans,
+              selectedId: selectedId,
+              saving: false,
+              currentPlanId: currentPlanId,
+              controller: controller,
+            ),
+            ChangePlanSaving(:final plans, :final selectedId) => _PlanList(
+              plans: plans,
+              selectedId: selectedId,
+              saving: true,
+              currentPlanId: currentPlanId,
+              controller: controller,
+            ),
+            ChangePlanFailed(:final plans, :final selectedId) => _PlanList(
+              plans: plans,
+              selectedId: selectedId,
+              saving: false,
+              currentPlanId: currentPlanId,
+              controller: controller,
+            ),
+            ChangePlanDone() => const SizedBox.shrink(),
+          },
+        ),
+      );
+    },
+  );
 
-class _ChangePlanSheetState extends State<ChangePlanSheet> {
-  AsyncValue<List<Plan>> _plans = const AsyncValue.loading();
-  String? _selectedId;
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPlans();
-  }
-
-  Future<void> _loadPlans() async {
-    final result = await AsyncValue.guard(widget.repository.availablePlans);
-    if (!mounted) return;
-    setState(() => _plans = result);
-  }
-
-  void _reloadPlans() {
-    setState(() => _plans = const AsyncValue.loading());
-    _loadPlans();
-  }
-
-  Future<void> _confirm() async {
-    final planId = _selectedId;
-    if (planId == null) return;
-    final l10n = BillingLocalizations.of(context);
-    setState(() => _saving = true);
-    try {
-      await widget.repository.changePlan(planId);
-    } on Exception catch (error) {
-      // API, contract or network: the sheet must not stay saving.
-      if (!mounted) return;
-      setState(() => _saving = false);
-      showActionError(context, error, message: l10n.changePlanError);
+  /// Saves the selection and closes the sheet with `true` when it worked.
+  static Future<void> _confirm(
+    BuildContext context,
+    ChangePlanController controller,
+  ) async {
+    final failure = BillingLocalizations.of(context).changePlanError;
+    final result = await controller.confirm();
+    if (!context.mounted) return;
+    if (result is ActionSucceeded<Subscription>) {
+      Navigator.of(context).pop(true);
       return;
     }
-    if (!mounted) return;
-    Navigator.of(context).pop(true);
+    showActionResult(context, result, failure: failure);
   }
+}
+
+/// The plans, the proration note and the two buttons.
+class _PlanList extends StatelessWidget {
+  const _PlanList({
+    required this.plans,
+    required this.selectedId,
+    required this.saving,
+    required this.currentPlanId,
+    required this.controller,
+  });
+
+  final List<Plan> plans;
+  final String? selectedId;
+  final bool saving;
+  final String currentPlanId;
+  final ChangePlanController controller;
 
   @override
   Widget build(BuildContext context) {
     final l10n = BillingLocalizations.of(context);
     final appL10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          AppSpacing.md,
-          AppSpacing.md,
-          AppSpacing.lg,
+    final showProration = selectedId != null && selectedId != currentPlanId;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.changePlanTitle, style: theme.textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.sm),
+        Text(l10n.availablePlans, style: theme.textTheme.labelLarge),
+        for (final plan in plans)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            selected: plan.id == selectedId,
+            title: Text(plan.name),
+            subtitle: Text(
+              l10n.planPrice(
+                formatMoney(plan.price, locale: context.localeTag),
+                periodicityLabel(l10n, plan.periodicity),
+              ),
+            ),
+            trailing: plan.id == currentPlanId
+                ? Text(l10n.currentPlanBadge)
+                : plan.id == selectedId
+                ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+                : null,
+            onTap: plan.id == currentPlanId || saving
+                ? null
+                : () => controller.select(plan.id),
+          ),
+        if (showProration) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Text(l10n.prorationNote, style: theme.textTheme.bodySmall),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          label: l10n.confirmChange,
+          onPressed: controller.canConfirm
+              ? () => ChangePlanSheet._confirm(context, controller)
+              : null,
+          loading: saving,
         ),
-        child: AsyncValueView<List<Plan>>(
-          value: _plans,
-          errorMessage: l10n.loadError,
-          onRetry: _reloadPlans,
-          loading: const SizedBox(height: 160, child: LoadingView()),
-          data: (plans) {
-            final selected = _selectedId;
-            final showProration =
-                selected != null && selected != widget.currentPlanId;
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(l10n.changePlanTitle, style: theme.textTheme.titleLarge),
-                const SizedBox(height: AppSpacing.sm),
-                Text(l10n.availablePlans, style: theme.textTheme.labelLarge),
-                for (final plan in plans)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    selected: plan.id == selected,
-                    title: Text(plan.name),
-                    subtitle: Text(
-                      '${formatMoney(plan.price, locale: localeTag(context))} / '
-                      '${periodicityLabel(l10n, plan.periodicity)}',
-                    ),
-                    trailing: plan.id == widget.currentPlanId
-                        ? Text(l10n.currentPlanBadge)
-                        : plan.id == selected
-                        ? Icon(
-                            Icons.check_circle,
-                            color: theme.colorScheme.primary,
-                          )
-                        : null,
-                    onTap: plan.id == widget.currentPlanId || _saving
-                        ? null
-                        : () => setState(() => _selectedId = plan.id),
-                  ),
-                if (showProration) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Text(
-                      l10n.prorationNote,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.md),
-                AppButton(
-                  label: l10n.confirmChange,
-                  onPressed: showProration ? _confirm : null,
-                  loading: _saving,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                AppButton(
-                  label: appL10n.actionCancel,
-                  variant: AppButtonVariant.secondary,
-                  onPressed: _saving ? null : () => Navigator.of(context).pop(),
-                ),
-              ],
-            );
-          },
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: appL10n.actionCancel,
+          variant: AppButtonVariant.secondary,
+          onPressed: saving ? null : () => Navigator.of(context).pop(),
         ),
-      ),
+      ],
     );
   }
 }

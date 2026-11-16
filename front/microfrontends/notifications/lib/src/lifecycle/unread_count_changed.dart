@@ -1,14 +1,14 @@
 import 'package:shell_core/shell_core.dart';
 
-/// Cantidad de notificaciones no leídas del usuario actual.
+/// Number of unread notifications of the current user.
 ///
-/// La publica el ciclo de vida de notificaciones y el manifiesto la declara
-/// como insignia de su entrada de menú, así el shell la dibuja sin conocer
-/// este microfrontend. Se repite: el shell que se suscribe tarde ve el último
-/// valor, hasta que cambia la identidad (`ShellEventBus.clearReplay`).
+/// The notifications lifecycle publishes it and the manifest declares it as
+/// the badge of its menu entry, so the shell draws it without knowing this
+/// microfrontend. It replays: a shell that subscribes late sees the last
+/// value, until the identity changes (`ShellEventBus.clearReplay`).
 final class UnreadCountChanged extends ReplayableShellEvent {
   const UnreadCountChanged(this.count);
 
-  /// No leídas, cero o más.
+  /// Unread notifications, zero or more.
   final int count;
 }

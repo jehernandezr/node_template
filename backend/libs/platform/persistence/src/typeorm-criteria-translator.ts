@@ -1,17 +1,17 @@
 import {
   CriteriaError,
   CriteriaErrorCode,
+  CriteriaValidator,
+  CursorCodec,
   LogicalOperator,
-  MAX_LIMIT,
   NodeKind,
   Operator,
+  PageBuilder,
   SortDirection,
-  takePage,
   type ConditionNode,
   type CriteriaAst,
   type CriteriaNode,
   type Cursor,
-  type CursorOptions,
   type OrderItem,
   type Page,
 } from '@platform/criteria';
@@ -92,21 +92,23 @@ export class TypeOrmCriteriaTranslator {
     return qb;
   }
 
-  /** Aplica el límite original a las filas leídas con `limit + 1` y arma el cursor siguiente. */
+  /**
+   * Aplica el límite original a las filas leídas con `limit + 1` y arma el cursor siguiente con el `codec` que
+   * recibe. Sin `codec` usa uno sin firma.
+   */
   toPage<TEntity extends ObjectLiteral>(
     rows: readonly TEntity[],
     ast: CriteriaAst,
-    cursorOptions?: CursorOptions,
+    codec?: CursorCodec,
   ): Page<TEntity> {
     const sortFields = ast.order
       .map((item) => item.field)
       .filter((field) => field !== this.fields.idField);
-    return takePage(
+    return new PageBuilder(codec ?? new CursorCodec()).build(
       rows,
       ast.limit,
       (row) => String(row[this.fields.idField]),
       (row) => sortFields.map((field) => this.cursorValueOf(row, field)),
-      cursorOptions,
     );
   }
 
@@ -343,12 +345,7 @@ export class TypeOrmCriteriaTranslator {
   }
 
   private fetchLimitOf(limit: number): number {
-    if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
-      throw new CriteriaError(
-        CriteriaErrorCode.InvalidLimit,
-        `limit must be an integer between 1 and ${MAX_LIMIT}`,
-      );
-    }
+    CriteriaValidator.limit(limit);
     return limit + 1;
   }
 

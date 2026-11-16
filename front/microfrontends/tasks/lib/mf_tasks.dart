@@ -11,12 +11,9 @@ import 'src/screens/screens.dart' deferred as screens;
 import 'src/shared/constants/tasks_access.dart';
 import 'src/shared/constants/tasks_paths.dart';
 
-/// Shown while a screen's library loads.
-const Widget _loading = Center(child: CircularProgressIndicator());
-
 /// Manifest registered by the shells. Routes live under `/tasks`.
 ///
-/// Data is not created here: the deferred builders get it from the scope of
+/// Data is not created here: the deferred screens get it from the scope of
 /// the current identity, so each user starts with a fresh repository.
 ///
 /// Demo only: tasks has no contract yet.
@@ -36,42 +33,34 @@ final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
   ],
   deepLinks: _deepLink,
   screens: [
-    ScreenRoute(
-      path: TasksPaths.list,
-      loadLibrary: screens.loadLibrary,
-      loading: _loading,
-      builder: (scope, {params = const {}}) =>
-          screens.buildTasksListScreen(scope),
+    ScreenRoute.deferred(
+      TasksPaths.list,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.TasksScreens.list(scope),
       routes: [
         // Declared before `:id` so `new` is not read as an id.
-        ScreenRoute(
-          path: TasksPaths.newSegment,
+        ScreenRoute.deferred(
+          TasksPaths.newSegment,
           access: tasksWriteRule,
-          loadLibrary: screens.loadLibrary,
-          loading: _loading,
-          builder: (scope, {params = const {}}) =>
-              screens.buildTaskFormScreen(scope),
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.TasksScreens.form(scope),
         ),
-        ScreenRoute(
-          path: ':${TasksPaths.idParam}',
-          loadLibrary: screens.loadLibrary,
-          loading: _loading,
-          builder: (scope, {params = const {}}) =>
-              screens.buildTaskDetailScreen(
-                scope,
-                taskId: params[TasksPaths.idParam]!,
-              ),
+        ScreenRoute.deferred(
+          ':${TasksPaths.idParam}',
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.TasksScreens.detail(
+            scope,
+            taskId: params.require(TasksPaths.idParam),
+          ),
           routes: [
-            ScreenRoute(
-              path: TasksPaths.editSegment,
+            ScreenRoute.deferred(
+              TasksPaths.editSegment,
               access: tasksWriteRule,
-              loadLibrary: screens.loadLibrary,
-              loading: _loading,
-              builder: (scope, {params = const {}}) =>
-                  screens.buildTaskFormScreen(
-                    scope,
-                    taskId: params[TasksPaths.idParam],
-                  ),
+              library: screens.loadLibrary,
+              build: (scope, params) => screens.TasksScreens.form(
+                scope,
+                taskId: params.require(TasksPaths.idParam),
+              ),
             ),
           ],
         ),

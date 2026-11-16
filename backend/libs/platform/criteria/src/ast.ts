@@ -1,40 +1,38 @@
 import type { Cursor } from './cursor.js';
-import type {
-  LogicalOperator,
-  NodeKind,
-  Operator,
-  SortDirection,
-} from './enums.js';
+import type { LogicalOperator } from './logical-operator.enum.js';
+import type { NodeKind } from './node-kind.enum.js';
+import type { Operator } from './operator.enum.js';
+import type { SortDirection } from './sort-direction.enum.js';
 
-/** Leaf node: `field operator value`. `value` is absent for `isNull` and `isNotNull`. */
+/** Nodo hoja: `campo operador valor`. `value` no existe para `isNull` e `isNotNull`. */
 export interface ConditionNode {
   readonly kind: NodeKind.Condition;
   readonly field: string;
   readonly operator: Operator;
   /**
-   * `null` is allowed only for `eq` and `ne` (rendered as IS NULL / IS NOT NULL).
-   * Array `[from, to]` for `between`, array of non-null values for `in` and `notIn`.
+   * `null` solo se admite con `eq` y `ne` (se traduce a IS NULL e IS NOT NULL).
+   * Para `between` es un arreglo `[desde, hasta]`; para `in` y `notIn`, un arreglo de valores no nulos.
    */
   readonly value?: unknown;
 }
 
-/** Inner node joining its children with one logical operator. */
+/** Nodo interno que une sus hijos con un operador lógico. */
 export interface GroupNode {
   readonly kind: NodeKind.Group;
   readonly operator: LogicalOperator;
   readonly children: CriteriaNode[];
 }
 
-/** Any node of the criteria filter tree. */
+/** Cualquier nodo del árbol de filtro. */
 export type CriteriaNode = ConditionNode | GroupNode;
 
-/** One ordering term. */
+/** Un término de orden. */
 export interface OrderItem {
   readonly field: string;
   readonly direction: SortDirection;
 }
 
-/** Neutral description of a query, independent of any storage engine. */
+/** Descripción neutral de una consulta, independiente del motor de almacenamiento. */
 export interface CriteriaAst {
   readonly filter: GroupNode;
   readonly order: OrderItem[];

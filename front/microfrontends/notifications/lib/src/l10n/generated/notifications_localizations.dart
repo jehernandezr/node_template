@@ -251,6 +251,12 @@ abstract class NotificationsLocalizations {
   /// In es, this message translates to:
   /// **'Hora de fin'**
   String get quietHoursEndPicker;
+
+  /// No description provided for @preferenceSwitchLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{type}, canal {channel}'**
+  String preferenceSwitchLabel(String type, String channel);
 }
 
 class _NotificationsLocalizationsDelegate

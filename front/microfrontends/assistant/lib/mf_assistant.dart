@@ -27,20 +27,18 @@ final MicrofrontendManifest assistantManifest = MicrofrontendManifest(
     ),
   ],
   screens: [
-    ScreenRoute(
-      path: assistantBasePath,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) =>
-          screens.buildAssistantListScreen(scope),
+    ScreenRoute.deferred(
+      assistantBasePath,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.AssistantScreens.list(scope),
       routes: [
-        ScreenRoute(
-          path: ':$conversationIdParam',
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) =>
-              screens.buildConversationScreen(
-                scope,
-                params[conversationIdParam] ?? '',
-              ),
+        ScreenRoute.deferred(
+          ':$conversationIdParam',
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.AssistantScreens.conversation(
+            scope,
+            params[conversationIdParam] ?? '',
+          ),
         ),
       ],
     ),

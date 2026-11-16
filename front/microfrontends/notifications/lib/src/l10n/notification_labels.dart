@@ -1,7 +1,7 @@
 import '../shared/enums/notification_enums.dart';
 import 'generated/notifications_localizations.dart';
 
-/// Etiquetas de tipos y canales traducidas con [NotificationsLocalizations].
+/// Localized names of the notification types and channels.
 extension NotificationLabels on NotificationsLocalizations {
   String typeLabel(NotificationType type) => switch (type) {
     NotificationType.securityAlert => typeSecurityAlert,

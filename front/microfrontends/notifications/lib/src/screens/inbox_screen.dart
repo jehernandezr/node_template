@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
@@ -8,146 +6,71 @@ import '../data/notifications_repository.dart';
 import '../l10n/generated/notifications_localizations.dart';
 import '../shared/constants/notifications_paths.dart';
 import '../shared/types/types.dart';
+import 'inbox_controller.dart';
 
-/// Bandeja de notificaciones: no leídas y leídas, marcado al tocar y llegada en vivo arriba.
-class NotificationsInboxScreen extends StatefulWidget {
+/// Inbox: unread and read notifications, marked on tap, with live arrivals on
+/// top. The screen only builds the view; [InboxController] holds the state.
+class NotificationsInboxScreen extends StatelessWidget {
   const NotificationsInboxScreen({super.key, required this.repository});
 
   final NotificationsRepository repository;
 
   @override
-  State<NotificationsInboxScreen> createState() =>
-      _NotificationsInboxScreenState();
-}
-
-class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
-  AsyncValue<List<AppNotification>> _inbox = const AsyncValue.loading();
-  // Notificaciones que llegan antes de que termine la carga inicial.
-  final List<AppNotification> _liveBuffer = [];
-  late final StreamSubscription<AppNotification> _liveSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _liveSubscription = widget.repository.live().listen(_onLive);
-    _fetch();
-  }
-
-  @override
-  void dispose() {
-    _liveSubscription.cancel();
-    super.dispose();
-  }
-
-  Future<void> _fetch() async {
-    final result = await AsyncValue.guard(widget.repository.fetchInbox);
-    if (!mounted) return;
-    setState(() {
-      _inbox = switch (result) {
-        AsyncData(value: final fetched) => AsyncValue.data(_merge(fetched)),
-        _ => result,
-      };
-    });
-  }
-
-  /// Une las llegadas en vivo que esperaban la carga con [fetched].
-  List<AppNotification> _merge(List<AppNotification> fetched) {
-    final bufferedIds = _liveBuffer.map((n) => n.id).toSet();
-    final merged = [
-      ..._liveBuffer,
-      ...fetched.where((n) => !bufferedIds.contains(n.id)),
-    ];
-    _liveBuffer.clear();
-    return merged;
-  }
-
-  void _retry() {
-    setState(() => _inbox = const AsyncValue.loading());
-    _fetch();
-  }
-
-  void _onLive(AppNotification notification) {
-    final items = _inbox.valueOrNull;
-    if (items == null) {
-      _liveBuffer.add(notification);
-      return;
-    }
-    if (items.any((n) => n.id == notification.id)) return;
-    setState(() => _inbox = AsyncValue.data([notification, ...items]));
-  }
-
-  Future<void> _open(AppNotification notification) async {
-    final items = _inbox.valueOrNull;
-    if (items == null || notification.read) return;
-    await _markOptimistically(
-      [
-        for (final n in items)
-          n.id == notification.id ? n.copyWith(read: true) : n,
-      ],
-      previous: items,
-      save: () => widget.repository.markAsRead(notification.id),
-    );
-  }
-
-  Future<void> _markAllRead() async {
-    final items = _inbox.valueOrNull;
-    if (items == null) return;
-    await _markOptimistically(
-      [for (final n in items) n.copyWith(read: true)],
-      previous: items,
-      save: widget.repository.markAllAsRead,
-    );
-  }
-
-  /// Muestra [next] al instante y guarda con [save]. Si falla, vuelve a
-  /// [previous] y avisa con [showActionError].
-  Future<void> _markOptimistically(
-    List<AppNotification> next, {
-    required List<AppNotification> previous,
-    required Future<void> Function() save,
-  }) async {
-    setState(() => _inbox = AsyncValue.data(next));
-    try {
-      await save();
-    } on Exception catch (error) {
-      if (!mounted) return;
-      setState(() => _inbox = AsyncValue.data(previous));
-      showActionError(
-        context,
-        error,
-        message: NotificationsLocalizations.of(context).markReadError,
+  Widget build(BuildContext context) => ControllerBuilder<InboxController>(
+    create: (_) => InboxController(repository)..start(),
+    builder: (context, controller) {
+      final l10n = NotificationsLocalizations.of(context);
+      return AppPage(
+        title: l10n.inboxTitle,
+        actions: [
+          TextButton(
+            onPressed: controller.unreadCount > 0
+                ? () => _markAll(context, controller)
+                : null,
+            child: Text(l10n.markAllRead),
+          ),
+          IconButton(
+            tooltip: l10n.preferencesTooltip,
+            icon: const Icon(Icons.tune),
+            onPressed: () => context.go(NotificationsPaths.preferences),
+          ),
+        ],
+        body: AsyncValueView<List<AppNotification>>(
+          value: controller.inbox,
+          errorMessage: l10n.loadError,
+          onRetry: controller.start,
+          data: (items) => _InboxList(
+            items: items,
+            onOpen: (notification) => _open(context, controller, notification),
+          ),
+        ),
       );
-    }
+    },
+  );
+
+  static Future<void> _open(
+    BuildContext context,
+    InboxController controller,
+    AppNotification notification,
+  ) async {
+    final failure = NotificationsLocalizations.of(context).markReadError;
+    final result = await controller.markRead(notification.id);
+    if (!context.mounted) return;
+    showActionResult(context, result, failure: failure);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = NotificationsLocalizations.of(context);
-    final hasUnread = _inbox.valueOrNull?.any((n) => !n.read) ?? false;
-    return AppPage(
-      title: l10n.inboxTitle,
-      actions: [
-        TextButton(
-          onPressed: hasUnread ? _markAllRead : null,
-          child: Text(l10n.markAllRead),
-        ),
-        IconButton(
-          tooltip: l10n.preferencesTooltip,
-          icon: const Icon(Icons.tune),
-          onPressed: () => context.go(NotificationsPaths.preferences),
-        ),
-      ],
-      body: AsyncValueView<List<AppNotification>>(
-        value: _inbox,
-        errorMessage: l10n.loadError,
-        onRetry: _retry,
-        data: (items) => _InboxList(items: items, onOpen: _open),
-      ),
-    );
+  static Future<void> _markAll(
+    BuildContext context,
+    InboxController controller,
+  ) async {
+    final failure = NotificationsLocalizations.of(context).markReadError;
+    final result = await controller.markAllRead();
+    if (!context.mounted) return;
+    showActionResult(context, result, failure: failure);
   }
 }
 
-class _InboxList extends StatelessWidget {
+final class _InboxList extends StatelessWidget {
   const _InboxList({required this.items, required this.onOpen});
 
   final List<AppNotification> items;

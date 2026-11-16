@@ -1,13 +1,11 @@
 import { Criteria } from '../criteria.js';
-import { encodeCursor } from '../cursor.js';
-import {
-  CriteriaErrorCode,
-  LogicalOperator,
-  NodeKind,
-  Operator,
-  SortDirection,
-} from '../enums.js';
-import { CriteriaError } from '../errors.js';
+import { CursorCodec } from '../cursor-codec.js';
+import { CriteriaErrorCode } from '../errors/criteria-error-code.enum.js';
+import { CriteriaError } from '../errors/criteria-error.js';
+import { LogicalOperator } from '../logical-operator.enum.js';
+import { NodeKind } from '../node-kind.enum.js';
+import { Operator } from '../operator.enum.js';
+import { SortDirection } from '../sort-direction.enum.js';
 
 interface Task {
   id: string;
@@ -368,9 +366,11 @@ describe('Criteria', () => {
   });
 
   describe('after', () => {
-    it('decodes a token produced by encodeCursor into the AST', () => {
-      const token = encodeCursor({ values: [3], id: 'row-1' });
-      expect(Criteria.for<Task>().after(token).toAst().after).toEqual({
+    const codec = new CursorCodec('criteria-secret');
+
+    it('decodes a token produced by the codec into the AST', () => {
+      const token = codec.encode({ values: [3], id: 'row-1' });
+      expect(Criteria.for<Task>().after(token, codec).toAst().after).toEqual({
         values: [3],
         id: 'row-1',
       });
@@ -378,7 +378,18 @@ describe('Criteria', () => {
 
     it('rejects a malformed token with InvalidValue', () => {
       expectCode(
-        () => Criteria.for<Task>().after('not a token!'),
+        () => Criteria.for<Task>().after('not a token!', codec),
+        CriteriaErrorCode.InvalidValue,
+      );
+    });
+
+    it('rejects a token signed with another secret', () => {
+      const token = new CursorCodec('other-secret').encode({
+        values: [3],
+        id: 'row-1',
+      });
+      expectCode(
+        () => Criteria.for<Task>().after(token, codec),
         CriteriaErrorCode.InvalidValue,
       );
     });
@@ -474,7 +485,7 @@ describe('Criteria', () => {
     });
 
     it('rejects unknown fields, wrong value types and like on non-string fields at compile time', () => {
-      // Never invoked: the calls below only have to type-check. The @ts-expect-error lines fail the typecheck if they stop failing.
+      // No se ejecuta: las llamadas solo tienen que pasar el chequeo de tipos. Las líneas con @ts-expect-error fallan si dejan de fallar.
       const invalidCalls = (criteria: Criteria<Task>): void => {
         // @ts-expect-error unknown field
         criteria.where('nope');

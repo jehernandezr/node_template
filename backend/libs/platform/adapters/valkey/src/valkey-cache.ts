@@ -1,47 +1,38 @@
-import { CacheInvalidArgumentError, type CachePort } from '@platform/cache';
-import {
-  optionalStringReply,
-  runCommand,
-  ValkeyCommand,
-  type ValkeyCommandRunner,
-} from './valkey-client.js';
+import { CacheInvalidArgumentError, CachePort } from '@platform/cache';
+import { ValkeyCommand } from './valkey-command.enum.js';
+import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
-/** Options of {@link ValkeyCache}. */
-export interface ValkeyCacheOptions {
-  /** Keys become `<prefix>:<key>`, inside the ACL of the service user. */
-  readonly keyspace: ValkeyKeyspace;
-}
-
 /**
- * {@link CachePort} over Valkey. Every operation is one atomic command:
- * `GET`, `SET ... PX` (TTL), `SET ... NX` (`setIfAbsent`) and `DEL`.
- * Failures are `ValkeyCommandError`, classified so the cache breaker opens when Valkey is down.
+ * `CachePort` sobre Valkey. Cada operación es un comando atómico: `GET`,
+ * `SET ... PX` (TTL), `SET ... NX` (`setIfAbsent`) y `DEL`. Las llaves quedan
+ * como `<prefijo>:<llave>`, dentro de la ACL del usuario del servicio. Las
+ * fallas son `ValkeyCommandError`, clasificadas para que el breaker del caché
+ * abra cuando Valkey está caído.
  */
-export class ValkeyCache implements CachePort {
-  private readonly keyspace: ValkeyKeyspace;
-
+export class ValkeyCache extends CachePort {
   constructor(
-    private readonly client: ValkeyCommandRunner,
-    options: ValkeyCacheOptions,
+    private readonly executor: ValkeyCommandExecutor,
+    private readonly keyspace: ValkeyKeyspace,
   ) {
-    this.keyspace = options.keyspace;
+    super();
   }
 
   async get(key: string): Promise<string | undefined> {
-    return optionalStringReply(
+    return this.executor.optionalString(
       ValkeyCommand.Get,
-      await runCommand(this.client, ValkeyCommand.Get, [this.key(key)]),
+      await this.executor.run(ValkeyCommand.Get, [this.keyOf(key)]),
     );
   }
 
   /**
-   * A TTL is rounded up to whole milliseconds; a TTL of 0 removes the key, as an entry that expires at once.
-   * @throws CacheInvalidArgumentError for a negative or non-finite TTL.
+   * Un TTL se redondea hacia arriba a milisegundos enteros; un TTL de 0 borra
+   * la llave, como una entrada que vence al instante.
+   * @throws CacheInvalidArgumentError con un TTL negativo o no finito.
    */
   async set(key: string, value: string, ttlMs?: number): Promise<void> {
     if (ttlMs === undefined) {
-      await runCommand(this.client, ValkeyCommand.Set, [this.key(key), value]);
+      await this.executor.run(ValkeyCommand.Set, [this.keyOf(key), value]);
       return;
     }
     if (!Number.isFinite(ttlMs) || ttlMs < 0) {
@@ -52,8 +43,8 @@ export class ValkeyCache implements CachePort {
       await this.delete(key);
       return;
     }
-    await runCommand(this.client, ValkeyCommand.Set, [
-      this.key(key),
+    await this.executor.run(ValkeyCommand.Set, [
+      this.keyOf(key),
       value,
       'PX',
       px,
@@ -61,8 +52,8 @@ export class ValkeyCache implements CachePort {
   }
 
   async setIfAbsent(key: string, value: string): Promise<boolean> {
-    const reply = await runCommand(this.client, ValkeyCommand.Set, [
-      this.key(key),
+    const reply = await this.executor.run(ValkeyCommand.Set, [
+      this.keyOf(key),
       value,
       'NX',
     ]);
@@ -70,10 +61,10 @@ export class ValkeyCache implements CachePort {
   }
 
   async delete(key: string): Promise<void> {
-    await runCommand(this.client, ValkeyCommand.Del, [this.key(key)]);
+    await this.executor.run(ValkeyCommand.Del, [this.keyOf(key)]);
   }
 
-  private key(key: string): string {
+  private keyOf(key: string): string {
     return this.keyspace.key(key);
   }
 }

@@ -1,0 +1,227 @@
+import { Compensation, defineOperation } from '@contracts/platform';
+import { Global, Injectable, Module, type DynamicModule } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { RandomSource, SystemRandomSource } from '@platform/kernel';
+import { FixedRandomSource } from '@platform/kernel/test-utils';
+import {
+  LoggerPort,
+  Redactor,
+  TraceContextRestorer,
+  Tracing,
+} from '@platform/observability';
+import { z } from 'zod';
+import { SagaDefinition } from '../../definition/saga-definition.js';
+import type { SagaFlow } from '../../definition/saga-flow.js';
+import { SagaEngine } from '../../engine/saga-engine.js';
+import { SagaSettings } from '../../engine/saga-settings.js';
+import { Sagas } from '../../engine/sagas.js';
+import { SagaError } from '../../errors/saga-error.js';
+import { SagaErrorCode } from '../../errors/saga-error-code.enum.js';
+import {
+  FakeParticipant,
+  InMemorySagaStore,
+  RecordingLogger,
+  ThreeStepSaga,
+} from '../../__tests__/utils/index.js';
+import { SagaRecoveryJob } from '../../jobs/saga-recovery-job.js';
+import { SagaRetentionJob } from '../../jobs/saga-retention-job.js';
+import { SagaStatus } from '../../model/saga-status.enum.js';
+import { SagaModule } from '../saga.module.js';
+
+/** Aleatoriedad con un valor fijo que la prueba puede reconocer. */
+class FixedRandom extends FixedRandomSource {
+  constructor() {
+    super([0.25]);
+  }
+}
+
+/**
+ * Lo que `SagaModule` necesita de su entorno y que en una app daría otro
+ * módulo: el almacén, el invocador, la traza y el logger.
+ */
+@Global()
+@Module({
+  providers: [
+    { provide: InMemorySagaStore, useFactory: () => new InMemorySagaStore() },
+    { provide: FakeParticipant, useFactory: () => new FakeParticipant() },
+    { provide: FixedRandom, useFactory: () => new FixedRandom() },
+    { provide: Tracing, useFactory: () => new Tracing(new Redactor()) },
+    {
+      provide: TraceContextRestorer,
+      useFactory: (tracing: Tracing) => new TraceContextRestorer(tracing),
+      inject: [Tracing],
+    },
+    { provide: LoggerPort, useFactory: () => new RecordingLogger() },
+  ],
+  exports: [
+    InMemorySagaStore,
+    FakeParticipant,
+    FixedRandom,
+    Tracing,
+    TraceContextRestorer,
+    LoggerPort,
+  ],
+})
+class SagaTestEnvironment {}
+
+/** Caso de uso que arranca la saga con `Sagas`, como lo haría un servicio. */
+@Injectable()
+class CreateOnboarding {
+  constructor(private readonly sagas: Sagas) {}
+
+  run(idempotencyKey: string) {
+    return this.sagas.start(ThreeStepSaga, {}, { idempotencyKey });
+  }
+}
+
+/** Definición sin compensación antes del pivote: sellar el registro debe fallar. */
+class BrokenSaga extends SagaDefinition<unknown> {
+  readonly type = 'broken';
+
+  protected define(flow: SagaFlow<unknown>): void {
+    flow
+      .step(
+        defineOperation({
+          id: 'y.create.v1',
+          input: z.unknown(),
+          output: z.unknown(),
+          idempotent: true,
+          compensatedBy: Compensation.None,
+          compensationReason: 'Nothing undoes it.',
+          description: 'Creates a y for good.',
+        }),
+      )
+      .step(
+        defineOperation({
+          id: 'z.create.v1',
+          input: z.unknown(),
+          output: z.unknown(),
+          idempotent: true,
+          compensatedBy: 'z.remove.v1',
+          description: 'Creates a z.',
+        }),
+      );
+  }
+}
+
+/** Opciones mínimas de `forRoot`, con los tiempos de las pruebas. */
+function rootOptions(
+  extra: { owner?: string; random?: typeof FixedRandom } = {},
+) {
+  return {
+    store: InMemorySagaStore,
+    invoker: FakeParticipant,
+    leaseMs: 1000,
+    maxStepDurationMs: 100,
+    ...extra,
+  };
+}
+
+/** Módulo de pruebas con el `SagaModule` dado y el caso de uso. */
+async function compile(imports: DynamicModule[]): Promise<TestingModule> {
+  return Test.createTestingModule({
+    imports: [SagaTestEnvironment, ...imports],
+    providers: [CreateOnboarding],
+  }).compile();
+}
+
+describe('SagaModule', () => {
+  let moduleRef: TestingModule | undefined;
+
+  afterEach(async () => {
+    await moduleRef?.close();
+    moduleRef = undefined;
+  });
+
+  it('un caso de uso inyecta Sagas y su saga termina Completed; la clave repetida devuelve la misma', async () => {
+    moduleRef = await compile([
+      SagaModule.forRoot(rootOptions()),
+      SagaModule.forFeature([ThreeStepSaga]),
+    ]);
+    await moduleRef.init();
+    const useCase = moduleRef.get(CreateOnboarding);
+
+    const first = await useCase.run('key-1');
+    const again = await useCase.run('key-1');
+
+    expect(first.status).toBe(SagaStatus.Completed);
+    expect(again.id).toBe(first.id);
+  });
+
+  it('forRoot sin store lanza SagaError InvalidConfiguration', () => {
+    const attempt = () => SagaModule.forRoot({ invoker: FakeParticipant });
+
+    expect(attempt).toThrow(SagaError);
+    try {
+      attempt();
+    } catch (error) {
+      expect((error as SagaError).code).toBe(
+        SagaErrorCode.InvalidConfiguration,
+      );
+    }
+  });
+
+  it('una definición inválida registrada con forFeature tumba el arranque', async () => {
+    moduleRef = await compile([
+      SagaModule.forRoot(rootOptions()),
+      SagaModule.forFeature([BrokenSaga]),
+    ]);
+
+    await expect(moduleRef.init()).rejects.toBeInstanceOf(SagaError);
+  });
+
+  it('Sagas, SagaEngine, SagaRecoveryJob y SagaRetentionJob se pueden resolver', async () => {
+    moduleRef = await compile([SagaModule.forRoot(rootOptions())]);
+    await moduleRef.init();
+
+    expect(moduleRef.get(Sagas)).toBeInstanceOf(Sagas);
+    expect(moduleRef.get(SagaEngine)).toBeInstanceOf(SagaEngine);
+    expect(moduleRef.get(SagaRecoveryJob)).toBeInstanceOf(SagaRecoveryJob);
+    expect(moduleRef.get(SagaRetentionJob)).toBeInstanceOf(SagaRetentionJob);
+  });
+
+  it('owner, leaseMs y maxStepDurationMs llegan a SagaSettings con sus valores', async () => {
+    moduleRef = await compile([
+      SagaModule.forRoot(rootOptions({ owner: 'node-z' })),
+    ]);
+    await moduleRef.init();
+
+    const settings = moduleRef.get(SagaSettings);
+
+    expect(settings.owner).toBe('node-z');
+    expect(settings.leaseMs).toBe(1000);
+    expect(settings.maxStepDurationMs).toBe(100);
+  });
+
+  it('sin owner, leaseMs ni maxStepDurationMs usa los valores por defecto', async () => {
+    moduleRef = await compile([
+      SagaModule.forRoot({
+        store: InMemorySagaStore,
+        invoker: FakeParticipant,
+      }),
+    ]);
+    await moduleRef.init();
+
+    const settings = moduleRef.get(SagaSettings);
+
+    expect(settings.owner).toMatch(/^[0-9a-f-]{36}$/);
+    expect(settings.leaseMs).toBe(SagaSettings.DEFAULT_LEASE_MS);
+    expect(settings.maxStepDurationMs).toBe(SagaSettings.DEFAULT_MAX_STEP_MS);
+  });
+
+  it('la opción random se usa como fuente de aleatoriedad cuando se pasa', async () => {
+    moduleRef = await compile([
+      SagaModule.forRoot(rootOptions({ random: FixedRandom })),
+    ]);
+    await moduleRef.init();
+
+    expect(moduleRef.get(RandomSource)).toBeInstanceOf(FixedRandom);
+  });
+
+  it('sin random, la aleatoriedad es SystemRandomSource', async () => {
+    moduleRef = await compile([SagaModule.forRoot(rootOptions())]);
+    await moduleRef.init();
+
+    expect(moduleRef.get(RandomSource)).toBeInstanceOf(SystemRandomSource);
+  });
+});

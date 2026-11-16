@@ -1,5 +1,5 @@
 import { PlatformErrorCode } from '@contracts/platform';
-import { Criteria } from '@platform/criteria';
+import { Criteria, CursorCodec } from '@platform/criteria';
 import { ActorType } from '@platform/observability';
 import { ShardKey, ShardRouter } from '@platform/sharding';
 import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
@@ -211,7 +211,7 @@ describe('ShardedRepository', () => {
 
       const page = await repository.findByCriteria(
         Criteria.for<ProbeEntity>().orderBy('name').limit(1),
-        { secret: 'test-secret' },
+        new CursorCodec('test-secret'),
       );
 
       const select = provider.runner.calls.find((call) =>

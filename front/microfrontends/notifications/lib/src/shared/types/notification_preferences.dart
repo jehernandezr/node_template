@@ -1,10 +1,10 @@
 import '../enums/notification_enums.dart';
 import 'clock_time.dart';
 
-/// Preferencias por tipo y canal, con horario de silencio.
+/// Preferences by type and channel, with quiet hours.
 ///
-/// Las combinaciones obligatorias (alertas de seguridad) siempre están activas;
-/// [withChannel] las ignora.
+/// Mandatory combinations (security alerts) are always on; [withChannel]
+/// ignores them.
 final class NotificationPreferences {
   NotificationPreferences({
     required Map<NotificationType, Set<NotificationChannel>> enabled,
@@ -17,7 +17,7 @@ final class NotificationPreferences {
            ),
        });
 
-  /// Preferencias iniciales de una cuenta nueva.
+  /// Initial preferences of a new account.
   factory NotificationPreferences.defaults() => NotificationPreferences(
     enabled: const {
       NotificationType.taskUpdated: {
@@ -41,8 +41,8 @@ final class NotificationPreferences {
   bool isEnabled(NotificationType type, NotificationChannel channel) =>
       type.isMandatory || (enabled[type]?.contains(channel) ?? false);
 
-  /// Nuevas preferencias con [channel] activo o no para [type].
-  /// Devuelve estas mismas preferencias si la combinación es obligatoria.
+  /// New preferences with [channel] on or off for [type]. Returns these same
+  /// preferences when the combination is mandatory.
   NotificationPreferences withChannel(
     NotificationType type,
     NotificationChannel channel,

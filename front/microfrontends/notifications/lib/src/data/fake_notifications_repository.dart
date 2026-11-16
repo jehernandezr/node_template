@@ -1,60 +1,52 @@
 import 'dart:async';
 
+import 'package:shell_core/shell_core.dart';
+
 import '../shared/types/types.dart';
 import 'notifications_repository.dart';
 
-/// Repositorio en memoria. [push] simula una notificación que llega en vivo.
+/// In-memory repository for the demo mode and the tests. [push] simulates a
+/// notification that arrives while the app is open.
 final class FakeNotificationsRepository implements NotificationsRepository {
   FakeNotificationsRepository({
     List<AppNotification>? seed,
     NotificationPreferences? preferences,
-    this.latency = Duration.zero,
-  }) : _inbox = List.of(seed ?? _sampleInbox()),
+    DemoBehavior? behavior,
+  }) : _behavior = behavior ?? DemoBehavior(),
+       _inbox = List.of(seed ?? _sampleInbox()),
        _preferences = preferences ?? NotificationPreferences.defaults();
 
-  /// Retraso artificial de cada lectura, útil para probar el estado de carga.
-  final Duration latency;
-
-  /// Si no es null, [fetchInbox] falla con este error.
-  Object? fetchError;
-
-  /// Si no es null, [markAsRead] y [markAllAsRead] fallan con este error.
-  Object? markError;
-
-  /// Si no es null, [savePreferences] falla con este error.
-  Object? saveError;
-
+  final DemoBehavior _behavior;
   final List<AppNotification> _inbox;
   NotificationPreferences _preferences;
   final StreamController<AppNotification> _live =
       StreamController<AppNotification>.broadcast();
-  // Avisa cada vez que cambia la bandeja: llegada en vivo o marcado como leída.
+  // Fires on every change of the inbox: a live arrival or a read mark.
   final StreamController<void> _changes = StreamController<void>.broadcast();
-  // Streams de [watchUnreadCount] abiertos, para cerrarlos en [dispose].
+  // Open streams from [watchUnreadCount], closed by [dispose].
   final Set<StreamController<int>> _counts = {};
-  bool _disposed = false;
 
-  /// Si ya se llamó a [dispose].
-  bool get isDisposed => _disposed;
+  /// Whether [dispose] already ran.
+  bool get isDisposed => _behavior.isDisposed;
 
-  /// Agrega [notification] al inicio de la bandeja y la emite por [live].
-  /// No hace nada después de [dispose].
+  /// Adds [notification] to the top of the inbox and emits it on [live].
+  /// Does nothing after [dispose].
   void push(AppNotification notification) {
-    if (_disposed) return;
+    if (isDisposed) return;
     _inbox.insert(0, notification);
     _live.add(notification);
     _changes.add(null);
   }
 
-  /// Cierra [live], [watchUnreadCount] y sus suscripciones internas. Lo llama
-  /// el scope de la identidad; llamarlo otra vez no hace nada.
+  /// Closes [live], [watchUnreadCount] and their internal subscriptions. The
+  /// identity scope calls it; calling it again does nothing.
   @override
   Future<void> dispose() async {
-    if (_disposed) return;
-    _disposed = true;
+    if (_behavior.isDisposed) return;
+    _behavior.dispose();
     final counts = List.of(_counts);
     _counts.clear();
-    // Sin esperar a los oyentes: un stream cerrado sin suscriptor no termina.
+    // Not waiting for the listeners: a stream with no subscriber never ends.
     for (final controller in counts) {
       unawaited(controller.close());
     }
@@ -65,28 +57,24 @@ final class FakeNotificationsRepository implements NotificationsRepository {
   int _unreadNow() => _inbox.where((notification) => !notification.read).length;
 
   void _notifyChanged() {
-    if (!_disposed) _changes.add(null);
-  }
-
-  Future<T> _delayed<T>(T value) async {
-    if (latency > Duration.zero) await Future<void>.delayed(latency);
-    return value;
+    if (!isDisposed) _changes.add(null);
   }
 
   @override
-  Future<List<AppNotification>> fetchInbox() async {
-    if (latency > Duration.zero) await Future<void>.delayed(latency);
-    final error = fetchError;
-    if (error != null) throw error;
-    return List.unmodifiable(_inbox);
-  }
+  Future<List<AppNotification>> fetchInbox() => _behavior.respond(
+    () => List<AppNotification>.unmodifiable(_inbox),
+    operation: NotificationsOperation.fetchInbox,
+  );
 
   @override
-  Future<int> unreadCount() => _delayed(_unreadNow());
+  Future<int> unreadCount() => _behavior.respond(
+    _unreadNow,
+    operation: NotificationsOperation.unreadCount,
+  );
 
   @override
   Stream<int> watchUnreadCount() {
-    if (_disposed) return const Stream<int>.empty();
+    if (isDisposed) return const Stream<int>.empty();
     StreamSubscription<void>? changes;
     late final StreamController<int> counts;
     counts = StreamController<int>(
@@ -104,37 +92,32 @@ final class FakeNotificationsRepository implements NotificationsRepository {
   }
 
   @override
-  Future<void> markAsRead(String id) async {
-    await _delayed(null);
-    final error = markError;
-    if (error != null) throw error;
+  Future<void> markAsRead(String id) => _behavior.respond(() {
     final index = _inbox.indexWhere((notification) => notification.id == id);
     if (index == -1) return;
     _inbox[index] = _inbox[index].copyWith(read: true);
     _notifyChanged();
-  }
+  }, operation: NotificationsOperation.markAsRead);
 
   @override
-  Future<void> markAllAsRead() async {
-    await _delayed(null);
-    final error = markError;
-    if (error != null) throw error;
+  Future<void> markAllAsRead() => _behavior.respond(() {
     for (var i = 0; i < _inbox.length; i++) {
       _inbox[i] = _inbox[i].copyWith(read: true);
     }
     _notifyChanged();
-  }
+  }, operation: NotificationsOperation.markAllAsRead);
 
   @override
-  Future<NotificationPreferences> fetchPreferences() => _delayed(_preferences);
+  Future<NotificationPreferences> fetchPreferences() => _behavior.respond(
+    () => _preferences,
+    operation: NotificationsOperation.fetchPreferences,
+  );
 
   @override
-  Future<void> savePreferences(NotificationPreferences preferences) {
-    final error = saveError;
-    if (error != null) return Future<void>.error(error);
-    _preferences = preferences;
-    return _delayed(null);
-  }
+  Future<void> savePreferences(NotificationPreferences preferences) =>
+      _behavior.respond(() {
+        _preferences = preferences;
+      }, operation: NotificationsOperation.savePreferences);
 
   @override
   Stream<AppNotification> live() => _live.stream;

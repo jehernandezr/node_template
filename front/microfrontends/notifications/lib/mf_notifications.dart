@@ -1,8 +1,9 @@
-/// Microfrontend `notifications`: manifiesto que registran los shells web y
-/// móvil.
+/// Microfrontend `notifications`: manifest registered by the web and mobile
+/// shells.
 ///
-/// Este archivo viaja en el bundle inicial. No importa nada de `src/data`,
-/// `src/screens` ni `src/l10n` sin `deferred as`; el ciclo de vida tampoco.
+/// This file ships in the initial bundle. It imports nothing from `src/data`,
+/// `src/screens` or `src/l10n` without `deferred as`; neither does the
+/// lifecycle.
 library;
 
 import 'package:material_ui/material_ui.dart';
@@ -18,10 +19,10 @@ export 'src/lifecycle/notifications_lifecycle.dart';
 export 'src/lifecycle/unread_count_changed.dart';
 export 'src/shared/constants/notifications_paths.dart';
 
-/// Manifiesto registrado por los shells. Las rutas viven bajo
-/// `/notifications`; pantallas, datos y textos se cargan de forma diferida.
+/// Manifest registered by the shells. Routes live under `/notifications`;
+/// screens, data and copy load as deferred libraries.
 ///
-/// Solo modo demo: notificaciones aún no tiene contrato en el backend.
+/// Demo only: the backend has no notifications contract yet.
 final MicrofrontendManifest notificationsManifest = MicrofrontendManifest(
   id: notificationsId,
   platforms: {AppPlatform.web, AppPlatform.mobile},
@@ -39,16 +40,16 @@ final MicrofrontendManifest notificationsManifest = MicrofrontendManifest(
   ],
   lifecycleFactory: NotificationsLifecycle.new,
   screens: [
-    ScreenRoute(
-      path: NotificationsPaths.inbox,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) => screens.buildInboxScreen(scope),
+    ScreenRoute.deferred(
+      NotificationsPaths.inbox,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.NotificationsScreens.inbox(scope),
       routes: [
-        ScreenRoute(
-          path: NotificationsPaths.preferencesSegment,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) =>
-              screens.buildPreferencesScreen(scope),
+        ScreenRoute.deferred(
+          NotificationsPaths.preferencesSegment,
+          library: screens.loadLibrary,
+          build: (scope, params) =>
+              screens.NotificationsScreens.preferences(scope),
         ),
       ],
     ),

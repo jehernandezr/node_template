@@ -86,4 +86,9 @@ class NotificationsLocalizationsEn extends NotificationsLocalizations {
 
   @override
   String get quietHoursEndPicker => 'End time';
+
+  @override
+  String preferenceSwitchLabel(String type, String channel) {
+    return '$type, $channel channel';
+  }
 }

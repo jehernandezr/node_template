@@ -62,6 +62,3 @@ export * from './ports/instance-endpoint-resolver.js';
 export * from './ports/shard-lister.js';
 export * from './transformers/id-transformer.js';
 export * from './transformers/timestamp-transformer.js';
-
-// Capa antigua sobre `pg`: se reexporta para que los adaptadores compilen hasta que migren a TypeORM.
-export * from './legacy/index.js';

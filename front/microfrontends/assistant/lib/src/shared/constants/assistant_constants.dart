@@ -18,3 +18,6 @@ const MenuLabel assistantMenuLabel = MenuLabel({
 
 /// Problem code the API returns when the plan's query quota is used up.
 const String quotaExceededCode = 'BILLING.QUOTA.EXCEEDED';
+
+/// Artificial latency of the demo repository on list, create and history.
+const Duration assistantDemoDelay = Duration(milliseconds: 300);

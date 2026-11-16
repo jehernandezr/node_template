@@ -1,6 +1,7 @@
 import {
   Criteria,
   CriteriaErrorCode,
+  CursorCodec,
   Operator,
   SortDirection,
 } from '@platform/criteria';
@@ -66,9 +67,11 @@ new ContainerRuntime(process.env).describeIfAvailable(
           .orderBy('priority', direction)
           .limit(3);
         const next: Criteria<ProbeEntity> =
-          token === null ? criteria : criteria.after(token, { secret: SECRET });
+          token === null
+            ? criteria
+            : criteria.after(token, new CursorCodec(SECRET));
         const page = await db.runAs(ShardedTestDatabase.TENANT_A, () =>
-          repository.findByCriteria(next, { secret: SECRET }),
+          repository.findByCriteria(next, new CursorCodec(SECRET)),
         );
         rows.push(...page.items);
         token = page.nextCursor;

@@ -1,4 +1,5 @@
 import 'package:contracts/contracts.dart';
+import 'package:shell_core/shell_core.dart';
 
 import '../shared/enums/billing_enums.dart';
 import '../shared/types/billing_types.dart';
@@ -7,18 +8,13 @@ import 'billing_repository.dart';
 /// In-memory [BillingRepository] with sample data. Changes live as long as
 /// the instance does.
 ///
-/// Errors use [ApiErrorException], as the real client does. Pass [failure] to
-/// make every call fail with it, for example to test error views.
+/// Errors use [ApiErrorException], as the real client does. Latency and
+/// programmed failures come from the [DemoBehavior] it receives.
 base class FakeBillingRepository implements BillingRepository {
-  FakeBillingRepository({this.failure});
+  FakeBillingRepository({DemoBehavior? behavior})
+    : _behavior = behavior ?? DemoBehavior();
 
-  /// Error thrown by every call when set.
-  final ApiErrorException? failure;
-
-  void _failIfConfigured() {
-    final error = failure;
-    if (error != null) throw error;
-  }
+  final DemoBehavior _behavior;
 
   static final _cop = Currency.cop.code;
   static final _usd = Currency.usd.code;
@@ -178,32 +174,31 @@ base class FakeBillingRepository implements BillingRepository {
   }
 
   @override
-  void dispose() {}
+  void dispose() => _behavior.dispose();
 
   @override
-  Future<Subscription> currentSubscription() async {
-    _failIfConfigured();
-    return _subscription;
-  }
+  Future<Subscription> currentSubscription() => _behavior.respond(
+    () => _subscription,
+    operation: BillingOperation.currentSubscription,
+  );
 
   @override
-  Future<List<QuotaUsage>> currentUsage() async {
-    _failIfConfigured();
-    return [
+  Future<List<QuotaUsage>> currentUsage() => _behavior.respond(
+    () => [
       for (final quota in _subscription.plan.quotas)
         QuotaUsage(quota: quota, used: _usedByQuota[quota.key] ?? 0),
-    ];
-  }
+    ],
+    operation: BillingOperation.currentUsage,
+  );
 
   @override
-  Future<List<Plan>> availablePlans() async {
-    _failIfConfigured();
-    return _catalog;
-  }
+  Future<List<Plan>> availablePlans() => _behavior.respond(
+    () => _catalog,
+    operation: BillingOperation.availablePlans,
+  );
 
   @override
-  Future<Subscription> changePlan(String planId) async {
-    _failIfConfigured();
+  Future<Subscription> changePlan(String planId) => _behavior.respond(() {
     final plan = _catalog.where((p) => p.id == planId).firstOrNull;
     if (plan == null) {
       throw ApiErrorException(
@@ -222,17 +217,15 @@ base class FakeBillingRepository implements BillingRepository {
       period: _subscription.period,
     );
     return _subscription;
-  }
+  }, operation: BillingOperation.changePlan);
 
   @override
-  Future<List<Invoice>> invoices() async {
-    _failIfConfigured();
-    return _invoices;
-  }
+  Future<List<Invoice>> invoices() =>
+      _behavior.respond(() => _invoices, operation: BillingOperation.invoices);
 
   @override
-  Future<Invoice?> invoice(String id) async {
-    _failIfConfigured();
-    return _invoices.where((invoice) => invoice.id == id).firstOrNull;
-  }
+  Future<Invoice?> invoice(String id) => _behavior.respond(
+    () => _invoices.where((invoice) => invoice.id == id).firstOrNull,
+    operation: BillingOperation.invoice,
+  );
 }

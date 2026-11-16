@@ -5,12 +5,13 @@ import 'package:shell_core/shell_core.dart';
 import 'unread_count_changed.dart';
 import 'unread_counts.dart';
 
-/// Publica [UnreadCountChanged] al iniciar y cada vez que cambia la cantidad de
-/// no leídas. Usa el repositorio del scope, la misma instancia que las pantallas.
+/// Publishes [UnreadCountChanged] on start and every time the number of
+/// unread notifications changes. It uses the repository of the scope, the
+/// same instance the screens use.
 ///
-/// El runtime crea una instancia por activación (`lifecycleFactory`). Emite con
-/// [ShellContext.emit], así un valor que llega después de cambiar de identidad
-/// se descarta.
+/// The runtime creates one instance per activation (`lifecycleFactory`). It
+/// emits with [ShellContext.emit], so a value that arrives after the identity
+/// changed is dropped.
 final class NotificationsLifecycle extends Microfrontend {
   NotificationsLifecycle();
 
@@ -18,8 +19,8 @@ final class NotificationsLifecycle extends Microfrontend {
 
   @override
   Future<void> initialize(ShellContext context) async {
-    final counts = await loadUnreadCounts(context.scope);
-    // La identidad pudo cambiar mientras se cargaba la librería de datos.
+    final counts = await UnreadCounts.load(context.scope);
+    // The identity may have changed while the data library loaded.
     if (counts == null || context.isDisposed) return;
     _subscription = counts.listen(
       (count) => context.emit(UnreadCountChanged(count)),

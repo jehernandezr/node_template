@@ -1,14 +1,25 @@
-/// Tipos de notificación. El tipo define la criticidad; las preferencias
-/// del usuario definen los canales por los que llega.
+/// Kinds of notification. The kind sets how critical it is; the preferences
+/// of the user set the channels it arrives on.
 enum NotificationType {
   securityAlert,
   taskUpdated,
   invoiceIssued,
   accountActivity;
 
-  /// Las alertas de seguridad salen siempre por todos los canales.
+  /// Whether it always goes out on every channel, as security alerts do.
   bool get isMandatory => this == securityAlert;
 }
 
-/// Canales por los que puede llegar una notificación.
+/// Channels a notification can arrive on.
 enum NotificationChannel { inApp, push, email }
+
+/// Operations of the notifications repository. The demo repository tags each
+/// call with one so a test can make a single operation fail.
+enum NotificationsOperation {
+  fetchInbox,
+  unreadCount,
+  markAsRead,
+  markAllAsRead,
+  fetchPreferences,
+  savePreferences,
+}

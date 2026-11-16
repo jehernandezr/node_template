@@ -2,22 +2,22 @@ import 'package:shell_core/shell_core.dart';
 
 import '../shared/types/types.dart';
 
-/// Puerto de datos de notificaciones. [FakeNotificationsRepository] la
-/// implementa en pruebas y en desarrollo; la implementación HTTP llegará
-/// cuando el backend publique el contrato de notificaciones.
+/// Data port of the notifications. `FakeNotificationsRepository` implements it
+/// in tests and in the demo mode; the HTTP implementation arrives when the
+/// backend publishes the notifications contract.
 ///
-/// Es un [ScopedResource]: el scope de la identidad lo cierra con [dispose],
-/// que cancela suscripciones y cierra los streams abiertos.
+/// It is a [ScopedResource]: the scope of the identity closes it with
+/// [dispose], which cancels subscriptions and closes the open streams.
 abstract interface class NotificationsRepository implements ScopedResource {
-  /// Bandeja del usuario, la más reciente primero.
+  /// Inbox of the user, newest first.
   Future<List<AppNotification>> fetchInbox();
 
-  /// Cantidad de notificaciones no leídas.
+  /// Number of unread notifications.
   Future<int> unreadCount();
 
-  /// Cantidad de no leídas que se actualiza sola. Emite el valor actual al
-  /// suscribirse y de nuevo con cada llegada en vivo y cada marcado como leída.
-  /// Termina cuando el repositorio se cierra.
+  /// Number of unread notifications that keeps itself current. Emits the
+  /// current value on listen and again on every live arrival and every read
+  /// mark. Ends when the repository closes.
   Stream<int> watchUnreadCount();
 
   Future<void> markAsRead(String id);
@@ -28,7 +28,7 @@ abstract interface class NotificationsRepository implements ScopedResource {
 
   Future<void> savePreferences(NotificationPreferences preferences);
 
-  /// Notificaciones que llegan mientras la app está abierta
-  /// (SSE o Socket.IO en producción). Termina cuando el repositorio se cierra.
+  /// Notifications that arrive while the app is open (SSE or Socket.IO in
+  /// production). Ends when the repository closes.
   Stream<AppNotification> live();
 }

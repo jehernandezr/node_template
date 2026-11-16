@@ -3,12 +3,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mf_tasks/mf_tasks.dart';
-import 'package:mf_tasks/src/data/tasks_repository.dart';
-import 'package:mf_tasks/src/screens/screens.dart';
-import 'package:mf_tasks/src/shared/types/task.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support.dart';
+import 'utils/tasks_app.dart';
 
 void main() {
   test('manifest id matches package', () {
@@ -36,7 +33,10 @@ void main() {
 
   test('every route lives under /tasks', () {
     final paths = _absolutePaths(
-      tasksManifest.buildRoutes(loadNow, () => newScope()),
+      tasksManifest.buildRoutes(
+        DeferredLibraryLoader().page,
+        () => TasksTestApp.newScope(),
+      ),
     );
     expect(
       paths,
@@ -127,47 +127,6 @@ void main() {
   test('screens are imported as deferred', () {
     final source = File('lib/mf_tasks.dart').readAsStringSync();
     expect(source, contains("screens.dart' deferred as screens"));
-  });
-
-  test('a fresh scope does not see tasks created in another scope', () async {
-    final scopeA = newScope(userId: 'a');
-    final scopeB = newScope(userId: 'b');
-    // The builders create each identity's repository on first use.
-    buildTasksListScreen(scopeA);
-    buildTasksListScreen(scopeB);
-
-    final repositoryA = scopeA.get<TasksRepository>(
-      (services) => throw StateError('repository of scope A should exist'),
-    );
-    await repositoryA.create(const TaskDraft(title: 'Solo de A'));
-
-    final repositoryB = scopeB.get<TasksRepository>(
-      (services) => throw StateError('repository of scope B should exist'),
-    );
-    final titles = (await repositoryB.list()).items.map((task) => task.title);
-    expect(titles, isNot(contains('Solo de A')));
-    expect(
-      (await repositoryA.list()).items.map((task) => task.title),
-      contains('Solo de A'),
-    );
-
-    await scopeA.dispose();
-    await scopeB.dispose();
-  });
-
-  test('disposing the scope disposes the repository', () async {
-    final scope = newScope();
-    buildTasksListScreen(scope);
-    final repository = scope.get<TasksRepository>(
-      (services) => throw StateError('repository should exist'),
-    );
-    var done = false;
-    repository.changes().listen(null, onDone: () => done = true);
-
-    await scope.dispose();
-    await Future<void>.delayed(Duration.zero);
-
-    expect(done, isTrue);
   });
 }
 

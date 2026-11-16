@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mf_assistant/mf_assistant.dart';
 import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
 
-import 'support.dart';
+import 'utils/assistant_test_app.dart';
 
 final _import = RegExp(
   r'''^import\s+['"]([^'"]+)['"]([^;]*);''',
@@ -46,7 +47,10 @@ void main() {
     final list = assistantManifest.screens.single;
     expect(list.path, '/assistant');
     expect(list.routes.single.path, ':conversationId');
-    final routes = assistantManifest.buildRoutes(loadNow, () => newScope());
+    final routes = assistantManifest.buildRoutes(
+      DeferredLibraryLoader().page,
+      () => TestScope().scope,
+    );
     final root = routes.single;
     expect(root.path, '/assistant');
     expect((root.routes.single as GoRoute).path, ':conversationId');

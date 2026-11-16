@@ -1,4 +1,4 @@
-import type { Criteria, CursorOptions, Page } from '@platform/criteria';
+import type { Criteria, CursorCodec, Page } from '@platform/criteria';
 import {
   type EntityManager,
   type EntityTarget,
@@ -84,10 +84,14 @@ export abstract class CatalogRepository<
     });
   }
 
-  /** @throws CriteriaError `UnknownField` si el criterio nombra un campo que la entidad no tiene. */
+  /**
+   * Una página según el criterio, con paginación por cursor. El `codec` firma el cursor siguiente; sin él, el
+   * cursor no va firmado.
+   * @throws CriteriaError `UnknownField` si el criterio nombra un campo que la entidad no tiene.
+   */
   async findByCriteria(
     criteria: Criteria<TEntity>,
-    cursorOptions?: CursorOptions,
+    codec?: CursorCodec,
   ): Promise<Page<TAggregate>> {
     const ast = criteria.toAst();
     return this.read(async (manager) => {
@@ -100,7 +104,7 @@ export abstract class CatalogRepository<
       );
       const qb = manager.createQueryBuilder(this.entityClass, 'e');
       translator.apply(qb, ast);
-      const page = translator.toPage(await qb.getMany(), ast, cursorOptions);
+      const page = translator.toPage(await qb.getMany(), ast, codec);
       return {
         items: page.items.map((entity) => this.mapper.toDomain(entity)),
         nextCursor: page.nextCursor,

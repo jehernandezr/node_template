@@ -2,7 +2,7 @@ import {
   type CommandDefinition,
   type EnvelopePublisher,
   type EventDefinition,
-  type MessageBus,
+  MessageBus,
   type MessageEnvelope,
   type MessageInput,
   type MessageOutput,
@@ -25,15 +25,17 @@ export interface SnsSqsMessageBusOptions extends OutboundMessageFactoryOptions {
  * `MessageBus` que publica directo en SNS y SQS, sin outbox. Sirve para
  * mensajes que no acompañan un cambio en la base (un job, una Lambda sin
  * transacción). Cuando el mensaje sale de un caso de uso que escribe datos,
- * usa `OutboxMessageBus` con `SnsSqsEnvelopePublisher` en el relay.
+ * el outbox guarda el sobre en la misma transacción y el relay lo publica
+ * con `SnsSqsEnvelopePublisher`.
  *
  * Valida ruta, contrato, `groupId` FIFO, retraso y tamaño antes de llamar.
  */
-export class SnsSqsMessageBus implements MessageBus {
+export class SnsSqsMessageBus extends MessageBus {
   private readonly factory: OutboundMessageFactory;
   private readonly publisher: EnvelopePublisher;
 
   constructor(options: SnsSqsMessageBusOptions) {
+    super();
     options.topology.assertValid();
     this.factory = new OutboundMessageFactory(options.topology, options);
     this.publisher = options.publisher;

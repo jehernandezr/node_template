@@ -57,14 +57,3 @@ export * from './topology/contract-topology.js';
 export type { RouteDef } from './topology/route-def.js';
 export * from './topology/target-kind.enum.js';
 export * from './topology/topology.js';
-
-// Transitorio: las pruebas de los adaptadores todavía los importan de aquí.
-// Se retiran cuando esas librerías pasen a `@platform/messaging/test-utils`
-// y a `EnvelopeFactory`.
-export * from './utils/deprecated-messaging-functions.js';
-/** @deprecated Usa `InMemoryBus` de `@platform/messaging/test-utils`. */
-export { InMemoryBus } from './__tests__/utils/in-memory-bus.js';
-/** @deprecated Usa `InMemoryOutboxStore` de `@platform/messaging/test-utils`. */
-export { InMemoryOutboxStore } from './__tests__/utils/in-memory-outbox-store.js';
-/** @deprecated Usa `InMemoryProcessedMessageStore` de `@platform/messaging/test-utils`. */
-export { InMemoryProcessedMessageStore } from './__tests__/utils/in-memory-processed-message-store.js';

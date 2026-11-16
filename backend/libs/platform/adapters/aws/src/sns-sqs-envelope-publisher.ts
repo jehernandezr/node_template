@@ -1,7 +1,7 @@
 import { PublishCommand, type SNSClient } from '@aws-sdk/client-sns';
 import { SendMessageCommand, type SQSClient } from '@aws-sdk/client-sqs';
 import {
-  type EnvelopePublisher,
+  EnvelopePublisher,
   type MessageEnvelope,
   MessagingError,
   MessagingErrorCode,
@@ -9,21 +9,9 @@ import {
   type PublishOutboxOptions,
   TargetKind,
 } from '@platform/messaging';
-import { AwsOperation, transportError } from './aws-errors.js';
-import type { AwsMessagingNames } from './messaging-names.js';
-
-/** Dependencias de {@link SnsSqsEnvelopePublisher}. */
-export interface SnsSqsEnvelopePublisherOptions {
-  readonly sns: SNSClient;
-  readonly sqs: SQSClient;
-  readonly names: AwsMessagingNames;
-}
-
-/** Retraso por mensaje de SQS, en segundos (0 a 900). */
-function delaySeconds(delayMs: number | undefined): number | undefined {
-  if (!delayMs || delayMs <= 0) return undefined;
-  return Math.min(900, Math.ceil(delayMs / 1000));
-}
+import type { AwsErrorTranslator } from './aws-error-translator.js';
+import type { AwsMessagingNames } from './aws-messaging-names.js';
+import { AwsOperation } from './aws-operation.enum.js';
 
 /**
  * Publica un envelope ya validado en SNS (eventos) o SQS (comandos). El cuerpo
@@ -31,15 +19,21 @@ function delaySeconds(delayMs: number | undefined): number | undefined {
  * recibe tal cual y el filtro de Terraform (`filter_policy_scope =
  * "MessageBody"`) lee su campo `type`.
  *
- * En destinos FIFO manda `groupId` como `MessageGroupId` y el id del envelope
+ * En destinos FIFO manda el grupo como `MessageGroupId` y el id del envelope
  * como `MessageDeduplicationId`, así un reintento del relay no duplica. Es el
- * `EnvelopePublisher` del `OutboxRelay` y la base de `SnsSqsMessageBus`.
+ * `EnvelopePublisher` del relay del outbox y la base de `SnsSqsMessageBus`.
  */
-export class SnsSqsEnvelopePublisher implements EnvelopePublisher {
-  private readonly options: SnsSqsEnvelopePublisherOptions;
+export class SnsSqsEnvelopePublisher extends EnvelopePublisher {
+  /** SQS no admite retrasos mayores a 15 minutos. */
+  private static readonly MAX_DELAY_SECONDS = 900;
 
-  constructor(options: SnsSqsEnvelopePublisherOptions) {
-    this.options = options;
+  constructor(
+    private readonly sns: SNSClient,
+    private readonly sqs: SQSClient,
+    private readonly names: AwsMessagingNames,
+    private readonly errors: AwsErrorTranslator,
+  ) {
+    super();
   }
 
   async publish(
@@ -61,12 +55,11 @@ export class SnsSqsEnvelopePublisher implements EnvelopePublisher {
         }
       : {};
     const body = JSON.stringify(envelope);
-    const { names, sns, sqs } = this.options;
 
     if (target.kind === TargetKind.Topic) {
-      const topicArn = names.topicArn(target.name, fifo);
+      const topicArn = this.names.topicArn(target.name, fifo);
       try {
-        await sns.send(
+        await this.sns.send(
           new PublishCommand({
             TopicArn: topicArn,
             Message: body,
@@ -74,15 +67,17 @@ export class SnsSqsEnvelopePublisher implements EnvelopePublisher {
           }),
         );
       } catch (err) {
-        throw transportError(AwsOperation.Publish, err, target.name);
+        throw this.errors.translate(AwsOperation.Publish, err, target.name);
       }
       return;
     }
 
-    const queueUrl = await names.queueUrl(names.queueName(target.name, fifo));
-    const delay = fifo ? undefined : delaySeconds(options.delayMs);
+    const queueUrl = await this.names.queueUrl(
+      this.names.queueName(target.name, fifo),
+    );
+    const delay = fifo ? undefined : this.delaySeconds(options.delayMs);
     try {
-      await sqs.send(
+      await this.sqs.send(
         new SendMessageCommand({
           QueueUrl: queueUrl,
           MessageBody: body,
@@ -91,7 +86,16 @@ export class SnsSqsEnvelopePublisher implements EnvelopePublisher {
         }),
       );
     } catch (err) {
-      throw transportError(AwsOperation.SendMessage, err, target.name);
+      throw this.errors.translate(AwsOperation.SendMessage, err, target.name);
     }
+  }
+
+  /** Retraso por mensaje de SQS, en segundos (0 a 900). */
+  private delaySeconds(delayMs: number | undefined): number | undefined {
+    if (!delayMs || delayMs <= 0) return undefined;
+    return Math.min(
+      SnsSqsEnvelopePublisher.MAX_DELAY_SECONDS,
+      Math.ceil(delayMs / 1000),
+    );
   }
 }

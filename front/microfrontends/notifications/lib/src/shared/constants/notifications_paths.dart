@@ -1,11 +1,11 @@
-/// Rutas del microfrontend de notificaciones.
+/// Routes of the notifications microfrontend.
 abstract final class NotificationsPaths {
-  /// Bandeja. Ruta raíz del microfrontend.
+  /// Inbox. Root route of the microfrontend.
   static const String inbox = '/notifications';
 
-  /// Segmento relativo de las preferencias, hijo de [inbox].
+  /// Relative segment of the preferences, child of [inbox].
   static const String preferencesSegment = 'preferences';
 
-  /// Ruta absoluta de las preferencias.
+  /// Absolute route of the preferences.
   static const String preferences = '$inbox/$preferencesSegment';
 }

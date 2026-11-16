@@ -1,8 +1,9 @@
-import type { SagaInstance } from '../../model.js';
-import { InMemorySagaStore } from '../../store/in-memory-saga-store.js';
-import type { DispatchWrite, FencedWrite } from '../../store/saga-store.js';
+import type { SagaInstance } from '../../model/saga-instance.js';
+import type { DispatchWrite } from '../../store/dispatch-write.js';
+import type { FencedWrite } from '../../store/fenced-write.js';
+import { InMemorySagaStore } from './in-memory-saga-store.js';
 
-/** Error a crashing store throws in place of the process that died. */
+/** Error que lanza un almacén que se cae en lugar del proceso que murió. */
 export class ProcessDied extends Error {
   constructor(where: string) {
     super(`process died ${where}`);
@@ -11,24 +12,23 @@ export class ProcessDied extends Error {
 }
 
 /**
- * In-memory store that emulates the death of the process running a saga at a
- * chosen point. The run that "dies" gets a `ProcessDied` error and, like a
- * dead process, never releases its lease: another node takes the saga only
- * once the lease expires.
+ * Almacén en memoria que emula la muerte del proceso que corre una saga en un
+ * punto elegido. La corrida que "muere" recibe un `ProcessDied` y, como un
+ * proceso muerto, nunca suelta su lease: otro nodo toma la saga solo cuando el lease vence.
  */
 export class CrashingSagaStore extends InMemorySagaStore {
   private afterDispatchOf: number | 'any' | undefined;
   private beforeOutcomeOf: number | undefined;
   private readonly deadTokens = new Set<string>();
 
-  /** The next dispatch of step `index` (any step by default) is written, then the process dies. */
+  /** El siguiente despacho del paso `index` (cualquiera por defecto) se escribe y luego el proceso muere. */
   crashAfterDispatch(index: number | 'any' = 'any'): void {
     this.afterDispatchOf = index;
   }
 
   /**
-   * The process dies right before writing the outcome of step `index`: the
-   * call has already applied its effect, but the log still says dispatched.
+   * El proceso muere justo antes de escribir el resultado del paso `index`: la
+   * llamada ya aplicó su efecto, pero la bitácora aún dice `dispatched`.
    */
   crashBeforeOutcome(index: number): void {
     this.beforeOutcomeOf = index;

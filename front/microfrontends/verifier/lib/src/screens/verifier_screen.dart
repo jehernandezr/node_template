@@ -1,265 +1,176 @@
-import 'dart:async';
-
 import 'package:flutter/services.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart';
 
-import '../data/demo_device_key.dart';
-import '../data/fake_verifier_repository.dart';
 import '../data/verifier_repository.dart';
 import '../l10n/generated/verifier_localizations.dart';
-import '../shared/constants/verifier_constants.dart';
-import '../shared/types/login_challenge.dart';
+import 'verifier_controller.dart';
+import 'verifier_state.dart';
 import 'verifier_widgets.dart';
 
-export '../l10n/generated/verifier_localizations.dart';
-
-/// Builds the screen with the repository of [scope].
-///
-/// This library is deferred: the manifest calls this function after it loads.
-/// The repository belongs to the scope, so it is created once per identity and
-/// disposed by the scope when the identity changes. The verifier only runs in
-/// demo mode (its manifest says so): login challenges have no contract yet.
-Widget buildVerifierScreen(MicrofrontendScope scope) {
-  final repository = scope.get<VerifierRepository>(
-    (services) => FakeVerifierRepository(const DemoDeviceKey()),
-  );
-  return VerifierScreen(repository: repository);
-}
-
 /// Device verifier: shows the code for a login attempt from a new device.
-///
-/// It provides its own localizations, read here inside the deferred chunk.
 class VerifierScreen extends StatelessWidget {
-  /// Creates the screen on top of [repository].
+  /// Creates the screen on top of [repository]. The key follows the
+  /// repository, so a new identity gets a new controller.
   const VerifierScreen({super.key, required this.repository});
 
   /// Source of challenges and codes.
   final VerifierRepository repository;
 
   @override
-  Widget build(BuildContext context) {
-    return Localizations.override(
-      context: context,
-      delegates: [VerifierLocalizations.delegate],
-      child: _VerifierView(repository: repository),
-    );
-  }
-}
-
-class _VerifierView extends StatefulWidget {
-  const _VerifierView({required this.repository});
-
-  final VerifierRepository repository;
-
-  @override
-  State<_VerifierView> createState() => _VerifierViewState();
-}
-
-class _VerifierViewState extends State<_VerifierView> {
-  StreamSubscription<LoginChallenge?>? _subscription;
-  Timer? _ticker;
-  AsyncValue<LoginChallenge?> _pending = const AsyncValue.loading();
-  AsyncValue<String> _code = const AsyncValue.loading();
-  bool _copied = false;
-  bool _denying = false;
-  bool _blocked = false;
-  int _secondsLeft = 0;
-
-  /// Incremented whenever the current challenge changes, so late results of
-  /// `autoCode` for an older challenge are ignored.
-  int _generation = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _listen();
-  }
-
-  @override
-  void didUpdateWidget(covariant _VerifierView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.repository != widget.repository) {
-      _subscription?.cancel();
-      _ticker?.cancel();
-      _generation++;
-      _pending = const AsyncValue.loading();
-      _listen();
-    }
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  void _listen() {
-    _subscription = widget.repository.pending().listen(
-      _onChallenge,
-      onError: _onPendingError,
-    );
-  }
-
-  void _retry() {
-    _subscription?.cancel();
-    setState(() => _pending = const AsyncValue.loading());
-    _listen();
-  }
-
-  void _onPendingError(Object error, StackTrace stackTrace) {
-    _ticker?.cancel();
-    _generation++;
-    setState(() => _pending = AsyncValue.error(error, stackTrace));
-  }
-
-  void _onChallenge(LoginChallenge? challenge) {
-    _ticker?.cancel();
-    _generation++;
-    if (challenge == null) {
-      setState(() {
-        _pending = const AsyncValue.data(null);
-        _code = const AsyncValue.loading();
-        _copied = false;
-      });
-      return;
-    }
-    final generation = _generation;
-    setState(() {
-      _pending = AsyncValue.data(challenge);
-      _code = const AsyncValue.loading();
-      _copied = false;
-      _denying = false;
-      _blocked = false;
-      _secondsLeft = challenge.validFor.inSeconds;
-    });
-    _ticker = Timer.periodic(verifierTick, _onTick);
-    AsyncValue.guard(() => widget.repository.autoCode(challenge.id))
-        .then((value) {
-          if (!mounted || generation != _generation) return;
-          setState(() => _code = value);
-        });
-  }
-
-  void _onTick(Timer timer) {
-    if (!mounted) return;
-    if (_secondsLeft <= 1) {
-      // The code expired: drop the challenge locally.
-      timer.cancel();
-      _generation++;
-      setState(() {
-        _pending = const AsyncValue.data(null);
-        _code = const AsyncValue.loading();
-        _secondsLeft = 0;
-      });
-      return;
-    }
-    setState(() => _secondsLeft--);
-  }
-
-  Future<void> _copyCode() async {
-    final code = _code.valueOrNull;
-    if (code == null) return;
-    await Clipboard.setData(ClipboardData(text: code));
-    if (!mounted) return;
-    setState(() => _copied = true);
-  }
-
-  Future<void> _confirmDeny(LoginChallenge challenge) async {
-    if (_denying) return;
-    final l10n = VerifierLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.denyDialogTitle),
-        content: Text(l10n.denyDialogBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(shared.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.denyConfirm),
-          ),
-        ],
+  Widget build(BuildContext context) => ControllerBuilder<VerifierController>(
+    key: ObjectKey(repository),
+    create: (context) =>
+        VerifierController(repository, clock: _clockOf(context))..start(),
+    builder: (context, controller) => AppPage(
+      title: VerifierLocalizations.of(context).title,
+      body: VerifierAnnouncer(
+        state: controller.state,
+        child: _VerifierBody(controller: controller),
       ),
-    );
-    if (confirmed != true || !mounted) return;
-    setState(() => _denying = true);
-    try {
-      await widget.repository.deny(challenge.id);
-      if (!mounted) return;
-      _ticker?.cancel();
-      _generation++;
-      setState(() {
-        _denying = false;
-        _blocked = true;
-        _pending = const AsyncValue.data(null);
-        _code = const AsyncValue.loading();
-      });
-    } on Exception catch (error) {
-      // API, contract or network.
-      _denyFailed(error, l10n);
-    }
-  }
+    ),
+  );
 
-  void _denyFailed(Object error, VerifierLocalizations l10n) {
-    if (!mounted) return;
-    setState(() => _denying = false);
-    showActionError(context, error, message: l10n.denyFailed);
+  static Clock _clockOf(BuildContext context) {
+    final scope = ShellAccessScope.maybeRead(context);
+    if (scope == null) {
+      throw StateError('VerifierScreen needs a ShellAccessScope above it');
+    }
+    return scope.clock;
   }
+}
+
+/// Draws one [VerifierState].
+class _VerifierBody extends StatelessWidget {
+  const _VerifierBody({required this.controller});
+
+  final VerifierController controller;
+
+  @override
+  Widget build(BuildContext context) => switch (controller.state) {
+    VerifierLoading() => const LoadingView(),
+    VerifierFailed(:final error) => ErrorView.fromException(
+      error,
+      fallbackMessage: VerifierLocalizations.of(context).loadError,
+      onRetry: controller.start,
+    ),
+    VerifierWaiting() => const _ReadyList(blocked: false),
+    VerifierBlocked() => const _ReadyList(blocked: true),
+    final VerifierChallenge challenge => _ChallengeView(
+      controller: controller,
+      shown: challenge,
+      denying: false,
+    ),
+    VerifierDenying(:final previous) => _ChallengeView(
+      controller: controller,
+      shown: previous,
+      denying: true,
+    ),
+  };
+}
+
+/// No challenge pending, with the blocked notice after a deny.
+class _ReadyList extends StatelessWidget {
+  const _ReadyList({required this.blocked});
+
+  final bool blocked;
 
   @override
   Widget build(BuildContext context) {
     final l10n = VerifierLocalizations.of(context);
-    return AppPage(
-      title: l10n.title,
-      body: AsyncValueView<LoginChallenge?>(
-        value: _pending,
-        errorMessage: l10n.loadError,
-        onRetry: _retry,
-        data: (challenge) => _content(l10n, challenge),
-      ),
-    );
-  }
-
-  Widget _content(VerifierLocalizations l10n, LoginChallenge? challenge) {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
-        if (_blocked) ...[
+        if (blocked) ...[
           const VerifierBlockedNotice(),
           const SizedBox(height: AppSpacing.md),
         ],
-        if (challenge == null)
-          EmptyState(
-            icon: Icons.verified_user_outlined,
-            title: l10n.readyTitle,
-            message: l10n.readyMessage,
-          )
-        else ...[
-          VerifierCodeCard(code: _code, copied: _copied, onCopy: _copyCode),
-          const SizedBox(height: AppSpacing.md),
-          VerifierCountdown(
-            secondsLeft: _secondsLeft,
-            totalSeconds: challenge.validFor.inSeconds,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          VerifierContextCard(attempt: challenge.context),
-          const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: l10n.denyButton,
-            variant: AppButtonVariant.danger,
-            loading: _denying,
-            onPressed: () => _confirmDeny(challenge),
-          ),
-        ],
+        EmptyState(
+          icon: Icons.verified_user_outlined,
+          title: l10n.readyTitle,
+          message: l10n.readyMessage,
+        ),
       ],
+    );
+  }
+}
+
+/// The pending challenge: code, countdown, context and the deny action.
+class _ChallengeView extends StatelessWidget {
+  const _ChallengeView({
+    required this.controller,
+    required this.shown,
+    required this.denying,
+  });
+
+  final VerifierController controller;
+  final VerifierChallenge shown;
+  final bool denying;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(AppSpacing.md),
+    children: [
+      VerifierCodeCard(
+        code: shown.code,
+        copied: shown.copied,
+        onCopy: () => _copy(context),
+      ),
+      const SizedBox(height: AppSpacing.md),
+      VerifierCountdown(
+        secondsLeft: shown.secondsLeft,
+        totalSeconds: shown.challenge.validFor.inSeconds,
+      ),
+      const SizedBox(height: AppSpacing.md),
+      VerifierContextCard(attempt: shown.challenge.context),
+      const SizedBox(height: AppSpacing.md),
+      AppButton(
+        label: VerifierLocalizations.of(context).denyButton,
+        variant: AppButtonVariant.danger,
+        loading: denying,
+        onPressed: () => _confirmDeny(context),
+      ),
+    ],
+  );
+
+  Future<void> _copy(BuildContext context) async {
+    if (shown.code case AsyncData<String>(:final value)) {
+      await Clipboard.setData(ClipboardData(text: value));
+      if (!context.mounted) return;
+      controller.markCopied();
+    }
+  }
+
+  Future<void> _confirmDeny(BuildContext context) async {
+    final confirmed = await context.showLocalizedDialog<bool>(
+      builder: (dialogContext) {
+        final l10n = VerifierLocalizations.of(dialogContext);
+        return AlertDialog(
+          title: Text(l10n.denyDialogTitle),
+          content: Text(l10n.denyDialogBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(AppLocalizations.of(dialogContext).actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.denyConfirm),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !context.mounted) return;
+    final result = await controller.deny();
+    if (!context.mounted) return;
+    showActionResult(
+      context,
+      result,
+      failure: VerifierLocalizations.of(context).denyFailed,
     );
   }
 }

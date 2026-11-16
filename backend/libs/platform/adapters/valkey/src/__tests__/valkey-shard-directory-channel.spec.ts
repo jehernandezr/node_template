@@ -1,17 +1,19 @@
-import { EventEmitter } from 'node:events';
 import {
   ShardDirectoryChangeKind,
   ShardingEvent,
   type ShardDirectoryChanged,
 } from '@platform/sharding';
-import type { ValkeyCommandRunner } from '../valkey-client.js';
+import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
+import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
+import { ValkeyShardDirectoryChannel } from '../valkey-shard-directory-channel.js';
+import { ValkeySubscriberSource } from '../valkey-subscriber-source.js';
 import {
-  ValkeyShardDirectoryChannel,
-  type ValkeySubscriberConnection,
-} from '../valkey-shard-directory-channel.js';
+  FakePubSubBroker,
+  RecordingChangeHandler,
+  RecordingErrorListener,
+} from './utils/index.js';
 
-const keyspace = new ValkeyKeyspace('orders');
 const CHANNEL = 'orders:sharding:directory-changed';
 
 const change: ShardDirectoryChanged = {
@@ -21,82 +23,108 @@ const change: ShardDirectoryChanged = {
   version: 2,
 };
 
-/** A fake broker: PUBLISH on the publisher emits `message` on the subscriber. */
-function broker() {
-  const emitter = new EventEmitter();
-  const subscribed = new Set<string>();
-  const subscriber: ValkeySubscriberConnection & {
-    subscribed: Set<string>;
-  } = {
-    subscribed,
-    subscribe: async (...channels) =>
-      channels.forEach((c) => subscribed.add(c)),
-    unsubscribe: async (...channels) =>
-      channels.forEach((c) => subscribed.delete(c)),
-    on: (event, listener) => emitter.on(event, listener),
-    off: (event, listener) => emitter.off(event, listener),
-  };
-  const publisher: ValkeyCommandRunner = {
-    call: async (_command, [channel, message]) => {
-      if (subscribed.has(String(channel))) {
-        emitter.emit('message', String(channel), String(message));
-      }
-      return 1;
-    },
-  };
-  return { emitter, subscriber, publisher };
-}
+const flush = (): Promise<void> =>
+  new Promise<void>((resolve) => setImmediate(resolve));
 
-const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
+function channelOver(
+  broker: FakePubSubBroker,
+  onError?: (error: unknown) => void,
+): ValkeyShardDirectoryChannel {
+  return new ValkeyShardDirectoryChannel(
+    new ValkeyCommandExecutor(broker.publisher, new ValkeyErrorTranslator()),
+    new ValkeySubscriberSource(broker.opener),
+    new ValkeyKeyspace('orders'),
+    onError,
+  );
+}
 
 describe('ValkeyShardDirectoryChannel', () => {
   it('delivers published changes to every handler and unsubscribes with the last one', async () => {
-    const { subscriber, publisher } = broker();
-    const channel = new ValkeyShardDirectoryChannel({
-      publisher,
-      subscriber,
-      keyspace,
-    });
-    const first = jest.fn();
-    const second = jest.fn();
-    const stopFirst = await channel.subscribe(first);
-    const stopSecond = await channel.subscribe(second);
-    expect(subscriber.subscribed).toEqual(new Set([CHANNEL]));
+    const broker = new FakePubSubBroker();
+    const channel = channelOver(broker);
+    const first = new RecordingChangeHandler();
+    const second = new RecordingChangeHandler();
+    const stopFirst = await channel.subscribe(first.handle);
+    const stopSecond = await channel.subscribe(second.handle);
+    expect(broker.subscribed).toEqual(new Set([CHANNEL]));
 
     await channel.publish(change);
     await flush();
-    expect(first).toHaveBeenCalledWith(change);
-    expect(second).toHaveBeenCalledWith(change);
+    expect(first.received).toEqual([change]);
+    expect(second.received).toEqual([change]);
 
     await stopFirst();
-    expect(subscriber.subscribed.size).toBe(1);
+    expect(broker.subscribed.size).toBe(1);
     await stopSecond();
-    expect(subscriber.subscribed.size).toBe(0);
+    expect(broker.subscribed.size).toBe(0);
+  });
+
+  it('opens one subscriber connection however many handlers subscribe', async () => {
+    const broker = new FakePubSubBroker();
+    const channel = channelOver(broker);
+    const stopFirst = await channel.subscribe(
+      new RecordingChangeHandler().handle,
+    );
+    await stopFirst();
+    await channel.subscribe(new RecordingChangeHandler().handle);
+    expect(broker.opened).toBe(1);
+  });
+
+  it('removes a handler subscribed twice only once per stop', async () => {
+    const broker = new FakePubSubBroker();
+    const channel = channelOver(broker);
+    const handler = new RecordingChangeHandler();
+    const stopA = await channel.subscribe(handler.handle);
+    const stopB = await channel.subscribe(handler.handle);
+    await stopA();
+    await stopA();
+    await channel.publish(change);
+    await flush();
+    expect(handler.received).toHaveLength(1);
+    await stopB();
+    expect(broker.subscribed.size).toBe(0);
   });
 
   it('reports malformed messages and failing handlers without stopping', async () => {
-    const { emitter, subscriber, publisher } = broker();
-    const onError = jest.fn();
-    const channel = new ValkeyShardDirectoryChannel({
-      publisher,
-      subscriber,
-      keyspace,
-      onError,
-    });
-    const handler = jest.fn(() => {
-      throw new Error('handler failed');
-    });
-    await channel.subscribe(handler);
+    const broker = new FakePubSubBroker();
+    const errors = new RecordingErrorListener();
+    const channel = channelOver(broker, errors.report);
+    const handler = new RecordingChangeHandler(new Error('handler failed'));
+    await channel.subscribe(handler.handle);
 
-    emitter.emit('message', CHANNEL, '{bad');
-    emitter.emit('message', 'other-channel', '{bad');
+    broker.emit(CHANNEL, '{bad');
+    broker.emit('other-channel', '{bad');
     await channel.publish(change);
     await flush();
 
-    expect(onError).toHaveBeenCalledTimes(2);
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ code: 'PLATFORM.VALKEY.UNEXPECTED_REPLY' }),
-    );
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(errors.errors).toHaveLength(2);
+    expect(errors.errors[0]).toMatchObject({
+      code: 'PLATFORM.VALKEY.UNEXPECTED_REPLY',
+    });
+    expect(errors.errors[1]).toEqual(new Error('handler failed'));
+    expect(handler.received).toEqual([change]);
+  });
+
+  it('ignores errors when nobody listens for them', async () => {
+    const broker = new FakePubSubBroker();
+    const channel = channelOver(broker);
+    await channel.subscribe(new RecordingChangeHandler().handle);
+    broker.emit(CHANNEL, '{bad');
+    await flush();
+  });
+
+  it('forgets the handler and stops listening when the subscription fails', async () => {
+    const broker = new FakePubSubBroker();
+    broker.subscribeFailure = new Error('NOPERM');
+    const channel = channelOver(broker);
+    await expect(
+      channel.subscribe(new RecordingChangeHandler().handle),
+    ).rejects.toThrow('NOPERM');
+
+    const handler = new RecordingChangeHandler();
+    await channel.subscribe(handler.handle);
+    await channel.publish(change);
+    await flush();
+    expect(handler.received).toHaveLength(1);
   });
 });

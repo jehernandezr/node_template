@@ -1,5 +1,5 @@
-/// Tipos compartidos entre las pantallas y los datos del microfrontend, con
-/// los enums que usan.
+/// Types shared by the screens and the data of the microfrontend, with the
+/// enums they use.
 library;
 
 export '../enums/notification_enums.dart';

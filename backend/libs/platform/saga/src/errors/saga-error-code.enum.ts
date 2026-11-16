@@ -1,0 +1,20 @@
+/** Códigos de error estables de `@platform/saga`. */
+export enum SagaErrorCode {
+  NotFound = 'PLATFORM.SAGA.NOT_FOUND',
+  DuplicateSaga = 'PLATFORM.SAGA.DUPLICATE_SAGA',
+  UnknownDefinition = 'PLATFORM.SAGA.UNKNOWN_DEFINITION',
+  InvalidDefinition = 'PLATFORM.SAGA.INVALID_DEFINITION',
+  InvalidConfiguration = 'PLATFORM.SAGA.INVALID_CONFIGURATION',
+  InvalidState = 'PLATFORM.SAGA.INVALID_STATE',
+  MissingCompensation = 'PLATFORM.SAGA.MISSING_COMPENSATION',
+  ConcurrentModification = 'PLATFORM.SAGA.CONCURRENT_MODIFICATION',
+  LeaseNotAcquired = 'PLATFORM.SAGA.LEASE_NOT_ACQUIRED',
+  LeaseLost = 'PLATFORM.SAGA.LEASE_LOST',
+  TransientFailure = 'PLATFORM.SAGA.TRANSIENT_FAILURE',
+  ProtocolViolation = 'PLATFORM.SAGA.PROTOCOL_VIOLATION',
+  UncertainOutcome = 'PLATFORM.SAGA.UNCERTAIN_OUTCOME',
+  StateUpdateFailed = 'PLATFORM.SAGA.STATE_UPDATE_FAILED',
+  InputBuildFailed = 'PLATFORM.SAGA.INPUT_BUILD_FAILED',
+  IdempotencyKeyConflict = 'PLATFORM.SAGA.IDEMPOTENCY_KEY_CONFLICT',
+  DeadlineExceeded = 'PLATFORM.SAGA.DEADLINE_EXCEEDED',
+}

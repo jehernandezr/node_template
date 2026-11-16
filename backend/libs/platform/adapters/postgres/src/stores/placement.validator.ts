@@ -1,0 +1,41 @@
+import { TenantStatus, type TenantPlacement } from '@platform/sharding';
+import { invalidConfiguration } from '@platform/persistence';
+
+/** Valida un `TenantPlacement` que llega de quien escribe el directorio, antes de tocar la base. */
+export class PlacementValidator {
+  private static readonly STATUSES: readonly string[] =
+    Object.values(TenantStatus);
+
+  /** @throws PersistenceError `PersistenceInvalidConfig` por el primer campo inválido. */
+  static assert(placement: TenantPlacement): void {
+    const { tenantId, region, shardGroup, status, version, dedicated } =
+      placement;
+    if (typeof tenantId !== 'string' || tenantId.length === 0) {
+      throw invalidConfiguration('placement.tenantId', 'a non-empty string');
+    }
+    if (typeof region !== 'string' || region.length === 0) {
+      throw invalidConfiguration('placement.region', 'a non-empty string');
+    }
+    if (
+      !Array.isArray(shardGroup) ||
+      shardGroup.length === 0 ||
+      !shardGroup.every(
+        (shard: unknown) => typeof shard === 'string' && shard.length > 0,
+      )
+    ) {
+      throw invalidConfiguration(
+        'placement.shardGroup',
+        'a non-empty list of shard ids',
+      );
+    }
+    if (!PlacementValidator.STATUSES.includes(status)) {
+      throw invalidConfiguration('placement.status', 'a TenantStatus');
+    }
+    if (!Number.isSafeInteger(version) || version < 0) {
+      throw invalidConfiguration('placement.version', 'a non-negative integer');
+    }
+    if (typeof dedicated !== 'boolean') {
+      throw invalidConfiguration('placement.dedicated', 'a boolean');
+    }
+  }
+}

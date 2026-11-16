@@ -1,0 +1,80 @@
+import {
+  defineCommand,
+  defineEvent,
+  defineQueue,
+  defineServiceContract,
+  defineTopic,
+} from '@contracts/platform';
+import { z } from 'zod';
+
+/** Contratos de prueba: un servicio de tareas, uno de reportes y uno de libro mayor. */
+export const TaskClosed = defineEvent({
+  type: 'tasks.task.closed.v1',
+  payload: z.object({ taskId: z.string() }),
+  description: 'Se cerró una tarea.',
+});
+export const TaskReopened = defineEvent({
+  type: 'tasks.task.reopened.v1',
+  payload: z.object({ taskId: z.string() }),
+  description: 'Se reabrió una tarea.',
+});
+export const TasksEvents = defineTopic({
+  name: 'tasks-events',
+  events: [TaskClosed, TaskReopened],
+  description: 'Eventos de tasks.',
+});
+export const LedgerPosted = defineEvent({
+  type: 'ledger.entry.posted.v1',
+  payload: z.object({ accountId: z.string(), amount: z.number() }),
+  description: 'Asiento registrado.',
+});
+export const LedgerEvents = defineTopic({
+  name: 'ledger-events',
+  fifo: true,
+  events: [LedgerPosted],
+  description: 'Asientos en orden por cuenta.',
+});
+export const GenerateReport = defineCommand({
+  type: 'reports.report.generate.v1',
+  payload: z.object({ reportId: z.string() }),
+  description: 'Genera un reporte.',
+});
+
+export const tasksContract = defineServiceContract({
+  service: 'tasks',
+  description: 'Tareas.',
+  events: { taskClosed: TaskClosed, taskReopened: TaskReopened },
+  topics: { tasksEvents: TasksEvents },
+});
+
+export const reportsContract = defineServiceContract({
+  service: 'reports',
+  description: 'Reportes.',
+  commands: { generateReport: GenerateReport },
+  queues: {
+    reportsWork: defineQueue({
+      name: 'reports-work',
+      visibilityTimeoutSeconds: 30,
+      retry: { maxAttempts: 3, baseMs: 2_000, maxMs: 2_000 },
+      commands: [GenerateReport],
+      subscriptions: [{ topic: TasksEvents, events: [TaskClosed] }],
+      description: 'Trabajo de reportes.',
+    }),
+  },
+});
+
+export const ledgerContract = defineServiceContract({
+  service: 'ledger',
+  description: 'Libro mayor.',
+  events: { ledgerPosted: LedgerPosted },
+  topics: { ledgerEvents: LedgerEvents },
+  queues: {
+    ledgerProjection: defineQueue({
+      name: 'ledger-projection',
+      fifo: true,
+      retry: { maxAttempts: 3, baseMs: 1_000, maxMs: 1_000 },
+      subscriptions: [{ topic: LedgerEvents }],
+      description: 'Proyección ordenada.',
+    }),
+  },
+});

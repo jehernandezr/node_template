@@ -26,3 +26,7 @@ const int verifierCodeGroupSize = 4;
 
 /// How often the countdown of a challenge updates.
 const Duration verifierTick = Duration(seconds: 1);
+
+/// Seconds left at which the countdown announces that the code is about to
+/// expire. It announces once, not every second.
+const int verifierWarningSeconds = 10;

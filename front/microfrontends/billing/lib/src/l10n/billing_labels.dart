@@ -1,13 +1,8 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:utils/utils.dart' show formatDate;
 
 import '../shared/enums/billing_enums.dart';
 import '../shared/types/billing_types.dart';
 import 'generated/billing_localizations.dart';
-
-/// Etiqueta BCP 47 del locale de [context], para los formatos de `utils`.
-String localeTag(BuildContext context) =>
-    Localizations.localeOf(context).toLanguageTag();
 
 /// Localized name of a metered limit.
 String quotaLabel(BillingLocalizations l10n, QuotaKey key) => switch (key) {

@@ -28,26 +28,24 @@ final MicrofrontendManifest billingManifest = MicrofrontendManifest(
     ),
   ],
   screens: [
-    ScreenRoute(
-      path: BillingPaths.plan,
-      loadLibrary: screens.loadLibrary,
-      builder: (scope, {params = const {}}) =>
-          screens.buildBillingPlanPage(scope),
+    ScreenRoute.deferred(
+      BillingPaths.plan,
+      library: screens.loadLibrary,
+      build: (scope, params) => screens.BillingScreens.plan(scope),
       routes: [
-        ScreenRoute(
-          path: BillingPaths.invoicesSegment,
+        ScreenRoute.deferred(
+          BillingPaths.invoicesSegment,
           access: billingAccessRule,
-          loadLibrary: screens.loadLibrary,
-          builder: (scope, {params = const {}}) =>
-              screens.buildInvoicesPage(scope),
+          library: screens.loadLibrary,
+          build: (scope, params) => screens.BillingScreens.invoices(scope),
           routes: [
-            ScreenRoute(
-              path: ':${BillingPaths.idParam}',
+            ScreenRoute.deferred(
+              ':${BillingPaths.idParam}',
               access: billingAccessRule,
-              loadLibrary: screens.loadLibrary,
-              builder: (scope, {params = const {}}) => screens.buildInvoicePage(
+              library: screens.loadLibrary,
+              build: (scope, params) => screens.BillingScreens.invoice(
                 scope,
-                params[BillingPaths.idParam] ?? '',
+                params.require(BillingPaths.idParam),
               ),
             ),
           ],
