@@ -1,4 +1,4 @@
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide TaskStatus;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';

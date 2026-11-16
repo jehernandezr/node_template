@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 
 import '../../core/core.dart';
 import '../../identity/enums/identity_enums.dart';
+import '../../platform/types/platform_types.dart';
 
 /// Claims del access token JWT.
 @immutable
@@ -312,7 +313,13 @@ final class PendingMfa {
 /// Resultado de un login o de una verificación MFA.
 @immutable
 final class SignInResponse {
-  const SignInResponse({required this.status, this.tokens, this.mfa});
+  const SignInResponse({
+    required this.status,
+    this.tokens,
+    this.mfa,
+    this.region,
+    this.apiBaseUrl,
+  });
 
   /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
   factory SignInResponse.fromJson(Map<String, dynamic> json) {
@@ -329,6 +336,8 @@ final class SignInResponse {
         mfa: json['mfa'] == null
             ? null
             : PendingMfa.fromJson(json['mfa'] as Map<String, dynamic>),
+        region: json['region'] as String?,
+        apiBaseUrl: json['apiBaseUrl'] as String?,
       );
     } on TypeError catch (error) {
       throw FormatException('Invalid SignInResponse: $error', json);
@@ -341,11 +350,17 @@ final class SignInResponse {
 
   final PendingMfa? mfa;
 
+  final String? region;
+
+  final String? apiBaseUrl;
+
   /// JSON del objeto; omite los campos opcionales nulos.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'status': status.wireCode,
     if (tokens case final value?) 'tokens': value.toJson(),
     if (mfa case final value?) 'mfa': value.toJson(),
+    'region': ?region,
+    'apiBaseUrl': ?apiBaseUrl,
   };
 
   /// Igual a [toJson], para usar como tear-off constante.
@@ -357,10 +372,12 @@ final class SignInResponse {
       other is SignInResponse &&
           contractEquals(status, other.status) &&
           contractEquals(tokens, other.tokens) &&
-          contractEquals(mfa, other.mfa);
+          contractEquals(mfa, other.mfa) &&
+          contractEquals(region, other.region) &&
+          contractEquals(apiBaseUrl, other.apiBaseUrl);
 
   @override
-  int get hashCode => contractHash([status, tokens, mfa]);
+  int get hashCode => contractHash([status, tokens, mfa, region, apiBaseUrl]);
 }
 
 /// Pedido de un desafío MFA.
@@ -6144,4 +6161,528 @@ final class SecurityAlertRaisedPayload {
 
   @override
   int get hashCode => contractHash([alertId, userId, type, raisedAt]);
+}
+
+/// Tenant en aprovisionamiento y la saga que lo activa.
+@immutable
+final class TenantCreation {
+  const TenantCreation({required this.tenantId, required this.sagaId});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory TenantCreation.fromJson(Map<String, dynamic> json) {
+    try {
+      return TenantCreation(
+        tenantId: json['tenantId'] as String,
+        sagaId: json['sagaId'] as String,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid TenantCreation: $error', json);
+    }
+  }
+
+  final String tenantId;
+
+  final String sagaId;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'tenantId': tenantId,
+    'sagaId': sagaId,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(TenantCreation value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TenantCreation &&
+          contractEquals(tenantId, other.tenantId) &&
+          contractEquals(sagaId, other.sagaId);
+
+  @override
+  int get hashCode => contractHash([tenantId, sagaId]);
+}
+
+/// Saga que borra la cuenta del usuario.
+@immutable
+final class AccountDeletionStarted {
+  const AccountDeletionStarted({required this.sagaId});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory AccountDeletionStarted.fromJson(Map<String, dynamic> json) {
+    try {
+      return AccountDeletionStarted(sagaId: json['sagaId'] as String);
+    } on TypeError catch (error) {
+      throw FormatException('Invalid AccountDeletionStarted: $error', json);
+    }
+  }
+
+  final String sagaId;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{'sagaId': sagaId};
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(AccountDeletionStarted value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AccountDeletionStarted && contractEquals(sagaId, other.sagaId);
+
+  @override
+  int get hashCode => contractHash([sagaId]);
+}
+
+/// Saga a consultar.
+@immutable
+final class GetSagaRequest {
+  const GetSagaRequest({required this.sagaId});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory GetSagaRequest.fromJson(Map<String, dynamic> json) {
+    try {
+      return GetSagaRequest(sagaId: json['sagaId'] as String);
+    } on TypeError catch (error) {
+      throw FormatException('Invalid GetSagaRequest: $error', json);
+    }
+  }
+
+  final String sagaId;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{'sagaId': sagaId};
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(GetSagaRequest value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GetSagaRequest && contractEquals(sagaId, other.sagaId);
+
+  @override
+  int get hashCode => contractHash([sagaId]);
+}
+
+/// Estado de una saga de identity.
+@immutable
+final class SagaSummary {
+  const SagaSummary({
+    required this.sagaId,
+    required this.saga,
+    required this.status,
+    required this.startedAt,
+    required this.finishedAt,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory SagaSummary.fromJson(Map<String, dynamic> json) {
+    try {
+      return SagaSummary(
+        sagaId: json['sagaId'] as String,
+        saga: decodeEnum(json['saga'], IdentitySaga.tryParse, 'IdentitySaga'),
+        status: decodeEnum(
+          json['status'],
+          IdentitySagaStatus.tryParse,
+          'IdentitySagaStatus',
+        ),
+        startedAt: DateTime.parse(json['startedAt'] as String),
+        finishedAt: json['finishedAt'] == null
+            ? null
+            : DateTime.parse(json['finishedAt'] as String),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid SagaSummary: $error', json);
+    }
+  }
+
+  final String sagaId;
+
+  final IdentitySaga saga;
+
+  final IdentitySagaStatus status;
+
+  final DateTime startedAt;
+
+  final DateTime? finishedAt;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'sagaId': sagaId,
+    'saga': saga.wireCode,
+    'status': status.wireCode,
+    'startedAt': startedAt.toUtc().toIso8601String(),
+    'finishedAt': switch (finishedAt) {
+      final value? => value.toUtc().toIso8601String(),
+      null => null,
+    },
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(SagaSummary value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SagaSummary &&
+          contractEquals(sagaId, other.sagaId) &&
+          contractEquals(saga, other.saga) &&
+          contractEquals(status, other.status) &&
+          contractEquals(startedAt, other.startedAt) &&
+          contractEquals(finishedAt, other.finishedAt);
+
+  @override
+  int get hashCode =>
+      contractHash([sagaId, saga, status, startedAt, finishedAt]);
+}
+
+/// Usuario cuyos datos personales se borran.
+@immutable
+final class EraseUserInput {
+  const EraseUserInput({required this.userId});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory EraseUserInput.fromJson(Map<String, dynamic> json) {
+    try {
+      return EraseUserInput(userId: json['userId'] as String);
+    } on TypeError catch (error) {
+      throw FormatException('Invalid EraseUserInput: $error', json);
+    }
+  }
+
+  final String userId;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{'userId': userId};
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(EraseUserInput value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EraseUserInput && contractEquals(userId, other.userId);
+
+  @override
+  int get hashCode => contractHash([userId]);
+}
+
+/// Resultado de borrar a un usuario.
+@immutable
+final class EraseUserResult {
+  const EraseUserResult({required this.userId, required this.erasedAt});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory EraseUserResult.fromJson(Map<String, dynamic> json) {
+    try {
+      return EraseUserResult(
+        userId: json['userId'] as String,
+        erasedAt: DateTime.parse(json['erasedAt'] as String),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid EraseUserResult: $error', json);
+    }
+  }
+
+  final String userId;
+
+  final DateTime erasedAt;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'userId': userId,
+    'erasedAt': erasedAt.toUtc().toIso8601String(),
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(EraseUserResult value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EraseUserResult &&
+          contractEquals(userId, other.userId) &&
+          contractEquals(erasedAt, other.erasedAt);
+
+  @override
+  int get hashCode => contractHash([userId, erasedAt]);
+}
+
+/// Usuario cuyos dispositivos con push se piden.
+@immutable
+final class ListPushTargetsInput {
+  const ListPushTargetsInput({required this.user});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory ListPushTargetsInput.fromJson(Map<String, dynamic> json) {
+    try {
+      return ListPushTargetsInput(
+        user: UserRef.fromJson(json['user'] as Map<String, dynamic>),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid ListPushTargetsInput: $error', json);
+    }
+  }
+
+  final UserRef user;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{'user': user.toJson()};
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(ListPushTargetsInput value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ListPushTargetsInput && contractEquals(user, other.user);
+
+  @override
+  int get hashCode => contractHash([user]);
+}
+
+/// Dispositivo al que se puede enviar un push.
+@immutable
+final class PushTarget {
+  const PushTarget({
+    required this.deviceId,
+    required this.platform,
+    required this.pushToken,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory PushTarget.fromJson(Map<String, dynamic> json) {
+    try {
+      return PushTarget(
+        deviceId: json['deviceId'] as String,
+        platform: json['platform'] as String,
+        pushToken: json['pushToken'] as String,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid PushTarget: $error', json);
+    }
+  }
+
+  final String deviceId;
+
+  final String platform;
+
+  final String pushToken;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'deviceId': deviceId,
+    'platform': platform,
+    'pushToken': pushToken,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(PushTarget value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PushTarget &&
+          contractEquals(deviceId, other.deviceId) &&
+          contractEquals(platform, other.platform) &&
+          contractEquals(pushToken, other.pushToken);
+
+  @override
+  int get hashCode => contractHash([deviceId, platform, pushToken]);
+}
+
+/// Dispositivos con push de un usuario.
+@immutable
+final class PushTargets {
+  const PushTargets({required this.targets});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory PushTargets.fromJson(Map<String, dynamic> json) {
+    try {
+      return PushTargets(
+        targets: [
+          for (final e0 in json['targets'] as List<dynamic>)
+            PushTarget.fromJson(e0 as Map<String, dynamic>),
+        ],
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid PushTargets: $error', json);
+    }
+  }
+
+  final List<PushTarget> targets;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'targets': [for (final e0 in targets) e0.toJson()],
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(PushTargets value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PushTargets && contractEquals(targets, other.targets);
+
+  @override
+  int get hashCode => contractHash([targets]);
+}
+
+/// Miembros de un tenant que tienen un permiso.
+@immutable
+final class ListMembersByPermissionInput {
+  const ListMembersByPermissionInput({
+    required this.tenantId,
+    required this.permission,
+    this.limit,
+    this.after,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory ListMembersByPermissionInput.fromJson(Map<String, dynamic> json) {
+    try {
+      return ListMembersByPermissionInput(
+        tenantId: json['tenantId'] as String,
+        permission: json['permission'] as String,
+        limit: json['limit'] == null ? null : (json['limit'] as num).toInt(),
+        after: json['after'] as String?,
+      );
+    } on TypeError catch (error) {
+      throw FormatException(
+        'Invalid ListMembersByPermissionInput: $error',
+        json,
+      );
+    }
+  }
+
+  final String tenantId;
+
+  final String permission;
+
+  final int? limit;
+
+  final String? after;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'tenantId': tenantId,
+    'permission': permission,
+    'limit': ?limit,
+    'after': ?after,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(ListMembersByPermissionInput value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ListMembersByPermissionInput &&
+          contractEquals(tenantId, other.tenantId) &&
+          contractEquals(permission, other.permission) &&
+          contractEquals(limit, other.limit) &&
+          contractEquals(after, other.after);
+
+  @override
+  int get hashCode => contractHash([tenantId, permission, limit, after]);
+}
+
+/// Página de usuarios.
+@immutable
+final class UserRefPage {
+  const UserRefPage({required this.items, required this.nextCursor});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory UserRefPage.fromJson(Map<String, dynamic> json) {
+    try {
+      return UserRefPage(
+        items: [
+          for (final e0 in json['items'] as List<dynamic>)
+            UserRef.fromJson(e0 as Map<String, dynamic>),
+        ],
+        nextCursor: json['nextCursor'] as String?,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid UserRefPage: $error', json);
+    }
+  }
+
+  final List<UserRef> items;
+
+  final String? nextCursor;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'items': [for (final e0 in items) e0.toJson()],
+    'nextCursor': nextCursor,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(UserRefPage value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserRefPage &&
+          contractEquals(items, other.items) &&
+          contractEquals(nextCursor, other.nextCursor);
+
+  @override
+  int get hashCode => contractHash([items, nextCursor]);
+}
+
+/// Se borró a un usuario.
+@immutable
+final class UserErasedPayload {
+  const UserErasedPayload({
+    required this.userId,
+    required this.homeTenantId,
+    required this.erasedAt,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory UserErasedPayload.fromJson(Map<String, dynamic> json) {
+    try {
+      return UserErasedPayload(
+        userId: json['userId'] as String,
+        homeTenantId: json['homeTenantId'] as String,
+        erasedAt: DateTime.parse(json['erasedAt'] as String),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid UserErasedPayload: $error', json);
+    }
+  }
+
+  final String userId;
+
+  final String homeTenantId;
+
+  final DateTime erasedAt;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'userId': userId,
+    'homeTenantId': homeTenantId,
+    'erasedAt': erasedAt.toUtc().toIso8601String(),
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(UserErasedPayload value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserErasedPayload &&
+          contractEquals(userId, other.userId) &&
+          contractEquals(homeTenantId, other.homeTenantId) &&
+          contractEquals(erasedAt, other.erasedAt);
+
+  @override
+  int get hashCode => contractHash([userId, homeTenantId, erasedAt]);
 }

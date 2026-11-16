@@ -46,6 +46,8 @@ abstract final class IdentityLimits {
   static const int tenantSlugMaxLength = 63;
   static const int tenantNameMaxLength = 120;
   static const int regionMaxLength = 32;
+  static const int apiBaseUrlMaxLength = 2048;
+  static const int maxPushTargets = 50;
   static const int serviceAccountNameMaxLength = 120;
   static const int apiKeyPrefixLength = 12;
   static const int apiKeySecretMaxLength = 128;

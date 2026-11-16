@@ -119,6 +119,8 @@ export enum IdentityRoute {
   CreateApiKey = 'identity.api-keys.create',
   RotateApiKey = 'identity.api-keys.rotate',
   RevokeApiKey = 'identity.api-keys.revoke',
+  StartAccountDeletion = 'identity.me.deletion',
+  GetSaga = 'identity.sagas.get',
 }
 
 /** Identificadores de las operaciones internas de identity. */
@@ -133,6 +135,14 @@ export enum IdentityOperation {
   SuspendTenant = 'identity.tenants.suspend.v1',
   ReactivateTenant = 'identity.tenants.reactivate.v1',
   AuthenticateApiKey = 'identity.api-keys.authenticate.v1',
+  ActivateTenant = 'identity.tenants.activate.v1',
+  EraseUser = 'identity.users.erase.v1',
+  ListPushTargets = 'identity.devices.list-push-targets.v1',
+  ListMembersByPermission = 'identity.members.list-by-permission.v1',
+  TenantMoveSync = 'identity.tenant-move.sync.v1',
+  TenantMoveFinalize = 'identity.tenant-move.finalize.v1',
+  TenantMoveAbort = 'identity.tenant-move.abort.v1',
+  TenantMoveCleanup = 'identity.tenant-move.cleanup.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica identity. */
@@ -153,6 +163,7 @@ export enum IdentityEvent {
   ApiKeyCreated = 'identity.api-key.created.v1',
   ApiKeyRevoked = 'identity.api-key.revoked.v1',
   SecurityAlertRaised = 'identity.security-alert.raised.v1',
+  UserErased = 'identity.user.erased.v1',
 }
 
 /** Tópicos donde identity publica sus eventos. */
@@ -163,4 +174,36 @@ export enum IdentityTopic {
 /** Colas que consume identity. */
 export enum IdentityQueue {
   AccessProjection = 'identity-access-projection',
+  Billing = 'identity-billing',
+}
+
+/** Sagas que orquesta identity. */
+export enum IdentitySaga {
+  TenantOnboarding = 'identity.tenant-onboarding',
+  DeleteAccount = 'identity.delete-account',
+  MoveTenant = 'identity.move-tenant',
+}
+
+/** Estado de una saga de identity tal como lo ve quien la inició. Repite los valores del motor de sagas. */
+export enum IdentitySagaStatus {
+  Running = 'running',
+  Suspended = 'suspended',
+  Compensating = 'compensating',
+  Completed = 'completed',
+  Compensated = 'compensated',
+  CompensationFailed = 'compensation_failed',
+  RequiresIntervention = 'requires_intervention',
+}
+
+/**
+ * Nombres de los mensajes de billing que identity consume o envía. Se repiten
+ * aquí porque billing ya importa a identity y un contrato no puede importar a
+ * quien lo importa; `contracts-export` comprueba que existan.
+ */
+export enum BillingReference {
+  Topic = 'billing-events',
+  SubscriptionSuspended = 'billing.subscription.suspended.v1',
+  SubscriptionReactivated = 'billing.subscription.reactivated.v1',
+  EntitlementsChanged = 'billing.entitlements.changed.v1',
+  RecordUsage = 'billing.usage.record.v1',
 }

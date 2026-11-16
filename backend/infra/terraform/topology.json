@@ -3,14 +3,79 @@
   "formatVersion": 1,
   "topics": [
     {
+      "name": "billing-events",
+      "fifo": false,
+      "owner": "billing",
+      "producers": ["billing"],
+      "description": "Eventos de billing: suscripciones, funcionalidades vigentes y facturas. Cada servicio suscribe su propia cola."
+    },
+    {
       "name": "identity-events",
       "fifo": false,
       "owner": "identity",
       "producers": ["identity"],
       "description": "Eventos de identity: usuarios, dispositivos, tenants, membresías, API keys, sesiones y alertas. Cada servicio suscribe su propia cola."
+    },
+    {
+      "name": "notifications-events",
+      "fifo": false,
+      "owner": "notifications",
+      "producers": ["notifications"],
+      "description": "Eventos de notifications: se creó una notificación. Cada servicio suscribe su propia cola."
+    },
+    {
+      "name": "reports-events",
+      "fifo": false,
+      "owner": "reports",
+      "producers": ["reports"],
+      "description": "Eventos de reports: terminó una ejecución. Cada servicio suscribe su propia cola."
+    },
+    {
+      "name": "tasks-events",
+      "fifo": false,
+      "owner": "tasks",
+      "producers": ["tasks"],
+      "description": "Eventos de tasks: creación, cambio y borrado de tareas. Cada servicio suscribe su propia cola."
     }
   ],
   "queues": [
+    {
+      "name": "billing-identity",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "billing-identity-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "identity-events",
+          "filterTypes": ["identity.membership.changed.v1"]
+        }
+      ],
+      "consumer": "billing",
+      "producers": [],
+      "description": "Cambios de membresía que alimentan el conteo de usuarios facturables."
+    },
+    {
+      "name": "billing-usage",
+      "fifo": true,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "billing-usage-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [],
+      "consumer": "billing",
+      "producers": ["identity", "notifications", "reports", "tasks"],
+      "description": "Lotes de uso que envían los servicios que miden."
+    },
     {
       "name": "identity-access-projection",
       "fifo": false,
@@ -31,9 +96,217 @@
       "consumer": "identity",
       "producers": [],
       "description": "Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía."
+    },
+    {
+      "name": "identity-billing",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "identity-billing-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "billing-events",
+          "filterTypes": [
+            "billing.entitlements.changed.v1",
+            "billing.subscription.reactivated.v1",
+            "billing.subscription.suspended.v1"
+          ]
+        }
+      ],
+      "consumer": "identity",
+      "producers": [],
+      "description": "Eventos de billing que identity aplica: suspende o reactiva el tenant y refresca sus funcionalidades."
+    },
+    {
+      "name": "notifications-realtime-control",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "notifications-realtime-control-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "identity-events",
+          "filterTypes": [
+            "identity.session.revoked.v1",
+            "identity.tokens.revoked.v1"
+          ]
+        }
+      ],
+      "consumer": "notifications",
+      "producers": [],
+      "description": "Cierra las conexiones de tiempo real de las sesiones y tokens revocados."
+    },
+    {
+      "name": "notifications-triggers",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "notifications-triggers-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "billing-events",
+          "filterTypes": ["billing.invoice.issued.v1"]
+        },
+        {
+          "topic": "identity-events",
+          "filterTypes": [
+            "identity.membership.changed.v1",
+            "identity.security-alert.raised.v1"
+          ]
+        },
+        {
+          "topic": "reports-events",
+          "filterTypes": ["reports.run.completed.v1"]
+        },
+        { "topic": "tasks-events", "filterTypes": ["tasks.task.updated.v1"] }
+      ],
+      "consumer": "notifications",
+      "producers": [],
+      "description": "Convierte eventos de identity, tasks, billing y reports en notificaciones para sus destinatarios."
+    },
+    {
+      "name": "reports-finance-projections",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "reports-finance-projections-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "billing-events",
+          "filterTypes": [
+            "billing.invoice.failed.v1",
+            "billing.invoice.issued.v1",
+            "billing.invoice.paid.v1"
+          ]
+        },
+        {
+          "topic": "notifications-events",
+          "filterTypes": ["notifications.notification.created.v1"]
+        }
+      ],
+      "consumer": "reports",
+      "producers": [],
+      "description": "Proyección de facturas y entregas, alimentada por billing y notifications."
+    },
+    {
+      "name": "reports-projections",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 30,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "reports-projections-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [
+        {
+          "topic": "tasks-events",
+          "filterTypes": [
+            "tasks.task.created.v1",
+            "tasks.task.deleted.v1",
+            "tasks.task.updated.v1"
+          ]
+        }
+      ],
+      "consumer": "reports",
+      "producers": [],
+      "description": "Proyección de tareas por tenant, alimentada por los eventos de tasks."
+    },
+    {
+      "name": "reports-runs",
+      "fifo": false,
+      "visibilityTimeoutSeconds": 300,
+      "maxAttempts": 5,
+      "retry": { "maxAttempts": 5, "baseMs": 1000, "maxMs": 300000 },
+      "dlq": {
+        "name": "reports-runs-dlq",
+        "maxReceiveCount": 5,
+        "retentionSeconds": 1209600
+      },
+      "subscriptions": [],
+      "consumer": "reports",
+      "producers": ["reports"],
+      "description": "Ejecuciones de reporte que reports se envía a sí mismo."
     }
   ],
   "routes": [
+    {
+      "type": "billing.entitlements.changed.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.invoice.failed.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.invoice.issued.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.invoice.paid.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.subscription.changed.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.subscription.reactivated.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.subscription.suspended.v1",
+      "kind": "event",
+      "target": "billing-events",
+      "targetKind": "topic",
+      "owner": "billing"
+    },
+    {
+      "type": "billing.usage.record.v1",
+      "kind": "command",
+      "target": "billing-usage",
+      "targetKind": "queue",
+      "owner": "billing"
+    },
     {
       "type": "identity.api-key.created.v1",
       "kind": "event",
@@ -126,6 +399,13 @@
       "owner": "identity"
     },
     {
+      "type": "identity.user.erased.v1",
+      "kind": "event",
+      "target": "identity-events",
+      "targetKind": "topic",
+      "owner": "identity"
+    },
+    {
       "type": "identity.user.reactivated.v1",
       "kind": "event",
       "target": "identity-events",
@@ -145,6 +425,48 @@
       "target": "identity-events",
       "targetKind": "topic",
       "owner": "identity"
+    },
+    {
+      "type": "notifications.notification.created.v1",
+      "kind": "event",
+      "target": "notifications-events",
+      "targetKind": "topic",
+      "owner": "notifications"
+    },
+    {
+      "type": "reports.run.completed.v1",
+      "kind": "event",
+      "target": "reports-events",
+      "targetKind": "topic",
+      "owner": "reports"
+    },
+    {
+      "type": "reports.run.execute.v1",
+      "kind": "command",
+      "target": "reports-runs",
+      "targetKind": "queue",
+      "owner": "reports"
+    },
+    {
+      "type": "tasks.task.created.v1",
+      "kind": "event",
+      "target": "tasks-events",
+      "targetKind": "topic",
+      "owner": "tasks"
+    },
+    {
+      "type": "tasks.task.deleted.v1",
+      "kind": "event",
+      "target": "tasks-events",
+      "targetKind": "topic",
+      "owner": "tasks"
+    },
+    {
+      "type": "tasks.task.updated.v1",
+      "kind": "event",
+      "target": "tasks-events",
+      "targetKind": "topic",
+      "owner": "tasks"
     }
   ]
 }

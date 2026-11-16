@@ -187,6 +187,17 @@ abstract final class IdentityEvents {
         decodePayload: SecurityAlertRaisedPayload.fromJson,
       );
 
+  /// Se borraron los datos personales de un usuario. Los servicios que guardan su rastro lo borran o anonimizan.
+  ///
+  /// `identity.user.erased.v1`
+  static const userErased = MessageDescriptor<UserErasedPayload>(
+    type: 'identity.user.erased.v1',
+    kind: MessageKind.event,
+    version: 1,
+    validatePayload: UserErasedPayloadSchema.validateIncoming,
+    decodePayload: UserErasedPayload.fromJson,
+  );
+
   /// Todos los descriptores, en el orden del contrato.
   static const all = <MessageDescriptor<Object?>>[
     sessionRevoked,
@@ -205,6 +216,7 @@ abstract final class IdentityEvents {
     apiKeyCreated,
     apiKeyRevoked,
     securityAlertRaised,
+    userErased,
   ];
 
   /// Descriptor con [type], o null si este cliente no lo conoce.

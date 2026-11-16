@@ -4,3 +4,8 @@ export {
   InProcessInternalApi,
   type InProcessInternalApiOptions,
 } from './in-process-internal-api.js';
+export {
+  runInternalRequestSignerContract,
+  type SignerContractSubject,
+} from './internal-request-signer-contract.js';
+export { RecordingRequestSigner } from './recording-request-signer.js';

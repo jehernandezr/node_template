@@ -801,6 +801,132 @@ abstract class AppLocalizations {
   /// **'La cuenta de servicio está deshabilitada.'**
   String get error_identity_service_account_disabled;
 
+  /// No description provided for @error_platform_access_feature_not_included.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu plan no incluye esta función.'**
+  String get error_platform_access_feature_not_included;
+
+  /// No description provided for @error_platform_access_flag_disabled.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta función todavía no está disponible para ti.'**
+  String get error_platform_access_flag_disabled;
+
+  /// No description provided for @error_tasks_task_not_found.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos esa tarea.'**
+  String get error_tasks_task_not_found;
+
+  /// No description provided for @error_tasks_task_version_conflict.
+  ///
+  /// In es, this message translates to:
+  /// **'La tarea cambió mientras la editabas. Vuelve a cargarla.'**
+  String get error_tasks_task_version_conflict;
+
+  /// No description provided for @error_tasks_search_query_too_short.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe al menos dos caracteres para buscar.'**
+  String get error_tasks_search_query_too_short;
+
+  /// No description provided for @error_notifications_inbox_not_found.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos esa notificación.'**
+  String get error_notifications_inbox_not_found;
+
+  /// No description provided for @error_notifications_preferences_invalid_quiet_hours.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa el horario de silencio: usa horas en formato 24 horas y elige tu zona horaria.'**
+  String get error_notifications_preferences_invalid_quiet_hours;
+
+  /// No description provided for @error_notifications_realtime_unauthenticated.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir la conexión en vivo. Inicia sesión de nuevo.'**
+  String get error_notifications_realtime_unauthenticated;
+
+  /// No description provided for @error_reports_run_not_found.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos esa ejecución del reporte.'**
+  String get error_reports_run_not_found;
+
+  /// No description provided for @error_reports_run_not_ready.
+  ///
+  /// In es, this message translates to:
+  /// **'El reporte todavía se está generando. Espera un momento.'**
+  String get error_reports_run_not_ready;
+
+  /// No description provided for @error_reports_run_expired.
+  ///
+  /// In es, this message translates to:
+  /// **'Este reporte venció. Genera uno nuevo.'**
+  String get error_reports_run_expired;
+
+  /// No description provided for @error_reports_type_unknown.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese reporte no existe.'**
+  String get error_reports_type_unknown;
+
+  /// No description provided for @error_reports_params_invalid_range.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa las fechas: el fin debe ser posterior al inicio y el rango no puede ser demasiado largo.'**
+  String get error_reports_params_invalid_range;
+
+  /// No description provided for @error_reports_result_too_large.
+  ///
+  /// In es, this message translates to:
+  /// **'El reporte es demasiado grande. Acota el rango de fechas.'**
+  String get error_reports_result_too_large;
+
+  /// No description provided for @error_billing_subscription_not_found.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu organización todavía no tiene una suscripción.'**
+  String get error_billing_subscription_not_found;
+
+  /// No description provided for @error_billing_subscription_not_changeable.
+  ///
+  /// In es, this message translates to:
+  /// **'No puedes cambiar de plan mientras la suscripción esté suspendida o cancelada.'**
+  String get error_billing_subscription_not_changeable;
+
+  /// No description provided for @error_billing_plan_not_available.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese plan no está disponible.'**
+  String get error_billing_plan_not_available;
+
+  /// No description provided for @error_billing_plan_usage_exceeds_limit.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu uso actual supera los límites de ese plan. Reduce el uso o elige otro plan.'**
+  String get error_billing_plan_usage_exceeds_limit;
+
+  /// No description provided for @error_billing_invoice_not_found.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos esa factura.'**
+  String get error_billing_invoice_not_found;
+
+  /// No description provided for @error_billing_invoice_invalid_state.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa factura no admite esta operación en su estado actual.'**
+  String get error_billing_invoice_invalid_state;
+
+  /// No description provided for @error_billing_quota_exceeded.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanzaste el límite de tu plan. Cambia de plan para continuar.'**
+  String get error_billing_quota_exceeded;
+
   /// No description provided for @errorFallback.
   ///
   /// In es, this message translates to:

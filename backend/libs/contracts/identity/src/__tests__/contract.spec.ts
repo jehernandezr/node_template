@@ -4,6 +4,7 @@ import {
   HttpMethod,
   MessageKind,
   messageKeyFor,
+  platformContract,
   PlatformErrorCode,
   QueryParamsCodec,
   validateContract,
@@ -49,6 +50,8 @@ describe('identity access enums', () => {
       'tasks:write',
       'billing:read',
       'billing:write',
+      'reports:read',
+      'reports:write',
       'backoffice:access',
       'identity:members:read',
       'identity:members:manage',
@@ -69,6 +72,7 @@ describe('identity access enums', () => {
       'ai_assistant',
       'webhooks',
       'billing',
+      'advanced_reports',
     ]);
     expect(Object.values(FeatureFlag)).toEqual(['new_reports']);
   });
@@ -316,7 +320,10 @@ describe('session lifecycle routes', () => {
 });
 
 describe('identityContract', () => {
-  const registered = new Set(Object.values(identityContract.schemas));
+  const registered = new Set([
+    ...Object.values(identityContract.schemas),
+    ...Object.values(platformContract.schemas),
+  ]);
 
   it.each(
     Object.values(identityContract.routes).flatMap((route) =>

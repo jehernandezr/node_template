@@ -18,8 +18,14 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {
+      "@contracts/billing": ["./libs/contracts/billing/src/index.ts"],
       "@contracts/identity": ["./libs/contracts/identity/src/index.ts"],
+      "@contracts/notifications": [
+        "./libs/contracts/notifications/src/index.ts"
+      ],
       "@contracts/platform": ["./libs/contracts/platform/src/index.ts"],
+      "@contracts/reports": ["./libs/contracts/reports/src/index.ts"],
+      "@contracts/tasks": ["./libs/contracts/tasks/src/index.ts"],
       "@platform/adapters-aws": ["./libs/platform/adapters/aws/src/index.ts"],
       "@platform/adapters-aws/nest": [
         "./libs/platform/adapters/aws/src/nest/index.ts"

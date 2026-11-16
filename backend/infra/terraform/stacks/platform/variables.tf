@@ -146,3 +146,35 @@ variable "force_destroy_buckets" {
   type        = bool
   default     = false
 }
+
+# --- Pipeline de despliegue (OIDC de GitHub) ------------------------------------------
+
+variable "github_repository" {
+  description = "Repositorio de GitHub (dueño/nombre) cuyos jobs asumen los roles de despliegue y publicación. Null no crea el acceso OIDC."
+  type        = string
+  default     = null
+}
+
+variable "github_environment" {
+  description = "Environment de GitHub que asume los roles. Null usa el nombre del ambiente."
+  type        = string
+  default     = null
+}
+
+variable "oidc_create_provider" {
+  description = "Crea el proveedor OIDC de GitHub. Solo hay uno por cuenta: false si otro ambiente de la cuenta ya lo creó."
+  type        = bool
+  default     = true
+}
+
+variable "oidc_existing_provider_arn" {
+  description = "ARN del proveedor OIDC de GitHub existente. Obligatorio con oidc_create_provider = false."
+  type        = string
+  default     = null
+}
+
+variable "deploy_policy_arns" {
+  description = "Políticas administradas del rol de despliegue: lo que Terraform puede crear en la cuenta. Las eliges tú."
+  type        = list(string)
+  default     = []
+}

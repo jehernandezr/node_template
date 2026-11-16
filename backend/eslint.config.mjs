@@ -223,8 +223,11 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
-  // Cuando ESLint corre desde backend/, la excepción de auth se declara con rutas de esta carpeta.
-  allowIdentityContracts(['libs/platform/auth/**/*.ts']),
+  // Cuando ESLint corre desde backend/, la excepción de auth y de http se declara con rutas de esta carpeta.
+  allowIdentityContracts([
+    'libs/platform/auth/**/*.ts',
+    'libs/platform/http/**/*.ts',
+  ]),
   {
     files: ['**/domain/**/*.ts'],
     rules: {

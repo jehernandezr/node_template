@@ -111,6 +111,16 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'El cuerpo de la solicitud no es un JSON válido.',
   ),
+  [C.AccessFeatureNotIncluded]: pub(
+    403,
+    false,
+    'El plan del tenant no incluye la funcionalidad que pide la operación.',
+  ),
+  [C.AccessFlagDisabled]: pub(
+    404,
+    false,
+    'El flag que habilita la ruta está apagado: se comporta como una ruta inexistente.',
+  ),
   [C.ResourceNotFound]: pub(404, false, 'El recurso solicitado no existe.'),
   [C.ConflictVersionMismatch]: pub(
     409,

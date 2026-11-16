@@ -439,5 +439,86 @@ class AppLocalizationsEn extends AppLocalizations {
       'The service account is disabled.';
 
   @override
+  String get error_platform_access_feature_not_included =>
+      'Your plan does not include this feature.';
+
+  @override
+  String get error_platform_access_flag_disabled =>
+      'This feature is not available to you yet.';
+
+  @override
+  String get error_tasks_task_not_found => 'We could not find that task.';
+
+  @override
+  String get error_tasks_task_version_conflict =>
+      'The task changed while you were editing it. Reload it.';
+
+  @override
+  String get error_tasks_search_query_too_short =>
+      'Type at least two characters to search.';
+
+  @override
+  String get error_notifications_inbox_not_found =>
+      'We could not find that notification.';
+
+  @override
+  String get error_notifications_preferences_invalid_quiet_hours =>
+      'Check the quiet hours: use 24-hour times and choose your time zone.';
+
+  @override
+  String get error_notifications_realtime_unauthenticated =>
+      'The live connection could not be opened. Sign in again.';
+
+  @override
+  String get error_reports_run_not_found =>
+      'We could not find that report run.';
+
+  @override
+  String get error_reports_run_not_ready =>
+      'The report is still being generated. Wait a moment.';
+
+  @override
+  String get error_reports_run_expired =>
+      'This report expired. Generate a new one.';
+
+  @override
+  String get error_reports_type_unknown => 'That report does not exist.';
+
+  @override
+  String get error_reports_params_invalid_range =>
+      'Check the dates: the end must be after the start and the range cannot be too long.';
+
+  @override
+  String get error_reports_result_too_large =>
+      'The report is too large. Narrow the date range.';
+
+  @override
+  String get error_billing_subscription_not_found =>
+      'Your organization does not have a subscription yet.';
+
+  @override
+  String get error_billing_subscription_not_changeable =>
+      'You cannot change plans while the subscription is suspended or canceled.';
+
+  @override
+  String get error_billing_plan_not_available => 'That plan is not available.';
+
+  @override
+  String get error_billing_plan_usage_exceeds_limit =>
+      'Your current usage exceeds the limits of that plan. Reduce usage or pick another plan.';
+
+  @override
+  String get error_billing_invoice_not_found =>
+      'We could not find that invoice.';
+
+  @override
+  String get error_billing_invoice_invalid_state =>
+      'That invoice does not allow this operation in its current state.';
+
+  @override
+  String get error_billing_quota_exceeded =>
+      'You reached your plan limit. Change plans to continue.';
+
+  @override
   String get errorFallback => 'Something went wrong. Try again.';
 }

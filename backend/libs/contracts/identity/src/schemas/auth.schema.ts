@@ -87,6 +87,13 @@ export const SignInResponseSchema = z
     status: SignInStatusSchema,
     tokens: SessionTokensSchema.optional(),
     mfa: PendingMfaSchema.optional(),
+    region: z.string().min(1).max(IdentityLimits.regionMaxLength).optional(),
+    apiBaseUrl: z
+      .string()
+      .min(1)
+      .max(IdentityLimits.apiBaseUrlMaxLength)
+      .regex(/^https?:\/\//)
+      .optional(),
   })
   .describe(
     'Resultado de un login o de una verificación MFA.',

@@ -1,0 +1,79 @@
+# Compila el .aab de la app móvil y lo sube al bucket de artefactos.
+# La subida a las tiendas y la firma de release exigen credenciales del titular de la cuenta y
+# no se automatizan aquí.
+name: Publish mobile
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente de la publicación
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: dev
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-mobile-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ENVIRONMENT: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+
+jobs:
+  build-and-upload:
+    name: Compilar el .aab y subirlo
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - name: Compilar el .aab
+        working-directory: front/apps/mobile
+        run: |
+          flutter pub get
+          flutter build appbundle --release
+
+      - name: Guardar el .aab como artefacto del workflow
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app-release-aab
+          path: front/apps/mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+      - name: Credenciales del rol de publicación
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ vars.AWS_PUBLISH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Subir el .aab al bucket de artefactos
+        env:
+          ARTIFACTS_BUCKET: ${{ vars.ARTIFACTS_BUCKET }}
+          GIT_SHA: ${{ github.sha }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: backend/infra/scripts/publish-mobile.sh "$ENVIRONMENT"

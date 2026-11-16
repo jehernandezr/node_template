@@ -2,7 +2,7 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { CallOutcome } from '@platform/primitives';
 import { HmacInternalCallAuthenticator } from '../../auth/hmac-internal-call-authenticator.js';
-import { HmacInternalCallSigner } from '../../auth/hmac-internal-call-signer.js';
+import { HmacSigner } from '../../signing/hmac-signer.js';
 import { CallMetaReader } from '../../transport/call-meta-reader.js';
 import { InternalApiRoute } from '../../transport/internal-api-route.js';
 import { InternalHeader } from '../../transport/internal-header.enum.js';
@@ -33,7 +33,7 @@ describe('InternalApiController', () => {
       new HmacInternalCallAuthenticator(SECRET, clock),
       new CallMetaReader(),
     );
-    const signer = new HmacInternalCallSigner(secret, clock);
+    const signer = new HmacSigner(secret, clock);
     /** Firma las cabeceras y el cuerpo dados, como lo haría el transporte del otro servicio. */
     async function signedHeaders(body: unknown, headers = baseHeaders()) {
       const signature = await signer.sign({

@@ -1,0 +1,13 @@
+/** Jobs periódicos de identity. */
+export enum IdentityJob {
+  /** Borra las reservas de `identity_lookup` de más de una hora sin usuario. */
+  SweepReservedLookups = 'identity.sweep-reserved-lookups',
+  /** Vuelca a Postgres el último uso de las API keys que acumuló Valkey. */
+  FlushApiKeyUsage = 'identity.flush-api-key-usage',
+  /** Crea las particiones mensuales de `login_attempts` y borra las de más de 12 meses. */
+  RotateLoginAttemptPartitions = 'identity.rotate-login-attempt-partitions',
+  /** Pasa a `Expired` las invitaciones vencidas. */
+  ExpireInvitations = 'identity.expire-invitations',
+  /** Recarga el Bloom de contraseñas filtradas. */
+  RebuildBreachedPasswords = 'identity.rebuild-breached-passwords',
+}

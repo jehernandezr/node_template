@@ -11,6 +11,8 @@
         { "name": "TasksWrite", "value": "tasks:write" },
         { "name": "BillingRead", "value": "billing:read" },
         { "name": "BillingWrite", "value": "billing:write" },
+        { "name": "ReportsRead", "value": "reports:read" },
+        { "name": "ReportsWrite", "value": "reports:write" },
         { "name": "BackofficeAccess", "value": "backoffice:access" },
         { "name": "IdentityMembersRead", "value": "identity:members:read" },
         { "name": "IdentityMembersManage", "value": "identity:members:manage" },
@@ -43,7 +45,8 @@
       "values": [
         { "name": "AiAssistant", "value": "ai_assistant" },
         { "name": "Webhooks", "value": "webhooks" },
-        { "name": "Billing", "value": "billing" }
+        { "name": "Billing", "value": "billing" },
+        { "name": "AdvancedReports", "value": "advanced_reports" }
       ]
     },
     "FeatureFlag": {
@@ -447,7 +450,9 @@
         { "name": "ListApiKeys", "value": "identity.api-keys.list" },
         { "name": "CreateApiKey", "value": "identity.api-keys.create" },
         { "name": "RotateApiKey", "value": "identity.api-keys.rotate" },
-        { "name": "RevokeApiKey", "value": "identity.api-keys.revoke" }
+        { "name": "RevokeApiKey", "value": "identity.api-keys.revoke" },
+        { "name": "StartAccountDeletion", "value": "identity.me.deletion" },
+        { "name": "GetSaga", "value": "identity.sagas.get" }
       ]
     },
     "IdentityOperation": {
@@ -470,6 +475,26 @@
         {
           "name": "AuthenticateApiKey",
           "value": "identity.api-keys.authenticate.v1"
+        },
+        { "name": "ActivateTenant", "value": "identity.tenants.activate.v1" },
+        { "name": "EraseUser", "value": "identity.users.erase.v1" },
+        {
+          "name": "ListPushTargets",
+          "value": "identity.devices.list-push-targets.v1"
+        },
+        {
+          "name": "ListMembersByPermission",
+          "value": "identity.members.list-by-permission.v1"
+        },
+        { "name": "TenantMoveSync", "value": "identity.tenant-move.sync.v1" },
+        {
+          "name": "TenantMoveFinalize",
+          "value": "identity.tenant-move.finalize.v1"
+        },
+        { "name": "TenantMoveAbort", "value": "identity.tenant-move.abort.v1" },
+        {
+          "name": "TenantMoveCleanup",
+          "value": "identity.tenant-move.cleanup.v1"
         }
       ]
     },
@@ -508,7 +533,8 @@
         {
           "name": "SecurityAlertRaised",
           "value": "identity.security-alert.raised.v1"
-        }
+        },
+        { "name": "UserErased", "value": "identity.user.erased.v1" }
       ]
     },
     "IdentityTopic": {
@@ -516,7 +542,26 @@
     },
     "IdentityQueue": {
       "values": [
-        { "name": "AccessProjection", "value": "identity-access-projection" }
+        { "name": "AccessProjection", "value": "identity-access-projection" },
+        { "name": "Billing", "value": "identity-billing" }
+      ]
+    },
+    "IdentitySaga": {
+      "values": [
+        { "name": "TenantOnboarding", "value": "identity.tenant-onboarding" },
+        { "name": "DeleteAccount", "value": "identity.delete-account" },
+        { "name": "MoveTenant", "value": "identity.move-tenant" }
+      ]
+    },
+    "IdentitySagaStatus": {
+      "values": [
+        { "name": "Running", "value": "running" },
+        { "name": "Suspended", "value": "suspended" },
+        { "name": "Compensating", "value": "compensating" },
+        { "name": "Completed", "value": "completed" },
+        { "name": "Compensated", "value": "compensated" },
+        { "name": "CompensationFailed", "value": "compensation_failed" },
+        { "name": "RequiresIntervention", "value": "requires_intervention" }
       ]
     }
   },
@@ -564,6 +609,8 @@
       "tenantSlugMaxLength": 63,
       "tenantNameMaxLength": 120,
       "regionMaxLength": 32,
+      "apiBaseUrlMaxLength": 2048,
+      "maxPushTargets": 50,
       "serviceAccountNameMaxLength": 120,
       "apiKeyPrefixLength": 12,
       "apiKeySecretMaxLength": 128,
@@ -595,6 +642,8 @@
         "tasks:write",
         "billing:read",
         "billing:write",
+        "reports:read",
+        "reports:write",
         "backoffice:access",
         "identity:members:read",
         "identity:members:manage",
@@ -614,7 +663,7 @@
     },
     "PlanFeature": {
       "type": "string",
-      "enum": ["ai_assistant", "webhooks", "billing"],
+      "enum": ["ai_assistant", "webhooks", "billing", "advanced_reports"],
       "description": "Funcionalidad del plan."
     },
     "FeatureFlag": {
@@ -854,7 +903,14 @@
       "properties": {
         "status": { "$ref": "#/schemas/SignInStatus" },
         "tokens": { "$ref": "#/schemas/SessionTokens" },
-        "mfa": { "$ref": "#/schemas/PendingMfa" }
+        "mfa": { "$ref": "#/schemas/PendingMfa" },
+        "region": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "apiBaseUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^https?:\\/\\/"
+        }
       },
       "required": ["status"],
       "description": "Resultado de un login o de una verificación MFA."
@@ -2065,6 +2121,8 @@
               "tasks:write",
               "billing:read",
               "billing:write",
+              "reports:read",
+              "reports:write",
               "backoffice:access",
               "identity:members:read",
               "identity:members:manage",
@@ -2113,6 +2171,8 @@
               "tasks:write",
               "billing:read",
               "billing:write",
+              "reports:read",
+              "reports:write",
               "backoffice:access",
               "identity:members:read",
               "identity:members:manage",
@@ -2145,6 +2205,8 @@
               "tasks:write",
               "billing:read",
               "billing:write",
+              "reports:read",
+              "reports:write",
               "backoffice:access",
               "identity:members:read",
               "identity:members:manage",
@@ -2832,6 +2894,206 @@
       },
       "required": ["alertId", "userId", "type", "raisedAt"],
       "description": "Se levantó una alerta de seguridad sobre una cuenta."
+    },
+    "IdentitySaga": {
+      "type": "string",
+      "enum": [
+        "identity.tenant-onboarding",
+        "identity.delete-account",
+        "identity.move-tenant"
+      ],
+      "description": "Saga que orquesta identity."
+    },
+    "IdentitySagaStatus": {
+      "type": "string",
+      "enum": [
+        "running",
+        "suspended",
+        "compensating",
+        "completed",
+        "compensated",
+        "compensation_failed",
+        "requires_intervention"
+      ],
+      "description": "Estado de una saga de identity."
+    },
+    "TenantCreation": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "sagaId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["tenantId", "sagaId"],
+      "description": "Tenant en aprovisionamiento y la saga que lo activa."
+    },
+    "AccountDeletionStarted": {
+      "type": "object",
+      "properties": {
+        "sagaId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["sagaId"],
+      "description": "Saga que borra la cuenta del usuario."
+    },
+    "GetSagaRequest": {
+      "type": "object",
+      "properties": {
+        "sagaId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["sagaId"],
+      "additionalProperties": false,
+      "description": "Saga a consultar."
+    },
+    "SagaSummary": {
+      "type": "object",
+      "properties": {
+        "sagaId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "saga": { "$ref": "#/schemas/IdentitySaga" },
+        "status": { "$ref": "#/schemas/IdentitySagaStatus" },
+        "startedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "finishedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["sagaId", "saga", "status", "startedAt", "finishedAt"],
+      "description": "Estado de una saga de identity."
+    },
+    "EraseUserInput": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["userId"],
+      "additionalProperties": false,
+      "description": "Usuario cuyos datos personales se borran."
+    },
+    "EraseUserResult": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "erasedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "erasedAt"],
+      "description": "Resultado de borrar a un usuario."
+    },
+    "ListPushTargetsInput": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        }
+      },
+      "required": ["user"],
+      "additionalProperties": false,
+      "description": "Usuario cuyos dispositivos con push se piden."
+    },
+    "PushTarget": {
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["ios", "android", "web", "macos", "windows", "linux"]
+        },
+        "pushToken": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["deviceId", "platform", "pushToken"],
+      "description": "Dispositivo al que se puede enviar un push."
+    },
+    "PushTargets": {
+      "type": "object",
+      "properties": {
+        "targets": {
+          "maxItems": 50,
+          "type": "array",
+          "items": { "$ref": "#/schemas/PushTarget" }
+        }
+      },
+      "required": ["targets"],
+      "description": "Dispositivos con push de un usuario."
+    },
+    "ListMembersByPermissionInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "permission": {
+          "type": "string",
+          "enum": [
+            "tasks:read",
+            "tasks:write",
+            "billing:read",
+            "billing:write",
+            "reports:read",
+            "reports:write",
+            "backoffice:access",
+            "identity:members:read",
+            "identity:members:manage",
+            "identity:groups:manage",
+            "identity:roles:manage",
+            "identity:invitations:manage",
+            "identity:service-accounts:manage",
+            "identity:api-keys:manage",
+            "identity:tenant:manage"
+          ]
+        },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "required": ["tenantId", "permission"],
+      "additionalProperties": false,
+      "description": "Miembros de un tenant que tienen un permiso."
+    },
+    "UserRefPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+          }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de usuarios."
+    },
+    "UserErasedPayload": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "homeTenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "erasedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["userId", "homeTenantId", "erasedAt"],
+      "description": "Se borró a un usuario."
     }
   },
   "routes": [
@@ -3903,8 +4165,8 @@
       "requestLocation": "body",
       "queryParams": [],
       "request": { "$ref": "#/schemas/CreateTenantRequest" },
-      "response": { "$ref": "#/schemas/TenantSummary" },
-      "successStatus": 201,
+      "response": { "$ref": "#/schemas/TenantCreation" },
+      "successStatus": 202,
       "errors": [
         "IDENTITY.SESSION.REVOKED",
         "IDENTITY.SESSION.EXPIRED",
@@ -3915,7 +4177,7 @@
         "IDENTITY.TENANT.SLUG_TAKEN"
       ],
       "access": { "kind": "authenticated" },
-      "description": "Crea un tenant y deja al usuario autenticado como dueño."
+      "description": "Inicia el aprovisionamiento de un tenant y deja al usuario autenticado como dueño."
     },
     {
       "name": "getTenant",
@@ -4702,6 +4964,56 @@
         "permissions": ["identity:api-keys:manage"]
       },
       "description": "Revoca una API key de inmediato."
+    },
+    {
+      "name": "startAccountDeletion",
+      "id": "identity.me.deletion",
+      "method": "POST",
+      "path": "/v1/me/deletion",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/AccountDeletionStarted" },
+      "successStatus": 202,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "IDENTITY.MFA.STEP_UP_REQUIRED"
+      ],
+      "access": { "kind": "authenticated", "mfaMaxAgeMinutes": 10 },
+      "description": "Inicia el borrado de la cuenta del usuario autenticado. La saga se consulta con su id."
+    },
+    {
+      "name": "getSaga",
+      "id": "identity.sagas.get",
+      "method": "GET",
+      "path": "/v1/sagas/{sagaId}",
+      "version": 1,
+      "pathParams": ["sagaId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/GetSagaRequest" },
+      "response": { "$ref": "#/schemas/SagaSummary" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.RESOURCE.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Devuelve el estado de una saga propia o de su tenant."
     }
   ],
   "operations": [
@@ -4838,6 +5150,128 @@
       ],
       "timeoutMs": 3000,
       "description": "Valida una API key y devuelve su principal."
+    },
+    {
+      "name": "activateTenant",
+      "id": "identity.tenants.activate.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/TenantRefInput" },
+      "output": { "$ref": "#/schemas/TenantOperationResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Corre después del pivote de la saga: se repite hasta completarse y no se revierte.",
+      "errors": ["IDENTITY.TENANT.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Activa un tenant en aprovisionamiento."
+    },
+    {
+      "name": "eraseUser",
+      "id": "identity.users.erase.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/EraseUserInput" },
+      "output": { "$ref": "#/schemas/EraseUserResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "El borrado de datos personales es irreversible y corre después del pivote de la saga.",
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "timeoutMs": 6000,
+      "description": "Borra los datos personales de un usuario."
+    },
+    {
+      "name": "listPushTargets",
+      "id": "identity.devices.list-push-targets.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/ListPushTargetsInput" },
+      "output": { "$ref": "#/schemas/PushTargets" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": ["IDENTITY.USER.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Devuelve los dispositivos con token de push de un usuario."
+    },
+    {
+      "name": "listMembersByPermission",
+      "id": "identity.members.list-by-permission.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/ListMembersByPermissionInput" },
+      "output": { "$ref": "#/schemas/UserRefPage" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": ["IDENTITY.TENANT.NOT_FOUND"],
+      "timeoutMs": 3000,
+      "description": "Pagina los miembros de un tenant que tienen un permiso."
+    },
+    {
+      "name": "tenantMoveSync",
+      "id": "identity.tenant-move.sync.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveProgress"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia un lote de los datos del tenant en identity al destino mientras las escrituras siguen; la saga repite hasta completar la ronda."
+    },
+    {
+      "name": "tenantMoveFinalize",
+      "id": "identity.tenant-move.finalize.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveVerification"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "identity.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia la última ronda de identity con el tenant congelado y verifica conteos y sumas."
+    },
+    {
+      "name": "tenantMoveAbort",
+      "id": "identity.tenant-move.abort.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación de la copia: descarta lo copiado al destino y no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Cancela el traslado de un tenant y descarta lo copiado de identity al destino."
+    },
+    {
+      "name": "tenantMoveCleanup",
+      "id": "identity.tenant-move.cleanup.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Borra del origen los datos ya trasladados una vez vencida la gracia: no se restauran.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra de identity los datos del tenant trasladado cuando pasa el periodo de gracia."
     }
   ],
   "events": [
@@ -4968,6 +5402,14 @@
       "version": 1,
       "payload": { "$ref": "#/schemas/SecurityAlertRaisedPayload" },
       "description": "Se levantó una alerta de seguridad sobre una cuenta. Notifica al usuario por su canal."
+    },
+    {
+      "name": "userErased",
+      "type": "identity.user.erased.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/UserErasedPayload" },
+      "description": "Se borraron los datos personales de un usuario. Los servicios que guardan su rastro lo borran o anonimizan."
     }
   ],
   "commands": [],

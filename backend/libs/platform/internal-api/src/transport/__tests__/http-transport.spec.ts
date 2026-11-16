@@ -5,10 +5,12 @@ import {
   RetryAfterParser,
 } from '@platform/primitives';
 import { HmacInternalCallAuthenticator } from '../../auth/hmac-internal-call-authenticator.js';
-import { HmacInternalCallSigner } from '../../auth/hmac-internal-call-signer.js';
+import { RecordingRequestSigner } from '../../__tests__/utils/index.js';
+import { HmacSigner } from '../../signing/hmac-signer.js';
 import { InternalApiErrorCode } from '../../errors/internal-api-error-code.enum.js';
 import { HttpOutcomeReader } from '../http-outcome-reader.js';
 import { HttpTransport } from '../http-transport.js';
+import { InternalApiRoute } from '../internal-api-route.js';
 import { InternalHeader } from '../internal-header.enum.js';
 import { ServiceBaseUrls } from '../service-base-urls.js';
 import { FakeFetcher } from './utils/fake-fetcher.js';
@@ -37,7 +39,7 @@ describe('HttpTransport', () => {
   function build(fetcher: FakeFetcher): HttpTransport {
     return new HttpTransport(
       new ServiceBaseUrls({ billing: 'http://billing.test:3000/' }),
-      new HmacInternalCallSigner(SECRET, clock),
+      new HmacSigner(SECRET, clock),
       new HttpOutcomeReader(new RetryAfterParser(clock)),
       fetcher.fetch,
     );
@@ -143,7 +145,7 @@ describe('HttpTransport', () => {
     const fetcher = new FakeFetcher();
     const transport = new HttpTransport(
       new ServiceBaseUrls({ identity: 'http://identity.test:3000' }),
-      new HmacInternalCallSigner(SECRET, clock),
+      new HmacSigner(SECRET, clock),
       new HttpOutcomeReader(new RetryAfterParser(clock)),
       fetcher.fetch,
     );
@@ -154,6 +156,26 @@ describe('HttpTransport', () => {
       code: InternalApiErrorCode.UnknownService,
     });
     expect(fetcher.requests).toHaveLength(0);
+  });
+
+  it('hands the signer the base URL of the owning service, the method and the route', async () => {
+    const fetcher = new FakeFetcher();
+    fetcher.respondWith(new Response(null, { status: 503 }));
+    const signer = new RecordingRequestSigner();
+    const transport = new HttpTransport(
+      new ServiceBaseUrls({ billing: 'http://billing.test:3000/' }),
+      signer,
+      new HttpOutcomeReader(new RetryAfterParser(clock)),
+      fetcher.fetch,
+    );
+
+    await transport.invoke(OPERATION_ID, { amount: 3 }, meta);
+
+    expect(signer.requests[0]).toMatchObject({
+      baseUrl: 'http://billing.test:3000',
+      method: 'POST',
+      path: InternalApiRoute.pathOf(OPERATION_ID),
+    });
   });
 
   it('propagates a network error of the fetcher', async () => {

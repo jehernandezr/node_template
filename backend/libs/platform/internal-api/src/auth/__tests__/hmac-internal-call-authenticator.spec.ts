@@ -2,7 +2,7 @@ import { FixedClock } from '@platform/kernel/test-utils';
 import { InternalApiErrorCode } from '../../errors/internal-api-error-code.enum.js';
 import { InternalHeader } from '../../transport/internal-header.enum.js';
 import { HmacInternalCallAuthenticator } from '../hmac-internal-call-authenticator.js';
-import { HmacInternalCallSigner } from '../hmac-internal-call-signer.js';
+import { HmacSigner } from '../../signing/hmac-signer.js';
 import type { SignableRequest } from '../signable-request.js';
 
 const SECRET = 'test-secret-of-the-authenticator';
@@ -20,7 +20,7 @@ async function signed(
     [InternalHeader.Deadline]: '1767225600000',
     [InternalHeader.TenantId]: 'tenant-1',
   };
-  const signer = new HmacInternalCallSigner(overrides.secret ?? SECRET, clock);
+  const signer = new HmacSigner(overrides.secret ?? SECRET, clock);
   const signature = await signer.sign({
     method: 'POST',
     path: PATH,

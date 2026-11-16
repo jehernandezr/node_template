@@ -37,6 +37,10 @@ export interface SignInResponse {
   tokens?: SessionTokens;
   /** Presente cuando `status` es `mfa_required`. */
   mfa?: PendingMfa;
+  /** Región donde viven los datos del tenant. Presente con `authenticated`. */
+  region?: string;
+  /** URL base de la API de esa región. Presente con `authenticated`. */
+  apiBaseUrl?: string;
 }
 
 /** Pedido de un desafío MFA con uno de los métodos ofrecidos. */

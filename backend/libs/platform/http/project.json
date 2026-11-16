@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-http",
+  "sourceRoot": "backend/libs/platform/http/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {},
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    }
+  }
+}

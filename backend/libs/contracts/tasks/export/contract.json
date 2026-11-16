@@ -1,0 +1,692 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
+  "formatVersion": 2,
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "service": "tasks",
+  "description": "Tareas de la organización: alta, lectura, búsqueda, cambio y borrado, y los eventos que otros servicios consumen.",
+  "enums": {
+    "TaskStatus": {
+      "values": [
+        { "name": "Open", "value": "open" },
+        { "name": "InProgress", "value": "in_progress" },
+        { "name": "Done", "value": "done" }
+      ]
+    },
+    "TaskField": {
+      "values": [
+        { "name": "Title", "value": "title" },
+        { "name": "Description", "value": "description" },
+        { "name": "Status", "value": "status" }
+      ]
+    },
+    "TasksErrorCode": {
+      "values": [
+        { "name": "TaskNotFound", "value": "TASKS.TASK.NOT_FOUND" },
+        {
+          "name": "TaskVersionConflict",
+          "value": "TASKS.TASK.VERSION_CONFLICT"
+        },
+        {
+          "name": "SearchQueryTooShort",
+          "value": "TASKS.SEARCH.QUERY_TOO_SHORT"
+        }
+      ]
+    },
+    "TasksRoute": {
+      "values": [
+        { "name": "ListTasks", "value": "tasks.task.list" },
+        { "name": "GetTask", "value": "tasks.task.get" },
+        { "name": "CreateTask", "value": "tasks.task.create" },
+        { "name": "UpdateTask", "value": "tasks.task.update" },
+        { "name": "DeleteTask", "value": "tasks.task.delete" }
+      ]
+    },
+    "TasksOperation": {
+      "values": [
+        { "name": "ListChanges", "value": "tasks.tasks.list-changes.v1" },
+        { "name": "EraseUserData", "value": "tasks.user-data.erase.v1" },
+        { "name": "TenantMoveSync", "value": "tasks.tenant-move.sync.v1" },
+        {
+          "name": "TenantMoveFinalize",
+          "value": "tasks.tenant-move.finalize.v1"
+        },
+        { "name": "TenantMoveAbort", "value": "tasks.tenant-move.abort.v1" },
+        { "name": "TenantMoveCleanup", "value": "tasks.tenant-move.cleanup.v1" }
+      ]
+    },
+    "TasksEvent": {
+      "values": [
+        { "name": "TaskCreated", "value": "tasks.task.created.v1" },
+        { "name": "TaskUpdated", "value": "tasks.task.updated.v1" },
+        { "name": "TaskDeleted", "value": "tasks.task.deleted.v1" }
+      ]
+    },
+    "TasksTopic": { "values": [{ "name": "Events", "value": "tasks-events" }] }
+  },
+  "constants": {
+    "TasksLimits": {
+      "titleMax": 200,
+      "descriptionMax": 5000,
+      "searchQueryMin": 2,
+      "searchQueryMax": 200,
+      "maxChangedFields": 3
+    }
+  },
+  "schemas": {
+    "TaskStatus": {
+      "type": "string",
+      "enum": ["open", "in_progress", "done"],
+      "description": "Estado de una tarea."
+    },
+    "TaskField": {
+      "type": "string",
+      "enum": ["title", "description", "status"],
+      "description": "Campo de una tarea que un cambio puede modificar."
+    },
+    "TaskCreatedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "taskId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "status": { "$ref": "#/schemas/TaskStatus" },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "createdBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "taskId",
+        "status",
+        "version",
+        "createdBy",
+        "createdAt"
+      ],
+      "description": "Se creó una tarea."
+    },
+    "TaskUpdatedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "taskId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "changedFields": {
+          "maxItems": 3,
+          "type": "array",
+          "items": { "$ref": "#/schemas/TaskField" }
+        },
+        "statusBefore": { "$ref": "#/schemas/TaskStatus" },
+        "statusAfter": { "$ref": "#/schemas/TaskStatus" },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "actor": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "createdBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "updatedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "taskId",
+        "changedFields",
+        "statusBefore",
+        "statusAfter",
+        "version",
+        "actor",
+        "createdBy",
+        "updatedAt"
+      ],
+      "description": "Se cambió una tarea."
+    },
+    "TaskDeletedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "taskId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "status": { "$ref": "#/schemas/TaskStatus" },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "actor": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "deletedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "taskId",
+        "status",
+        "version",
+        "actor",
+        "deletedAt"
+      ],
+      "description": "Se borró una tarea."
+    },
+    "Task": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "status": { "$ref": "#/schemas/TaskStatus" },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "updatedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "createdBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt",
+        "createdBy"
+      ],
+      "description": "Una tarea de la organización."
+    },
+    "TaskPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Task" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de tareas del tenant."
+    },
+    "ListTasksRequest": {
+      "type": "object",
+      "properties": {
+        "status": { "$ref": "#/schemas/TaskStatus" },
+        "q": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Listado o búsqueda de tareas, con filtro de estado opcional."
+    },
+    "GetTaskRequest": {
+      "type": "object",
+      "properties": {
+        "taskId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["taskId"],
+      "additionalProperties": false,
+      "description": "Tarea a consultar."
+    },
+    "CreateTaskRequest": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 5000 }
+      },
+      "required": ["title"],
+      "additionalProperties": false,
+      "description": "Alta de una tarea."
+    },
+    "UpdateTaskRequest": {
+      "type": "object",
+      "properties": {
+        "taskId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "status": { "$ref": "#/schemas/TaskStatus" },
+        "expectedVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["taskId"],
+      "additionalProperties": false,
+      "description": "Cambios parciales de una tarea, con versión esperada opcional."
+    },
+    "DeleteTaskRequest": {
+      "type": "object",
+      "properties": {
+        "taskId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["taskId"],
+      "additionalProperties": false,
+      "description": "Tarea a borrar."
+    },
+    "TaskChange": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "status": { "$ref": "#/schemas/TaskStatus" },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "updatedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "createdBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "deletedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "deletedAt"
+      ],
+      "description": "Tarea con la fecha de borrado lógico, si la hubo."
+    },
+    "TaskChangePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/TaskChange" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de cambios de tareas."
+    },
+    "ListTaskChangesInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "updatedAfter": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Entrada para paginar los cambios de tareas de un tenant."
+    },
+    "EraseTasksUserInput": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        }
+      },
+      "required": ["user"],
+      "additionalProperties": false,
+      "description": "Usuario cuyos datos se anonimizan en las tareas."
+    },
+    "EraseTasksUserResult": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "affectedRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["userId", "affectedRows"],
+      "description": "Filas de tareas anonimizadas para un usuario."
+    }
+  },
+  "routes": [
+    {
+      "name": "listTasks",
+      "id": "tasks.task.list",
+      "method": "GET",
+      "path": "/v1/tasks",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "status", "kind": "string", "list": false },
+        { "name": "q", "kind": "string", "list": false },
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": { "$ref": "#/schemas/ListTasksRequest" },
+      "response": { "$ref": "#/schemas/TaskPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.VALIDATION.INVALID_INPUT",
+        "TASKS.SEARCH.QUERY_TOO_SHORT"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["tasks:read"] },
+      "description": "Lista las tareas del tenant activo o las busca por texto."
+    },
+    {
+      "name": "getTask",
+      "id": "tasks.task.get",
+      "method": "GET",
+      "path": "/v1/tasks/{taskId}",
+      "version": 1,
+      "pathParams": ["taskId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/GetTaskRequest" },
+      "response": { "$ref": "#/schemas/Task" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "TASKS.TASK.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["tasks:read"] },
+      "description": "Devuelve una tarea del tenant activo."
+    },
+    {
+      "name": "createTask",
+      "id": "tasks.task.create",
+      "method": "POST",
+      "path": "/v1/tasks",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateTaskRequest" },
+      "response": { "$ref": "#/schemas/Task" },
+      "successStatus": 201,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.VALIDATION.INVALID_INPUT"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["tasks:write"] },
+      "description": "Crea una tarea en el tenant activo."
+    },
+    {
+      "name": "updateTask",
+      "id": "tasks.task.update",
+      "method": "PATCH",
+      "path": "/v1/tasks/{taskId}",
+      "version": 1,
+      "pathParams": ["taskId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/UpdateTaskRequest" },
+      "response": { "$ref": "#/schemas/Task" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.VALIDATION.INVALID_INPUT",
+        "TASKS.TASK.NOT_FOUND",
+        "TASKS.TASK.VERSION_CONFLICT"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["tasks:write"] },
+      "description": "Cambia campos de una tarea. Con expectedVersion, rechaza el cambio si la tarea se modificó antes."
+    },
+    {
+      "name": "deleteTask",
+      "id": "tasks.task.delete",
+      "method": "DELETE",
+      "path": "/v1/tasks/{taskId}",
+      "version": 1,
+      "pathParams": ["taskId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/DeleteTaskRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "TASKS.TASK.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["tasks:write"] },
+      "description": "Borra una tarea de forma lógica."
+    }
+  ],
+  "operations": [
+    {
+      "name": "listChanges",
+      "id": "tasks.tasks.list-changes.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/ListTaskChangesInput" },
+      "output": { "$ref": "#/schemas/TaskChangePage" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": [],
+      "timeoutMs": 5000,
+      "description": "Pagina los cambios de tareas de un tenant por fecha de actualización."
+    },
+    {
+      "name": "eraseUserData",
+      "id": "tasks.user-data.erase.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/EraseTasksUserInput" },
+      "output": { "$ref": "#/schemas/EraseTasksUserResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Anonimizar es irreversible y corre después del pivote de la saga: se repite hasta terminar y no se revierte.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Anonimiza al usuario como autor de las tareas. Las tareas se conservan."
+    },
+    {
+      "name": "tenantMoveSync",
+      "id": "tasks.tenant-move.sync.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveProgress"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "tasks.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia un lote de los datos del tenant en tasks al destino mientras las escrituras siguen; la saga repite hasta completar la ronda."
+    },
+    {
+      "name": "tenantMoveFinalize",
+      "id": "tasks.tenant-move.finalize.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveVerification"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "tasks.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia la última ronda de tasks con el tenant congelado y verifica conteos y sumas."
+    },
+    {
+      "name": "tenantMoveAbort",
+      "id": "tasks.tenant-move.abort.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación de la copia: descarta lo copiado al destino y no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Cancela el traslado de un tenant y descarta lo copiado de tasks al destino."
+    },
+    {
+      "name": "tenantMoveCleanup",
+      "id": "tasks.tenant-move.cleanup.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Borra del origen los datos ya trasladados una vez vencida la gracia: no se restauran.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra de tasks los datos del tenant trasladado cuando pasa el periodo de gracia."
+    }
+  ],
+  "events": [
+    {
+      "name": "taskCreated",
+      "type": "tasks.task.created.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TaskCreatedPayload" },
+      "description": "Se creó una tarea en un tenant."
+    },
+    {
+      "name": "taskUpdated",
+      "type": "tasks.task.updated.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TaskUpdatedPayload" },
+      "description": "Se cambió una tarea: campos modificados, estado anterior y nuevo, quien la cambió y quien la creó."
+    },
+    {
+      "name": "taskDeleted",
+      "type": "tasks.task.deleted.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/TaskDeletedPayload" },
+      "description": "Se borró una tarea (borrado lógico)."
+    }
+  ],
+  "commands": [],
+  "errors": {
+    "TasksErrorCode": [
+      {
+        "name": "TaskNotFound",
+        "code": "TASKS.TASK.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_tasks_task_not_found",
+        "description": "La tarea no existe en el tenant activo."
+      },
+      {
+        "name": "TaskVersionConflict",
+        "code": "TASKS.TASK.VERSION_CONFLICT",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_tasks_task_version_conflict",
+        "description": "La tarea cambió desde que se leyó: la versión esperada ya no es la actual."
+      },
+      {
+        "name": "SearchQueryTooShort",
+        "code": "TASKS.SEARCH.QUERY_TOO_SHORT",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_tasks_search_query_too_short",
+        "description": "El texto de búsqueda es más corto que el mínimo permitido."
+      }
+    ]
+  }
+}

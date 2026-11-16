@@ -21,6 +21,7 @@ const StepUpRouteIds = [
   IdentityRoute.RemovePasskey,
   IdentityRoute.CreateApiKey,
   IdentityRoute.RotateApiKey,
+  IdentityRoute.StartAccountDeletion,
 ];
 
 describe('identity routes contract', () => {

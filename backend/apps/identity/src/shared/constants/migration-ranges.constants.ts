@@ -1,0 +1,17 @@
+/**
+ * Primer timestamp de las migraciones de cada módulo. Dentro de su bloque, un módulo suma de 1 en 1.
+ * Los timestamps de la plataforma son más bajos, así que sus migraciones corren primero.
+ */
+export enum MigrationRange {
+  Users = 1_795_000_100_000,
+  Passwords = 1_795_000_200_000,
+  Authentication = 1_795_000_300_000,
+  Devices = 1_795_000_400_000,
+  Mfa = 1_795_000_500_000,
+  Passkeys = 1_795_000_600_000,
+  Sessions = 1_795_000_700_000,
+  Tenants = 1_795_000_800_000,
+  Access = 1_795_000_900_000,
+  Invitations = 1_795_001_000_000,
+  ApiKeys = 1_795_001_100_000,
+}

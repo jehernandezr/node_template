@@ -1,0 +1,1213 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
+  "formatVersion": 2,
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "service": "billing",
+  "description": "Facturación: planes, suscripción del tenant, medición de uso, entitlements, cuotas, facturas y morosidad.",
+  "enums": {
+    "SubscriptionStatus": {
+      "values": [
+        { "name": "Trialing", "value": "trialing" },
+        { "name": "Active", "value": "active" },
+        { "name": "PastDue", "value": "past_due" },
+        { "name": "Suspended", "value": "suspended" },
+        { "name": "Canceled", "value": "canceled" }
+      ]
+    },
+    "InvoiceStatus": {
+      "values": [
+        { "name": "Draft", "value": "draft" },
+        { "name": "Issued", "value": "issued" },
+        { "name": "Paid", "value": "paid" },
+        { "name": "Failed", "value": "failed" },
+        { "name": "Void", "value": "void" }
+      ]
+    },
+    "InvoiceLineKind": {
+      "values": [
+        { "name": "FixedFee", "value": "fixed_fee" },
+        { "name": "Usage", "value": "usage" }
+      ]
+    },
+    "PlanPeriodicity": {
+      "values": [
+        { "name": "Monthly", "value": "monthly" },
+        { "name": "Annual", "value": "annual" }
+      ]
+    },
+    "Currency": {
+      "values": [
+        { "name": "Cop", "value": "COP" },
+        { "name": "Usd", "value": "USD" }
+      ]
+    },
+    "UsageMetric": {
+      "values": [
+        { "name": "Users", "value": "users" },
+        { "name": "ApiCalls", "value": "api_calls" },
+        { "name": "StorageGb", "value": "storage_gb" }
+      ]
+    },
+    "UsageAggregationKind": {
+      "values": [
+        { "name": "Max", "value": "max" },
+        { "name": "Sum", "value": "sum" }
+      ]
+    },
+    "BillingErrorCode": {
+      "values": [
+        {
+          "name": "SubscriptionNotFound",
+          "value": "BILLING.SUBSCRIPTION.NOT_FOUND"
+        },
+        {
+          "name": "SubscriptionNotChangeable",
+          "value": "BILLING.SUBSCRIPTION.NOT_CHANGEABLE"
+        },
+        { "name": "PlanNotAvailable", "value": "BILLING.PLAN.NOT_AVAILABLE" },
+        {
+          "name": "PlanUsageExceedsLimit",
+          "value": "BILLING.PLAN.USAGE_EXCEEDS_LIMIT"
+        },
+        { "name": "InvoiceNotFound", "value": "BILLING.INVOICE.NOT_FOUND" },
+        {
+          "name": "InvoiceInvalidState",
+          "value": "BILLING.INVOICE.INVALID_STATE"
+        },
+        { "name": "QuotaExceeded", "value": "BILLING.QUOTA.EXCEEDED" }
+      ]
+    },
+    "BillingRoute": {
+      "values": [
+        { "name": "GetSubscription", "value": "billing.subscription.get" },
+        { "name": "GetUsage", "value": "billing.usage.get" },
+        { "name": "ListPlans", "value": "billing.plan.list" },
+        { "name": "ChangePlan", "value": "billing.subscription.change-plan" },
+        { "name": "ListInvoices", "value": "billing.invoice.list" },
+        { "name": "GetInvoice", "value": "billing.invoice.get" }
+      ]
+    },
+    "BillingOperation": {
+      "values": [
+        { "name": "OpenAccount", "value": "billing.accounts.open.v1" },
+        { "name": "CloseAccount", "value": "billing.accounts.close.v1" },
+        { "name": "GetEntitlements", "value": "billing.entitlements.get.v1" },
+        { "name": "CheckQuota", "value": "billing.quotas.check.v1" },
+        { "name": "MarkInvoicePaid", "value": "billing.invoices.mark-paid.v1" },
+        {
+          "name": "MarkInvoiceFailed",
+          "value": "billing.invoices.mark-failed.v1"
+        },
+        { "name": "TenantMoveSync", "value": "billing.tenant-move.sync.v1" },
+        {
+          "name": "TenantMoveFinalize",
+          "value": "billing.tenant-move.finalize.v1"
+        },
+        { "name": "TenantMoveAbort", "value": "billing.tenant-move.abort.v1" },
+        {
+          "name": "TenantMoveCleanup",
+          "value": "billing.tenant-move.cleanup.v1"
+        }
+      ]
+    },
+    "BillingEvent": {
+      "values": [
+        {
+          "name": "SubscriptionChanged",
+          "value": "billing.subscription.changed.v1"
+        },
+        {
+          "name": "SubscriptionSuspended",
+          "value": "billing.subscription.suspended.v1"
+        },
+        {
+          "name": "SubscriptionReactivated",
+          "value": "billing.subscription.reactivated.v1"
+        },
+        {
+          "name": "EntitlementsChanged",
+          "value": "billing.entitlements.changed.v1"
+        },
+        { "name": "InvoiceIssued", "value": "billing.invoice.issued.v1" },
+        { "name": "InvoicePaid", "value": "billing.invoice.paid.v1" },
+        { "name": "InvoiceFailed", "value": "billing.invoice.failed.v1" }
+      ]
+    },
+    "BillingCommand": {
+      "values": [{ "name": "RecordUsage", "value": "billing.usage.record.v1" }]
+    },
+    "BillingTopic": {
+      "values": [{ "name": "Events", "value": "billing-events" }]
+    },
+    "BillingQueue": {
+      "values": [
+        { "name": "Usage", "value": "billing-usage" },
+        { "name": "Identity", "value": "billing-identity" }
+      ]
+    }
+  },
+  "constants": {
+    "BillingLimits": {
+      "planNameMaxLength": 120,
+      "invoiceNumberMaxLength": 32,
+      "invoiceDescriptionMaxLength": 200,
+      "maxQuotasPerPlan": 10,
+      "maxFeaturesPerPlan": 20,
+      "maxLinesPerInvoice": 200,
+      "usageKeyMaxLength": 200,
+      "maxUsageRecordsPerBatch": 500,
+      "maxUsageQuantity": 1000000000,
+      "maxPlans": 20,
+      "paymentReferenceMaxLength": 120,
+      "failureReasonMaxLength": 200
+    },
+    "UsageAggregation": {
+      "users": "max",
+      "apiCalls": "sum",
+      "storageGb": "max"
+    }
+  },
+  "schemas": {
+    "UsageMetric": {
+      "type": "string",
+      "enum": ["users", "api_calls", "storage_gb"],
+      "description": "Métrica de uso que tiene cuota."
+    },
+    "SubscriptionStatus": {
+      "type": "string",
+      "enum": ["trialing", "active", "past_due", "suspended", "canceled"],
+      "description": "Estado de una suscripción."
+    },
+    "InvoiceStatus": {
+      "type": "string",
+      "enum": ["draft", "issued", "paid", "failed", "void"],
+      "description": "Estado de una factura."
+    },
+    "InvoiceLineKind": {
+      "type": "string",
+      "enum": ["fixed_fee", "usage"],
+      "description": "Tipo de línea de una factura."
+    },
+    "PlanPeriodicity": {
+      "type": "string",
+      "enum": ["monthly", "annual"],
+      "description": "Periodicidad de cobro de un plan."
+    },
+    "Currency": {
+      "type": "string",
+      "enum": ["COP", "USD"],
+      "description": "Moneda en que se factura."
+    },
+    "BillingPeriod": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "../../platform/export/contract.json#/schemas/CalendarDate"
+        },
+        "end": {
+          "$ref": "../../platform/export/contract.json#/schemas/CalendarDate"
+        }
+      },
+      "required": ["start", "end"],
+      "description": "Periodo de facturación con fechas de calendario."
+    },
+    "QuotaLimit": {
+      "type": "object",
+      "properties": {
+        "metric": { "$ref": "#/schemas/UsageMetric" },
+        "limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["metric", "limit"],
+      "description": "Límite de una métrica en un plan."
+    },
+    "UsageRecord": {
+      "type": "object",
+      "properties": {
+        "metric": { "$ref": "#/schemas/UsageMetric" },
+        "quantity": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "windowStart": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "key": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "required": ["metric", "quantity", "windowStart", "key"],
+      "additionalProperties": false,
+      "description": "Uso de una métrica en una ventana, con su llave de idempotencia."
+    },
+    "RecordUsagePayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "records": {
+          "minItems": 1,
+          "maxItems": 500,
+          "type": "array",
+          "items": { "$ref": "#/schemas/UsageRecord" }
+        }
+      },
+      "required": ["tenantId", "records"],
+      "additionalProperties": false,
+      "description": "Lote de registros de uso de un tenant."
+    },
+    "SubscriptionChangedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "subscriptionId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "previousPlanId": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+            { "type": "null" }
+          ]
+        },
+        "planId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "changedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "subscriptionId",
+        "previousPlanId",
+        "planId",
+        "changedAt"
+      ],
+      "description": "Cambió el plan de una suscripción."
+    },
+    "SubscriptionSuspendedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "subscriptionId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "suspendedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "subscriptionId", "suspendedAt"],
+      "description": "Se suspendió una suscripción por falta de pago."
+    },
+    "SubscriptionReactivatedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "subscriptionId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "reactivatedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "subscriptionId", "reactivatedAt"],
+      "description": "Se reactivó una suscripción suspendida."
+    },
+    "EntitlementsChangedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "features": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "$ref": "../../identity/export/contract.json#/schemas/PlanFeature"
+          }
+        },
+        "quotas": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/QuotaLimit" }
+        },
+        "changedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "features", "quotas", "changedAt"],
+      "description": "Cambiaron las funcionalidades o cuotas vigentes de un tenant."
+    },
+    "InvoiceIssuedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "period": { "$ref": "#/schemas/BillingPeriod" },
+        "total": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "issuedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "invoiceId",
+        "number",
+        "period",
+        "total",
+        "issuedAt"
+      ],
+      "description": "Se emitió una factura."
+    },
+    "InvoicePaidPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "total": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "paidAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": ["tenantId", "invoiceId", "number", "total", "paidAt"],
+      "description": "Se pagó una factura."
+    },
+    "InvoiceFailedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "total": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "failedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "invoiceId",
+        "number",
+        "total",
+        "attempts",
+        "failedAt"
+      ],
+      "description": "Falló el cobro de una factura."
+    },
+    "Plan": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "price": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "periodicity": { "$ref": "#/schemas/PlanPeriodicity" },
+        "quotas": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/QuotaLimit" }
+        },
+        "features": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "$ref": "../../identity/export/contract.json#/schemas/PlanFeature"
+          }
+        }
+      },
+      "required": ["id", "name", "price", "periodicity", "quotas", "features"],
+      "description": "Plan del catálogo con su precio y sus límites."
+    },
+    "PlanCatalog": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "$ref": "#/schemas/Plan" }
+        }
+      },
+      "required": ["items"],
+      "description": "Catálogo de planes disponibles."
+    },
+    "Subscription": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "plan": { "$ref": "#/schemas/Plan" },
+        "status": { "$ref": "#/schemas/SubscriptionStatus" },
+        "period": { "$ref": "#/schemas/BillingPeriod" }
+      },
+      "required": ["id", "plan", "status", "period"],
+      "description": "Suscripción del tenant con su plan y el periodo vigente."
+    },
+    "QuotaUsage": {
+      "type": "object",
+      "properties": {
+        "metric": { "$ref": "#/schemas/UsageMetric" },
+        "limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "used": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      },
+      "required": ["metric", "limit", "used"],
+      "description": "Uso de una métrica frente a su límite."
+    },
+    "UsageOverview": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/QuotaUsage" }
+        }
+      },
+      "required": ["items"],
+      "description": "Uso del periodo vigente de cada métrica con cuota."
+    },
+    "InvoiceLine": {
+      "type": "object",
+      "properties": {
+        "kind": { "$ref": "#/schemas/InvoiceLineKind" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "amount": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        }
+      },
+      "required": ["kind", "description", "amount"],
+      "description": "Línea de una factura."
+    },
+    "Invoice": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "period": { "$ref": "#/schemas/BillingPeriod" },
+        "status": { "$ref": "#/schemas/InvoiceStatus" },
+        "currency": { "$ref": "#/schemas/Currency" },
+        "lines": {
+          "maxItems": 200,
+          "type": "array",
+          "items": { "$ref": "#/schemas/InvoiceLine" }
+        },
+        "total": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        }
+      },
+      "required": [
+        "id",
+        "number",
+        "period",
+        "status",
+        "currency",
+        "lines",
+        "total"
+      ],
+      "description": "Factura completa con sus líneas."
+    },
+    "InvoiceSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "period": { "$ref": "#/schemas/BillingPeriod" },
+        "status": { "$ref": "#/schemas/InvoiceStatus" },
+        "currency": { "$ref": "#/schemas/Currency" },
+        "total": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        }
+      },
+      "required": ["id", "number", "period", "status", "currency", "total"],
+      "description": "Factura sin líneas, para listados."
+    },
+    "InvoicePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/InvoiceSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de facturas, más nuevas primero."
+    },
+    "ChangePlanRequest": {
+      "type": "object",
+      "properties": {
+        "planId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["planId"],
+      "additionalProperties": false,
+      "description": "Plan al que cambia la suscripción."
+    },
+    "ListInvoicesRequest": {
+      "type": "object",
+      "properties": {
+        "status": { "$ref": "#/schemas/InvoiceStatus" },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Filtros y paginación del listado de facturas."
+    },
+    "GetInvoiceRequest": {
+      "type": "object",
+      "properties": {
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["invoiceId"],
+      "additionalProperties": false,
+      "description": "Factura a consultar."
+    },
+    "OpenBillingAccountInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "ownerUserId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId", "ownerUserId"],
+      "additionalProperties": false,
+      "description": "Abre la cuenta de facturación de un tenant nuevo."
+    },
+    "BillingAccountResult": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "subscriptionId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "status": { "$ref": "#/schemas/SubscriptionStatus" }
+      },
+      "required": ["tenantId", "subscriptionId", "status"],
+      "description": "Cuenta de facturación abierta con su suscripción."
+    },
+    "CloseBillingAccountInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Cierra la cuenta de facturación de un tenant."
+    },
+    "BillingAccountClosed": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId"],
+      "description": "Cuenta de facturación cerrada."
+    },
+    "GetEntitlementsInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Tenant cuyas funcionalidades y cuotas se consultan."
+    },
+    "Entitlements": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "status": { "$ref": "#/schemas/SubscriptionStatus" },
+        "features": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "$ref": "../../identity/export/contract.json#/schemas/PlanFeature"
+          }
+        },
+        "quotas": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/QuotaLimit" }
+        }
+      },
+      "required": ["tenantId", "status", "features", "quotas"],
+      "description": "Funcionalidades y cuotas vigentes de un tenant."
+    },
+    "CheckQuotaInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "metric": { "$ref": "#/schemas/UsageMetric" },
+        "requested": { "type": "integer", "minimum": 1, "maximum": 1000000000 }
+      },
+      "required": ["tenantId", "metric"],
+      "additionalProperties": false,
+      "description": "Consulta si un tenant puede consumir una cantidad de una métrica."
+    },
+    "QuotaCheck": {
+      "type": "object",
+      "properties": {
+        "metric": { "$ref": "#/schemas/UsageMetric" },
+        "limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "used": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "allowed": { "type": "boolean" }
+      },
+      "required": ["metric", "limit", "used", "allowed"],
+      "description": "Resultado de consultar una cuota."
+    },
+    "MarkInvoicePaidInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "paidAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "required": ["tenantId", "invoiceId", "paidAt", "reference"],
+      "additionalProperties": false,
+      "description": "Marca una factura como pagada con la referencia del proveedor."
+    },
+    "MarkInvoiceFailedInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "failedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "required": ["tenantId", "invoiceId", "failedAt"],
+      "additionalProperties": false,
+      "description": "Marca una factura como fallida después de un cobro rechazado."
+    },
+    "InvoiceStateResult": {
+      "type": "object",
+      "properties": {
+        "invoiceId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "status": { "$ref": "#/schemas/InvoiceStatus" }
+      },
+      "required": ["invoiceId", "status"],
+      "description": "Estado de una factura después de la operación."
+    }
+  },
+  "routes": [
+    {
+      "name": "getSubscription",
+      "id": "billing.subscription.get",
+      "method": "GET",
+      "path": "/v1/billing/subscription",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/Subscription" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.SUBSCRIPTION.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["billing:read"] },
+      "description": "Consulta la suscripción del tenant con su plan."
+    },
+    {
+      "name": "getUsage",
+      "id": "billing.usage.get",
+      "method": "GET",
+      "path": "/v1/billing/usage",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/UsageOverview" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.SUBSCRIPTION.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["billing:read"] },
+      "description": "Consulta el uso del periodo vigente de cada métrica con cuota."
+    },
+    {
+      "name": "listPlans",
+      "id": "billing.plan.list",
+      "method": "GET",
+      "path": "/v1/billing/plans",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/PlanCatalog" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["billing:read"] },
+      "description": "Lista los planes del catálogo con su precio y sus límites."
+    },
+    {
+      "name": "changePlan",
+      "id": "billing.subscription.change-plan",
+      "method": "PUT",
+      "path": "/v1/billing/subscription/plan",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/ChangePlanRequest" },
+      "response": { "$ref": "#/schemas/Subscription" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.VALIDATION.INVALID_INPUT",
+        "BILLING.SUBSCRIPTION.NOT_FOUND",
+        "BILLING.SUBSCRIPTION.NOT_CHANGEABLE",
+        "BILLING.PLAN.NOT_AVAILABLE",
+        "BILLING.PLAN.USAGE_EXCEEDS_LIMIT"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["billing:write"] },
+      "description": "Cambia el plan de la suscripción del tenant."
+    },
+    {
+      "name": "listInvoices",
+      "id": "billing.invoice.list",
+      "method": "GET",
+      "path": "/v1/billing/invoices",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "status", "kind": "string", "list": false },
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": { "$ref": "#/schemas/ListInvoicesRequest" },
+      "response": { "$ref": "#/schemas/InvoicePage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.VALIDATION.INVALID_INPUT"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["billing:read"] },
+      "description": "Lista las facturas del tenant, con filtro y paginación."
+    },
+    {
+      "name": "getInvoice",
+      "id": "billing.invoice.get",
+      "method": "GET",
+      "path": "/v1/billing/invoices/{invoiceId}",
+      "version": 1,
+      "pathParams": ["invoiceId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/GetInvoiceRequest" },
+      "response": { "$ref": "#/schemas/Invoice" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.INVOICE.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated", "permissions": ["billing:read"] },
+      "description": "Consulta una factura con sus líneas."
+    }
+  ],
+  "operations": [
+    {
+      "name": "openAccount",
+      "id": "billing.accounts.open.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/OpenBillingAccountInput" },
+      "output": { "$ref": "#/schemas/BillingAccountResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "billing.accounts.close.v1",
+      "errors": ["BILLING.PLAN.NOT_AVAILABLE"],
+      "timeoutMs": 5000,
+      "description": "Abre la cuenta de facturación de un tenant con su suscripción."
+    },
+    {
+      "name": "closeAccount",
+      "id": "billing.accounts.close.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/CloseBillingAccountInput" },
+      "output": { "$ref": "#/schemas/BillingAccountClosed" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación de la apertura: sin factura emitida borra la suscripción y no hay nada que restaurar.",
+      "errors": ["BILLING.INVOICE.INVALID_STATE"],
+      "timeoutMs": 5000,
+      "description": "Cierra la cuenta de facturación de un tenant."
+    },
+    {
+      "name": "getEntitlements",
+      "id": "billing.entitlements.get.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/GetEntitlementsInput" },
+      "output": { "$ref": "#/schemas/Entitlements" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": ["BILLING.SUBSCRIPTION.NOT_FOUND"],
+      "timeoutMs": 5000,
+      "description": "Consulta las funcionalidades y cuotas vigentes de un tenant."
+    },
+    {
+      "name": "checkQuota",
+      "id": "billing.quotas.check.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/CheckQuotaInput" },
+      "output": { "$ref": "#/schemas/QuotaCheck" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": ["BILLING.SUBSCRIPTION.NOT_FOUND"],
+      "timeoutMs": 1000,
+      "description": "Consulta si un tenant puede consumir una cantidad de una métrica."
+    },
+    {
+      "name": "markInvoicePaid",
+      "id": "billing.invoices.mark-paid.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/MarkInvoicePaidInput" },
+      "output": { "$ref": "#/schemas/InvoiceStateResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "El pago ocurrió fuera de billing; un error se corrige con una nota, no con una reversa.",
+      "errors": ["BILLING.INVOICE.NOT_FOUND", "BILLING.INVOICE.INVALID_STATE"],
+      "timeoutMs": 5000,
+      "description": "Marca una factura como pagada con la referencia del proveedor."
+    },
+    {
+      "name": "markInvoiceFailed",
+      "id": "billing.invoices.mark-failed.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/MarkInvoiceFailedInput" },
+      "output": { "$ref": "#/schemas/InvoiceStateResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "El cobro falló fuera de billing; un error se corrige con una nota, no con una reversa.",
+      "errors": ["BILLING.INVOICE.NOT_FOUND", "BILLING.INVOICE.INVALID_STATE"],
+      "timeoutMs": 5000,
+      "description": "Marca una factura como fallida después de un cobro rechazado."
+    },
+    {
+      "name": "tenantMoveSync",
+      "id": "billing.tenant-move.sync.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveProgress"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "billing.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia un lote de los datos del tenant en billing al destino mientras las escrituras siguen; la saga repite hasta completar la ronda."
+    },
+    {
+      "name": "tenantMoveFinalize",
+      "id": "billing.tenant-move.finalize.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveVerification"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "billing.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia la última ronda de billing con el tenant congelado y verifica conteos y sumas."
+    },
+    {
+      "name": "tenantMoveAbort",
+      "id": "billing.tenant-move.abort.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación de la copia: descarta lo copiado al destino y no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Cancela el traslado de un tenant y descarta lo copiado de billing al destino."
+    },
+    {
+      "name": "tenantMoveCleanup",
+      "id": "billing.tenant-move.cleanup.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Borra del origen los datos ya trasladados una vez vencida la gracia: no se restauran.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra de billing los datos del tenant trasladado cuando pasa el periodo de gracia."
+    }
+  ],
+  "events": [
+    {
+      "name": "subscriptionChanged",
+      "type": "billing.subscription.changed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/SubscriptionChangedPayload" },
+      "description": "Cambió el plan de la suscripción de un tenant."
+    },
+    {
+      "name": "subscriptionSuspended",
+      "type": "billing.subscription.suspended.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/SubscriptionSuspendedPayload" },
+      "description": "Se suspendió la suscripción de un tenant. Identity suspende el acceso."
+    },
+    {
+      "name": "subscriptionReactivated",
+      "type": "billing.subscription.reactivated.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/SubscriptionReactivatedPayload" },
+      "description": "Se reactivó la suscripción de un tenant."
+    },
+    {
+      "name": "entitlementsChanged",
+      "type": "billing.entitlements.changed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/EntitlementsChangedPayload" },
+      "description": "Cambiaron las funcionalidades y cuotas vigentes de un tenant. Identity las refleja en los permisos."
+    },
+    {
+      "name": "invoiceIssued",
+      "type": "billing.invoice.issued.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/InvoiceIssuedPayload" },
+      "description": "Se emitió una factura."
+    },
+    {
+      "name": "invoicePaid",
+      "type": "billing.invoice.paid.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/InvoicePaidPayload" },
+      "description": "Se pagó una factura."
+    },
+    {
+      "name": "invoiceFailed",
+      "type": "billing.invoice.failed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/InvoiceFailedPayload" },
+      "description": "Falló el cobro de una factura."
+    }
+  ],
+  "commands": [
+    {
+      "name": "recordUsage",
+      "type": "billing.usage.record.v1",
+      "kind": "command",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/RecordUsagePayload" },
+      "description": "Registra el uso de un tenant medido por otro servicio. Cada registro lleva su llave de idempotencia."
+    }
+  ],
+  "errors": {
+    "BillingErrorCode": [
+      {
+        "name": "SubscriptionNotFound",
+        "code": "BILLING.SUBSCRIPTION.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_subscription_not_found",
+        "description": "El tenant no tiene una suscripción."
+      },
+      {
+        "name": "SubscriptionNotChangeable",
+        "code": "BILLING.SUBSCRIPTION.NOT_CHANGEABLE",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_subscription_not_changeable",
+        "description": "La suscripción está suspendida o cancelada y no admite cambio de plan."
+      },
+      {
+        "name": "PlanNotAvailable",
+        "code": "BILLING.PLAN.NOT_AVAILABLE",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_plan_not_available",
+        "description": "El plan no existe o no está disponible para este tenant."
+      },
+      {
+        "name": "PlanUsageExceedsLimit",
+        "code": "BILLING.PLAN.USAGE_EXCEEDS_LIMIT",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_plan_usage_exceeds_limit",
+        "description": "El uso actual supera un límite del plan nuevo: no se puede bajar a ese plan."
+      },
+      {
+        "name": "InvoiceNotFound",
+        "code": "BILLING.INVOICE.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_invoice_not_found",
+        "description": "La factura no existe en el tenant."
+      },
+      {
+        "name": "InvoiceInvalidState",
+        "code": "BILLING.INVOICE.INVALID_STATE",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_invoice_invalid_state",
+        "description": "La factura no está en un estado que admita la operación pedida."
+      },
+      {
+        "name": "QuotaExceeded",
+        "code": "BILLING.QUOTA.EXCEEDED",
+        "httpStatus": 403,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_billing_quota_exceeded",
+        "description": "Se alcanzó la cuota del plan. Los detalles traen metric, limit y used."
+      }
+    ]
+  }
+}

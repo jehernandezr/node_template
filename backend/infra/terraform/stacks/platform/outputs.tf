@@ -84,3 +84,15 @@ output "ses_dns_records" {
   description = "Registros DNS de SES que debes publicar si no usas route53_zone_id."
   value       = try(module.ses[0].dns_records, null)
 }
+
+output "github_oidc" {
+  description = "Acceso de GitHub Actions por OIDC: provider_arn, deploy_role_arn, publish_role_arn, web_role_arn, artifacts_bucket y ecr_repository_prefix. Null sin github_repository."
+  value = length(module.oidc_github) == 0 ? null : {
+    provider_arn          = module.oidc_github[0].provider_arn
+    deploy_role_arn       = module.oidc_github[0].deploy_role_arn
+    publish_role_arn      = module.oidc_github[0].publish_role_arn
+    web_role_arn          = module.oidc_github[0].web_role_arn
+    artifacts_bucket      = module.oidc_github[0].artifacts_bucket
+    ecr_repository_prefix = module.oidc_github[0].ecr_repository_prefix
+  }
+}

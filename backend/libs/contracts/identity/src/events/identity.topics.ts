@@ -15,6 +15,7 @@ import {
 } from './tenant.events.js';
 import {
   UserEmailChangedEvent,
+  UserErasedEvent,
   UserReactivatedEvent,
   UserRegisteredEvent,
   UserSuspendedEvent,
@@ -40,6 +41,7 @@ export const IdentityEventsTopic = defineTopic({
     ApiKeyCreatedEvent,
     ApiKeyRevokedEvent,
     SecurityAlertRaisedEvent,
+    UserErasedEvent,
   ],
   description:
     'Eventos de identity: usuarios, dispositivos, tenants, membresías, API keys, sesiones y alertas. Cada servicio suscribe su propia cola.',

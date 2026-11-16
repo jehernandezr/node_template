@@ -58,6 +58,8 @@ final class RouteDescriptor<Req, Res> {
     required this.validateRequest,
     this.version = 1,
     this.platformRoles = const [],
+    this.features = const [],
+    this.flags = const [],
     this.mfaMaxAgeMinutes,
     this.deprecated,
     this.validateResponse,
@@ -95,6 +97,14 @@ final class RouteDescriptor<Req, Res> {
 
   /// Platform roles (wire codes of `PlatformRole`) accepted, any of them.
   final List<String> platformRoles;
+
+  /// Plan features (wire codes of `PlanFeature`) the tenant's plan must
+  /// include, all of them.
+  final List<String> features;
+
+  /// Feature flags (wire codes of `FeatureFlag`) that must be on for the
+  /// user, all of them. An off flag answers as a missing route.
+  final List<String> flags;
 
   /// Maximum age in minutes of the last second factor (step-up), or null.
   final int? mfaMaxAgeMinutes;

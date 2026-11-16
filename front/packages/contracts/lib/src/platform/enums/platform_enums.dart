@@ -175,6 +175,22 @@ enum PlatformErrorCode {
     messageKey: 'error_platform_http_malformed_body',
   ),
 
+  /// El plan del tenant no incluye la funcionalidad que pide la operación.
+  accessFeatureNotIncluded(
+    'PLATFORM.ACCESS.FEATURE_NOT_INCLUDED',
+    httpStatus: 403,
+    retryable: false,
+    messageKey: 'error_platform_access_feature_not_included',
+  ),
+
+  /// El flag que habilita la ruta está apagado: se comporta como una ruta inexistente.
+  accessFlagDisabled(
+    'PLATFORM.ACCESS.FLAG_DISABLED',
+    httpStatus: 404,
+    retryable: false,
+    messageKey: 'error_platform_access_flag_disabled',
+  ),
+
   /// El recurso solicitado no existe.
   resourceNotFound(
     'PLATFORM.RESOURCE.NOT_FOUND',

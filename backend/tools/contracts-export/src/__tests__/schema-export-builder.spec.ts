@@ -55,7 +55,7 @@ describe('SchemaExportBuilder', () => {
     const exported = builder.build(ContractFixtures.registered());
 
     it('exports one document per registered service', () => {
-      expect([...exported.keys()]).toEqual(['platform', 'identity']);
+      expect([...exported.keys()]).toEqual(['platform', 'identity', 'billing']);
       const identity = exported.get('identity') as Obj;
       expect(identity['jsonSchemaDialect']).toBe(
         'https://json-schema.org/draft/2020-12/schema',

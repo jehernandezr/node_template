@@ -1,0 +1,734 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
+  "formatVersion": 2,
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "service": "notifications",
+  "description": "Notificaciones: bandeja del usuario, preferencias, despacho por canal, correo transaccional y tiempo real.",
+  "enums": {
+    "NotificationType": {
+      "values": [
+        { "name": "SecurityAlert", "value": "security_alert" },
+        { "name": "TaskUpdated", "value": "task_updated" },
+        { "name": "InvoiceIssued", "value": "invoice_issued" },
+        { "name": "AccountActivity", "value": "account_activity" }
+      ]
+    },
+    "NotificationChannel": {
+      "values": [
+        { "name": "InApp", "value": "in_app" },
+        { "name": "Push", "value": "push" },
+        { "name": "Email", "value": "email" }
+      ]
+    },
+    "NotificationFrameType": {
+      "values": [
+        { "name": "Notification", "value": "notification" },
+        { "name": "UnreadCount", "value": "unread-count" },
+        { "name": "SessionClosed", "value": "session-closed" }
+      ]
+    },
+    "EmailTemplate": {
+      "values": [
+        { "name": "VerifyEmail", "value": "verify_email" },
+        { "name": "PasswordReset", "value": "password_reset" },
+        { "name": "MfaCode", "value": "mfa_code" },
+        { "name": "EmailChange", "value": "email_change" },
+        { "name": "Invitation", "value": "invitation" }
+      ]
+    },
+    "TemplateParameter": {
+      "values": [
+        { "name": "Code", "value": "code" },
+        { "name": "Link", "value": "link" },
+        { "name": "DisplayName", "value": "display_name" },
+        { "name": "TenantName", "value": "tenant_name" },
+        { "name": "Reference", "value": "reference" }
+      ]
+    },
+    "NotificationsErrorCode": {
+      "values": [
+        { "name": "InboxNotFound", "value": "NOTIFICATIONS.INBOX.NOT_FOUND" },
+        {
+          "name": "PreferencesInvalidQuietHours",
+          "value": "NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS"
+        },
+        {
+          "name": "EmailRecipientSuppressed",
+          "value": "NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED"
+        },
+        {
+          "name": "EmailTemplateUnknown",
+          "value": "NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN"
+        },
+        {
+          "name": "RealtimeUnauthenticated",
+          "value": "NOTIFICATIONS.REALTIME.UNAUTHENTICATED"
+        }
+      ]
+    },
+    "NotificationsRoute": {
+      "values": [
+        { "name": "ListInbox", "value": "notifications.inbox.list" },
+        {
+          "name": "GetUnreadCount",
+          "value": "notifications.inbox.unread-count"
+        },
+        { "name": "MarkRead", "value": "notifications.inbox.mark-read" },
+        { "name": "MarkAllRead", "value": "notifications.inbox.mark-all-read" },
+        { "name": "GetPreferences", "value": "notifications.preferences.get" },
+        { "name": "SavePreferences", "value": "notifications.preferences.save" }
+      ]
+    },
+    "NotificationsOperation": {
+      "values": [
+        { "name": "SendMessage", "value": "notifications.messages.send.v1" },
+        { "name": "NotifyUser", "value": "notifications.users.notify.v1" },
+        {
+          "name": "EraseUserData",
+          "value": "notifications.user-data.erase.v1"
+        },
+        {
+          "name": "TenantMoveSync",
+          "value": "notifications.tenant-move.sync.v1"
+        },
+        {
+          "name": "TenantMoveFinalize",
+          "value": "notifications.tenant-move.finalize.v1"
+        },
+        {
+          "name": "TenantMoveAbort",
+          "value": "notifications.tenant-move.abort.v1"
+        },
+        {
+          "name": "TenantMoveCleanup",
+          "value": "notifications.tenant-move.cleanup.v1"
+        }
+      ]
+    },
+    "NotificationsEvent": {
+      "values": [
+        {
+          "name": "NotificationCreated",
+          "value": "notifications.notification.created.v1"
+        }
+      ]
+    },
+    "NotificationsTopic": {
+      "values": [{ "name": "Events", "value": "notifications-events" }]
+    },
+    "NotificationsQueue": {
+      "values": [
+        { "name": "Triggers", "value": "notifications-triggers" },
+        { "name": "RealtimeControl", "value": "notifications-realtime-control" }
+      ]
+    }
+  },
+  "constants": {
+    "NotificationsLimits": {
+      "titleMaxLength": 200,
+      "bodyMaxLength": 1000,
+      "quietTimePattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "timezoneMaxLength": 64,
+      "maxChannels": 3,
+      "maxTypes": 4,
+      "maxParameters": 10,
+      "parameterValueMaxLength": 512,
+      "recipientMaxLength": 254,
+      "localeMaxLength": 35
+    },
+    "NotificationPolicy": { "mandatoryTypes": ["security_alert"] }
+  },
+  "schemas": {
+    "NotificationType": {
+      "type": "string",
+      "enum": [
+        "security_alert",
+        "task_updated",
+        "invoice_issued",
+        "account_activity"
+      ],
+      "description": "Tipo de notificación."
+    },
+    "NotificationChannel": {
+      "type": "string",
+      "enum": ["in_app", "push", "email"],
+      "description": "Canal de una notificación."
+    },
+    "NotificationCreatedPayload": {
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "type": { "$ref": "#/schemas/NotificationType" },
+        "channels": {
+          "maxItems": 3,
+          "type": "array",
+          "items": { "$ref": "#/schemas/NotificationChannel" }
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "notificationId",
+        "tenantId",
+        "type",
+        "channels",
+        "createdAt"
+      ],
+      "description": "Se creó una notificación."
+    },
+    "AppNotification": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "type": { "$ref": "#/schemas/NotificationType" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "type", "title", "body", "createdAt", "read"],
+      "description": "Notificación de la bandeja del usuario."
+    },
+    "NotificationPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/AppNotification" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de la bandeja, de la más nueva a la más antigua."
+    },
+    "UnreadCount": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["count"],
+      "description": "Notificaciones sin leer de la bandeja."
+    },
+    "MarkNotificationReadRequest": {
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["notificationId"],
+      "additionalProperties": false,
+      "description": "Notificación a marcar como leída."
+    },
+    "NotificationPreferenceEntry": {
+      "type": "object",
+      "properties": {
+        "type": { "$ref": "#/schemas/NotificationType" },
+        "channels": {
+          "maxItems": 3,
+          "type": "array",
+          "items": { "$ref": "#/schemas/NotificationChannel" }
+        }
+      },
+      "required": ["type", "channels"],
+      "description": "Canales por los que el usuario recibe un tipo de notificación."
+    },
+    "NotificationPreferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "maxItems": 4,
+          "type": "array",
+          "items": { "$ref": "#/schemas/NotificationPreferenceEntry" }
+        },
+        "quietStart": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 5,
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "quietEnd": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 5,
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "timezone": { "type": "string", "minLength": 1, "maxLength": 64 }
+      },
+      "required": ["enabled", "quietStart", "quietEnd", "timezone"],
+      "additionalProperties": false,
+      "description": "Preferencias de notificaciones del usuario."
+    },
+    "EmailTemplate": {
+      "type": "string",
+      "enum": [
+        "verify_email",
+        "password_reset",
+        "mfa_code",
+        "email_change",
+        "invitation"
+      ],
+      "description": "Plantilla de correo transaccional."
+    },
+    "TemplateParameter": {
+      "type": "string",
+      "enum": ["code", "link", "display_name", "tenant_name", "reference"],
+      "description": "Nombre de un dato que llena una plantilla."
+    },
+    "TemplateParameterValue": {
+      "type": "object",
+      "properties": {
+        "name": { "$ref": "#/schemas/TemplateParameter" },
+        "value": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "required": ["name", "value"],
+      "additionalProperties": false,
+      "description": "Valor de un dato de plantilla."
+    },
+    "SendEmailInput": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "template": { "$ref": "#/schemas/EmailTemplate" },
+        "to": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        "locale": { "type": "string", "minLength": 2, "maxLength": 35 },
+        "parameters": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/TemplateParameterValue" }
+        }
+      },
+      "required": ["messageId", "template", "to", "parameters"],
+      "additionalProperties": false,
+      "description": "Correo transaccional a enviar, con sus datos de plantilla."
+    },
+    "SendEmailResult": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        }
+      },
+      "required": ["messageId"],
+      "description": "Correo transaccional aceptado para envío."
+    },
+    "NotifyUserInput": {
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "user": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "type": { "$ref": "#/schemas/NotificationType" },
+        "parameters": {
+          "maxItems": 10,
+          "type": "array",
+          "items": { "$ref": "#/schemas/TemplateParameterValue" }
+        }
+      },
+      "required": ["notificationId", "user", "tenantId", "type", "parameters"],
+      "additionalProperties": false,
+      "description": "Notificación a entregar a un usuario por sus canales."
+    },
+    "NotifyUserResult": {
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "channels": {
+          "maxItems": 3,
+          "type": "array",
+          "items": { "$ref": "#/schemas/NotificationChannel" }
+        }
+      },
+      "required": ["notificationId", "channels"],
+      "description": "Canales por los que salió una notificación."
+    },
+    "EraseNotificationsUserInput": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        }
+      },
+      "required": ["user"],
+      "additionalProperties": false,
+      "description": "Usuario cuyos datos de notificaciones se borran."
+    },
+    "EraseNotificationsUserResult": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "affectedRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["userId", "affectedRows"],
+      "description": "Filas de notificaciones borradas para un usuario."
+    }
+  },
+  "routes": [
+    {
+      "name": "listInbox",
+      "id": "notifications.inbox.list",
+      "method": "GET",
+      "path": "/v1/notifications",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/PageQuery"
+      },
+      "response": { "$ref": "#/schemas/NotificationPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Lista las notificaciones de la bandeja del usuario."
+    },
+    {
+      "name": "getUnreadCount",
+      "id": "notifications.inbox.unread-count",
+      "method": "GET",
+      "path": "/v1/notifications/unread-count",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/UnreadCount" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Cuenta las notificaciones sin leer de la bandeja del usuario."
+    },
+    {
+      "name": "markRead",
+      "id": "notifications.inbox.mark-read",
+      "method": "POST",
+      "path": "/v1/notifications/{notificationId}/read",
+      "version": 1,
+      "pathParams": ["notificationId"],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/MarkNotificationReadRequest" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "NOTIFICATIONS.INBOX.NOT_FOUND"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Marca como leída una notificación; repetirlo no falla."
+    },
+    {
+      "name": "markAllRead",
+      "id": "notifications.inbox.mark-all-read",
+      "method": "POST",
+      "path": "/v1/notifications/read-all",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Marca como leídas todas las notificaciones del usuario."
+    },
+    {
+      "name": "getPreferences",
+      "id": "notifications.preferences.get",
+      "method": "GET",
+      "path": "/v1/notification-preferences",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/NotificationPreferences" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Devuelve las preferencias de notificaciones del usuario."
+    },
+    {
+      "name": "savePreferences",
+      "id": "notifications.preferences.save",
+      "method": "PUT",
+      "path": "/v1/notification-preferences",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/NotificationPreferences" },
+      "response": null,
+      "successStatus": 204,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.VALIDATION.INVALID_INPUT",
+        "NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS"
+      ],
+      "access": { "kind": "authenticated" },
+      "description": "Guarda las preferencias de notificaciones del usuario."
+    }
+  ],
+  "operations": [
+    {
+      "name": "sendEmail",
+      "id": "notifications.messages.send.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/SendEmailInput" },
+      "output": { "$ref": "#/schemas/SendEmailResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Un correo ya enviado no se puede retirar.",
+      "errors": [
+        "NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED",
+        "NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN"
+      ],
+      "timeoutMs": 6000,
+      "description": "Envía un correo transaccional. El código de un solo uso viaja por la API interna y nunca por el bus."
+    },
+    {
+      "name": "notifyUser",
+      "id": "notifications.users.notify.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/NotifyUserInput" },
+      "output": { "$ref": "#/schemas/NotifyUserResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Una notificación ya entregada no se retira; el paso corre después del pivote de la saga y se repite con el mismo notificationId.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Entrega una notificación a un usuario por sus canales."
+    },
+    {
+      "name": "eraseUserData",
+      "id": "notifications.user-data.erase.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/EraseNotificationsUserInput" },
+      "output": { "$ref": "#/schemas/EraseNotificationsUserResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "El borrado de datos del usuario es irreversible y corre después del pivote de la saga.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra las notificaciones, preferencias y entregas de un usuario."
+    },
+    {
+      "name": "tenantMoveSync",
+      "id": "notifications.tenant-move.sync.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveProgress"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "notifications.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia un lote de los datos del tenant en notifications al destino mientras las escrituras siguen; la saga repite hasta completar la ronda."
+    },
+    {
+      "name": "tenantMoveFinalize",
+      "id": "notifications.tenant-move.finalize.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveVerification"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "notifications.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia la última ronda de notifications con el tenant congelado y verifica conteos y sumas."
+    },
+    {
+      "name": "tenantMoveAbort",
+      "id": "notifications.tenant-move.abort.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación de la copia: descarta lo copiado al destino y no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Cancela el traslado de un tenant y descarta lo copiado de notifications al destino."
+    },
+    {
+      "name": "tenantMoveCleanup",
+      "id": "notifications.tenant-move.cleanup.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Borra del origen los datos ya trasladados una vez vencida la gracia: no se restauran.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra de notifications los datos del tenant trasladado cuando pasa el periodo de gracia."
+    }
+  ],
+  "events": [
+    {
+      "name": "notificationCreated",
+      "type": "notifications.notification.created.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/NotificationCreatedPayload" },
+      "description": "Se creó una notificación: tenant, tipo y canales usados, sin texto. Reports lo cuenta."
+    }
+  ],
+  "commands": [],
+  "errors": {
+    "NotificationsErrorCode": [
+      {
+        "name": "InboxNotFound",
+        "code": "NOTIFICATIONS.INBOX.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_notifications_inbox_not_found",
+        "description": "La notificación no existe en la bandeja del usuario."
+      },
+      {
+        "name": "PreferencesInvalidQuietHours",
+        "code": "NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_notifications_preferences_invalid_quiet_hours",
+        "description": "El horario de silencio es inválido: falta la zona horaria o las horas no tienen el formato HH:mm."
+      },
+      {
+        "name": "EmailRecipientSuppressed",
+        "code": "NOTIFICATIONS.EMAIL.RECIPIENT_SUPPRESSED",
+        "httpStatus": 422,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_notifications_email_recipient_suppressed",
+        "description": "El destinatario está en la lista de supresión (rebote o queja) y no se le envía correo."
+      },
+      {
+        "name": "EmailTemplateUnknown",
+        "code": "NOTIFICATIONS.EMAIL.TEMPLATE_UNKNOWN",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_notifications_email_template_unknown",
+        "description": "La plantilla de correo pedida no existe."
+      },
+      {
+        "name": "RealtimeUnauthenticated",
+        "code": "NOTIFICATIONS.REALTIME.UNAUTHENTICATED",
+        "httpStatus": 401,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_notifications_realtime_unauthenticated",
+        "description": "La conexión en tiempo real no trae una credencial válida."
+      }
+    ]
+  }
+}

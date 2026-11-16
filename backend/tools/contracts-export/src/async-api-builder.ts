@@ -94,12 +94,12 @@ export class AsyncApiBuilder {
 
   private sendersOf(
     contracts: readonly ServiceContract[],
-  ): Map<MessageDefinition, string[]> {
-    const senders = new Map<MessageDefinition, string[]>();
+  ): Map<string, string[]> {
+    const senders = new Map<string, string[]>();
     for (const contract of contracts) {
       for (const command of contract.sends) {
-        senders.set(command, [
-          ...(senders.get(command) ?? []),
+        senders.set(command.type, [
+          ...(senders.get(command.type) ?? []),
           contract.service,
         ]);
       }
@@ -136,7 +136,7 @@ export class AsyncApiBuilder {
    */
   private addQueues(
     contract: ServiceContract,
-    senders: ReadonlyMap<MessageDefinition, readonly string[]>,
+    senders: ReadonlyMap<string, readonly string[]>,
     channels: JsonObject,
     operations: JsonObject,
   ): void {
@@ -157,7 +157,7 @@ export class AsyncApiBuilder {
       };
       if (queue.commands.length > 0) {
         const producers = [
-          ...new Set(queue.commands.flatMap((c) => senders.get(c) ?? [])),
+          ...new Set(queue.commands.flatMap((c) => senders.get(c.type) ?? [])),
         ].sort();
         operations[`${queue.name}.send`] = {
           action: AsyncApiAction.Send,

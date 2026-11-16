@@ -3,6 +3,7 @@ import type { OperationDefinition } from '@contracts/platform';
 import type { PurgeableStore } from '@platform/kernel';
 import type { FinalOutcome } from '@platform/primitives';
 import { IdempotencyStore } from '@platform/kernel';
+import type { InternalRequestSigner } from '../signing/internal-request-signer.js';
 import type { InternalTransportKind } from './internal-transport-kind.enum.js';
 
 /** Cómo se llega por HTTP a otros servicios y cómo se firman y verifican las llamadas. */
@@ -11,6 +12,11 @@ export interface InternalApiHttpOptions {
   readonly baseUrls: Readonly<Record<string, string>>;
   /** Secreto HMAC compartido entre servicios. Llega de la configuración validada, nunca escrito en el código. */
   readonly secret: string;
+  /**
+   * Firmador de las llamadas salientes. Sin valor, `HmacSigner` con `secret`. Un servicio que elige
+   * `INTERNAL_API_SIGNER=sigv4` pasa aquí el `SigV4Signer` de `@platform/adapters-aws`.
+   */
+  readonly signer?: InternalRequestSigner;
   /** Ventana de validez de una firma. Por defecto 60 000 ms. */
   readonly signatureWindowMs?: number;
 }

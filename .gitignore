@@ -69,3 +69,6 @@ test-output
 front/**/build/
 *.iml
 .flutter-plugins-dependencies
+
+# salidas del pipeline de despliegue
+.artifacts/

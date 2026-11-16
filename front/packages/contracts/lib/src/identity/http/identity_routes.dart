@@ -1265,18 +1265,18 @@ abstract final class IdentityRoutes {
         decodeResponse: SessionTokens.fromJson,
       );
 
-  /// Crea un tenant y deja al usuario autenticado como dueño.
+  /// Inicia el aprovisionamiento de un tenant y deja al usuario autenticado como dueño.
   ///
   /// `POST /v1/tenants`
   static const createTenant =
-      RouteDescriptor<CreateTenantRequest, TenantSummary>(
+      RouteDescriptor<CreateTenantRequest, TenantCreation>(
         id: 'identity.tenants.create',
         method: HttpMethod.post,
         path: '/v1/tenants',
         version: 1,
         pathParams: <String>[],
         requestLocation: RequestLocation.body,
-        successStatus: 201,
+        successStatus: 202,
         errors: <String>[
           'IDENTITY.SESSION.REVOKED',
           'IDENTITY.SESSION.EXPIRED',
@@ -1291,8 +1291,8 @@ abstract final class IdentityRoutes {
         platformRoles: <String>[],
         encodeRequest: CreateTenantRequest.encode,
         validateRequest: CreateTenantRequestSchema.validate,
-        validateResponse: TenantSummarySchema.validateIncoming,
-        decodeResponse: TenantSummary.fromJson,
+        validateResponse: TenantCreationSchema.validateIncoming,
+        decodeResponse: TenantCreation.fromJson,
       );
 
   /// Devuelve el tenant de la sesión actual.
@@ -2099,5 +2099,65 @@ abstract final class IdentityRoutes {
     platformRoles: <String>[],
     encodeRequest: RevokeApiKeyRequest.encode,
     validateRequest: RevokeApiKeyRequestSchema.validate,
+  );
+
+  /// Inicia el borrado de la cuenta del usuario autenticado. La saga se consulta con su id.
+  ///
+  /// `POST /v1/me/deletion`
+  static const startAccountDeletion =
+      RouteDescriptor<Empty, AccountDeletionStarted>(
+        id: 'identity.me.deletion',
+        method: HttpMethod.post,
+        path: '/v1/me/deletion',
+        version: 1,
+        pathParams: <String>[],
+        requestLocation: RequestLocation.body,
+        successStatus: 202,
+        errors: <String>[
+          'IDENTITY.SESSION.REVOKED',
+          'IDENTITY.SESSION.EXPIRED',
+          'IDENTITY.TOKEN.REVOKED',
+          'IDENTITY.USER.SUSPENDED',
+          'IDENTITY.TENANT.SUSPENDED',
+          'IDENTITY.TOKEN.STALE_PERMISSIONS',
+          'IDENTITY.MFA.STEP_UP_REQUIRED',
+        ],
+        requiresAuth: true,
+        permissions: <String>[],
+        platformRoles: <String>[],
+        mfaMaxAgeMinutes: 10,
+        encodeRequest: Empty.encode,
+        validateRequest: EmptySchema.validate,
+        validateResponse: AccountDeletionStartedSchema.validateIncoming,
+        decodeResponse: AccountDeletionStarted.fromJson,
+      );
+
+  /// Devuelve el estado de una saga propia o de su tenant.
+  ///
+  /// `GET /v1/sagas/{sagaId}`
+  static const getSaga = RouteDescriptor<GetSagaRequest, SagaSummary>(
+    id: 'identity.sagas.get',
+    method: HttpMethod.get,
+    path: '/v1/sagas/{sagaId}',
+    version: 1,
+    pathParams: <String>['sagaId'],
+    requestLocation: RequestLocation.query,
+    successStatus: 200,
+    errors: <String>[
+      'IDENTITY.SESSION.REVOKED',
+      'IDENTITY.SESSION.EXPIRED',
+      'IDENTITY.TOKEN.REVOKED',
+      'IDENTITY.USER.SUSPENDED',
+      'IDENTITY.TENANT.SUSPENDED',
+      'IDENTITY.TOKEN.STALE_PERMISSIONS',
+      'PLATFORM.RESOURCE.NOT_FOUND',
+    ],
+    requiresAuth: true,
+    permissions: <String>[],
+    platformRoles: <String>[],
+    encodeRequest: GetSagaRequest.encode,
+    validateRequest: GetSagaRequestSchema.validate,
+    validateResponse: SagaSummarySchema.validateIncoming,
+    decodeResponse: SagaSummary.fromJson,
   );
 }

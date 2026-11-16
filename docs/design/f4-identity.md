@@ -110,9 +110,9 @@ El esquema `AccessTokenClaimsSchema` vive en `@contracts/identity` (`schemas/acc
 | 6    | `sid` revocado (Bloom local, luego Valkey)             | `IDENTITY.SESSION.REVOKED`                                 |
 | 7    | Época del usuario: `iat` anterior o usuario suspendido | `IDENTITY.TOKEN.REVOKED` o `IDENTITY.USER.SUSPENDED`       |
 | 8    | Época del tenant: `iat` anterior o tenant suspendido   | `IDENTITY.TOKEN.REVOKED` o `IDENTITY.TENANT.SUSPENDED`     |
-| 9    | `pv` distinto del actual                               | `IDENTITY.TOKEN.STALE_PERMISSIONS`                         |
+| 9    | `pv` anterior al actual                                | `IDENTITY.TOKEN.STALE_PERMISSIONS`                         |
 
-Los pasos 6 a 9 coinciden con `SessionGuardErrors` del contrato. Si Valkey falla en los pasos 6 a 9, el verificador usa el último valor de su caché local. Si no tiene ninguno, responde `PLATFORM.RESILIENCE.CIRCUIT_OPEN` (503): nunca acepta un token sin poder revisar la revocación.
+El paso 9 acepta un `pv` más nuevo que el de la caché local, porque las versiones solo suben y la caché puede ir unos segundos detrás de identity; rechaza solo uno más viejo (la versión del tenant o la del usuario menor que la vigente). Los pasos 6 a 9 coinciden con `SessionGuardErrors` del contrato. Si Valkey falla en los pasos 6 a 9, el verificador usa el último valor de su caché local. Si no tiene ninguno, responde `PLATFORM.RESILIENCE.CIRCUIT_OPEN` (503): nunca acepta un token sin poder revisar la revocación.
 
 #### 3.2.3 Estado compartido en Valkey
 
@@ -241,7 +241,7 @@ Enums: `AuthMethod` (`Jwt`, `ApiKey`), `RateLimitTier` (`Auth`, `Sensitive`, `St
 
 #### 3.4.3 API interna por HTTP
 
-`InternalApiController`, `HttpTransport` y las clases HMAC (`HmacInternalCallAuthenticator`, `HmacInternalCallSigner`) son de `@platform/internal-api`. `@platform/http` solo monta el controller, sin pasar por `EndpointGuard`, en `POST /internal/operations/:operationId`.
+`InternalApiController`, `HttpTransport` y las clases HMAC (`HmacInternalCallAuthenticator`, `HmacSigner`) son de `@platform/internal-api`. `@platform/http` solo monta el controller, sin pasar por `EndpointGuard`, en `POST /internal/operations/:operationId`.
 
 - Autenticación en local: firma HMAC-SHA256 del método, path, hora y hash del cuerpo (header `x-internal-signature`, ventana de 60 s). El adaptador SigV4 de AWS llega en F12.
 - `HttpTransport` firma la llamada y propaga `traceparent`, tenant, actor e idempotencia.

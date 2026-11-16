@@ -127,5 +127,27 @@
   "error_identity_api_key_permission_not_grantable": "No puedes otorgar permisos que tu cuenta no tiene.",
   "error_identity_service_account_disabled": "La cuenta de servicio está deshabilitada.",
 
+  "error_platform_access_feature_not_included": "Tu plan no incluye esta función.",
+  "error_platform_access_flag_disabled": "Esta función todavía no está disponible para ti.",
+  "error_tasks_task_not_found": "No encontramos esa tarea.",
+  "error_tasks_task_version_conflict": "La tarea cambió mientras la editabas. Vuelve a cargarla.",
+  "error_tasks_search_query_too_short": "Escribe al menos dos caracteres para buscar.",
+  "error_notifications_inbox_not_found": "No encontramos esa notificación.",
+  "error_notifications_preferences_invalid_quiet_hours": "Revisa el horario de silencio: usa horas en formato 24 horas y elige tu zona horaria.",
+  "error_notifications_realtime_unauthenticated": "No se pudo abrir la conexión en vivo. Inicia sesión de nuevo.",
+  "error_reports_run_not_found": "No encontramos esa ejecución del reporte.",
+  "error_reports_run_not_ready": "El reporte todavía se está generando. Espera un momento.",
+  "error_reports_run_expired": "Este reporte venció. Genera uno nuevo.",
+  "error_reports_type_unknown": "Ese reporte no existe.",
+  "error_reports_params_invalid_range": "Revisa las fechas: el fin debe ser posterior al inicio y el rango no puede ser demasiado largo.",
+  "error_reports_result_too_large": "El reporte es demasiado grande. Acota el rango de fechas.",
+  "error_billing_subscription_not_found": "Tu organización todavía no tiene una suscripción.",
+  "error_billing_subscription_not_changeable": "No puedes cambiar de plan mientras la suscripción esté suspendida o cancelada.",
+  "error_billing_plan_not_available": "Ese plan no está disponible.",
+  "error_billing_plan_usage_exceeds_limit": "Tu uso actual supera los límites de ese plan. Reduce el uso o elige otro plan.",
+  "error_billing_invoice_not_found": "No encontramos esa factura.",
+  "error_billing_invoice_invalid_state": "Esa factura no admite esta operación en su estado actual.",
+  "error_billing_quota_exceeded": "Alcanzaste el límite de tu plan. Cambia de plan para continuar.",
+
   "errorFallback": "Algo salió mal. Intenta de nuevo."
 }

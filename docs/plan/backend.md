@@ -577,7 +577,7 @@ export abstract class InternalCallSigner {
 export abstract class InternalCallAuthenticator {
   abstract authenticate(request: SignableRequest): Promise<void>; // lanza si no es válida
 }
-export class HmacInternalCallSigner extends InternalCallSigner {}
+export class HmacSigner extends InternalCallSigner {}
 export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {} // ventana de 60 s
 
 // @platform/internal-api/nest
@@ -900,7 +900,7 @@ Las tres tropas parten de la ola 0 integrada y no comparten carpetas. Los jobs d
 - **Carpetas exclusivas:** `backend/libs/platform/internal-api/**`.
 - **Cierra:** INT-1, INT-2, INT-3, INT-4, INT-5, INT-6, INT-7, T1, T2, T3, T5, T7, T8.
 - **Consume:** `ResilienceRegistry` y `PolicyName`, `RetryPolicy`, `Guard`, `TenantId`, `ScheduledJob`, `TraceContextRestorer`, `TransactionManager`, `IdempotencyStore`.
-- **Produce:** `HttpTransport`, `InternalCallSigner`, `InternalCallAuthenticator`, `HmacInternalCallSigner`, `HmacInternalCallAuthenticator`, `InternalApiController`, `InternalApiModule`, `@InternalHandler`, `OperationDispatcher`, `IdempotencyGate`, `UnitOfWorkRunner`, `OperationMetadata` como clase, `IdempotencyKeyPolicy`, `PayloadLimit`, `CallAttempt`, `ProcessedOperationRetentionJob`, `@platform/internal-api/test-utils`. La forma de `InternalClient.call` y `callById` y la de `OperationInvoker` no cambian, porque WP-12 las consume.
+- **Produce:** `HttpTransport`, `InternalCallSigner`, `InternalCallAuthenticator`, `HmacSigner`, `HmacInternalCallAuthenticator`, `InternalApiController`, `InternalApiModule`, `@InternalHandler`, `OperationDispatcher`, `IdempotencyGate`, `UnitOfWorkRunner`, `OperationMetadata` como clase, `IdempotencyKeyPolicy`, `PayloadLimit`, `CallAttempt`, `ProcessedOperationRetentionJob`, `@platform/internal-api/test-utils`. La forma de `InternalClient.call` y `callById` y la de `OperationInvoker` no cambian, porque WP-12 las consume.
 - **Aceptación específica:**
   - Prueba de extremo a extremo con dos `InternalApiModule` en un solo proceso de Nest y `HttpTransport` sobre un servidor HTTP real: la llamada llega, se valida contra el contrato en el cliente antes de salir, propaga `traceparent` y se rechaza con firma inválida o fuera de la ventana de 60 s.
   - `InternalClient` no tiene bucle de reintento propio ni las opciones `sleep`, `random`, `clock`; un `transient-failure` se reintenta por el `ResilienceRegistry` con la política `ExternalApi`.

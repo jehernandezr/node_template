@@ -1,4 +1,4 @@
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide Task, TaskStatus, TasksOperation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
 import 'package:mf_tasks/src/screens/task_form_controller.dart';

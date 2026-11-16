@@ -11,3 +11,4 @@ export * from './invitation.type.js';
 export * from './api-key.type.js';
 export * from './jwks.type.js';
 export * from './security.type.js';
+export * from './orchestration.type.js';

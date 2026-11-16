@@ -6,4 +6,8 @@
 library;
 
 export 'platform/platform.dart';
+export 'billing/billing.dart';
 export 'identity/identity.dart';
+export 'notifications/notifications.dart';
+export 'reports/reports.dart';
+export 'tasks/tasks.dart';

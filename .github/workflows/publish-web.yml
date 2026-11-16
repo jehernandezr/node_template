@@ -1,0 +1,72 @@
+# Publica la web de Flutter en el bucket del ambiente. Un push a main publica solo dev.
+name: Publish web
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente donde se publica la web
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+        default: dev
+  push:
+    branches:
+      - main
+    paths:
+      - 'front/**'
+      - '.github/workflows/publish-web.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-web-${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  ENVIRONMENT: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+
+jobs:
+  build-and-publish:
+    name: Compilar y publicar la web
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Leer la versión de Flutter
+        id: flutter-version
+        run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          cache: true
+
+      - name: Compilar la web
+        working-directory: front/apps/web
+        run: |
+          flutter pub get
+          flutter build web --release --source-maps
+
+      - name: Credenciales del rol de la web
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ vars.AWS_WEB_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Subir la web e invalidar CloudFront
+        env:
+          NAME_PREFIX: ${{ vars.NAME_PREFIX }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: backend/infra/scripts/publish-web.sh "$ENVIRONMENT"

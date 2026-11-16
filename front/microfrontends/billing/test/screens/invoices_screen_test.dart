@@ -7,7 +7,7 @@ import 'package:mf_billing/src/shared/types/billing_types.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:test_utils/test_utils.dart';
 import 'package:utils/utils.dart' show formatMoney;
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide Currency, Invoice;
 import 'package:mf_billing/src/shared/enums/billing_enums.dart';
 import 'package:material_ui/material_ui.dart';
 

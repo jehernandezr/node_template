@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide Task, TaskStatus;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_tasks/src/data/fake_tasks_repository.dart';
 import 'package:mf_tasks/src/data/tasks_repository.dart';

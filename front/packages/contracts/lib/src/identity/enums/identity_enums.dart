@@ -11,6 +11,8 @@ enum Permission {
   tasksWrite('tasks:write'),
   billingRead('billing:read'),
   billingWrite('billing:write'),
+  reportsRead('reports:read'),
+  reportsWrite('reports:write'),
   backofficeAccess('backoffice:access'),
   identityMembersRead('identity:members:read'),
   identityMembersManage('identity:members:manage'),
@@ -66,7 +68,8 @@ enum PlatformRole {
 enum PlanFeature {
   aiAssistant('ai_assistant'),
   webhooks('webhooks'),
-  billing('billing');
+  billing('billing'),
+  advancedReports('advanced_reports');
 
   const PlanFeature(this.wireCode);
 
@@ -944,7 +947,9 @@ enum IdentityRoute {
   listApiKeys('identity.api-keys.list'),
   createApiKey('identity.api-keys.create'),
   rotateApiKey('identity.api-keys.rotate'),
-  revokeApiKey('identity.api-keys.revoke');
+  revokeApiKey('identity.api-keys.revoke'),
+  startAccountDeletion('identity.me.deletion'),
+  getSaga('identity.sagas.get');
 
   const IdentityRoute(this.wireCode);
 
@@ -974,7 +979,15 @@ enum IdentityOperation {
   discardTenant('identity.tenants.discard.v1'),
   suspendTenant('identity.tenants.suspend.v1'),
   reactivateTenant('identity.tenants.reactivate.v1'),
-  authenticateApiKey('identity.api-keys.authenticate.v1');
+  authenticateApiKey('identity.api-keys.authenticate.v1'),
+  activateTenant('identity.tenants.activate.v1'),
+  eraseUser('identity.users.erase.v1'),
+  listPushTargets('identity.devices.list-push-targets.v1'),
+  listMembersByPermission('identity.members.list-by-permission.v1'),
+  tenantMoveSync('identity.tenant-move.sync.v1'),
+  tenantMoveFinalize('identity.tenant-move.finalize.v1'),
+  tenantMoveAbort('identity.tenant-move.abort.v1'),
+  tenantMoveCleanup('identity.tenant-move.cleanup.v1');
 
   const IdentityOperation(this.wireCode);
 
@@ -1010,7 +1023,8 @@ enum IdentityEvent {
   permissionsChanged('identity.permissions.changed.v1'),
   apiKeyCreated('identity.api-key.created.v1'),
   apiKeyRevoked('identity.api-key.revoked.v1'),
-  securityAlertRaised('identity.security-alert.raised.v1');
+  securityAlertRaised('identity.security-alert.raised.v1'),
+  userErased('identity.user.erased.v1');
 
   const IdentityEvent(this.wireCode);
 
@@ -1052,7 +1066,8 @@ enum IdentityTopic {
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
 enum IdentityQueue {
-  accessProjection('identity-access-projection');
+  accessProjection('identity-access-projection'),
+  billing('identity-billing');
 
   const IdentityQueue(this.wireCode);
 
@@ -1061,6 +1076,56 @@ enum IdentityQueue {
 
   /// Valor con [code] como `wireCode`, o null si es desconocido.
   static IdentityQueue? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}
+
+/// Saga que orquesta identity.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum IdentitySaga {
+  tenantOnboarding('identity.tenant-onboarding'),
+  deleteAccount('identity.delete-account'),
+  moveTenant('identity.move-tenant');
+
+  const IdentitySaga(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static IdentitySaga? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}
+
+/// Estado de una saga de identity.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum IdentitySagaStatus {
+  running('running'),
+  suspended('suspended'),
+  compensating('compensating'),
+  completed('completed'),
+  compensated('compensated'),
+  compensationFailed('compensation_failed'),
+  requiresIntervention('requires_intervention');
+
+  const IdentitySagaStatus(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static IdentitySagaStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
     }

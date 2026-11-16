@@ -42,6 +42,19 @@ class MigratingDataSource extends StubDataSource {
   }
 }
 
+/** Base de prueba configurada con réplicas: TypeORM deja `options.database` sin valor y el nombre va en `replication.master`. */
+class ReplicatedDataSource extends MigratingDataSource {
+  constructor(label: string) {
+    super(label);
+    Object.assign(this, {
+      options: {
+        type: 'postgres',
+        replication: { master: { database: label }, slaves: [] },
+      },
+    });
+  }
+}
+
 /** `CatalogDataSource` que entrega una base de prueba. */
 class StubCatalogDataSource extends CatalogDataSource {
   constructor(private readonly dataSource: StubDataSource) {
@@ -132,6 +145,21 @@ describe('ShardedMigrationRunner', () => {
       expect(reports[0].applied).toEqual(['CreateCatalog1']);
       expect(reports[1].applied).toEqual(['CreateProbes1', 'Audit2']);
       expect(reports[2].applied).toEqual([]);
+    });
+
+    it('reports the master database when the data source uses replication', async () => {
+      const runner = runnerFor(new ReplicatedDataSource('catalog'), {
+        test_shard_0: new ReplicatedDataSource('test_shard_0'),
+        test_shard_1: new ReplicatedDataSource('test_shard_1'),
+      });
+
+      const reports = await runner.migrateAll();
+
+      expect(reports.map((report) => report.database)).toEqual([
+        'catalog',
+        'test_shard_0',
+        'test_shard_1',
+      ]);
     });
 
     it('applies nothing when a second run finds every database up to date', async () => {

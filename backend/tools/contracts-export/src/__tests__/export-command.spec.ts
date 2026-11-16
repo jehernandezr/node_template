@@ -73,7 +73,8 @@ describe('ExportCommand', () => {
       ).toBeDefined();
       expect(fileSystem.contentOf(paths.topology)).toBeDefined();
       expect(fileSystem.contentOf(paths.asyncApi)).toBeDefined();
-      expect(output.infoLines).toHaveLength(4);
+      // platform, identity y billing, la topología y el asyncapi.
+      expect(output.infoLines).toHaveLength(5);
     });
 
     it('check passes when the files match the contracts', async () => {

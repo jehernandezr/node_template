@@ -12,3 +12,4 @@ export * from './api-key.schema.js';
 export * from './jwks.schema.js';
 export * from './event.schema.js';
 export * from './access-token.schema.js';
+export * from './orchestration.schema.js';
