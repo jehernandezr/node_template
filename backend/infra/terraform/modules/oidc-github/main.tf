@@ -85,13 +85,23 @@ resource "aws_s3_bucket_versioning" "artifacts" {
   }
 }
 
+module "artifacts_kms" {
+  source = "../kms-key"
+
+  alias       = "${var.name_prefix}-artifacts"
+  description = "Cifrado del bucket de artefactos del despliegue de ${var.name_prefix}"
+  tags        = var.tags
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
   bucket = aws_s3_bucket.artifacts.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = module.artifacts_kms.arn
     }
+    bucket_key_enabled = true
   }
 }
 
@@ -173,6 +183,12 @@ data "aws_iam_policy_document" "deploy" {
     actions   = ["s3:GetObject", "s3:GetObjectVersion"]
     resources = ["${aws_s3_bucket.artifacts.arn}/*"]
   }
+
+  statement {
+    sid       = "ArtifactsKey"
+    actions   = ["kms:Decrypt"]
+    resources = [module.artifacts_kms.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "deploy" {
@@ -233,6 +249,12 @@ data "aws_iam_policy_document" "publish" {
     sid       = "ArtifactsWrite"
     actions   = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion"]
     resources = ["${aws_s3_bucket.artifacts.arn}/*"]
+  }
+
+  statement {
+    sid       = "ArtifactsKey"
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
+    resources = [module.artifacts_kms.arn]
   }
 }
 
