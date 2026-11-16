@@ -119,6 +119,11 @@
       "@platform/scheduling/nest": [
         "./libs/platform/scheduling/src/nest/index.ts"
       ],
+      "@platform/http": ["./libs/platform/http/src/index.ts"],
+      "@platform/http/nest": ["./libs/platform/http/src/nest/index.ts"],
+      "@platform/http/test-utils": [
+        "./libs/platform/http/src/__tests__/utils/index.ts"
+      ],
       "@platform/service": ["./libs/platform/service/src/index.ts"],
       "@platform/service/nest": ["./libs/platform/service/src/nest/index.ts"],
       "@platform/service/test-utils": [

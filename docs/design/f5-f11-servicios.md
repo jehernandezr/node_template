@@ -1,8 +1,7 @@
 # Diseño de las fases F5 a F11: servicios de ejemplo, negocio y escala
 
-- Estado: Propuesta (pendiente de la sección 15)
+- Estado: Aprobado el 2026-11-16, con la recomendación de cada decisión de la sección 15
 - Fecha: 2026-11-16
-- Rama de trabajo: `docs/diseno-f5-f11`
 - ADR relacionados: [0007](../adr/0007-mensajeria-topologia-tipada-sns-sqs-cloudevents.md), [0008](../adr/0008-sagas-orquestadas-bitacora-persistente.md), [0010](../adr/0010-sharding-logico-residencia-region.md), [0011](../adr/0011-tiempo-real-socketio-sse.md), [0013](../adr/0013-modulo-ia-puertos-claude.md), [0014](../adr/0014-acuerdos-documentos-firmados.md), [0020](../adr/0020-terraform-por-stacks-y-runtime-por-servicio.md), [0023](../adr/0023-enrutamiento-de-datos-de-identity.md), [0024](../adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md), [0025](../adr/0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md) y [0026](../adr/0026-jobs-programados-scheduledjob-y-joblock.md)
 
 Este documento reparte la construcción de los servicios `tasks`, `notifications`, `reports` y `billing`, de sus pantallas, de las sagas de ejemplo, del sharding real y de los generadores en las tropas de las olas 5 a 7 del [plan](../plan/README.md#orden-de-ejecución-por-olas). No contiene código de producción: fija nombres, carpetas, contratos, tablas, eventos, colas, permisos, paquetes y decisiones. Sigue el formato del [diseño de F4](f4-identity.md) y no repite lo que ese documento ya fija: la estructura de un servicio ([sección 4](f4-identity.md#4-estructura-de-backendappsidentity)), las piezas de plataforma ([sección 3](f4-identity.md#3-piezas-de-plataforma-nuevas)) y las reglas de paquetes ([sección 6](f4-identity.md#6-paquetes-de-trabajo)).
@@ -710,7 +709,7 @@ Las fechas se comprobaron con `npm view` el 16 de noviembre de 2026: todas tiene
 
 ## 15. Decisiones que requieren al usuario
 
-Cada decisión tiene opciones y una recomendación. Ninguna está tomada en el README, los ADR ni el diseño de F4. Hasta que el usuario las apruebe, las tropas no arrancan lo que dependa de ellas.
+Cada decisión tiene opciones y una recomendación. El usuario aprobó todas las recomendaciones el 16 de noviembre de 2026.
 
 1. **Qué entra en "capacidades" de F5.** (a) Feature flags propios y búsqueda de texto; archivos y webhooks fuera. (b) Sumar un servicio `files`. (c) Sumar webhooks salientes. **Recomiendo (a).** Los cuatro contratos de la ola 5 no incluyen `files`, F4 deja los flags para F5 y la pantalla de `tasks` pide búsqueda de texto. Los flags viven en la configuración de cada ambiente (`ConfigFlagStore`); una tabla editable en el catálogo necesita el `backoffice-api`, que no existe.
 2. **Campos de la tarea y a quién se avisa.** (a) Solo título, descripción y estado, y se avisa a `createdBy` cuando otra persona la cambia. (b) Sumar responsable, fecha límite y prioridad. **Recomiendo (a).** Es lo que muestra la pantalla de hoy; `NotificationType.taskUpdated` necesita un destinatario y `createdBy` es el único que existe.
