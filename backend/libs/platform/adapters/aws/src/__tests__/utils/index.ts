@@ -1,4 +1,5 @@
 export { AWS_TEST_SETTINGS } from './aws-test-settings.js';
+export { CountingCredentialsProvider } from './counting-credentials-provider.js';
 export { FakeSnsClient } from './fake-sns-client.js';
 export { FakeSqsClient } from './fake-sqs-client.js';
 export {

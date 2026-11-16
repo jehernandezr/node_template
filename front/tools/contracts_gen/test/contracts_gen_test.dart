@@ -303,6 +303,8 @@ void main() {
       'kind': 'authenticated',
       'permissions': ['items:write'],
       'platformRoles': ['support'],
+      'features': ['advanced'],
+      'flags': ['beta'],
       'mfaMaxAgeMinutes': 10,
     };
     Json routed({
@@ -323,6 +325,16 @@ void main() {
         'PlatformRole': {
           'values': [
             {'name': 'Support', 'value': 'support'},
+          ],
+        },
+        'PlanFeature': {
+          'values': [
+            {'name': 'Advanced', 'value': 'advanced'},
+          ],
+        },
+        'FeatureFlag': {
+          'values': [
+            {'name': 'Beta', 'value': 'beta'},
           ],
         },
       },
@@ -365,6 +377,8 @@ void main() {
       expect(routes, contains('version: 2,'));
       expect(routes, contains("permissions: <String>['items:write'],"));
       expect(routes, contains("platformRoles: <String>['support'],"));
+      expect(routes, contains("features: <String>['advanced'],"));
+      expect(routes, contains("flags: <String>['beta'],"));
       expect(routes, contains('mfaMaxAgeMinutes: 10,'));
       expect(routes, contains('deprecated: RouteDeprecation('));
       expect(routes, contains("replacement: 'sample.items.put2',"));

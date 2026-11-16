@@ -163,6 +163,12 @@ export class SchemaExportBuilder {
     if (route.access.platformRoles) {
       access['platformRoles'] = [...route.access.platformRoles];
     }
+    if (route.access.features) {
+      access['features'] = [...route.access.features];
+    }
+    if (route.access.flags) {
+      access['flags'] = [...route.access.flags];
+    }
     if (route.access.mfaMaxAgeMinutes !== undefined) {
       access['mfaMaxAgeMinutes'] = route.access.mfaMaxAgeMinutes;
     }

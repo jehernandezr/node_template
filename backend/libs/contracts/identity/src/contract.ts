@@ -1,4 +1,7 @@
-import { defineServiceContract } from '@contracts/platform';
+import {
+  defineServiceContract,
+  defineTenantMoveOperations,
+} from '@contracts/platform';
 import {
   AccessTokenRules,
   IdentityLimits,
@@ -30,6 +33,8 @@ import {
   IdentityOperation,
   IdentityQueue,
   IdentityRoute,
+  IdentitySaga,
+  IdentitySagaStatus,
   IdentityTopic,
 } from './enums/identifiers.enum.js';
 import {
@@ -45,11 +50,13 @@ import {
   AccessProjectionQueue,
   ApiKeyCreatedEvent,
   ApiKeyRevokedEvent,
+  BillingEventsQueue,
   DeviceRegisteredEvent,
   DeviceRemovedEvent,
   IdentityEventsTopic,
   MembershipChangedEvent,
   PermissionsChangedEvent,
+  RecordUsageReference,
   SecurityAlertRaisedEvent,
   SessionRevokedEvent,
   TenantCreatedEvent,
@@ -57,6 +64,7 @@ import {
   TenantSuspendedEvent,
   TokensRevokedEvent,
   UserEmailChangedEvent,
+  UserErasedEvent,
   UserReactivatedEvent,
   UserRegisteredEvent,
   UserSuspendedEvent,
@@ -80,6 +88,7 @@ import {
   DenyDeviceApprovalRoute,
   GetJwksRoute,
   GetProfileRoute,
+  GetSagaRoute,
   GetSessionAccessRoute,
   GetTenantRoute,
   InviteUserRoute,
@@ -123,6 +132,7 @@ import {
   SignInRoute,
   SignOutRoute,
   SignUpRoute,
+  StartAccountDeletionRoute,
   StartMfaRecoveryRoute,
   StartStepUpRoute,
   StartTotpEnrollmentRoute,
@@ -138,11 +148,15 @@ import {
   VerifyStepUpRoute,
 } from './http/index.js';
 import {
+  ActivateTenantOperation,
   AuthenticateApiKeyOperation,
   CreateTenantOperation,
   DiscardTenantOperation,
+  EraseUserOperation,
   GetUserAccessOperation,
   GetUserProfileOperation,
+  ListMembersByPermissionOperation,
+  ListPushTargetsOperation,
   ReactivateTenantOperation,
   ReactivateUserOperation,
   RevokeUserSessionsOperation,
@@ -150,6 +164,8 @@ import {
   SuspendUserOperation,
 } from './internal/index.js';
 import * as schemas from './schemas/index.js';
+
+const tenantMove = defineTenantMoveOperations('identity');
 
 /** Contrato del servicio identity: acceso, sesiones, cuentas, tenants, API keys y eventos. */
 export const identityContract = defineServiceContract({
@@ -184,6 +200,8 @@ export const identityContract = defineServiceContract({
     IdentityEvent,
     IdentityTopic,
     IdentityQueue,
+    IdentitySaga,
+    IdentitySagaStatus,
   },
   constants: { IdentityLimits, MfaRules, AccessTokenRules },
   schemas: {
@@ -331,6 +349,20 @@ export const identityContract = defineServiceContract({
     ApiKeyCreatedPayload: schemas.ApiKeyCreatedPayloadSchema,
     ApiKeyRevokedPayload: schemas.ApiKeyRevokedPayloadSchema,
     SecurityAlertRaisedPayload: schemas.SecurityAlertRaisedPayloadSchema,
+    IdentitySaga: schemas.IdentitySagaSchema,
+    IdentitySagaStatus: schemas.IdentitySagaStatusSchema,
+    TenantCreation: schemas.TenantCreationSchema,
+    AccountDeletionStarted: schemas.AccountDeletionStartedSchema,
+    GetSagaRequest: schemas.GetSagaRequestSchema,
+    SagaSummary: schemas.SagaSummarySchema,
+    EraseUserInput: schemas.EraseUserInputSchema,
+    EraseUserResult: schemas.EraseUserResultSchema,
+    ListPushTargetsInput: schemas.ListPushTargetsInputSchema,
+    PushTarget: schemas.PushTargetSchema,
+    PushTargets: schemas.PushTargetsSchema,
+    ListMembersByPermissionInput: schemas.ListMembersByPermissionInputSchema,
+    UserRefPage: schemas.UserRefPageSchema,
+    UserErasedPayload: schemas.UserErasedPayloadSchema,
   },
   routes: {
     signIn: SignInRoute,
@@ -407,6 +439,8 @@ export const identityContract = defineServiceContract({
     createApiKey: CreateApiKeyRoute,
     rotateApiKey: RotateApiKeyRoute,
     revokeApiKey: RevokeApiKeyRoute,
+    startAccountDeletion: StartAccountDeletionRoute,
+    getSaga: GetSagaRoute,
   },
   operations: {
     revokeUserSessions: RevokeUserSessionsOperation,
@@ -419,6 +453,14 @@ export const identityContract = defineServiceContract({
     suspendTenant: SuspendTenantOperation,
     reactivateTenant: ReactivateTenantOperation,
     authenticateApiKey: AuthenticateApiKeyOperation,
+    activateTenant: ActivateTenantOperation,
+    eraseUser: EraseUserOperation,
+    listPushTargets: ListPushTargetsOperation,
+    listMembersByPermission: ListMembersByPermissionOperation,
+    tenantMoveSync: tenantMove.tenantMoveSync,
+    tenantMoveFinalize: tenantMove.tenantMoveFinalize,
+    tenantMoveAbort: tenantMove.tenantMoveAbort,
+    tenantMoveCleanup: tenantMove.tenantMoveCleanup,
   },
   events: {
     sessionRevoked: SessionRevokedEvent,
@@ -437,8 +479,13 @@ export const identityContract = defineServiceContract({
     apiKeyCreated: ApiKeyCreatedEvent,
     apiKeyRevoked: ApiKeyRevokedEvent,
     securityAlertRaised: SecurityAlertRaisedEvent,
+    userErased: UserErasedEvent,
   },
   topics: { events: IdentityEventsTopic },
-  queues: { accessProjection: AccessProjectionQueue },
+  queues: {
+    accessProjection: AccessProjectionQueue,
+    billing: BillingEventsQueue,
+  },
+  sends: [RecordUsageReference],
   errors: { IdentityErrorCode: identityErrorCatalog },
 });

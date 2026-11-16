@@ -41,6 +41,9 @@ String errorMessageFor(AppLocalizations l10n, String code) {
     'PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE' =>
       l10n.error_platform_http_unsupported_media_type,
     'PLATFORM.HTTP.MALFORMED_BODY' => l10n.error_platform_http_malformed_body,
+    'PLATFORM.ACCESS.FEATURE_NOT_INCLUDED' =>
+      l10n.error_platform_access_feature_not_included,
+    'PLATFORM.ACCESS.FLAG_DISABLED' => l10n.error_platform_access_flag_disabled,
     'PLATFORM.RESOURCE.NOT_FOUND' => l10n.error_platform_resource_not_found,
     'PLATFORM.CONFLICT.VERSION_MISMATCH' =>
       l10n.error_platform_conflict_version_mismatch,
@@ -65,6 +68,16 @@ String errorMessageFor(AppLocalizations l10n, String code) {
       l10n.error_platform_resilience_bulkhead_full,
     'PLATFORM.RESILIENCE.OVERLOADED' =>
       l10n.error_platform_resilience_overloaded,
+    'BILLING.SUBSCRIPTION.NOT_FOUND' =>
+      l10n.error_billing_subscription_not_found,
+    'BILLING.SUBSCRIPTION.NOT_CHANGEABLE' =>
+      l10n.error_billing_subscription_not_changeable,
+    'BILLING.PLAN.NOT_AVAILABLE' => l10n.error_billing_plan_not_available,
+    'BILLING.PLAN.USAGE_EXCEEDS_LIMIT' =>
+      l10n.error_billing_plan_usage_exceeds_limit,
+    'BILLING.INVOICE.NOT_FOUND' => l10n.error_billing_invoice_not_found,
+    'BILLING.INVOICE.INVALID_STATE' => l10n.error_billing_invoice_invalid_state,
+    'BILLING.QUOTA.EXCEEDED' => l10n.error_billing_quota_exceeded,
     'IDENTITY.AUTH.INVALID_CREDENTIALS' =>
       l10n.error_identity_auth_invalid_credentials,
     'IDENTITY.MFA.TOKEN_INVALID' => l10n.error_identity_mfa_token_invalid,
@@ -124,6 +137,20 @@ String errorMessageFor(AppLocalizations l10n, String code) {
       l10n.error_identity_api_key_permission_not_grantable,
     'IDENTITY.SERVICE_ACCOUNT.DISABLED' =>
       l10n.error_identity_service_account_disabled,
+    'NOTIFICATIONS.INBOX.NOT_FOUND' => l10n.error_notifications_inbox_not_found,
+    'NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS' =>
+      l10n.error_notifications_preferences_invalid_quiet_hours,
+    'NOTIFICATIONS.REALTIME.UNAUTHENTICATED' =>
+      l10n.error_notifications_realtime_unauthenticated,
+    'REPORTS.RUN.NOT_FOUND' => l10n.error_reports_run_not_found,
+    'REPORTS.RUN.NOT_READY' => l10n.error_reports_run_not_ready,
+    'REPORTS.RUN.EXPIRED' => l10n.error_reports_run_expired,
+    'REPORTS.TYPE.UNKNOWN' => l10n.error_reports_type_unknown,
+    'REPORTS.PARAMS.INVALID_RANGE' => l10n.error_reports_params_invalid_range,
+    'REPORTS.RESULT.TOO_LARGE' => l10n.error_reports_result_too_large,
+    'TASKS.TASK.NOT_FOUND' => l10n.error_tasks_task_not_found,
+    'TASKS.TASK.VERSION_CONFLICT' => l10n.error_tasks_task_version_conflict,
+    'TASKS.SEARCH.QUERY_TOO_SHORT' => l10n.error_tasks_search_query_too_short,
     _ => l10n.errorFallback,
   };
 }

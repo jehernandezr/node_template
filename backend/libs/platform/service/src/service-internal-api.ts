@@ -1,4 +1,5 @@
 import type { AppConfig } from '@platform/config';
+import type { InternalRequestSigner } from '@platform/internal-api';
 
 /** Cómo llega una llamada interna al dueño de la operación. */
 export enum ServiceInternalTransport {
@@ -14,6 +15,8 @@ export interface ServiceInternalHttpSettings {
   readonly baseUrls: Readonly<Record<string, string>>;
   /** Secreto HMAC compartido entre servicios. */
   readonly secret: string;
+  /** Firmador de salida; sin valor, HMAC con `secret`. Lo arma el servicio según `INTERNAL_API_SIGNER`. */
+  readonly signer?: InternalRequestSigner;
   readonly signatureWindowMs?: number;
 }
 

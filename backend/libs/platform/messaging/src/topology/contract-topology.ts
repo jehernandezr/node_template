@@ -1,5 +1,4 @@
 import type {
-  CommandDefinition,
   QueueDefinition,
   ServiceContract,
   TopicDefinition,
@@ -60,16 +59,18 @@ function queueDefOf(
 export function topologyFromContracts(
   contracts: readonly ServiceContract[],
 ): Topology {
-  const topics = new Map<TopicDefinition, TopicDef>();
+  // Por nombre: un suscriptor apunta al tópico de otro servicio con una referencia, que es otro objeto.
+  const topics = new Map<string, TopicDef>();
   const queues: QueueDef[] = [];
   const routes: RouteDef[] = [];
-  const commandQueues = new Map<CommandDefinition, QueueDef>();
+  // Por tipo, por la misma razón: lo que un servicio envía puede ser una referencia al comando.
+  const commandQueues = new Map<string, QueueDef>();
 
   const topicDef = (topic: TopicDefinition): TopicDef => {
-    let def = topics.get(topic);
+    let def = topics.get(topic.name);
     if (!def) {
       def = new TopicDef(topic.name, { fifo: topic.fifo });
-      topics.set(topic, def);
+      topics.set(topic.name, def);
       for (const event of topic.events) {
         routes.push(Route.event(event).to(def));
       }
@@ -85,14 +86,14 @@ export function topologyFromContracts(
       const def = queueDefOf(queue, topicDef);
       queues.push(def);
       for (const command of queue.commands) {
-        commandQueues.set(command, def);
+        commandQueues.set(command.type, def);
         routes.push(Route.command(command).to(def));
       }
     }
   }
   for (const contract of contracts) {
     for (const command of contract.sends) {
-      if (!commandQueues.has(command)) {
+      if (!commandQueues.has(command.type)) {
         throw new MessagingError(
           MessagingErrorCode.InvalidTopology,
           `${contract.service} sends "${command.type}", but none of the given contracts declares its queue`,

@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "contracts-notifications",
+  "sourceRoot": "backend/libs/contracts/notifications/src",
+  "projectType": "library",
+  "tags": ["type:contracts", "scope:notifications"],
+  "targets": {
+    "typecheck": {}
+  }
+}

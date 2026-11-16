@@ -3,8 +3,8 @@ import { SystemClock, type Clock } from '@platform/kernel';
 import { TraceContextRestorer } from '@platform/observability';
 import { CallOutcomeFactory, RetryAfterParser } from '@platform/primitives';
 import { ResilienceRegistry } from '@platform/resilience';
-import { HmacInternalCallSigner } from '../auth/hmac-internal-call-signer.js';
-import { InternalCallSigner } from '../auth/internal-call-signer.js';
+import { HmacSigner } from '../signing/hmac-signer.js';
+import { InternalRequestSigner } from '../signing/internal-request-signer.js';
 import { CallErrorTranslator } from '../client/call-error-translator.js';
 import { ClientOutcomeChecker } from '../client/client-outcome-checker.js';
 import { InternalClient } from '../client/internal-client.js';
@@ -116,12 +116,13 @@ export class InternalApiClientProviders {
   private static http(): Provider[] {
     return [
       {
-        provide: InternalCallSigner,
+        provide: InternalRequestSigner,
         useFactory: (
           options: InternalApiModuleOptions,
           clock: Clock | undefined,
         ) =>
-          new HmacInternalCallSigner(
+          InternalApiClientProviders.httpOptions(options).signer ??
+          new HmacSigner(
             InternalApiClientProviders.httpOptions(options).secret,
             clock ?? new SystemClock(),
           ),
@@ -131,7 +132,7 @@ export class InternalApiClientProviders {
         provide: HttpTransport,
         useFactory: (
           options: InternalApiModuleOptions,
-          signer: InternalCallSigner,
+          signer: InternalRequestSigner,
           clock: Clock | undefined,
         ) =>
           new HttpTransport(
@@ -146,7 +147,7 @@ export class InternalApiClientProviders {
           ),
         inject: [
           INTERNAL_API_OPTIONS,
-          InternalCallSigner,
+          InternalRequestSigner,
           InternalApiOptionalDependency.CLOCK,
         ],
       },

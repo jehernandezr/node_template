@@ -1,0 +1,791 @@
+{
+  "$comment": "GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.",
+  "formatVersion": 2,
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "service": "reports",
+  "description": "Reportes sobre los datos del tenant: catálogo, ejecuciones calculadas en segundo plano y resultado guardado.",
+  "enums": {
+    "ReportType": {
+      "values": [
+        { "name": "TasksByStatus", "value": "tasks_by_status" },
+        { "name": "TasksActivity", "value": "tasks_activity" },
+        { "name": "InvoicesSummary", "value": "invoices_summary" },
+        { "name": "NotificationsDelivery", "value": "notifications_delivery" }
+      ]
+    },
+    "ReportRunStatus": {
+      "values": [
+        { "name": "Queued", "value": "queued" },
+        { "name": "Running", "value": "running" },
+        { "name": "Ready", "value": "ready" },
+        { "name": "Failed", "value": "failed" },
+        { "name": "Expired", "value": "expired" }
+      ]
+    },
+    "ReportFormat": {
+      "values": [
+        { "name": "Json", "value": "json" },
+        { "name": "Csv", "value": "csv" }
+      ]
+    },
+    "ReportGranularity": {
+      "values": [
+        { "name": "Day", "value": "day" },
+        { "name": "Week", "value": "week" },
+        { "name": "Month", "value": "month" }
+      ]
+    },
+    "ReportColumnKind": {
+      "values": [
+        { "name": "Text", "value": "text" },
+        { "name": "Integer", "value": "integer" },
+        { "name": "Date", "value": "date" }
+      ]
+    },
+    "ReportsErrorCode": {
+      "values": [
+        { "name": "RunNotFound", "value": "REPORTS.RUN.NOT_FOUND" },
+        { "name": "RunNotReady", "value": "REPORTS.RUN.NOT_READY" },
+        { "name": "RunExpired", "value": "REPORTS.RUN.EXPIRED" },
+        { "name": "TypeUnknown", "value": "REPORTS.TYPE.UNKNOWN" },
+        {
+          "name": "ParamsInvalidRange",
+          "value": "REPORTS.PARAMS.INVALID_RANGE"
+        },
+        { "name": "ResultTooLarge", "value": "REPORTS.RESULT.TOO_LARGE" }
+      ]
+    },
+    "ReportsRoute": {
+      "values": [
+        { "name": "ListCatalog", "value": "reports.catalog.list" },
+        { "name": "CreateRun", "value": "reports.run.create" },
+        { "name": "ListRuns", "value": "reports.run.list" },
+        { "name": "GetRun", "value": "reports.run.get" },
+        { "name": "DownloadRun", "value": "reports.run.download" }
+      ]
+    },
+    "ReportsOperation": {
+      "values": [
+        { "name": "EraseUserData", "value": "reports.user-data.erase.v1" },
+        { "name": "TenantMoveSync", "value": "reports.tenant-move.sync.v1" },
+        {
+          "name": "TenantMoveFinalize",
+          "value": "reports.tenant-move.finalize.v1"
+        },
+        { "name": "TenantMoveAbort", "value": "reports.tenant-move.abort.v1" },
+        {
+          "name": "TenantMoveCleanup",
+          "value": "reports.tenant-move.cleanup.v1"
+        }
+      ]
+    },
+    "ReportsEvent": {
+      "values": [
+        { "name": "RunCompleted", "value": "reports.run.completed.v1" }
+      ]
+    },
+    "ReportsCommand": {
+      "values": [{ "name": "ExecuteRun", "value": "reports.run.execute.v1" }]
+    },
+    "ReportsTopic": {
+      "values": [{ "name": "Events", "value": "reports-events" }]
+    },
+    "ReportsQueue": {
+      "values": [
+        { "name": "Runs", "value": "reports-runs" },
+        { "name": "Projections", "value": "reports-projections" },
+        { "name": "FinanceProjections", "value": "reports-finance-projections" }
+      ]
+    }
+  },
+  "constants": {
+    "ReportsLimits": {
+      "maxRangeDays": 366,
+      "maxColumns": 20,
+      "maxRows": 10000,
+      "columnKeyMaxLength": 64,
+      "columnHeaderMaxLength": 120,
+      "cellMaxLength": 1000,
+      "fileNameMaxLength": 200,
+      "contentTypeMaxLength": 100,
+      "downloadContentMaxLength": 8000000,
+      "maxCatalogEntries": 20,
+      "maxFormats": 2,
+      "maxGranularities": 3
+    }
+  },
+  "schemas": {
+    "ReportType": {
+      "type": "string",
+      "enum": [
+        "tasks_by_status",
+        "tasks_activity",
+        "invoices_summary",
+        "notifications_delivery"
+      ],
+      "description": "Tipo de reporte."
+    },
+    "ReportRunStatus": {
+      "type": "string",
+      "enum": ["queued", "running", "ready", "failed", "expired"],
+      "description": "Estado de una ejecución de reporte."
+    },
+    "ReportFormat": {
+      "type": "string",
+      "enum": ["json", "csv"],
+      "description": "Formato de un reporte."
+    },
+    "ReportGranularity": {
+      "type": "string",
+      "enum": ["day", "week", "month"],
+      "description": "Granularidad temporal de un reporte."
+    },
+    "RunCompletedPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "runId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "type": { "$ref": "#/schemas/ReportType" },
+        "status": { "$ref": "#/schemas/ReportRunStatus" },
+        "requestedBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "completedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        }
+      },
+      "required": [
+        "tenantId",
+        "runId",
+        "type",
+        "status",
+        "requestedBy",
+        "completedAt"
+      ],
+      "description": "Terminó una ejecución de reporte."
+    },
+    "ExecuteRunPayload": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "runId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["tenantId", "runId"],
+      "additionalProperties": false,
+      "description": "Retoma una ejecución de reporte en un worker."
+    },
+    "ReportColumnKind": {
+      "type": "string",
+      "enum": ["text", "integer", "date"],
+      "description": "Tipo de dato de una columna del resultado."
+    },
+    "ReportParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "../../platform/export/contract.json#/schemas/CalendarDate"
+        },
+        "to": {
+          "$ref": "../../platform/export/contract.json#/schemas/CalendarDate"
+        },
+        "granularity": { "$ref": "#/schemas/ReportGranularity" }
+      },
+      "required": ["from", "to", "granularity"],
+      "additionalProperties": false,
+      "description": "Rango de fechas y granularidad de un reporte."
+    },
+    "ReportColumn": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "header": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "kind": { "$ref": "#/schemas/ReportColumnKind" }
+      },
+      "required": ["key", "header", "kind"],
+      "description": "Columna del resultado de un reporte."
+    },
+    "ReportRow": {
+      "type": "object",
+      "properties": {
+        "cells": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "type": "string", "maxLength": 1000 }
+        }
+      },
+      "required": ["cells"],
+      "description": "Fila del resultado de un reporte."
+    },
+    "ReportResult": {
+      "type": "object",
+      "properties": {
+        "columns": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ReportColumn" }
+        },
+        "rows": {
+          "maxItems": 10000,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ReportRow" }
+        }
+      },
+      "required": ["columns", "rows"],
+      "description": "Resultado tabular de una ejecución terminada."
+    },
+    "ReportCatalogEntry": {
+      "type": "object",
+      "properties": {
+        "type": { "$ref": "#/schemas/ReportType" },
+        "formats": {
+          "minItems": 1,
+          "maxItems": 2,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ReportFormat" }
+        },
+        "granularities": {
+          "minItems": 1,
+          "maxItems": 3,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ReportGranularity" }
+        }
+      },
+      "required": ["type", "formats", "granularities"],
+      "description": "Tipo de reporte disponible, con sus formatos y granularidades."
+    },
+    "ReportCatalog": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 20,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ReportCatalogEntry" }
+        }
+      },
+      "required": ["items"],
+      "description": "Catálogo de reportes que puede pedir el tenant."
+    },
+    "CreateReportRunRequest": {
+      "type": "object",
+      "properties": {
+        "type": { "$ref": "#/schemas/ReportType" },
+        "format": { "$ref": "#/schemas/ReportFormat" },
+        "params": { "$ref": "#/schemas/ReportParams" }
+      },
+      "required": ["type", "format", "params"],
+      "additionalProperties": false,
+      "description": "Petición de una ejecución de reporte."
+    },
+    "ReportRunCreated": {
+      "type": "object",
+      "properties": {
+        "runId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["runId"],
+      "description": "Ejecución aceptada; su resultado se consulta por el id."
+    },
+    "ReportRunSummary": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "type": { "$ref": "#/schemas/ReportType" },
+        "status": { "$ref": "#/schemas/ReportRunStatus" },
+        "format": { "$ref": "#/schemas/ReportFormat" },
+        "params": { "$ref": "#/schemas/ReportParams" },
+        "requestedBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "expiresAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "status",
+        "format",
+        "params",
+        "requestedBy",
+        "createdAt",
+        "completedAt",
+        "expiresAt"
+      ],
+      "description": "Ejecución de reporte sin su resultado."
+    },
+    "ReportRunPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/ReportRunSummary" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de ejecuciones de reporte."
+    },
+    "ListReportRunsRequest": {
+      "type": "object",
+      "properties": {
+        "type": { "$ref": "#/schemas/ReportType" },
+        "status": { "$ref": "#/schemas/ReportRunStatus" },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Filtros y paginación del listado de ejecuciones."
+    },
+    "GetReportRunRequest": {
+      "type": "object",
+      "properties": {
+        "runId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["runId"],
+      "additionalProperties": false,
+      "description": "Ejecución de reporte a consultar."
+    },
+    "ReportRunDetail": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "type": { "$ref": "#/schemas/ReportType" },
+        "status": { "$ref": "#/schemas/ReportRunStatus" },
+        "format": { "$ref": "#/schemas/ReportFormat" },
+        "params": { "$ref": "#/schemas/ReportParams" },
+        "requestedBy": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        },
+        "createdAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "expiresAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        },
+        "result": {
+          "anyOf": [{ "$ref": "#/schemas/ReportResult" }, { "type": "null" }]
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "status",
+        "format",
+        "params",
+        "requestedBy",
+        "createdAt",
+        "completedAt",
+        "expiresAt",
+        "result"
+      ],
+      "description": "Ejecución de reporte con su resultado, nulo mientras no esté lista."
+    },
+    "DownloadReportRunRequest": {
+      "type": "object",
+      "properties": {
+        "runId": { "$ref": "../../platform/export/contract.json#/schemas/Id" }
+      },
+      "required": ["runId"],
+      "additionalProperties": false,
+      "description": "Ejecución de reporte cuyo resultado se descarga."
+    },
+    "ReportDownload": {
+      "type": "object",
+      "properties": {
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "contentType": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "content": { "type": "string", "maxLength": 8000000 }
+      },
+      "required": ["fileName", "contentType", "content"],
+      "description": "Contenido de un reporte listo para descargar."
+    },
+    "EraseReportsUserInput": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "../../platform/export/contract.json#/schemas/UserRef"
+        }
+      },
+      "required": ["user"],
+      "additionalProperties": false,
+      "description": "Usuario cuyos datos se borran de reports."
+    },
+    "EraseReportsUserResult": {
+      "type": "object",
+      "properties": {
+        "userId": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "affectedRows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["userId", "affectedRows"],
+      "description": "Filas de reports que dejaron de guardar al usuario."
+    }
+  },
+  "routes": [
+    {
+      "name": "listCatalog",
+      "id": "reports.catalog.list",
+      "method": "GET",
+      "path": "/v1/reports",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": {
+        "$ref": "../../platform/export/contract.json#/schemas/Empty"
+      },
+      "response": { "$ref": "#/schemas/ReportCatalog" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.ACCESS.FLAG_DISABLED"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["reports:read"],
+        "flags": ["new_reports"]
+      },
+      "description": "Lista los tipos de reporte, con sus formatos y granularidades."
+    },
+    {
+      "name": "createRun",
+      "id": "reports.run.create",
+      "method": "POST",
+      "path": "/v1/reports/runs",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "body",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/CreateReportRunRequest" },
+      "response": { "$ref": "#/schemas/ReportRunCreated" },
+      "successStatus": 202,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.ACCESS.FLAG_DISABLED",
+        "PLATFORM.VALIDATION.INVALID_INPUT",
+        "PLATFORM.ACCESS.FEATURE_NOT_INCLUDED",
+        "REPORTS.TYPE.UNKNOWN",
+        "REPORTS.PARAMS.INVALID_RANGE"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["reports:write"],
+        "flags": ["new_reports"]
+      },
+      "description": "Crea una ejecución de reporte. Responde 202 con su id."
+    },
+    {
+      "name": "listRuns",
+      "id": "reports.run.list",
+      "method": "GET",
+      "path": "/v1/reports/runs",
+      "version": 1,
+      "pathParams": [],
+      "requestLocation": "query",
+      "queryParams": [
+        { "name": "type", "kind": "string", "list": false },
+        { "name": "status", "kind": "string", "list": false },
+        { "name": "limit", "kind": "number", "list": false },
+        { "name": "after", "kind": "string", "list": false }
+      ],
+      "request": { "$ref": "#/schemas/ListReportRunsRequest" },
+      "response": { "$ref": "#/schemas/ReportRunPage" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.ACCESS.FLAG_DISABLED",
+        "PLATFORM.VALIDATION.INVALID_INPUT"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["reports:read"],
+        "flags": ["new_reports"]
+      },
+      "description": "Lista las ejecuciones de reporte, con filtros y paginación."
+    },
+    {
+      "name": "getRun",
+      "id": "reports.run.get",
+      "method": "GET",
+      "path": "/v1/reports/runs/{runId}",
+      "version": 1,
+      "pathParams": ["runId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/GetReportRunRequest" },
+      "response": { "$ref": "#/schemas/ReportRunDetail" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.ACCESS.FLAG_DISABLED",
+        "REPORTS.RUN.NOT_FOUND"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["reports:read"],
+        "flags": ["new_reports"]
+      },
+      "description": "Consulta una ejecución de reporte y su resultado."
+    },
+    {
+      "name": "downloadRun",
+      "id": "reports.run.download",
+      "method": "GET",
+      "path": "/v1/reports/runs/{runId}/download",
+      "version": 1,
+      "pathParams": ["runId"],
+      "requestLocation": "query",
+      "queryParams": [],
+      "request": { "$ref": "#/schemas/DownloadReportRunRequest" },
+      "response": { "$ref": "#/schemas/ReportDownload" },
+      "successStatus": 200,
+      "errors": [
+        "IDENTITY.SESSION.REVOKED",
+        "IDENTITY.SESSION.EXPIRED",
+        "IDENTITY.TOKEN.REVOKED",
+        "IDENTITY.USER.SUSPENDED",
+        "IDENTITY.TENANT.SUSPENDED",
+        "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "PLATFORM.ACCESS.FLAG_DISABLED",
+        "REPORTS.RUN.NOT_FOUND",
+        "REPORTS.RUN.NOT_READY",
+        "REPORTS.RUN.EXPIRED"
+      ],
+      "access": {
+        "kind": "authenticated",
+        "permissions": ["reports:read"],
+        "flags": ["new_reports"]
+      },
+      "description": "Descarga el resultado de una ejecución lista en su formato."
+    }
+  ],
+  "operations": [
+    {
+      "name": "eraseUserData",
+      "id": "reports.user-data.erase.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/EraseReportsUserInput" },
+      "output": { "$ref": "#/schemas/EraseReportsUserResult" },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Borrar al solicitante es irreversible y corre después del pivote de la saga: se repite hasta terminar y no se revierte.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra los datos del usuario en las ejecuciones y las proyecciones."
+    },
+    {
+      "name": "tenantMoveSync",
+      "id": "reports.tenant-move.sync.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveProgress"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "reports.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia un lote de los datos del tenant en reports al destino mientras las escrituras siguen; la saga repite hasta completar la ronda."
+    },
+    {
+      "name": "tenantMoveFinalize",
+      "id": "reports.tenant-move.finalize.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveVerification"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "reports.tenant-move.abort.v1",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Copia la última ronda de reports con el tenant congelado y verifica conteos y sumas."
+    },
+    {
+      "name": "tenantMoveAbort",
+      "id": "reports.tenant-move.abort.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Solo corre como compensación de la copia: descarta lo copiado al destino y no hay nada que restaurar.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Cancela el traslado de un tenant y descarta lo copiado de reports al destino."
+    },
+    {
+      "name": "tenantMoveCleanup",
+      "id": "reports.tenant-move.cleanup.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Borra del origen los datos ya trasladados una vez vencida la gracia: no se restauran.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Borra de reports los datos del tenant trasladado cuando pasa el periodo de gracia."
+    }
+  ],
+  "events": [
+    {
+      "name": "runCompleted",
+      "type": "reports.run.completed.v1",
+      "kind": "event",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/RunCompletedPayload" },
+      "description": "Terminó una ejecución de reporte, lista o fallida. Notifications avisa a quien la pidió."
+    }
+  ],
+  "commands": [
+    {
+      "name": "executeRun",
+      "type": "reports.run.execute.v1",
+      "kind": "command",
+      "version": 1,
+      "payload": { "$ref": "#/schemas/ExecuteRunPayload" },
+      "description": "Ejecuta una ejecución de reporte en un worker."
+    }
+  ],
+  "errors": {
+    "ReportsErrorCode": [
+      {
+        "name": "RunNotFound",
+        "code": "REPORTS.RUN.NOT_FOUND",
+        "httpStatus": 404,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_reports_run_not_found",
+        "description": "La ejecución del reporte no existe."
+      },
+      {
+        "name": "RunNotReady",
+        "code": "REPORTS.RUN.NOT_READY",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_reports_run_not_ready",
+        "description": "La ejecución todavía no termina: el resultado no está listo."
+      },
+      {
+        "name": "RunExpired",
+        "code": "REPORTS.RUN.EXPIRED",
+        "httpStatus": 410,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_reports_run_expired",
+        "description": "El resultado de la ejecución venció y ya no se guarda. Genera el reporte de nuevo."
+      },
+      {
+        "name": "TypeUnknown",
+        "code": "REPORTS.TYPE.UNKNOWN",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_reports_type_unknown",
+        "description": "El tipo de reporte no existe."
+      },
+      {
+        "name": "ParamsInvalidRange",
+        "code": "REPORTS.PARAMS.INVALID_RANGE",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_reports_params_invalid_range",
+        "description": "El rango de fechas es inválido: el fin es anterior al inicio o supera el máximo."
+      },
+      {
+        "name": "ResultTooLarge",
+        "code": "REPORTS.RESULT.TOO_LARGE",
+        "httpStatus": 422,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_reports_result_too_large",
+        "description": "El resultado supera el tamaño máximo. Acota el rango de fechas."
+      }
+    ]
+  }
+}

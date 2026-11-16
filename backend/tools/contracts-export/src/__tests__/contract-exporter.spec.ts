@@ -50,6 +50,7 @@ describe('ContractExporter', () => {
         lines: [
           `Escrito ${paths.contractExportOf('platform')}`,
           `Escrito ${paths.contractExportOf('identity')}`,
+          `Escrito ${paths.contractExportOf('billing')}`,
           `Escrito ${paths.topology}`,
           `Escrito ${paths.asyncApi}`,
         ],

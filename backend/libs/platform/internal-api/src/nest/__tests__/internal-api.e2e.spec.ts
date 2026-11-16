@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { OperationMetadata } from '../../contract/operation-metadata.js';
 import { InternalApiReason } from '../../contract/internal-api-reason.enum.js';
-import { HmacInternalCallSigner } from '../../auth/hmac-internal-call-signer.js';
+import { HmacSigner } from '../../signing/hmac-signer.js';
 import { InternalClient } from '../../client/internal-client.js';
 import { InternalApiController } from '../internal-api.controller.js';
 import { InternalApiModule } from '../internal-api.module.js';
@@ -134,10 +134,7 @@ describe('Internal API end to end over HTTP', () => {
     const before = handlers.greetCalls;
     const transport = new HttpTransport(
       new ServiceBaseUrls({ greeter: serverUrl }),
-      new HmacInternalCallSigner(
-        'another-secret-of-the-test',
-        new SystemClock(),
-      ),
+      new HmacSigner('another-secret-of-the-test', new SystemClock()),
       new HttpOutcomeReader(new RetryAfterParser(new SystemClock())),
       globalThis.fetch,
     );
@@ -164,10 +161,7 @@ describe('Internal API end to end over HTTP', () => {
     async (skewMs, expected) => {
       const transport = new HttpTransport(
         new ServiceBaseUrls({ greeter: serverUrl }),
-        new HmacInternalCallSigner(
-          SECRET,
-          new FixedClock(new Date(Date.now() + skewMs)),
-        ),
+        new HmacSigner(SECRET, new FixedClock(new Date(Date.now() + skewMs))),
         new HttpOutcomeReader(new RetryAfterParser(new SystemClock())),
         globalThis.fetch,
       );

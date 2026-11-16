@@ -13,3 +13,4 @@ export * from './tenant.routes.js';
 export * from './access.routes.js';
 export * from './invitation.routes.js';
 export * from './api-key.routes.js';
+export * from './lifecycle.routes.js';

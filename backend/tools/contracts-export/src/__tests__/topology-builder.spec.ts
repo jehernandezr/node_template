@@ -1,4 +1,11 @@
-import { platformContract } from '@contracts/platform';
+import {
+  defineCommandReference,
+  defineQueue,
+  defineServiceContract,
+  defineTopicReference,
+  platformContract,
+  type ServiceContract,
+} from '@contracts/platform';
 import { GlobalUniquenessChecker } from '../global-uniqueness-checker.js';
 import { TopologyBuilder } from '../topology-builder.js';
 import { ContractFixtures } from './utils/contract-fixtures.js';
@@ -75,9 +82,14 @@ describe('TopologyBuilder', () => {
     it('routes the identity events to the identity topic', () => {
       const topology = builder.build(ContractFixtures.registered());
 
-      expect(topology['topics']).toEqual([
-        expect.objectContaining({ name: 'identity-events', owner: 'identity' }),
-      ]);
+      expect(topology['topics']).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'identity-events',
+            owner: 'identity',
+          }),
+        ]),
+      );
       expect((topology['routes'] as Obj[]).map((r) => r['type'])).toEqual(
         expect.arrayContaining([
           'identity.session.revoked.v1',
@@ -169,6 +181,67 @@ describe('TopologyBuilder', () => {
           { ...orders, service: 'copy' },
         ]),
       ).toThrow(/ya está declarado en orders/);
+    });
+  });
+
+  describe('build (references by name)', () => {
+    const ledger = (events: readonly string[], sends = true): ServiceContract =>
+      defineServiceContract({
+        service: 'ledger',
+        description: 'Libro.',
+        queues: {
+          orders: defineQueue({
+            name: 'ledger-orders',
+            fifo: true,
+            subscriptions: [
+              {
+                topic: defineTopicReference({
+                  name: 'orders-events',
+                  fifo: true,
+                  events,
+                  description: 'Pedidos.',
+                }),
+              },
+            ],
+            description: 'Pedidos que se asientan.',
+          }),
+        },
+        sends: sends
+          ? [
+              defineCommandReference({
+                type: 'payments.payment.charge.v1',
+                description: 'Cobro.',
+              }),
+            ]
+          : [],
+      });
+
+    const owners = [
+      platformContract,
+      ContractFixtures.orders(),
+      ContractFixtures.payments(),
+    ];
+
+    it('resolves the topic and the sent command against their owners', () => {
+      const topology = builder.build([
+        ...owners,
+        ledger(['orders.order.placed.v1']),
+      ]);
+      const queues = topology['queues'] as Obj[];
+
+      expect(queues.find((q) => q['name'] === 'ledger-orders')).toMatchObject({
+        consumer: 'ledger',
+        subscriptions: [{ topic: 'orders-events', filterTypes: [] }],
+      });
+      expect(
+        queues.find((q) => q['name'] === 'payments-commands'),
+      ).toMatchObject({ producers: ['ledger', 'orders'] });
+    });
+
+    it('fails when the reference names an event the owner does not publish', () => {
+      expect(() =>
+        builder.build([...owners, ledger(['orders.order.cancelled.v1'])]),
+      ).toThrow(/espera orders.order.cancelled.v1 en orders-events/);
     });
   });
 });

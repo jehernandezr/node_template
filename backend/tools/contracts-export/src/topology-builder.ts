@@ -1,7 +1,6 @@
 import {
   DEAD_LETTER_SUFFIX,
   MessageKind,
-  type CommandDefinition,
   type QueueDefinition,
   type ServiceContract,
   type TopicDefinition,
@@ -24,11 +23,16 @@ interface Owned<T> {
   readonly value: T;
 }
 
-/** Índices globales: qué servicio declara cada tópico, cola y comando. */
+/**
+ * Índices globales: qué servicio declara cada tópico (por nombre), cola y comando
+ * (por tipo). Se indexa por nombre y no por objeto porque un contrato que no
+ * puede importar al dueño apunta con `defineTopicReference` y
+ * `defineCommandReference`.
+ */
 interface ContractIndex {
-  readonly topics: Map<TopicDefinition, Owned<TopicDefinition>>;
+  readonly topics: Map<string, Owned<TopicDefinition>>;
   readonly queues: Owned<QueueDefinition>[];
-  readonly commands: Map<CommandDefinition, string>;
+  readonly commands: Map<string, string>;
 }
 
 /**
@@ -94,18 +98,18 @@ export class TopologyBuilder {
   private sendersOf(
     contracts: readonly ServiceContract[],
     index: ContractIndex,
-  ): Map<CommandDefinition, Set<string>> {
-    const senders = new Map<CommandDefinition, Set<string>>();
+  ): Map<string, Set<string>> {
+    const senders = new Map<string, Set<string>>();
     for (const contract of contracts) {
       for (const command of contract.sends) {
-        if (!index.commands.has(command)) {
+        if (!index.commands.has(command.type)) {
           throw ExportError.forTopology(
             `${contract.service} envía ${command.type}, que ningún contrato declara`,
           );
         }
-        const set = senders.get(command) ?? new Set<string>();
+        const set = senders.get(command.type) ?? new Set<string>();
         set.add(contract.service);
-        senders.set(command, set);
+        senders.set(command.type, set);
       }
     }
     return senders;
@@ -128,10 +132,10 @@ export class TopologyBuilder {
   private queueOf(
     { service, value: queue }: Owned<QueueDefinition>,
     index: ContractIndex,
-    senders: ReadonlyMap<CommandDefinition, ReadonlySet<string>>,
+    senders: ReadonlyMap<string, ReadonlySet<string>>,
   ): JsonObject {
     const producers = queue.commands.flatMap((command) => [
-      ...(senders.get(command) ?? []),
+      ...(senders.get(command.type) ?? []),
     ]);
     return {
       name: queue.name,
@@ -161,10 +165,20 @@ export class TopologyBuilder {
   ): JsonObject[] {
     return queue.subscriptions
       .map((subscription) => {
-        if (!index.topics.has(subscription.topic)) {
+        const owner = index.topics.get(subscription.topic.name);
+        if (!owner) {
           throw ExportError.forTopology(
             `la cola ${queue.name} se suscribe a ${subscription.topic.name}, que ningún contrato declara`,
           );
+        }
+        const published = new Set(owner.value.events.map((e) => e.type));
+        const named = [...subscription.topic.events, ...subscription.events];
+        for (const event of named) {
+          if (!published.has(event.type)) {
+            throw ExportError.forTopology(
+              `la cola ${queue.name} espera ${event.type} en ${subscription.topic.name}, que ${owner.service} no publica ahí`,
+            );
+          }
         }
         return {
           topic: subscription.topic.name,
@@ -175,19 +189,19 @@ export class TopologyBuilder {
   }
 
   private indexContracts(contracts: readonly ServiceContract[]): ContractIndex {
-    const topics = new Map<TopicDefinition, Owned<TopicDefinition>>();
+    const topics = new Map<string, Owned<TopicDefinition>>();
     const queues: Owned<QueueDefinition>[] = [];
-    const commands = new Map<CommandDefinition, string>();
+    const commands = new Map<string, string>();
     for (const contract of contracts) {
       const { service } = contract;
       for (const topic of Object.values(contract.topics)) {
-        topics.set(topic, { service, value: topic });
+        topics.set(topic.name, { service, value: topic });
       }
       for (const queue of Object.values(contract.queues)) {
         queues.push({ service, value: queue });
       }
       for (const command of Object.values(contract.commands)) {
-        commands.set(command, service);
+        commands.set(command.type, service);
       }
     }
     return { topics, queues, commands };

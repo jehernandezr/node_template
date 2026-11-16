@@ -9,6 +9,7 @@ import {
   platformContract,
   type ServiceContract,
 } from '@contracts/platform';
+import { billingContract } from '@contracts/billing';
 import { identityContract } from '@contracts/identity';
 
 const TaskPayload = z.object({ taskId: IdSchema });
@@ -171,7 +172,7 @@ const reporting = defineServiceContract({
 export class ContractFixtures {
   /** Los contratos del registro real, en el orden en que se exportan. */
   static registered(): readonly ServiceContract[] {
-    return [platformContract, identityContract];
+    return [platformContract, identityContract, billingContract];
   }
 
   /** Servicio con tópico y comando, sin esquemas propios. */

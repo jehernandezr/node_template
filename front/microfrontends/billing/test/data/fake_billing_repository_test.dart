@@ -1,4 +1,4 @@
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide BillingOperation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_billing/src/data/fake_billing_repository.dart';
 import 'package:mf_billing/src/shared/enums/billing_enums.dart';

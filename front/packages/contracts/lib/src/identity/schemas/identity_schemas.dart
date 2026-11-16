@@ -5,6 +5,7 @@
 import '../../core/core.dart';
 import '../../identity/types/identity_types.dart';
 import '../../platform/enums/platform_enums.dart';
+import '../../platform/schemas/platform_schemas.dart';
 
 final _pattern0 = RegExp(
   '^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})\$',
@@ -16,13 +17,14 @@ final _pattern2 = RegExp(
 final _pattern3 = RegExp(
   '^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))\$',
 );
-final _pattern4 = RegExp('^[A-Za-z0-9-]+\$');
-final _pattern5 = RegExp('^[A-Za-z0-9_-]+\$');
-final _pattern6 = RegExp('^\\d+\\.\\d+\$');
-final _pattern7 = RegExp('^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*\$');
-final _pattern8 = RegExp('^[0-9]+\$');
-final _pattern9 = RegExp('^[a-z0-9]+(-[a-z0-9]+)*\$');
-final _pattern10 = RegExp('^[A-Z2-7]+\$');
+final _pattern4 = RegExp('^https?:\\/\\/');
+final _pattern5 = RegExp('^[A-Za-z0-9-]+\$');
+final _pattern6 = RegExp('^[A-Za-z0-9_-]+\$');
+final _pattern7 = RegExp('^\\d+\\.\\d+\$');
+final _pattern8 = RegExp('^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*\$');
+final _pattern9 = RegExp('^[0-9]+\$');
+final _pattern10 = RegExp('^[a-z0-9]+(-[a-z0-9]+)*\$');
+final _pattern11 = RegExp('^[A-Z2-7]+\$');
 
 /// Validador de [AccessTokenClaims] generado desde el JSON Schema del contrato.
 ///
@@ -1037,6 +1039,63 @@ abstract final class SignInResponseSchema {
         acceptUnknownEnums: acceptUnknownEnums,
       );
     }
+    if (json.containsKey('region')) {
+      final value36 = json['region'];
+      if (value36 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'region'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value36.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'region'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value36.length > 32) {
+          addFieldError(
+            errors,
+            joinPath(path, 'region'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    }
+    if (json.containsKey('apiBaseUrl')) {
+      final value37 = json['apiBaseUrl'];
+      if (value37 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'apiBaseUrl'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value37.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'apiBaseUrl'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value37.length > 2048) {
+          addFieldError(
+            errors,
+            joinPath(path, 'apiBaseUrl'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        if (!_pattern4.hasMatch(value37)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'apiBaseUrl'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    }
   }
 }
 
@@ -1083,22 +1142,22 @@ abstract final class MfaChallengeRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value36 = json['mfaToken'];
-      if (value36 is! String) {
+      final value38 = json['mfaToken'];
+      if (value38 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value36.isEmpty) {
+        if (value38.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value36.length > 2048) {
+        if (value38.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -1114,15 +1173,15 @@ abstract final class MfaChallengeRequestSchema {
       );
     }
     if (json.containsKey('method')) {
-      final value37 = json['method'];
-      if (value37 is! String ||
+      final value39 = json['method'];
+      if (value39 is! String ||
           !const <String>{
             'device_otp',
             'email_otp',
             'totp',
             'recovery_code',
             'passkey',
-          }.contains(value37)) {
+          }.contains(value39)) {
         addFieldError(
           errors,
           joinPath(path, 'method'),
@@ -1191,15 +1250,15 @@ abstract final class MfaChallengeSchema {
       return;
     }
     if (json.containsKey('challengeId')) {
-      final value38 = json['challengeId'];
-      if (value38 is! String) {
+      final value40 = json['challengeId'];
+      if (value40 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value38)) {
+        if (!_pattern0.hasMatch(value40)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -1215,15 +1274,15 @@ abstract final class MfaChallengeSchema {
       );
     }
     if (json.containsKey('method')) {
-      final value39 = json['method'];
-      if (value39 is! String ||
+      final value41 = json['method'];
+      if (value41 is! String ||
           !const <String>{
             'device_otp',
             'email_otp',
             'totp',
             'recovery_code',
             'passkey',
-          }.contains(value39)) {
+          }.contains(value41)) {
         addFieldError(
           errors,
           joinPath(path, 'method'),
@@ -1238,15 +1297,15 @@ abstract final class MfaChallengeSchema {
       );
     }
     if (json.containsKey('expiresAt')) {
-      final value40 = json['expiresAt'];
-      if (value40 is! String) {
+      final value42 = json['expiresAt'];
+      if (value42 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'expiresAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value40)) {
+        if (!_pattern3.hasMatch(value42)) {
           addFieldError(
             errors,
             joinPath(path, 'expiresAt'),
@@ -1262,24 +1321,24 @@ abstract final class MfaChallengeSchema {
       );
     }
     if (json.containsKey('codeLength')) {
-      final value41 = json['codeLength'];
-      if (value41 is! num ||
-          !value41.isFinite ||
-          value41 != value41.roundToDouble()) {
+      final value43 = json['codeLength'];
+      if (value43 is! num ||
+          !value43.isFinite ||
+          value43 != value43.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'codeLength'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value41 < 6) {
+        if (value43 < 6) {
           addFieldError(
             errors,
             joinPath(path, 'codeLength'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value41 > 64) {
+        if (value43 > 64) {
           addFieldError(
             errors,
             joinPath(path, 'codeLength'),
@@ -1334,22 +1393,22 @@ abstract final class MfaVerifyRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value42 = json['mfaToken'];
-      if (value42 is! String) {
+      final value44 = json['mfaToken'];
+      if (value44 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value42.isEmpty) {
+        if (value44.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value42.length > 2048) {
+        if (value44.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -1365,15 +1424,15 @@ abstract final class MfaVerifyRequestSchema {
       );
     }
     if (json.containsKey('challengeId')) {
-      final value43 = json['challengeId'];
-      if (value43 is! String) {
+      final value45 = json['challengeId'];
+      if (value45 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value43)) {
+        if (!_pattern0.hasMatch(value45)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -1389,29 +1448,29 @@ abstract final class MfaVerifyRequestSchema {
       );
     }
     if (json.containsKey('code')) {
-      final value44 = json['code'];
-      if (value44 is! String) {
+      final value46 = json['code'];
+      if (value46 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'code'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value44.length < 6) {
+        if (value46.length < 6) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value44.length > 64) {
+        if (value46.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern4.hasMatch(value44)) {
+        if (!_pattern5.hasMatch(value46)) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
@@ -1427,29 +1486,29 @@ abstract final class MfaVerifyRequestSchema {
       );
     }
     if (json.containsKey('devicePublicKey')) {
-      final value45 = json['devicePublicKey'];
-      if (value45 is! String) {
+      final value47 = json['devicePublicKey'];
+      if (value47 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'devicePublicKey'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value45.isEmpty) {
+        if (value47.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value45.length > 2048) {
+        if (value47.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value45)) {
+        if (!_pattern6.hasMatch(value47)) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
@@ -1518,22 +1577,22 @@ abstract final class SessionTokenRequestSchema {
       return;
     }
     if (json.containsKey('sessionToken')) {
-      final value46 = json['sessionToken'];
-      if (value46 is! String) {
+      final value48 = json['sessionToken'];
+      if (value48 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value46.isEmpty) {
+        if (value48.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'sessionToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value46.length > 8192) {
+        if (value48.length > 8192) {
           addFieldError(
             errors,
             joinPath(path, 'sessionToken'),
@@ -1597,22 +1656,22 @@ abstract final class StepUpVerifyRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value47 = json['mfaToken'];
-      if (value47 is! String) {
+      final value49 = json['mfaToken'];
+      if (value49 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value47.isEmpty) {
+        if (value49.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value47.length > 2048) {
+        if (value49.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -1628,15 +1687,15 @@ abstract final class StepUpVerifyRequestSchema {
       );
     }
     if (json.containsKey('challengeId')) {
-      final value48 = json['challengeId'];
-      if (value48 is! String) {
+      final value50 = json['challengeId'];
+      if (value50 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value48)) {
+        if (!_pattern0.hasMatch(value50)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -1652,29 +1711,29 @@ abstract final class StepUpVerifyRequestSchema {
       );
     }
     if (json.containsKey('code')) {
-      final value49 = json['code'];
-      if (value49 is! String) {
+      final value51 = json['code'];
+      if (value51 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'code'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value49.length < 6) {
+        if (value51.length < 6) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value49.length > 64) {
+        if (value51.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern4.hasMatch(value49)) {
+        if (!_pattern5.hasMatch(value51)) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
@@ -1744,9 +1803,9 @@ abstract final class StepUpResultSchema {
       return;
     }
     if (json.containsKey('tokens')) {
-      final value50 = json['tokens'];
+      final value52 = json['tokens'];
       SessionTokensSchema.check(
-        value50,
+        value52,
         joinPath(path, 'tokens'),
         errors,
         acceptUnknownEnums: acceptUnknownEnums,
@@ -1759,15 +1818,15 @@ abstract final class StepUpResultSchema {
       );
     }
     if (json.containsKey('mfaVerifiedAt')) {
-      final value51 = json['mfaVerifiedAt'];
-      if (value51 is! String) {
+      final value53 = json['mfaVerifiedAt'];
+      if (value53 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaVerifiedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value51)) {
+        if (!_pattern3.hasMatch(value53)) {
           addFieldError(
             errors,
             joinPath(path, 'mfaVerifiedAt'),
@@ -1828,15 +1887,15 @@ abstract final class SessionSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value52 = json['id'];
-      if (value52 is! String) {
+      final value54 = json['id'];
+      if (value54 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value52)) {
+        if (!_pattern0.hasMatch(value54)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -1852,22 +1911,22 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('deviceName')) {
-      final value53 = json['deviceName'];
-      if (value53 is! String) {
+      final value55 = json['deviceName'];
+      if (value55 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceName'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value53.isEmpty) {
+        if (value55.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'deviceName'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value53.length > 120) {
+        if (value55.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'deviceName'),
@@ -1883,8 +1942,8 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('platform')) {
-      final value54 = json['platform'];
-      if (value54 is! String ||
+      final value56 = json['platform'];
+      if (value56 is! String ||
           !const <String>{
             'ios',
             'android',
@@ -1892,7 +1951,7 @@ abstract final class SessionSummarySchema {
             'macos',
             'windows',
             'linux',
-          }.contains(value54)) {
+          }.contains(value56)) {
         addFieldError(
           errors,
           joinPath(path, 'platform'),
@@ -1907,15 +1966,15 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('lastSeenAt')) {
-      final value55 = json['lastSeenAt'];
-      if (value55 is! String) {
+      final value57 = json['lastSeenAt'];
+      if (value57 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'lastSeenAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value55)) {
+        if (!_pattern3.hasMatch(value57)) {
           addFieldError(
             errors,
             joinPath(path, 'lastSeenAt'),
@@ -1931,8 +1990,8 @@ abstract final class SessionSummarySchema {
       );
     }
     if (json.containsKey('current')) {
-      final value56 = json['current'];
-      if (value56 is! bool) {
+      final value58 = json['current'];
+      if (value58 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'current'),
@@ -1992,26 +2051,26 @@ abstract final class SessionPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value57 = json['items'];
-      if (value57 is! List) {
+      final value59 = json['items'];
+      if (value59 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value57.length > 100) {
+        if (value59.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i58 = 0; i58 < value57.length; i58++) {
-          final item59 = value57[i58];
+        for (var i60 = 0; i60 < value59.length; i60++) {
+          final item61 = value59[i60];
           SessionSummarySchema.check(
-            item59,
-            joinPath(joinPath(path, 'items'), '$i58'),
+            item61,
+            joinPath(joinPath(path, 'items'), '$i60'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -2025,30 +2084,30 @@ abstract final class SessionPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value60 = json['nextCursor'];
-      if (value60 != null) {
-        if (value60 is! String) {
+      final value62 = json['nextCursor'];
+      if (value62 != null) {
+        if (value62 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value60.isEmpty) {
+          if (value62.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value60.length > 512) {
+          if (value62.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value60)) {
+          if (!_pattern6.hasMatch(value62)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -2110,15 +2169,15 @@ abstract final class DeviceSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value61 = json['id'];
-      if (value61 is! String) {
+      final value63 = json['id'];
+      if (value63 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value61)) {
+        if (!_pattern0.hasMatch(value63)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -2134,22 +2193,22 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value62 = json['name'];
-      if (value62 is! String) {
+      final value64 = json['name'];
+      if (value64 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value62.isEmpty) {
+        if (value64.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value62.length > 120) {
+        if (value64.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -2165,8 +2224,8 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('platform')) {
-      final value63 = json['platform'];
-      if (value63 is! String ||
+      final value65 = json['platform'];
+      if (value65 is! String ||
           !const <String>{
             'ios',
             'android',
@@ -2174,7 +2233,7 @@ abstract final class DeviceSummarySchema {
             'macos',
             'windows',
             'linux',
-          }.contains(value63)) {
+          }.contains(value65)) {
         addFieldError(
           errors,
           joinPath(path, 'platform'),
@@ -2189,15 +2248,15 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('lastSeenAt')) {
-      final value64 = json['lastSeenAt'];
-      if (value64 is! String) {
+      final value66 = json['lastSeenAt'];
+      if (value66 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'lastSeenAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value64)) {
+        if (!_pattern3.hasMatch(value66)) {
           addFieldError(
             errors,
             joinPath(path, 'lastSeenAt'),
@@ -2213,15 +2272,15 @@ abstract final class DeviceSummarySchema {
       );
     }
     if (json.containsKey('trustedUntil')) {
-      final value65 = json['trustedUntil'];
-      if (value65 is! String) {
+      final value67 = json['trustedUntil'];
+      if (value67 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'trustedUntil'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value65)) {
+        if (!_pattern3.hasMatch(value67)) {
           addFieldError(
             errors,
             joinPath(path, 'trustedUntil'),
@@ -2231,8 +2290,8 @@ abstract final class DeviceSummarySchema {
       }
     }
     if (json.containsKey('verifier')) {
-      final value66 = json['verifier'];
-      if (value66 is! bool) {
+      final value68 = json['verifier'];
+      if (value68 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'verifier'),
@@ -2292,26 +2351,26 @@ abstract final class DevicePageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value67 = json['items'];
-      if (value67 is! List) {
+      final value69 = json['items'];
+      if (value69 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value67.length > 100) {
+        if (value69.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i68 = 0; i68 < value67.length; i68++) {
-          final item69 = value67[i68];
+        for (var i70 = 0; i70 < value69.length; i70++) {
+          final item71 = value69[i70];
           DeviceSummarySchema.check(
-            item69,
-            joinPath(joinPath(path, 'items'), '$i68'),
+            item71,
+            joinPath(joinPath(path, 'items'), '$i70'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -2325,30 +2384,30 @@ abstract final class DevicePageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value70 = json['nextCursor'];
-      if (value70 != null) {
-        if (value70 is! String) {
+      final value72 = json['nextCursor'];
+      if (value72 != null) {
+        if (value72 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value70.isEmpty) {
+          if (value72.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value70.length > 512) {
+          if (value72.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value70)) {
+          if (!_pattern6.hasMatch(value72)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -2410,15 +2469,15 @@ abstract final class RevokeSessionRequestSchema {
       return;
     }
     if (json.containsKey('sessionId')) {
-      final value71 = json['sessionId'];
-      if (value71 is! String) {
+      final value73 = json['sessionId'];
+      if (value73 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value71)) {
+        if (!_pattern0.hasMatch(value73)) {
           addFieldError(
             errors,
             joinPath(path, 'sessionId'),
@@ -2488,24 +2547,24 @@ abstract final class RevokedSessionsSchema {
       return;
     }
     if (json.containsKey('revoked')) {
-      final value72 = json['revoked'];
-      if (value72 is! num ||
-          !value72.isFinite ||
-          value72 != value72.roundToDouble()) {
+      final value74 = json['revoked'];
+      if (value74 is! num ||
+          !value74.isFinite ||
+          value74 != value74.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'revoked'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value72 < 0) {
+        if (value74 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'revoked'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value72 > 9007199254740991) {
+        if (value74 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'revoked'),
@@ -2566,15 +2625,15 @@ abstract final class RevokeUserSessionsInputSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value73 = json['userId'];
-      if (value73 is! String) {
+      final value75 = json['userId'];
+      if (value75 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value73)) {
+        if (!_pattern0.hasMatch(value75)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -2590,15 +2649,15 @@ abstract final class RevokeUserSessionsInputSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value74 = json['reason'];
-      if (value74 is! String ||
+      final value76 = json['reason'];
+      if (value76 is! String ||
           !const <String>{
             'logout',
             'user_action',
             'password_changed',
             'admin_action',
             'compromised',
-          }.contains(value74)) {
+          }.contains(value76)) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
@@ -2668,15 +2727,15 @@ abstract final class GetUserAccessInputSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value75 = json['userId'];
-      if (value75 is! String) {
+      final value77 = json['userId'];
+      if (value77 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value75)) {
+        if (!_pattern0.hasMatch(value77)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -2692,15 +2751,15 @@ abstract final class GetUserAccessInputSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value76 = json['tenantId'];
-      if (value76 is! String) {
+      final value78 = json['tenantId'];
+      if (value78 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value76)) {
+        if (!_pattern0.hasMatch(value78)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -2770,23 +2829,25 @@ abstract final class UserAccessSchema {
       return;
     }
     if (json.containsKey('permissions')) {
-      final value77 = json['permissions'];
-      if (value77 is! List) {
+      final value79 = json['permissions'];
+      if (value79 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i78 = 0; i78 < value77.length; i78++) {
-          final item79 = value77[i78];
-          if (item79 is! String ||
+        for (var i80 = 0; i80 < value79.length; i80++) {
+          final item81 = value79[i80];
+          if (item81 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -2796,10 +2857,10 @@ abstract final class UserAccessSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item79))) {
+                  }.contains(item81))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i78'),
+              joinPath(joinPath(path, 'permissions'), '$i80'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -2813,41 +2874,41 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('roles')) {
-      final value80 = json['roles'];
-      if (value80 is! List) {
+      final value82 = json['roles'];
+      if (value82 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'roles'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value80.length > 50) {
+        if (value82.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'roles'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i81 = 0; i81 < value80.length; i81++) {
-          final item82 = value80[i81];
-          if (item82 is! String) {
+        for (var i83 = 0; i83 < value82.length; i83++) {
+          final item84 = value82[i83];
+          if (item84 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'roles'), '$i81'),
+              joinPath(joinPath(path, 'roles'), '$i83'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (item82.isEmpty) {
+            if (item84.isEmpty) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'roles'), '$i81'),
+                joinPath(joinPath(path, 'roles'), '$i83'),
                 PlatformErrorCode.validationTooShort.code,
               );
             }
-            if (item82.length > 80) {
+            if (item84.length > 80) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'roles'), '$i81'),
+                joinPath(joinPath(path, 'roles'), '$i83'),
                 PlatformErrorCode.validationTooLong.code,
               );
             }
@@ -2862,22 +2923,22 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('permissionVersion')) {
-      final value83 = json['permissionVersion'];
-      if (value83 is! String) {
+      final value85 = json['permissionVersion'];
+      if (value85 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'permissionVersion'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value83.length > 32) {
+        if (value85.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'permissionVersion'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern6.hasMatch(value83)) {
+        if (!_pattern7.hasMatch(value85)) {
           addFieldError(
             errors,
             joinPath(path, 'permissionVersion'),
@@ -2893,27 +2954,27 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('platformRoles')) {
-      final value84 = json['platformRoles'];
-      if (value84 is! List) {
+      final value86 = json['platformRoles'];
+      if (value86 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'platformRoles'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i85 = 0; i85 < value84.length; i85++) {
-          final item86 = value84[i85];
-          if (item86 is! String ||
+        for (var i87 = 0; i87 < value86.length; i87++) {
+          final item88 = value86[i87];
+          if (item88 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'super_admin',
                     'support',
                     'finance',
                     'read_only',
-                  }.contains(item86))) {
+                  }.contains(item88))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'platformRoles'), '$i85'),
+              joinPath(joinPath(path, 'platformRoles'), '$i87'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -2927,26 +2988,27 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('features')) {
-      final value87 = json['features'];
-      if (value87 is! List) {
+      final value89 = json['features'];
+      if (value89 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'features'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i88 = 0; i88 < value87.length; i88++) {
-          final item89 = value87[i88];
-          if (item89 is! String ||
+        for (var i90 = 0; i90 < value89.length; i90++) {
+          final item91 = value89[i90];
+          if (item91 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'ai_assistant',
                     'webhooks',
                     'billing',
-                  }.contains(item89))) {
+                    'advanced_reports',
+                  }.contains(item91))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'features'), '$i88'),
+              joinPath(joinPath(path, 'features'), '$i90'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -2960,22 +3022,22 @@ abstract final class UserAccessSchema {
       );
     }
     if (json.containsKey('flags')) {
-      final value90 = json['flags'];
-      if (value90 is! List) {
+      final value92 = json['flags'];
+      if (value92 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'flags'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i91 = 0; i91 < value90.length; i91++) {
-          final item92 = value90[i91];
-          if (item92 is! String ||
+        for (var i93 = 0; i93 < value92.length; i93++) {
+          final item94 = value92[i93];
+          if (item94 is! String ||
               (!acceptUnknownEnums &&
-                  !const <String>{'new_reports'}.contains(item92))) {
+                  !const <String>{'new_reports'}.contains(item94))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'flags'), '$i91'),
+              joinPath(joinPath(path, 'flags'), '$i93'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -3034,15 +3096,15 @@ abstract final class SessionAccessSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value93 = json['userId'];
-      if (value93 is! String) {
+      final value95 = json['userId'];
+      if (value95 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value93)) {
+        if (!_pattern0.hasMatch(value95)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -3058,15 +3120,15 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value94 = json['tenantId'];
-      if (value94 is! String) {
+      final value96 = json['tenantId'];
+      if (value96 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value94)) {
+        if (!_pattern0.hasMatch(value96)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -3082,15 +3144,15 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('sessionId')) {
-      final value95 = json['sessionId'];
-      if (value95 is! String) {
+      final value97 = json['sessionId'];
+      if (value97 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value95)) {
+        if (!_pattern0.hasMatch(value97)) {
           addFieldError(
             errors,
             joinPath(path, 'sessionId'),
@@ -3106,23 +3168,25 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value96 = json['permissions'];
-      if (value96 is! List) {
+      final value98 = json['permissions'];
+      if (value98 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i97 = 0; i97 < value96.length; i97++) {
-          final item98 = value96[i97];
-          if (item98 is! String ||
+        for (var i99 = 0; i99 < value98.length; i99++) {
+          final item100 = value98[i99];
+          if (item100 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -3132,10 +3196,10 @@ abstract final class SessionAccessSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item98))) {
+                  }.contains(item100))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i97'),
+              joinPath(joinPath(path, 'permissions'), '$i99'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -3149,41 +3213,41 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('roles')) {
-      final value99 = json['roles'];
-      if (value99 is! List) {
+      final value101 = json['roles'];
+      if (value101 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'roles'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value99.length > 50) {
+        if (value101.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'roles'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i100 = 0; i100 < value99.length; i100++) {
-          final item101 = value99[i100];
-          if (item101 is! String) {
+        for (var i102 = 0; i102 < value101.length; i102++) {
+          final item103 = value101[i102];
+          if (item103 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'roles'), '$i100'),
+              joinPath(joinPath(path, 'roles'), '$i102'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (item101.isEmpty) {
+            if (item103.isEmpty) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'roles'), '$i100'),
+                joinPath(joinPath(path, 'roles'), '$i102'),
                 PlatformErrorCode.validationTooShort.code,
               );
             }
-            if (item101.length > 80) {
+            if (item103.length > 80) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'roles'), '$i100'),
+                joinPath(joinPath(path, 'roles'), '$i102'),
                 PlatformErrorCode.validationTooLong.code,
               );
             }
@@ -3198,22 +3262,22 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('permissionVersion')) {
-      final value102 = json['permissionVersion'];
-      if (value102 is! String) {
+      final value104 = json['permissionVersion'];
+      if (value104 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'permissionVersion'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value102.length > 32) {
+        if (value104.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'permissionVersion'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern6.hasMatch(value102)) {
+        if (!_pattern7.hasMatch(value104)) {
           addFieldError(
             errors,
             joinPath(path, 'permissionVersion'),
@@ -3229,27 +3293,27 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('platformRoles')) {
-      final value103 = json['platformRoles'];
-      if (value103 is! List) {
+      final value105 = json['platformRoles'];
+      if (value105 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'platformRoles'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i104 = 0; i104 < value103.length; i104++) {
-          final item105 = value103[i104];
-          if (item105 is! String ||
+        for (var i106 = 0; i106 < value105.length; i106++) {
+          final item107 = value105[i106];
+          if (item107 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'super_admin',
                     'support',
                     'finance',
                     'read_only',
-                  }.contains(item105))) {
+                  }.contains(item107))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'platformRoles'), '$i104'),
+              joinPath(joinPath(path, 'platformRoles'), '$i106'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -3263,26 +3327,27 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('features')) {
-      final value106 = json['features'];
-      if (value106 is! List) {
+      final value108 = json['features'];
+      if (value108 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'features'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i107 = 0; i107 < value106.length; i107++) {
-          final item108 = value106[i107];
-          if (item108 is! String ||
+        for (var i109 = 0; i109 < value108.length; i109++) {
+          final item110 = value108[i109];
+          if (item110 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'ai_assistant',
                     'webhooks',
                     'billing',
-                  }.contains(item108))) {
+                    'advanced_reports',
+                  }.contains(item110))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'features'), '$i107'),
+              joinPath(joinPath(path, 'features'), '$i109'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -3296,22 +3361,22 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('flags')) {
-      final value109 = json['flags'];
-      if (value109 is! List) {
+      final value111 = json['flags'];
+      if (value111 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'flags'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        for (var i110 = 0; i110 < value109.length; i110++) {
-          final item111 = value109[i110];
-          if (item111 is! String ||
+        for (var i112 = 0; i112 < value111.length; i112++) {
+          final item113 = value111[i112];
+          if (item113 is! String ||
               (!acceptUnknownEnums &&
-                  !const <String>{'new_reports'}.contains(item111))) {
+                  !const <String>{'new_reports'}.contains(item113))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'flags'), '$i110'),
+              joinPath(joinPath(path, 'flags'), '$i112'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -3325,16 +3390,16 @@ abstract final class SessionAccessSchema {
       );
     }
     if (json.containsKey('mfaVerifiedAt')) {
-      final value112 = json['mfaVerifiedAt'];
-      if (value112 != null) {
-        if (value112 is! String) {
+      final value114 = json['mfaVerifiedAt'];
+      if (value114 != null) {
+        if (value114 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'mfaVerifiedAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value112)) {
+          if (!_pattern3.hasMatch(value114)) {
             addFieldError(
               errors,
               joinPath(path, 'mfaVerifiedAt'),
@@ -3396,15 +3461,15 @@ abstract final class SessionRevokedPayloadSchema {
       return;
     }
     if (json.containsKey('sessionId')) {
-      final value113 = json['sessionId'];
-      if (value113 is! String) {
+      final value115 = json['sessionId'];
+      if (value115 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sessionId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value113)) {
+        if (!_pattern0.hasMatch(value115)) {
           addFieldError(
             errors,
             joinPath(path, 'sessionId'),
@@ -3420,15 +3485,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('userId')) {
-      final value114 = json['userId'];
-      if (value114 is! String) {
+      final value116 = json['userId'];
+      if (value116 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value114)) {
+        if (!_pattern0.hasMatch(value116)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -3444,15 +3509,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value115 = json['tenantId'];
-      if (value115 is! String) {
+      final value117 = json['tenantId'];
+      if (value117 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value115)) {
+        if (!_pattern0.hasMatch(value117)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -3468,15 +3533,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value116 = json['reason'];
-      if (value116 is! String ||
+      final value118 = json['reason'];
+      if (value118 is! String ||
           !const <String>{
             'logout',
             'user_action',
             'password_changed',
             'admin_action',
             'compromised',
-          }.contains(value116)) {
+          }.contains(value118)) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
@@ -3491,15 +3556,15 @@ abstract final class SessionRevokedPayloadSchema {
       );
     }
     if (json.containsKey('revokedAt')) {
-      final value117 = json['revokedAt'];
-      if (value117 is! String) {
+      final value119 = json['revokedAt'];
+      if (value119 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'revokedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value117)) {
+        if (!_pattern3.hasMatch(value119)) {
           addFieldError(
             errors,
             joinPath(path, 'revokedAt'),
@@ -3560,9 +3625,9 @@ abstract final class TokensRevokedPayloadSchema {
       return;
     }
     if (json.containsKey('scope')) {
-      final value118 = json['scope'];
-      if (value118 is! String ||
-          !const <String>{'session', 'user', 'tenant'}.contains(value118)) {
+      final value120 = json['scope'];
+      if (value120 is! String ||
+          !const <String>{'session', 'user', 'tenant'}.contains(value120)) {
         addFieldError(
           errors,
           joinPath(path, 'scope'),
@@ -3577,15 +3642,15 @@ abstract final class TokensRevokedPayloadSchema {
       );
     }
     if (json.containsKey('subjectId')) {
-      final value119 = json['subjectId'];
-      if (value119 is! String) {
+      final value121 = json['subjectId'];
+      if (value121 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'subjectId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value119)) {
+        if (!_pattern0.hasMatch(value121)) {
           addFieldError(
             errors,
             joinPath(path, 'subjectId'),
@@ -3601,15 +3666,15 @@ abstract final class TokensRevokedPayloadSchema {
       );
     }
     if (json.containsKey('revokedBefore')) {
-      final value120 = json['revokedBefore'];
-      if (value120 is! String) {
+      final value122 = json['revokedBefore'];
+      if (value122 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'revokedBefore'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value120)) {
+        if (!_pattern3.hasMatch(value122)) {
           addFieldError(
             errors,
             joinPath(path, 'revokedBefore'),
@@ -3670,22 +3735,22 @@ abstract final class SignUpRequestSchema {
       return;
     }
     if (json.containsKey('email')) {
-      final value121 = json['email'];
-      if (value121 is! String) {
+      final value123 = json['email'];
+      if (value123 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value121.length > 254) {
+        if (value123.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value121)) {
+        if (!_pattern2.hasMatch(value123)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -3701,22 +3766,22 @@ abstract final class SignUpRequestSchema {
       );
     }
     if (json.containsKey('password')) {
-      final value122 = json['password'];
-      if (value122 is! String) {
+      final value124 = json['password'];
+      if (value124 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'password'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value122.isEmpty) {
+        if (value124.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'password'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value122.length > 128) {
+        if (value124.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'password'),
@@ -3732,22 +3797,22 @@ abstract final class SignUpRequestSchema {
       );
     }
     if (json.containsKey('displayName')) {
-      final value123 = json['displayName'];
-      if (value123 is! String) {
+      final value125 = json['displayName'];
+      if (value125 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'displayName'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value123.isEmpty) {
+        if (value125.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value123.length > 120) {
+        if (value125.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
@@ -3763,29 +3828,29 @@ abstract final class SignUpRequestSchema {
       );
     }
     if (json.containsKey('locale')) {
-      final value124 = json['locale'];
-      if (value124 is! String) {
+      final value126 = json['locale'];
+      if (value126 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'locale'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value124.length < 2) {
+        if (value126.length < 2) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value124.length > 35) {
+        if (value126.length > 35) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern7.hasMatch(value124)) {
+        if (!_pattern8.hasMatch(value126)) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
@@ -3801,22 +3866,22 @@ abstract final class SignUpRequestSchema {
       );
     }
     if (json.containsKey('invitationToken')) {
-      final value125 = json['invitationToken'];
-      if (value125 is! String) {
+      final value127 = json['invitationToken'];
+      if (value127 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'invitationToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value125.isEmpty) {
+        if (value127.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'invitationToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value125.length > 512) {
+        if (value127.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'invitationToken'),
@@ -3886,22 +3951,22 @@ abstract final class EmailVerificationRequestSchema {
       return;
     }
     if (json.containsKey('email')) {
-      final value126 = json['email'];
-      if (value126 is! String) {
+      final value128 = json['email'];
+      if (value128 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value126.length > 254) {
+        if (value128.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value126)) {
+        if (!_pattern2.hasMatch(value128)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -3972,22 +4037,22 @@ abstract final class EmailVerificationConfirmRequestSchema {
       return;
     }
     if (json.containsKey('token')) {
-      final value127 = json['token'];
-      if (value127 is! String) {
+      final value129 = json['token'];
+      if (value129 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'token'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value127.isEmpty) {
+        if (value129.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value127.length > 512) {
+        if (value129.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
@@ -4059,15 +4124,15 @@ abstract final class UserProfileSchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value128 = json['id'];
-      if (value128 is! String) {
+      final value130 = json['id'];
+      if (value130 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value128)) {
+        if (!_pattern0.hasMatch(value130)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -4083,22 +4148,22 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('email')) {
-      final value129 = json['email'];
-      if (value129 is! String) {
+      final value131 = json['email'];
+      if (value131 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value129.length > 254) {
+        if (value131.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value129)) {
+        if (!_pattern2.hasMatch(value131)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -4114,16 +4179,16 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('emailVerifiedAt')) {
-      final value130 = json['emailVerifiedAt'];
-      if (value130 != null) {
-        if (value130 is! String) {
+      final value132 = json['emailVerifiedAt'];
+      if (value132 != null) {
+        if (value132 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'emailVerifiedAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value130)) {
+          if (!_pattern3.hasMatch(value132)) {
             addFieldError(
               errors,
               joinPath(path, 'emailVerifiedAt'),
@@ -4140,22 +4205,22 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('displayName')) {
-      final value131 = json['displayName'];
-      if (value131 is! String) {
+      final value133 = json['displayName'];
+      if (value133 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'displayName'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value131.isEmpty) {
+        if (value133.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value131.length > 120) {
+        if (value133.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
@@ -4171,29 +4236,29 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('locale')) {
-      final value132 = json['locale'];
-      if (value132 is! String) {
+      final value134 = json['locale'];
+      if (value134 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'locale'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value132.length < 2) {
+        if (value134.length < 2) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value132.length > 35) {
+        if (value134.length > 35) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern7.hasMatch(value132)) {
+        if (!_pattern8.hasMatch(value134)) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
@@ -4209,14 +4274,14 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('status')) {
-      final value133 = json['status'];
-      if (value133 is! String ||
+      final value135 = json['status'];
+      if (value135 is! String ||
           !const <String>{
             'pending_verification',
             'active',
             'suspended',
             'deleted',
-          }.contains(value133)) {
+          }.contains(value135)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -4231,15 +4296,15 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('homeTenantId')) {
-      final value134 = json['homeTenantId'];
-      if (value134 is! String) {
+      final value136 = json['homeTenantId'];
+      if (value136 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'homeTenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value134)) {
+        if (!_pattern0.hasMatch(value136)) {
           addFieldError(
             errors,
             joinPath(path, 'homeTenantId'),
@@ -4255,16 +4320,16 @@ abstract final class UserProfileSchema {
       );
     }
     if (json.containsKey('lastTenantId')) {
-      final value135 = json['lastTenantId'];
-      if (value135 != null) {
-        if (value135 is! String) {
+      final value137 = json['lastTenantId'];
+      if (value137 != null) {
+        if (value137 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'lastTenantId'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern0.hasMatch(value135)) {
+          if (!_pattern0.hasMatch(value137)) {
             addFieldError(
               errors,
               joinPath(path, 'lastTenantId'),
@@ -4326,22 +4391,22 @@ abstract final class UpdateProfileRequestSchema {
       return;
     }
     if (json.containsKey('displayName')) {
-      final value136 = json['displayName'];
-      if (value136 is! String) {
+      final value138 = json['displayName'];
+      if (value138 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'displayName'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value136.isEmpty) {
+        if (value138.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value136.length > 120) {
+        if (value138.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
@@ -4351,29 +4416,29 @@ abstract final class UpdateProfileRequestSchema {
       }
     }
     if (json.containsKey('locale')) {
-      final value137 = json['locale'];
-      if (value137 is! String) {
+      final value139 = json['locale'];
+      if (value139 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'locale'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value137.length < 2) {
+        if (value139.length < 2) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value137.length > 35) {
+        if (value139.length > 35) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern7.hasMatch(value137)) {
+        if (!_pattern8.hasMatch(value139)) {
           addFieldError(
             errors,
             joinPath(path, 'locale'),
@@ -4437,22 +4502,22 @@ abstract final class EmailChangeRequestSchema {
       return;
     }
     if (json.containsKey('newEmail')) {
-      final value138 = json['newEmail'];
-      if (value138 is! String) {
+      final value140 = json['newEmail'];
+      if (value140 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'newEmail'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value138.length > 254) {
+        if (value140.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'newEmail'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value138)) {
+        if (!_pattern2.hasMatch(value140)) {
           addFieldError(
             errors,
             joinPath(path, 'newEmail'),
@@ -4522,22 +4587,22 @@ abstract final class EmailChangeConfirmRequestSchema {
       return;
     }
     if (json.containsKey('token')) {
-      final value139 = json['token'];
-      if (value139 is! String) {
+      final value141 = json['token'];
+      if (value141 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'token'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value139.isEmpty) {
+        if (value141.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value139.length > 512) {
+        if (value141.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
@@ -4608,15 +4673,15 @@ abstract final class SuspendUserInputSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value140 = json['userId'];
-      if (value140 is! String) {
+      final value142 = json['userId'];
+      if (value142 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value140)) {
+        if (!_pattern0.hasMatch(value142)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -4632,22 +4697,22 @@ abstract final class SuspendUserInputSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value141 = json['reason'];
-      if (value141 is! String) {
+      final value143 = json['reason'];
+      if (value143 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value141.isEmpty) {
+        if (value143.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value141.length > 200) {
+        if (value143.length > 200) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
@@ -4711,15 +4776,15 @@ abstract final class ReactivateUserInputSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value142 = json['userId'];
-      if (value142 is! String) {
+      final value144 = json['userId'];
+      if (value144 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value142)) {
+        if (!_pattern0.hasMatch(value144)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -4789,15 +4854,15 @@ abstract final class UserOperationResultSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value143 = json['userId'];
-      if (value143 is! String) {
+      final value145 = json['userId'];
+      if (value145 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value143)) {
+        if (!_pattern0.hasMatch(value145)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -4813,14 +4878,14 @@ abstract final class UserOperationResultSchema {
       );
     }
     if (json.containsKey('status')) {
-      final value144 = json['status'];
-      if (value144 is! String ||
+      final value146 = json['status'];
+      if (value146 is! String ||
           !const <String>{
             'pending_verification',
             'active',
             'suspended',
             'deleted',
-          }.contains(value144)) {
+          }.contains(value146)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -4880,15 +4945,15 @@ abstract final class GetUserProfileInputSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value145 = json['userId'];
-      if (value145 is! String) {
+      final value147 = json['userId'];
+      if (value147 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value145)) {
+        if (!_pattern0.hasMatch(value147)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -4958,22 +5023,22 @@ abstract final class ChangePasswordRequestSchema {
       return;
     }
     if (json.containsKey('currentPassword')) {
-      final value146 = json['currentPassword'];
-      if (value146 is! String) {
+      final value148 = json['currentPassword'];
+      if (value148 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'currentPassword'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value146.isEmpty) {
+        if (value148.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'currentPassword'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value146.length > 128) {
+        if (value148.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'currentPassword'),
@@ -4989,22 +5054,22 @@ abstract final class ChangePasswordRequestSchema {
       );
     }
     if (json.containsKey('newPassword')) {
-      final value147 = json['newPassword'];
-      if (value147 is! String) {
+      final value149 = json['newPassword'];
+      if (value149 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'newPassword'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value147.isEmpty) {
+        if (value149.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'newPassword'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value147.length > 128) {
+        if (value149.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'newPassword'),
@@ -5074,22 +5139,22 @@ abstract final class PasswordResetRequestSchema {
       return;
     }
     if (json.containsKey('email')) {
-      final value148 = json['email'];
-      if (value148 is! String) {
+      final value150 = json['email'];
+      if (value150 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value148.length > 254) {
+        if (value150.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value148)) {
+        if (!_pattern2.hasMatch(value150)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -5159,22 +5224,22 @@ abstract final class PasswordResetConfirmRequestSchema {
       return;
     }
     if (json.containsKey('token')) {
-      final value149 = json['token'];
-      if (value149 is! String) {
+      final value151 = json['token'];
+      if (value151 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'token'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value149.isEmpty) {
+        if (value151.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value149.length > 512) {
+        if (value151.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
@@ -5190,22 +5255,22 @@ abstract final class PasswordResetConfirmRequestSchema {
       );
     }
     if (json.containsKey('newPassword')) {
-      final value150 = json['newPassword'];
-      if (value150 is! String) {
+      final value152 = json['newPassword'];
+      if (value152 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'newPassword'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value150.isEmpty) {
+        if (value152.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'newPassword'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value150.length > 128) {
+        if (value152.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'newPassword'),
@@ -5276,15 +5341,15 @@ abstract final class RemoveDeviceRequestSchema {
       return;
     }
     if (json.containsKey('deviceId')) {
-      final value151 = json['deviceId'];
-      if (value151 is! String) {
+      final value153 = json['deviceId'];
+      if (value153 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value151)) {
+        if (!_pattern0.hasMatch(value153)) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -5354,15 +5419,15 @@ abstract final class UntrustDeviceRequestSchema {
       return;
     }
     if (json.containsKey('deviceId')) {
-      final value152 = json['deviceId'];
-      if (value152 is! String) {
+      final value154 = json['deviceId'];
+      if (value154 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value152)) {
+        if (!_pattern0.hasMatch(value154)) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -5432,22 +5497,22 @@ abstract final class PushTokenRequestSchema {
       return;
     }
     if (json.containsKey('pushToken')) {
-      final value153 = json['pushToken'];
-      if (value153 is! String) {
+      final value155 = json['pushToken'];
+      if (value155 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'pushToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value153.isEmpty) {
+        if (value155.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'pushToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value153.length > 512) {
+        if (value155.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'pushToken'),
@@ -5517,22 +5582,22 @@ abstract final class PullDeviceApprovalsRequestSchema {
       return;
     }
     if (json.containsKey('deviceId')) {
-      final value154 = json['deviceId'];
-      if (value154 is! String) {
+      final value156 = json['deviceId'];
+      if (value156 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value154.isEmpty) {
+        if (value156.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value154.length > 512) {
+        if (value156.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -5548,15 +5613,15 @@ abstract final class PullDeviceApprovalsRequestSchema {
       );
     }
     if (json.containsKey('timestamp')) {
-      final value155 = json['timestamp'];
-      if (value155 is! String) {
+      final value157 = json['timestamp'];
+      if (value157 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'timestamp'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value155)) {
+        if (!_pattern3.hasMatch(value157)) {
           addFieldError(
             errors,
             joinPath(path, 'timestamp'),
@@ -5572,29 +5637,29 @@ abstract final class PullDeviceApprovalsRequestSchema {
       );
     }
     if (json.containsKey('nonce')) {
-      final value156 = json['nonce'];
-      if (value156 is! String) {
+      final value158 = json['nonce'];
+      if (value158 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'nonce'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value156.length < 16) {
+        if (value158.length < 16) {
           addFieldError(
             errors,
             joinPath(path, 'nonce'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value156.length > 128) {
+        if (value158.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'nonce'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value156)) {
+        if (!_pattern6.hasMatch(value158)) {
           addFieldError(
             errors,
             joinPath(path, 'nonce'),
@@ -5610,29 +5675,29 @@ abstract final class PullDeviceApprovalsRequestSchema {
       );
     }
     if (json.containsKey('signature')) {
-      final value157 = json['signature'];
-      if (value157 is! String) {
+      final value159 = json['signature'];
+      if (value159 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'signature'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value157.isEmpty) {
+        if (value159.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'signature'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value157.length > 256) {
+        if (value159.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'signature'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value157)) {
+        if (!_pattern6.hasMatch(value159)) {
           addFieldError(
             errors,
             joinPath(path, 'signature'),
@@ -5708,15 +5773,15 @@ abstract final class DenyDeviceApprovalRequestSchema {
       return;
     }
     if (json.containsKey('challengeId')) {
-      final value158 = json['challengeId'];
-      if (value158 is! String) {
+      final value160 = json['challengeId'];
+      if (value160 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value158)) {
+        if (!_pattern0.hasMatch(value160)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -5732,22 +5797,22 @@ abstract final class DenyDeviceApprovalRequestSchema {
       );
     }
     if (json.containsKey('deviceId')) {
-      final value159 = json['deviceId'];
-      if (value159 is! String) {
+      final value161 = json['deviceId'];
+      if (value161 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value159.isEmpty) {
+        if (value161.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value159.length > 512) {
+        if (value161.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -5763,15 +5828,15 @@ abstract final class DenyDeviceApprovalRequestSchema {
       );
     }
     if (json.containsKey('timestamp')) {
-      final value160 = json['timestamp'];
-      if (value160 is! String) {
+      final value162 = json['timestamp'];
+      if (value162 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'timestamp'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value160)) {
+        if (!_pattern3.hasMatch(value162)) {
           addFieldError(
             errors,
             joinPath(path, 'timestamp'),
@@ -5787,29 +5852,29 @@ abstract final class DenyDeviceApprovalRequestSchema {
       );
     }
     if (json.containsKey('nonce')) {
-      final value161 = json['nonce'];
-      if (value161 is! String) {
+      final value163 = json['nonce'];
+      if (value163 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'nonce'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value161.length < 16) {
+        if (value163.length < 16) {
           addFieldError(
             errors,
             joinPath(path, 'nonce'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value161.length > 128) {
+        if (value163.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'nonce'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value161)) {
+        if (!_pattern6.hasMatch(value163)) {
           addFieldError(
             errors,
             joinPath(path, 'nonce'),
@@ -5825,29 +5890,29 @@ abstract final class DenyDeviceApprovalRequestSchema {
       );
     }
     if (json.containsKey('signature')) {
-      final value162 = json['signature'];
-      if (value162 is! String) {
+      final value164 = json['signature'];
+      if (value164 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'signature'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value162.isEmpty) {
+        if (value164.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'signature'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value162.length > 256) {
+        if (value164.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'signature'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value162)) {
+        if (!_pattern6.hasMatch(value164)) {
           addFieldError(
             errors,
             joinPath(path, 'signature'),
@@ -5924,22 +5989,22 @@ abstract final class ApprovalContextSchema {
       return;
     }
     if (json.containsKey('browser')) {
-      final value163 = json['browser'];
-      if (value163 is! String) {
+      final value165 = json['browser'];
+      if (value165 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'browser'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value163.isEmpty) {
+        if (value165.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'browser'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value163.length > 120) {
+        if (value165.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'browser'),
@@ -5949,22 +6014,22 @@ abstract final class ApprovalContextSchema {
       }
     }
     if (json.containsKey('os')) {
-      final value164 = json['os'];
-      if (value164 is! String) {
+      final value166 = json['os'];
+      if (value166 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'os'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value164.isEmpty) {
+        if (value166.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'os'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value164.length > 120) {
+        if (value166.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'os'),
@@ -5974,22 +6039,22 @@ abstract final class ApprovalContextSchema {
       }
     }
     if (json.containsKey('ip')) {
-      final value165 = json['ip'];
-      if (value165 is! String) {
+      final value167 = json['ip'];
+      if (value167 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'ip'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value165.isEmpty) {
+        if (value167.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'ip'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value165.length > 120) {
+        if (value167.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'ip'),
@@ -5999,22 +6064,22 @@ abstract final class ApprovalContextSchema {
       }
     }
     if (json.containsKey('city')) {
-      final value166 = json['city'];
-      if (value166 is! String) {
+      final value168 = json['city'];
+      if (value168 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'city'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value166.isEmpty) {
+        if (value168.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'city'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value166.length > 120) {
+        if (value168.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'city'),
@@ -6069,15 +6134,15 @@ abstract final class DeviceApprovalSchema {
       return;
     }
     if (json.containsKey('challengeId')) {
-      final value167 = json['challengeId'];
-      if (value167 is! String) {
+      final value169 = json['challengeId'];
+      if (value169 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value167)) {
+        if (!_pattern0.hasMatch(value169)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -6093,22 +6158,22 @@ abstract final class DeviceApprovalSchema {
       );
     }
     if (json.containsKey('code')) {
-      final value168 = json['code'];
-      if (value168 is! String) {
+      final value170 = json['code'];
+      if (value170 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'code'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value168.length < 6) {
+        if (value170.length < 6) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value168.length > 64) {
+        if (value170.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
@@ -6124,15 +6189,15 @@ abstract final class DeviceApprovalSchema {
       );
     }
     if (json.containsKey('requestedAt')) {
-      final value169 = json['requestedAt'];
-      if (value169 is! String) {
+      final value171 = json['requestedAt'];
+      if (value171 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'requestedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value169)) {
+        if (!_pattern3.hasMatch(value171)) {
           addFieldError(
             errors,
             joinPath(path, 'requestedAt'),
@@ -6148,15 +6213,15 @@ abstract final class DeviceApprovalSchema {
       );
     }
     if (json.containsKey('expiresAt')) {
-      final value170 = json['expiresAt'];
-      if (value170 is! String) {
+      final value172 = json['expiresAt'];
+      if (value172 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'expiresAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value170)) {
+        if (!_pattern3.hasMatch(value172)) {
           addFieldError(
             errors,
             joinPath(path, 'expiresAt'),
@@ -6172,9 +6237,9 @@ abstract final class DeviceApprovalSchema {
       );
     }
     if (json.containsKey('context')) {
-      final value171 = json['context'];
+      final value173 = json['context'];
       ApprovalContextSchema.check(
-        value171,
+        value173,
         joinPath(path, 'context'),
         errors,
         acceptUnknownEnums: acceptUnknownEnums,
@@ -6232,26 +6297,26 @@ abstract final class DeviceApprovalsSchema {
       return;
     }
     if (json.containsKey('approvals')) {
-      final value172 = json['approvals'];
-      if (value172 is! List) {
+      final value174 = json['approvals'];
+      if (value174 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'approvals'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value172.length > 20) {
+        if (value174.length > 20) {
           addFieldError(
             errors,
             joinPath(path, 'approvals'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i173 = 0; i173 < value172.length; i173++) {
-          final item174 = value172[i173];
+        for (var i175 = 0; i175 < value174.length; i175++) {
+          final item176 = value174[i175];
           DeviceApprovalSchema.check(
-            item174,
-            joinPath(joinPath(path, 'approvals'), '$i173'),
+            item176,
+            joinPath(joinPath(path, 'approvals'), '$i175'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -6310,22 +6375,22 @@ abstract final class TotpEnrollmentSchema {
       return;
     }
     if (json.containsKey('secret')) {
-      final value175 = json['secret'];
-      if (value175 is! String) {
+      final value177 = json['secret'];
+      if (value177 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'secret'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value175.isEmpty) {
+        if (value177.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'secret'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value175.length > 128) {
+        if (value177.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'secret'),
@@ -6341,22 +6406,22 @@ abstract final class TotpEnrollmentSchema {
       );
     }
     if (json.containsKey('otpauthUri')) {
-      final value176 = json['otpauthUri'];
-      if (value176 is! String) {
+      final value178 = json['otpauthUri'];
+      if (value178 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'otpauthUri'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value176.isEmpty) {
+        if (value178.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'otpauthUri'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value176.length > 512) {
+        if (value178.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'otpauthUri'),
@@ -6417,29 +6482,29 @@ abstract final class TotpConfirmRequestSchema {
       return;
     }
     if (json.containsKey('code')) {
-      final value177 = json['code'];
-      if (value177 is! String) {
+      final value179 = json['code'];
+      if (value179 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'code'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value177.length < 6) {
+        if (value179.length < 6) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value177.length > 8) {
+        if (value179.length > 8) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern8.hasMatch(value177)) {
+        if (!_pattern9.hasMatch(value179)) {
           addFieldError(
             errors,
             joinPath(path, 'code'),
@@ -6509,41 +6574,41 @@ abstract final class RecoveryCodesSchema {
       return;
     }
     if (json.containsKey('codes')) {
-      final value178 = json['codes'];
-      if (value178 is! List) {
+      final value180 = json['codes'];
+      if (value180 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'codes'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value178.length > 20) {
+        if (value180.length > 20) {
           addFieldError(
             errors,
             joinPath(path, 'codes'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i179 = 0; i179 < value178.length; i179++) {
-          final item180 = value178[i179];
-          if (item180 is! String) {
+        for (var i181 = 0; i181 < value180.length; i181++) {
+          final item182 = value180[i181];
+          if (item182 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'codes'), '$i179'),
+              joinPath(joinPath(path, 'codes'), '$i181'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (item180.length < 8) {
+            if (item182.length < 8) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'codes'), '$i179'),
+                joinPath(joinPath(path, 'codes'), '$i181'),
                 PlatformErrorCode.validationTooShort.code,
               );
             }
-            if (item180.length > 64) {
+            if (item182.length > 64) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'codes'), '$i179'),
+                joinPath(joinPath(path, 'codes'), '$i181'),
                 PlatformErrorCode.validationTooLong.code,
               );
             }
@@ -6603,22 +6668,22 @@ abstract final class MfaRecoveryStartRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value181 = json['mfaToken'];
-      if (value181 is! String) {
+      final value183 = json['mfaToken'];
+      if (value183 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value181.isEmpty) {
+        if (value183.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value181.length > 2048) {
+        if (value183.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -6689,15 +6754,15 @@ abstract final class MfaRecoveryStartedSchema {
       return;
     }
     if (json.containsKey('availableAt')) {
-      final value182 = json['availableAt'];
-      if (value182 is! String) {
+      final value184 = json['availableAt'];
+      if (value184 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'availableAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value182)) {
+        if (!_pattern3.hasMatch(value184)) {
           addFieldError(
             errors,
             joinPath(path, 'availableAt'),
@@ -6758,22 +6823,22 @@ abstract final class MfaRecoveryConfirmRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value183 = json['mfaToken'];
-      if (value183 is! String) {
+      final value185 = json['mfaToken'];
+      if (value185 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value183.isEmpty) {
+        if (value185.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value183.length > 2048) {
+        if (value185.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -6789,22 +6854,22 @@ abstract final class MfaRecoveryConfirmRequestSchema {
       );
     }
     if (json.containsKey('token')) {
-      final value184 = json['token'];
-      if (value184 is! String) {
+      final value186 = json['token'];
+      if (value186 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'token'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value184.isEmpty) {
+        if (value186.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value184.length > 512) {
+        if (value186.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
@@ -6820,29 +6885,29 @@ abstract final class MfaRecoveryConfirmRequestSchema {
       );
     }
     if (json.containsKey('devicePublicKey')) {
-      final value185 = json['devicePublicKey'];
-      if (value185 is! String) {
+      final value187 = json['devicePublicKey'];
+      if (value187 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'devicePublicKey'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value185.isEmpty) {
+        if (value187.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value185.length > 2048) {
+        if (value187.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value185)) {
+        if (!_pattern6.hasMatch(value187)) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
@@ -6911,15 +6976,15 @@ abstract final class PasskeyOptionsSchema {
       return;
     }
     if (json.containsKey('challengeId')) {
-      final value186 = json['challengeId'];
-      if (value186 is! String) {
+      final value188 = json['challengeId'];
+      if (value188 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value186)) {
+        if (!_pattern0.hasMatch(value188)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -6935,29 +7000,29 @@ abstract final class PasskeyOptionsSchema {
       );
     }
     if (json.containsKey('optionsJson')) {
-      final value187 = json['optionsJson'];
-      if (value187 is! String) {
+      final value189 = json['optionsJson'];
+      if (value189 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'optionsJson'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value187.isEmpty) {
+        if (value189.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'optionsJson'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value187.length > 8192) {
+        if (value189.length > 8192) {
           addFieldError(
             errors,
             joinPath(path, 'optionsJson'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value187)) {
+        if (!_pattern6.hasMatch(value189)) {
           addFieldError(
             errors,
             joinPath(path, 'optionsJson'),
@@ -7018,15 +7083,15 @@ abstract final class PasskeySignInVerifyRequestSchema {
       return;
     }
     if (json.containsKey('challengeId')) {
-      final value188 = json['challengeId'];
-      if (value188 is! String) {
+      final value190 = json['challengeId'];
+      if (value190 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value188)) {
+        if (!_pattern0.hasMatch(value190)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -7042,29 +7107,29 @@ abstract final class PasskeySignInVerifyRequestSchema {
       );
     }
     if (json.containsKey('credentialJson')) {
-      final value189 = json['credentialJson'];
-      if (value189 is! String) {
+      final value191 = json['credentialJson'];
+      if (value191 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'credentialJson'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value189.isEmpty) {
+        if (value191.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value189.length > 16384) {
+        if (value191.length > 16384) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value189)) {
+        if (!_pattern6.hasMatch(value191)) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
@@ -7080,22 +7145,22 @@ abstract final class PasskeySignInVerifyRequestSchema {
       );
     }
     if (json.containsKey('deviceId')) {
-      final value190 = json['deviceId'];
-      if (value190 is! String) {
+      final value192 = json['deviceId'];
+      if (value192 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value190.isEmpty) {
+        if (value192.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value190.length > 512) {
+        if (value192.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -7164,22 +7229,22 @@ abstract final class PasskeyMfaOptionsRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value191 = json['mfaToken'];
-      if (value191 is! String) {
+      final value193 = json['mfaToken'];
+      if (value193 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value191.isEmpty) {
+        if (value193.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value191.length > 2048) {
+        if (value193.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -7250,22 +7315,22 @@ abstract final class PasskeyMfaVerifyRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value192 = json['mfaToken'];
-      if (value192 is! String) {
+      final value194 = json['mfaToken'];
+      if (value194 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value192.isEmpty) {
+        if (value194.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value192.length > 2048) {
+        if (value194.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -7281,15 +7346,15 @@ abstract final class PasskeyMfaVerifyRequestSchema {
       );
     }
     if (json.containsKey('challengeId')) {
-      final value193 = json['challengeId'];
-      if (value193 is! String) {
+      final value195 = json['challengeId'];
+      if (value195 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value193)) {
+        if (!_pattern0.hasMatch(value195)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -7305,29 +7370,29 @@ abstract final class PasskeyMfaVerifyRequestSchema {
       );
     }
     if (json.containsKey('credentialJson')) {
-      final value194 = json['credentialJson'];
-      if (value194 is! String) {
+      final value196 = json['credentialJson'];
+      if (value196 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'credentialJson'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value194.isEmpty) {
+        if (value196.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value194.length > 16384) {
+        if (value196.length > 16384) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value194)) {
+        if (!_pattern6.hasMatch(value196)) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
@@ -7343,29 +7408,29 @@ abstract final class PasskeyMfaVerifyRequestSchema {
       );
     }
     if (json.containsKey('devicePublicKey')) {
-      final value195 = json['devicePublicKey'];
-      if (value195 is! String) {
+      final value197 = json['devicePublicKey'];
+      if (value197 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'devicePublicKey'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value195.isEmpty) {
+        if (value197.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value195.length > 2048) {
+        if (value197.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value195)) {
+        if (!_pattern6.hasMatch(value197)) {
           addFieldError(
             errors,
             joinPath(path, 'devicePublicKey'),
@@ -7435,22 +7500,22 @@ abstract final class PasskeyStepUpOptionsRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value196 = json['mfaToken'];
-      if (value196 is! String) {
+      final value198 = json['mfaToken'];
+      if (value198 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value196.isEmpty) {
+        if (value198.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value196.length > 2048) {
+        if (value198.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -7521,22 +7586,22 @@ abstract final class PasskeyStepUpVerifyRequestSchema {
       return;
     }
     if (json.containsKey('mfaToken')) {
-      final value197 = json['mfaToken'];
-      if (value197 is! String) {
+      final value199 = json['mfaToken'];
+      if (value199 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'mfaToken'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value197.isEmpty) {
+        if (value199.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value197.length > 2048) {
+        if (value199.length > 2048) {
           addFieldError(
             errors,
             joinPath(path, 'mfaToken'),
@@ -7552,15 +7617,15 @@ abstract final class PasskeyStepUpVerifyRequestSchema {
       );
     }
     if (json.containsKey('challengeId')) {
-      final value198 = json['challengeId'];
-      if (value198 is! String) {
+      final value200 = json['challengeId'];
+      if (value200 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value198)) {
+        if (!_pattern0.hasMatch(value200)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -7576,29 +7641,29 @@ abstract final class PasskeyStepUpVerifyRequestSchema {
       );
     }
     if (json.containsKey('credentialJson')) {
-      final value199 = json['credentialJson'];
-      if (value199 is! String) {
+      final value201 = json['credentialJson'];
+      if (value201 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'credentialJson'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value199.isEmpty) {
+        if (value201.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value199.length > 16384) {
+        if (value201.length > 16384) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value199)) {
+        if (!_pattern6.hasMatch(value201)) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
@@ -7673,15 +7738,15 @@ abstract final class PasskeySummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value200 = json['id'];
-      if (value200 is! String) {
+      final value202 = json['id'];
+      if (value202 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value200)) {
+        if (!_pattern0.hasMatch(value202)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -7697,22 +7762,22 @@ abstract final class PasskeySummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value201 = json['name'];
-      if (value201 is! String) {
+      final value203 = json['name'];
+      if (value203 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value201.isEmpty) {
+        if (value203.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value201.length > 120) {
+        if (value203.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -7728,15 +7793,15 @@ abstract final class PasskeySummarySchema {
       );
     }
     if (json.containsKey('createdAt')) {
-      final value202 = json['createdAt'];
-      if (value202 is! String) {
+      final value204 = json['createdAt'];
+      if (value204 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'createdAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value202)) {
+        if (!_pattern3.hasMatch(value204)) {
           addFieldError(
             errors,
             joinPath(path, 'createdAt'),
@@ -7752,16 +7817,16 @@ abstract final class PasskeySummarySchema {
       );
     }
     if (json.containsKey('lastUsedAt')) {
-      final value203 = json['lastUsedAt'];
-      if (value203 != null) {
-        if (value203 is! String) {
+      final value205 = json['lastUsedAt'];
+      if (value205 != null) {
+        if (value205 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'lastUsedAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value203)) {
+          if (!_pattern3.hasMatch(value205)) {
             addFieldError(
               errors,
               joinPath(path, 'lastUsedAt'),
@@ -7778,8 +7843,8 @@ abstract final class PasskeySummarySchema {
       );
     }
     if (json.containsKey('backedUp')) {
-      final value204 = json['backedUp'];
-      if (value204 is! bool) {
+      final value206 = json['backedUp'];
+      if (value206 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'backedUp'),
@@ -7839,26 +7904,26 @@ abstract final class PasskeyPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value205 = json['items'];
-      if (value205 is! List) {
+      final value207 = json['items'];
+      if (value207 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value205.length > 100) {
+        if (value207.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i206 = 0; i206 < value205.length; i206++) {
-          final item207 = value205[i206];
+        for (var i208 = 0; i208 < value207.length; i208++) {
+          final item209 = value207[i208];
           PasskeySummarySchema.check(
-            item207,
-            joinPath(joinPath(path, 'items'), '$i206'),
+            item209,
+            joinPath(joinPath(path, 'items'), '$i208'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -7872,30 +7937,30 @@ abstract final class PasskeyPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value208 = json['nextCursor'];
-      if (value208 != null) {
-        if (value208 is! String) {
+      final value210 = json['nextCursor'];
+      if (value210 != null) {
+        if (value210 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value208.isEmpty) {
+          if (value210.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value208.length > 512) {
+          if (value210.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value208)) {
+          if (!_pattern6.hasMatch(value210)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -7957,15 +8022,15 @@ abstract final class RegisterPasskeyRequestSchema {
       return;
     }
     if (json.containsKey('challengeId')) {
-      final value209 = json['challengeId'];
-      if (value209 is! String) {
+      final value211 = json['challengeId'];
+      if (value211 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'challengeId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value209)) {
+        if (!_pattern0.hasMatch(value211)) {
           addFieldError(
             errors,
             joinPath(path, 'challengeId'),
@@ -7981,29 +8046,29 @@ abstract final class RegisterPasskeyRequestSchema {
       );
     }
     if (json.containsKey('credentialJson')) {
-      final value210 = json['credentialJson'];
-      if (value210 is! String) {
+      final value212 = json['credentialJson'];
+      if (value212 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'credentialJson'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value210.isEmpty) {
+        if (value212.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value210.length > 16384) {
+        if (value212.length > 16384) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value210)) {
+        if (!_pattern6.hasMatch(value212)) {
           addFieldError(
             errors,
             joinPath(path, 'credentialJson'),
@@ -8019,22 +8084,22 @@ abstract final class RegisterPasskeyRequestSchema {
       );
     }
     if (json.containsKey('name')) {
-      final value211 = json['name'];
-      if (value211 is! String) {
+      final value213 = json['name'];
+      if (value213 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value211.isEmpty) {
+        if (value213.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value211.length > 120) {
+        if (value213.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -8109,15 +8174,15 @@ abstract final class RemovePasskeyRequestSchema {
       return;
     }
     if (json.containsKey('passkeyId')) {
-      final value212 = json['passkeyId'];
-      if (value212 is! String) {
+      final value214 = json['passkeyId'];
+      if (value214 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'passkeyId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value212)) {
+        if (!_pattern0.hasMatch(value214)) {
           addFieldError(
             errors,
             joinPath(path, 'passkeyId'),
@@ -8187,15 +8252,15 @@ abstract final class TenantSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value213 = json['id'];
-      if (value213 is! String) {
+      final value215 = json['id'];
+      if (value215 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value213)) {
+        if (!_pattern0.hasMatch(value215)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -8211,29 +8276,29 @@ abstract final class TenantSummarySchema {
       );
     }
     if (json.containsKey('slug')) {
-      final value214 = json['slug'];
-      if (value214 is! String) {
+      final value216 = json['slug'];
+      if (value216 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'slug'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value214.length < 3) {
+        if (value216.length < 3) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value214.length > 63) {
+        if (value216.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern9.hasMatch(value214)) {
+        if (!_pattern10.hasMatch(value216)) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
@@ -8249,22 +8314,22 @@ abstract final class TenantSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value215 = json['name'];
-      if (value215 is! String) {
+      final value217 = json['name'];
+      if (value217 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value215.isEmpty) {
+        if (value217.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value215.length > 120) {
+        if (value217.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -8280,22 +8345,22 @@ abstract final class TenantSummarySchema {
       );
     }
     if (json.containsKey('region')) {
-      final value216 = json['region'];
-      if (value216 is! String) {
+      final value218 = json['region'];
+      if (value218 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'region'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value216.isEmpty) {
+        if (value218.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value216.length > 32) {
+        if (value218.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
@@ -8311,13 +8376,13 @@ abstract final class TenantSummarySchema {
       );
     }
     if (json.containsKey('kind')) {
-      final value217 = json['kind'];
-      if (value217 is! String ||
+      final value219 = json['kind'];
+      if (value219 is! String ||
           !const <String>{
             'organization',
             'shared_customers',
             'platform',
-          }.contains(value217)) {
+          }.contains(value219)) {
         addFieldError(
           errors,
           joinPath(path, 'kind'),
@@ -8332,14 +8397,14 @@ abstract final class TenantSummarySchema {
       );
     }
     if (json.containsKey('status')) {
-      final value218 = json['status'];
-      if (value218 is! String ||
+      final value220 = json['status'];
+      if (value220 is! String ||
           !const <String>{
             'provisioning',
             'active',
             'suspended',
             'deleting',
-          }.contains(value218)) {
+          }.contains(value220)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -8399,29 +8464,29 @@ abstract final class CreateTenantRequestSchema {
       return;
     }
     if (json.containsKey('slug')) {
-      final value219 = json['slug'];
-      if (value219 is! String) {
+      final value221 = json['slug'];
+      if (value221 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'slug'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value219.length < 3) {
+        if (value221.length < 3) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value219.length > 63) {
+        if (value221.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern9.hasMatch(value219)) {
+        if (!_pattern10.hasMatch(value221)) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
@@ -8437,22 +8502,22 @@ abstract final class CreateTenantRequestSchema {
       );
     }
     if (json.containsKey('name')) {
-      final value220 = json['name'];
-      if (value220 is! String) {
+      final value222 = json['name'];
+      if (value222 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value220.isEmpty) {
+        if (value222.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value220.length > 120) {
+        if (value222.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -8468,22 +8533,22 @@ abstract final class CreateTenantRequestSchema {
       );
     }
     if (json.containsKey('region')) {
-      final value221 = json['region'];
-      if (value221 is! String) {
+      final value223 = json['region'];
+      if (value223 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'region'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value221.isEmpty) {
+        if (value223.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value221.length > 32) {
+        if (value223.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
@@ -8547,22 +8612,22 @@ abstract final class UpdateTenantRequestSchema {
       return;
     }
     if (json.containsKey('name')) {
-      final value222 = json['name'];
-      if (value222 is! String) {
+      final value224 = json['name'];
+      if (value224 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value222.isEmpty) {
+        if (value224.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value222.length > 120) {
+        if (value224.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -8626,15 +8691,15 @@ abstract final class MyTenantSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value223 = json['id'];
-      if (value223 is! String) {
+      final value225 = json['id'];
+      if (value225 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value223)) {
+        if (!_pattern0.hasMatch(value225)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -8650,29 +8715,29 @@ abstract final class MyTenantSummarySchema {
       );
     }
     if (json.containsKey('slug')) {
-      final value224 = json['slug'];
-      if (value224 is! String) {
+      final value226 = json['slug'];
+      if (value226 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'slug'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value224.length < 3) {
+        if (value226.length < 3) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value224.length > 63) {
+        if (value226.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern9.hasMatch(value224)) {
+        if (!_pattern10.hasMatch(value226)) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
@@ -8688,22 +8753,22 @@ abstract final class MyTenantSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value225 = json['name'];
-      if (value225 is! String) {
+      final value227 = json['name'];
+      if (value227 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value225.isEmpty) {
+        if (value227.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value225.length > 120) {
+        if (value227.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -8719,13 +8784,13 @@ abstract final class MyTenantSummarySchema {
       );
     }
     if (json.containsKey('kind')) {
-      final value226 = json['kind'];
-      if (value226 is! String ||
+      final value228 = json['kind'];
+      if (value228 is! String ||
           !const <String>{
             'organization',
             'shared_customers',
             'platform',
-          }.contains(value226)) {
+          }.contains(value228)) {
         addFieldError(
           errors,
           joinPath(path, 'kind'),
@@ -8740,14 +8805,14 @@ abstract final class MyTenantSummarySchema {
       );
     }
     if (json.containsKey('status')) {
-      final value227 = json['status'];
-      if (value227 is! String ||
+      final value229 = json['status'];
+      if (value229 is! String ||
           !const <String>{
             'provisioning',
             'active',
             'suspended',
             'deleting',
-          }.contains(value227)) {
+          }.contains(value229)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -8762,15 +8827,15 @@ abstract final class MyTenantSummarySchema {
       );
     }
     if (json.containsKey('joinedAt')) {
-      final value228 = json['joinedAt'];
-      if (value228 is! String) {
+      final value230 = json['joinedAt'];
+      if (value230 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'joinedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value228)) {
+        if (!_pattern3.hasMatch(value230)) {
           addFieldError(
             errors,
             joinPath(path, 'joinedAt'),
@@ -8831,26 +8896,26 @@ abstract final class MyTenantPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value229 = json['items'];
-      if (value229 is! List) {
+      final value231 = json['items'];
+      if (value231 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value229.length > 100) {
+        if (value231.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i230 = 0; i230 < value229.length; i230++) {
-          final item231 = value229[i230];
+        for (var i232 = 0; i232 < value231.length; i232++) {
+          final item233 = value231[i232];
           MyTenantSummarySchema.check(
-            item231,
-            joinPath(joinPath(path, 'items'), '$i230'),
+            item233,
+            joinPath(joinPath(path, 'items'), '$i232'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -8864,30 +8929,30 @@ abstract final class MyTenantPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value232 = json['nextCursor'];
-      if (value232 != null) {
-        if (value232 is! String) {
+      final value234 = json['nextCursor'];
+      if (value234 != null) {
+        if (value234 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value232.isEmpty) {
+          if (value234.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value232.length > 512) {
+          if (value234.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value232)) {
+          if (!_pattern6.hasMatch(value234)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -8949,15 +9014,15 @@ abstract final class SwitchTenantRequestSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value233 = json['tenantId'];
-      if (value233 is! String) {
+      final value235 = json['tenantId'];
+      if (value235 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value233)) {
+        if (!_pattern0.hasMatch(value235)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -9027,15 +9092,15 @@ abstract final class TenantOperationResultSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value234 = json['tenantId'];
-      if (value234 is! String) {
+      final value236 = json['tenantId'];
+      if (value236 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value234)) {
+        if (!_pattern0.hasMatch(value236)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -9051,14 +9116,14 @@ abstract final class TenantOperationResultSchema {
       );
     }
     if (json.containsKey('status')) {
-      final value235 = json['status'];
-      if (value235 is! String ||
+      final value237 = json['status'];
+      if (value237 is! String ||
           !const <String>{
             'provisioning',
             'active',
             'suspended',
             'deleting',
-          }.contains(value235)) {
+          }.contains(value237)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -9118,15 +9183,15 @@ abstract final class CreateTenantInputSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value236 = json['tenantId'];
-      if (value236 is! String) {
+      final value238 = json['tenantId'];
+      if (value238 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value236)) {
+        if (!_pattern0.hasMatch(value238)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -9142,29 +9207,29 @@ abstract final class CreateTenantInputSchema {
       );
     }
     if (json.containsKey('slug')) {
-      final value237 = json['slug'];
-      if (value237 is! String) {
+      final value239 = json['slug'];
+      if (value239 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'slug'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value237.length < 3) {
+        if (value239.length < 3) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value237.length > 63) {
+        if (value239.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern9.hasMatch(value237)) {
+        if (!_pattern10.hasMatch(value239)) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
@@ -9180,22 +9245,22 @@ abstract final class CreateTenantInputSchema {
       );
     }
     if (json.containsKey('name')) {
-      final value238 = json['name'];
-      if (value238 is! String) {
+      final value240 = json['name'];
+      if (value240 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value238.isEmpty) {
+        if (value240.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value238.length > 120) {
+        if (value240.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -9211,22 +9276,22 @@ abstract final class CreateTenantInputSchema {
       );
     }
     if (json.containsKey('region')) {
-      final value239 = json['region'];
-      if (value239 is! String) {
+      final value241 = json['region'];
+      if (value241 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'region'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value239.isEmpty) {
+        if (value241.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value239.length > 32) {
+        if (value241.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
@@ -9242,13 +9307,13 @@ abstract final class CreateTenantInputSchema {
       );
     }
     if (json.containsKey('kind')) {
-      final value240 = json['kind'];
-      if (value240 is! String ||
+      final value242 = json['kind'];
+      if (value242 is! String ||
           !const <String>{
             'organization',
             'shared_customers',
             'platform',
-          }.contains(value240)) {
+          }.contains(value242)) {
         addFieldError(
           errors,
           joinPath(path, 'kind'),
@@ -9263,15 +9328,15 @@ abstract final class CreateTenantInputSchema {
       );
     }
     if (json.containsKey('ownerUserId')) {
-      final value241 = json['ownerUserId'];
-      if (value241 is! String) {
+      final value243 = json['ownerUserId'];
+      if (value243 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'ownerUserId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value241)) {
+        if (!_pattern0.hasMatch(value243)) {
           addFieldError(
             errors,
             joinPath(path, 'ownerUserId'),
@@ -9348,15 +9413,15 @@ abstract final class TenantRefInputSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value242 = json['tenantId'];
-      if (value242 is! String) {
+      final value244 = json['tenantId'];
+      if (value244 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value242)) {
+        if (!_pattern0.hasMatch(value244)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -9426,15 +9491,15 @@ abstract final class SuspendTenantInputSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value243 = json['tenantId'];
-      if (value243 is! String) {
+      final value245 = json['tenantId'];
+      if (value245 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value243)) {
+        if (!_pattern0.hasMatch(value245)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -9450,22 +9515,22 @@ abstract final class SuspendTenantInputSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value244 = json['reason'];
-      if (value244 is! String) {
+      final value246 = json['reason'];
+      if (value246 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value244.isEmpty) {
+        if (value246.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value244.length > 200) {
+        if (value246.length > 200) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
@@ -9529,15 +9594,15 @@ abstract final class MemberSummarySchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value245 = json['userId'];
-      if (value245 is! String) {
+      final value247 = json['userId'];
+      if (value247 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value245)) {
+        if (!_pattern0.hasMatch(value247)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -9553,22 +9618,22 @@ abstract final class MemberSummarySchema {
       );
     }
     if (json.containsKey('email')) {
-      final value246 = json['email'];
-      if (value246 is! String) {
+      final value248 = json['email'];
+      if (value248 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value246.length > 254) {
+        if (value248.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value246)) {
+        if (!_pattern2.hasMatch(value248)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -9584,22 +9649,22 @@ abstract final class MemberSummarySchema {
       );
     }
     if (json.containsKey('displayName')) {
-      final value247 = json['displayName'];
-      if (value247 is! String) {
+      final value249 = json['displayName'];
+      if (value249 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'displayName'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value247.isEmpty) {
+        if (value249.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value247.length > 120) {
+        if (value249.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'displayName'),
@@ -9615,34 +9680,34 @@ abstract final class MemberSummarySchema {
       );
     }
     if (json.containsKey('groupIds')) {
-      final value248 = json['groupIds'];
-      if (value248 is! List) {
+      final value250 = json['groupIds'];
+      if (value250 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'groupIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value248.length > 50) {
+        if (value250.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'groupIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i249 = 0; i249 < value248.length; i249++) {
-          final item250 = value248[i249];
-          if (item250 is! String) {
+        for (var i251 = 0; i251 < value250.length; i251++) {
+          final item252 = value250[i251];
+          if (item252 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'groupIds'), '$i249'),
+              joinPath(joinPath(path, 'groupIds'), '$i251'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item250)) {
+            if (!_pattern0.hasMatch(item252)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'groupIds'), '$i249'),
+                joinPath(joinPath(path, 'groupIds'), '$i251'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -9657,15 +9722,15 @@ abstract final class MemberSummarySchema {
       );
     }
     if (json.containsKey('joinedAt')) {
-      final value251 = json['joinedAt'];
-      if (value251 is! String) {
+      final value253 = json['joinedAt'];
+      if (value253 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'joinedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value251)) {
+        if (!_pattern3.hasMatch(value253)) {
           addFieldError(
             errors,
             joinPath(path, 'joinedAt'),
@@ -9726,26 +9791,26 @@ abstract final class MemberPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value252 = json['items'];
-      if (value252 is! List) {
+      final value254 = json['items'];
+      if (value254 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value252.length > 100) {
+        if (value254.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i253 = 0; i253 < value252.length; i253++) {
-          final item254 = value252[i253];
+        for (var i255 = 0; i255 < value254.length; i255++) {
+          final item256 = value254[i255];
           MemberSummarySchema.check(
-            item254,
-            joinPath(joinPath(path, 'items'), '$i253'),
+            item256,
+            joinPath(joinPath(path, 'items'), '$i255'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -9759,30 +9824,30 @@ abstract final class MemberPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value255 = json['nextCursor'];
-      if (value255 != null) {
-        if (value255 is! String) {
+      final value257 = json['nextCursor'];
+      if (value257 != null) {
+        if (value257 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value255.isEmpty) {
+          if (value257.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value255.length > 512) {
+          if (value257.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value255)) {
+          if (!_pattern6.hasMatch(value257)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -9844,15 +9909,15 @@ abstract final class RemoveMemberRequestSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value256 = json['userId'];
-      if (value256 is! String) {
+      final value258 = json['userId'];
+      if (value258 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value256)) {
+        if (!_pattern0.hasMatch(value258)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -9922,15 +9987,15 @@ abstract final class SetMemberGroupsRequestSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value257 = json['userId'];
-      if (value257 is! String) {
+      final value259 = json['userId'];
+      if (value259 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value257)) {
+        if (!_pattern0.hasMatch(value259)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -9946,34 +10011,34 @@ abstract final class SetMemberGroupsRequestSchema {
       );
     }
     if (json.containsKey('groupIds')) {
-      final value258 = json['groupIds'];
-      if (value258 is! List) {
+      final value260 = json['groupIds'];
+      if (value260 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'groupIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value258.length > 50) {
+        if (value260.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'groupIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i259 = 0; i259 < value258.length; i259++) {
-          final item260 = value258[i259];
-          if (item260 is! String) {
+        for (var i261 = 0; i261 < value260.length; i261++) {
+          final item262 = value260[i261];
+          if (item262 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'groupIds'), '$i259'),
+              joinPath(joinPath(path, 'groupIds'), '$i261'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item260)) {
+            if (!_pattern0.hasMatch(item262)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'groupIds'), '$i259'),
+                joinPath(joinPath(path, 'groupIds'), '$i261'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -10043,15 +10108,15 @@ abstract final class GroupSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value261 = json['id'];
-      if (value261 is! String) {
+      final value263 = json['id'];
+      if (value263 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value261)) {
+        if (!_pattern0.hasMatch(value263)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -10067,22 +10132,22 @@ abstract final class GroupSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value262 = json['name'];
-      if (value262 is! String) {
+      final value264 = json['name'];
+      if (value264 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value262.isEmpty) {
+        if (value264.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value262.length > 80) {
+        if (value264.length > 80) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -10098,8 +10163,8 @@ abstract final class GroupSummarySchema {
       );
     }
     if (json.containsKey('system')) {
-      final value263 = json['system'];
-      if (value263 is! bool) {
+      final value265 = json['system'];
+      if (value265 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'system'),
@@ -10114,34 +10179,34 @@ abstract final class GroupSummarySchema {
       );
     }
     if (json.containsKey('roleIds')) {
-      final value264 = json['roleIds'];
-      if (value264 is! List) {
+      final value266 = json['roleIds'];
+      if (value266 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'roleIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value264.length > 50) {
+        if (value266.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'roleIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i265 = 0; i265 < value264.length; i265++) {
-          final item266 = value264[i265];
-          if (item266 is! String) {
+        for (var i267 = 0; i267 < value266.length; i267++) {
+          final item268 = value266[i267];
+          if (item268 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'roleIds'), '$i265'),
+              joinPath(joinPath(path, 'roleIds'), '$i267'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item266)) {
+            if (!_pattern0.hasMatch(item268)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'roleIds'), '$i265'),
+                joinPath(joinPath(path, 'roleIds'), '$i267'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -10156,24 +10221,24 @@ abstract final class GroupSummarySchema {
       );
     }
     if (json.containsKey('memberCount')) {
-      final value267 = json['memberCount'];
-      if (value267 is! num ||
-          !value267.isFinite ||
-          value267 != value267.roundToDouble()) {
+      final value269 = json['memberCount'];
+      if (value269 is! num ||
+          !value269.isFinite ||
+          value269 != value269.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'memberCount'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value267 < 0) {
+        if (value269 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'memberCount'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value267 > 9007199254740991) {
+        if (value269 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'memberCount'),
@@ -10234,26 +10299,26 @@ abstract final class GroupPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value268 = json['items'];
-      if (value268 is! List) {
+      final value270 = json['items'];
+      if (value270 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value268.length > 100) {
+        if (value270.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i269 = 0; i269 < value268.length; i269++) {
-          final item270 = value268[i269];
+        for (var i271 = 0; i271 < value270.length; i271++) {
+          final item272 = value270[i271];
           GroupSummarySchema.check(
-            item270,
-            joinPath(joinPath(path, 'items'), '$i269'),
+            item272,
+            joinPath(joinPath(path, 'items'), '$i271'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -10267,30 +10332,30 @@ abstract final class GroupPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value271 = json['nextCursor'];
-      if (value271 != null) {
-        if (value271 is! String) {
+      final value273 = json['nextCursor'];
+      if (value273 != null) {
+        if (value273 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value271.isEmpty) {
+          if (value273.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value271.length > 512) {
+          if (value273.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value271)) {
+          if (!_pattern6.hasMatch(value273)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -10352,22 +10417,22 @@ abstract final class CreateGroupRequestSchema {
       return;
     }
     if (json.containsKey('name')) {
-      final value272 = json['name'];
-      if (value272 is! String) {
+      final value274 = json['name'];
+      if (value274 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value272.isEmpty) {
+        if (value274.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value272.length > 80) {
+        if (value274.length > 80) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -10437,15 +10502,15 @@ abstract final class UpdateGroupRequestSchema {
       return;
     }
     if (json.containsKey('groupId')) {
-      final value273 = json['groupId'];
-      if (value273 is! String) {
+      final value275 = json['groupId'];
+      if (value275 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'groupId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value273)) {
+        if (!_pattern0.hasMatch(value275)) {
           addFieldError(
             errors,
             joinPath(path, 'groupId'),
@@ -10461,22 +10526,22 @@ abstract final class UpdateGroupRequestSchema {
       );
     }
     if (json.containsKey('name')) {
-      final value274 = json['name'];
-      if (value274 is! String) {
+      final value276 = json['name'];
+      if (value276 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value274.isEmpty) {
+        if (value276.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value274.length > 80) {
+        if (value276.length > 80) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -10546,15 +10611,15 @@ abstract final class DeleteGroupRequestSchema {
       return;
     }
     if (json.containsKey('groupId')) {
-      final value275 = json['groupId'];
-      if (value275 is! String) {
+      final value277 = json['groupId'];
+      if (value277 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'groupId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value275)) {
+        if (!_pattern0.hasMatch(value277)) {
           addFieldError(
             errors,
             joinPath(path, 'groupId'),
@@ -10624,15 +10689,15 @@ abstract final class SetGroupRolesRequestSchema {
       return;
     }
     if (json.containsKey('groupId')) {
-      final value276 = json['groupId'];
-      if (value276 is! String) {
+      final value278 = json['groupId'];
+      if (value278 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'groupId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value276)) {
+        if (!_pattern0.hasMatch(value278)) {
           addFieldError(
             errors,
             joinPath(path, 'groupId'),
@@ -10648,34 +10713,34 @@ abstract final class SetGroupRolesRequestSchema {
       );
     }
     if (json.containsKey('roleIds')) {
-      final value277 = json['roleIds'];
-      if (value277 is! List) {
+      final value279 = json['roleIds'];
+      if (value279 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'roleIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value277.length > 50) {
+        if (value279.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'roleIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i278 = 0; i278 < value277.length; i278++) {
-          final item279 = value277[i278];
-          if (item279 is! String) {
+        for (var i280 = 0; i280 < value279.length; i280++) {
+          final item281 = value279[i280];
+          if (item281 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'roleIds'), '$i278'),
+              joinPath(joinPath(path, 'roleIds'), '$i280'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item279)) {
+            if (!_pattern0.hasMatch(item281)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'roleIds'), '$i278'),
+                joinPath(joinPath(path, 'roleIds'), '$i280'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -10744,15 +10809,15 @@ abstract final class RoleSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value280 = json['id'];
-      if (value280 is! String) {
+      final value282 = json['id'];
+      if (value282 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value280)) {
+        if (!_pattern0.hasMatch(value282)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -10768,22 +10833,22 @@ abstract final class RoleSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value281 = json['name'];
-      if (value281 is! String) {
+      final value283 = json['name'];
+      if (value283 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value281.isEmpty) {
+        if (value283.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value281.length > 80) {
+        if (value283.length > 80) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -10799,15 +10864,15 @@ abstract final class RoleSummarySchema {
       );
     }
     if (json.containsKey('systemRole')) {
-      final value282 = json['systemRole'];
-      if (value282 != null) {
-        if (value282 is! String ||
+      final value284 = json['systemRole'];
+      if (value284 != null) {
+        if (value284 is! String ||
             !const <String>{
               'owner',
               'admin',
               'member',
               'billing',
-            }.contains(value282)) {
+            }.contains(value284)) {
           addFieldError(
             errors,
             joinPath(path, 'systemRole'),
@@ -10823,30 +10888,32 @@ abstract final class RoleSummarySchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value283 = json['permissions'];
-      if (value283 is! List) {
+      final value285 = json['permissions'];
+      if (value285 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value283.length > 100) {
+        if (value285.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i284 = 0; i284 < value283.length; i284++) {
-          final item285 = value283[i284];
-          if (item285 is! String ||
+        for (var i286 = 0; i286 < value285.length; i286++) {
+          final item287 = value285[i286];
+          if (item287 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -10856,10 +10923,10 @@ abstract final class RoleSummarySchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item285))) {
+                  }.contains(item287))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i284'),
+              joinPath(joinPath(path, 'permissions'), '$i286'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -10918,26 +10985,26 @@ abstract final class RolePageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value286 = json['items'];
-      if (value286 is! List) {
+      final value288 = json['items'];
+      if (value288 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value286.length > 100) {
+        if (value288.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i287 = 0; i287 < value286.length; i287++) {
-          final item288 = value286[i287];
+        for (var i289 = 0; i289 < value288.length; i289++) {
+          final item290 = value288[i289];
           RoleSummarySchema.check(
-            item288,
-            joinPath(joinPath(path, 'items'), '$i287'),
+            item290,
+            joinPath(joinPath(path, 'items'), '$i289'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -10951,30 +11018,30 @@ abstract final class RolePageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value289 = json['nextCursor'];
-      if (value289 != null) {
-        if (value289 is! String) {
+      final value291 = json['nextCursor'];
+      if (value291 != null) {
+        if (value291 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value289.isEmpty) {
+          if (value291.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value289.length > 512) {
+          if (value291.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value289)) {
+          if (!_pattern6.hasMatch(value291)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -11036,22 +11103,22 @@ abstract final class CreateRoleRequestSchema {
       return;
     }
     if (json.containsKey('name')) {
-      final value290 = json['name'];
-      if (value290 is! String) {
+      final value292 = json['name'];
+      if (value292 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value290.isEmpty) {
+        if (value292.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value290.length > 80) {
+        if (value292.length > 80) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -11067,30 +11134,32 @@ abstract final class CreateRoleRequestSchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value291 = json['permissions'];
-      if (value291 is! List) {
+      final value293 = json['permissions'];
+      if (value293 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value291.length > 100) {
+        if (value293.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i292 = 0; i292 < value291.length; i292++) {
-          final item293 = value291[i292];
-          if (item293 is! String ||
+        for (var i294 = 0; i294 < value293.length; i294++) {
+          final item295 = value293[i294];
+          if (item295 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -11100,10 +11169,10 @@ abstract final class CreateRoleRequestSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item293))) {
+                  }.contains(item295))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i292'),
+              joinPath(joinPath(path, 'permissions'), '$i294'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -11171,15 +11240,15 @@ abstract final class UpdateRoleRequestSchema {
       return;
     }
     if (json.containsKey('roleId')) {
-      final value294 = json['roleId'];
-      if (value294 is! String) {
+      final value296 = json['roleId'];
+      if (value296 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'roleId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value294)) {
+        if (!_pattern0.hasMatch(value296)) {
           addFieldError(
             errors,
             joinPath(path, 'roleId'),
@@ -11195,22 +11264,22 @@ abstract final class UpdateRoleRequestSchema {
       );
     }
     if (json.containsKey('name')) {
-      final value295 = json['name'];
-      if (value295 is! String) {
+      final value297 = json['name'];
+      if (value297 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value295.isEmpty) {
+        if (value297.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value295.length > 80) {
+        if (value297.length > 80) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -11220,30 +11289,32 @@ abstract final class UpdateRoleRequestSchema {
       }
     }
     if (json.containsKey('permissions')) {
-      final value296 = json['permissions'];
-      if (value296 is! List) {
+      final value298 = json['permissions'];
+      if (value298 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value296.length > 100) {
+        if (value298.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i297 = 0; i297 < value296.length; i297++) {
-          final item298 = value296[i297];
-          if (item298 is! String ||
+        for (var i299 = 0; i299 < value298.length; i299++) {
+          final item300 = value298[i299];
+          if (item300 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -11253,10 +11324,10 @@ abstract final class UpdateRoleRequestSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item298))) {
+                  }.contains(item300))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i297'),
+              joinPath(joinPath(path, 'permissions'), '$i299'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -11318,15 +11389,15 @@ abstract final class DeleteRoleRequestSchema {
       return;
     }
     if (json.containsKey('roleId')) {
-      final value299 = json['roleId'];
-      if (value299 is! String) {
+      final value301 = json['roleId'];
+      if (value301 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'roleId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value299)) {
+        if (!_pattern0.hasMatch(value301)) {
           addFieldError(
             errors,
             joinPath(path, 'roleId'),
@@ -11396,15 +11467,15 @@ abstract final class InvitationSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value300 = json['id'];
-      if (value300 is! String) {
+      final value302 = json['id'];
+      if (value302 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value300)) {
+        if (!_pattern0.hasMatch(value302)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -11420,22 +11491,22 @@ abstract final class InvitationSummarySchema {
       );
     }
     if (json.containsKey('email')) {
-      final value301 = json['email'];
-      if (value301 is! String) {
+      final value303 = json['email'];
+      if (value303 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value301.length > 254) {
+        if (value303.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value301)) {
+        if (!_pattern2.hasMatch(value303)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -11451,34 +11522,34 @@ abstract final class InvitationSummarySchema {
       );
     }
     if (json.containsKey('groupIds')) {
-      final value302 = json['groupIds'];
-      if (value302 is! List) {
+      final value304 = json['groupIds'];
+      if (value304 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'groupIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value302.length > 50) {
+        if (value304.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'groupIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i303 = 0; i303 < value302.length; i303++) {
-          final item304 = value302[i303];
-          if (item304 is! String) {
+        for (var i305 = 0; i305 < value304.length; i305++) {
+          final item306 = value304[i305];
+          if (item306 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'groupIds'), '$i303'),
+              joinPath(joinPath(path, 'groupIds'), '$i305'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item304)) {
+            if (!_pattern0.hasMatch(item306)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'groupIds'), '$i303'),
+                joinPath(joinPath(path, 'groupIds'), '$i305'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -11493,14 +11564,14 @@ abstract final class InvitationSummarySchema {
       );
     }
     if (json.containsKey('status')) {
-      final value305 = json['status'];
-      if (value305 is! String ||
+      final value307 = json['status'];
+      if (value307 is! String ||
           !const <String>{
             'pending',
             'accepted',
             'revoked',
             'expired',
-          }.contains(value305)) {
+          }.contains(value307)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -11515,15 +11586,15 @@ abstract final class InvitationSummarySchema {
       );
     }
     if (json.containsKey('expiresAt')) {
-      final value306 = json['expiresAt'];
-      if (value306 is! String) {
+      final value308 = json['expiresAt'];
+      if (value308 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'expiresAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value306)) {
+        if (!_pattern3.hasMatch(value308)) {
           addFieldError(
             errors,
             joinPath(path, 'expiresAt'),
@@ -11539,15 +11610,15 @@ abstract final class InvitationSummarySchema {
       );
     }
     if (json.containsKey('invitedBy')) {
-      final value307 = json['invitedBy'];
-      if (value307 is! String) {
+      final value309 = json['invitedBy'];
+      if (value309 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'invitedBy'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value307)) {
+        if (!_pattern0.hasMatch(value309)) {
           addFieldError(
             errors,
             joinPath(path, 'invitedBy'),
@@ -11608,26 +11679,26 @@ abstract final class InvitationPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value308 = json['items'];
-      if (value308 is! List) {
+      final value310 = json['items'];
+      if (value310 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value308.length > 100) {
+        if (value310.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i309 = 0; i309 < value308.length; i309++) {
-          final item310 = value308[i309];
+        for (var i311 = 0; i311 < value310.length; i311++) {
+          final item312 = value310[i311];
           InvitationSummarySchema.check(
-            item310,
-            joinPath(joinPath(path, 'items'), '$i309'),
+            item312,
+            joinPath(joinPath(path, 'items'), '$i311'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -11641,30 +11712,30 @@ abstract final class InvitationPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value311 = json['nextCursor'];
-      if (value311 != null) {
-        if (value311 is! String) {
+      final value313 = json['nextCursor'];
+      if (value313 != null) {
+        if (value313 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value311.isEmpty) {
+          if (value313.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value311.length > 512) {
+          if (value313.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value311)) {
+          if (!_pattern6.hasMatch(value313)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -11726,22 +11797,22 @@ abstract final class InviteUserRequestSchema {
       return;
     }
     if (json.containsKey('email')) {
-      final value312 = json['email'];
-      if (value312 is! String) {
+      final value314 = json['email'];
+      if (value314 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'email'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value312.length > 254) {
+        if (value314.length > 254) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern2.hasMatch(value312)) {
+        if (!_pattern2.hasMatch(value314)) {
           addFieldError(
             errors,
             joinPath(path, 'email'),
@@ -11757,34 +11828,34 @@ abstract final class InviteUserRequestSchema {
       );
     }
     if (json.containsKey('groupIds')) {
-      final value313 = json['groupIds'];
-      if (value313 is! List) {
+      final value315 = json['groupIds'];
+      if (value315 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'groupIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value313.length > 50) {
+        if (value315.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'groupIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i314 = 0; i314 < value313.length; i314++) {
-          final item315 = value313[i314];
-          if (item315 is! String) {
+        for (var i316 = 0; i316 < value315.length; i316++) {
+          final item317 = value315[i316];
+          if (item317 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'groupIds'), '$i314'),
+              joinPath(joinPath(path, 'groupIds'), '$i316'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item315)) {
+            if (!_pattern0.hasMatch(item317)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'groupIds'), '$i314'),
+                joinPath(joinPath(path, 'groupIds'), '$i316'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -11853,15 +11924,15 @@ abstract final class RevokeInvitationRequestSchema {
       return;
     }
     if (json.containsKey('invitationId')) {
-      final value316 = json['invitationId'];
-      if (value316 is! String) {
+      final value318 = json['invitationId'];
+      if (value318 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'invitationId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value316)) {
+        if (!_pattern0.hasMatch(value318)) {
           addFieldError(
             errors,
             joinPath(path, 'invitationId'),
@@ -11932,22 +12003,22 @@ abstract final class AcceptInvitationRequestSchema {
       return;
     }
     if (json.containsKey('token')) {
-      final value317 = json['token'];
-      if (value317 is! String) {
+      final value319 = json['token'];
+      if (value319 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'token'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value317.isEmpty) {
+        if (value319.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value317.length > 512) {
+        if (value319.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'token'),
@@ -12018,15 +12089,15 @@ abstract final class ServiceAccountSummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value318 = json['id'];
-      if (value318 is! String) {
+      final value320 = json['id'];
+      if (value320 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value318)) {
+        if (!_pattern0.hasMatch(value320)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -12042,22 +12113,22 @@ abstract final class ServiceAccountSummarySchema {
       );
     }
     if (json.containsKey('name')) {
-      final value319 = json['name'];
-      if (value319 is! String) {
+      final value321 = json['name'];
+      if (value321 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value319.isEmpty) {
+        if (value321.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value319.length > 120) {
+        if (value321.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -12073,30 +12144,32 @@ abstract final class ServiceAccountSummarySchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value320 = json['permissions'];
-      if (value320 is! List) {
+      final value322 = json['permissions'];
+      if (value322 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value320.length > 100) {
+        if (value322.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i321 = 0; i321 < value320.length; i321++) {
-          final item322 = value320[i321];
-          if (item322 is! String ||
+        for (var i323 = 0; i323 < value322.length; i323++) {
+          final item324 = value322[i323];
+          if (item324 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -12106,10 +12179,10 @@ abstract final class ServiceAccountSummarySchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item322))) {
+                  }.contains(item324))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i321'),
+              joinPath(joinPath(path, 'permissions'), '$i323'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -12123,9 +12196,9 @@ abstract final class ServiceAccountSummarySchema {
       );
     }
     if (json.containsKey('status')) {
-      final value323 = json['status'];
-      if (value323 is! String ||
-          !const <String>{'active', 'disabled'}.contains(value323)) {
+      final value325 = json['status'];
+      if (value325 is! String ||
+          !const <String>{'active', 'disabled'}.contains(value325)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -12140,23 +12213,23 @@ abstract final class ServiceAccountSummarySchema {
       );
     }
     if (json.containsKey('pinnedApiVersion')) {
-      final value324 = json['pinnedApiVersion'];
-      if (value324 != null) {
-        if (value324 is! String) {
+      final value326 = json['pinnedApiVersion'];
+      if (value326 != null) {
+        if (value326 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'pinnedApiVersion'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value324.isEmpty) {
+          if (value326.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'pinnedApiVersion'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value324.length > 16) {
+          if (value326.length > 16) {
             addFieldError(
               errors,
               joinPath(path, 'pinnedApiVersion'),
@@ -12173,15 +12246,15 @@ abstract final class ServiceAccountSummarySchema {
       );
     }
     if (json.containsKey('createdAt')) {
-      final value325 = json['createdAt'];
-      if (value325 is! String) {
+      final value327 = json['createdAt'];
+      if (value327 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'createdAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value325)) {
+        if (!_pattern3.hasMatch(value327)) {
           addFieldError(
             errors,
             joinPath(path, 'createdAt'),
@@ -12242,26 +12315,26 @@ abstract final class ServiceAccountPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value326 = json['items'];
-      if (value326 is! List) {
+      final value328 = json['items'];
+      if (value328 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value326.length > 100) {
+        if (value328.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i327 = 0; i327 < value326.length; i327++) {
-          final item328 = value326[i327];
+        for (var i329 = 0; i329 < value328.length; i329++) {
+          final item330 = value328[i329];
           ServiceAccountSummarySchema.check(
-            item328,
-            joinPath(joinPath(path, 'items'), '$i327'),
+            item330,
+            joinPath(joinPath(path, 'items'), '$i329'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -12275,30 +12348,30 @@ abstract final class ServiceAccountPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value329 = json['nextCursor'];
-      if (value329 != null) {
-        if (value329 is! String) {
+      final value331 = json['nextCursor'];
+      if (value331 != null) {
+        if (value331 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value329.isEmpty) {
+          if (value331.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value329.length > 512) {
+          if (value331.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value329)) {
+          if (!_pattern6.hasMatch(value331)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -12360,22 +12433,22 @@ abstract final class CreateServiceAccountRequestSchema {
       return;
     }
     if (json.containsKey('name')) {
-      final value330 = json['name'];
-      if (value330 is! String) {
+      final value332 = json['name'];
+      if (value332 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value330.isEmpty) {
+        if (value332.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value330.length > 120) {
+        if (value332.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -12391,30 +12464,32 @@ abstract final class CreateServiceAccountRequestSchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value331 = json['permissions'];
-      if (value331 is! List) {
+      final value333 = json['permissions'];
+      if (value333 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value331.length > 100) {
+        if (value333.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i332 = 0; i332 < value331.length; i332++) {
-          final item333 = value331[i332];
-          if (item333 is! String ||
+        for (var i334 = 0; i334 < value333.length; i334++) {
+          final item335 = value333[i334];
+          if (item335 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -12424,10 +12499,10 @@ abstract final class CreateServiceAccountRequestSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item333))) {
+                  }.contains(item335))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i332'),
+              joinPath(joinPath(path, 'permissions'), '$i334'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -12441,22 +12516,22 @@ abstract final class CreateServiceAccountRequestSchema {
       );
     }
     if (json.containsKey('pinnedApiVersion')) {
-      final value334 = json['pinnedApiVersion'];
-      if (value334 is! String) {
+      final value336 = json['pinnedApiVersion'];
+      if (value336 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'pinnedApiVersion'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value334.isEmpty) {
+        if (value336.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'pinnedApiVersion'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value334.length > 16) {
+        if (value336.length > 16) {
           addFieldError(
             errors,
             joinPath(path, 'pinnedApiVersion'),
@@ -12525,15 +12600,15 @@ abstract final class UpdateServiceAccountRequestSchema {
       return;
     }
     if (json.containsKey('serviceAccountId')) {
-      final value335 = json['serviceAccountId'];
-      if (value335 is! String) {
+      final value337 = json['serviceAccountId'];
+      if (value337 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value335)) {
+        if (!_pattern0.hasMatch(value337)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -12549,22 +12624,22 @@ abstract final class UpdateServiceAccountRequestSchema {
       );
     }
     if (json.containsKey('name')) {
-      final value336 = json['name'];
-      if (value336 is! String) {
+      final value338 = json['name'];
+      if (value338 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'name'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value336.isEmpty) {
+        if (value338.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value336.length > 120) {
+        if (value338.length > 120) {
           addFieldError(
             errors,
             joinPath(path, 'name'),
@@ -12574,30 +12649,32 @@ abstract final class UpdateServiceAccountRequestSchema {
       }
     }
     if (json.containsKey('permissions')) {
-      final value337 = json['permissions'];
-      if (value337 is! List) {
+      final value339 = json['permissions'];
+      if (value339 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value337.length > 100) {
+        if (value339.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i338 = 0; i338 < value337.length; i338++) {
-          final item339 = value337[i338];
-          if (item339 is! String ||
+        for (var i340 = 0; i340 < value339.length; i340++) {
+          final item341 = value339[i340];
+          if (item341 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -12607,10 +12684,10 @@ abstract final class UpdateServiceAccountRequestSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item339))) {
+                  }.contains(item341))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i338'),
+              joinPath(joinPath(path, 'permissions'), '$i340'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -12677,15 +12754,15 @@ abstract final class DeleteServiceAccountRequestSchema {
       return;
     }
     if (json.containsKey('serviceAccountId')) {
-      final value340 = json['serviceAccountId'];
-      if (value340 is! String) {
+      final value342 = json['serviceAccountId'];
+      if (value342 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value340)) {
+        if (!_pattern0.hasMatch(value342)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -12756,15 +12833,15 @@ abstract final class ApiKeySummarySchema {
       return;
     }
     if (json.containsKey('id')) {
-      final value341 = json['id'];
-      if (value341 is! String) {
+      final value343 = json['id'];
+      if (value343 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'id'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value341)) {
+        if (!_pattern0.hasMatch(value343)) {
           addFieldError(
             errors,
             joinPath(path, 'id'),
@@ -12780,15 +12857,15 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('serviceAccountId')) {
-      final value342 = json['serviceAccountId'];
-      if (value342 is! String) {
+      final value344 = json['serviceAccountId'];
+      if (value344 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value342)) {
+        if (!_pattern0.hasMatch(value344)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -12804,29 +12881,29 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('prefix')) {
-      final value343 = json['prefix'];
-      if (value343 is! String) {
+      final value345 = json['prefix'];
+      if (value345 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'prefix'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value343.length < 12) {
+        if (value345.length < 12) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value343.length > 12) {
+        if (value345.length > 12) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern10.hasMatch(value343)) {
+        if (!_pattern11.hasMatch(value345)) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
@@ -12842,9 +12919,9 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('environment')) {
-      final value344 = json['environment'];
-      if (value344 is! String ||
-          !const <String>{'live', 'test'}.contains(value344)) {
+      final value346 = json['environment'];
+      if (value346 is! String ||
+          !const <String>{'live', 'test'}.contains(value346)) {
         addFieldError(
           errors,
           joinPath(path, 'environment'),
@@ -12859,9 +12936,9 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('status')) {
-      final value345 = json['status'];
-      if (value345 is! String ||
-          !const <String>{'active', 'rotated', 'revoked'}.contains(value345)) {
+      final value347 = json['status'];
+      if (value347 is! String ||
+          !const <String>{'active', 'rotated', 'revoked'}.contains(value347)) {
         addFieldError(
           errors,
           joinPath(path, 'status'),
@@ -12876,16 +12953,16 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('expiresAt')) {
-      final value346 = json['expiresAt'];
-      if (value346 != null) {
-        if (value346 is! String) {
+      final value348 = json['expiresAt'];
+      if (value348 != null) {
+        if (value348 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'expiresAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value346)) {
+          if (!_pattern3.hasMatch(value348)) {
             addFieldError(
               errors,
               joinPath(path, 'expiresAt'),
@@ -12902,16 +12979,16 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('validUntil')) {
-      final value347 = json['validUntil'];
-      if (value347 != null) {
-        if (value347 is! String) {
+      final value349 = json['validUntil'];
+      if (value349 != null) {
+        if (value349 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'validUntil'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value347)) {
+          if (!_pattern3.hasMatch(value349)) {
             addFieldError(
               errors,
               joinPath(path, 'validUntil'),
@@ -12928,41 +13005,41 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('allowedCidrs')) {
-      final value348 = json['allowedCidrs'];
-      if (value348 is! List) {
+      final value350 = json['allowedCidrs'];
+      if (value350 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'allowedCidrs'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value348.length > 20) {
+        if (value350.length > 20) {
           addFieldError(
             errors,
             joinPath(path, 'allowedCidrs'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i349 = 0; i349 < value348.length; i349++) {
-          final item350 = value348[i349];
-          if (item350 is! String) {
+        for (var i351 = 0; i351 < value350.length; i351++) {
+          final item352 = value350[i351];
+          if (item352 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'allowedCidrs'), '$i349'),
+              joinPath(joinPath(path, 'allowedCidrs'), '$i351'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (item350.isEmpty) {
+            if (item352.isEmpty) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'allowedCidrs'), '$i349'),
+                joinPath(joinPath(path, 'allowedCidrs'), '$i351'),
                 PlatformErrorCode.validationTooShort.code,
               );
             }
-            if (item350.length > 64) {
+            if (item352.length > 64) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'allowedCidrs'), '$i349'),
+                joinPath(joinPath(path, 'allowedCidrs'), '$i351'),
                 PlatformErrorCode.validationTooLong.code,
               );
             }
@@ -12977,16 +13054,16 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('lastUsedAt')) {
-      final value351 = json['lastUsedAt'];
-      if (value351 != null) {
-        if (value351 is! String) {
+      final value353 = json['lastUsedAt'];
+      if (value353 != null) {
+        if (value353 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'lastUsedAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value351)) {
+          if (!_pattern3.hasMatch(value353)) {
             addFieldError(
               errors,
               joinPath(path, 'lastUsedAt'),
@@ -13003,15 +13080,15 @@ abstract final class ApiKeySummarySchema {
       );
     }
     if (json.containsKey('createdAt')) {
-      final value352 = json['createdAt'];
-      if (value352 is! String) {
+      final value354 = json['createdAt'];
+      if (value354 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'createdAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value352)) {
+        if (!_pattern3.hasMatch(value354)) {
           addFieldError(
             errors,
             joinPath(path, 'createdAt'),
@@ -13072,26 +13149,26 @@ abstract final class ApiKeyPageSchema {
       return;
     }
     if (json.containsKey('items')) {
-      final value353 = json['items'];
-      if (value353 is! List) {
+      final value355 = json['items'];
+      if (value355 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'items'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value353.length > 100) {
+        if (value355.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'items'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i354 = 0; i354 < value353.length; i354++) {
-          final item355 = value353[i354];
+        for (var i356 = 0; i356 < value355.length; i356++) {
+          final item357 = value355[i356];
           ApiKeySummarySchema.check(
-            item355,
-            joinPath(joinPath(path, 'items'), '$i354'),
+            item357,
+            joinPath(joinPath(path, 'items'), '$i356'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -13105,30 +13182,30 @@ abstract final class ApiKeyPageSchema {
       );
     }
     if (json.containsKey('nextCursor')) {
-      final value356 = json['nextCursor'];
-      if (value356 != null) {
-        if (value356 is! String) {
+      final value358 = json['nextCursor'];
+      if (value358 != null) {
+        if (value358 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'nextCursor'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value356.isEmpty) {
+          if (value358.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value356.length > 512) {
+          if (value358.length > 512) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
               PlatformErrorCode.validationTooLong.code,
             );
           }
-          if (!_pattern5.hasMatch(value356)) {
+          if (!_pattern6.hasMatch(value358)) {
             addFieldError(
               errors,
               joinPath(path, 'nextCursor'),
@@ -13190,15 +13267,15 @@ abstract final class ListApiKeysRequestSchema {
       return;
     }
     if (json.containsKey('serviceAccountId')) {
-      final value357 = json['serviceAccountId'];
-      if (value357 is! String) {
+      final value359 = json['serviceAccountId'];
+      if (value359 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value357)) {
+        if (!_pattern0.hasMatch(value359)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -13214,24 +13291,24 @@ abstract final class ListApiKeysRequestSchema {
       );
     }
     if (json.containsKey('limit')) {
-      final value358 = json['limit'];
-      if (value358 is! num ||
-          !value358.isFinite ||
-          value358 != value358.roundToDouble()) {
+      final value360 = json['limit'];
+      if (value360 is! num ||
+          !value360.isFinite ||
+          value360 != value360.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'limit'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value358 < 1) {
+        if (value360 < 1) {
           addFieldError(
             errors,
             joinPath(path, 'limit'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value358 > 100) {
+        if (value360 > 100) {
           addFieldError(
             errors,
             joinPath(path, 'limit'),
@@ -13241,29 +13318,29 @@ abstract final class ListApiKeysRequestSchema {
       }
     }
     if (json.containsKey('after')) {
-      final value359 = json['after'];
-      if (value359 is! String) {
+      final value361 = json['after'];
+      if (value361 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'after'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value359.isEmpty) {
+        if (value361.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'after'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value359.length > 512) {
+        if (value361.length > 512) {
           addFieldError(
             errors,
             joinPath(path, 'after'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern5.hasMatch(value359)) {
+        if (!_pattern6.hasMatch(value361)) {
           addFieldError(
             errors,
             joinPath(path, 'after'),
@@ -13327,15 +13404,15 @@ abstract final class CreateApiKeyRequestSchema {
       return;
     }
     if (json.containsKey('serviceAccountId')) {
-      final value360 = json['serviceAccountId'];
-      if (value360 is! String) {
+      final value362 = json['serviceAccountId'];
+      if (value362 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value360)) {
+        if (!_pattern0.hasMatch(value362)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -13351,9 +13428,9 @@ abstract final class CreateApiKeyRequestSchema {
       );
     }
     if (json.containsKey('environment')) {
-      final value361 = json['environment'];
-      if (value361 is! String ||
-          !const <String>{'live', 'test'}.contains(value361)) {
+      final value363 = json['environment'];
+      if (value363 is! String ||
+          !const <String>{'live', 'test'}.contains(value363)) {
         addFieldError(
           errors,
           joinPath(path, 'environment'),
@@ -13368,15 +13445,15 @@ abstract final class CreateApiKeyRequestSchema {
       );
     }
     if (json.containsKey('expiresAt')) {
-      final value362 = json['expiresAt'];
-      if (value362 is! String) {
+      final value364 = json['expiresAt'];
+      if (value364 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'expiresAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value362)) {
+        if (!_pattern3.hasMatch(value364)) {
           addFieldError(
             errors,
             joinPath(path, 'expiresAt'),
@@ -13386,41 +13463,41 @@ abstract final class CreateApiKeyRequestSchema {
       }
     }
     if (json.containsKey('allowedCidrs')) {
-      final value363 = json['allowedCidrs'];
-      if (value363 is! List) {
+      final value365 = json['allowedCidrs'];
+      if (value365 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'allowedCidrs'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value363.length > 20) {
+        if (value365.length > 20) {
           addFieldError(
             errors,
             joinPath(path, 'allowedCidrs'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i364 = 0; i364 < value363.length; i364++) {
-          final item365 = value363[i364];
-          if (item365 is! String) {
+        for (var i366 = 0; i366 < value365.length; i366++) {
+          final item367 = value365[i366];
+          if (item367 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'allowedCidrs'), '$i364'),
+              joinPath(joinPath(path, 'allowedCidrs'), '$i366'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (item365.isEmpty) {
+            if (item367.isEmpty) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'allowedCidrs'), '$i364'),
+                joinPath(joinPath(path, 'allowedCidrs'), '$i366'),
                 PlatformErrorCode.validationTooShort.code,
               );
             }
-            if (item365.length > 64) {
+            if (item367.length > 64) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'allowedCidrs'), '$i364'),
+                joinPath(joinPath(path, 'allowedCidrs'), '$i366'),
                 PlatformErrorCode.validationTooLong.code,
               );
             }
@@ -13488,9 +13565,9 @@ abstract final class CreatedApiKeySchema {
       return;
     }
     if (json.containsKey('apiKey')) {
-      final value366 = json['apiKey'];
+      final value368 = json['apiKey'];
       ApiKeySummarySchema.check(
-        value366,
+        value368,
         joinPath(path, 'apiKey'),
         errors,
         acceptUnknownEnums: acceptUnknownEnums,
@@ -13503,22 +13580,22 @@ abstract final class CreatedApiKeySchema {
       );
     }
     if (json.containsKey('secret')) {
-      final value367 = json['secret'];
-      if (value367 is! String) {
+      final value369 = json['secret'];
+      if (value369 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'secret'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value367.isEmpty) {
+        if (value369.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'secret'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value367.length > 128) {
+        if (value369.length > 128) {
           addFieldError(
             errors,
             joinPath(path, 'secret'),
@@ -13579,15 +13656,15 @@ abstract final class RotateApiKeyRequestSchema {
       return;
     }
     if (json.containsKey('apiKeyId')) {
-      final value368 = json['apiKeyId'];
-      if (value368 is! String) {
+      final value370 = json['apiKeyId'];
+      if (value370 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiKeyId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value368)) {
+        if (!_pattern0.hasMatch(value370)) {
           addFieldError(
             errors,
             joinPath(path, 'apiKeyId'),
@@ -13657,15 +13734,15 @@ abstract final class RevokeApiKeyRequestSchema {
       return;
     }
     if (json.containsKey('apiKeyId')) {
-      final value369 = json['apiKeyId'];
-      if (value369 is! String) {
+      final value371 = json['apiKeyId'];
+      if (value371 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiKeyId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value369)) {
+        if (!_pattern0.hasMatch(value371)) {
           addFieldError(
             errors,
             joinPath(path, 'apiKeyId'),
@@ -13735,22 +13812,22 @@ abstract final class AuthenticateApiKeyInputSchema {
       return;
     }
     if (json.containsKey('apiKey')) {
-      final value370 = json['apiKey'];
-      if (value370 is! String) {
+      final value372 = json['apiKey'];
+      if (value372 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiKey'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value370.isEmpty) {
+        if (value372.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'apiKey'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value370.length > 256) {
+        if (value372.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'apiKey'),
@@ -13766,22 +13843,22 @@ abstract final class AuthenticateApiKeyInputSchema {
       );
     }
     if (json.containsKey('clientIp')) {
-      final value371 = json['clientIp'];
-      if (value371 is! String) {
+      final value373 = json['clientIp'];
+      if (value373 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'clientIp'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value371.isEmpty) {
+        if (value373.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'clientIp'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value371.length > 64) {
+        if (value373.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'clientIp'),
@@ -13846,15 +13923,15 @@ abstract final class ApiKeyPrincipalSchema {
       return;
     }
     if (json.containsKey('apiKeyId')) {
-      final value372 = json['apiKeyId'];
-      if (value372 is! String) {
+      final value374 = json['apiKeyId'];
+      if (value374 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiKeyId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value372)) {
+        if (!_pattern0.hasMatch(value374)) {
           addFieldError(
             errors,
             joinPath(path, 'apiKeyId'),
@@ -13870,15 +13947,15 @@ abstract final class ApiKeyPrincipalSchema {
       );
     }
     if (json.containsKey('serviceAccountId')) {
-      final value373 = json['serviceAccountId'];
-      if (value373 is! String) {
+      final value375 = json['serviceAccountId'];
+      if (value375 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value373)) {
+        if (!_pattern0.hasMatch(value375)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -13894,15 +13971,15 @@ abstract final class ApiKeyPrincipalSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value374 = json['tenantId'];
-      if (value374 is! String) {
+      final value376 = json['tenantId'];
+      if (value376 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value374)) {
+        if (!_pattern0.hasMatch(value376)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -13918,30 +13995,32 @@ abstract final class ApiKeyPrincipalSchema {
       );
     }
     if (json.containsKey('permissions')) {
-      final value375 = json['permissions'];
-      if (value375 is! List) {
+      final value377 = json['permissions'];
+      if (value377 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'permissions'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value375.length > 100) {
+        if (value377.length > 100) {
           addFieldError(
             errors,
             joinPath(path, 'permissions'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i376 = 0; i376 < value375.length; i376++) {
-          final item377 = value375[i376];
-          if (item377 is! String ||
+        for (var i378 = 0; i378 < value377.length; i378++) {
+          final item379 = value377[i378];
+          if (item379 is! String ||
               (!acceptUnknownEnums &&
                   !const <String>{
                     'tasks:read',
                     'tasks:write',
                     'billing:read',
                     'billing:write',
+                    'reports:read',
+                    'reports:write',
                     'backoffice:access',
                     'identity:members:read',
                     'identity:members:manage',
@@ -13951,10 +14030,10 @@ abstract final class ApiKeyPrincipalSchema {
                     'identity:service-accounts:manage',
                     'identity:api-keys:manage',
                     'identity:tenant:manage',
-                  }.contains(item377))) {
+                  }.contains(item379))) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'permissions'), '$i376'),
+              joinPath(joinPath(path, 'permissions'), '$i378'),
               PlatformErrorCode.validationInvalidEnum.code,
             );
           }
@@ -13968,9 +14047,9 @@ abstract final class ApiKeyPrincipalSchema {
       );
     }
     if (json.containsKey('environment')) {
-      final value378 = json['environment'];
-      if (value378 is! String ||
-          !const <String>{'live', 'test'}.contains(value378)) {
+      final value380 = json['environment'];
+      if (value380 is! String ||
+          !const <String>{'live', 'test'}.contains(value380)) {
         addFieldError(
           errors,
           joinPath(path, 'environment'),
@@ -13985,16 +14064,16 @@ abstract final class ApiKeyPrincipalSchema {
       );
     }
     if (json.containsKey('expiresAt')) {
-      final value379 = json['expiresAt'];
-      if (value379 != null) {
-        if (value379 is! String) {
+      final value381 = json['expiresAt'];
+      if (value381 != null) {
+        if (value381 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'expiresAt'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (!_pattern3.hasMatch(value379)) {
+          if (!_pattern3.hasMatch(value381)) {
             addFieldError(
               errors,
               joinPath(path, 'expiresAt'),
@@ -14011,23 +14090,23 @@ abstract final class ApiKeyPrincipalSchema {
       );
     }
     if (json.containsKey('pinnedApiVersion')) {
-      final value380 = json['pinnedApiVersion'];
-      if (value380 != null) {
-        if (value380 is! String) {
+      final value382 = json['pinnedApiVersion'];
+      if (value382 != null) {
+        if (value382 is! String) {
           addFieldError(
             errors,
             joinPath(path, 'pinnedApiVersion'),
             PlatformErrorCode.validationInvalidType.code,
           );
         } else {
-          if (value380.isEmpty) {
+          if (value382.isEmpty) {
             addFieldError(
               errors,
               joinPath(path, 'pinnedApiVersion'),
               PlatformErrorCode.validationTooShort.code,
             );
           }
-          if (value380.length > 16) {
+          if (value382.length > 16) {
             addFieldError(
               errors,
               joinPath(path, 'pinnedApiVersion'),
@@ -14089,22 +14168,22 @@ abstract final class JwkSchema {
       return;
     }
     if (json.containsKey('kty')) {
-      final value381 = json['kty'];
-      if (value381 is! String) {
+      final value383 = json['kty'];
+      if (value383 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'kty'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value381.isEmpty) {
+        if (value383.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'kty'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value381.length > 256) {
+        if (value383.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'kty'),
@@ -14120,22 +14199,22 @@ abstract final class JwkSchema {
       );
     }
     if (json.containsKey('crv')) {
-      final value382 = json['crv'];
-      if (value382 is! String) {
+      final value384 = json['crv'];
+      if (value384 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'crv'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value382.isEmpty) {
+        if (value384.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'crv'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value382.length > 256) {
+        if (value384.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'crv'),
@@ -14151,22 +14230,22 @@ abstract final class JwkSchema {
       );
     }
     if (json.containsKey('kid')) {
-      final value383 = json['kid'];
-      if (value383 is! String) {
+      final value385 = json['kid'];
+      if (value385 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'kid'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value383.isEmpty) {
+        if (value385.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'kid'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value383.length > 256) {
+        if (value385.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'kid'),
@@ -14182,22 +14261,22 @@ abstract final class JwkSchema {
       );
     }
     if (json.containsKey('use')) {
-      final value384 = json['use'];
-      if (value384 is! String) {
+      final value386 = json['use'];
+      if (value386 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'use'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value384.isEmpty) {
+        if (value386.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'use'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value384.length > 256) {
+        if (value386.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'use'),
@@ -14213,22 +14292,22 @@ abstract final class JwkSchema {
       );
     }
     if (json.containsKey('alg')) {
-      final value385 = json['alg'];
-      if (value385 is! String) {
+      final value387 = json['alg'];
+      if (value387 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'alg'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value385.isEmpty) {
+        if (value387.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'alg'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value385.length > 256) {
+        if (value387.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'alg'),
@@ -14244,22 +14323,22 @@ abstract final class JwkSchema {
       );
     }
     if (json.containsKey('x')) {
-      final value386 = json['x'];
-      if (value386 is! String) {
+      final value388 = json['x'];
+      if (value388 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'x'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value386.isEmpty) {
+        if (value388.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'x'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value386.length > 256) {
+        if (value388.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'x'),
@@ -14275,22 +14354,22 @@ abstract final class JwkSchema {
       );
     }
     if (json.containsKey('y')) {
-      final value387 = json['y'];
-      if (value387 is! String) {
+      final value389 = json['y'];
+      if (value389 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'y'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value387.isEmpty) {
+        if (value389.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'y'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value387.length > 256) {
+        if (value389.length > 256) {
           addFieldError(
             errors,
             joinPath(path, 'y'),
@@ -14351,26 +14430,26 @@ abstract final class JwksSchema {
       return;
     }
     if (json.containsKey('keys')) {
-      final value388 = json['keys'];
-      if (value388 is! List) {
+      final value390 = json['keys'];
+      if (value390 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'keys'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value388.length > 10) {
+        if (value390.length > 10) {
           addFieldError(
             errors,
             joinPath(path, 'keys'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i389 = 0; i389 < value388.length; i389++) {
-          final item390 = value388[i389];
+        for (var i391 = 0; i391 < value390.length; i391++) {
+          final item392 = value390[i391];
           JwkSchema.check(
-            item390,
-            joinPath(joinPath(path, 'keys'), '$i389'),
+            item392,
+            joinPath(joinPath(path, 'keys'), '$i391'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -14429,15 +14508,15 @@ abstract final class UserRegisteredPayloadSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value391 = json['userId'];
-      if (value391 is! String) {
+      final value393 = json['userId'];
+      if (value393 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value391)) {
+        if (!_pattern0.hasMatch(value393)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -14453,15 +14532,15 @@ abstract final class UserRegisteredPayloadSchema {
       );
     }
     if (json.containsKey('homeTenantId')) {
-      final value392 = json['homeTenantId'];
-      if (value392 is! String) {
+      final value394 = json['homeTenantId'];
+      if (value394 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'homeTenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value392)) {
+        if (!_pattern0.hasMatch(value394)) {
           addFieldError(
             errors,
             joinPath(path, 'homeTenantId'),
@@ -14477,15 +14556,15 @@ abstract final class UserRegisteredPayloadSchema {
       );
     }
     if (json.containsKey('registeredAt')) {
-      final value393 = json['registeredAt'];
-      if (value393 is! String) {
+      final value395 = json['registeredAt'];
+      if (value395 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'registeredAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value393)) {
+        if (!_pattern3.hasMatch(value395)) {
           addFieldError(
             errors,
             joinPath(path, 'registeredAt'),
@@ -14546,15 +14625,15 @@ abstract final class UserSuspendedPayloadSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value394 = json['userId'];
-      if (value394 is! String) {
+      final value396 = json['userId'];
+      if (value396 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value394)) {
+        if (!_pattern0.hasMatch(value396)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -14570,22 +14649,22 @@ abstract final class UserSuspendedPayloadSchema {
       );
     }
     if (json.containsKey('reason')) {
-      final value395 = json['reason'];
-      if (value395 is! String) {
+      final value397 = json['reason'];
+      if (value397 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'reason'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value395.isEmpty) {
+        if (value397.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value395.length > 200) {
+        if (value397.length > 200) {
           addFieldError(
             errors,
             joinPath(path, 'reason'),
@@ -14595,15 +14674,15 @@ abstract final class UserSuspendedPayloadSchema {
       }
     }
     if (json.containsKey('suspendedAt')) {
-      final value396 = json['suspendedAt'];
-      if (value396 is! String) {
+      final value398 = json['suspendedAt'];
+      if (value398 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'suspendedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value396)) {
+        if (!_pattern3.hasMatch(value398)) {
           addFieldError(
             errors,
             joinPath(path, 'suspendedAt'),
@@ -14664,15 +14743,15 @@ abstract final class UserReactivatedPayloadSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value397 = json['userId'];
-      if (value397 is! String) {
+      final value399 = json['userId'];
+      if (value399 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value397)) {
+        if (!_pattern0.hasMatch(value399)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -14688,15 +14767,15 @@ abstract final class UserReactivatedPayloadSchema {
       );
     }
     if (json.containsKey('reactivatedAt')) {
-      final value398 = json['reactivatedAt'];
-      if (value398 is! String) {
+      final value400 = json['reactivatedAt'];
+      if (value400 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'reactivatedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value398)) {
+        if (!_pattern3.hasMatch(value400)) {
           addFieldError(
             errors,
             joinPath(path, 'reactivatedAt'),
@@ -14758,15 +14837,15 @@ abstract final class UserEmailChangedPayloadSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value399 = json['userId'];
-      if (value399 is! String) {
+      final value401 = json['userId'];
+      if (value401 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value399)) {
+        if (!_pattern0.hasMatch(value401)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -14782,15 +14861,15 @@ abstract final class UserEmailChangedPayloadSchema {
       );
     }
     if (json.containsKey('changedAt')) {
-      final value400 = json['changedAt'];
-      if (value400 is! String) {
+      final value402 = json['changedAt'];
+      if (value402 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'changedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value400)) {
+        if (!_pattern3.hasMatch(value402)) {
           addFieldError(
             errors,
             joinPath(path, 'changedAt'),
@@ -14852,15 +14931,15 @@ abstract final class DeviceRegisteredPayloadSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value401 = json['userId'];
-      if (value401 is! String) {
+      final value403 = json['userId'];
+      if (value403 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value401)) {
+        if (!_pattern0.hasMatch(value403)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -14876,15 +14955,15 @@ abstract final class DeviceRegisteredPayloadSchema {
       );
     }
     if (json.containsKey('deviceId')) {
-      final value402 = json['deviceId'];
-      if (value402 is! String) {
+      final value404 = json['deviceId'];
+      if (value404 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value402)) {
+        if (!_pattern0.hasMatch(value404)) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -14900,8 +14979,8 @@ abstract final class DeviceRegisteredPayloadSchema {
       );
     }
     if (json.containsKey('platform')) {
-      final value403 = json['platform'];
-      if (value403 is! String ||
+      final value405 = json['platform'];
+      if (value405 is! String ||
           !const <String>{
             'ios',
             'android',
@@ -14909,7 +14988,7 @@ abstract final class DeviceRegisteredPayloadSchema {
             'macos',
             'windows',
             'linux',
-          }.contains(value403)) {
+          }.contains(value405)) {
         addFieldError(
           errors,
           joinPath(path, 'platform'),
@@ -14924,8 +15003,8 @@ abstract final class DeviceRegisteredPayloadSchema {
       );
     }
     if (json.containsKey('verifier')) {
-      final value404 = json['verifier'];
-      if (value404 is! bool) {
+      final value406 = json['verifier'];
+      if (value406 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'verifier'),
@@ -14940,15 +15019,15 @@ abstract final class DeviceRegisteredPayloadSchema {
       );
     }
     if (json.containsKey('registeredAt')) {
-      final value405 = json['registeredAt'];
-      if (value405 is! String) {
+      final value407 = json['registeredAt'];
+      if (value407 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'registeredAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value405)) {
+        if (!_pattern3.hasMatch(value407)) {
           addFieldError(
             errors,
             joinPath(path, 'registeredAt'),
@@ -15010,15 +15089,15 @@ abstract final class DeviceRemovedPayloadSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value406 = json['userId'];
-      if (value406 is! String) {
+      final value408 = json['userId'];
+      if (value408 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value406)) {
+        if (!_pattern0.hasMatch(value408)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -15034,15 +15113,15 @@ abstract final class DeviceRemovedPayloadSchema {
       );
     }
     if (json.containsKey('deviceId')) {
-      final value407 = json['deviceId'];
-      if (value407 is! String) {
+      final value409 = json['deviceId'];
+      if (value409 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'deviceId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value407)) {
+        if (!_pattern0.hasMatch(value409)) {
           addFieldError(
             errors,
             joinPath(path, 'deviceId'),
@@ -15058,15 +15137,15 @@ abstract final class DeviceRemovedPayloadSchema {
       );
     }
     if (json.containsKey('removedAt')) {
-      final value408 = json['removedAt'];
-      if (value408 is! String) {
+      final value410 = json['removedAt'];
+      if (value410 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'removedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value408)) {
+        if (!_pattern3.hasMatch(value410)) {
           addFieldError(
             errors,
             joinPath(path, 'removedAt'),
@@ -15127,15 +15206,15 @@ abstract final class TenantCreatedPayloadSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value409 = json['tenantId'];
-      if (value409 is! String) {
+      final value411 = json['tenantId'];
+      if (value411 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value409)) {
+        if (!_pattern0.hasMatch(value411)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -15151,22 +15230,22 @@ abstract final class TenantCreatedPayloadSchema {
       );
     }
     if (json.containsKey('slug')) {
-      final value410 = json['slug'];
-      if (value410 is! String) {
+      final value412 = json['slug'];
+      if (value412 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'slug'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value410.length < 3) {
+        if (value412.length < 3) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value410.length > 63) {
+        if (value412.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'slug'),
@@ -15182,13 +15261,13 @@ abstract final class TenantCreatedPayloadSchema {
       );
     }
     if (json.containsKey('kind')) {
-      final value411 = json['kind'];
-      if (value411 is! String ||
+      final value413 = json['kind'];
+      if (value413 is! String ||
           !const <String>{
             'organization',
             'shared_customers',
             'platform',
-          }.contains(value411)) {
+          }.contains(value413)) {
         addFieldError(
           errors,
           joinPath(path, 'kind'),
@@ -15203,22 +15282,22 @@ abstract final class TenantCreatedPayloadSchema {
       );
     }
     if (json.containsKey('region')) {
-      final value412 = json['region'];
-      if (value412 is! String) {
+      final value414 = json['region'];
+      if (value414 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'region'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value412.isEmpty) {
+        if (value414.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value412.length > 32) {
+        if (value414.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'region'),
@@ -15234,15 +15313,15 @@ abstract final class TenantCreatedPayloadSchema {
       );
     }
     if (json.containsKey('ownerUserId')) {
-      final value413 = json['ownerUserId'];
-      if (value413 is! String) {
+      final value415 = json['ownerUserId'];
+      if (value415 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'ownerUserId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value413)) {
+        if (!_pattern0.hasMatch(value415)) {
           addFieldError(
             errors,
             joinPath(path, 'ownerUserId'),
@@ -15258,15 +15337,15 @@ abstract final class TenantCreatedPayloadSchema {
       );
     }
     if (json.containsKey('createdAt')) {
-      final value414 = json['createdAt'];
-      if (value414 is! String) {
+      final value416 = json['createdAt'];
+      if (value416 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'createdAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value414)) {
+        if (!_pattern3.hasMatch(value416)) {
           addFieldError(
             errors,
             joinPath(path, 'createdAt'),
@@ -15327,15 +15406,15 @@ abstract final class TenantSuspendedPayloadSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value415 = json['tenantId'];
-      if (value415 is! String) {
+      final value417 = json['tenantId'];
+      if (value417 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value415)) {
+        if (!_pattern0.hasMatch(value417)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -15351,15 +15430,15 @@ abstract final class TenantSuspendedPayloadSchema {
       );
     }
     if (json.containsKey('suspendedAt')) {
-      final value416 = json['suspendedAt'];
-      if (value416 is! String) {
+      final value418 = json['suspendedAt'];
+      if (value418 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'suspendedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value416)) {
+        if (!_pattern3.hasMatch(value418)) {
           addFieldError(
             errors,
             joinPath(path, 'suspendedAt'),
@@ -15421,15 +15500,15 @@ abstract final class TenantReactivatedPayloadSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value417 = json['tenantId'];
-      if (value417 is! String) {
+      final value419 = json['tenantId'];
+      if (value419 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value417)) {
+        if (!_pattern0.hasMatch(value419)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -15445,15 +15524,15 @@ abstract final class TenantReactivatedPayloadSchema {
       );
     }
     if (json.containsKey('reactivatedAt')) {
-      final value418 = json['reactivatedAt'];
-      if (value418 is! String) {
+      final value420 = json['reactivatedAt'];
+      if (value420 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'reactivatedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value418)) {
+        if (!_pattern3.hasMatch(value420)) {
           addFieldError(
             errors,
             joinPath(path, 'reactivatedAt'),
@@ -15515,15 +15594,15 @@ abstract final class MembershipChangedPayloadSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value419 = json['tenantId'];
-      if (value419 is! String) {
+      final value421 = json['tenantId'];
+      if (value421 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value419)) {
+        if (!_pattern0.hasMatch(value421)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -15539,15 +15618,15 @@ abstract final class MembershipChangedPayloadSchema {
       );
     }
     if (json.containsKey('userId')) {
-      final value420 = json['userId'];
-      if (value420 is! String) {
+      final value422 = json['userId'];
+      if (value422 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value420)) {
+        if (!_pattern0.hasMatch(value422)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -15563,13 +15642,13 @@ abstract final class MembershipChangedPayloadSchema {
       );
     }
     if (json.containsKey('kind')) {
-      final value421 = json['kind'];
-      if (value421 is! String ||
+      final value423 = json['kind'];
+      if (value423 is! String ||
           !const <String>{
             'added',
             'removed',
             'groups_changed',
-          }.contains(value421)) {
+          }.contains(value423)) {
         addFieldError(
           errors,
           joinPath(path, 'kind'),
@@ -15584,34 +15663,34 @@ abstract final class MembershipChangedPayloadSchema {
       );
     }
     if (json.containsKey('groupIds')) {
-      final value422 = json['groupIds'];
-      if (value422 is! List) {
+      final value424 = json['groupIds'];
+      if (value424 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'groupIds'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value422.length > 50) {
+        if (value424.length > 50) {
           addFieldError(
             errors,
             joinPath(path, 'groupIds'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i423 = 0; i423 < value422.length; i423++) {
-          final item424 = value422[i423];
-          if (item424 is! String) {
+        for (var i425 = 0; i425 < value424.length; i425++) {
+          final item426 = value424[i425];
+          if (item426 is! String) {
             addFieldError(
               errors,
-              joinPath(joinPath(path, 'groupIds'), '$i423'),
+              joinPath(joinPath(path, 'groupIds'), '$i425'),
               PlatformErrorCode.validationInvalidType.code,
             );
           } else {
-            if (!_pattern0.hasMatch(item424)) {
+            if (!_pattern0.hasMatch(item426)) {
               addFieldError(
                 errors,
-                joinPath(joinPath(path, 'groupIds'), '$i423'),
+                joinPath(joinPath(path, 'groupIds'), '$i425'),
                 PlatformErrorCode.validationInvalidFormat.code,
               );
             }
@@ -15626,15 +15705,15 @@ abstract final class MembershipChangedPayloadSchema {
       );
     }
     if (json.containsKey('changedAt')) {
-      final value425 = json['changedAt'];
-      if (value425 is! String) {
+      final value427 = json['changedAt'];
+      if (value427 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'changedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value425)) {
+        if (!_pattern3.hasMatch(value427)) {
           addFieldError(
             errors,
             joinPath(path, 'changedAt'),
@@ -15696,15 +15775,15 @@ abstract final class PermissionsChangedPayloadSchema {
       return;
     }
     if (json.containsKey('tenantId')) {
-      final value426 = json['tenantId'];
-      if (value426 is! String) {
+      final value428 = json['tenantId'];
+      if (value428 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value426)) {
+        if (!_pattern0.hasMatch(value428)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -15720,15 +15799,15 @@ abstract final class PermissionsChangedPayloadSchema {
       );
     }
     if (json.containsKey('userId')) {
-      final value427 = json['userId'];
-      if (value427 is! String) {
+      final value429 = json['userId'];
+      if (value429 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value427)) {
+        if (!_pattern0.hasMatch(value429)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -15738,22 +15817,22 @@ abstract final class PermissionsChangedPayloadSchema {
       }
     }
     if (json.containsKey('permissionVersion')) {
-      final value428 = json['permissionVersion'];
-      if (value428 is! String) {
+      final value430 = json['permissionVersion'];
+      if (value430 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'permissionVersion'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value428.length > 32) {
+        if (value430.length > 32) {
           addFieldError(
             errors,
             joinPath(path, 'permissionVersion'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        if (!_pattern6.hasMatch(value428)) {
+        if (!_pattern7.hasMatch(value430)) {
           addFieldError(
             errors,
             joinPath(path, 'permissionVersion'),
@@ -15769,15 +15848,15 @@ abstract final class PermissionsChangedPayloadSchema {
       );
     }
     if (json.containsKey('changedAt')) {
-      final value429 = json['changedAt'];
-      if (value429 is! String) {
+      final value431 = json['changedAt'];
+      if (value431 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'changedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value429)) {
+        if (!_pattern3.hasMatch(value431)) {
           addFieldError(
             errors,
             joinPath(path, 'changedAt'),
@@ -15839,15 +15918,15 @@ abstract final class ApiKeyCreatedPayloadSchema {
       return;
     }
     if (json.containsKey('apiKeyId')) {
-      final value430 = json['apiKeyId'];
-      if (value430 is! String) {
+      final value432 = json['apiKeyId'];
+      if (value432 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiKeyId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value430)) {
+        if (!_pattern0.hasMatch(value432)) {
           addFieldError(
             errors,
             joinPath(path, 'apiKeyId'),
@@ -15863,15 +15942,15 @@ abstract final class ApiKeyCreatedPayloadSchema {
       );
     }
     if (json.containsKey('serviceAccountId')) {
-      final value431 = json['serviceAccountId'];
-      if (value431 is! String) {
+      final value433 = json['serviceAccountId'];
+      if (value433 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'serviceAccountId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value431)) {
+        if (!_pattern0.hasMatch(value433)) {
           addFieldError(
             errors,
             joinPath(path, 'serviceAccountId'),
@@ -15887,15 +15966,15 @@ abstract final class ApiKeyCreatedPayloadSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value432 = json['tenantId'];
-      if (value432 is! String) {
+      final value434 = json['tenantId'];
+      if (value434 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value432)) {
+        if (!_pattern0.hasMatch(value434)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -15911,22 +15990,22 @@ abstract final class ApiKeyCreatedPayloadSchema {
       );
     }
     if (json.containsKey('prefix')) {
-      final value433 = json['prefix'];
-      if (value433 is! String) {
+      final value435 = json['prefix'];
+      if (value435 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'prefix'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value433.length < 12) {
+        if (value435.length < 12) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value433.length > 12) {
+        if (value435.length > 12) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
@@ -15942,9 +16021,9 @@ abstract final class ApiKeyCreatedPayloadSchema {
       );
     }
     if (json.containsKey('environment')) {
-      final value434 = json['environment'];
-      if (value434 is! String ||
-          !const <String>{'live', 'test'}.contains(value434)) {
+      final value436 = json['environment'];
+      if (value436 is! String ||
+          !const <String>{'live', 'test'}.contains(value436)) {
         addFieldError(
           errors,
           joinPath(path, 'environment'),
@@ -15959,15 +16038,15 @@ abstract final class ApiKeyCreatedPayloadSchema {
       );
     }
     if (json.containsKey('createdBy')) {
-      final value435 = json['createdBy'];
-      if (value435 is! String) {
+      final value437 = json['createdBy'];
+      if (value437 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'createdBy'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value435)) {
+        if (!_pattern0.hasMatch(value437)) {
           addFieldError(
             errors,
             joinPath(path, 'createdBy'),
@@ -15983,15 +16062,15 @@ abstract final class ApiKeyCreatedPayloadSchema {
       );
     }
     if (json.containsKey('createdAt')) {
-      final value436 = json['createdAt'];
-      if (value436 is! String) {
+      final value438 = json['createdAt'];
+      if (value438 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'createdAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value436)) {
+        if (!_pattern3.hasMatch(value438)) {
           addFieldError(
             errors,
             joinPath(path, 'createdAt'),
@@ -16052,15 +16131,15 @@ abstract final class ApiKeyRevokedPayloadSchema {
       return;
     }
     if (json.containsKey('apiKeyId')) {
-      final value437 = json['apiKeyId'];
-      if (value437 is! String) {
+      final value439 = json['apiKeyId'];
+      if (value439 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'apiKeyId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value437)) {
+        if (!_pattern0.hasMatch(value439)) {
           addFieldError(
             errors,
             joinPath(path, 'apiKeyId'),
@@ -16076,15 +16155,15 @@ abstract final class ApiKeyRevokedPayloadSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value438 = json['tenantId'];
-      if (value438 is! String) {
+      final value440 = json['tenantId'];
+      if (value440 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value438)) {
+        if (!_pattern0.hasMatch(value440)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -16100,22 +16179,22 @@ abstract final class ApiKeyRevokedPayloadSchema {
       );
     }
     if (json.containsKey('prefix')) {
-      final value439 = json['prefix'];
-      if (value439 is! String) {
+      final value441 = json['prefix'];
+      if (value441 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'prefix'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value439.length < 12) {
+        if (value441.length < 12) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value439.length > 12) {
+        if (value441.length > 12) {
           addFieldError(
             errors,
             joinPath(path, 'prefix'),
@@ -16131,15 +16210,15 @@ abstract final class ApiKeyRevokedPayloadSchema {
       );
     }
     if (json.containsKey('revokedAt')) {
-      final value440 = json['revokedAt'];
-      if (value440 is! String) {
+      final value442 = json['revokedAt'];
+      if (value442 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'revokedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value440)) {
+        if (!_pattern3.hasMatch(value442)) {
           addFieldError(
             errors,
             joinPath(path, 'revokedAt'),
@@ -16200,15 +16279,15 @@ abstract final class SecurityAlertRaisedPayloadSchema {
       return;
     }
     if (json.containsKey('alertId')) {
-      final value441 = json['alertId'];
-      if (value441 is! String) {
+      final value443 = json['alertId'];
+      if (value443 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'alertId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value441)) {
+        if (!_pattern0.hasMatch(value443)) {
           addFieldError(
             errors,
             joinPath(path, 'alertId'),
@@ -16224,15 +16303,15 @@ abstract final class SecurityAlertRaisedPayloadSchema {
       );
     }
     if (json.containsKey('userId')) {
-      final value442 = json['userId'];
-      if (value442 is! String) {
+      final value444 = json['userId'];
+      if (value444 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern0.hasMatch(value442)) {
+        if (!_pattern0.hasMatch(value444)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -16248,8 +16327,8 @@ abstract final class SecurityAlertRaisedPayloadSchema {
       );
     }
     if (json.containsKey('type')) {
-      final value443 = json['type'];
-      if (value443 is! String ||
+      final value445 = json['type'];
+      if (value445 is! String ||
           !const <String>{
             'new_device_sign_in',
             'verifier_registered',
@@ -16265,7 +16344,7 @@ abstract final class SecurityAlertRaisedPayloadSchema {
             'account_locked',
             'protected_mode_enabled',
             'device_approval_denied',
-          }.contains(value443)) {
+          }.contains(value445)) {
         addFieldError(
           errors,
           joinPath(path, 'type'),
@@ -16280,15 +16359,15 @@ abstract final class SecurityAlertRaisedPayloadSchema {
       );
     }
     if (json.containsKey('raisedAt')) {
-      final value444 = json['raisedAt'];
-      if (value444 is! String) {
+      final value446 = json['raisedAt'];
+      if (value446 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'raisedAt'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern3.hasMatch(value444)) {
+        if (!_pattern3.hasMatch(value446)) {
           addFieldError(
             errors,
             joinPath(path, 'raisedAt'),
@@ -16311,4 +16390,1264 @@ extension SecurityAlertRaisedPayloadValidation on SecurityAlertRaisedPayload {
   /// Errores de este objeto, o una lista vacía si cumple el contrato.
   List<FieldError> validate() =>
       SecurityAlertRaisedPayloadSchema.validate(toJson());
+}
+
+/// Validador de [TenantCreation] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class TenantCreationSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tenantId')) {
+      final value447 = json['tenantId'];
+      if (value447 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'tenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value447)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'tenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('sagaId')) {
+      final value448 = json['sagaId'];
+      if (value448 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'sagaId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value448)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'sagaId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'sagaId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [TenantCreation] contra su contrato.
+extension TenantCreationValidation on TenantCreation {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => TenantCreationSchema.validate(toJson());
+}
+
+/// Validador de [AccountDeletionStarted] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class AccountDeletionStartedSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('sagaId')) {
+      final value449 = json['sagaId'];
+      if (value449 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'sagaId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value449)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'sagaId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'sagaId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [AccountDeletionStarted] contra su contrato.
+extension AccountDeletionStartedValidation on AccountDeletionStarted {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() =>
+      AccountDeletionStartedSchema.validate(toJson());
+}
+
+/// Validador de [GetSagaRequest] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class GetSagaRequestSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('sagaId')) {
+      final value450 = json['sagaId'];
+      if (value450 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'sagaId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value450)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'sagaId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'sagaId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'sagaId'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [GetSagaRequest] contra su contrato.
+extension GetSagaRequestValidation on GetSagaRequest {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => GetSagaRequestSchema.validate(toJson());
+}
+
+/// Validador de [SagaSummary] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class SagaSummarySchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('sagaId')) {
+      final value451 = json['sagaId'];
+      if (value451 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'sagaId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value451)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'sagaId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'sagaId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('saga')) {
+      final value452 = json['saga'];
+      if (value452 is! String ||
+          !const <String>{
+            'identity.tenant-onboarding',
+            'identity.delete-account',
+            'identity.move-tenant',
+          }.contains(value452)) {
+        addFieldError(
+          errors,
+          joinPath(path, 'saga'),
+          PlatformErrorCode.validationInvalidEnum.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'saga'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('status')) {
+      final value453 = json['status'];
+      if (value453 is! String ||
+          !const <String>{
+            'running',
+            'suspended',
+            'compensating',
+            'completed',
+            'compensated',
+            'compensation_failed',
+            'requires_intervention',
+          }.contains(value453)) {
+        addFieldError(
+          errors,
+          joinPath(path, 'status'),
+          PlatformErrorCode.validationInvalidEnum.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'status'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('startedAt')) {
+      final value454 = json['startedAt'];
+      if (value454 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'startedAt'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern3.hasMatch(value454)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'startedAt'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'startedAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('finishedAt')) {
+      final value455 = json['finishedAt'];
+      if (value455 != null) {
+        if (value455 is! String) {
+          addFieldError(
+            errors,
+            joinPath(path, 'finishedAt'),
+            PlatformErrorCode.validationInvalidType.code,
+          );
+        } else {
+          if (!_pattern3.hasMatch(value455)) {
+            addFieldError(
+              errors,
+              joinPath(path, 'finishedAt'),
+              PlatformErrorCode.validationInvalidFormat.code,
+            );
+          }
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'finishedAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [SagaSummary] contra su contrato.
+extension SagaSummaryValidation on SagaSummary {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => SagaSummarySchema.validate(toJson());
+}
+
+/// Validador de [EraseUserInput] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class EraseUserInputSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('userId')) {
+      final value456 = json['userId'];
+      if (value456 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'userId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value456)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'userId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'userId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'userId'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [EraseUserInput] contra su contrato.
+extension EraseUserInputValidation on EraseUserInput {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => EraseUserInputSchema.validate(toJson());
+}
+
+/// Validador de [EraseUserResult] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class EraseUserResultSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('userId')) {
+      final value457 = json['userId'];
+      if (value457 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'userId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value457)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'userId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'userId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('erasedAt')) {
+      final value458 = json['erasedAt'];
+      if (value458 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'erasedAt'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern3.hasMatch(value458)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'erasedAt'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'erasedAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [EraseUserResult] contra su contrato.
+extension EraseUserResultValidation on EraseUserResult {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => EraseUserResultSchema.validate(toJson());
+}
+
+/// Validador de [ListPushTargetsInput] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class ListPushTargetsInputSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('user')) {
+      final value459 = json['user'];
+      UserRefSchema.check(
+        value459,
+        joinPath(path, 'user'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'user'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'user'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [ListPushTargetsInput] contra su contrato.
+extension ListPushTargetsInputValidation on ListPushTargetsInput {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => ListPushTargetsInputSchema.validate(toJson());
+}
+
+/// Validador de [PushTarget] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class PushTargetSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('deviceId')) {
+      final value460 = json['deviceId'];
+      if (value460 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'deviceId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value460)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'deviceId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'deviceId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('platform')) {
+      final value461 = json['platform'];
+      if (value461 is! String ||
+          !const <String>{
+            'ios',
+            'android',
+            'web',
+            'macos',
+            'windows',
+            'linux',
+          }.contains(value461)) {
+        addFieldError(
+          errors,
+          joinPath(path, 'platform'),
+          PlatformErrorCode.validationInvalidEnum.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'platform'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('pushToken')) {
+      final value462 = json['pushToken'];
+      if (value462 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'pushToken'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value462.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'pushToken'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value462.length > 512) {
+          addFieldError(
+            errors,
+            joinPath(path, 'pushToken'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'pushToken'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [PushTarget] contra su contrato.
+extension PushTargetValidation on PushTarget {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => PushTargetSchema.validate(toJson());
+}
+
+/// Validador de [PushTargets] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class PushTargetsSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('targets')) {
+      final value463 = json['targets'];
+      if (value463 is! List) {
+        addFieldError(
+          errors,
+          joinPath(path, 'targets'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value463.length > 50) {
+          addFieldError(
+            errors,
+            joinPath(path, 'targets'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        for (var i464 = 0; i464 < value463.length; i464++) {
+          final item465 = value463[i464];
+          PushTargetSchema.check(
+            item465,
+            joinPath(joinPath(path, 'targets'), '$i464'),
+            errors,
+            acceptUnknownEnums: acceptUnknownEnums,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'targets'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [PushTargets] contra su contrato.
+extension PushTargetsValidation on PushTargets {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => PushTargetsSchema.validate(toJson());
+}
+
+/// Validador de [ListMembersByPermissionInput] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class ListMembersByPermissionInputSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tenantId')) {
+      final value466 = json['tenantId'];
+      if (value466 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'tenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value466)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'tenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('permission')) {
+      final value467 = json['permission'];
+      if (value467 is! String ||
+          !const <String>{
+            'tasks:read',
+            'tasks:write',
+            'billing:read',
+            'billing:write',
+            'reports:read',
+            'reports:write',
+            'backoffice:access',
+            'identity:members:read',
+            'identity:members:manage',
+            'identity:groups:manage',
+            'identity:roles:manage',
+            'identity:invitations:manage',
+            'identity:service-accounts:manage',
+            'identity:api-keys:manage',
+            'identity:tenant:manage',
+          }.contains(value467)) {
+        addFieldError(
+          errors,
+          joinPath(path, 'permission'),
+          PlatformErrorCode.validationInvalidEnum.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'permission'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('limit')) {
+      final value468 = json['limit'];
+      if (value468 is! num ||
+          !value468.isFinite ||
+          value468 != value468.roundToDouble()) {
+        addFieldError(
+          errors,
+          joinPath(path, 'limit'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value468 < 1) {
+          addFieldError(
+            errors,
+            joinPath(path, 'limit'),
+            PlatformErrorCode.validationTooSmall.code,
+          );
+        }
+        if (value468 > 100) {
+          addFieldError(
+            errors,
+            joinPath(path, 'limit'),
+            PlatformErrorCode.validationTooLarge.code,
+          );
+        }
+      }
+    }
+    if (json.containsKey('after')) {
+      final value469 = json['after'];
+      if (value469 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'after'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value469.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'after'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value469.length > 512) {
+          addFieldError(
+            errors,
+            joinPath(path, 'after'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        if (!_pattern6.hasMatch(value469)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'after'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    }
+    for (final key in json.keys) {
+      if (!const <String>{
+        'tenantId',
+        'permission',
+        'limit',
+        'after',
+      }.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [ListMembersByPermissionInput] contra su contrato.
+extension ListMembersByPermissionInputValidation
+    on ListMembersByPermissionInput {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() =>
+      ListMembersByPermissionInputSchema.validate(toJson());
+}
+
+/// Validador de [UserRefPage] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class UserRefPageSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('items')) {
+      final value470 = json['items'];
+      if (value470 is! List) {
+        addFieldError(
+          errors,
+          joinPath(path, 'items'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value470.length > 100) {
+          addFieldError(
+            errors,
+            joinPath(path, 'items'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        for (var i471 = 0; i471 < value470.length; i471++) {
+          final item472 = value470[i471];
+          UserRefSchema.check(
+            item472,
+            joinPath(joinPath(path, 'items'), '$i471'),
+            errors,
+            acceptUnknownEnums: acceptUnknownEnums,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'items'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('nextCursor')) {
+      final value473 = json['nextCursor'];
+      if (value473 != null) {
+        if (value473 is! String) {
+          addFieldError(
+            errors,
+            joinPath(path, 'nextCursor'),
+            PlatformErrorCode.validationInvalidType.code,
+          );
+        } else {
+          if (value473.isEmpty) {
+            addFieldError(
+              errors,
+              joinPath(path, 'nextCursor'),
+              PlatformErrorCode.validationTooShort.code,
+            );
+          }
+          if (value473.length > 512) {
+            addFieldError(
+              errors,
+              joinPath(path, 'nextCursor'),
+              PlatformErrorCode.validationTooLong.code,
+            );
+          }
+          if (!_pattern6.hasMatch(value473)) {
+            addFieldError(
+              errors,
+              joinPath(path, 'nextCursor'),
+              PlatformErrorCode.validationInvalidFormat.code,
+            );
+          }
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'nextCursor'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [UserRefPage] contra su contrato.
+extension UserRefPageValidation on UserRefPage {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => UserRefPageSchema.validate(toJson());
+}
+
+/// Validador de [UserErasedPayload] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class UserErasedPayloadSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('userId')) {
+      final value474 = json['userId'];
+      if (value474 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'userId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value474)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'userId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'userId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('homeTenantId')) {
+      final value475 = json['homeTenantId'];
+      if (value475 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'homeTenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern0.hasMatch(value475)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'homeTenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'homeTenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('erasedAt')) {
+      final value476 = json['erasedAt'];
+      if (value476 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'erasedAt'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern3.hasMatch(value476)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'erasedAt'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'erasedAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [UserErasedPayload] contra su contrato.
+extension UserErasedPayloadValidation on UserErasedPayload {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => UserErasedPayloadSchema.validate(toJson());
 }

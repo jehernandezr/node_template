@@ -8,6 +8,51 @@
   },
   "defaultContentType": "application/json",
   "channels": {
+    "billing-events": {
+      "address": "billing-events",
+      "description": "Tópico de billing. Eventos de billing: suscripciones, funcionalidades vigentes y facturas. Cada servicio suscribe su propia cola.",
+      "messages": {
+        "billing.subscription.changed.v1": {
+          "$ref": "#/components/messages/billing.subscription.changed.v1"
+        },
+        "billing.subscription.suspended.v1": {
+          "$ref": "#/components/messages/billing.subscription.suspended.v1"
+        },
+        "billing.subscription.reactivated.v1": {
+          "$ref": "#/components/messages/billing.subscription.reactivated.v1"
+        },
+        "billing.entitlements.changed.v1": {
+          "$ref": "#/components/messages/billing.entitlements.changed.v1"
+        },
+        "billing.invoice.issued.v1": {
+          "$ref": "#/components/messages/billing.invoice.issued.v1"
+        },
+        "billing.invoice.paid.v1": {
+          "$ref": "#/components/messages/billing.invoice.paid.v1"
+        },
+        "billing.invoice.failed.v1": {
+          "$ref": "#/components/messages/billing.invoice.failed.v1"
+        }
+      }
+    },
+    "billing-usage": {
+      "address": "billing-usage",
+      "description": "Cola FIFO de billing. Lotes de uso que envían los servicios que miden.",
+      "messages": {
+        "billing.usage.record.v1": {
+          "$ref": "#/components/messages/billing.usage.record.v1"
+        }
+      }
+    },
+    "billing-identity": {
+      "address": "billing-identity",
+      "description": "Cola de billing. Cambios de membresía que alimentan el conteo de usuarios facturables.",
+      "messages": {
+        "identity.membership.changed.v1": {
+          "$ref": "#/components/messages/identity.membership.changed.v1"
+        }
+      }
+    },
     "identity-events": {
       "address": "identity-events",
       "description": "Tópico de identity. Eventos de identity: usuarios, dispositivos, tenants, membresías, API keys, sesiones y alertas. Cada servicio suscribe su propia cola.",
@@ -59,6 +104,9 @@
         },
         "identity.security-alert.raised.v1": {
           "$ref": "#/components/messages/identity.security-alert.raised.v1"
+        },
+        "identity.user.erased.v1": {
+          "$ref": "#/components/messages/identity.user.erased.v1"
         }
       }
     },
@@ -70,9 +118,190 @@
           "$ref": "#/components/messages/identity.membership.changed.v1"
         }
       }
+    },
+    "identity-billing": {
+      "address": "identity-billing",
+      "description": "Cola de identity. Eventos de billing que identity aplica: suspende o reactiva el tenant y refresca sus funcionalidades.",
+      "messages": {
+        "billing.subscription.suspended.v1": {
+          "$ref": "#/components/messages/billing.subscription.suspended.v1"
+        },
+        "billing.subscription.reactivated.v1": {
+          "$ref": "#/components/messages/billing.subscription.reactivated.v1"
+        },
+        "billing.entitlements.changed.v1": {
+          "$ref": "#/components/messages/billing.entitlements.changed.v1"
+        }
+      }
+    },
+    "notifications-events": {
+      "address": "notifications-events",
+      "description": "Tópico de notifications. Eventos de notifications: se creó una notificación. Cada servicio suscribe su propia cola.",
+      "messages": {
+        "notifications.notification.created.v1": {
+          "$ref": "#/components/messages/notifications.notification.created.v1"
+        }
+      }
+    },
+    "notifications-triggers": {
+      "address": "notifications-triggers",
+      "description": "Cola de notifications. Convierte eventos de identity, tasks, billing y reports en notificaciones para sus destinatarios.",
+      "messages": {
+        "identity.security-alert.raised.v1": {
+          "$ref": "#/components/messages/identity.security-alert.raised.v1"
+        },
+        "identity.membership.changed.v1": {
+          "$ref": "#/components/messages/identity.membership.changed.v1"
+        },
+        "tasks.task.updated.v1": {
+          "$ref": "#/components/messages/tasks.task.updated.v1"
+        },
+        "billing.invoice.issued.v1": {
+          "$ref": "#/components/messages/billing.invoice.issued.v1"
+        },
+        "reports.run.completed.v1": {
+          "$ref": "#/components/messages/reports.run.completed.v1"
+        }
+      }
+    },
+    "notifications-realtime-control": {
+      "address": "notifications-realtime-control",
+      "description": "Cola de notifications. Cierra las conexiones de tiempo real de las sesiones y tokens revocados.",
+      "messages": {
+        "identity.session.revoked.v1": {
+          "$ref": "#/components/messages/identity.session.revoked.v1"
+        },
+        "identity.tokens.revoked.v1": {
+          "$ref": "#/components/messages/identity.tokens.revoked.v1"
+        }
+      }
+    },
+    "reports-events": {
+      "address": "reports-events",
+      "description": "Tópico de reports. Eventos de reports: terminó una ejecución. Cada servicio suscribe su propia cola.",
+      "messages": {
+        "reports.run.completed.v1": {
+          "$ref": "#/components/messages/reports.run.completed.v1"
+        }
+      }
+    },
+    "reports-runs": {
+      "address": "reports-runs",
+      "description": "Cola de reports. Ejecuciones de reporte que reports se envía a sí mismo.",
+      "messages": {
+        "reports.run.execute.v1": {
+          "$ref": "#/components/messages/reports.run.execute.v1"
+        }
+      }
+    },
+    "reports-projections": {
+      "address": "reports-projections",
+      "description": "Cola de reports. Proyección de tareas por tenant, alimentada por los eventos de tasks.",
+      "messages": {
+        "tasks.task.created.v1": {
+          "$ref": "#/components/messages/tasks.task.created.v1"
+        },
+        "tasks.task.updated.v1": {
+          "$ref": "#/components/messages/tasks.task.updated.v1"
+        },
+        "tasks.task.deleted.v1": {
+          "$ref": "#/components/messages/tasks.task.deleted.v1"
+        }
+      }
+    },
+    "reports-finance-projections": {
+      "address": "reports-finance-projections",
+      "description": "Cola de reports. Proyección de facturas y entregas, alimentada por billing y notifications.",
+      "messages": {
+        "billing.invoice.issued.v1": {
+          "$ref": "#/components/messages/billing.invoice.issued.v1"
+        },
+        "billing.invoice.paid.v1": {
+          "$ref": "#/components/messages/billing.invoice.paid.v1"
+        },
+        "billing.invoice.failed.v1": {
+          "$ref": "#/components/messages/billing.invoice.failed.v1"
+        },
+        "notifications.notification.created.v1": {
+          "$ref": "#/components/messages/notifications.notification.created.v1"
+        }
+      }
+    },
+    "tasks-events": {
+      "address": "tasks-events",
+      "description": "Tópico de tasks. Eventos de tasks: creación, cambio y borrado de tareas. Cada servicio suscribe su propia cola.",
+      "messages": {
+        "tasks.task.created.v1": {
+          "$ref": "#/components/messages/tasks.task.created.v1"
+        },
+        "tasks.task.updated.v1": {
+          "$ref": "#/components/messages/tasks.task.updated.v1"
+        },
+        "tasks.task.deleted.v1": {
+          "$ref": "#/components/messages/tasks.task.deleted.v1"
+        }
+      }
     }
   },
   "operations": {
+    "billing-events.publish": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/billing-events" },
+      "summary": "billing publica sus eventos.",
+      "messages": [
+        {
+          "$ref": "#/channels/billing-events/messages/billing.subscription.changed.v1"
+        },
+        {
+          "$ref": "#/channels/billing-events/messages/billing.subscription.suspended.v1"
+        },
+        {
+          "$ref": "#/channels/billing-events/messages/billing.subscription.reactivated.v1"
+        },
+        {
+          "$ref": "#/channels/billing-events/messages/billing.entitlements.changed.v1"
+        },
+        {
+          "$ref": "#/channels/billing-events/messages/billing.invoice.issued.v1"
+        },
+        {
+          "$ref": "#/channels/billing-events/messages/billing.invoice.paid.v1"
+        },
+        {
+          "$ref": "#/channels/billing-events/messages/billing.invoice.failed.v1"
+        }
+      ],
+      "x-producers": ["billing"]
+    },
+    "billing-usage.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/billing-usage" },
+      "summary": "billing consume la cola.",
+      "messages": [
+        { "$ref": "#/channels/billing-usage/messages/billing.usage.record.v1" }
+      ],
+      "x-consumer": "billing"
+    },
+    "billing-usage.send": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/billing-usage" },
+      "summary": "Comandos que recibe billing.",
+      "messages": [
+        { "$ref": "#/channels/billing-usage/messages/billing.usage.record.v1" }
+      ],
+      "x-producers": ["identity", "notifications", "reports", "tasks"]
+    },
+    "billing-identity.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/billing-identity" },
+      "summary": "billing consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/billing-identity/messages/identity.membership.changed.v1"
+        }
+      ],
+      "x-consumer": "billing"
+    },
     "identity-events.publish": {
       "action": "send",
       "channel": { "$ref": "#/channels/identity-events" },
@@ -125,6 +354,9 @@
         },
         {
           "$ref": "#/channels/identity-events/messages/identity.security-alert.raised.v1"
+        },
+        {
+          "$ref": "#/channels/identity-events/messages/identity.user.erased.v1"
         }
       ],
       "x-producers": ["identity"]
@@ -139,10 +371,248 @@
         }
       ],
       "x-consumer": "identity"
+    },
+    "identity-billing.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/identity-billing" },
+      "summary": "identity consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/identity-billing/messages/billing.subscription.suspended.v1"
+        },
+        {
+          "$ref": "#/channels/identity-billing/messages/billing.subscription.reactivated.v1"
+        },
+        {
+          "$ref": "#/channels/identity-billing/messages/billing.entitlements.changed.v1"
+        }
+      ],
+      "x-consumer": "identity"
+    },
+    "notifications-events.publish": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/notifications-events" },
+      "summary": "notifications publica sus eventos.",
+      "messages": [
+        {
+          "$ref": "#/channels/notifications-events/messages/notifications.notification.created.v1"
+        }
+      ],
+      "x-producers": ["notifications"]
+    },
+    "notifications-triggers.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/notifications-triggers" },
+      "summary": "notifications consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/notifications-triggers/messages/identity.security-alert.raised.v1"
+        },
+        {
+          "$ref": "#/channels/notifications-triggers/messages/identity.membership.changed.v1"
+        },
+        {
+          "$ref": "#/channels/notifications-triggers/messages/tasks.task.updated.v1"
+        },
+        {
+          "$ref": "#/channels/notifications-triggers/messages/billing.invoice.issued.v1"
+        },
+        {
+          "$ref": "#/channels/notifications-triggers/messages/reports.run.completed.v1"
+        }
+      ],
+      "x-consumer": "notifications"
+    },
+    "notifications-realtime-control.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/notifications-realtime-control" },
+      "summary": "notifications consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/notifications-realtime-control/messages/identity.session.revoked.v1"
+        },
+        {
+          "$ref": "#/channels/notifications-realtime-control/messages/identity.tokens.revoked.v1"
+        }
+      ],
+      "x-consumer": "notifications"
+    },
+    "reports-events.publish": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/reports-events" },
+      "summary": "reports publica sus eventos.",
+      "messages": [
+        {
+          "$ref": "#/channels/reports-events/messages/reports.run.completed.v1"
+        }
+      ],
+      "x-producers": ["reports"]
+    },
+    "reports-runs.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/reports-runs" },
+      "summary": "reports consume la cola.",
+      "messages": [
+        { "$ref": "#/channels/reports-runs/messages/reports.run.execute.v1" }
+      ],
+      "x-consumer": "reports"
+    },
+    "reports-runs.send": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/reports-runs" },
+      "summary": "Comandos que recibe reports.",
+      "messages": [
+        { "$ref": "#/channels/reports-runs/messages/reports.run.execute.v1" }
+      ],
+      "x-producers": ["reports"]
+    },
+    "reports-projections.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/reports-projections" },
+      "summary": "reports consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/reports-projections/messages/tasks.task.created.v1"
+        },
+        {
+          "$ref": "#/channels/reports-projections/messages/tasks.task.updated.v1"
+        },
+        {
+          "$ref": "#/channels/reports-projections/messages/tasks.task.deleted.v1"
+        }
+      ],
+      "x-consumer": "reports"
+    },
+    "reports-finance-projections.receive": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/reports-finance-projections" },
+      "summary": "reports consume la cola.",
+      "messages": [
+        {
+          "$ref": "#/channels/reports-finance-projections/messages/billing.invoice.issued.v1"
+        },
+        {
+          "$ref": "#/channels/reports-finance-projections/messages/billing.invoice.paid.v1"
+        },
+        {
+          "$ref": "#/channels/reports-finance-projections/messages/billing.invoice.failed.v1"
+        },
+        {
+          "$ref": "#/channels/reports-finance-projections/messages/notifications.notification.created.v1"
+        }
+      ],
+      "x-consumer": "reports"
+    },
+    "tasks-events.publish": {
+      "action": "send",
+      "channel": { "$ref": "#/channels/tasks-events" },
+      "summary": "tasks publica sus eventos.",
+      "messages": [
+        { "$ref": "#/channels/tasks-events/messages/tasks.task.created.v1" },
+        { "$ref": "#/channels/tasks-events/messages/tasks.task.updated.v1" },
+        { "$ref": "#/channels/tasks-events/messages/tasks.task.deleted.v1" }
+      ],
+      "x-producers": ["tasks"]
     }
   },
   "components": {
     "messages": {
+      "billing.subscription.changed.v1": {
+        "name": "billing.subscription.changed.v1",
+        "title": "billing.subscription.changed.v1",
+        "summary": "Cambió el plan de la suscripción de un tenant.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/SubscriptionChangedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.subscription.suspended.v1": {
+        "name": "billing.subscription.suspended.v1",
+        "title": "billing.subscription.suspended.v1",
+        "summary": "Se suspendió la suscripción de un tenant. Identity suspende el acceso.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/SubscriptionSuspendedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.subscription.reactivated.v1": {
+        "name": "billing.subscription.reactivated.v1",
+        "title": "billing.subscription.reactivated.v1",
+        "summary": "Se reactivó la suscripción de un tenant.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/SubscriptionReactivatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.entitlements.changed.v1": {
+        "name": "billing.entitlements.changed.v1",
+        "title": "billing.entitlements.changed.v1",
+        "summary": "Cambiaron las funcionalidades y cuotas vigentes de un tenant. Identity las refleja en los permisos.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/EntitlementsChangedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.invoice.issued.v1": {
+        "name": "billing.invoice.issued.v1",
+        "title": "billing.invoice.issued.v1",
+        "summary": "Se emitió una factura.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/InvoiceIssuedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.invoice.paid.v1": {
+        "name": "billing.invoice.paid.v1",
+        "title": "billing.invoice.paid.v1",
+        "summary": "Se pagó una factura.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/InvoicePaidPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.invoice.failed.v1": {
+        "name": "billing.invoice.failed.v1",
+        "title": "billing.invoice.failed.v1",
+        "summary": "Falló el cobro de una factura.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/InvoiceFailedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
+      "billing.usage.record.v1": {
+        "name": "billing.usage.record.v1",
+        "title": "billing.usage.record.v1",
+        "summary": "Registra el uso de un tenant medido por otro servicio. Cada registro lleva su llave de idempotencia.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "billing/export/contract.json#/schemas/RecordUsagePayload"
+        },
+        "x-kind": "command",
+        "x-version": 1,
+        "x-owner": "billing"
+      },
       "identity.session.revoked.v1": {
         "name": "identity.session.revoked.v1",
         "title": "identity.session.revoked.v1",
@@ -334,6 +804,90 @@
         "x-kind": "event",
         "x-version": 1,
         "x-owner": "identity"
+      },
+      "identity.user.erased.v1": {
+        "name": "identity.user.erased.v1",
+        "title": "identity.user.erased.v1",
+        "summary": "Se borraron los datos personales de un usuario. Los servicios que guardan su rastro lo borran o anonimizan.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "identity/export/contract.json#/schemas/UserErasedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "identity"
+      },
+      "notifications.notification.created.v1": {
+        "name": "notifications.notification.created.v1",
+        "title": "notifications.notification.created.v1",
+        "summary": "Se creó una notificación: tenant, tipo y canales usados, sin texto. Reports lo cuenta.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "notifications/export/contract.json#/schemas/NotificationCreatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "notifications"
+      },
+      "reports.run.completed.v1": {
+        "name": "reports.run.completed.v1",
+        "title": "reports.run.completed.v1",
+        "summary": "Terminó una ejecución de reporte, lista o fallida. Notifications avisa a quien la pidió.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "reports/export/contract.json#/schemas/RunCompletedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "reports"
+      },
+      "reports.run.execute.v1": {
+        "name": "reports.run.execute.v1",
+        "title": "reports.run.execute.v1",
+        "summary": "Ejecuta una ejecución de reporte en un worker.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "reports/export/contract.json#/schemas/ExecuteRunPayload"
+        },
+        "x-kind": "command",
+        "x-version": 1,
+        "x-owner": "reports"
+      },
+      "tasks.task.created.v1": {
+        "name": "tasks.task.created.v1",
+        "title": "tasks.task.created.v1",
+        "summary": "Se creó una tarea en un tenant.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "tasks/export/contract.json#/schemas/TaskCreatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "tasks"
+      },
+      "tasks.task.updated.v1": {
+        "name": "tasks.task.updated.v1",
+        "title": "tasks.task.updated.v1",
+        "summary": "Se cambió una tarea: campos modificados, estado anterior y nuevo, quien la cambió y quien la creó.",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "tasks/export/contract.json#/schemas/TaskUpdatedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "tasks"
+      },
+      "tasks.task.deleted.v1": {
+        "name": "tasks.task.deleted.v1",
+        "title": "tasks.task.deleted.v1",
+        "summary": "Se borró una tarea (borrado lógico).",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "tasks/export/contract.json#/schemas/TaskDeletedPayload"
+        },
+        "x-kind": "event",
+        "x-version": 1,
+        "x-owner": "tasks"
       }
     }
   }

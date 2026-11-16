@@ -1,0 +1,22 @@
+/** Headers HTTP que lee o escribe la librería. En minúsculas, como los entrega Node. */
+export enum HttpHeader {
+  Authorization = 'authorization',
+  ApiVersion = 'api-version',
+  Cookie = 'cookie',
+  SetCookie = 'set-cookie',
+  Origin = 'origin',
+  UserAgent = 'user-agent',
+  ContentType = 'content-type',
+  ContentLength = 'content-length',
+  TransferEncoding = 'transfer-encoding',
+  SessionTransport = 'x-session-transport',
+  RetryAfter = 'retry-after',
+  CacheControl = 'cache-control',
+  Deprecation = 'deprecation',
+  Sunset = 'sunset',
+  Link = 'link',
+  StrictTransportSecurity = 'strict-transport-security',
+  ContentTypeOptions = 'x-content-type-options',
+  ReferrerPolicy = 'referrer-policy',
+  ContentSecurityPolicy = 'content-security-policy',
+}

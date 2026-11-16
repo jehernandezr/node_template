@@ -1,4 +1,4 @@
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide Task;
 import 'package:flutter/foundation.dart';
 import 'package:ui/ui.dart';
 import 'package:utils/utils.dart';

@@ -1,4 +1,4 @@
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart' hide NotificationsOperation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_notifications/src/data/fake_notifications_repository.dart';

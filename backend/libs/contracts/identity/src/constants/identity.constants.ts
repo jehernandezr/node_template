@@ -43,6 +43,10 @@ export const IdentityLimits = {
   tenantSlugMaxLength: 63,
   tenantNameMaxLength: 120,
   regionMaxLength: 32,
+  /** URL base de la API regional que devuelve el inicio de sesión. */
+  apiBaseUrlMaxLength: 2048,
+  /** Dispositivos con push que se devuelven por usuario. */
+  maxPushTargets: 50,
   serviceAccountNameMaxLength: 120,
   apiKeyPrefixLength: 12,
   apiKeySecretMaxLength: 128,

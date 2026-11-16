@@ -4,6 +4,8 @@ export enum Permission {
   TasksWrite = 'tasks:write',
   BillingRead = 'billing:read',
   BillingWrite = 'billing:write',
+  ReportsRead = 'reports:read',
+  ReportsWrite = 'reports:write',
   BackofficeAccess = 'backoffice:access',
   IdentityMembersRead = 'identity:members:read',
   IdentityMembersManage = 'identity:members:manage',
@@ -28,6 +30,7 @@ export enum PlanFeature {
   AiAssistant = 'ai_assistant',
   Webhooks = 'webhooks',
   Billing = 'billing',
+  AdvancedReports = 'advanced_reports',
 }
 
 /** Feature flags que habilitan partes del producto. */

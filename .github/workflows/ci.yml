@@ -238,6 +238,9 @@ jobs:
           python3 -B -I -m unittest discover -s modules/http-api/authorizer -v
           python3 -B -I -m unittest discover -s ../local/localstack -v
 
+      - name: Pruebas de los scripts del pipeline
+        run: node --test ../scripts/__tests__/*.test.mjs
+
       - name: vendor/ del bootstrap coincide con requirements.txt
         run: python3 -B -I ../scripts/check_vendor.py modules/rds-postgres/lambda/db_bootstrap
 

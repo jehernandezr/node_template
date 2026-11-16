@@ -53,7 +53,7 @@ export class ShardedMigrationRunner {
       try {
         const applied = await dataSource.runMigrations({ transaction: 'each' });
         return {
-          database: String(dataSource.options.database),
+          database: ShardedMigrationRunner.databaseOf(dataSource),
           applied: applied.map((migration) => migration.name),
         };
       } finally {
@@ -64,5 +64,17 @@ export class ShardedMigrationRunner {
     } finally {
       await runner.release();
     }
+  }
+
+  /**
+   * Nombre de la base que se migra. Con réplicas, TypeORM deja `options.database` sin valor y el
+   * nombre vive en `replication.master`.
+   */
+  private static databaseOf(dataSource: DataSource): string {
+    const { options } = dataSource;
+    if (options.type === 'postgres' && options.replication !== undefined) {
+      return String(options.replication.master.database);
+    }
+    return String(options.database);
   }
 }

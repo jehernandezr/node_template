@@ -7,3 +7,4 @@ export * from './api-key.events.js';
 export * from './security.events.js';
 export * from './identity.topics.js';
 export * from './identity.queues.js';
+export * from './billing.references.js';

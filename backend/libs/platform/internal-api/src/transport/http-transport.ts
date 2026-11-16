@@ -1,5 +1,5 @@
 import type { CallOutcome } from '@platform/primitives';
-import type { InternalCallSigner } from '../auth/internal-call-signer.js';
+import type { InternalRequestSigner } from '../signing/internal-request-signer.js';
 import type { CallMeta } from './call-meta.js';
 import type { HttpOutcomeReader } from './http-outcome-reader.js';
 import { InternalApiRoute } from './internal-api-route.js';
@@ -19,7 +19,7 @@ export class HttpTransport extends Transport {
 
   constructor(
     private readonly baseUrls: ServiceBaseUrls,
-    private readonly signer: InternalCallSigner,
+    private readonly signer: InternalRequestSigner,
     private readonly outcomeReader: HttpOutcomeReader,
     private readonly fetcher: typeof fetch,
   ) {
@@ -63,6 +63,7 @@ export class HttpTransport extends Transport {
     const signed = await this.signer.sign({
       method: HttpTransport.METHOD,
       path,
+      baseUrl: base,
       body,
       headers,
     });

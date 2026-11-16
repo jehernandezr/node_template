@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "contracts-billing",
+  "sourceRoot": "backend/libs/contracts/billing/src",
+  "projectType": "library",
+  "tags": ["type:contracts", "scope:billing"],
+  "targets": {
+    "typecheck": {}
+  }
+}

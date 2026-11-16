@@ -25,6 +25,8 @@ export enum PlatformErrorCode {
   HttpPayloadTooLarge = 'PLATFORM.HTTP.PAYLOAD_TOO_LARGE',
   HttpUnsupportedMediaType = 'PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE',
   HttpMalformedBody = 'PLATFORM.HTTP.MALFORMED_BODY',
+  AccessFeatureNotIncluded = 'PLATFORM.ACCESS.FEATURE_NOT_INCLUDED',
+  AccessFlagDisabled = 'PLATFORM.ACCESS.FLAG_DISABLED',
   ResourceNotFound = 'PLATFORM.RESOURCE.NOT_FOUND',
   ConflictVersionMismatch = 'PLATFORM.CONFLICT.VERSION_MISMATCH',
   KernelInvalidId = 'PLATFORM.KERNEL.INVALID_ID',

@@ -41,6 +41,29 @@ describe('Access', () => {
   });
 });
 
+describe('Access (features and flags)', () => {
+  it('keeps the plan features and the flags a route requires', () => {
+    expect(
+      Access.authenticated({
+        permissions: ['reports:read'],
+        features: ['advanced_reports'],
+        flags: ['new_reports'],
+      }),
+    ).toEqual({
+      kind: AccessKind.Authenticated,
+      permissions: ['reports:read'],
+      features: ['advanced_reports'],
+      flags: ['new_reports'],
+    });
+  });
+
+  it('leaves out empty features and flags', () => {
+    expect(Access.authenticated({ features: [], flags: [] })).toEqual({
+      kind: AccessKind.Authenticated,
+    });
+  });
+});
+
 describe('defineRoute', () => {
   it('extracts path params and defaults request, response and status', () => {
     const route = defineRoute({

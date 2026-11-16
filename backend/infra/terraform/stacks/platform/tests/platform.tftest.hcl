@@ -106,3 +106,64 @@ run "staging_requires_alarm_destination" {
 
   expect_failures = [terraform_data.alarm_check]
 }
+
+run "oidc_off_by_default" {
+  command = plan
+
+  variables {
+    environment     = "dev"
+    compute_enabled = false
+  }
+
+  assert {
+    condition     = length(module.oidc_github) == 0
+    error_message = "Sin github_repository no se crean roles de OIDC."
+  }
+
+  assert {
+    condition     = output.github_oidc == null
+    error_message = "Sin OIDC la salida github_oidc es null."
+  }
+}
+
+run "oidc_creates_provider_and_roles" {
+  command = plan
+
+  variables {
+    environment       = "dev"
+    compute_enabled   = false
+    github_repository = "acme/node-template"
+  }
+
+  assert {
+    condition     = length(module.oidc_github) == 1
+    error_message = "Con github_repository se crea el módulo de OIDC."
+  }
+
+  assert {
+    condition     = module.oidc_github[0].ecr_repository_prefix == var.name_prefix
+    error_message = "El prefijo de ECR sale del prefijo de nombres del ambiente."
+  }
+
+  assert {
+    condition     = output.github_oidc != null
+    error_message = "La salida github_oidc trae los datos del pipeline."
+  }
+}
+
+run "oidc_reuses_existing_provider" {
+  command = plan
+
+  variables {
+    environment                = "dev"
+    compute_enabled            = false
+    github_repository          = "acme/node-template"
+    oidc_create_provider       = false
+    oidc_existing_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+  }
+
+  assert {
+    condition     = module.oidc_github[0].provider_arn == var.oidc_existing_provider_arn
+    error_message = "Con oidc_create_provider = false se reutiliza el proveedor indicado."
+  }
+}

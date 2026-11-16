@@ -145,6 +145,37 @@ python3 -B -I -m unittest discover -s backend/infra/terraform/modules/http-api/a
 python3 -B -I backend/infra/scripts/check_vendor.py backend/infra/terraform/modules/rds-postgres/lambda/db_bootstrap
 ```
 
+## Pipeline de despliegue
+
+Los workflows `deploy.yml`, `publish-web.yml` y `publish-mobile.yml` entran a AWS por OIDC. No hay claves de larga vida: cada job asume un rol con `aws-actions/configure-aws-credentials`. El módulo `modules/oidc-github` crea los roles y el bucket de artefactos, y el stack `platform` lo cablea cuando `github_repository` está configurado (si es `null`, el pipeline queda apagado).
+
+Roles y variables del repositorio de GitHub. Cada GitHub environment, con el mismo nombre que el ambiente (`dev`, `staging`, `prod`), guarda estas variables:
+
+| Variable                    | Uso                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `vars.AWS_DEPLOY_ROLE_ARN`  | Rol de Terraform y de lectura del estado, de los stacks y de cada servicio.                        |
+| `vars.AWS_PUBLISH_ROLE_ARN` | Rol que sube imágenes a ECR y artefactos al bucket de artefactos.                                  |
+| `vars.AWS_WEB_ROLE_ARN`     | Rol que publica la web e invalida CloudFront.                                                      |
+| `vars.AWS_REGION`           | Región de AWS del ambiente.                                                                        |
+| `vars.NAME_PREFIX`          | Prefijo de nombres, por ejemplo `node-template-dev`. Lo usa la web.                                |
+| `vars.ARTIFACTS_BUCKET`     | Bucket de artefactos. Lo lee `publish-mobile.yml`; el pipeline de servicios lo toma de `platform`. |
+| `vars.DEPLOY_RUNNER`        | Opcional. Etiqueta de un runner propio dentro de la VPC; sin ella se usa `ubuntu-latest`.          |
+
+Orden por servicio. Los servicios se descubren recorriendo `environments/<ambiente>/services/*`: cada carpeta con `terraform.tfvars` y `backend.tfvars` es un servicio, y el workflow no tiene una lista fija. Para cada uno se hacen cuatro pasos en orden: publicar el artefacto (imagen con etiqueta `sha-<commit>` o paquete de Lambda en S3), migrar la base, planear y aplicar el stack `service`. El artefacto sale antes porque el `apply` necesita `TF_VAR_image` o `TF_VAR_lambda_package`. Antes de los servicios, el job de stacks aplica `network`, `platform`, `data`, `messaging` y `edge`, en ese orden, planeando y aplicando cada uno antes del siguiente porque lee sus salidas.
+
+Migraciones. Las migraciones corren en el runner del job y necesitan alcanzar la base a través de RDS Proxy. Por eso conviene un runner dentro de la VPC (`vars.DEPLOY_RUNNER`), no uno hospedado por GitHub. `migrate-service.sh` lee la base y las credenciales del servicio desde las salidas del stack `data` y las enmascara en los logs.
+
+Aplicación móvil. El pipeline solo compila el `.aab` y lo sube al bucket de artefactos bajo el commit. La subida a las tiendas y la firma de release exigen credenciales del titular de la cuenta y no se automatizan.
+
+Probar los scripts sin tocar AWS. Con `DRY_RUN=1` cada comando se imprime con el prefijo `+ ` en lugar de ejecutarse, y las lecturas devuelven `<dry-run>`. Para probar contra el fixture de servicios:
+
+```bash
+DRY_RUN=1 TF_ROOT=backend/infra/scripts/__tests__/utils/fixtures/terraform GIT_SHA=abc1234 \
+  ARTIFACTS_BUCKET=fixture-artifacts ECR_PREFIX=fixture-dev AWS_REGION=us-east-1 \
+  backend/infra/scripts/deploy-service.sh dev fixture-mixed
+node --test backend/infra/scripts/__tests__/*.test.mjs
+```
+
 ## Decisiones
 
 - Salida a Internet: `egress` (`none`, `single_nat` en dev, `per_az_nat` en staging y prod) pone NAT solo para las subredes privadas de aplicación. Las de datos no tienen ruta a Internet. Ver [ADR 0016](../../../docs/adr/0016-egress-de-red.md).

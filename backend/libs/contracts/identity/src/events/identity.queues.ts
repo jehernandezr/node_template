@@ -1,6 +1,7 @@
 import { defineQueue } from '@contracts/platform';
 import { IdentityQueue } from '../enums/identifiers.enum.js';
 import { MembershipChangedEvent } from './access.events.js';
+import { BillingEventsReference } from './billing.references.js';
 import { IdentityEventsTopic } from './identity.topics.js';
 
 /**
@@ -17,4 +18,20 @@ export const AccessProjectionQueue = defineQueue({
   ],
   description:
     'Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía.',
+});
+
+/**
+ * Cambios de billing que afectan al acceso: suspensión, reactivación y
+ * funcionalidades vigentes de un tenant.
+ */
+export const BillingEventsQueue = defineQueue({
+  name: IdentityQueue.Billing,
+  subscriptions: [
+    {
+      topic: BillingEventsReference,
+      events: BillingEventsReference.events,
+    },
+  ],
+  description:
+    'Eventos de billing que identity aplica: suspende o reactiva el tenant y refresca sus funcionalidades.',
 });

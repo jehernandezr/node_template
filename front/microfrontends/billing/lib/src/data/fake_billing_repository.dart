@@ -1,4 +1,17 @@
-import 'package:contracts/contracts.dart';
+import 'package:contracts/contracts.dart'
+    hide
+        BillingOperation,
+        BillingPeriod,
+        Currency,
+        Invoice,
+        InvoiceLine,
+        InvoiceLineKind,
+        InvoiceStatus,
+        Plan,
+        PlanPeriodicity,
+        QuotaUsage,
+        Subscription,
+        SubscriptionStatus;
 import 'package:shell_core/shell_core.dart';
 
 import '../shared/enums/billing_enums.dart';

@@ -65,6 +65,8 @@ describe('identity internal operations', () => {
         IdentityOperation.GetUserAccess,
         IdentityOperation.GetUserProfile,
         IdentityOperation.AuthenticateApiKey,
+        IdentityOperation.ListPushTargets,
+        IdentityOperation.ListMembersByPermission,
       ].sort(),
     );
     for (const op of reads) {

@@ -7,6 +7,7 @@ import {
 } from '@contracts/platform';
 import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
 import { Permission } from '../enums/access.enum.js';
+import { TenantCreationSchema } from '../schemas/orchestration.schema.js';
 import {
   CreateTenantRequestSchema,
   MyTenantPageSchema,
@@ -15,17 +16,21 @@ import {
 } from '../schemas/tenant.schema.js';
 import { SessionGuardErrors } from './session-guard.errors.js';
 
-/** `POST /v1/tenants`: crea un tenant y deja al usuario como dueño. */
+/**
+ * `POST /v1/tenants`: crea un tenant y deja al usuario como dueño. El tenant se
+ * aprovisiona en una saga: responde 202 y el cliente consulta `GET /v1/sagas/{sagaId}`.
+ */
 export const CreateTenantRoute = defineRoute({
   id: IdentityRoute.CreateTenant,
   method: HttpMethod.Post,
   path: '/v1/tenants',
   request: CreateTenantRequestSchema,
-  response: TenantSummarySchema,
-  successStatus: 201,
+  response: TenantCreationSchema,
+  successStatus: 202,
   errors: [...SessionGuardErrors, IdentityErrorCode.TenantSlugTaken],
   access: Access.authenticated(),
-  description: 'Crea un tenant y deja al usuario autenticado como dueño.',
+  description:
+    'Inicia el aprovisionamiento de un tenant y deja al usuario autenticado como dueño.',
 });
 
 /** `GET /v1/tenant`: tenant de la sesión actual. */

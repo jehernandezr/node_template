@@ -879,6 +879,8 @@ const _accessKeys = {
   'kind',
   'permissions',
   'platformRoles',
+  'features',
+  'flags',
   'mfaMaxAgeMinutes',
 };
 
@@ -889,7 +891,12 @@ const _deprecationKeys = {'since', 'sunset', 'replacement'};
 Map<String, Set<String>> _accessValues(ContractModel model) {
   final result = <String, Set<String>>{};
   for (final service in model.services) {
-    for (final name in const ['Permission', 'PlatformRole']) {
+    for (final name in const [
+      'Permission',
+      'PlatformRole',
+      'PlanFeature',
+      'FeatureFlag',
+    ]) {
       final declared = model.enumsOf(service)[name] as Json?;
       if (declared == null) continue;
       result.putIfAbsent(name, () => {}).addAll([
@@ -940,6 +947,8 @@ void _checkKeys(String where, Json json, Set<String> known) {
     for (final (key, enumName) in const [
       ('permissions', 'Permission'),
       ('platformRoles', 'PlatformRole'),
+      ('features', 'PlanFeature'),
+      ('flags', 'FeatureFlag'),
     ]) {
       final known = accessValues[enumName];
       for (final value in (access[key] as List?) ?? const []) {
@@ -979,6 +988,12 @@ void _checkKeys(String where, Json json, Set<String> known) {
       ..writeln('    requiresAuth: ${access['kind'] != 'public'},')
       ..writeln('    permissions: ${strings(access['permissions'])},')
       ..writeln('    platformRoles: ${strings(access['platformRoles'])},');
+    if (access['features'] != null) {
+      out.writeln('    features: ${strings(access['features'])},');
+    }
+    if (access['flags'] != null) {
+      out.writeln('    flags: ${strings(access['flags'])},');
+    }
     if (mfaMaxAge != null) {
       out.writeln('    mfaMaxAgeMinutes: ${mfaMaxAge as int},');
     }

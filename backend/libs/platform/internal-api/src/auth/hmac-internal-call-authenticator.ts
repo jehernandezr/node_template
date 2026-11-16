@@ -8,7 +8,7 @@ import { InternalCallAuthenticator } from './internal-call-authenticator.js';
 import type { SignableRequest } from './signable-request.js';
 
 /**
- * Autentica las llamadas entrantes firmadas con `HmacInternalCallSigner`. La
+ * Autentica las llamadas entrantes firmadas con `HmacSigner`. La
  * firma solo vale dentro de una ventana de tiempo, a cada lado del reloj, para
  * que una llamada interceptada no se repita más tarde.
  */

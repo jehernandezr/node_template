@@ -1,5 +1,7 @@
 import {
   defineCommand,
+  defineCommandReference,
+  defineTopicReference,
   defineEvent,
   defineQueue,
   defineServiceContract,
@@ -134,6 +136,48 @@ describe('topologyFromContracts', () => {
         ],
       },
     ]);
+  });
+
+  it('accepts a sent command declared as a reference to the command of another contract', () => {
+    const GenerateReportReference = defineCommandReference({
+      type: GenerateReport.type,
+      description: 'Pide un reporte.',
+    });
+    const billing = defineServiceContract({
+      service: 'billing',
+      description: 'Cobros.',
+      sends: [GenerateReportReference],
+    });
+
+    expect(() => topologyFromContracts([billing, reports])).not.toThrow();
+    expect(() => topologyFromContracts([billing])).toThrow(
+      expect.objectContaining({ code: MessagingErrorCode.InvalidTopology }),
+    );
+  });
+
+  it('declares a topic once when its owner and a subscriber by reference are both given', () => {
+    const TasksEventsReference = defineTopicReference({
+      name: TasksEvents.name,
+      events: [TaskCreated.type],
+      description: 'Eventos de tareas.',
+    });
+    const audit = defineServiceContract({
+      service: 'audit',
+      description: 'Auditoría.',
+      queues: {
+        auditTasks: defineQueue({
+          name: 'audit-tasks',
+          subscriptions: [{ topic: TasksEventsReference }],
+          description: 'Eventos de tareas para auditar.',
+        }),
+      },
+    });
+
+    const topology = topologyFromContracts([tasks, audit]);
+
+    expect(
+      topology.topics.filter((topic) => topic.name === TasksEvents.name),
+    ).toHaveLength(1);
   });
 
   it('fails when a sent command has no queue in the given contracts', () => {

@@ -4,7 +4,14 @@
   "sourceRoot": "backend/tools/contracts-export/src",
   "projectType": "application",
   "tags": ["type:tool", "scope:shared"],
-  "implicitDependencies": ["contracts-platform", "contracts-identity"],
+  "implicitDependencies": [
+    "contracts-platform",
+    "contracts-identity",
+    "contracts-tasks",
+    "contracts-notifications",
+    "contracts-reports",
+    "contracts-billing"
+  ],
   "targets": {
     "typecheck": {},
     "export": {
