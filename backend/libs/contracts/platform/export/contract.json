@@ -121,10 +121,6 @@
           "value": "PLATFORM.RESILIENCE.OVERLOADED"
         },
         {
-          "name": "InternalApiInvalidInput",
-          "value": "PLATFORM.INTERNAL_API.INVALID_INPUT"
-        },
-        {
           "name": "InternalApiInvalidOutput",
           "value": "PLATFORM.INTERNAL_API.INVALID_OUTPUT"
         },
@@ -143,10 +139,6 @@
         {
           "name": "InternalApiMissingHandler",
           "value": "PLATFORM.INTERNAL_API.MISSING_HANDLER"
-        },
-        {
-          "name": "InternalApiTimeout",
-          "value": "PLATFORM.INTERNAL_API.TIMEOUT"
         },
         {
           "name": "InternalApiNonJsonSafeSchema",
@@ -272,10 +264,6 @@
           "value": "PLATFORM.SAGA.DEADLINE_EXCEEDED"
         },
         {
-          "name": "SagaSimulatedCrash",
-          "value": "PLATFORM.SAGA.SIMULATED_CRASH"
-        },
-        {
           "name": "BloomInvalidParameters",
           "value": "PLATFORM.BLOOM.INVALID_PARAMETERS"
         },
@@ -288,14 +276,6 @@
           "value": "PLATFORM.BLOOM.INCOMPATIBLE_FILTERS"
         },
         {
-          "name": "BloomUnknownFilter",
-          "value": "PLATFORM.BLOOM.UNKNOWN_FILTER"
-        },
-        {
-          "name": "BloomDuplicateFilter",
-          "value": "PLATFORM.BLOOM.DUPLICATE_FILTER"
-        },
-        {
           "name": "CacheInvalidArgument",
           "value": "PLATFORM.CACHE.INVALID_ARGUMENT"
         },
@@ -304,7 +284,6 @@
           "name": "CacheValueTooLarge",
           "value": "PLATFORM.CACHE.VALUE_TOO_LARGE"
         },
-        { "name": "CacheNotACounter", "value": "PLATFORM.CACHE.NOT_A_COUNTER" },
         { "name": "CacheTimeout", "value": "PLATFORM.CACHE.TIMEOUT" },
         {
           "name": "CacheCorruptEntry",
@@ -370,10 +349,6 @@
         {
           "name": "ResilienceUnknownPolicy",
           "value": "PLATFORM.RESILIENCE.UNKNOWN_POLICY"
-        },
-        {
-          "name": "ResilienceNotConfigured",
-          "value": "PLATFORM.RESILIENCE.NOT_CONFIGURED"
         },
         {
           "name": "ShardingInvalidConfig",
@@ -843,15 +818,6 @@
         "description": "El servicio está sobrecargado. Intenta de nuevo en unos instantes."
       },
       {
-        "name": "InternalApiInvalidInput",
-        "code": "PLATFORM.INTERNAL_API.INVALID_INPUT",
-        "httpStatus": 400,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_invalid_input",
-        "description": "La entrada de una operación interna no cumple su contrato."
-      },
-      {
         "name": "InternalApiInvalidOutput",
         "code": "PLATFORM.INTERNAL_API.INVALID_OUTPUT",
         "httpStatus": 502,
@@ -895,15 +861,6 @@
         "audience": "internal",
         "messageKey": "error_platform_internal_api_missing_handler",
         "description": "La operación interna no tiene manejador."
-      },
-      {
-        "name": "InternalApiTimeout",
-        "code": "PLATFORM.INTERNAL_API.TIMEOUT",
-        "httpStatus": 504,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_internal_api_timeout",
-        "description": "La operación interna no respondió a tiempo."
       },
       {
         "name": "InternalApiNonJsonSafeSchema",
@@ -1203,15 +1160,6 @@
         "description": "La saga superó su plazo máximo."
       },
       {
-        "name": "SagaSimulatedCrash",
-        "code": "PLATFORM.SAGA.SIMULATED_CRASH",
-        "httpStatus": 500,
-        "retryable": true,
-        "audience": "internal",
-        "messageKey": "error_platform_saga_simulated_crash",
-        "description": "Caída simulada en pruebas de recuperación de sagas."
-      },
-      {
         "name": "BloomInvalidParameters",
         "code": "PLATFORM.BLOOM.INVALID_PARAMETERS",
         "httpStatus": 500,
@@ -1239,24 +1187,6 @@
         "description": "Los filtros de Bloom no tienen los mismos parámetros."
       },
       {
-        "name": "BloomUnknownFilter",
-        "code": "PLATFORM.BLOOM.UNKNOWN_FILTER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_unknown_filter",
-        "description": "El filtro de Bloom no está registrado."
-      },
-      {
-        "name": "BloomDuplicateFilter",
-        "code": "PLATFORM.BLOOM.DUPLICATE_FILTER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_bloom_duplicate_filter",
-        "description": "Ya hay un filtro de Bloom registrado con ese nombre."
-      },
-      {
         "name": "CacheInvalidArgument",
         "code": "PLATFORM.CACHE.INVALID_ARGUMENT",
         "httpStatus": 500,
@@ -1282,15 +1212,6 @@
         "audience": "internal",
         "messageKey": "error_platform_cache_value_too_large",
         "description": "El valor supera el tamaño máximo que se guarda en caché."
-      },
-      {
-        "name": "CacheNotACounter",
-        "code": "PLATFORM.CACHE.NOT_A_COUNTER",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_cache_not_a_counter",
-        "description": "La entrada de caché no contiene un contador."
       },
       {
         "name": "CacheTimeout",
@@ -1453,15 +1374,6 @@
         "audience": "internal",
         "messageKey": "error_platform_resilience_unknown_policy",
         "description": "No existe la política de resiliencia pedida."
-      },
-      {
-        "name": "ResilienceNotConfigured",
-        "code": "PLATFORM.RESILIENCE.NOT_CONFIGURED",
-        "httpStatus": 500,
-        "retryable": false,
-        "audience": "internal",
-        "messageKey": "error_platform_resilience_not_configured",
-        "description": "El registro de resiliencia no está configurado."
       },
       {
         "name": "ShardingInvalidConfig",

@@ -1,6 +1,6 @@
 import 'package:contracts/contracts.dart' show MfaFactor;
 
-/// Perfil del usuario autenticado.
+/// Profile of the signed-in user.
 final class AccountProfile {
   const AccountProfile({
     required this.name,
@@ -13,8 +13,8 @@ final class AccountProfile {
   final String tenantName;
 }
 
-/// Estado de la verificación en dos pasos (MFA). [method] es el factor que el
-/// usuario tiene activo.
+/// Two-step verification (MFA) status. [method] is the factor the user has
+/// enabled.
 final class MfaStatus {
   const MfaStatus({required this.enabled, this.method});
 
@@ -22,7 +22,7 @@ final class MfaStatus {
   final MfaFactor? method;
 }
 
-/// Passkey registrada por el usuario.
+/// Passkey registered by the user.
 final class Passkey {
   const Passkey({
     required this.id,
@@ -35,7 +35,7 @@ final class Passkey {
   final DateTime createdAt;
 }
 
-/// Resumen de seguridad: MFA y passkeys.
+/// Security summary: MFA and passkeys.
 final class SecurityOverview {
   const SecurityOverview({required this.mfa, required this.passkeys});
 
@@ -43,7 +43,7 @@ final class SecurityOverview {
   final List<Passkey> passkeys;
 }
 
-/// Acuerdo pendiente o aceptado. [acceptedAt] se llena al aceptarlo.
+/// Pending or accepted agreement. [acceptedAt] is set on acceptance.
 final class Agreement {
   const Agreement({
     required this.id,
@@ -71,12 +71,20 @@ final class Agreement {
   );
 }
 
-/// El acuerdo que se intentó aceptar no está pendiente.
+/// The agreement being accepted is not pending.
 final class AgreementNotPendingException implements Exception {
   const AgreementNotPendingException(this.agreementId);
 
   final String agreementId;
 
   @override
-  String toString() => 'El acuerdo $agreementId no está pendiente.';
+  String toString() => 'Agreement $agreementId is not pending.';
+}
+
+/// The agreements the user still has to accept and the ones already accepted.
+final class AgreementsOverview {
+  const AgreementsOverview({required this.pending, required this.accepted});
+
+  final List<Agreement> pending;
+  final List<Agreement> accepted;
 }

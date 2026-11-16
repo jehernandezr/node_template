@@ -41,42 +41,13 @@ resource "terraform_data" "input_check" {
 
 # --- KMS --------------------------------------------------------------------
 
-resource "aws_kms_key" "this" {
-  description             = "Cifrado de OpenObserve de ${var.name_prefix}: bucket, EFS, secreto y logs"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${local.region}.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"
-          }
-        }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  name          = "alias/${local.name}"
-  target_key_id = aws_kms_key.this.key_id
+  alias          = local.name
+  description    = "Cifrado de OpenObserve de ${var.name_prefix}: bucket, EFS, secreto y logs"
+  log_group_arns = ["arn:${local.partition}:logs:${local.region}:${local.account_id}:log-group:${local.log_group}"]
+  tags           = var.tags
 }
 
 # --- Almacenamiento: S3 para los datos y EFS para los metadatos -------------
@@ -113,7 +84,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "storage" {
 
     apply_server_side_encryption_by_default {
       sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.this.arn
+      kms_master_key_id = module.kms.arn
     }
   }
 }
@@ -172,7 +143,7 @@ resource "aws_vpc_security_group_ingress_rule" "efs_from_tasks" {
 
 resource "aws_efs_file_system" "this" {
   encrypted        = true
-  kms_key_id       = aws_kms_key.this.arn
+  kms_key_id       = module.kms.arn
   performance_mode = "generalPurpose"
   throughput_mode  = "elastic"
 
@@ -227,7 +198,7 @@ resource "random_password" "root" {
 resource "aws_secretsmanager_secret" "root" {
   name                    = "${local.name}-root"
   description             = "Usuario raíz de OpenObserve y cabecera de autorización OTLP"
-  kms_key_id              = aws_kms_key.this.arn
+  kms_key_id              = module.kms.arn
   recovery_window_in_days = var.secret_recovery_window_days
 
   tags = var.tags
@@ -248,7 +219,7 @@ resource "aws_secretsmanager_secret_version" "root" {
 resource "aws_cloudwatch_log_group" "this" {
   name              = local.log_group
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.this.arn
+  kms_key_id        = module.kms.arn
 
   tags = var.tags
 }
@@ -292,7 +263,7 @@ data "aws_iam_policy_document" "execution" {
   statement {
     sid       = "UseKey"
     actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
-    resources = [aws_kms_key.this.arn]
+    resources = [module.kms.arn]
   }
 }
 
@@ -325,7 +296,7 @@ data "aws_iam_policy_document" "task" {
   statement {
     sid       = "UseKey"
     actions   = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"]
-    resources = [aws_kms_key.this.arn]
+    resources = [module.kms.arn]
   }
 
   statement {
@@ -602,4 +573,14 @@ resource "aws_ecs_service" "this" {
   tags = merge(var.tags, { Name = local.name })
 
   depends_on = [aws_efs_mount_target.this, aws_lb_listener.internal, aws_lb_listener_rule.shared]
+}
+
+moved {
+  from = aws_kms_key.this
+  to   = module.kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.this
+  to   = module.kms.aws_kms_alias.this
 }

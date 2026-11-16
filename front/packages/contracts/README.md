@@ -1,9 +1,8 @@
 # contracts
 
-Contratos de API compartidos por el front: códigos de error de la plataforma, documentos de problema (RFC 9457) y la excepción `ApiErrorException`.
+Dart de los contratos del backend, para el front. Paquete de Dart puro.
 
-- `PlatformErrorCode`: enum con los mismos códigos que `libs/contracts/platform`. `fromCode` devuelve `null` si el código no se conoce.
-- `ProblemDetails` y `FieldError`: modelos inmutables con `fromJson` y `toJson`.
-- `ApiErrorException`: envuelve un `ProblemDetails`; `platformCode` devuelve el código conocido.
+- `lib/src/core/`: núcleo escrito a mano. `RouteDescriptor` y `encodeQuery`, `ProblemDetails` y `FieldError` (RFC 9457), `ApiErrorException`, `ContractViolationException`, validación e igualdad.
+- `lib/src/<servicio>/`: código generado por `front/tools/contracts_gen` desde `backend/libs/contracts/*/export/contract.json` (ADR 0017): enums, constantes, tipos, validadores, rutas y mensajes. No se edita a mano; `dart run contracts_gen --check` falla si quedó desactualizado.
 
-El test `platform_error_code_sync_test.dart` compara el enum con el TypeScript y comprueba que cada código tenga mensaje en `i18n`. Hasta que exista el generador, el enum se escribe a mano y ese test lo protege.
+`test/platform_error_code_sync_test.dart` comprueba que cada código público tenga mensaje en `i18n`.

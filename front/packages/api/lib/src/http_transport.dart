@@ -35,9 +35,41 @@ final class TransportResponse {
   final String body;
 }
 
-/// Port to the network. The app injects an adapter over `package:http`,
-/// `dio` or the browser; tests inject a fake.
+/// Why a request never got an HTTP answer.
+enum TransportFailure {
+  /// No answer within the transport's time limit.
+  timeout,
+
+  /// The connection failed: no network, DNS, TLS, refused or reset.
+  connection,
+}
+
+/// A request that never got an HTTP answer.
+///
+/// Callers tell a network problem (retry later, show a generic message) from
+/// a bug by this type: a [TypeError] or a [StateError] is never wrapped.
+final class TransportException implements Exception {
+  const TransportException(this.failure, {required this.uri, this.cause});
+
+  final TransportFailure failure;
+
+  /// Target of the failed request.
+  final Uri uri;
+
+  /// Original error of the HTTP client, kept for logs.
+  final Object? cause;
+
+  @override
+  String toString() => 'TransportException(${failure.name}, $uri)';
+}
+
+/// Port to the network. The app injects an adapter over `package:http` or
+/// the browser; tests inject a fake.
 abstract interface class HttpTransport {
-  /// Sends [request]. Throws only for network failures, never for HTTP errors.
+  /// Sends [request]. HTTP errors come back as responses; a request without
+  /// an answer throws [TransportException].
   Future<TransportResponse> send(TransportRequest request);
+
+  /// Releases the connections. The owner calls it once, when it goes away.
+  void close();
 }

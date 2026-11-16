@@ -1,20 +1,24 @@
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatDate;
 
 import '../data/account_repository.dart';
+import '../l10n/account_labels.dart';
 import '../l10n/generated/account_localizations.dart';
+import '../shared/constants/account_access.dart';
+import '../shared/constants/account_constants.dart';
 import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 import '../shared/utils/account_paths.dart';
-import '../l10n/account_labels.dart';
-import 'widgets/account_widgets.dart';
-import 'widgets/step_up.dart';
+import 'security_controller.dart';
+import 'step_up_gate.dart';
 
-/// MFA, passkeys y códigos de recuperación. Las acciones sensibles piden MFA.
-class SecurityScreen extends StatefulWidget {
+/// MFA, passkeys and recovery codes. Every change asks for a recent second
+/// factor first.
+class SecurityScreen extends StatelessWidget {
   const SecurityScreen({
     super.key,
     required this.repository,
@@ -23,183 +27,217 @@ class SecurityScreen extends StatefulWidget {
 
   final AccountRepository repository;
 
-  /// Step-up del shell (`ShellServices.requestStepUp`) para las acciones
-  /// sensibles.
-  final StepUpRequest requestStepUp;
+  /// The shell's step-up, for the actions that change the second factor.
+  final Future<bool> Function() requestStepUp;
 
   @override
-  State<SecurityScreen> createState() => _SecurityScreenState();
-}
+  Widget build(BuildContext context) => ControllerBuilder<SecurityController>(
+    create: (context) => SecurityController(
+      repository,
+      stepUp: StepUpGate.fromContext(
+        context,
+        rule: accountStepUpRule,
+        request: requestStepUp,
+      ),
+    )..start(),
+    builder: (context, controller) => AppPage(
+      title: AccountLocalizations.of(context).securityTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
+      body: AsyncValueView<SecurityOverview>(
+        value: controller.overview,
+        errorMessage: AccountLocalizations.of(context).loadError,
+        onRetry: controller.start,
+        data: (overview) => ContentColumn(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            children: [
+              _MfaCard(mfa: overview.mfa),
+              const SizedBox(height: AppSpacing.md),
+              _PasskeysCard(
+                passkeys: overview.passkeys,
+                onAdd: () => _addPasskey(context, controller),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _RecoveryCard(
+                onRegenerate: () => _regenerate(context, controller),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 
-class _SecurityScreenState extends State<SecurityScreen> {
-  AsyncValue<SecurityOverview> _overview = const AsyncValue.loading();
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final result = await AsyncValue.guard(widget.repository.loadSecurity);
-    if (!mounted) return;
-    setState(() => _overview = result);
-  }
-
-  void _reload() {
-    setState(() => _overview = const AsyncValue.loading());
-    _load();
-  }
-
-  Future<void> _addPasskey() async {
+  Future<void> _addPasskey(
+    BuildContext context,
+    SecurityController controller,
+  ) async {
+    final result = await controller.addPasskey();
+    if (!context.mounted) return;
     final l10n = AccountLocalizations.of(context);
-    final done = await runSensitiveAction(
+    showActionResult(
       context,
-      widget.requestStepUp,
-      widget.repository.addPasskey,
-      success: () => l10n.passkeyAdded,
+      result,
+      success: l10n.passkeyAdded,
+      failure: l10n.actionFailed,
     );
-    if (done && mounted) _reload();
   }
 
-  Future<void> _regenerateCodes() async {
+  Future<void> _regenerate(
+    BuildContext context,
+    SecurityController controller,
+  ) async {
+    final result = await controller.regenerateCodes();
+    if (!context.mounted) return;
     final l10n = AccountLocalizations.of(context);
-    final verified = await confirmStepUp(context, widget.requestStepUp);
-    if (!verified || !mounted) return;
-    List<String>? codes;
-    final done = await runAccountAction(context, () async {
-      codes = await widget.repository.regenerateRecoveryCodes();
-    }, success: () => l10n.recoveryRegenerated);
-    final created = codes;
-    if (done && created != null && mounted) {
-      _reload();
-      await _showCodes(created);
+    showActionResult(
+      context,
+      result,
+      success: l10n.recoveryRegenerated,
+      failure: l10n.actionFailed,
+    );
+    // The codes are shown once, so they open a dialog the user must read.
+    if (result is ActionSucceeded<List<String>>) {
+      await context.showLocalizedDialog<void>(
+        builder: (dialogContext) => _RecoveryCodesDialog(codes: result.value),
+      );
     }
   }
+}
 
-  Future<void> _showCodes(List<String> codes) {
+class _MfaCard extends StatelessWidget {
+  const _MfaCard({required this.mfa});
+
+  final MfaStatus mfa;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final l10n = AccountLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.recoveryCodesTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.recoveryCodesNotice),
-            const SizedBox(height: AppSpacing.sm),
-            for (final code in codes)
-              SelectableText(
-                code,
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
-          ],
-        ),
-        actions: [
-          AppButton(
-            label: shared.close,
-            onPressed: () => Navigator.of(dialogContext).pop(),
+    final method = mfa.method;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.mfaTitle, style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            mfa.enabled
+                ? l10n.mfaEnabled(
+                    method == null ? '' : mfaFactorLabel(l10n, method),
+                  )
+                : l10n.mfaDisabled,
           ),
         ],
       ),
     );
   }
+}
+
+class _PasskeysCard extends StatelessWidget {
+  const _PasskeysCard({required this.passkeys, required this.onAdd});
+
+  final List<Passkey> passkeys;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
-    return AppPage(
-      title: AccountLocalizations.of(context).securityTitle,
-      onBack: () => context.go(accountPath(AccountSection.overview)),
-      body: PlatformScreen(
-        compact: (_) => AccountAsyncView<SecurityOverview>(
-          value: _overview,
-          onRetry: _reload,
-          data: (overview) => _buildBody(context, overview),
-        ),
+    final theme = Theme.of(context);
+    final l10n = AccountLocalizations.of(context);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              Text(l10n.passkeysTitle, style: theme.textTheme.titleMedium),
+              AppButton(
+                label: l10n.passkeyAdd,
+                variant: AppButtonVariant.secondary,
+                onPressed: onAdd,
+              ),
+            ],
+          ),
+          if (passkeys.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Text(l10n.passkeysEmpty),
+            ),
+          for (final passkey in passkeys)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(passkey.name),
+              subtitle: Text(
+                l10n.createdOnLabel(
+                  formatDate(passkey.createdAt, locale: context.localeTag),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildBody(BuildContext context, SecurityOverview overview) {
+class _RecoveryCard extends StatelessWidget {
+  const _RecoveryCard({required this.onRegenerate});
+
+  final VoidCallback onRegenerate;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AccountLocalizations.of(context);
-    final mfa = overview.mfa;
-    final method = mfa.method;
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.mfaTitle, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                mfa.enabled
-                    ? l10n.mfaEnabled(
-                        method == null ? '' : mfaFactorLabel(l10n, method),
-                      )
-                    : l10n.mfaDisabled,
-              ),
-            ],
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.recoveryTitle, style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Text(l10n.recoveryDescription),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: l10n.recoveryRegenerate,
+            variant: AppButtonVariant.secondary,
+            onPressed: onRegenerate,
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.passkeysTitle,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  ),
-                  AppButton(
-                    label: l10n.passkeyAdd,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: _addPasskey,
-                  ),
-                ],
-              ),
-              if (overview.passkeys.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.sm),
-                  child: Text(l10n.passkeysEmpty),
-                ),
-              for (final passkey in overview.passkeys)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(passkey.name),
-                  subtitle: Text(
-                    l10n.createdOnLabel(
-                      formatDate(passkey.createdAt, locale: localeTag(context)),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.recoveryTitle, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              Text(l10n.recoveryDescription),
-              const SizedBox(height: AppSpacing.md),
-              AppButton(
-                label: l10n.recoveryRegenerate,
-                variant: AppButtonVariant.secondary,
-                onPressed: _regenerateCodes,
-              ),
-            ],
-          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecoveryCodesDialog extends StatelessWidget {
+  const _RecoveryCodesDialog({required this.codes});
+
+  final List<String> codes;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AccountLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.recoveryCodesTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.recoveryCodesNotice),
+          const SizedBox(height: AppSpacing.sm),
+          for (final code in codes)
+            SelectableText(
+              code,
+              style: const TextStyle(fontFamily: accountCodeFontFamily),
+            ),
+        ],
+      ),
+      actions: [
+        AppButton(
+          label: AppLocalizations.of(context).close,
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );

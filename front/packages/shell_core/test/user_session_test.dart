@@ -36,11 +36,8 @@ void main() {
         Permission.billingWrite,
       });
       expect(session.platformRoles, {PlatformRole.support});
-      expect(session.planFeatures, {
-        PlanFeature.billing,
-        PlanFeature.aiAssistant,
-      });
-      expect(session.featureFlags, {FeatureFlag.newReports});
+      expect(session.features, {PlanFeature.billing, PlanFeature.aiAssistant});
+      expect(session.flags, {FeatureFlag.newReports});
       expect(session.mfaVerifiedAt, verifiedAt);
       expect(session.isAuthenticated, isTrue);
     });
@@ -56,11 +53,13 @@ void main() {
       );
 
       expect(
-        AccessRule.permissions([Permission.billingWrite]).allows(session),
+        AccessRule.permissions([Permission.billingWrite])
+            .allows(session, now: DateTime.utc(2026, 1, 1)),
         isTrue,
       );
       expect(
-        AccessRule.planFeature(PlanFeature.aiAssistant).allows(session),
+        AccessRule.planFeature(PlanFeature.aiAssistant)
+            .allows(session, now: DateTime.utc(2026, 1, 1)),
         isTrue,
       );
       expect(
@@ -83,7 +82,8 @@ void main() {
 
       expect(session.mfaVerifiedAt, isNull);
       expect(
-        AccessRule.mfa(const Duration(minutes: 10)).decide(session),
+        AccessRule.mfa(const Duration(minutes: 10))
+            .decide(session, now: DateTime.utc(2026, 1, 1)),
         AccessDecision.stepUpRequired,
       );
     });

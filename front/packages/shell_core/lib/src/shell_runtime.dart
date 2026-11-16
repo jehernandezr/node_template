@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:utils/utils.dart';
 
 import 'enums.dart';
 import 'microfrontend.dart';
@@ -14,6 +15,8 @@ import 'user_session.dart';
 
 /// Default wait before retrying a lifecycle whose `initialize` failed
 /// [failures] times in a row: 1 s, 2 s, 4 s... up to 5 minutes.
+/// Inject another function through `ShellRuntime.lifecycleRetryDelay` (for
+/// example `(_) => Duration.zero` in tests) to avoid real waits.
 Duration defaultLifecycleRetryDelay(int failures) {
   const max = Duration(minutes: 5);
   final seconds = math.pow(2, math.min(failures - 1, 16)).toInt();
@@ -31,7 +34,7 @@ Duration defaultLifecycleRetryDelay(int failures) {
 ///   [ScopedResource]s in them);
 /// - clears replayable events on [eventBus];
 /// - increments [identityEpoch], which re-keys the mounted microfrontend pages
-///   (see `buildShellRouter`).
+///   (see `ShellRouterFactory`).
 /// The [ShellServices] of the new identity are built on first use with
 /// [servicesFactory]. Changes that only touch permissions, flags or the MFA
 /// time keep the identity.
@@ -50,7 +53,7 @@ final class ShellRuntime {
     required this.platform,
     required this.session,
     required this.servicesFactory,
-    this.clock = DateTime.now,
+    this.clock = systemClock,
     this.lifecycleRetryDelay = defaultLifecycleRetryDelay,
   }) {
     _userId = session.value.userId;
@@ -71,10 +74,11 @@ final class ShellRuntime {
   final ShellServices Function(UserSession session) servicesFactory;
 
   /// Current time, used for MFA freshness.
-  final DateTime Function() clock;
+  final Clock clock;
 
   /// Wait before retrying a lifecycle that failed to initialize, given the
   /// number of consecutive failures (1 for the first one).
+  /// The default is [defaultLifecycleRetryDelay].
   final Duration Function(int failures) lifecycleRetryDelay;
 
   /// Bus shared by the shell and every active microfrontend.
@@ -82,7 +86,7 @@ final class ShellRuntime {
 
   /// Increments every time the user or tenant changes. Starts at 0.
   ///
-  /// `buildShellRouter` keys each microfrontend page with it, so mounted
+  /// `ShellRouterFactory` keys each microfrontend page with it, so mounted
   /// screens build their state again for the new identity.
   ValueListenable<int> get identityEpoch => _identityEpoch;
   // Not disposed: pages may still remove their listeners after the runtime.
@@ -226,6 +230,7 @@ final class ShellRuntime {
       try {
         await lifecycle.initialize(context);
         if (epoch == _identityEpoch.value) _retries.remove(id);
+        // catch-all: a failing hook is reported and retried; it must not stop the other microfrontends
       } catch (error, stack) {
         // A context cancelled meanwhile means the identity changed or the
         // runtime was disposed: the failure belongs to an abandoned start.
@@ -264,6 +269,7 @@ final class ShellRuntime {
   Future<void> _release(_Active active) async {
     try {
       await active.lifecycle.dispose();
+      // catch-all: a failing dispose is reported so the remaining lifecycles still close
     } catch (error, stack) {
       _report(error, stack);
     }

@@ -142,7 +142,7 @@ void main() {
 
     testWidgets('a failing code shows the localized failure', (tester) async {
       final repo = _ControlledRepository()
-        ..onAutoCode = (_) async => throw StateError('no key');
+        ..onAutoCode = (_) async => throw Exception('no key');
       await _pump(tester, repo);
 
       repo.source.add(challenge);
@@ -158,7 +158,8 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(find.text(_es.expiresIn('02:29')), findsOneWidget);
 
-      await tester.pump(const Duration(seconds: 149));
+      // The rest of the challenge's validity, from the fixture.
+      await tester.pump(challenge.validFor - const Duration(seconds: 1));
       expect(find.text(_es.readyTitle), findsOneWidget);
       expect(find.text(_es.denyButton), findsNothing);
     });
@@ -193,12 +194,11 @@ void main() {
       await _pump(tester, fakeRepository(initial: challenge));
 
       await tester.tap(find.text(_es.denyButton));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       expect(find.text(_es.denyDialogTitle), findsOneWidget);
 
       await tester.tap(find.text(_es.denyConfirm));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text(_es.denyDialogTitle), findsNothing);
       expect(find.text(_es.blockedTitle), findsOneWidget);
@@ -213,9 +213,9 @@ void main() {
       await _pump(tester, repo);
 
       await tester.tap(find.text(_es.denyButton));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Cancelar'));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       expect(find.text(groupCode(code)), findsOneWidget);
       expect(find.text(_es.blockedTitle), findsNothing);
@@ -232,10 +232,9 @@ void main() {
       await settle(tester);
 
       await tester.tap(find.text(_es.denyButton));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(_es.denyConfirm));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text(_es.denyFailed), findsOneWidget);
       expect(find.text(_es.blockedTitle), findsNothing);
@@ -254,10 +253,9 @@ void main() {
       await settle(tester);
 
       await tester.tap(find.text(_es.denyButton));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(_es.denyConfirm));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
       expect(find.text(_es.denyFailed), findsOneWidget);

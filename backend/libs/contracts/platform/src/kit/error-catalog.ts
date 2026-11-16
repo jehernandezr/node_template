@@ -1,10 +1,15 @@
 import { ValidationRules } from '../constants/validation.constants.js';
-import type { ErrorAudience } from '../enums/error-audience.enum.js';
+import { ErrorAudience } from '../enums/error-audience.enum.js';
 import type { ErrorCatalogEntry } from '../types/error-catalog-entry.type.js';
 import { ContractDefinitionError } from './contract-definition-error.js';
 
-/** Formato de un código de error: `SERVICIO.SUBMÓDULO.ERROR`. */
-export const ERROR_CODE_PATTERN = /^[A-Z]+(\.[A-Z_]+){2}$/;
+/**
+ * Formato de un código de error: `SERVICIO.SUBMÓDULO.ERROR`, con al menos tres
+ * segmentos. Es la misma expresión que `ErrorCode.PATTERN` del kernel, que un
+ * contrato no puede importar; una prueba de `@platform/primitives` comprueba
+ * que coinciden.
+ */
+export const ERROR_CODE_PATTERN = /^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*){2,}$/;
 
 /**
  * Clave ARB del mensaje de un código. Es la misma transformación que usa el front:
@@ -20,6 +25,38 @@ export interface ErrorSpec {
   readonly retryable: boolean;
   readonly audience: ErrorAudience;
   readonly description: string;
+}
+
+/**
+ * Atajos para declarar las entradas de un catálogo: `pub` para los códigos que
+ * llegan al cliente y `internal` para los que nunca salen del backend.
+ */
+export class ErrorSpecs {
+  static pub(
+    httpStatus: number,
+    retryable: boolean,
+    description: string,
+  ): ErrorSpec {
+    return {
+      httpStatus,
+      retryable,
+      audience: ErrorAudience.Public,
+      description,
+    };
+  }
+
+  static internal(
+    httpStatus: number,
+    retryable: boolean,
+    description: string,
+  ): ErrorSpec {
+    return {
+      httpStatus,
+      retryable,
+      audience: ErrorAudience.Internal,
+      description,
+    };
+  }
 }
 
 /**

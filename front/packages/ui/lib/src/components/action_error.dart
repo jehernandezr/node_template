@@ -1,4 +1,3 @@
-import 'package:contracts/contracts.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -9,7 +8,7 @@ import 'package:material_ui/material_ui.dart';
 /// ```dart
 /// try {
 ///   await repository.save(draft);
-/// } catch (error) {
+/// } on Exception catch (error) {
 ///   showActionError(context, error, message: l10n.saveError);
 /// }
 /// ```
@@ -19,23 +18,18 @@ import 'package:material_ui/material_ui.dart';
 /// when there is no [ScaffoldMessenger]. Otherwise it replaces the current
 /// snack bar and returns true.
 ///
-/// The text is [message] when given; otherwise the `detail` (or `title`) of an
-/// `ApiErrorException`; otherwise the localized `errorFallback` of
-/// [AppLocalizations]. The error code
-/// of an `ApiErrorException` is appended for support. Raw exception text is
-/// never shown.
+/// The text is [message] when given; otherwise [actionErrorMessage], the
+/// localized catalog message of the error. The error code of an
+/// `ApiErrorException` is appended for support. Neither the server's own text
+/// nor the raw exception is ever shown.
 bool showActionError(BuildContext context, Object error, {String? message}) {
   if (!context.mounted) return false;
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return false;
 
-  final problem = error is ApiErrorException ? error.problem : null;
-  final text =
-      message ??
-      problem?.detail ??
-      problem?.title ??
-      AppLocalizations.of(context).errorFallback;
-  final code = problem?.code;
+  final details = ErrorPresenter(AppLocalizations.of(context)).describe(error);
+  final text = message ?? details.message;
+  final code = details.code;
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -51,11 +45,4 @@ bool showActionError(BuildContext context, Object error, {String? message}) {
 /// other error (network, timeout...) the `errorFallback` text. Pair it with
 /// [showActionError] when the screen has no message of its own.
 String actionErrorMessage(AppLocalizations l10n, Object error) =>
-    switch (error) {
-      ApiErrorException(:final problem) => errorMessage(l10n, problem.code),
-      ContractViolationException(inResponse: false) => errorMessage(
-        l10n,
-        PlatformErrorCode.validationInvalidInput.code,
-      ),
-      _ => l10n.errorFallback,
-    };
+    ErrorPresenter(l10n).actionMessage(error);

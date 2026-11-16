@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-adapters-aws",
+  "sourceRoot": "backend/libs/platform/adapters/aws/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {}
+  }
+}

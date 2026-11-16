@@ -33,7 +33,10 @@ class AppCard extends StatelessWidget {
       shape: shape,
       child: onTap == null
           ? content
-          : InkWell(customBorder: shape, onTap: onTap, child: content),
+          : Semantics(
+              button: true,
+              child: InkWell(customBorder: shape, onTap: onTap, child: content),
+            ),
     );
   }
 }

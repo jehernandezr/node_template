@@ -1,0 +1,75 @@
+import { mkdtemp, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import {
+  PostgreSqlContainer,
+  type StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
+import { SystemClock } from '@platform/kernel';
+import { ContainerRuntime } from '@platform/kernel/test-utils';
+import { MigrationGenerator } from '../migration-generator.js';
+import type { MigrationGenerateRequest } from '../model/migration-generate-request.js';
+import type { DatabaseSetDefinition } from '../model/database-set-definition.js';
+import { MigrationSourceRenderer } from '../migration-source-renderer.js';
+import { PlatformPersistenceMigrations } from '../migrations/platform-persistence-migrations.js';
+import { ProbeDatabaseSets } from './utils/probe-database-sets.js';
+import { ProbeEntity } from './utils/probe.entity.js';
+
+jest.setTimeout(180_000);
+
+const runtime = new ContainerRuntime(process.env);
+
+runtime.describeIfAvailable('MigrationGenerator against PostgreSQL', () => {
+  let container: StartedPostgreSqlContainer;
+  let outputDir: string;
+  let generator: MigrationGenerator;
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:17-alpine').start();
+    outputDir = await mkdtemp(join(tmpdir(), 'migration-'));
+    generator = new MigrationGenerator(
+      new SystemClock(),
+      new MigrationSourceRenderer(),
+    );
+  });
+
+  afterAll(async () => {
+    await container.stop();
+  });
+
+  function requestFor(
+    definition: DatabaseSetDefinition,
+  ): MigrationGenerateRequest {
+    return {
+      name: 'CreateProbes',
+      outputDir,
+      definition,
+      server: {
+        host: container.getHost(),
+        port: container.getMappedPort(5432),
+      },
+      user: container.getUsername(),
+      password: container.getPassword(),
+    };
+  }
+
+  it('writes a migration that creates the table of an entity without migrations', async () => {
+    const path = await generator.generate(
+      requestFor({
+        entities: [ProbeEntity],
+        migrations: [...PlatformPersistenceMigrations.shard],
+      }),
+    );
+
+    const source = await readFile(path ?? '', 'utf8');
+
+    expect(source).toContain('CREATE TABLE "probes"');
+    expect(source).toContain('implements MigrationInterface');
+  });
+
+  it('returns null when the migrations already cover the entities', async () => {
+    const path = await generator.generate(requestFor(ProbeDatabaseSets.shard));
+
+    expect(path).toBeNull();
+  });
+});

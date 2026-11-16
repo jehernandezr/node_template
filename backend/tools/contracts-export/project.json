@@ -6,10 +6,11 @@
   "tags": ["type:tool", "scope:shared"],
   "implicitDependencies": ["contracts-platform", "contracts-identity"],
   "targets": {
+    "typecheck": {},
     "export": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "SWC_NODE_PROJECT=tools/contracts-export/tsconfig.lib.json node --conditions=@node-template/source --import @swc-node/register/esm-register tools/contracts-export/src/main.ts export",
+        "command": "tsx --tsconfig tools/contracts-export/tsconfig.lib.json tools/contracts-export/src/main.ts export",
         "cwd": "{workspaceRoot}/backend"
       },
       "cache": false
@@ -17,7 +18,7 @@
     "check": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "SWC_NODE_PROJECT=tools/contracts-export/tsconfig.lib.json node --conditions=@node-template/source --import @swc-node/register/esm-register tools/contracts-export/src/main.ts check",
+        "command": "tsx --tsconfig tools/contracts-export/tsconfig.lib.json tools/contracts-export/src/main.ts check",
         "cwd": "{workspaceRoot}/backend"
       },
       "inputs": [
@@ -25,14 +26,16 @@
         "{workspaceRoot}/backend/infra/terraform/topology.json",
         "{workspaceRoot}/.prettierrc",
         "{projectRoot}/src/**/*",
-        { "externalDependencies": ["zod", "prettier"] }
+        {
+          "externalDependencies": ["zod", "prettier"]
+        }
       ],
       "cache": true
     },
     "topology-export": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "SWC_NODE_PROJECT=tools/contracts-export/tsconfig.lib.json node --conditions=@node-template/source --import @swc-node/register/esm-register tools/contracts-export/src/main.ts topology-export",
+        "command": "tsx --tsconfig tools/contracts-export/tsconfig.lib.json tools/contracts-export/src/main.ts topology-export",
         "cwd": "{workspaceRoot}/backend"
       },
       "cache": false
@@ -40,7 +43,7 @@
     "topology-check": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "SWC_NODE_PROJECT=tools/contracts-export/tsconfig.lib.json node --conditions=@node-template/source --import @swc-node/register/esm-register tools/contracts-export/src/main.ts topology-check",
+        "command": "tsx --tsconfig tools/contracts-export/tsconfig.lib.json tools/contracts-export/src/main.ts topology-check",
         "cwd": "{workspaceRoot}/backend"
       },
       "inputs": [
@@ -48,7 +51,9 @@
         "{workspaceRoot}/backend/infra/terraform/topology.json",
         "{workspaceRoot}/.prettierrc",
         "{projectRoot}/src/**/*",
-        { "externalDependencies": ["zod", "prettier"] }
+        {
+          "externalDependencies": ["zod", "prettier"]
+        }
       ],
       "cache": true
     }

@@ -1,9 +1,9 @@
-import 'package:auth/auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_verifier/mf_verifier.dart';
+import 'package:mf_verifier/src/data/demo_device_key.dart';
 import 'package:mf_verifier/src/data/fake_verifier_repository.dart';
 import 'package:mf_verifier/src/l10n/generated/verifier_localizations.dart';
 import 'package:mf_verifier/src/shared/types/login_challenge.dart';
@@ -20,14 +20,13 @@ const challenge = LoginChallenge(
   validFor: Duration(seconds: 150),
 );
 
-DefaultShellServices services({Map<Type, Object> extras = const {}}) =>
-    DefaultShellServices(
-      session: UserSession(userId: 'u1', tenantId: 't1'),
-      extras: extras,
-    );
+ShellServices services() => ShellServices(
+  session: UserSession(userId: 'u1', tenantId: 't1'),
+  mode: ShellMode.demo,
+);
 
 FakeVerifierRepository fakeRepository({LoginChallenge? initial}) =>
-    FakeVerifierRepository(FakeDeviceKeyPort(), initial: initial);
+    FakeVerifierRepository(const DemoDeviceKey(), initial: initial);
 
 VerifierLocalizations l10nFor(String language) =>
     lookupVerifierLocalizations(Locale(language));

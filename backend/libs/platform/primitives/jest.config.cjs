@@ -12,8 +12,6 @@ module.exports = {
   displayName: 'platform-primitives',
   preset: '../../../jest.preset.js',
   testEnvironment: 'node',
-  // @platform/kernel usa uuid v14, que es ESM puro, y Jest corre en CJS.
-  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },

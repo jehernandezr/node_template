@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_notifications/src/l10n/generated/notifications_localizations.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 AppNotification _item(String id, {bool read = false}) => AppNotification(
   id: id,
@@ -69,7 +69,7 @@ void main() {
 
   testWidgets('shows an error with retry when loading fails', (tester) async {
     final repo = FakeNotificationsRepository(seed: [_item('a')])
-      ..fetchError = StateError('boom');
+      ..fetchError = Exception('boom');
     addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
@@ -183,7 +183,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeNotificationsRepository(seed: [_item('a'), _item('b')])
-      ..markError = StateError('offline');
+      ..markError = Exception('offline');
     addTearDown(repo.dispose);
 
     await _pumpInbox(tester, repo);
@@ -222,7 +222,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 60));
     expect(find.text('Título a'), findsOneWidget);
 
-    repo.markError = StateError('offline');
+    repo.markError = Exception('offline');
     await tester.tap(find.text('Título a'));
     // Otra identidad reemplaza la pantalla antes de que llegue el error.
     showScreen.value = false;

@@ -15,6 +15,11 @@ class _Transport implements HttpTransport {
     requests.add(request);
     return queue.removeAt(0);
   }
+
+  @override
+  void close() => closed = true;
+
+  bool closed = false;
 }
 
 TransportResponse _json(int status, Object body) =>

@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:api/api.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('sends method, headers and body, and returns the answer', () async {
@@ -50,5 +51,67 @@ void main() {
     );
 
     expect(response.statusCode, 401);
+  });
+
+  test('a connection failure throws TransportException', () async {
+    final transport = PackageHttpTransport(
+      client: MockClient((_) async => throw http.ClientException('refused')),
+    );
+
+    await expectLater(
+      transport.send(
+        TransportRequest(
+          method: 'GET',
+          uri: Uri.parse('https://api.example.com/v1/me/access'),
+        ),
+      ),
+      throwsA(
+        isA<TransportException>().having(
+          (e) => e.failure,
+          'failure',
+          TransportFailure.connection,
+        ),
+      ),
+    );
+  });
+
+  test('an answer slower than the timeout throws TransportException', () async {
+    final never = Completer<http.Response>();
+    final transport = PackageHttpTransport(
+      client: MockClient((_) => never.future),
+      timeout: const Duration(milliseconds: 10),
+    );
+
+    await expectLater(
+      transport.send(
+        TransportRequest(
+          method: 'GET',
+          uri: Uri.parse('https://api.example.com/v1/me/access'),
+        ),
+      ),
+      throwsA(
+        isA<TransportException>().having(
+          (e) => e.failure,
+          'failure',
+          TransportFailure.timeout,
+        ),
+      ),
+    );
+  });
+
+  test('a programming error is not wrapped', () async {
+    final transport = PackageHttpTransport(
+      client: MockClient((_) async => throw StateError('bug')),
+    );
+
+    await expectLater(
+      transport.send(
+        TransportRequest(
+          method: 'GET',
+          uri: Uri.parse('https://api.example.com/v1/me/access'),
+        ),
+      ),
+      throwsA(isA<StateError>()),
+    );
   });
 }

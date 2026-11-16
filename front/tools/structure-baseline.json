@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "violations": {
+    "front/microfrontends/assistant/lib/src/screens/assistant_list_screen.dart": {
+      "widget-repository": 2
+    },
+    "front/microfrontends/billing/lib/src/screens/billing_plan_screen.dart": {
+      "l10n-interpolation": 1,
+      "text-literal": 2,
+      "widget-repository": 2
+    },
+    "front/microfrontends/billing/lib/src/screens/invoice_detail_screen.dart": {
+      "l10n-interpolation": 1,
+      "text-literal": 1,
+      "widget-repository": 1
+    },
+    "front/microfrontends/billing/lib/src/screens/invoices_screen.dart": {
+      "widget-repository": 1
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/billing_colors.dart": {
+      "hardcoded-color": 5
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/change_plan_sheet.dart": {
+      "physical-direction": 1,
+      "text-literal": 1,
+      "widget-repository": 2
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/status_chip.dart": {
+      "physical-direction": 1
+    },
+    "front/microfrontends/billing/lib/src/screens/widgets/usage_meter.dart": {
+      "physical-direction": 1,
+      "text-literal": 1
+    },
+    "front/microfrontends/notifications/lib/src/screens/inbox_screen.dart": {
+      "widget-repository": 4
+    },
+    "front/microfrontends/notifications/lib/src/screens/preferences_screen.dart": {
+      "widget-repository": 2
+    },
+    "front/microfrontends/tasks/lib/src/data/fake_tasks_repository.dart": {
+      "datetime-now": 1
+    },
+    "front/microfrontends/tasks/lib/src/screens/task_detail_view.dart": {
+      "widget-repository": 3
+    },
+    "front/microfrontends/tasks/lib/src/screens/task_form_screen.dart": {
+      "widget-repository": 3
+    },
+    "front/microfrontends/tasks/lib/src/screens/tasks_list_screen.dart": {
+      "physical-direction": 2
+    },
+    "front/microfrontends/verifier/lib/src/screens/verifier_screen.dart": {
+      "widget-repository": 3
+    }
+  }
+}

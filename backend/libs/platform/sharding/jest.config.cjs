@@ -16,6 +16,7 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
+  // uuid y NestJS 12 se publican solo como ESM: hay que transformarlos para que Jest los cargue.
+  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?(uuid|@nestjs)[@/])'],
   coverageDirectory: 'test-output/jest/coverage',
 };

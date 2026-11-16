@@ -5,7 +5,7 @@ import 'package:mf_billing/src/shared/types/billing_types.dart';
 import 'package:mf_billing/src/l10n/generated/billing_localizations.dart';
 import 'package:mf_billing/src/screens/widgets/change_plan_sheet.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 final _es = lookupBillingLocalizations(const Locale('es'));
 

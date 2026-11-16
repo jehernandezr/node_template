@@ -1,38 +1,25 @@
 {
   "@@locale": "es",
-
   "navOverview": "Resumen",
   "navTenants": "Tenants",
   "navSagas": "Sagas",
   "navDlq": "Colas muertas",
-
   "loadError": "No se pudo cargar la información. Intenta de nuevo.",
   "notFound": "No encontramos este registro.",
-  "filterAll": "Todos",
   "filterStatus": "Estado",
   "filterRegion": "Región",
-  "actor": "Actor",
-  "action": "Acción",
-  "entity": "Entidad",
-  "traceId": "Trace ID",
   "auditTitle": "Auditoría",
   "auditEmpty": "Sin registros de auditoría.",
-
   "overviewTitle": "Backoffice",
   "overviewSubtitle": "Estado de la plataforma en este momento.",
   "cardTenants": "Tenants",
   "cardSagas": "Sagas que requieren intervención",
   "cardDlq": "Mensajes en colas muertas",
   "cardOpen": "Ver detalle",
-
   "tenantsTitle": "Tenants",
   "tenantSearchLabel": "Buscar por nombre o id",
   "tenantsEmpty": "Ningún tenant coincide con los filtros.",
   "tenantDetailTitle": "Detalle del tenant",
-  "tenantPlan": "Plan",
-  "tenantShardGroup": "Grupo de shards",
-  "tenantUsers": "Usuarios",
-  "tenantRegion": "Región",
   "tenantStatusActive": "Activo",
   "tenantStatusSuspended": "Suspendido",
   "tenantStatusProvisioning": "Aprovisionando",
@@ -40,17 +27,11 @@
   "regionEuWest": "Europa oeste",
   "regionUsEast": "Estados Unidos este",
   "regionSaEast": "Sudamérica este",
-
   "sagasTitle": "Sagas",
   "sagasEmpty": "No hay sagas con este estado.",
   "sagaDetailTitle": "Detalle de la saga",
-  "sagaType": "Tipo",
-  "sagaTenant": "Tenant",
-  "sagaCurrentStep": "Último paso",
-  "sagaUpdated": "Actualizada",
   "sagaSteps": "Pasos",
   "sagaStepsEmpty": "La saga aún no ha ejecutado pasos.",
-  "sagaErrorCode": "Código de error",
   "sagaManualActions": "Acciones manuales",
   "sagaIntervention": "Requiere intervención",
   "sagaActionDone": "Acción registrada en la auditoría.",
@@ -75,39 +56,194 @@
   "sagaStepLabel": "{order}. {operation}",
   "@sagaStepLabel": {
     "placeholders": {
-      "order": {"type": "int"},
-      "operation": {"type": "String"}
+      "order": {
+        "type": "int"
+      },
+      "operation": {
+        "type": "String"
+      }
     }
   },
-
   "dlqTitle": "Colas muertas",
   "dlqSubtitle": "Mensajes que agotaron sus reintentos.",
   "dlqEmpty": "No hay colas configuradas.",
-  "dlqMessagesTitle": "Mensajes",
   "dlqSelectQueue": "Elige una cola para ver sus mensajes.",
   "dlqMessagesEmpty": "La cola no tiene mensajes.",
-  "dlqMessageType": "Tipo",
-  "dlqFirstError": "Primer error",
-  "dlqSentAt": "Enviado",
   "dlqRedrive": "Redistribuir",
   "dlqRedriveTitle": "Redistribuir mensajes",
   "dlqMessagesCount": "{count, plural, =1{1 mensaje} other{{count} mensajes}}",
   "@dlqMessagesCount": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "dlqReceiveCount": "Recepciones: {count}",
   "@dlqReceiveCount": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "dlqRedriveConfirm": "Se moverán {count, plural, =1{1 mensaje} other{{count} mensajes}} de \"{queue}\" a su cola de origen. Revisa el primer error antes de continuar.",
   "@dlqRedriveConfirm": {
     "placeholders": {
-      "count": {"type": "int"},
-      "queue": {"type": "String"}
+      "count": {
+        "type": "int"
+      },
+      "queue": {
+        "type": "String"
+      }
     }
   },
   "dlqRedriveDone": "{count, plural, =1{1 mensaje redistribuido.} other{{count} mensajes redistribuidos.}}",
   "@dlqRedriveDone": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "navSectionsLabel": "Secciones del backoffice",
+  "valueNone": "-",
+  "filterStatusAll": "Todos",
+  "filterRegionAll": "Todas",
+  "auditActorLine": "Actor: {actor}",
+  "@auditActorLine": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "auditEntityLine": "Entidad: {entity}",
+  "@auditEntityLine": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "traceIdLine": "Trace ID: {traceId}",
+  "@traceIdLine": {
+    "placeholders": {
+      "traceId": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewCount": "{count}",
+  "@overviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantPlanLine": "Plan: {plan}",
+  "@tenantPlanLine": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantRegionLine": "Región: {region}",
+  "@tenantRegionLine": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantShardGroupLine": "Grupo de shards: {shardGroup}",
+  "@tenantShardGroupLine": {
+    "placeholders": {
+      "shardGroup": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantUsersLine": "Usuarios: {count}",
+  "@tenantUsersLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sagaTypeLine": "Tipo: {type}",
+  "@sagaTypeLine": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "sagaTenantLine": "Tenant: {tenantId}",
+  "@sagaTenantLine": {
+    "placeholders": {
+      "tenantId": {
+        "type": "String"
+      }
+    }
+  },
+  "sagaCurrentStepLine": "Último paso: {operation}",
+  "@sagaCurrentStepLine": {
+    "placeholders": {
+      "operation": {
+        "type": "String"
+      }
+    }
+  },
+  "sagaUpdatedLine": "Actualizada: {updatedAt}",
+  "@sagaUpdatedLine": {
+    "placeholders": {
+      "updatedAt": {
+        "type": "String"
+      }
+    }
+  },
+  "sagaErrorCodeLine": "Código de error: {code}",
+  "@sagaErrorCodeLine": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "dlqMessagesHeading": "Mensajes: {queue}",
+  "@dlqMessagesHeading": {
+    "placeholders": {
+      "queue": {
+        "type": "String"
+      }
+    }
+  },
+  "dlqMessageTypeLine": "Tipo: {type}",
+  "@dlqMessageTypeLine": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "dlqFirstErrorLine": "Primer error: {error}",
+  "@dlqFirstErrorLine": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dlqSentAtLine": "Enviado: {sentAt}",
+  "@dlqSentAtLine": {
+    "placeholders": {
+      "sentAt": {
+        "type": "String"
+      }
+    }
   }
 }

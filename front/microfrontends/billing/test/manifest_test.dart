@@ -13,8 +13,9 @@ Widget _loader({
   Widget Function(Object error, VoidCallback retry)? errorBuilder,
 }) => const SizedBox.shrink();
 
-MicrofrontendScope _scope() =>
-    MicrofrontendScope(DefaultShellServices(session: UserSession.anonymous()));
+MicrofrontendScope _scope() => MicrofrontendScope(
+  ShellServices(mode: ShellMode.demo, session: UserSession.anonymous()),
+);
 
 String _join(String prefix, String path) =>
     path.startsWith('/') ? path : '$prefix/$path';
@@ -34,7 +35,7 @@ final _importPattern = RegExp(
 
 void main() {
   test('manifest id matches package', () {
-    expect(billingManifest.id, MicrofrontendId.billing);
+    expect(billingManifest.id, const MicrofrontendId('billing'));
   });
 
   test('routes are nested under /billing', () {
@@ -56,9 +57,24 @@ void main() {
       userId: 'u',
       permissions: {Permission.billingRead},
     );
-    expect(billingManifest.access.allows(allowed), isTrue);
-    expect(billingManifest.access.allows(UserSession(userId: 'u')), isFalse);
-    expect(billingManifest.access.allows(UserSession.anonymous()), isFalse);
+    expect(
+      billingManifest.access.allows(allowed, now: DateTime.utc(2026, 1, 1)),
+      isTrue,
+    );
+    expect(
+      billingManifest.access.allows(
+        UserSession(userId: 'u'),
+        now: DateTime.utc(2026, 1, 1),
+      ),
+      isFalse,
+    );
+    expect(
+      billingManifest.access.allows(
+        UserSession.anonymous(),
+        now: DateTime.utc(2026, 1, 1),
+      ),
+      isFalse,
+    );
   });
 
   test('access: sub-routes carry the billing rule', () {
@@ -71,10 +87,17 @@ void main() {
       expect(
         route.access!.allows(
           UserSession(userId: 'u', permissions: {Permission.billingRead}),
+          now: DateTime.utc(2026, 1, 1),
         ),
         isTrue,
       );
-      expect(route.access!.allows(UserSession(userId: 'u')), isFalse);
+      expect(
+        route.access!.allows(
+          UserSession(userId: 'u'),
+          now: DateTime.utc(2026, 1, 1),
+        ),
+        isFalse,
+      );
     }
     final routes = _byPath(billingManifest.buildRoutes(_loader, _scope));
     expect(routes['/billing']!.redirect, isNull);

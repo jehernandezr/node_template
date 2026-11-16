@@ -16,12 +16,5 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // Unitarias con pg-mem junto al código; integración con Testcontainers en test/integration.
-  // Las de integración se saltan solas si no hay Docker (ver test/support/docker.ts).
-  testMatch: [
-    '<rootDir>/src/**/*.spec.ts',
-    '<rootDir>/test/integration/**/*.int-spec.ts',
-  ],
-  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
   coverageDirectory: 'test-output/jest/coverage',
 };

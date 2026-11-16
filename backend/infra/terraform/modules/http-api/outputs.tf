@@ -35,5 +35,5 @@ output "origin_verify_secret_arn" {
 
 output "kms_key_arn" {
   description = "Clave KMS de los logs y del secreto de origen."
-  value       = aws_kms_key.this.arn
+  value       = module.kms.arn
 }

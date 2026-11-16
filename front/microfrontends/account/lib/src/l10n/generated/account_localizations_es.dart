@@ -47,6 +47,13 @@ class AccountLocalizationsEs extends AccountLocalizations {
       'Términos, consentimientos y documentos firmados.';
 
   @override
+  String get sectionUnavailableTitle => 'Aún no disponible';
+
+  @override
+  String get sectionUnavailableMessage =>
+      'Esta sección todavía no está conectada al servidor.';
+
+  @override
   String get actionFailed =>
       'La acción no se pudo completar. Intenta de nuevo.';
 
@@ -202,6 +209,11 @@ class AccountLocalizationsEs extends AccountLocalizations {
   @override
   String get reviewNotice =>
       'Al aceptar confirmas que revisaste este documento.';
+
+  @override
+  String reviewDialogMessage(String version) {
+    return 'Versión $version. Al aceptar confirmas que revisaste este documento.';
+  }
 
   @override
   String get agreementAccepted => 'Acuerdo aceptado.';

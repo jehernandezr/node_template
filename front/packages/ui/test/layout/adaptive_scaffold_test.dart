@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
 
-import '../support/pump.dart';
+import '../utils/pump.dart';
 
 const _destinations = [
   AdaptiveDestination(label: 'Home', icon: Icons.home_outlined),

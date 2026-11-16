@@ -4,7 +4,6 @@ import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mf_account/src/data/api_account_repository.dart';
-import 'package:mf_account/src/data/fake_account_repository.dart';
 
 class _Transport implements HttpTransport {
   final List<TransportRequest> requests = [];
@@ -15,6 +14,9 @@ class _Transport implements HttpTransport {
     requests.add(request);
     return answers.removeAt(0);
   }
+
+  @override
+  void close() {}
 }
 
 const _id = '0193f1c2-0000-7000-8000-000000000001';
@@ -32,19 +34,16 @@ TransportResponse _json(int status, Object body) =>
 
 void main() {
   late _Transport transport;
-  late FakeAccountRepository pending;
   late ApiAccountRepository repository;
 
   setUp(() {
     transport = _Transport();
-    pending = FakeAccountRepository(delay: Duration.zero);
     repository = ApiAccountRepository(
       client: ApiClient(
         transport: transport,
         baseUri: Uri.parse('https://api.example.com'),
         accessToken: () async => 'token',
       ),
-      pending: pending,
     );
   });
 
@@ -139,14 +138,26 @@ void main() {
     expect(transport.requests.single.uri.path, '/v1/me/devices');
   });
 
-  test('operations without a contract go to the pending repository', () async {
-    final profile = await repository.loadProfile();
-    expect(profile.name, 'Ana Pérez');
-    expect(transport.requests, isEmpty);
-  });
-
-  test('dispose releases the pending repository', () async {
-    await repository.dispose();
-    expect(pending.isDisposed, isTrue);
-  });
+  test(
+    'operations without a contract fail instead of inventing data',
+    () async {
+      expect(repository.capabilities, isEmpty);
+      await expectLater(repository.loadProfile(), throwsUnsupportedError);
+      await expectLater(repository.loadSecurity(), throwsUnsupportedError);
+      await expectLater(
+        repository.regenerateRecoveryCodes(),
+        throwsUnsupportedError,
+      );
+      await expectLater(repository.addPasskey(), throwsUnsupportedError);
+      await expectLater(
+        repository.removeDeviceTrust(_id),
+        throwsUnsupportedError,
+      );
+      await expectLater(
+        repository.acceptAgreement('a'),
+        throwsUnsupportedError,
+      );
+      expect(transport.requests, isEmpty);
+    },
+  );
 }

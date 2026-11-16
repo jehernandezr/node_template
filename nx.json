@@ -4,35 +4,19 @@
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
-      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/src/**/__tests__/**",
       "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/jest.config.[jt]s",
-      "!{projectRoot}/src/test-setup.[jt]s",
-      "!{projectRoot}/test-setup.[jt]s",
-      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/jest.config.?(c|m)[jt]s",
+      "!{projectRoot}/.spec.swcrc",
       "!{projectRoot}/eslint.config.mjs"
     ],
     "sharedGlobals": [
       "{workspaceRoot}/.nvmrc",
-      "{workspaceRoot}/pnpm-lock.yaml"
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/backend/tsconfig.base.json"
     ]
   },
   "plugins": [
-    {
-      "plugin": "@nx/js/typescript",
-      "options": {
-        "typecheck": {
-          "targetName": "typecheck"
-        },
-        "build": {
-          "targetName": "build",
-          "configName": "tsconfig.lib.json",
-          "buildDepsName": "build-deps",
-          "watchDepsName": "watch-deps"
-        }
-      },
-      "include": ["backend/**/*"]
-    },
     {
       "plugin": "@nx/jest/plugin",
       "options": {
@@ -52,9 +36,6 @@
   ],
   "analytics": false,
   "targetDefaults": {
-    "test": {
-      "dependsOn": ["^build"]
-    },
     "analyze": {
       "cache": true
     },
@@ -62,17 +43,36 @@
       "cache": true
     },
     "typecheck": {
+      "executor": "nx:run-commands",
       "options": {
-        "command": "tsc -p tsconfig.lib.json --noEmit && tsc -p tsconfig.spec.json --noEmit"
+        "command": "tsc -p tsconfig.lib.json && tsc -p tsconfig.spec.json",
+        "cwd": "{projectRoot}"
       },
+      "cache": true,
       "inputs": [
         "default",
-        "^production",
+        "^default",
         {
           "externalDependencies": ["typescript"]
         }
+      ]
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx backend/tools/app-bundler/src/main.ts {projectName} {projectRoot}",
+        "cwd": "{workspaceRoot}"
+      },
+      "cache": true,
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/backend/tools/app-bundler/src/**/*",
+        {
+          "externalDependencies": ["esbuild", "@swc/core"]
+        }
       ],
-      "dependsOn": ["build"]
+      "outputs": ["{workspaceRoot}/backend/dist/{projectName}"]
     }
   }
 }

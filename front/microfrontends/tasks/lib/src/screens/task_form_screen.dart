@@ -12,6 +12,7 @@ import '../l10n/generated/tasks_localizations.dart';
 import '../shared/enums/task_status.dart';
 import '../shared/types/task.dart';
 import 'task_status_label.dart';
+import '../shared/constants/tasks_paths.dart';
 
 /// Route `/tasks/new` (create) and `/tasks/:id/edit` (edit).
 ///
@@ -109,7 +110,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       return;
     }
     if (!mounted) return;
-    context.go(id == null ? '/tasks' : '/tasks/$id');
+    context.go(id == null ? TasksPaths.list : TasksPaths.detail(id));
   }
 
   void _saveFailed(Object error) {
@@ -189,7 +190,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = TasksLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
     final id = widget.taskId;
     final notFound = switch (_loaded) {
       AsyncError<Task?>(:final error) => error is TaskNotFoundException,
@@ -197,14 +197,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     };
     return AppPage(
       title: _editing ? l10n.editTaskTitle : l10n.newTask,
-      onBack: () => context.go(id == null ? '/tasks' : '/tasks/$id'),
+      onBack: () =>
+          context.go(id == null ? TasksPaths.list : TasksPaths.detail(id)),
       body: AsyncValueView<Task?>(
         value: _loaded,
         errorMessage: notFound ? l10n.detailNotFound : l10n.detailError,
         onRetry: notFound ? null : _retry,
-        retryLabel: shared.actionRetry,
-        codeLabel: shared.errorCodeLabel,
-        traceIdLabel: shared.errorTraceIdLabel,
         data: (_) => _form(context),
       ),
     );

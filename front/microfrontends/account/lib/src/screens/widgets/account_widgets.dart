@@ -1,20 +1,15 @@
-import 'package:contracts/contracts.dart';
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../../l10n/generated/account_localizations.dart';
+import '../../shared/constants/account_constants.dart';
 
-/// Etiqueta BCP 47 del locale de [context], para los formatos de `utils`.
-String localeTag(BuildContext context) =>
-    Localizations.localeOf(context).toLanguageTag();
-
-/// Fila dentro de una [AppCard]: título, detalle opcional, insignia y acción.
+/// Row inside an [AppCard]: title, optional detail, badge and action.
 class AccountRowCard extends StatelessWidget {
   const AccountRowCard({
     super.key,
     required this.title,
     this.subtitle,
+    this.details = const [],
     this.badge,
     this.trailing,
     this.onTap,
@@ -22,6 +17,10 @@ class AccountRowCard extends StatelessWidget {
 
   final String title;
   final String? subtitle;
+
+  /// Secondary pieces joined with the localized separator in one line, shown
+  /// under [subtitle].
+  final List<String> details;
   final Widget? badge;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -35,44 +34,62 @@ class AccountRowCard extends StatelessWidget {
     final detail = subtitle;
     final badgeWidget = badge;
     final trailingWidget = trailing;
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          spacing: AppSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(title, style: theme.textTheme.titleMedium),
+            ?badgeWidget,
+          ],
+        ),
+        if (detail != null) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(detail, style: muted),
+        ],
+        if (details.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          MetaLine(parts: details, style: muted),
+        ],
+      ],
+    );
     return AppCard(
       onTap: onTap,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (trailingWidget == null) return text;
+          // A trailing action next to the text only fits on wide cards; on
+          // narrow ones it goes below so neither gets squeezed.
+          if (constraints.maxWidth < accountCompactRowWidth) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(title, style: theme.textTheme.titleMedium),
-                    ),
-                    if (badgeWidget != null) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      badgeWidget,
-                    ],
-                  ],
+                text,
+                const SizedBox(height: AppSpacing.sm),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: trailingWidget,
                 ),
-                if (detail != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(detail, style: muted),
-                ],
               ],
-            ),
-          ),
-          if (trailingWidget != null) ...[
-            const SizedBox(width: AppSpacing.md),
-            trailingWidget,
-          ],
-        ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: text),
+              const SizedBox(width: AppSpacing.md),
+              trailingWidget,
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-/// Insignia pequeña con texto, por ejemplo "Actual" o "Verificador".
+/// Small text badge, such as the current session or the verifier device.
 class StatusBadge extends StatelessWidget {
   const StatusBadge({super.key, required this.label});
 
@@ -80,11 +97,14 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Chip(
       label: Text(
         label,
-        style: TextStyle(color: scheme.onSecondaryContainer, fontSize: 12),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: scheme.onSecondaryContainer,
+        ),
       ),
       backgroundColor: scheme.secondaryContainer,
       side: BorderSide.none,
@@ -92,61 +112,4 @@ class StatusBadge extends StatelessWidget {
       padding: EdgeInsets.zero,
     );
   }
-}
-
-/// Muestra un [AsyncValue] con [AsyncValueView]: cargando, error con
-/// reintento o [data].
-///
-/// Un [ApiErrorException] muestra el mensaje de su código, junto con el código
-/// y la traza para soporte. Cualquier otro error muestra el texto genérico.
-class AccountAsyncView<T> extends StatelessWidget {
-  const AccountAsyncView({
-    super.key,
-    required this.value,
-    required this.onRetry,
-    required this.data,
-  });
-
-  final AsyncValue<T> value;
-  final VoidCallback onRetry;
-  final Widget Function(T value) data;
-
-  @override
-  Widget build(BuildContext context) {
-    final shared = AppLocalizations.of(context);
-    final current = value;
-    final error = current is AsyncError<T> ? current.error : null;
-    final message = error is ApiErrorException
-        ? errorMessage(shared, error.problem.code)
-        : AccountLocalizations.of(context).loadError;
-    return AsyncValueView<T>(
-      value: value,
-      data: data,
-      errorMessage: message,
-      onRetry: onRetry,
-      retryLabel: shared.actionRetry,
-      codeLabel: shared.errorCodeLabel,
-      traceIdLabel: shared.errorTraceIdLabel,
-    );
-  }
-}
-
-/// Ejecuta [action] y muestra el texto de [success] o el error de la acción.
-/// Devuelve true cuando la acción se completó y el contexto sigue montado.
-Future<bool> runAccountAction(
-  BuildContext context,
-  Future<void> Function() action, {
-  required String Function() success,
-}) async {
-  final failed = AccountLocalizations.of(context).actionFailed;
-  try {
-    await action();
-  } on Exception catch (error) {
-    if (context.mounted) showActionError(context, error, message: failed);
-    return false;
-  }
-  if (!context.mounted) return false;
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(success())));
-  return true;
 }

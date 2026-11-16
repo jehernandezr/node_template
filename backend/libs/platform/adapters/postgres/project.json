@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-adapters-postgres",
+  "sourceRoot": "backend/libs/platform/adapters/postgres/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {}
+  }
+}

@@ -14,17 +14,17 @@ Una Lambda en arm64: consumidora de una cola SQS con respuesta parcial de lotes,
 
 ## Entradas principales
 
-| Variable                                                                                  | Descripción                            |
-| ----------------------------------------------------------------------------------------- | -------------------------------------- |
-| `name_prefix`, `function_name`, `environment`                                             | Nombres y entorno.                     |
-| `handler`, `runtime`                                                                      | Handler y runtime (`nodejs22.x`).      |
-| `filename` o `s3_bucket` con `s3_key`, `source_code_hash`                                 | Paquete.                               |
-| `queue_arn`, `queue_kms_key_arn`                                                          | Cola de `messaging` y su clave KMS.    |
-| `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumo.                               |
-| `reserved_concurrent_executions`                                                          | Protege la base de datos de picos.     |
-| `otel_layer_arn`, `otel_collector_config_uri`                                             | OpenTelemetry. Null desactiva la capa. |
-| `vpc_enabled`, `vpc_id`, `subnet_ids`                                                     | Ejecución en la VPC.                   |
-| `secret_arns`, `secrets_kms_key_arns`, `task_policies`                                    | Permisos adicionales.                  |
+| Variable                                                                                  | Descripción                                                                         |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `name_prefix`, `function_name`, `environment`                                             | Nombres y entorno.                                                                  |
+| `handler`, `runtime`                                                                      | Handler y runtime (`nodejs24.x`, la versión mayor de `.nvmrc`; otra falla el plan). |
+| `filename` o `s3_bucket` con `s3_key`, `source_code_hash`                                 | Paquete.                                                                            |
+| `queue_arn`, `queue_kms_key_arn`                                                          | Cola de `messaging` y su clave KMS.                                                 |
+| `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumo.                                                                            |
+| `reserved_concurrent_executions`                                                          | Protege la base de datos de picos.                                                  |
+| `otel_layer_arn`, `otel_collector_config_uri`                                             | OpenTelemetry. Null desactiva la capa.                                              |
+| `vpc_enabled`, `vpc_id`, `subnet_ids`                                                     | Ejecución en la VPC.                                                                |
+| `secret_arns`, `secrets_kms_key_arns`, `task_policies`                                    | Permisos adicionales.                                                               |
 
 ## Salidas
 
@@ -35,4 +35,4 @@ Una Lambda en arm64: consumidora de una cola SQS con respuesta parcial de lotes,
 - La visibilidad de la cola de origen debe ser al menos seis veces `timeout`; lo declara la topología de mensajería.
 - El handler (`lambda.ts`) debe devolver `batchItemFailures` con los identificadores de los mensajes fallidos.
 - La capa ADOT depende de la región y la arquitectura: confirma el ARN vigente antes de usarlo.
-- La clave KMS es del módulo salvo que pases `kms_key_arn`; su política debe permitir a CloudWatch Logs y a SQS.
+- La clave KMS es del módulo salvo que pases `kms_key_arn`; su política debe permitir a CloudWatch Logs y a SQS. El stack `service` pasa la CMK de cómputo del ambiente (`compute_logs_kms_key_arn` de `platform`).

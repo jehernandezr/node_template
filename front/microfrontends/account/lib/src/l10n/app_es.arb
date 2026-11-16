@@ -17,6 +17,9 @@
   "agreementsLinkTitle": "Acuerdos",
   "agreementsLinkMessage": "Términos, consentimientos y documentos firmados.",
 
+  "sectionUnavailableTitle": "Aún no disponible",
+  "sectionUnavailableMessage": "Esta sección todavía no está conectada al servidor.",
+
   "actionFailed": "La acción no se pudo completar. Intenta de nuevo.",
   "loadError": "No pudimos cargar esta información.",
   "versionLabel": "Versión {version}",
@@ -106,6 +109,12 @@
   "requiredLabel": "Obligatorio",
   "optionalLabel": "Opcional",
   "reviewNotice": "Al aceptar confirmas que revisaste este documento.",
+  "reviewDialogMessage": "Versión {version}. Al aceptar confirmas que revisaste este documento.",
+  "@reviewDialogMessage": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
   "agreementAccepted": "Acuerdo aceptado.",
   "pendingEmptyTitle": "No tienes acuerdos pendientes",
   "acceptedEmptyMessage": "Todavía no has aceptado acuerdos.",

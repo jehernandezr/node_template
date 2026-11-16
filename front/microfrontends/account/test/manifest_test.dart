@@ -3,8 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mf_account/mf_account.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/manifest_app.dart';
-import 'support/test_app.dart';
+import 'utils/manifest_app.dart';
+import 'utils/test_app.dart';
 
 /// Rutas completas de un árbol de [ScreenRoute], con los hijos relativos
 /// resueltos, y su regla de acceso propia.
@@ -22,10 +22,9 @@ Iterable<(String, AccessRule?)> _screens(
 }
 
 void main() {
-  setUp(resetDeferredPageCache);
-
   test('manifest id, menu and lifecycle', () {
-    expect(accountManifest.id, MicrofrontendId.account);
+    expect(accountManifest.id, const MicrofrontendId('account'));
+    expect(accountManifest.modes, {ShellMode.demo, ShellMode.live});
     expect(accountManifest.menu.single.path, '/account');
     expect(accountManifest.hasLifecycle, isFalse);
   });

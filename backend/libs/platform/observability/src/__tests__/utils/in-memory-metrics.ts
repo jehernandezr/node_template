@@ -1,0 +1,53 @@
+import type { MetricAttributes } from '../../metrics/metric-attributes.js';
+import { MetricsPort } from '../../metrics/metrics.port.js';
+
+/** Tipo de instrumento de una medición. */
+export enum MeasurementType {
+  Counter = 'counter',
+  Histogram = 'histogram',
+}
+
+/** Una medición guardada por `InMemoryMetrics`. */
+export interface RecordedMeasurement {
+  readonly type: MeasurementType;
+  readonly name: string;
+  readonly value: number;
+  readonly attributes: MetricAttributes;
+}
+
+/** Guarda las mediciones en memoria, para pruebas. */
+export class InMemoryMetrics extends MetricsPort {
+  readonly measurements: RecordedMeasurement[] = [];
+
+  increment(name: string, attributes: MetricAttributes = {}, value = 1): void {
+    this.measurements.push({
+      type: MeasurementType.Counter,
+      name,
+      value,
+      attributes,
+    });
+  }
+
+  record(name: string, value: number, attributes: MetricAttributes = {}): void {
+    this.measurements.push({
+      type: MeasurementType.Histogram,
+      name,
+      value,
+      attributes,
+    });
+  }
+
+  /** Suma de un contador, opcionalmente filtrando por atributos. */
+  total(name: string, where: MetricAttributes = {}): number {
+    return this.measurements
+      .filter(
+        (measurement) =>
+          measurement.type === MeasurementType.Counter &&
+          measurement.name === name &&
+          Object.entries(where).every(
+            ([key, value]) => measurement.attributes[key] === value,
+          ),
+      )
+      .reduce((sum, measurement) => sum + measurement.value, 0);
+  }
+}

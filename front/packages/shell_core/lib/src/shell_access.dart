@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:utils/utils.dart';
 
 import 'access_rule.dart';
 import 'user_session.dart';
@@ -29,30 +30,37 @@ final class ShellPaths {
   /// Whether [path] is one of these pages.
   bool contains(String path) =>
       path == login || path == forbidden || path == stepUp;
+
+  /// Where [decision] sends a request for [location], or null to let it
+  /// through.
+  ///
+  /// Anonymous sessions go to [login], sessions that need a step-up go to
+  /// [stepUp] (or [forbidden] without one) and denied sessions go to
+  /// [forbidden]. The original location is kept in `from`. A location already
+  /// on one of these pages is never redirected, so there is no loop.
+  String? redirectFor(AccessDecision decision, Uri location) {
+    if (contains(location.path)) return null;
+    final target = switch (decision) {
+      AccessDecision.allowed => null,
+      AccessDecision.signInRequired => login,
+      AccessDecision.stepUpRequired => stepUp ?? forbidden,
+      AccessDecision.denied => forbidden,
+    };
+    if (target == null) return null;
+    return '$target?from=${Uri.encodeComponent(location.toString())}';
+  }
 }
 
 /// Where [decision] sends a request for [location], or null to let it through.
 ///
-/// Anonymous sessions go to [ShellPaths.login], sessions that need a step-up
-/// go to [ShellPaths.stepUp] (or [ShellPaths.forbidden] without one) and
-/// denied sessions go to [ShellPaths.forbidden]. The original location is
-/// kept in `from`.
-String? redirectFor(AccessDecision decision, Uri location, ShellPaths paths) {
-  if (paths.contains(location.path)) return null;
-  final target = switch (decision) {
-    AccessDecision.allowed => null,
-    AccessDecision.signInRequired => paths.login,
-    AccessDecision.stepUpRequired => paths.stepUp ?? paths.forbidden,
-    AccessDecision.denied => paths.forbidden,
-  };
-  if (target == null) return null;
-  return '$target?from=${Uri.encodeComponent(location.toString())}';
-}
+/// Superseded by [ShellPaths.redirectFor].
+String? redirectFor(AccessDecision decision, Uri location, ShellPaths paths) =>
+    paths.redirectFor(decision, location);
 
 /// Access environment of a shell: the session, the clock and the redirect
 /// pages. Read it with [ShellAccessScope.of] or `context.can(rule)`.
 ///
-/// `buildShellRouter` puts one above every microfrontend page. Shells can add
+/// `ShellRouterFactory` puts one above every microfrontend page. Shells can add
 /// another one above the router (for example in `MaterialApp.router.builder`)
 /// so the shell chrome can use [AccessGate] too. Tests of a screen wrap it
 /// in one to control the session.
@@ -61,7 +69,7 @@ class ShellAccessScope extends InheritedNotifier<ValueListenable<UserSession>> {
   const ShellAccessScope({
     super.key,
     required ValueListenable<UserSession> session,
-    this.clock = DateTime.now,
+    this.clock = systemClock,
     this.paths = const ShellPaths(),
     required super.child,
   }) : super(notifier: session);
@@ -70,7 +78,7 @@ class ShellAccessScope extends InheritedNotifier<ValueListenable<UserSession>> {
   ValueListenable<UserSession> get session => notifier!;
 
   /// Current time, used by [AccessRule.mfa].
-  final DateTime Function() clock;
+  final Clock clock;
 
   /// Pages that [accessRedirect] sends rejected requests to.
   final ShellPaths paths;
@@ -84,8 +92,9 @@ class ShellAccessScope extends InheritedNotifier<ValueListenable<UserSession>> {
     if (scope == null) {
       throw FlutterError(
         'No ShellAccessScope above this widget.\n'
-        'Microfrontend pages get one from buildShellRouter. A widget test of a '
-        'screen must wrap it in ShellAccessScope(session: ..., child: ...).',
+        'Microfrontend pages get one from ShellRouterFactory. A widget test '
+        'of a screen must wrap it in ShellAccessScope(session: ..., '
+        'child: ...).',
       );
     }
     return scope;
@@ -143,7 +152,7 @@ class AccessGate extends StatelessWidget {
       context.can(rule) ? child : (fallback ?? const SizedBox.shrink());
 }
 
-/// Access environment for redirects, set by `buildShellRouter` while it runs
+/// Access environment for redirects, set by `ShellRouterFactory` while it runs
 /// route redirects. A zone value, because go_router runs redirects with the
 /// router's context, above the pages.
 @immutable
@@ -159,7 +168,7 @@ final class ShellAccessEnvironment {
   final ValueListenable<UserSession> session;
 
   /// Current time.
-  final DateTime Function() clock;
+  final Clock clock;
 
   /// Redirect pages.
   final ShellPaths paths;
@@ -185,13 +194,13 @@ final class ShellAccessEnvironment {
 /// ```
 ///
 /// [ScreenRoute.access] uses it for you. The session, clock and pages come
-/// from `buildShellRouter`; in a plain [GoRouter] they come from a
+/// from `ShellRouterFactory`; in a plain [GoRouter] they come from a
 /// [ShellAccessScope] above the router. Throws [StateError] when neither is
 /// present, so a guard is never skipped silently.
 GoRouterRedirect accessRedirect(AccessRule rule) => (context, state) {
   final environment = ShellAccessEnvironment.current;
   final ValueListenable<UserSession> session;
-  final DateTime Function() clock;
+  final Clock clock;
   final ShellPaths paths;
   if (environment != null) {
     session = environment.session;
@@ -201,7 +210,7 @@ GoRouterRedirect accessRedirect(AccessRule rule) => (context, state) {
     final scope = ShellAccessScope.maybeRead(context);
     if (scope == null) {
       throw StateError(
-        'accessRedirect needs buildShellRouter or a ShellAccessScope above '
+        'accessRedirect needs ShellRouterFactory or a ShellAccessScope above '
         'the router',
       );
     }
@@ -210,5 +219,5 @@ GoRouterRedirect accessRedirect(AccessRule rule) => (context, state) {
     paths = scope.paths;
   }
   final decision = rule.decide(session.value, now: clock());
-  return redirectFor(decision, state.uri, paths);
+  return paths.redirectFor(decision, state.uri);
 };

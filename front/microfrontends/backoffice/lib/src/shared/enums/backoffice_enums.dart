@@ -31,3 +31,22 @@ enum SagaStepStatus { dispatched, succeeded, failed }
 
 /// Manual actions an operator can apply to a saga. Each one needs a reason.
 enum SagaManualAction { retryStep, forceCompensation, markResolved }
+
+/// Calls of the backoffice repository. A demo repository tags each call with
+/// one so a scheduled failure can target a single operation.
+enum BackofficeOperation {
+  overview,
+  listTenants,
+  tenant,
+  tenantAudit,
+  listSagas,
+  saga,
+  sagaAudit,
+  applySagaAction,
+  deadLetterQueues,
+  deadLetterMessages,
+  redrive,
+}
+
+/// Sections of the backoffice, one per entry of its section navigation.
+enum BackofficeSection { overview, tenants, sagas, dlq }

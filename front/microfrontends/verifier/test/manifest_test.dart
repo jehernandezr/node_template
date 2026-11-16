@@ -34,7 +34,8 @@ Set<String> _eagerFiles(String entry) {
 
 void main() {
   test('manifest id, platform and menu', () {
-    expect(verifierManifest.id, MicrofrontendId.verifier);
+    expect(verifierManifest.id, const MicrofrontendId('verifier'));
+    expect(verifierManifest.modes, {ShellMode.demo});
     expect(verifierManifest.platforms, {AppPlatform.mobile});
     expect(verifierManifest.menu.single.path, '/verifier');
   });
@@ -44,10 +45,13 @@ void main() {
     final signedIn = UserSession(userId: 'u1', tenantId: 't1');
 
     expect(
-      verifierManifest.access.decide(anonymous),
+      verifierManifest.access.decide(anonymous, now: DateTime.utc(2026, 1, 1)),
       AccessDecision.signInRequired,
     );
-    expect(verifierManifest.access.allows(signedIn), isTrue);
+    expect(
+      verifierManifest.access.allows(signedIn, now: DateTime.utc(2026, 1, 1)),
+      isTrue,
+    );
   });
 
   test('screens: one route with no extra access and no children', () {

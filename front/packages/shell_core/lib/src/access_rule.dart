@@ -20,8 +20,8 @@ enum AccessDecision {
 
 /// Condition that decides whether a [UserSession] may use a microfrontend.
 ///
-/// Build rules with the named factories and combine them with [AccessRule.all]
-/// or [AccessRule.any].
+/// Build rules with the named factories and combine them with
+/// [AccessRule.all].
 sealed class AccessRule {
   const AccessRule();
 
@@ -34,10 +34,6 @@ sealed class AccessRule {
   /// Allows sessions that hold every permission in [permissions].
   factory AccessRule.permissions(List<Permission> permissions) =
       _PermissionsRule;
-
-  /// Allows sessions that hold at least one permission in [permissions].
-  factory AccessRule.anyPermission(List<Permission> permissions) =
-      _AnyPermissionRule;
 
   /// Allows sessions that hold at least one role in [roles].
   factory AccessRule.platformRoles(List<PlatformRole> roles) =
@@ -60,25 +56,19 @@ sealed class AccessRule {
   /// visitors included. Use [AccessRule.public] for that.
   factory AccessRule.all(List<AccessRule> rules) = _AllRule;
 
-  /// Allows sessions that satisfy at least one rule in [rules], which cannot
-  /// be empty.
-  factory AccessRule.any(List<AccessRule> rules) = _AnyRule;
-
-  /// Whether [session] satisfies this rule at [now] (default: the current time).
+  /// Whether [session] satisfies this rule at [now].
   ///
   /// [now] only matters for [AccessRule.mfa].
-  bool allows(UserSession session, {DateTime? now}) =>
-      _check(session, now ?? DateTime.now(), assumeRecentMfa: false);
+  bool allows(UserSession session, {required DateTime now}) =>
+      _check(session, now, assumeRecentMfa: false);
 
-  /// Decides what [session] needs to pass this rule at [now] (default: the
-  /// current time).
-  AccessDecision decide(UserSession session, {DateTime? now}) {
-    final at = now ?? DateTime.now();
-    if (_check(session, at, assumeRecentMfa: false)) {
+  /// Decides what [session] needs to pass this rule at [now].
+  AccessDecision decide(UserSession session, {required DateTime now}) {
+    if (_check(session, now, assumeRecentMfa: false)) {
       return AccessDecision.allowed;
     }
     if (!session.isAuthenticated) return AccessDecision.signInRequired;
-    if (_check(session, at, assumeRecentMfa: true)) {
+    if (_check(session, now, assumeRecentMfa: true)) {
       return AccessDecision.stepUpRequired;
     }
     return AccessDecision.denied;
@@ -88,8 +78,8 @@ sealed class AccessRule {
   ///
   /// Menus use it: an entry that needs a recent second factor stays visible so
   /// the user can reach the step-up page from it.
-  bool reachableBy(UserSession session, {DateTime? now}) =>
-      _check(session, now ?? DateTime.now(), assumeRecentMfa: true);
+  bool reachableBy(UserSession session, {required DateTime now}) =>
+      _check(session, now, assumeRecentMfa: true);
 
   /// Evaluates the rule. With [assumeRecentMfa], MFA rules pass for any
   /// signed-in session. Implemented by the rules of this library.
@@ -140,24 +130,6 @@ final class _PermissionsRule extends AccessRule {
   }) => permissions.every(session.permissions.contains);
 }
 
-final class _AnyPermissionRule extends AccessRule {
-  _AnyPermissionRule(List<Permission> permissions)
-    : assert(
-        permissions.isNotEmpty,
-        'anyPermission needs at least one permission',
-      ),
-      permissions = List.unmodifiable(permissions);
-
-  final List<Permission> permissions;
-
-  @override
-  bool _check(
-    UserSession session,
-    DateTime now, {
-    required bool assumeRecentMfa,
-  }) => permissions.any(session.permissions.contains);
-}
-
 final class _PlatformRolesRule extends AccessRule {
   _PlatformRolesRule(List<PlatformRole> roles)
     : assert(roles.isNotEmpty, 'platformRoles needs at least one role'),
@@ -183,7 +155,7 @@ final class _PlanFeatureRule extends AccessRule {
     UserSession session,
     DateTime now, {
     required bool assumeRecentMfa,
-  }) => session.planFeatures.contains(feature);
+  }) => session.features.contains(feature);
 }
 
 final class _MfaRule extends AccessRule {
@@ -219,23 +191,6 @@ final class _AllRule extends AccessRule {
     DateTime now, {
     required bool assumeRecentMfa,
   }) => rules.every(
-    (rule) => rule._check(session, now, assumeRecentMfa: assumeRecentMfa),
-  );
-}
-
-final class _AnyRule extends AccessRule {
-  _AnyRule(List<AccessRule> rules)
-    : assert(rules.isNotEmpty, 'any needs at least one rule'),
-      rules = List.unmodifiable(rules);
-
-  final List<AccessRule> rules;
-
-  @override
-  bool _check(
-    UserSession session,
-    DateTime now, {
-    required bool assumeRecentMfa,
-  }) => rules.any(
     (rule) => rule._check(session, now, assumeRecentMfa: assumeRecentMfa),
   );
 }

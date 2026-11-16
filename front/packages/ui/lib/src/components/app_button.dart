@@ -1,3 +1,4 @@
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tokens/tokens.dart';
 
@@ -16,6 +17,10 @@ enum AppButtonVariant {
 /// Button with a [variant] and a [loading] state.
 ///
 /// While [loading] is true the button shows a spinner and cannot be tapped.
+/// A label longer than the available width wraps.
+///
+/// The spinner is labeled with the shared loading text when
+/// [AppLocalizations] is installed.
 class AppButton extends StatelessWidget {
   /// Creates a button. A null [onPressed] disables it.
   const AppButton({
@@ -40,6 +45,10 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loadingLabel = Localizations.of<AppLocalizations>(
+      context,
+      AppLocalizations,
+    )?.loading;
     final scheme = Theme.of(context).colorScheme;
     final foreground = switch (variant) {
       AppButtonVariant.primary => scheme.onPrimary,
@@ -52,12 +61,18 @@ class AppButton extends StatelessWidget {
       children: [
         if (loading) ...[
           SizedBox.square(
-            dimension: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
+            dimension: AppIconSize.sm,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: foreground,
+              semanticsLabel: loadingLabel,
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
-        Text(label),
+        // Flexible lets a long label wrap instead of overflowing a narrow
+        // button (small phones, large text scale).
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
       ],
     );
 

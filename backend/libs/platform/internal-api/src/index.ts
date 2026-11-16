@@ -1,12 +1,83 @@
-export * from './lib/errors.js';
-export * from './lib/result.js';
-export * from './lib/contract.js';
-export * from './lib/json-safety.js';
-export * from './lib/input-hash.js';
-export * from './lib/limits.js';
-export * from './lib/registry.js';
-export * from './lib/transport.js';
-export * from './lib/client.js';
-export * from './lib/store.js';
-export * from './lib/router.js';
-export * from './lib/in-process-transport.js';
+import type { OperationDefinition } from '@contracts/platform';
+import type { OperationDescriptor } from './contract/operation-descriptor.js';
+import type { OperationMetadata } from './contract/operation-metadata.js';
+import { OperationResolver } from './contract/operation-resolver.js';
+
+export * from './errors/internal-api-error.js';
+export * from './errors/internal-api-error-catalog.js';
+export * from './errors/internal-api-error-code.enum.js';
+export * from './contract/contract-registry.js';
+export * from './contract/contract-registry.options.js';
+export * from './contract/idempotency-key-policy.js';
+export * from './contract/input-violation.js';
+export * from './contract/internal-api-reason.enum.js';
+export * from './contract/json-safety-checker.js';
+export * from './contract/operation-descriptor.js';
+export * from './contract/operation-io.type.js';
+export * from './contract/operation-metadata.js';
+export * from './contract/operation-resolver.js';
+export * from './contract/operation-schemas.js';
+export * from './contract/payload-limit.js';
+export * from './contract/registered-contract.js';
+export * from './contract/registry-issue.js';
+export * from './contract/registry-issue-code.enum.js';
+export * from './auth/deny-all-internal-call-authenticator.js';
+export * from './auth/hmac-internal-call-authenticator.js';
+export * from './auth/hmac-internal-call-signer.js';
+export * from './auth/hmac-signature-calculator.js';
+export * from './auth/internal-call-authenticator.js';
+export * from './auth/internal-call-signer.js';
+export * from './auth/signable-request.js';
+export * from './transport/call-meta.js';
+export * from './transport/call-meta-reader.js';
+export * from './transport/http-outcome-reader.js';
+export * from './transport/http-transport.js';
+export * from './transport/in-process-transport.js';
+export * from './transport/internal-api-route.js';
+export * from './transport/internal-header.enum.js';
+export * from './transport/internal-request.js';
+export * from './transport/internal-response.js';
+export * from './transport/service-base-urls.js';
+export * from './transport/transport.js';
+export * from './client/call-attempt.js';
+export * from './client/call-error-context.js';
+export * from './client/call-error-translator.js';
+export * from './client/call-options.js';
+export * from './client/client-outcome-checker.js';
+export * from './client/external-api-policy.js';
+export * from './client/internal-client.js';
+export * from './client/internal-client-collaborators.js';
+export * from './client/operation-policy-resolver.js';
+export * from './client/retryable-outcome.error.js';
+export * from './server/claimed-operation.js';
+export * from './server/gate-decision.js';
+export * from './server/handler-outcome-checker.js';
+export * from './server/handler-result.js';
+export * from './server/idempotency-gate.js';
+export * from './server/idempotency-gate.options.js';
+export * from './server/internal-api-job.enum.js';
+export * from './server/internal-api-span-attribute.enum.js';
+export * from './server/internal-router.js';
+export * from './server/operation-dispatcher.js';
+export * from './server/operation-handler.js';
+export * from './server/operation-route.js';
+export * from './server/processed-operation-retention-job.js';
+export * from './server/processed-operation-store.js';
+export * from './server/unit-of-work-runner.js';
+
+/** @deprecated Usa `OperationMetadata.compensation`. */
+export function compensationOf(metadata: OperationMetadata): string | null {
+  return metadata.compensation();
+}
+
+/** @deprecated Usa `OperationMetadata.callBudgetMs`. */
+export function defaultCallBudgetMs(metadata: OperationMetadata): number {
+  return metadata.callBudgetMs();
+}
+
+/** @deprecated Inyecta `OperationResolver` y usa `resolve`. */
+export function resolveOperation(
+  definition: OperationDefinition,
+): OperationDescriptor {
+  return new OperationResolver().resolve(definition);
+}

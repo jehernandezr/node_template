@@ -9,7 +9,7 @@ import 'package:i18n/i18n.dart';
 /// Public error codes of every generated catalog in `packages/contracts`.
 ///
 /// Reads the generated enums as text, so a new service is covered without
-/// this package depending on `contracts`.
+/// listing its enum here.
 Set<String> _publicErrorCodes() {
   final codes = <String>{};
   final pattern = RegExp(r"'([A-Z0-9_.]+)',\s*httpStatus:");
@@ -59,6 +59,9 @@ void main() {
       'loading',
       'errorCodeLabel',
       'errorTraceIdLabel',
+      'errorCodeLine',
+      'errorTraceIdLine',
+      'metaSeparator',
       'notFound',
       'confirm',
       'delete',
@@ -92,37 +95,6 @@ void main() {
         reason: 'empty en: $key',
       );
     }
-  });
-
-  group('menuLabel', () {
-    const menuKeys = {
-      'menuAccount': 'Account',
-      'menuTasks': 'Tasks',
-      'menuNotifications': 'Notifications',
-      'menuAssistant': 'Assistant',
-      'menuBilling': 'Billing',
-      'menuBackoffice': 'Administration',
-      'menuVerifier': 'Verifier',
-    };
-
-    test('maps every menu key to its English label', () {
-      final en = lookupAppLocalizations(const Locale('en'));
-      menuKeys.forEach((key, label) {
-        expect(menuLabel(en, key), label, reason: key);
-      });
-    });
-
-    test('maps every menu key to its Spanish label', () {
-      final es = lookupAppLocalizations(const Locale('es'));
-      expect(menuLabel(es, 'menuAccount'), 'Cuenta');
-      expect(menuLabel(es, 'menuBackoffice'), 'Administración');
-    });
-
-    test('returns the key itself for an unknown key', () {
-      final en = lookupAppLocalizations(const Locale('en'));
-      expect(menuLabel(en, 'menuUnknown'), 'menuUnknown');
-      expect(menuLabel(en, ''), '');
-    });
   });
 
   group('errorMessage', () {

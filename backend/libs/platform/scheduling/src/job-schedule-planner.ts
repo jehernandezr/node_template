@@ -1,0 +1,58 @@
+import {
+  JobScheduleKind,
+  type Clock,
+  type RandomSource,
+  type ScheduledJob,
+} from '@platform/kernel';
+import { CronExpression } from './cron/cron-expression.js';
+import { InvalidJobScheduleError } from './errors/invalid-job-schedule.error.js';
+
+/** Decide cuánto falta para la próxima corrida de un job según su calendario. */
+export class JobSchedulePlanner {
+  constructor(
+    private readonly clock: Clock,
+    private readonly random: RandomSource,
+  ) {}
+
+  /** @throws InvalidJobScheduleError o InvalidCronExpressionError cuando el calendario o el `timeoutMs` no son válidos. */
+  validate(job: ScheduledJob): void {
+    // Un plazo inválido haría fallar cada corrida; se rechaza al registrar el job.
+    if (!Number.isFinite(job.timeoutMs) || job.timeoutMs <= 0) {
+      throw new InvalidJobScheduleError(
+        job.name,
+        'timeoutMs debe ser un número finito positivo',
+      );
+    }
+    const { schedule } = job;
+    if (schedule.kind === JobScheduleKind.Cron) {
+      CronExpression.parse(schedule.expression);
+      return;
+    }
+    if (!Number.isInteger(schedule.everyMs) || schedule.everyMs <= 0) {
+      throw new InvalidJobScheduleError(
+        job.name,
+        'everyMs debe ser un entero positivo',
+      );
+    }
+    const jitter = schedule.jitterRatio ?? 0;
+    if (!(jitter >= 0 && jitter <= 1)) {
+      throw new InvalidJobScheduleError(
+        job.name,
+        'jitterRatio debe estar entre 0 y 1',
+      );
+    }
+  }
+
+  /** Milisegundos hasta la próxima corrida, nunca negativos. */
+  delayMs(job: ScheduledJob): number {
+    const { schedule } = job;
+    if (schedule.kind === JobScheduleKind.Cron) {
+      const now = this.clock.now();
+      const next = CronExpression.parse(schedule.expression).nextAfter(now);
+      return Math.max(0, next.getTime() - now.getTime());
+    }
+    const spread = schedule.everyMs * (schedule.jitterRatio ?? 0);
+    const offset = spread * (2 * this.random.next() - 1);
+    return Math.max(0, Math.round(schedule.everyMs + offset));
+  }
+}

@@ -8,6 +8,23 @@ locals {
   api_alb_enabled      = var.compute_enabled && var.fargate_api_enabled
 }
 
+# Una CMK por ambiente para los logs de los servicios (tareas Fargate y Lambdas, con sus
+# variables de entorno y DLQ asíncronas). Una clave por componente multiplicaba el costo y
+# las llamadas a KMS sin aislar nada que importe: los roles de cada componente ya limitan
+# qué log group escriben. ECS Exec conserva la clave del clúster.
+module "compute_logs_kms" {
+  count  = var.compute_enabled ? 1 : 0
+  source = "../../modules/kms-key"
+
+  alias       = "${var.name_prefix}-compute-logs"
+  description = "Cifrado de logs, variables de entorno y DLQ del cómputo de ${var.name_prefix}"
+  log_group_arns = [
+    "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.name_prefix}/*",
+    "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.name_prefix}-*",
+  ]
+  service_principals = [{ sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] }]
+}
+
 module "ecs_cluster" {
   count  = var.compute_enabled ? 1 : 0
   source = "../../modules/ecs-cluster"

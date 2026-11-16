@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-adapters-valkey",
+  "sourceRoot": "backend/libs/platform/adapters/valkey/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {}
+  }
+}

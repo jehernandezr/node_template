@@ -2,6 +2,8 @@
 
 - Estado: aceptada
 - Fecha: 2026-11-12
+- Revisada: 2026-11-13 (un solo `node_modules`, librerías por alias, pruebas en `__tests__/` y compilado solo de las apps)
+- Revisada: 2026-11-14 (los utilitarios de prueba del backend van en `__tests__/utils/`, y el ejemplo de `src/ids/` corresponde hoy a `src/id-generator.ts` con su prueba en `src/__tests__/id-generator.spec.ts`; los dobles que comparten varios paquetes del front viven en `front/packages/test_utils`, solo en `dev_dependencies`, y los de un paquete en su `test/utils/`; la raíz incluye `.claude/` con skills, hooks y agentes)
 
 ## Contexto
 
@@ -13,9 +15,9 @@ El repositorio mezclaba en la raíz el workspace Node (Nx, pnpm, librerías, Ter
 
 La raíz contiene solo:
 
-- `backend/`: apps, librerías, herramientas e infraestructura del backend, con sus herramientas de TypeScript (Jest, ESLint, `tsconfig.base.json`) en `backend/package.json`.
+- `backend/`: apps, librerías, herramientas e infraestructura del backend. `backend/package.json` es el único `package.json` del backend: declara todas sus dependencias externas, con versión exacta. `backend/tsconfig.base.json` declara los alias de las librerías.
 - `front/`: pub workspace de Flutter (shells, microfrontends, paquetes, herramientas).
-- Nx como orquestador: `nx.json`, `package.json` (Nx, sus plugins y las herramientas de git), `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.nvmrc` y un `tsconfig.json` de solución que Nx exige en la raíz para sincronizar las referencias.
+- Nx como orquestador: `nx.json`, `package.json` (Nx, sus plugins y las herramientas de git), `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.nvmrc` y un `tsconfig.json` que solo extiende `backend/tsconfig.base.json`, porque Nx busca los alias en la raíz.
 - Lo propio del repositorio: `.github/` (CI/CD), `.husky/`, `commitlint.config.mjs`, `lint-staged.config.mjs`, Prettier, `docs/`, `README.md`, `CLAUDE.md` y `renovate.json`.
 
 Cada aplicación es dueña de sus librerías y utilidades. Nada compartido entre backend y front vive en la raíz: el front recibe los contratos generados desde el backend.
@@ -24,7 +26,7 @@ Cada aplicación es dueña de sus librerías y utilidades. Nada compartido entre
 
 Un solo grafo de Nx cubre backend y front:
 
-- Los proyectos TypeScript se descubren con los plugins de `@nx/js`, `@nx/jest` y `@nx/eslint`, limitados a `backend/**`.
+- Cada proyecto TypeScript es un `project.json` con su nombre y sus tags. Los plugins de `@nx/jest` y `@nx/eslint`, limitados a `backend/**`, agregan `test` y `lint`; `typecheck` y `build` salen de `targetDefaults`.
 - `front/tools/nx-plugin` registra cada miembro del pub workspace como proyecto `front-<nombre>` con las tareas `analyze`, `format-check` y `test` (con caché). Las dependencias entre paquetes Dart salen de sus `pubspec.yaml`.
 - `front-contracts` depende de los paquetes de `backend/libs/contracts`, así que un cambio de contrato marca como afectados los paquetes y microfrontends del front que lo usan.
 - `pnpm nx affected -t lint test typecheck build analyze format-check` es el comando de CI y el de uso diario.
@@ -52,9 +54,26 @@ backend/
     shared/
       utils/           # @shared/utils: funciones puras que usan los tipos de contracts
     platform/          # runtime: kernel, primitives, config, observability, saga...
-  tools/               # generadores Nx y contracts-export
+  tools/               # generadores Nx, contracts-export y app-bundler
   infra/               # Terraform y entorno local
+  dist/<app>/          # paquete de cada app (esbuild), fuera de git
 ```
+
+### Dependencias, alias y compilado del backend
+
+- Un pnpm workspace con dos importadores, la raíz y `backend/`, y `nodeLinker: hoisted`: queda un solo `node_modules`, en la raíz. Las versiones exactas evitan copias anidadas dentro de `backend/`, y CI falla si aparece un `node_modules` fuera de la raíz.
+- Las librerías, apps y herramientas del backend no son paquetes: no tienen `package.json`. Son proyectos de Nx (`project.json` con tags) y se importan por los alias de `backend/tsconfig.base.json` (`@platform/kernel`, `@platform/kernel/test-utils`, `@contracts/identity`). Jest los resuelve con el resolver de Nx, las herramientas con `tsx` y las apps con esbuild.
+- Las librerías no se compilan por separado: su target es `typecheck` (`tsc` sin emitir sobre `tsconfig.lib.json` y `tsconfig.spec.json`). No hay `dist/` dentro de librerías ni de apps.
+- Cada app se empaqueta con esbuild en `backend/dist/<app>/` con el target `build` de `nx.json` (`backend/tools/app-bundler`). Las librerías entran al paquete; las dependencias de `node_modules` quedan externas. Como esbuild no emite la metadata de decoradores que necesita NestJS, el TypeScript propio pasa antes por SWC con la misma configuración de las pruebas.
+- Las herramientas de `backend/tools` corren con `tsx` y los alias, sin compilado propio.
+
+### Carpetas de código y pruebas del backend
+
+- El código va directo en `src/`, sin `src/lib/`.
+- Las pruebas de cada carpeta van en su carpeta `__tests__/`: unitarias en `*.spec.ts` e integración en `*.int-spec.ts`. Por ejemplo, `src/ids/uuid-v7-id-generator.ts` se prueba en `src/ids/__tests__/uuid-v7-id-generator.spec.ts`.
+- Los dobles y el soporte compartido por las pruebas van en `__tests__/utils/` (de la carpeta o, si los usan varias, de `src/__tests__/utils/`). Si otra librería los usa, se exportan con el alias `@platform/<lib>/test-utils`.
+- El preset de Jest (`backend/jest.preset.js`) solo busca pruebas en `src/**/__tests__/`, y una regla de ESLint de `backend/eslint.config.mjs` rechaza una prueba fuera de esas carpetas y cualquier archivo en `src/lib/`.
+- La skill `backend-estructura` detalla la convención.
 
 ### Front
 
@@ -68,7 +87,7 @@ front/
     contracts/         # lib/src/core (a mano) y lib/src/<servicio>/{enums,constants,types,schemas,http} (generado)
     utils/             # funciones puras que usan los tipos de contracts
     api/               # ApiClient: valida la petición contra el contrato antes de llamar por HTTP
-    shell_core/ ui/ tokens/ i18n/ auth/ realtime/
+    shell_core/ shell_host/ test_utils/ ui/ tokens/ i18n/ auth/
   tools/contracts_gen/ # genera Dart desde backend/libs/contracts/*/export/contract.json
 ```
 
@@ -106,6 +125,8 @@ Los contratos se escriben en TypeScript con zod en `backend/libs/contracts`. `co
 
 ## Consecuencias
 
-- `pnpm install` en la raíz instala Nx y el backend; `flutter pub get` en `front/` prepara el front. Después, todo se corre con Nx desde la raíz.
+- `pnpm install` en la raíz instala Nx y el backend en un solo `node_modules`; `flutter pub get` en `front/` prepara el front. Después, todo se corre con Nx desde la raíz.
+- Una dependencia externa nueva del backend se agrega solo en `backend/package.json`, con versión exacta. Una librería nueva es un `project.json`, su alias en `backend/tsconfig.base.json` y sus `tsconfig` y `jest.config.cjs`.
+- Ninguna librería se publica como paquete de npm; si algún día hiciera falta, tendría que volver a tener `package.json` y compilado propio.
 - Los enums de acceso (roles, permisos, planes, flags) pasan de Dart escrito a mano a TypeScript, y el front los recibe generados.
 - Un cambio en un contrato del backend obliga a regenerar el Dart en el mismo cambio.

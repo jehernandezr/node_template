@@ -11,6 +11,7 @@ import '../l10n/generated/tasks_localizations.dart';
 import '../shared/constants/tasks_access.dart';
 import '../shared/types/task.dart';
 import 'task_status_label.dart';
+import '../shared/constants/tasks_paths.dart';
 
 /// Detail of one task with edit and delete actions.
 ///
@@ -132,9 +133,6 @@ class _TaskDetailViewState extends State<TaskDetailView> {
       value: _task,
       errorMessage: notFound ? l10n.detailNotFound : l10n.detailError,
       onRetry: notFound ? null : _retry,
-      retryLabel: shared.actionRetry,
-      codeLabel: shared.errorCodeLabel,
-      traceIdLabel: shared.errorTraceIdLabel,
       data: (task) => ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -156,7 +154,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
                 AppButton(
                   label: shared.edit,
                   variant: AppButtonVariant.secondary,
-                  onPressed: () => context.go('/tasks/${task.id}/edit'),
+                  onPressed: () => context.go(TasksPaths.edit(task.id)),
                 ),
                 AppButton(
                   label: shared.delete,

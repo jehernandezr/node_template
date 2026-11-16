@@ -1,10 +1,10 @@
 # mf_tasks
 
-Microfrontend de tareas: ejemplo de CRUD para web y móvil. Exporta `tasksManifest` y todas sus rutas viven bajo `/tasks`.
+Microfrontend de tareas: ejemplo de CRUD para web y móvil. Exporta `tasksManifest` y todas sus rutas viven bajo `/tasks` (`TasksPaths`). Solo modo demo: tareas aún no tiene contrato. Acepta el enlace `tasks/<id>`.
 
 ## Rutas
 
-- `/tasks`: lista con filtro por estado, búsqueda y paginación por cursor ("Cargar más"). En ancho expandido muestra el detalle al lado.
+- `/tasks`: lista con filtro por estado, búsqueda y paginación por cursor ("Cargar más"). En ancho expandido muestra el detalle al lado. El estado vive en `TasksListController`, que busca cuando el usuario deja de escribir y descarta las respuestas de pedidos viejos.
 - `/tasks/new`: crear tarea (hija de `/tasks`).
 - `/tasks/:id`: detalle con editar y eliminar (con confirmación). Hija de `/tasks`, así un enlace directo tiene pila de navegación y botón atrás.
 - `/tasks/:id/edit`: editar tarea (hija de `/tasks/:id`).

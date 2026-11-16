@@ -1,0 +1,322 @@
+import { z } from 'zod';
+import {
+  usesQuery,
+  type MessageDefinition,
+  type RouteDefinition,
+  type ServiceContract,
+  type StringEnum,
+} from '@contracts/platform';
+import {
+  CONTRACT_EXPORT_FILE,
+  EXPORT_DIR,
+  EXPORT_FORMAT_VERSION,
+  JSON_SCHEMA_DIALECT,
+} from './export-constants.js';
+import { ExportError } from './export-error.js';
+import type { GlobalUniquenessChecker } from './global-uniqueness-checker.js';
+import type { Json, JsonObject } from './json.type.js';
+import type { SchemaOwner, SchemaOwnership } from './schema-ownership.js';
+
+/** Lo que necesita cada sección del `contract.json` de un servicio. */
+interface ServiceExportContext {
+  readonly service: string;
+  readonly owners: ReadonlyMap<z.ZodType, SchemaOwner>;
+  readonly knownCodes: ReadonlySet<string>;
+}
+
+/**
+ * Construye el `contract.json` de cada servicio. No lee ni escribe archivos:
+ * se prueba sin tocar el disco.
+ */
+export class SchemaExportBuilder {
+  constructor(
+    private readonly ownership: SchemaOwnership,
+    private readonly uniqueness: GlobalUniquenessChecker,
+  ) {}
+
+  /** Mapa de nombre de servicio a su `contract.json`. */
+  build(contracts: readonly ServiceContract[]): Map<string, JsonObject> {
+    this.uniqueness.check(contracts);
+    const owners = this.ownership.of(contracts);
+    const knownCodes = this.collectErrorCodes(contracts);
+    const registry = z.registry<{ id: string }>();
+    for (const [schema, owner] of owners) {
+      registry.add(schema, { id: `${owner.service}/${owner.name}` });
+    }
+    const result = new Map<string, JsonObject>();
+    for (const contract of contracts) {
+      const context: ServiceExportContext = {
+        service: contract.service,
+        owners,
+        knownCodes,
+      };
+      result.set(contract.service, {
+        $comment:
+          'GENERADO por backend/tools/contracts-export. No editar: cambia el contrato en TypeScript y ejecuta pnpm nx run contracts-export:export.',
+        formatVersion: EXPORT_FORMAT_VERSION,
+        jsonSchemaDialect: JSON_SCHEMA_DIALECT,
+        service: contract.service,
+        description: contract.description,
+        enums: this.enumsOf(contract),
+        constants: this.constantsOf(contract),
+        schemas: this.schemasOf(contract, registry),
+        routes: this.routesOf(contract, context),
+        operations: this.operationsOf(contract, context),
+        events: this.messagesOf(contract.events, 'el evento', context),
+        commands: this.messagesOf(contract.commands, 'el comando', context),
+        errors: this.errorsOf(contract),
+      });
+    }
+    return result;
+  }
+
+  /** Códigos de todos los catálogos; un código repetido entre servicios es un error. */
+  private collectErrorCodes(
+    contracts: readonly ServiceContract[],
+  ): ReadonlySet<string> {
+    const knownCodes = new Set<string>();
+    for (const contract of contracts) {
+      for (const entries of Object.values(contract.errors)) {
+        for (const entry of entries) {
+          if (knownCodes.has(entry.code)) {
+            this.fail(
+              contract.service,
+              `código de error repetido ${entry.code}`,
+            );
+          }
+          knownCodes.add(entry.code);
+        }
+      }
+    }
+    return knownCodes;
+  }
+
+  private schemasOf(
+    contract: ServiceContract,
+    registry: z.core.$ZodRegistry<{ id: string }>,
+  ): JsonObject {
+    const { service } = contract;
+    const generated = z.toJSONSchema(registry, {
+      target: 'draft-2020-12',
+      io: 'input',
+      unrepresentable: 'throw',
+      uri: (id) => {
+        const [owner, name] = id.split('/');
+        return this.schemaRef(service, owner, name);
+      },
+    }).schemas;
+    const schemas: JsonObject = {};
+    for (const name of Object.keys(contract.schemas)) {
+      schemas[name] = this.cleanSchema(generated[`${service}/${name}`]);
+    }
+    return schemas;
+  }
+
+  private routesOf(
+    contract: ServiceContract,
+    context: ServiceExportContext,
+  ): Json[] {
+    return Object.entries(contract.routes).map(([name, route]) => {
+      const where = `la ruta ${name}`;
+      this.checkErrors(context, route.errors, where);
+      const entry: JsonObject = {
+        name,
+        id: route.id,
+        method: route.method,
+        path: route.path,
+        version: route.version,
+        pathParams: [...route.pathParams],
+        requestLocation: usesQuery(route.method) ? 'query' : 'body',
+        queryParams: route.queryParams.map((param) => ({
+          name: param.name,
+          kind: param.kind,
+          list: param.list,
+        })),
+        request: this.refOf(context, route.request, where),
+        response: route.response
+          ? this.refOf(context, route.response, where)
+          : null,
+        successStatus: route.successStatus,
+        errors: [...route.errors],
+        access: this.accessOf(route),
+      };
+      if (route.deprecated) {
+        const deprecated: JsonObject = {
+          since: route.deprecated.since,
+          sunset: route.deprecated.sunset,
+        };
+        if (route.deprecated.replacement !== undefined) {
+          deprecated['replacement'] = route.deprecated.replacement;
+        }
+        entry['deprecated'] = deprecated;
+      }
+      entry['description'] = route.description;
+      return entry;
+    });
+  }
+
+  private accessOf(route: RouteDefinition): JsonObject {
+    const access: JsonObject = { kind: route.access.kind };
+    if (route.access.permissions) {
+      access['permissions'] = [...route.access.permissions];
+    }
+    if (route.access.platformRoles) {
+      access['platformRoles'] = [...route.access.platformRoles];
+    }
+    if (route.access.mfaMaxAgeMinutes !== undefined) {
+      access['mfaMaxAgeMinutes'] = route.access.mfaMaxAgeMinutes;
+    }
+    return access;
+  }
+
+  private operationsOf(
+    contract: ServiceContract,
+    context: ServiceExportContext,
+  ): Json[] {
+    return Object.entries(contract.operations).map(([name, op]) => {
+      const where = `la operación ${name}`;
+      this.checkErrors(context, op.errors, where);
+      const entry: JsonObject = {
+        name,
+        id: op.id,
+        version: op.version,
+        input: this.refOf(context, op.input, where),
+        output: this.refOf(context, op.output, where),
+        idempotent: op.idempotent,
+        mutating: op.mutating,
+      };
+      if (op.compensatedBy !== undefined) {
+        entry['compensatedBy'] = op.compensatedBy;
+      }
+      if (op.compensationReason !== undefined) {
+        entry['compensationReason'] = op.compensationReason;
+      }
+      entry['errors'] = [...op.errors];
+      if (op.timeoutMs !== undefined) entry['timeoutMs'] = op.timeoutMs;
+      if (op.retry !== undefined) entry['retry'] = { ...op.retry };
+      entry['description'] = op.description;
+      return entry;
+    });
+  }
+
+  private messagesOf(
+    entries: Readonly<Record<string, MessageDefinition>>,
+    label: string,
+    context: ServiceExportContext,
+  ): Json[] {
+    return Object.entries(entries).map(([name, message]) => ({
+      name,
+      type: message.type,
+      kind: message.kind,
+      version: message.version,
+      payload: this.refOf(context, message.payload, `${label} ${name}`),
+      description: message.description,
+    }));
+  }
+
+  private errorsOf(contract: ServiceContract): JsonObject {
+    const errors: JsonObject = {};
+    for (const [enumName, entries] of Object.entries(contract.errors)) {
+      const names = new Map(
+        Object.entries(contract.enums[enumName]).map(([key, value]) => [
+          value,
+          key,
+        ]),
+      );
+      errors[enumName] = entries.map((entry) => ({
+        name:
+          names.get(entry.code) ??
+          this.fail(contract.service, `sin nombre ${entry.code}`),
+        code: entry.code,
+        httpStatus: entry.httpStatus,
+        retryable: entry.retryable,
+        audience: entry.audience,
+        messageKey: entry.messageKey,
+        description: entry.description,
+      }));
+    }
+    return errors;
+  }
+
+  /** Referencia JSON al esquema con nombre; un esquema anónimo no se puede exportar. */
+  private refOf(
+    context: ServiceExportContext,
+    schema: z.ZodType,
+    where: string,
+  ): Json {
+    const owner = context.owners.get(schema);
+    if (!owner)
+      this.fail(context.service, `${where} usa un esquema sin nombre`);
+    return { $ref: this.schemaRef(context.service, owner.service, owner.name) };
+  }
+
+  private checkErrors(
+    context: ServiceExportContext,
+    codes: readonly string[],
+    where: string,
+  ): void {
+    for (const code of codes) {
+      if (!context.knownCodes.has(code)) {
+        this.fail(
+          context.service,
+          `${where} declara ${code}, que no está en ningún catálogo`,
+        );
+      }
+    }
+  }
+
+  private fail(service: string, reason: string): never {
+    throw ExportError.forService(service, reason);
+  }
+
+  private schemaRef(from: string, service: string, name: string): string {
+    return service === from
+      ? `#/schemas/${name}`
+      : `../../${service}/${EXPORT_DIR}/${CONTRACT_EXPORT_FILE}#/schemas/${name}`;
+  }
+
+  private enumsOf(contract: ServiceContract): JsonObject {
+    const result: JsonObject = {};
+    for (const [name, values] of Object.entries(contract.enums)) {
+      result[name] = {
+        values: Object.entries(values as StringEnum).map(([key, value]) => {
+          if (typeof value !== 'string') {
+            this.fail(contract.service, `el enum ${name} no es de texto`);
+          }
+          return { name: key, value };
+        }),
+      };
+    }
+    return result;
+  }
+
+  private constantsOf(contract: ServiceContract): JsonObject {
+    const result: JsonObject = {};
+    for (const [name, values] of Object.entries(contract.constants)) {
+      const entry: JsonObject = {};
+      for (const [key, value] of Object.entries(values)) {
+        const ok = (v: unknown) =>
+          typeof v === 'string' ||
+          typeof v === 'boolean' ||
+          (typeof v === 'number' && Number.isFinite(v));
+        if (!(ok(value) || (Array.isArray(value) && value.every(ok)))) {
+          this.fail(
+            contract.service,
+            `la constante ${name}.${key} no es exportable`,
+          );
+        }
+        entry[key] = value as Json;
+      }
+      result[name] = entry;
+    }
+    return result;
+  }
+
+  /** Quita `$schema` e `$id` que zod agrega a cada esquema del registro. */
+  private cleanSchema(schema: Record<string, unknown>): JsonObject {
+    const rest = { ...schema };
+    delete rest.$schema;
+    delete rest.$id;
+    return rest as JsonObject;
+  }
+}

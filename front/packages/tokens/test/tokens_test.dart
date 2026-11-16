@@ -37,6 +37,8 @@ void main() {
       'warning.on': (p) => p.warningOn.toARGB32(),
       'danger.base': (p) => p.dangerBase.toARGB32(),
       'danger.on': (p) => p.dangerOn.toARGB32(),
+      'info.base': (p) => p.infoBase.toARGB32(),
+      'info.on': (p) => p.infoOn.toARGB32(),
     };
 
     for (final mode in ['light', 'dark']) {
@@ -76,6 +78,7 @@ void main() {
       'sm': AppRadius.sm,
       'md': AppRadius.md,
       'lg': AppRadius.lg,
+      'full': AppRadius.full,
     };
     for (final entry in values.entries) {
       expect(
@@ -98,6 +101,36 @@ void main() {
         entry.value,
         (_value('typography.size.${entry.key}') as num).toDouble(),
         reason: 'typography.size.${entry.key}',
+      );
+    }
+  });
+
+  test('icon sizes match design-tokens.json', () {
+    final values = <String, double>{
+      'sm': AppIconSize.sm,
+      'md': AppIconSize.md,
+      'xl': AppIconSize.xl,
+    };
+    for (final entry in values.entries) {
+      expect(
+        entry.value,
+        (_value('icon-size.${entry.key}') as num).toDouble(),
+        reason: 'icon-size.${entry.key}',
+      );
+    }
+  });
+
+  test('layout widths match design-tokens.json', () {
+    final values = <String, double>{
+      'list-pane-width': AppLayout.listPaneWidth,
+      'reading-width': AppLayout.readingWidth,
+      'wide-content-width': AppLayout.wideContentWidth,
+    };
+    for (final entry in values.entries) {
+      expect(
+        entry.value,
+        (_value('layout.${entry.key}') as num).toDouble(),
+        reason: 'layout.${entry.key}',
       );
     }
   });

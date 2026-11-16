@@ -2,6 +2,8 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-11
+- Revisión: 2026-11-14 (la bitácora vive en las tablas `saga.instances` y `saga.step_log` del esquema `saga` del shard, con `TypeOrmSagaStore`, y el catálogo del servicio guarda un directorio de sagas; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md). `OperationRef` se retiró: cada paso recibe el descriptor de `defineOperation`)
+- Actualizada: 2026-11-14 (store TypeORM, `SagaRecoveryJob` como `ScheduledJob` y transacción del kernel; ver [ADR 0024](0024-persistencia-typeorm-sharding-y-sagas-persistentes.md) y [ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md))
 
 ## Contexto
 
@@ -9,14 +11,14 @@ Algunas operaciones cruzan varios servicios: el alta de un tenant, el borrado de
 
 ## Decisión
 
-`libs/platform/saga` coordina las operaciones con una bitácora persistente en la base del servicio que orquesta, en las tablas `saga_instances` y `saga_step_log`.
+`libs/platform/saga` coordina las operaciones con una bitácora persistente en la base del servicio que orquesta, en las tablas `saga_instances` y `saga_step_log`. El store es `TypeOrmSagaStore` con las entidades `SagaInstanceEntity` y `SagaStepLogEntity`, en `@platform/adapters-postgres`; `InMemorySagaStore` vive en `@platform/saga/test-utils`.
 
 - Cada paso se registra como `Dispatched` con la llave `sagaId:paso:dirección` antes de llamar al servicio destino. Después se guarda el resultado en otra transacción.
-- Quien ejecuta una saga toma un lease de 30 segundos. `SagaRecoveryJob` corre cada minuto y al arrancar, con `FOR UPDATE SKIP LOCKED`, y retoma las sagas con lease vencido.
+- Quien ejecuta una saga toma un lease de 30 segundos. `SagaRecoveryJob` es un `ScheduledJob` ([ADR 0026](0026-jobs-programados-scheduledjob-y-joblock.md)) que corre cada 5 segundos, con `FOR UPDATE SKIP LOCKED`, y retoma las sagas con lease vencido.
 - Los pasos antes de `pivot()` tienen compensación. Los pasos después son idempotentes y se reintentan hasta completar.
 - Las compensaciones salen del `compensatedBy` del contrato de cada operación. Renombrar una operación rompe la compilación.
 - Un `BusinessError` inicia la compensación. Un `TransientFailure` deja la saga en `Suspended` hasta que se resuelva.
-- El servicio destino guarda el resultado de cada llamada en la misma unidad de trabajo que sus efectos: `InternalRouter` recibe el `TransactionManager` del servicio (`transactions`) y ejecuta el manejador y `processed.complete` en una sola transacción. Si guardar el resultado falla, los efectos se deshacen y el reintento los aplica una vez.
+- El servicio destino guarda el resultado de cada llamada en la misma unidad de trabajo que sus efectos: en la API interna, `IdempotencyGate` hace `claim`, `complete` y `release` sobre `ProcessedOperationStore`, y `UnitOfWorkRunner` confirma el manejador y el `complete` en una sola transacción del `TransactionManager` de `@platform/kernel`. Si guardar el resultado falla, los efectos se deshacen y el reintento los aplica una vez.
 
 ### Pasos desde los contratos
 

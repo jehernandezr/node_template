@@ -5,7 +5,7 @@ import 'package:mf_backoffice/mf_backoffice.dart';
 import 'package:mf_backoffice/src/shared/constants/backoffice_access.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/harness.dart';
+import 'utils/backoffice_harness.dart';
 
 /// Full path and access rule of every screen, including nested children.
 Map<String, AccessRule?> _screens(
@@ -31,11 +31,17 @@ Iterable<String> _goPaths(List<RouteBase> routes, [String parent = '']) sync* {
 }
 
 void main() {
+  final harness = BackofficeHarness();
+
   test('id, platform and menu', () {
-    expect(backofficeManifest.id, MicrofrontendId.backoffice);
+    expect(backofficeManifest.id, const MicrofrontendId('backoffice'));
     expect(backofficeManifest.platforms, {AppPlatform.web});
     expect(backofficeManifest.menu.single.path, '/backoffice');
-    expect(backofficeManifest.menu.single.labelKey, 'menuBackoffice');
+    expect(
+      backofficeManifest.menu.single.label.byLanguage['es'],
+      'Administración',
+    );
+    expect(backofficeManifest.modes, {ShellMode.demo});
     expect(backofficeManifest.hasLifecycle, isFalse);
   });
 
@@ -53,7 +59,10 @@ void main() {
   });
 
   test('buildRoutes yields the same tree as GoRoutes', () {
-    final routes = backofficeManifest.buildRoutes(deferredPage, newScope);
+    final routes = backofficeManifest.buildRoutes(
+      harness.loader.page,
+      harness.newScope,
+    );
     final paths = _goPaths(routes).toList();
     expect(paths, _screens(backofficeManifest.screens).keys.toList());
     for (final path in paths) {
@@ -85,25 +94,25 @@ void main() {
 
   group('manifest access', () {
     AccessDecision decide(UserSession session) =>
-        backofficeManifest.access.decide(session, now: testNow);
+        backofficeManifest.access.decide(session, now: harness.now);
 
     for (final role in PlatformRole.values) {
       test('${role.name} with a recent second factor enters', () {
-        expect(decide(platformUser({role})), AccessDecision.allowed);
+        expect(decide(harness.platformUser({role})), AccessDecision.allowed);
         expect(
-          decide(platformUser({role}, mfaAge: backofficeMfaMaxAge)),
+          decide(harness.platformUser({role}, mfaAge: backofficeMfaMaxAge)),
           AccessDecision.allowed,
         );
       });
 
       test('${role.name} without a recent second factor needs a step-up', () {
         expect(
-          decide(platformUser({role}, mfaAge: null)),
+          decide(harness.platformUser({role}, mfaAge: null)),
           AccessDecision.stepUpRequired,
         );
         expect(
           decide(
-            platformUser({
+            harness.platformUser({
               role,
             }, mfaAge: backofficeMfaMaxAge + const Duration(minutes: 1)),
           ),
@@ -113,7 +122,7 @@ void main() {
     }
 
     test('a tenant role is denied, even with a recent second factor', () {
-      expect(decide(tenantUser()), AccessDecision.denied);
+      expect(decide(harness.tenantUser()), AccessDecision.denied);
     });
 
     test('an anonymous visitor must sign in', () {
@@ -121,13 +130,18 @@ void main() {
     });
 
     test('the menu entry stays reachable before the step-up', () {
-      final session = platformUser({PlatformRole.support}, mfaAge: null);
+      final session = harness.platformUser({
+        PlatformRole.support,
+      }, mfaAge: null);
       expect(
-        backofficeManifest.access.reachableBy(session, now: testNow),
+        backofficeManifest.access.reachableBy(session, now: harness.now),
         isTrue,
       );
       expect(
-        backofficeManifest.access.reachableBy(tenantUser(), now: testNow),
+        backofficeManifest.access.reachableBy(
+          harness.tenantUser(),
+          now: harness.now,
+        ),
         isFalse,
       );
     });
@@ -135,12 +149,12 @@ void main() {
 
   group('action rules', () {
     bool canRead(PlatformRole role) => backofficeOperationsReadAccess.allows(
-      platformUser({role}),
-      now: testNow,
+      harness.platformUser({role}),
+      now: harness.now,
     );
     bool canWrite(PlatformRole role) => backofficeOperationsWriteAccess.allows(
-      platformUser({role}),
-      now: testNow,
+      harness.platformUser({role}),
+      now: harness.now,
     );
 
     test('superAdmin and support read and act', () {

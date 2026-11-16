@@ -1,9 +1,9 @@
+import 'package:material_ui/material_ui.dart';
 import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
-import '../support/pump.dart';
+import '../utils/pump.dart';
 
 const _problem = ProblemDetails(
   type: 'about:blank',
@@ -59,39 +59,5 @@ void main() {
     await pumpApp(tester, _view(AsyncValue.error(StateError('socket'))));
     expect(find.text('No se pudo cargar'), findsOneWidget);
     expect(find.textContaining('socket'), findsNothing);
-  });
-
-  test('fromSnapshot maps each snapshot state', () {
-    expect(
-      AsyncValue<int>.fromSnapshot(const AsyncSnapshot.waiting()),
-      isA<AsyncLoading<int>>(),
-    );
-    expect(
-      AsyncValue<int>.fromSnapshot(
-        const AsyncSnapshot.withData(ConnectionState.done, 1),
-      ).valueOrNull,
-      1,
-    );
-    expect(
-      AsyncValue<int>.fromSnapshot(
-        const AsyncSnapshot.withError(ConnectionState.done, 'x'),
-      ),
-      isA<AsyncError<int>>(),
-    );
-    expect(
-      AsyncValue<int?>.fromSnapshot(
-        const AsyncSnapshot<int?>.withData(ConnectionState.done, null),
-      ),
-      isA<AsyncData<int?>>(),
-    );
-  });
-
-  test('guard turns a thrown error into AsyncError', () async {
-    expect((await AsyncValue.guard(() async => 2)).valueOrNull, 2);
-    final failed = await AsyncValue.guard<int>(
-      () async => throw StateError('x'),
-    );
-    expect(failed, isA<AsyncError<int>>());
-    expect(failed.isLoading, isFalse);
   });
 }

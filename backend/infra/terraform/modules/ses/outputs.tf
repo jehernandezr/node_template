@@ -15,7 +15,7 @@ output "events_topic_arn" {
 
 output "events_kms_key_arn" {
   description = "ARN de la clave KMS del tópico de eventos. Quien se suscriba necesita kms:Decrypt sobre ella."
-  value       = aws_kms_key.events.arn
+  value       = module.events_kms.arn
 }
 
 output "dkim_tokens" {

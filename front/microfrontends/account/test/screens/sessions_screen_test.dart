@@ -1,15 +1,17 @@
+import 'package:contracts/contracts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:contracts/contracts.dart';
 import 'package:mf_account/src/data/fake_account_repository.dart';
 import 'package:mf_account/src/screens/screens.dart';
+import 'package:mf_account/src/screens/widgets/account_widgets.dart';
+import 'package:test_utils/test_utils.dart';
 import 'package:ui/ui.dart';
 
-import '../support/test_app.dart';
+import '../utils/recording_step_up.dart';
+import '../utils/test_app.dart';
 
 class _FlakyRepository extends FakeAccountRepository {
-  _FlakyRepository({this.failList = false, this.failRevoke = false})
-    : super(delay: Duration.zero);
+  _FlakyRepository({this.failList = false, this.failRevoke = false}) : super();
 
   final bool failList;
   final bool failRevoke;
@@ -49,7 +51,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: approveStepUp,
-          repository: FakeAccountRepository(delay: Duration.zero, sessions: []),
+          repository: FakeAccountRepository(sessions: []),
         ),
       ),
     );
@@ -63,7 +65,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: approveStepUp,
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
         ),
       ),
     );
@@ -83,7 +85,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: approveStepUp,
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
         ),
       ),
     );
@@ -143,7 +145,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: stepUp.call,
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
         ),
         session: testSession(mfaFresh: true),
       ),
@@ -165,7 +167,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: stepUp.call,
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
         ),
       ),
     );
@@ -183,7 +185,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: stepUp.call,
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
         ),
       ),
     );
@@ -201,7 +203,7 @@ void main() {
       testApp(
         SessionsScreen(
           requestStepUp: approveStepUp,
-          repository: FakeAccountRepository(delay: Duration.zero),
+          repository: FakeAccountRepository(),
         ),
         locale: const Locale('en'),
       ),
@@ -209,5 +211,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(en.sessionsTitle), findsOneWidget);
     expect(find.text(en.sessionCurrent), findsOneWidget);
+  });
+
+  testWidgets('meets the accessibility guidelines', (tester) async {
+    await tester.pumpWidget(
+      testApp(
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: FakeAccountRepository(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await expectAccessible(tester);
+  });
+
+  testWidgets('keeps the list centered and narrow on wide windows', (
+    tester,
+  ) async {
+    await pumpAtWidths(
+      tester,
+      testApp(
+        SessionsScreen(
+          requestStepUp: approveStepUp,
+          repository: FakeAccountRepository(),
+        ),
+      ),
+      widths: const [320, 800, 1280],
+      check: (width) async {
+        await tester.pumpAndSettle();
+        final card = find.byType(AccountRowCard).first;
+        expect(
+          tester.getSize(card).width,
+          lessThanOrEqualTo(AppLayout.readingWidth),
+        );
+        if (width == 1280) {
+          expect(tester.getCenter(card).dx, closeTo(640, 1));
+        }
+      },
+    );
   });
 }

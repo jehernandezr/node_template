@@ -8,13 +8,6 @@
   "actionSignIn": "Iniciar sesión",
   "actionSignOut": "Cerrar sesión",
 
-  "menuAccount": "Cuenta",
-  "menuTasks": "Tareas",
-  "menuNotifications": "Notificaciones",
-  "menuAssistant": "Asistente",
-  "menuBilling": "Facturación",
-  "menuBackoffice": "Administración",
-  "menuVerifier": "Verificador",
   "menuMore": "Más",
 
   "demoModeTitle": "Modo demostración",
@@ -44,6 +37,11 @@
 
   "errorCodeLabel": "Código",
   "errorTraceIdLabel": "ID de traza",
+  "errorCodeLine": "Código: {code}",
+  "@errorCodeLine": { "placeholders": { "code": { "type": "String" } } },
+  "errorTraceIdLine": "ID de traza: {traceId}",
+  "@errorTraceIdLine": { "placeholders": { "traceId": { "type": "String" } } },
+  "metaSeparator": " · ",
   "notFound": "Página no encontrada.",
   "confirm": "Confirmar",
   "delete": "Eliminar",

@@ -19,7 +19,7 @@ variable "origin_verify_enabled" {
 }
 
 variable "origin_verify_secret_version" {
-  description = "Versión del secreto de origen. Súbela para rotarlo; luego aplica edge para que CloudFront envíe el valor nuevo."
+  description = "Versión del secreto de origen. Súbela para rotarlo y, pasados 5 minutos (la recarga del autorizador), aplica edge para que CloudFront envíe el valor nuevo."
   type        = number
   default     = 1
 }

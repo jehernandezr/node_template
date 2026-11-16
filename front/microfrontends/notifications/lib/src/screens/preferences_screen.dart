@@ -1,4 +1,3 @@
-import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:ui/ui.dart';
 
@@ -46,7 +45,7 @@ class _NotificationsPreferencesScreenState
     setState(() => _preferences = AsyncValue.data(next));
     try {
       await widget.repository.savePreferences(next);
-    } catch (error) {
+    } on Exception catch (error) {
       if (!mounted) return;
       setState(() => _preferences = previous);
       showActionError(
@@ -89,15 +88,11 @@ class _NotificationsPreferencesScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = NotificationsLocalizations.of(context);
-    final common = AppLocalizations.of(context);
     return AppPage(
       title: l10n.preferencesTitle,
       body: AsyncValueView<NotificationPreferences>(
         value: _preferences,
         errorMessage: l10n.loadError,
-        codeLabel: common.errorCodeLabel,
-        traceIdLabel: common.errorTraceIdLabel,
-        retryLabel: common.actionRetry,
         onRetry: _retry,
         data: (preferences) => _buildForm(context, l10n, preferences),
       ),

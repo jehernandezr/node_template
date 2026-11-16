@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/fakes.dart';
+import 'utils/fakes.dart';
 
 final _shellPages = <RouteBase>[
   GoRoute(path: '/', builder: (_, _) => const Text('home')),
@@ -18,9 +18,9 @@ final _reader = UserSession(
 );
 
 List<MicrofrontendManifest> _manifests() => [
-  fakeManifest(id: MicrofrontendId.account, routePath: '/account'),
+  fakeManifest(id: TestIds.account, routePath: '/account'),
   fakeManifest(
-    id: MicrofrontendId.tasks,
+    id: TestIds.tasks,
     access: AccessRule.permissions([Permission.tasksRead]),
     screens: [
       fakeScreen(
@@ -31,22 +31,22 @@ List<MicrofrontendManifest> _manifests() => [
     ],
   ),
   fakeManifest(
-    id: MicrofrontendId.backoffice,
+    id: TestIds.backoffice,
     access: AccessRule.permissions([Permission.backofficeAccess]),
     routePath: '/backoffice',
   ),
   fakeManifest(
-    id: MicrofrontendId.billing,
+    id: TestIds.billing,
     platforms: {AppPlatform.web},
     routePath: '/billing',
   ),
   fakeManifest(
-    id: MicrofrontendId.notifications,
+    id: TestIds.notifications,
     access: AccessRule.authenticated(),
     screens: [fakeScreen('/notifications', 'inbox')],
   ),
   fakeManifest(
-    id: MicrofrontendId.assistant,
+    id: TestIds.assistant,
     flag: FeatureFlag.newReports,
     screens: [fakeScreen('/assistant', 'assistant')],
   ),
@@ -65,10 +65,8 @@ GoRouter _build({
   required MicrofrontendRegistry registry,
   required ValueNotifier<UserSession> session,
   AppPlatform platform = AppPlatform.web,
-  ShellRouteBuilder? shellBuilder,
-  RouteBase Function(List<RouteBase> microfrontendRoutes)? wrapRoutes,
-  String loginPath = '/login',
-  String forbiddenPath = '/forbidden',
+  ShellRouteBuilder shellBuilder = passThroughShell,
+  ShellPaths paths = const ShellPaths(),
 }) => buildShellRouter(
   registry: registry,
   platform: platform,
@@ -79,9 +77,7 @@ GoRouter _build({
   ),
   routes: _shellPages,
   shellBuilder: shellBuilder,
-  wrapRoutes: wrapRoutes,
-  loginPath: loginPath,
-  forbiddenPath: forbiddenPath,
+  paths: paths,
 );
 
 Future<GoRouter> _pump(
@@ -90,19 +86,13 @@ Future<GoRouter> _pump(
   AppPlatform platform = AppPlatform.web,
   required String location,
   MicrofrontendRegistry? registry,
-  ShellRouteBuilder? shellBuilder,
-  RouteBase Function(List<RouteBase> microfrontendRoutes)? wrapRoutes,
-  String loginPath = '/login',
-  String forbiddenPath = '/forbidden',
+  ShellRouteBuilder shellBuilder = passThroughShell,
 }) async {
   final router = _build(
     registry: registry ?? _registry(),
     session: session,
     platform: platform,
     shellBuilder: shellBuilder,
-    wrapRoutes: wrapRoutes,
-    loginPath: loginPath,
-    forbiddenPath: forbiddenPath,
   );
   await tester.pumpWidget(
     WidgetsApp.router(color: const Color(0xFF000000), routerConfig: router),
@@ -168,7 +158,7 @@ void main() {
       userId: 'u1',
       tenantId: 't1',
       permissions: {Permission.tasksRead},
-      featureFlags: {FeatureFlag.newReports},
+      flags: {FeatureFlag.newReports},
     );
     await tester.pumpAndSettle();
     final allowed = await _pump(
@@ -284,64 +274,14 @@ void main() {
     },
   );
 
-  testWidgets(
-    'wrapRoutes receives the manifest routes and its result is used as is',
-    (tester) async {
-      List<RouteBase>? received;
-      final router = _build(
-        registry: _registry(),
-        session: ValueNotifier(_reader),
-        wrapRoutes: (routes) {
-          received = routes;
-          return ShellRoute(
-            builder: (context, state, child) =>
-                Column(children: [const Text('wrapped'), child]),
-            routes: routes,
-          );
-        },
-      );
-      expect(
-        received!.whereType<GoRoute>().map((r) => r.path),
-        contains('/tasks'),
-      );
-      expect(
-        received!.whereType<GoRoute>().map((r) => r.path),
-        isNot(contains('/login')),
-      );
-      expect(router.configuration.routes.whereType<ShellRoute>(), hasLength(1));
-
-      await tester.pumpWidget(
-        WidgetsApp.router(color: const Color(0xFF000000), routerConfig: router),
-      );
-      router.go('/tasks');
-      await tester.pumpAndSettle();
-      expect(find.text('wrapped'), findsOneWidget);
-      expect(find.text('tasks'), findsOneWidget);
-    },
-  );
-
   test('a manifest route outside its segment fails at startup', () {
     final registry = _registry([
-      fakeManifest(id: MicrofrontendId.tasks, routePath: '/wrong'),
+      fakeManifest(id: TestIds.tasks, routePath: '/wrong'),
     ]);
     expect(
       () => _build(
         registry: registry,
         session: ValueNotifier(UserSession.anonymous()),
-      ),
-      throwsStateError,
-    );
-  });
-
-  test('a shellBuilder router also fails on a route outside its segment', () {
-    final registry = _registry([
-      fakeManifest(id: MicrofrontendId.tasks, routePath: '/wrong'),
-    ]);
-    expect(
-      () => _build(
-        registry: registry,
-        session: ValueNotifier(UserSession.anonymous()),
-        shellBuilder: (context, state, child) => child,
       ),
       throwsStateError,
     );
@@ -349,7 +289,7 @@ void main() {
 
   test('a route whose path only shares a prefix with its segment fails', () {
     final registry = _registry([
-      fakeManifest(id: MicrofrontendId.tasks, routePath: '/tasksheet'),
+      fakeManifest(id: TestIds.tasks, routePath: '/tasksheet'),
     ]);
     expect(
       () => _build(
@@ -360,17 +300,16 @@ void main() {
     );
   });
 
-  test('loginPath or forbiddenPath inside a microfrontend segment fails at startup', () {
-    for (final paths in [
-      (loginPath: '/tasks/login', forbiddenPath: '/forbidden'),
-      (loginPath: '/login', forbiddenPath: '/billing/forbidden'),
+  test('a shell page inside a microfrontend segment fails at startup', () {
+    for (final paths in const [
+      ShellPaths(login: '/tasks/login'),
+      ShellPaths(forbidden: '/billing/forbidden'),
     ]) {
       expect(
         () => _build(
           registry: _registry(),
           session: ValueNotifier(UserSession.anonymous()),
-          loginPath: paths.loginPath,
-          forbiddenPath: paths.forbiddenPath,
+          paths: paths,
         ),
         throwsStateError,
       );

@@ -1,28 +1,27 @@
-import 'dart:async';
-
 import 'package:api/api.dart';
 import 'package:contracts/contracts.dart';
 
 import '../shared/constants/account_constants.dart';
+import '../shared/enums/account_enums.dart';
 import '../shared/types/account_types.dart';
 import 'account_repository.dart';
 
-/// Repositorio sobre la API de `identity`.
+/// Repository over the `identity` API.
 ///
-/// Sesiones y dispositivos usan las rutas generadas de [IdentityRoutes] con
-/// [ApiClient], que valida cada petición antes de llamar por HTTP. Lo que el
-/// contrato aún no cubre (perfil, MFA, passkeys, acuerdos, retirar la
-/// confianza de un dispositivo) se delega en [pending] hasta que exista la
-/// operación en el backend.
+/// Sessions and devices use the generated [IdentityRoutes] with [ApiClient],
+/// which validates each request before calling over HTTP. What the contract
+/// does not cover yet (profile, device trust, security, agreements) is not in
+/// [capabilities] and throws [UnsupportedError]: it never answers made-up
+/// data as if it came from the server.
 class ApiAccountRepository implements AccountRepository {
-  ApiAccountRepository({required this.client, required this.pending});
+  ApiAccountRepository({required this.client});
 
   final ApiClient client;
 
-  /// Cubre las operaciones sin contrato. Se libera junto con este repositorio.
-  final AccountRepository pending;
+  @override
+  Set<AccountCapability> get capabilities => const {};
 
-  /// Recorre las páginas de un listado hasta agotarlas o llegar al tope.
+  /// Walks the pages of a listing until they run out or the limit is reached.
   Future<List<T>> _collect<T>(
     Future<({List<T> items, String? next})> Function(PageQuery query) fetch,
   ) async {
@@ -68,33 +67,42 @@ class ApiAccountRepository implements AccountRepository {
 
   @override
   Future<void> removeDeviceTrust(String deviceId) =>
-      pending.removeDeviceTrust(deviceId);
+      _unsupported(AccountCapability.deviceTrust);
 
   @override
-  Future<AccountProfile> loadProfile() => pending.loadProfile();
+  Future<AccountProfile> loadProfile() =>
+      _unsupported(AccountCapability.profile);
 
   @override
-  Future<SecurityOverview> loadSecurity() => pending.loadSecurity();
+  Future<SecurityOverview> loadSecurity() =>
+      _unsupported(AccountCapability.security);
 
   @override
-  Future<void> addPasskey() => pending.addPasskey();
+  Future<void> addPasskey() => _unsupported(AccountCapability.security);
 
   @override
   Future<List<String>> regenerateRecoveryCodes() =>
-      pending.regenerateRecoveryCodes();
+      _unsupported(AccountCapability.security);
 
   @override
   Future<List<Agreement>> listPendingAgreements() =>
-      pending.listPendingAgreements();
+      _unsupported(AccountCapability.agreements);
 
   @override
   Future<List<Agreement>> listAcceptedAgreements() =>
-      pending.listAcceptedAgreements();
+      _unsupported(AccountCapability.agreements);
 
   @override
   Future<void> acceptAgreement(String agreementId) =>
-      pending.acceptAgreement(agreementId);
+      _unsupported(AccountCapability.agreements);
 
   @override
-  FutureOr<void> dispose() => pending.dispose();
+  void dispose() {}
+
+  static Future<T> _unsupported<T>(AccountCapability capability) =>
+      Future<T>.error(
+        UnsupportedError(
+          'identity no tiene contrato para ${capability.name} todavía',
+        ),
+      );
 }

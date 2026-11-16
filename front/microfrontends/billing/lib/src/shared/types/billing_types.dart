@@ -21,7 +21,7 @@ UsageLevel usageLevelFor(int used, int limit) {
   return UsageLevel.normal;
 }
 
-/// Half-open calendar range of a billing period, by date.
+/// Calendar range of a billing period, by date, both ends included.
 final class BillingPeriod {
   const BillingPeriod({required this.start, required this.end});
 

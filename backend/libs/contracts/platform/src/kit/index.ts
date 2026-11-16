@@ -9,5 +9,7 @@ export * from './define-service-contract.js';
 export * from './error-catalog.js';
 export * from './field-errors.js';
 export * from './message-definition.js';
-export * from './problem-details.js';
+export * from './problem-details-factory.js';
+export * from './query-params-codec.js';
 export * from './query-params.js';
+export * from './service-contract-validator.js';

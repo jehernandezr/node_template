@@ -1,0 +1,86 @@
+import { FixedClock } from '@platform/kernel/test-utils';
+import { CachePort } from '../../cache-port.js';
+
+interface Stored {
+  readonly value: string;
+  readonly expiresAt: number | undefined;
+}
+
+/**
+ * `CachePort` de prueba con reloj fijo para los vencimientos. Cuenta las
+ * operaciones en contadores públicos y puede caer con `fail` para simular
+ * una caché inalcanzable.
+ */
+export class FakeCachePort extends CachePort {
+  gets = 0;
+  sets = 0;
+  deletes = 0;
+  private readonly entries = new Map<string, Stored>();
+  private failure: Error | undefined;
+
+  constructor(readonly clock: FixedClock = new FixedClock()) {
+    super();
+  }
+
+  /** Hace que toda operación rechace con `error` hasta `recover`. */
+  fail(error: Error = new Error('cache down')): void {
+    this.failure = error;
+  }
+
+  /** Vuelve a responder normalmente. */
+  recover(): void {
+    this.failure = undefined;
+  }
+
+  async get(key: string): Promise<string | undefined> {
+    this.gets += 1;
+    this.throwIfFailing();
+    return this.live(key)?.value;
+  }
+
+  async set(key: string, value: string, ttlMs?: number): Promise<void> {
+    this.sets += 1;
+    this.throwIfFailing();
+    this.entries.set(key, {
+      value,
+      expiresAt: ttlMs === undefined ? undefined : this.now() + ttlMs,
+    });
+  }
+
+  async setIfAbsent(key: string, value: string): Promise<boolean> {
+    this.throwIfFailing();
+    if (this.live(key) !== undefined) {
+      return false;
+    }
+    this.entries.set(key, { value, expiresAt: undefined });
+    return true;
+  }
+
+  async delete(key: string): Promise<void> {
+    this.deletes += 1;
+    this.throwIfFailing();
+    this.entries.delete(key);
+  }
+
+  private live(key: string): Stored | undefined {
+    const entry = this.entries.get(key);
+    if (entry === undefined) {
+      return undefined;
+    }
+    if (entry.expiresAt !== undefined && this.now() >= entry.expiresAt) {
+      this.entries.delete(key);
+      return undefined;
+    }
+    return entry;
+  }
+
+  private now(): number {
+    return this.clock.now().getTime();
+  }
+
+  private throwIfFailing(): void {
+    if (this.failure !== undefined) {
+      throw this.failure;
+    }
+  }
+}

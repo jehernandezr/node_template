@@ -30,25 +30,10 @@ class BackofficeLocalizationsEs extends BackofficeLocalizations {
   String get notFound => 'No encontramos este registro.';
 
   @override
-  String get filterAll => 'Todos';
-
-  @override
   String get filterStatus => 'Estado';
 
   @override
   String get filterRegion => 'Región';
-
-  @override
-  String get actor => 'Actor';
-
-  @override
-  String get action => 'Acción';
-
-  @override
-  String get entity => 'Entidad';
-
-  @override
-  String get traceId => 'Trace ID';
 
   @override
   String get auditTitle => 'Auditoría';
@@ -87,18 +72,6 @@ class BackofficeLocalizationsEs extends BackofficeLocalizations {
   String get tenantDetailTitle => 'Detalle del tenant';
 
   @override
-  String get tenantPlan => 'Plan';
-
-  @override
-  String get tenantShardGroup => 'Grupo de shards';
-
-  @override
-  String get tenantUsers => 'Usuarios';
-
-  @override
-  String get tenantRegion => 'Región';
-
-  @override
   String get tenantStatusActive => 'Activo';
 
   @override
@@ -129,25 +102,10 @@ class BackofficeLocalizationsEs extends BackofficeLocalizations {
   String get sagaDetailTitle => 'Detalle de la saga';
 
   @override
-  String get sagaType => 'Tipo';
-
-  @override
-  String get sagaTenant => 'Tenant';
-
-  @override
-  String get sagaCurrentStep => 'Último paso';
-
-  @override
-  String get sagaUpdated => 'Actualizada';
-
-  @override
   String get sagaSteps => 'Pasos';
 
   @override
   String get sagaStepsEmpty => 'La saga aún no ha ejecutado pasos.';
-
-  @override
-  String get sagaErrorCode => 'Código de error';
 
   @override
   String get sagaManualActions => 'Acciones manuales';
@@ -228,22 +186,10 @@ class BackofficeLocalizationsEs extends BackofficeLocalizations {
   String get dlqEmpty => 'No hay colas configuradas.';
 
   @override
-  String get dlqMessagesTitle => 'Mensajes';
-
-  @override
   String get dlqSelectQueue => 'Elige una cola para ver sus mensajes.';
 
   @override
   String get dlqMessagesEmpty => 'La cola no tiene mensajes.';
-
-  @override
-  String get dlqMessageType => 'Tipo';
-
-  @override
-  String get dlqFirstError => 'Primer error';
-
-  @override
-  String get dlqSentAt => 'Enviado';
 
   @override
   String get dlqRedrive => 'Redistribuir';
@@ -287,5 +233,102 @@ class BackofficeLocalizationsEs extends BackofficeLocalizations {
       one: '1 mensaje redistribuido.',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get navSectionsLabel => 'Secciones del backoffice';
+
+  @override
+  String get valueNone => '-';
+
+  @override
+  String get filterStatusAll => 'Todos';
+
+  @override
+  String get filterRegionAll => 'Todas';
+
+  @override
+  String auditActorLine(String actor) {
+    return 'Actor: $actor';
+  }
+
+  @override
+  String auditEntityLine(String entity) {
+    return 'Entidad: $entity';
+  }
+
+  @override
+  String traceIdLine(String traceId) {
+    return 'Trace ID: $traceId';
+  }
+
+  @override
+  String overviewCount(int count) {
+    return '$count';
+  }
+
+  @override
+  String tenantPlanLine(String plan) {
+    return 'Plan: $plan';
+  }
+
+  @override
+  String tenantRegionLine(String region) {
+    return 'Región: $region';
+  }
+
+  @override
+  String tenantShardGroupLine(String shardGroup) {
+    return 'Grupo de shards: $shardGroup';
+  }
+
+  @override
+  String tenantUsersLine(int count) {
+    return 'Usuarios: $count';
+  }
+
+  @override
+  String sagaTypeLine(String type) {
+    return 'Tipo: $type';
+  }
+
+  @override
+  String sagaTenantLine(String tenantId) {
+    return 'Tenant: $tenantId';
+  }
+
+  @override
+  String sagaCurrentStepLine(String operation) {
+    return 'Último paso: $operation';
+  }
+
+  @override
+  String sagaUpdatedLine(String updatedAt) {
+    return 'Actualizada: $updatedAt';
+  }
+
+  @override
+  String sagaErrorCodeLine(String code) {
+    return 'Código de error: $code';
+  }
+
+  @override
+  String dlqMessagesHeading(String queue) {
+    return 'Mensajes: $queue';
+  }
+
+  @override
+  String dlqMessageTypeLine(String type) {
+    return 'Tipo: $type';
+  }
+
+  @override
+  String dlqFirstErrorLine(String error) {
+    return 'Primer error: $error';
+  }
+
+  @override
+  String dlqSentAtLine(String sentAt) {
+    return 'Enviado: $sentAt';
   }
 }

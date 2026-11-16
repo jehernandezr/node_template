@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:auth/auth.dart';
 import 'package:flutter/services.dart';
 import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
 
+import '../data/demo_device_key.dart';
 import '../data/fake_verifier_repository.dart';
 import '../data/verifier_repository.dart';
 import '../l10n/generated/verifier_localizations.dart';
@@ -20,13 +20,11 @@ export '../l10n/generated/verifier_localizations.dart';
 ///
 /// This library is deferred: the manifest calls this function after it loads.
 /// The repository belongs to the scope, so it is created once per identity and
-/// disposed by the scope when the identity changes. The device key comes from
-/// the shell extras when present, otherwise a [FakeDeviceKeyPort] is used.
+/// disposed by the scope when the identity changes. The verifier only runs in
+/// demo mode (its manifest says so): login challenges have no contract yet.
 Widget buildVerifierScreen(MicrofrontendScope scope) {
   final repository = scope.get<VerifierRepository>(
-    (services) => FakeVerifierRepository(
-      services.extra<DeviceKeyPort>() ?? FakeDeviceKeyPort(),
-    ),
+    (services) => FakeVerifierRepository(const DemoDeviceKey()),
   );
   return VerifierScreen(repository: repository);
 }
@@ -219,16 +217,12 @@ class _VerifierViewState extends State<_VerifierView> {
   @override
   Widget build(BuildContext context) {
     final l10n = VerifierLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
     return AppPage(
       title: l10n.title,
       body: AsyncValueView<LoginChallenge?>(
         value: _pending,
         errorMessage: l10n.loadError,
         onRetry: _retry,
-        retryLabel: shared.actionRetry,
-        codeLabel: shared.errorCodeLabel,
-        traceIdLabel: shared.errorTraceIdLabel,
         data: (challenge) => _content(l10n, challenge),
       ),
     );

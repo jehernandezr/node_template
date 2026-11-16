@@ -26,6 +26,10 @@
       "danger": {
         "base": { "$value": "#B91C1C" },
         "on": { "$value": "#FFFFFF" }
+      },
+      "info": {
+        "base": { "$value": "#0369A1" },
+        "on": { "$value": "#FFFFFF" }
       }
     },
     "dark": {
@@ -53,6 +57,10 @@
       "danger": {
         "base": { "$value": "#F87171" },
         "on": { "$value": "#450A0A" }
+      },
+      "info": {
+        "base": { "$value": "#38BDF8" },
+        "on": { "$value": "#082F49" }
       }
     }
   },
@@ -68,7 +76,20 @@
     "$type": "dimension",
     "sm": { "$value": 4 },
     "md": { "$value": 8 },
-    "lg": { "$value": 16 }
+    "lg": { "$value": 16 },
+    "full": { "$value": 999 }
+  },
+  "icon-size": {
+    "$type": "dimension",
+    "sm": { "$value": 16 },
+    "md": { "$value": 24 },
+    "xl": { "$value": 48 }
+  },
+  "layout": {
+    "$type": "dimension",
+    "list-pane-width": { "$value": 360 },
+    "reading-width": { "$value": 720 },
+    "wide-content-width": { "$value": 1100 }
   },
   "typography": {
     "size": {

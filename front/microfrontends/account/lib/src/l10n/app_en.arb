@@ -17,6 +17,9 @@
   "agreementsLinkTitle": "Agreements",
   "agreementsLinkMessage": "Terms, consents and signed documents.",
 
+  "sectionUnavailableTitle": "Not available yet",
+  "sectionUnavailableMessage": "This section is not connected to the server yet.",
+
   "actionFailed": "The action could not be completed. Try again.",
   "loadError": "We could not load this information.",
   "versionLabel": "Version {version}",
@@ -106,6 +109,12 @@
   "requiredLabel": "Required",
   "optionalLabel": "Optional",
   "reviewNotice": "By accepting you confirm that you reviewed this document.",
+  "reviewDialogMessage": "Version {version}. By accepting you confirm that you reviewed this document.",
+  "@reviewDialogMessage": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
   "agreementAccepted": "Agreement accepted.",
   "pendingEmptyTitle": "You have no pending agreements",
   "acceptedEmptyMessage": "You have not accepted any agreements yet.",

@@ -12,7 +12,26 @@ import 'support.dart';
 
 void main() {
   test('manifest id matches package', () {
-    expect(tasksManifest.id, MicrofrontendId.tasks);
+    expect(tasksManifest.id, const MicrofrontendId('tasks'));
+    expect(tasksManifest.modes, {ShellMode.demo});
+  });
+
+  group('deep links', () {
+    String? resolve(List<String> rest) =>
+        tasksManifest.deepLinks!(rest, const {});
+
+    test('a task id opens its detail', () {
+      expect(resolve(['t_42']), '/tasks/t_42');
+    });
+
+    test('page segments, nested paths and unsafe ids are refused', () {
+      expect(resolve(['new']), isNull);
+      expect(resolve(['edit']), isNull);
+      expect(resolve([]), isNull);
+      expect(resolve(['a', 'b']), isNull);
+      expect(resolve(['a b']), isNull);
+      expect(resolve(['..']), isNull);
+    });
   });
 
   test('every route lives under /tasks', () {
@@ -51,8 +70,16 @@ void main() {
     for (final path in ['/tasks/new', '/tasks/:id/edit']) {
       final rule = access[path];
       expect(rule, isNotNull, reason: path);
-      expect(rule!.allows(readOnly), isFalse, reason: path);
-      expect(rule.allows(writer), isTrue, reason: path);
+      expect(
+        rule!.allows(readOnly, now: DateTime.utc(2026, 1, 1)),
+        isFalse,
+        reason: path,
+      );
+      expect(
+        rule.allows(writer, now: DateTime.utc(2026, 1, 1)),
+        isTrue,
+        reason: path,
+      );
     }
   });
 
@@ -63,8 +90,14 @@ void main() {
       tenantId: 't',
       permissions: {Permission.tasksRead},
     );
-    expect(tasksManifest.access.allows(none), isFalse);
-    expect(tasksManifest.access.allows(reader), isTrue);
+    expect(
+      tasksManifest.access.allows(none, now: DateTime.utc(2026, 1, 1)),
+      isFalse,
+    );
+    expect(
+      tasksManifest.access.allows(reader, now: DateTime.utc(2026, 1, 1)),
+      isTrue,
+    );
   });
 
   test('the manifest does not import data, screens or l10n eagerly', () {

@@ -1,24 +1,30 @@
 import baseConfig from '../../../eslint.config.mjs';
 
+const literalMessage =
+  'Usa KernelErrorCode (o el enum de la librería) en lugar del código como texto.';
+
 export default [
   ...baseConfig,
   {
-    files: ['**/*.json'],
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.spec.ts'],
     rules: {
-      '@nx/dependency-checks': [
+      'no-restricted-syntax': [
         'error',
         {
-          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
-          // tslib solo lo usa el build (importHelpers).
-          ignoredDependencies: ['tslib'],
+          selector: 'Literal[value=/^PLATFORM\\./]',
+          message: literalMessage,
+        },
+        {
+          selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
+          message: literalMessage,
         },
       ],
     },
-    languageOptions: {
-      parser: await import('jsonc-eslint-parser'),
-    },
   },
   {
-    ignores: ['**/out-tsc'],
+    // Aquí se declaran los códigos: es el único lugar donde van como texto.
+    files: ['src/errors/kernel-error-code.enum.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
   },
 ];

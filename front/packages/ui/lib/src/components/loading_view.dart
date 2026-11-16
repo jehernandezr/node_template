@@ -1,7 +1,11 @@
+import 'package:i18n/i18n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tokens/tokens.dart';
 
 /// Centered spinner with an optional [message] below it.
+///
+/// The spinner is labeled with the shared loading text when
+/// [AppLocalizations] is installed.
 class LoadingView extends StatelessWidget {
   /// Creates a loading view.
   const LoadingView({super.key, this.message});
@@ -12,16 +16,27 @@ class LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = message;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          if (text != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text(text, textAlign: TextAlign.center),
+    final label = Localizations.of<AppLocalizations>(
+      context,
+      AppLocalizations,
+    )?.loading;
+    // The label comes from the indicator; repeating it here would be read
+    // twice. `container` keeps the live region to this view instead of the
+    // whole page.
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(semanticsLabel: label),
+            if (text != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(text, textAlign: TextAlign.center),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

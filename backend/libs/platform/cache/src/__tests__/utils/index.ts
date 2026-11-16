@@ -1,0 +1,11 @@
+export type { CachePortHarness } from './cache-port-harness.js';
+export { AsideHarness } from './aside-harness.js';
+export { CountingLoader } from './counting-loader.js';
+export { FakeCachePort } from './fake-cache-port.js';
+export { FakeResilience } from './fake-resilience.js';
+export { FakeTransactionManager } from './fake-transaction-manager.js';
+export { FakeUnitOfWork } from './fake-unit-of-work.js';
+export { RecordingCacheErrorReporter } from './recording-cache-error-reporter.js';
+export { RecordingMetricsPort } from './recording-metrics-port.js';
+export { runCachePortContract } from './cache-port-contract.js';
+export { CyclicValue } from './cyclic-value.js';

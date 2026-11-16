@@ -49,19 +49,19 @@ UserSession writerSession({String userId = 'user-1'}) => UserSession(
   userId: userId,
   tenantId: 'tenant-1',
   permissions: {Permission.tasksWrite},
-  planFeatures: {PlanFeature.aiAssistant},
+  features: {PlanFeature.aiAssistant},
 );
 
 /// Session that can use the assistant but not create tasks.
 UserSession readerSession() => UserSession(
   userId: 'user-2',
   tenantId: 'tenant-1',
-  planFeatures: {PlanFeature.aiAssistant},
+  features: {PlanFeature.aiAssistant},
 );
 
 /// Scope of one identity. Each call is a new identity with no objects yet.
 MicrofrontendScope newScope({UserSession? session}) => MicrofrontendScope(
-  DefaultShellServices(session: session ?? writerSession()),
+  ShellServices(mode: ShellMode.demo, session: session ?? writerSession()),
 );
 
 /// Scope whose assistant repository is [repository].

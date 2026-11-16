@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-persistence",
+  "sourceRoot": "backend/libs/platform/persistence/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {},
+    "migration-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig backend/libs/platform/persistence/tsconfig.json backend/libs/platform/persistence/src/cli/migration-generate.entry.ts",
+        "cwd": "{workspaceRoot}",
+        "forwardAllArgs": true
+      }
+    }
+  }
+}

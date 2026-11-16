@@ -2,6 +2,7 @@
 
 - Estado: Aceptada
 - Fecha: 2026-11-11
+- Revisión: 2026-11-14 (cada puerto vive en la librería de plataforma de su capacidad, por ejemplo `CachePort` en `@platform/cache`, y los adaptadores en `libs/platform/adapters/<proveedor>`)
 
 ## Contexto
 

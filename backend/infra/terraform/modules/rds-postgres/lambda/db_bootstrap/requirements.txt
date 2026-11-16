@@ -3,7 +3,10 @@
 # tzdata (que pide python-dateutil 4) no se empaqueta: el handler no usa zonas horarias.
 # Para regenerar vendor/ desde esta carpeta, con Python 3.13 como el runtime:
 #   rm -rf vendor && pip install --no-deps --only-binary=:all: --target vendor -r requirements.txt
-# OSV-Scanner lee este archivo y Renovate (pip_requirements) propone las subidas.
+# OSV-Scanner lee este archivo y Renovate (pip_requirements) propone las subidas. Lo que se
+# despliega es vendor/: CI (backend/infra/scripts/check_vendor.py) falla si no coinciden, así
+# que una subida incluye vendor/ regenerado. Confirma también los RECORD que escribe pip:
+# con ellos la comprobación verifica el hash de cada archivo.
 pg8000==1.31.6
 scramp==1.5.0
 asn1crypto==1.5.1

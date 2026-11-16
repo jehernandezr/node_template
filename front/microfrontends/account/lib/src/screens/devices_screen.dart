@@ -5,15 +5,17 @@ import 'package:ui/ui.dart';
 import 'package:utils/utils.dart' show formatDate;
 
 import '../data/account_repository.dart';
+import '../l10n/account_labels.dart';
 import '../l10n/generated/account_localizations.dart';
+import '../shared/constants/account_access.dart';
 import '../shared/enums/account_enums.dart';
 import '../shared/utils/account_paths.dart';
-import '../l10n/account_labels.dart';
+import 'devices_controller.dart';
+import 'step_up_gate.dart';
 import 'widgets/account_widgets.dart';
-import 'widgets/step_up.dart';
 
-/// Dispositivos de confianza, con el verificador marcado.
-class DevicesScreen extends StatefulWidget {
+/// Trusted devices, with the verifier device marked.
+class DevicesScreen extends StatelessWidget {
   const DevicesScreen({
     super.key,
     required this.repository,
@@ -22,62 +24,59 @@ class DevicesScreen extends StatefulWidget {
 
   final AccountRepository repository;
 
-  /// Step-up del shell (`ShellServices.requestStepUp`) para las acciones
-  /// sensibles.
-  final StepUpRequest requestStepUp;
+  /// The shell's step-up, for removing the trust of a device.
+  final Future<bool> Function() requestStepUp;
 
   @override
-  State<DevicesScreen> createState() => _DevicesScreenState();
+  Widget build(BuildContext context) => ControllerBuilder<DevicesController>(
+    create: (context) => DevicesController(
+      repository,
+      stepUp: StepUpGate.fromContext(
+        context,
+        rule: accountStepUpRule,
+        request: requestStepUp,
+      ),
+    )..start(),
+    builder: (context, controller) => AppPage(
+      title: AccountLocalizations.of(context).devicesTitle,
+      onBack: () => context.go(accountPath(AccountSection.overview)),
+      body: AsyncValueView<List<DeviceSummary>>(
+        value: controller.devices,
+        errorMessage: AccountLocalizations.of(context).loadError,
+        onRetry: controller.start,
+        data: (devices) => _DevicesList(
+          devices: devices,
+          canRemoveTrust: controller.canRemoveTrust,
+          onRemove: (id) async {
+            final result = await controller.removeTrust(id);
+            if (!context.mounted) return;
+            final l10n = AccountLocalizations.of(context);
+            showActionResult(
+              context,
+              result,
+              success: l10n.deviceRemoved,
+              failure: l10n.actionFailed,
+            );
+          },
+        ),
+      ),
+    ),
+  );
 }
 
-class _DevicesScreenState extends State<DevicesScreen> {
-  AsyncValue<List<DeviceSummary>> _devices = const AsyncValue.loading();
+class _DevicesList extends StatelessWidget {
+  const _DevicesList({
+    required this.devices,
+    required this.canRemoveTrust,
+    required this.onRemove,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final result = await AsyncValue.guard(widget.repository.listDevices);
-    if (!mounted) return;
-    setState(() => _devices = result);
-  }
-
-  void _reload() {
-    setState(() => _devices = const AsyncValue.loading());
-    _load();
-  }
-
-  Future<void> _removeTrust(DeviceSummary device) async {
-    final l10n = AccountLocalizations.of(context);
-    final verified = await confirmStepUp(context, widget.requestStepUp);
-    if (!verified || !mounted) return;
-    final done = await runAccountAction(
-      context,
-      () => widget.repository.removeDeviceTrust(device.id),
-      success: () => l10n.deviceRemoved,
-    );
-    if (done && mounted) _reload();
-  }
+  final List<DeviceSummary> devices;
+  final bool canRemoveTrust;
+  final ValueChanged<String> onRemove;
 
   @override
   Widget build(BuildContext context) {
-    return AppPage(
-      title: AccountLocalizations.of(context).devicesTitle,
-      onBack: () => context.go(accountPath(AccountSection.overview)),
-      body: PlatformScreen(
-        compact: (_) => AccountAsyncView<List<DeviceSummary>>(
-          value: _devices,
-          onRetry: _reload,
-          data: (devices) => _buildList(context, devices),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildList(BuildContext context, List<DeviceSummary> devices) {
     final l10n = AccountLocalizations.of(context);
     if (devices.isEmpty) {
       return EmptyState(
@@ -86,35 +85,40 @@ class _DevicesScreenState extends State<DevicesScreen> {
         message: l10n.devicesEmptyMessage,
       );
     }
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        for (final device in devices)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: AccountRowCard(
-              title: device.name,
-              subtitle:
-                  '${platformLabel(l10n, device.platform)} · ${_trustLabel(l10n, device)}',
-              badge: device.verifier
-                  ? StatusBadge(label: l10n.verifierBadge)
-                  : null,
-              trailing: AppButton(
-                label: l10n.deviceRemove,
-                variant: AppButtonVariant.secondary,
-                onPressed: () => _removeTrust(device),
+    return ContentColumn(
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          for (final device in devices)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: AccountRowCard(
+                title: device.name,
+                details: [
+                  platformLabel(l10n, device.platform),
+                  _trustLabel(context, device),
+                ],
+                badge: device.verifier
+                    ? StatusBadge(label: l10n.verifierBadge)
+                    : null,
+                trailing: canRemoveTrust
+                    ? AppButton(
+                        label: l10n.deviceRemove,
+                        variant: AppButtonVariant.secondary,
+                        onPressed: () => onRemove(device.id),
+                      )
+                    : null,
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
-  String _trustLabel(AccountLocalizations l10n, DeviceSummary device) {
+  String _trustLabel(BuildContext context, DeviceSummary device) {
+    final l10n = AccountLocalizations.of(context);
     final until = device.trustedUntil;
     if (until == null) return l10n.noTrustDate;
-    return l10n.trustedUntilLabel(
-      formatDate(until, locale: localeTag(context)),
-    );
+    return l10n.trustedUntilLabel(formatDate(until, locale: context.localeTag));
   }
 }

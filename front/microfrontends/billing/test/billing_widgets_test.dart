@@ -12,7 +12,7 @@ import 'package:mf_billing/src/shared/enums/billing_enums.dart';
 import 'package:utils/utils.dart' show formatMoney;
 import 'package:contracts/contracts.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 final _es = lookupBillingLocalizations(const Locale('es'));
 

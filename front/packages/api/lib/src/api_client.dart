@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:contracts/contracts.dart';
 
@@ -6,6 +7,21 @@ import 'http_transport.dart';
 
 /// Returns the current access token, or null when there is no session.
 typedef AccessTokenProvider = Future<String?> Function();
+
+/// When and how to refresh the session after an authenticated route fails.
+///
+/// The client knows no service: the owner of the session decides which
+/// problems mean "the token is valid but out of date".
+final class SessionRefreshPolicy {
+  const SessionRefreshPolicy({required this.appliesTo, required this.refresh});
+
+  /// Whether [ProblemDetails] of a failed authenticated route asks for a
+  /// refresh and one retry.
+  final bool Function(ProblemDetails problem) appliesTo;
+
+  /// Refreshes the session. The retry reads the new token afterwards.
+  final Future<void> Function() refresh;
+}
 
 /// Client for the public routes of the contracts.
 ///
@@ -17,15 +33,18 @@ typedef AccessTokenProvider = Future<String?> Function();
 ///
 /// A route that requires a session fails with
 /// `PLATFORM.AUTH.UNAUTHENTICATED` before reaching the network when there is
-/// no access token. An `IDENTITY.TOKEN.STALE_PERMISSIONS` answer runs
-/// [onStalePermissions] (the shell refreshes the session there) and retries
-/// the request once with the new token.
+/// no access token. An error that [sessionRefresh] accepts refreshes the
+/// session and retries the request once with the new token.
+///
+/// A successful answer must carry the route's `successStatus`; a deprecated
+/// route is logged once per client so the migration does not wait for the
+/// sunset.
 class ApiClient {
   ApiClient({
     required this.transport,
     required this.baseUri,
     this.accessToken,
-    this.onStalePermissions,
+    this.sessionRefresh,
     this.defaultHeaders = const {},
   });
 
@@ -38,12 +57,14 @@ class ApiClient {
   /// Source of the access token for routes that need a session.
   final AccessTokenProvider? accessToken;
 
-  /// Refreshes the session after the API reports stale permissions. When
-  /// null, that answer is thrown as any other [ApiErrorException].
-  final Future<void> Function()? onStalePermissions;
+  /// Refresh and retry of authenticated routes. When null, every error is
+  /// thrown as an [ApiErrorException].
+  final SessionRefreshPolicy? sessionRefresh;
 
   /// Headers added to every request, for example `accept-language`.
   final Map<String, String> defaultHeaders;
+
+  final Set<String> _reportedDeprecations = {};
 
   /// Sends [request] through [route] and returns the decoded response.
   ///
@@ -59,20 +80,32 @@ class ApiClient {
       throw ContractViolationException(routeId: route.id, errors: errors);
     }
 
+    _reportDeprecation(route);
+
     final (uri, body) = _encode(route, json);
     var response = await _dispatch(route, uri, body);
-    final refresh = onStalePermissions;
-    if (refresh != null &&
-        route.requiresAuth &&
-        _isStalePermissions(response)) {
-      await refresh();
-      response = await _dispatch(route, uri, body);
+    final policy = sessionRefresh;
+    if (policy != null && route.requiresAuth && !_isSuccess(response)) {
+      if (policy.appliesTo(_problemOf(response))) {
+        await policy.refresh();
+        response = await _dispatch(route, uri, body);
+      }
     }
 
     if (!_isSuccess(response)) {
       throw ApiErrorException(_problemOf(response));
     }
+    if (response.statusCode != route.successStatus) {
+      throw ContractViolationException(
+        routeId: route.id,
+        errors: [
+          FieldError(code: PlatformErrorCode.validationInvalidInput.code),
+        ],
+        inResponse: true,
+      );
+    }
     final decode = route.decodeResponse;
+    // Routes without a body are `RouteDescriptor<Req, void>`.
     if (decode == null) return null as Res;
 
     final Object? decoded;
@@ -141,10 +174,18 @@ class ApiClient {
   static bool _isSuccess(TransportResponse response) =>
       response.statusCode >= 200 && response.statusCode <= 299;
 
-  bool _isStalePermissions(TransportResponse response) =>
-      !_isSuccess(response) &&
-      IdentityErrorCode.fromCode(_problemOf(response).code) ==
-          IdentityErrorCode.tokenStalePermissions;
+  void _reportDeprecation<Req, Res>(RouteDescriptor<Req, Res> route) {
+    final deprecation = route.deprecated;
+    if (deprecation == null || !_reportedDeprecations.add(route.id)) return;
+    final replacement = deprecation.replacement;
+    developer.log(
+      'Route ${route.id} is deprecated since ${deprecation.since} and stops '
+      'answering on ${deprecation.sunset}'
+      '${replacement == null ? '' : '; use $replacement'}.',
+      name: 'api',
+      level: 900,
+    );
+  }
 
   (Uri, String?) _encode<Req, Res>(
     RouteDescriptor<Req, Res> route,
@@ -162,8 +203,8 @@ class ApiClient {
     if (route.requestLocation == RequestLocation.body) {
       return (baseUri.replace(path: '$basePath$path'), jsonEncode(rest));
     }
-    // Forma canónica del contrato: números en notación JSON, booleanos
-    // true/false y listas como parámetro repetido.
+    // The contract's canonical form: numbers in JSON notation, booleans as
+    // true/false and lists as a repeated parameter.
     final query = encodeQuery(rest);
     return (
       baseUri.replace(

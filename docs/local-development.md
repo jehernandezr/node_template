@@ -16,27 +16,46 @@ Desde la raíz:
 
 ```bash
 corepack enable
-pnpm install                    # Nx, el backend y los hooks de git
+pnpm install                    # Nx, el backend y los hooks de git, en un solo node_modules
 cd front && flutter pub get     # el pub workspace del front
 cd ..
 ```
 
 Las tareas del front que corre Nx (`analyze`, `format-check` y `test`) usan `--no-pub`, así que necesitan el `flutter pub get` previo.
 
+`pnpm install` crea un único `node_modules` en la raíz (`nodeLinker: hoisted` en `pnpm-workspace.yaml`). Si aparece otro dentro de `backend/`, alguna dependencia quedó con dos versiones o una librería volvió a tener `package.json`; CI falla en ese caso. Para comprobarlo:
+
+```bash
+find . -path ./node_modules -prune -o -name node_modules -type d -print -prune   # no debe imprimir nada
+```
+
+Las librerías del backend no se compilan. Jest, `tsc` y las herramientas leen su TypeScript por los alias de `backend/tsconfig.base.json`. Las herramientas de `backend/tools` corren con `tsx` a través de sus targets de Nx, por ejemplo `pnpm nx run contracts-export:check`.
+
 ## Comandos de uso diario
 
 Todos corren desde la raíz:
 
-| Comando                                                              | Qué hace                                                 |
-| -------------------------------------------------------------------- | -------------------------------------------------------- |
-| `pnpm nx affected -t lint test typecheck build analyze format-check` | Valida lo que cambió frente a `main`, igual que CI       |
-| `pnpm nx format:check`                                               | Revisa el formato con Prettier                           |
-| `pnpm nx test platform-saga`                                         | Prueba un proyecto del backend                           |
-| `pnpm nx test front-shell_core`                                      | Prueba un paquete del front                              |
-| `pnpm nx run contracts-export:export`                                | Exporta los contratos de `backend/libs/contracts` a JSON |
-| `pnpm nx run contracts-export:check`                                 | Falla si el JSON exportado está desactualizado           |
-| `pnpm nx show projects`                                              | Lista los proyectos del backend y del front              |
-| `pnpm nx graph`                                                      | Abre el grafo de proyectos                               |
+| Comando                                                              | Qué hace                                                    |
+| -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `pnpm nx affected -t lint test typecheck build analyze format-check` | Valida lo que cambió frente a `main`, igual que CI          |
+| `pnpm nx format:check`                                               | Revisa el formato con Prettier                              |
+| `pnpm nx test platform-saga`                                         | Prueba un proyecto del backend                              |
+| `pnpm nx typecheck platform-saga`                                    | Revisa los tipos del código y de las pruebas de un proyecto |
+| `pnpm nx build <app>`                                                | Empaqueta una app del backend en `backend/dist/<app>/`      |
+| `pnpm nx test front-shell_core`                                      | Prueba un paquete del front                                 |
+| `pnpm nx run contracts-export:export`                                | Exporta los contratos de `backend/libs/contracts` a JSON    |
+| `pnpm nx run contracts-export:check`                                 | Falla si el JSON exportado está desactualizado              |
+| `pnpm nx show projects`                                              | Lista los proyectos del backend y del front                 |
+| `pnpm nx graph`                                                      | Abre el grafo de proyectos                                  |
+
+Las pruebas de integración (`*.int-spec.ts`) corren con el mismo target `test` contra PostgreSQL y Valkey reales, levantados con Testcontainers. Necesitan Docker en marcha. Por ejemplo, `pnpm nx test platform-persistence` y `pnpm nx test platform-adapters-valkey`.
+
+Los scripts de estructura de las skills revisan los archivos cambiados frente a `HEAD` (o todo el árbol con `--all`):
+
+```bash
+node .claude/skills/backend-estructura/scripts/check-structure.mjs
+node .claude/skills/front-estructura/scripts/check-structure.mjs
+```
 
 El Dart de los contratos se genera dentro de `front/`:
 
@@ -76,7 +95,7 @@ Los puertos se publican solo en `127.0.0.1`: nada queda expuesto a la red local.
 | OpenObserve             | 5080        | http://localhost:5080. Usuario y contraseña de desarrollo en `backend/docker-compose.yml`                                                                                           |
 | OpenTelemetry Collector | 4317 y 4318 | OTLP gRPC y HTTP. Los servicios envían a `http://localhost:4318`. Guarda todas las trazas con error y `OTEL_SAMPLING_PERCENT` (10 % por defecto) del resto, y reenvía a OpenObserve |
 
-Las dos bases `identity_shard_0` e `identity_shard_1` son intencionales. Sirven para probar el enrutamiento por shard en local.
+Las dos bases `identity_shard_0` e `identity_shard_1` son intencionales. Sirven para probar el enrutamiento por shard en local. Con la persistencia sobre TypeORM, la fase que sigue, las migraciones de cada servicio agregan el esquema `saga` de la bitácora de sagas a cada base de shard y la tabla `saga_directory` al catálogo ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)).
 
 Al arrancar, LocalStack corre `backend/infra/local/localstack/init-aws.sh`, que crea el bucket `platform-files-local` y la topología de mensajería desde `backend/infra/terraform/topology.json` (tópicos, colas, DLQ y suscripciones con filtro), con el prefijo `local` de `MESSAGING_NAME_PREFIX`.
 

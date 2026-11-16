@@ -19,6 +19,8 @@ locals {
     realtime_alb    = null
     files_bucket    = null
     ses             = null
+
+    compute_logs_kms_key_arn = null
   }
 
   remote_state_config = { bucket = var.state_bucket, region = coalesce(var.state_region, var.region) }

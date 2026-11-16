@@ -20,6 +20,8 @@ class ColorPalette {
     required this.warningOn,
     required this.dangerBase,
     required this.dangerOn,
+    required this.infoBase,
+    required this.infoOn,
   });
 
   /// Main brand color for primary actions and key highlights.
@@ -60,6 +62,12 @@ class ColorPalette {
 
   /// Content color drawn on top of [dangerBase].
   final Color dangerOn;
+
+  /// Informational status color.
+  final Color infoBase;
+
+  /// Content color drawn on top of [infoBase].
+  final Color infoOn;
 }
 
 /// Light and dark palettes, matching `design-tokens.json`.
@@ -79,6 +87,8 @@ abstract final class AppColors {
     warningOn: Color(0xFFFFFFFF),
     dangerBase: Color(0xFFB91C1C),
     dangerOn: Color(0xFFFFFFFF),
+    infoBase: Color(0xFF0369A1),
+    infoOn: Color(0xFFFFFFFF),
   );
 
   /// Palette for dark backgrounds.
@@ -96,5 +106,7 @@ abstract final class AppColors {
     warningOn: Color(0xFF422006),
     dangerBase: Color(0xFFF87171),
     dangerOn: Color(0xFF450A0A),
+    infoBase: Color(0xFF38BDF8),
+    infoOn: Color(0xFF082F49),
   );
 }

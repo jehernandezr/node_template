@@ -19,6 +19,12 @@ typedef MicrofrontendScreenBuilder = Widget Function(
   Map<String, String> params,
 });
 
+/// Builds a deferred screen. [params] unites the path and query parameters.
+typedef DeferredScreenBuilder = Widget Function(
+  MicrofrontendScope scope,
+  Map<String, String> params,
+);
+
 /// Declarative route of a microfrontend screen whose library loads on demand.
 ///
 /// The shell turns it into a [GoRoute]: it loads [loadLibrary] through the
@@ -37,6 +43,26 @@ final class ScreenRoute {
     this.loading,
     this.routes = const [],
   });
+
+  /// One-liner for a screen whose library loads on demand. The loading view
+  /// is the shell's default unless [loading] is given.
+  factory ScreenRoute.deferred(
+    String path, {
+    required Future<void> Function() library,
+    required DeferredScreenBuilder build,
+    String? name,
+    AccessRule? access,
+    Widget? loading,
+    List<ScreenRoute> routes = const [],
+  }) => ScreenRoute(
+    path: path,
+    name: name,
+    loadLibrary: library,
+    builder: (scope, {params = const {}}) => build(scope, params),
+    access: access,
+    loading: loading,
+    routes: routes,
+  );
 
   /// Path pattern, as in [GoRoute.path].
   final String path;
@@ -83,3 +109,15 @@ final class ScreenRoute {
 /// Query parameters of [state] overlaid with its path parameters.
 Map<String, String> screenParams(GoRouterState state) =>
     Map.unmodifiable({...state.uri.queryParameters, ...state.pathParameters});
+
+/// Reads route parameters.
+extension ScreenParamsX on Map<String, String> {
+  /// The parameter [name]; throws [StateError] when the route did not define it.
+  String require(String name) {
+    final value = this[name];
+    if (value == null) {
+      throw StateError('The route did not define the parameter "$name"');
+    }
+    return value;
+  }
+}

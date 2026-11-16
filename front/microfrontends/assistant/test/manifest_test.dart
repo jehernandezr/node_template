@@ -23,11 +23,23 @@ List<File> _eagerImports(File file) => [
 
 void main() {
   test('manifest id, menu and plan access', () {
-    expect(assistantManifest.id, MicrofrontendId.assistant);
+    expect(assistantManifest.id, const MicrofrontendId('assistant'));
     expect(assistantManifest.menu.single.path, '/assistant');
     expect(assistantManifest.hasLifecycle, isFalse);
-    expect(assistantManifest.access.allows(UserSession.anonymous()), isFalse);
-    expect(assistantManifest.access.allows(readerSession()), isTrue);
+    expect(
+      assistantManifest.access.allows(
+        UserSession.anonymous(),
+        now: DateTime.utc(2026, 1, 1),
+      ),
+      isFalse,
+    );
+    expect(
+      assistantManifest.access.allows(
+        readerSession(),
+        now: DateTime.utc(2026, 1, 1),
+      ),
+      isTrue,
+    );
   });
 
   test('manifest declares the list and the nested chat screen', () {
@@ -42,7 +54,10 @@ void main() {
 
   test('routes inherit the manifest access rule', () {
     final noPlan = UserSession(userId: 'u', tenantId: 't');
-    expect(assistantManifest.access.allows(noPlan), isFalse);
+    expect(
+      assistantManifest.access.allows(noPlan, now: DateTime.utc(2026, 1, 1)),
+      isFalse,
+    );
     expect(assistantManifest.screens.single.access, isNull);
   });
 

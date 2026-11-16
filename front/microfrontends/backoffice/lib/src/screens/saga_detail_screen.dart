@@ -1,7 +1,7 @@
-import 'package:i18n/i18n.dart' show AppLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 import 'package:ui/ui.dart';
+import 'package:utils/utils.dart' show formatDateTime;
 
 import '../data/backoffice_repository.dart';
 import '../l10n/backoffice_labels.dart';
@@ -9,164 +9,151 @@ import '../l10n/generated/backoffice_localizations.dart';
 import '../shared/constants/backoffice_access.dart';
 import '../shared/enums/backoffice_enums.dart';
 import '../shared/types/backoffice_types.dart';
-import 'widgets.dart';
+import 'async_sliver.dart';
+import 'audit_timeline.dart';
+import 'backoffice_page.dart';
+import 'saga_detail_controller.dart';
+import 'saga_reason_dialog.dart';
+import 'sliver_gap.dart';
 
 /// Saga detail: step timeline, manual actions (each with a reason) and audit.
 ///
 /// The manual actions appear only for `superAdmin` and `support`.
-class SagaDetailScreen extends StatefulWidget {
+class SagaDetailScreen extends StatelessWidget {
   const SagaDetailScreen({
     super.key,
-    required this.sagaId,
     required this.repository,
+    required this.sagaId,
   });
-
-  final String sagaId;
 
   /// Data source of the screen.
   final BackofficeRepository repository;
 
+  /// Id of the saga shown.
+  final String sagaId;
+
   @override
-  State<SagaDetailScreen> createState() => _SagaDetailScreenState();
+  Widget build(BuildContext context) => ControllerBuilder<SagaDetailController>(
+    create: (_) => SagaDetailController(repository, sagaId: sagaId)..start(),
+    builder: (context, controller) {
+      final l10n = BackofficeLocalizations.of(context);
+      return BackofficePage(
+        title: l10n.sagaDetailTitle,
+        slivers: [
+          AsyncSliver<SagaWithAudit>(
+            value: controller.detail,
+            onRetry: controller.start,
+            data: (data) => [
+              _SagaDetailSlivers(data: data, controller: controller),
+            ],
+          ),
+        ],
+      );
+    },
+  );
 }
 
-typedef _SagaData = ({Saga? saga, List<AuditEntry> audit});
+class _SagaDetailSlivers extends StatelessWidget {
+  const _SagaDetailSlivers({required this.data, required this.controller});
 
-class _SagaDetailScreenState extends State<SagaDetailScreen> {
-  late Future<_SagaData> _data = _load();
-
-  Future<_SagaData> _load() async {
-    final saga = await widget.repository.saga(widget.sagaId);
-    final audit = await widget.repository.sagaAudit(widget.sagaId);
-    return (saga: saga, audit: audit);
-  }
-
-  void _reload() => setState(() {
-    _data = _load();
-  });
-
-  Future<void> _runAction(SagaManualAction action) async {
-    final reason = await showBackofficeDialog<String>(
-      context: context,
-      builder: (_) => _ReasonDialog(action: action),
-    );
-    if (reason == null || !mounted) return;
-    try {
-      await widget.repository.applySagaAction(
-        sagaId: widget.sagaId,
-        action: action,
-        reason: reason,
-      );
-    } on Exception catch (error) {
-      // API, contract or network.
-      if (!mounted) return;
-      final shared = AppLocalizations.of(context);
-      showActionError(
-        context,
-        error,
-        message: actionErrorMessage(shared, error),
-      );
-      return;
-    }
-    if (!mounted) return;
-    _reload();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(BackofficeLocalizations.of(context).sagaActionDone),
-      ),
-    );
-  }
+  final SagaWithAudit data;
+  final SagaDetailController controller;
 
   @override
   Widget build(BuildContext context) {
     final l10n = BackofficeLocalizations.of(context);
-    return BackofficePage(
-      title: l10n.sagaDetailTitle,
-      child: AsyncBody<_SagaData>(
-        future: _data,
-        onRetry: _reload,
-        builder: (context, data) {
-          final saga = data.saga;
-          if (saga == null) {
-            return EmptyState(
-              icon: Icons.account_tree_outlined,
-              title: l10n.notFound,
-            );
-          }
-          final theme = Theme.of(context);
-          final scheme = theme.colorScheme;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(saga.id, style: theme.textTheme.titleLarge),
-                    const SizedBox(height: AppSpacing.xs),
-                    Chip(
-                      label: Text(sagaStatusLabel(l10n, saga.status)),
-                      backgroundColor: saga.needsIntervention
-                          ? scheme.errorContainer
-                          : null,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text('${l10n.sagaType}: ${saga.type}'),
-                    Text('${l10n.sagaTenant}: ${saga.tenantId}'),
-                    Text(
-                      '${l10n.sagaCurrentStep}: ${saga.currentOperation ?? '-'}',
-                    ),
-                    Text(
-                      '${l10n.sagaUpdated}: ${formatTimestamp(context, saga.updatedAt)}',
-                    ),
-                    SelectableText(
-                      '${l10n.traceId}: ${saga.traceId}',
-                      style: theme.textTheme.labelSmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(l10n.sagaSteps, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              if (saga.steps.isEmpty)
-                EmptyState(icon: Icons.timeline, title: l10n.sagaStepsEmpty)
-              else
-                for (final step in saga.steps) _StepTile(step: step),
-              AccessGate(
-                rule: backofficeOperationsWriteAccess,
-                child: Column(
-                  key: const Key('saga-manual-actions'),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      l10n.sagaManualActions,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      children: [
-                        for (final action in SagaManualAction.values)
-                          OutlinedButton(
-                            key: Key('saga-action-${action.name}'),
-                            onPressed: () => _runAction(action),
-                            child: Text(manualActionLabel(l10n, action)),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(l10n.auditTitle, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              AuditTimeline(entries: data.audit),
-            ],
-          );
-        },
+    final textTheme = Theme.of(context).textTheme;
+    final saga = data.saga;
+    if (saga == null) {
+      return SliverToBoxAdapter(
+        child: EmptyState(
+          icon: Icons.account_tree_outlined,
+          title: l10n.notFound,
+        ),
+      );
+    }
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(child: _SagaSummary(saga: saga)),
+        const SliverGap(AppSpacing.lg),
+        SliverToBoxAdapter(
+          child: Semantics(
+            header: true,
+            child: Text(l10n.sagaSteps, style: textTheme.titleMedium),
+          ),
+        ),
+        const SliverGap(AppSpacing.sm),
+        if (saga.steps.isEmpty)
+          SliverToBoxAdapter(
+            child: EmptyState(icon: Icons.timeline, title: l10n.sagaStepsEmpty),
+          )
+        else
+          SliverList.separated(
+            itemCount: saga.steps.length,
+            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+            itemBuilder: (context, index) => _StepTile(step: saga.steps[index]),
+          ),
+        SliverToBoxAdapter(
+          child: AccessGate(
+            rule: backofficeOperationsWriteAccess,
+            child: _ManualActions(controller: controller),
+          ),
+        ),
+        const SliverGap(AppSpacing.lg),
+        SliverToBoxAdapter(
+          child: Semantics(
+            header: true,
+            child: Text(l10n.auditTitle, style: textTheme.titleMedium),
+          ),
+        ),
+        const SliverGap(AppSpacing.sm),
+        AuditTimeline(entries: data.audit),
+      ],
+    );
+  }
+}
+
+class _SagaSummary extends StatelessWidget {
+  const _SagaSummary({required this.saga});
+
+  final Saga saga;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = BackofficeLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(saga.id, style: textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.xs),
+          Chip(
+            label: Text(sagaStatusLabel(l10n, saga.status)),
+            backgroundColor: saga.needsIntervention
+                ? scheme.errorContainer
+                : null,
+            labelStyle: saga.needsIntervention
+                ? TextStyle(color: scheme.onErrorContainer)
+                : null,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(l10n.sagaTypeLine(saga.type)),
+          Text(l10n.sagaTenantLine(saga.tenantId)),
+          Text(
+            l10n.sagaCurrentStepLine(saga.currentOperation ?? l10n.valueNone),
+          ),
+          Text(
+            l10n.sagaUpdatedLine(
+              formatDateTime(saga.updatedAt, locale: context.localeTag),
+            ),
+          ),
+          SelectableText(
+            l10n.traceIdLine(saga.traceId),
+            style: textTheme.labelSmall,
+          ),
+        ],
       ),
     );
   }
@@ -180,96 +167,86 @@ class _StepTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = BackofficeLocalizations.of(context);
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final failed = step.status == SagaStepStatus.failed;
     final code = step.errorCode;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.sagaStepLabel(step.order, step.operation),
-              style: theme.textTheme.titleSmall,
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.sagaStepLabel(step.order, step.operation),
+            style: textTheme.titleSmall,
+          ),
+          MetaLine(
+            parts: [
+              sagaDirectionLabel(l10n, step.direction),
+              stepStatusLabel(l10n, step.status),
+            ],
+            style: textTheme.bodySmall?.copyWith(
+              color: failed ? scheme.error : null,
             ),
+          ),
+          if (code != null)
             Text(
-              '${sagaDirectionLabel(l10n, step.direction)} · '
-              '${stepStatusLabel(l10n, step.status)}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: failed ? theme.colorScheme.error : null,
-              ),
+              l10n.sagaErrorCodeLine(code),
+              style: textTheme.bodySmall?.copyWith(color: scheme.error),
             ),
-            if (code != null)
-              Text(
-                '${l10n.sagaErrorCode}: $code',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
-/// Asks for the reason of a manual action. Confirm stays disabled while blank.
-class _ReasonDialog extends StatefulWidget {
-  const _ReasonDialog({required this.action});
+class _ManualActions extends StatelessWidget {
+  const _ManualActions({required this.controller});
 
-  final SagaManualAction action;
-
-  @override
-  State<_ReasonDialog> createState() => _ReasonDialogState();
-}
-
-class _ReasonDialogState extends State<_ReasonDialog> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final SagaDetailController controller;
 
   @override
   Widget build(BuildContext context) {
     final l10n = BackofficeLocalizations.of(context);
-    final shared = AppLocalizations.of(context);
-    final reason = _controller.text.trim();
-    return AlertDialog(
-      title: Text(manualActionLabel(l10n, widget.action)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.reasonHelp),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            key: const Key('saga-reason-field'),
-            controller: _controller,
-            autofocus: true,
-            minLines: 2,
-            maxLines: 4,
-            decoration: InputDecoration(labelText: l10n.reasonLabel),
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(shared.actionCancel),
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      key: const Key('saga-manual-actions'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        Semantics(
+          header: true,
+          child: Text(l10n.sagaManualActions, style: textTheme.titleMedium),
         ),
-        FilledButton(
-          key: const Key('saga-reason-confirm'),
-          onPressed: reason.isEmpty
-              ? null
-              : () => Navigator.of(context).pop(reason),
-          child: Text(shared.confirm),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final action in SagaManualAction.values)
+              OutlinedButton(
+                key: Key('saga-action-${action.name}'),
+                onPressed: controller.isBusy
+                    ? null
+                    : () => _run(context, action),
+                child: Text(manualActionLabel(l10n, action)),
+              ),
+          ],
         ),
       ],
+    );
+  }
+
+  Future<void> _run(BuildContext context, SagaManualAction action) async {
+    final reason = await context.showLocalizedDialog<String>(
+      builder: (_) => SagaReasonDialog(action: action),
+    );
+    if (reason == null || !context.mounted) return;
+    final result = await controller.apply(action, reason);
+    if (!context.mounted) return;
+    showActionResult(
+      context,
+      result,
+      success: BackofficeLocalizations.of(context).sagaActionDone,
     );
   }
 }

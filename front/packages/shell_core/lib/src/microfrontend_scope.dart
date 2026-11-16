@@ -24,10 +24,7 @@ abstract interface class ScopedResource {
 final class MicrofrontendScope {
   /// Creates an empty scope over [services]. The runtime creates these and
   /// passes its [eventBus]; without one, [emit] drops every event.
-  MicrofrontendScope(ShellServices services, {ShellEventBus? eventBus})
-    : _services = services,
-      // ignore: prefer_initializing_formals
-      _eventBus = eventBus;
+  MicrofrontendScope(this._services, {this._eventBus});
 
   /// Services of the identity this scope belongs to.
   ShellServices get services => _services;
@@ -97,6 +94,7 @@ final class MicrofrontendScope {
       if (release == null) continue;
       try {
         await release(entry.value);
+        // catch-all: a failing resource is reported so the remaining ones still close
       } catch (error, stack) {
         FlutterError.reportError(
           FlutterErrorDetails(

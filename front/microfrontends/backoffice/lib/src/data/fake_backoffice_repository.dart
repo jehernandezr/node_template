@@ -1,12 +1,17 @@
 import 'package:contracts/contracts.dart';
+import 'package:shell_core/shell_core.dart';
 
 import '../shared/enums/backoffice_enums.dart';
 import '../shared/types/backoffice_types.dart';
 import 'backoffice_repository.dart';
 
 /// In-memory repository with fixed seed data. Writes change only this instance.
-class FakeBackofficeRepository implements BackofficeRepository {
-  FakeBackofficeRepository()
+///
+/// Latency, scheduled failures, the clock and the disposal state come from the
+/// [DemoBehavior] it receives; each call is tagged with its
+/// [BackofficeOperation] so a failure can target one of them.
+final class FakeBackofficeRepository implements BackofficeRepository {
+  FakeBackofficeRepository({required this._behavior})
     : _tenants = List.of(_seedTenants),
       _tenantAudit = {
         for (final e in _seedTenantAudit.entries) e.key: List.of(e.value),
@@ -17,6 +22,7 @@ class FakeBackofficeRepository implements BackofficeRepository {
       },
       _queues = {for (final e in _seedQueues.entries) e.key: List.of(e.value)};
 
+  final DemoBehavior _behavior;
   final List<Tenant> _tenants;
   final Map<String, List<AuditEntry>> _tenantAudit;
   final List<Saga> _sagas;
@@ -24,16 +30,13 @@ class FakeBackofficeRepository implements BackofficeRepository {
   final Map<String, List<DeadLetterMessage>> _queues;
 
   /// Whether the scope already released this repository.
-  bool get isDisposed => _disposed;
-  bool _disposed = false;
+  bool get isDisposed => _behavior.isDisposed;
 
   @override
-  void dispose() {
-    _disposed = true;
-  }
+  void dispose() => _behavior.dispose();
 
   @override
-  Future<BackofficeOverview> overview() async {
+  Future<BackofficeOverview> overview() => _behavior.respond(() {
     final queued = _queues.values.fold<int>(
       0,
       (sum, list) => sum + list.length,
@@ -43,14 +46,14 @@ class FakeBackofficeRepository implements BackofficeRepository {
       sagasNeedingIntervention: _sagas.where((s) => s.needsIntervention).length,
       deadLetterMessages: queued,
     );
-  }
+  }, operation: BackofficeOperation.overview);
 
   @override
   Future<List<Tenant>> listTenants({
     String query = '',
     TenantRegion? region,
     TenantStatus? status,
-  }) async {
+  }) => _behavior.respond(() {
     final needle = query.trim().toLowerCase();
     return _tenants.where((t) {
       final matchesQuery =
@@ -61,46 +64,50 @@ class FakeBackofficeRepository implements BackofficeRepository {
       final matchesStatus = status == null || t.status == status;
       return matchesQuery && matchesRegion && matchesStatus;
     }).toList();
-  }
+  }, operation: BackofficeOperation.listTenants);
 
   @override
-  Future<Tenant?> tenant(String id) async {
+  Future<Tenant?> tenant(String id) => _behavior.respond(() {
     for (final tenant in _tenants) {
       if (tenant.id == id) return tenant;
     }
     return null;
-  }
+  }, operation: BackofficeOperation.tenant);
 
   @override
-  Future<List<AuditEntry>> tenantAudit(String tenantId) async =>
-      _newestFirst(_tenantAudit[tenantId] ?? const []);
+  Future<List<AuditEntry>> tenantAudit(String tenantId) => _behavior.respond(
+    () => _newestFirst(_tenantAudit[tenantId] ?? const []),
+    operation: BackofficeOperation.tenantAudit,
+  );
 
   @override
-  Future<List<Saga>> listSagas({SagaStatus? status}) async {
+  Future<List<Saga>> listSagas({SagaStatus? status}) => _behavior.respond(() {
     final list =
         _sagas.where((s) => status == null || s.status == status).toList()
           ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return list;
-  }
+  }, operation: BackofficeOperation.listSagas);
 
   @override
-  Future<Saga?> saga(String id) async {
+  Future<Saga?> saga(String id) => _behavior.respond(() {
     for (final saga in _sagas) {
       if (saga.id == id) return saga;
     }
     return null;
-  }
+  }, operation: BackofficeOperation.saga);
 
   @override
-  Future<List<AuditEntry>> sagaAudit(String sagaId) async =>
-      _newestFirst(_sagaAudit[sagaId] ?? const []);
+  Future<List<AuditEntry>> sagaAudit(String sagaId) => _behavior.respond(
+    () => _newestFirst(_sagaAudit[sagaId] ?? const []),
+    operation: BackofficeOperation.sagaAudit,
+  );
 
   @override
   Future<void> applySagaAction({
     required String sagaId,
     required SagaManualAction action,
     required String reason,
-  }) async {
+  }) => _behavior.respond(() {
     final trimmed = reason.trim();
     if (trimmed.isEmpty) {
       throw _problem(
@@ -123,12 +130,13 @@ class FakeBackofficeRepository implements BackofficeRepository {
         status: SagaStatus.completed,
       ),
     };
-    _sagas[index] = next.copyWith(updatedAt: _now);
+    final now = _behavior.now();
+    _sagas[index] = next.copyWith(updatedAt: now);
     _sagaAudit
         .putIfAbsent(sagaId, () => [])
         .add(
           AuditEntry(
-            occurredAt: _now,
+            occurredAt: now,
             actor: _operator,
             action: 'saga.${action.name}',
             entity: 'saga:$sagaId',
@@ -136,20 +144,26 @@ class FakeBackofficeRepository implements BackofficeRepository {
             detail: trimmed,
           ),
         );
-  }
+  }, operation: BackofficeOperation.applySagaAction);
 
   @override
-  Future<List<DeadLetterQueue>> deadLetterQueues() async => [
-    for (final entry in _queues.entries)
-      DeadLetterQueue(name: entry.key, messageCount: entry.value.length),
-  ];
+  Future<List<DeadLetterQueue>> deadLetterQueues() => _behavior.respond(
+    () => [
+      for (final entry in _queues.entries)
+        DeadLetterQueue(name: entry.key, messageCount: entry.value.length),
+    ],
+    operation: BackofficeOperation.deadLetterQueues,
+  );
 
   @override
-  Future<List<DeadLetterMessage>> deadLetterMessages(String queue) async =>
-      List.of(_queues[queue] ?? const <DeadLetterMessage>[]);
+  Future<List<DeadLetterMessage>> deadLetterMessages(String queue) =>
+      _behavior.respond(
+        () => List.of(_queues[queue] ?? const <DeadLetterMessage>[]),
+        operation: BackofficeOperation.deadLetterMessages,
+      );
 
   @override
-  Future<int> redrive(String queue) async {
+  Future<int> redrive(String queue) => _behavior.respond(() {
     final messages = _queues[queue];
     if (messages == null) {
       throw _problem(PlatformErrorCode.resourceNotFound, 'Queue not found');
@@ -157,7 +171,7 @@ class FakeBackofficeRepository implements BackofficeRepository {
     final moved = messages.length;
     messages.clear();
     return moved;
-  }
+  }, operation: BackofficeOperation.redrive);
 
   static ApiErrorException _problem(PlatformErrorCode code, String title) =>
       ApiErrorException(
@@ -173,7 +187,6 @@ class FakeBackofficeRepository implements BackofficeRepository {
       List.of(entries)..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
 
   static const _operator = 'operador.soporte';
-  static final _now = DateTime(2026, 11, 11, 9, 0);
 }
 
 final _t0 = DateTime(2026, 11, 10, 14, 5);

@@ -1,28 +1,8 @@
-import { ErrorAudience } from '../enums/error-audience.enum.js';
 import { PlatformErrorCode as C } from '../enums/platform-error-code.enum.js';
-import { defineErrorCatalog, type ErrorSpec } from '../kit/error-catalog.js';
+import { defineErrorCatalog, ErrorSpecs } from '../kit/error-catalog.js';
 
-const pub = (
-  httpStatus: number,
-  retryable: boolean,
-  description: string,
-): ErrorSpec => ({
-  httpStatus,
-  retryable,
-  audience: ErrorAudience.Public,
-  description,
-});
-
-const internal = (
-  httpStatus: number,
-  retryable: boolean,
-  description: string,
-): ErrorSpec => ({
-  httpStatus,
-  retryable,
-  audience: ErrorAudience.Internal,
-  description,
-});
+const pub = ErrorSpecs.pub;
+const internal = ErrorSpecs.internal;
 
 /**
  * Catálogo de los códigos de plataforma. Los públicos tienen mensaje en el ARB
@@ -181,11 +161,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     true,
     'El servicio está sobrecargado. Intenta de nuevo en unos instantes.',
   ),
-  [C.InternalApiInvalidInput]: internal(
-    400,
-    false,
-    'La entrada de una operación interna no cumple su contrato.',
-  ),
   [C.InternalApiInvalidOutput]: internal(
     502,
     false,
@@ -210,11 +185,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     500,
     false,
     'La operación interna no tiene manejador.',
-  ),
-  [C.InternalApiTimeout]: internal(
-    504,
-    true,
-    'La operación interna no respondió a tiempo.',
   ),
   [C.InternalApiNonJsonSafeSchema]: internal(
     500,
@@ -377,11 +347,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'La saga superó su plazo máximo.',
   ),
-  [C.SagaSimulatedCrash]: internal(
-    500,
-    true,
-    'Caída simulada en pruebas de recuperación de sagas.',
-  ),
   [C.BloomInvalidParameters]: internal(
     500,
     false,
@@ -397,16 +362,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     false,
     'Los filtros de Bloom no tienen los mismos parámetros.',
   ),
-  [C.BloomUnknownFilter]: internal(
-    500,
-    false,
-    'El filtro de Bloom no está registrado.',
-  ),
-  [C.BloomDuplicateFilter]: internal(
-    500,
-    false,
-    'Ya hay un filtro de Bloom registrado con ese nombre.',
-  ),
   [C.CacheInvalidArgument]: internal(
     500,
     false,
@@ -421,11 +376,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     500,
     false,
     'El valor supera el tamaño máximo que se guarda en caché.',
-  ),
-  [C.CacheNotACounter]: internal(
-    500,
-    false,
-    'La entrada de caché no contiene un contador.',
   ),
   [C.CacheTimeout]: internal(
     504,
@@ -516,11 +466,6 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     500,
     false,
     'No existe la política de resiliencia pedida.',
-  ),
-  [C.ResilienceNotConfigured]: internal(
-    500,
-    false,
-    'El registro de resiliencia no está configurado.',
   ),
   [C.ShardingInvalidConfig]: internal(
     500,

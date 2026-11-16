@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/fakes.dart';
+import 'utils/fakes.dart';
 
 final _now = DateTime.utc(2026, 11, 12, 10);
 DateTime _clock() => _now;
@@ -33,14 +33,14 @@ final _backofficeRule = AccessRule.all([
 MicrofrontendRegistry _registry() => MicrofrontendRegistry()
   ..register(
     fakeManifest(
-      id: MicrofrontendId.backoffice,
+      id: TestIds.backoffice,
       access: _backofficeRule,
       routePath: '/backoffice',
     ),
   )
   ..register(
     fakeManifest(
-      id: MicrofrontendId.tasks,
+      id: TestIds.tasks,
       access: AccessRule.permissions([Permission.tasksRead]),
       screens: [
         ScreenRoute(
@@ -61,7 +61,7 @@ MicrofrontendRegistry _registry() => MicrofrontendRegistry()
   )
   ..register(
     fakeManifest(
-      id: MicrofrontendId.billing,
+      id: TestIds.billing,
       access: AccessRule.authenticated(),
       screens: [
         fakeScreen(
@@ -97,7 +97,8 @@ Future<GoRouter> _pump(
     platform: AppPlatform.web,
     runtime: fakeRuntime(registry: registry, session: session),
     routes: _shellPages,
-    stepUpPath: stepUpPath,
+    shellBuilder: passThroughShell,
+    paths: ShellPaths(stepUp: stepUpPath),
     clock: _clock,
   );
   addTearDown(router.dispose);
@@ -193,7 +194,8 @@ void main() {
             session: ValueNotifier(UserSession.anonymous()),
           ),
           routes: _shellPages,
-          stepUpPath: '/backoffice/step-up',
+          shellBuilder: passThroughShell,
+          paths: ShellPaths(stepUp: '/backoffice/step-up'),
         ),
         throwsStateError,
       );
@@ -261,24 +263,49 @@ void main() {
       },
     );
 
-    test('redirectFor keeps the original location and skips shell pages', () {
+    test('ShellPaths.redirectFor keeps the original location and skips shell '
+        'pages', () {
       const paths = ShellPaths(stepUp: '/step-up');
+      final location = Uri.parse('/backoffice/sagas?page=2');
       expect(
-        redirectFor(
-          AccessDecision.stepUpRequired,
-          Uri.parse('/backoffice/sagas?page=2'),
-          paths,
-        ),
+        paths.redirectFor(AccessDecision.stepUpRequired, location),
         '/step-up?from=%2Fbackoffice%2Fsagas%3Fpage%3D2',
       );
       expect(
-        redirectFor(AccessDecision.denied, Uri.parse('/forbidden'), paths),
+        paths.redirectFor(AccessDecision.signInRequired, location),
+        '/login?from=%2Fbackoffice%2Fsagas%3Fpage%3D2',
+      );
+      expect(
+        paths.redirectFor(AccessDecision.denied, Uri.parse('/forbidden')),
         isNull,
       );
       expect(
-        redirectFor(AccessDecision.allowed, Uri.parse('/tasks'), paths),
+        paths.redirectFor(AccessDecision.allowed, Uri.parse('/tasks')),
         isNull,
       );
+    });
+
+    test('ShellPaths.redirectFor sends a step-up to forbidden without a '
+        'step-up page', () {
+      expect(
+        const ShellPaths().redirectFor(
+          AccessDecision.stepUpRequired,
+          Uri.parse('/backoffice'),
+        ),
+        '/forbidden?from=%2Fbackoffice',
+      );
+    });
+
+    test('redirectFor gives the same answer as ShellPaths.redirectFor', () {
+      const paths = ShellPaths(stepUp: '/step-up');
+      final location = Uri.parse('/backoffice');
+      for (final decision in AccessDecision.values) {
+        expect(
+          redirectFor(decision, location, paths),
+          paths.redirectFor(decision, location),
+          reason: decision.name,
+        );
+      }
     });
   });
 
@@ -368,7 +395,7 @@ void main() {
       final registry = MicrofrontendRegistry()
         ..register(
           fakeManifest(
-            id: MicrofrontendId.tasks,
+            id: TestIds.tasks,
             screens: [
               ScreenRoute(
                 path: '/tasks',
@@ -387,6 +414,7 @@ void main() {
         platform: AppPlatform.web,
         runtime: fakeRuntime(registry: registry, session: session),
         routes: _shellPages,
+        shellBuilder: passThroughShell,
       );
       addTearDown(router.dispose);
       await tester.pumpWidget(

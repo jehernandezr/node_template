@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -9,13 +10,25 @@ import 'http_transport.dart';
 /// [HttpTransport] over `package:http`.
 ///
 /// On the web it uses the browser client; with `withCredentials` the browser
-/// sends the httpOnly session cookie to the API origin. Network failures
-/// throw `http.ClientException`; HTTP errors come back as responses.
+/// sends the httpOnly session cookie to the API origin. HTTP errors come back
+/// as responses; a connection failure or an answer that takes longer than
+/// [timeout] throws [TransportException].
 final class PackageHttpTransport implements HttpTransport {
   /// Transport over [client], or over the platform client when null.
-  PackageHttpTransport({http.Client? client, bool withCredentials = false})
-    : _client =
-          client ?? createPlatformClient(withCredentials: withCredentials);
+  PackageHttpTransport({
+    http.Client? client,
+    bool withCredentials = false,
+    this.timeout = defaultTimeout,
+  }) : _client =
+           client ?? createPlatformClient(withCredentials: withCredentials);
+
+  /// Limit for the whole exchange, headers and body. Without one a hung
+  /// request keeps a form busy and a shared token refresh pending forever.
+  static const Duration defaultTimeout = Duration(seconds: 30);
+
+  /// Time a request may take before it fails with
+  /// [TransportFailure.timeout].
+  final Duration timeout;
 
   final http.Client _client;
 
@@ -25,9 +38,22 @@ final class PackageHttpTransport implements HttpTransport {
       ..headers.addAll(request.headers);
     final body = request.body;
     if (body != null) outgoing.body = body;
-    final response = await http.Response.fromStream(
-      await _client.send(outgoing),
-    );
+    final http.Response response;
+    try {
+      response = await _exchange(outgoing).timeout(timeout);
+    } on TimeoutException catch (error) {
+      throw TransportException(
+        TransportFailure.timeout,
+        uri: request.uri,
+        cause: error,
+      );
+    } on http.ClientException catch (error) {
+      throw TransportException(
+        TransportFailure.connection,
+        uri: request.uri,
+        cause: error,
+      );
+    }
     return TransportResponse(
       statusCode: response.statusCode,
       headers: {
@@ -39,6 +65,9 @@ final class PackageHttpTransport implements HttpTransport {
     );
   }
 
-  /// Closes the underlying client.
+  Future<http.Response> _exchange(http.Request outgoing) async =>
+      http.Response.fromStream(await _client.send(outgoing));
+
+  @override
   void close() => _client.close();
 }

@@ -30,5 +30,5 @@ output "queue_names" {
 
 output "kms_key_arn" {
   description = "ARN de la clave KMS que cifra tópicos, colas y DLQ."
-  value       = aws_kms_key.messaging.arn
+  value       = module.kms.arn
 }

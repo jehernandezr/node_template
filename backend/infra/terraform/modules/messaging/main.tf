@@ -1,7 +1,3 @@
-data "aws_caller_identity" "current" {}
-
-data "aws_partition" "current" {}
-
 locals {
   topology       = jsondecode(file(var.topology_file))
   topics_by_name = { for t in local.topology.topics : t.name => t }
@@ -98,46 +94,16 @@ resource "terraform_data" "topology_check" {
   }
 }
 
-resource "aws_kms_key" "messaging" {
-  description             = "Cifrado de tópicos y colas de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowSnsUse"
-        Effect    = "Allow"
-        Principal = { Service = "sns.amazonaws.com" }
-        Action    = ["kms:GenerateDataKey*", "kms:Decrypt"]
-        Resource  = "*"
-        Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id } }
-      },
-      {
-        Sid       = "AllowSqsUse"
-        Effect    = "Allow"
-        Principal = { Service = "sqs.amazonaws.com" }
-        Action    = ["kms:GenerateDataKey*", "kms:Decrypt"]
-        Resource  = "*"
-        Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id } }
-      },
-    ]
-  })
-
+  alias       = "${var.name_prefix}-messaging"
+  description = "Cifrado de tópicos y colas de ${var.name_prefix}"
+  service_principals = [
+    { sid = "AllowSnsUse", services = ["sns.amazonaws.com"] },
+    { sid = "AllowSqsUse", services = ["sqs.amazonaws.com"] },
+  ]
   tags = var.tags
-}
-
-resource "aws_kms_alias" "messaging" {
-  name          = "alias/${var.name_prefix}-messaging"
-  target_key_id = aws_kms_key.messaging.key_id
 }
 
 resource "aws_sns_topic" "this" {
@@ -146,7 +112,7 @@ resource "aws_sns_topic" "this" {
   name                        = local.topic_names[each.key]
   fifo_topic                  = each.value.fifo
   content_based_deduplication = each.value.fifo
-  kms_master_key_id           = aws_kms_key.messaging.arn
+  kms_master_key_id           = module.kms.arn
 
   tags = merge(var.tags, { Name = each.key })
 
@@ -160,7 +126,7 @@ resource "aws_sqs_queue" "dlq" {
   fifo_queue                        = each.value.fifo
   content_based_deduplication       = each.value.fifo
   message_retention_seconds         = each.value.dlq.retentionSeconds
-  kms_master_key_id                 = aws_kms_key.messaging.arn
+  kms_master_key_id                 = module.kms.arn
   kms_data_key_reuse_period_seconds = var.kms_data_key_reuse_period_seconds
 
   tags = merge(var.tags, { Name = "${each.key}-dlq", Role = "dlq" })
@@ -175,7 +141,7 @@ resource "aws_sqs_queue" "this" {
   fifo_queue                        = each.value.fifo
   content_based_deduplication       = each.value.fifo
   visibility_timeout_seconds        = each.value.visibilityTimeoutSeconds
-  kms_master_key_id                 = aws_kms_key.messaging.arn
+  kms_master_key_id                 = module.kms.arn
   kms_data_key_reuse_period_seconds = var.kms_data_key_reuse_period_seconds
 
   # maxAttempts lo usa el dispatcher de la aplicación para el backoff. Terraform lo etiqueta.
@@ -322,4 +288,14 @@ resource "aws_cloudwatch_metric_alarm" "queue_old_message" {
   ok_actions    = var.alarm_topic_arn == null ? [] : [var.alarm_topic_arn]
 
   tags = var.tags
+}
+
+moved {
+  from = aws_kms_key.messaging
+  to   = module.kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.messaging
+  to   = module.kms.aws_kms_alias.this
 }

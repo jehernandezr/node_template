@@ -13,7 +13,7 @@ OpenTelemetry (OTel) produce logs, trazas y métricas. La instrumentación autom
 
 OpenObserve es la única herramienta de logs, métricas, trazas, dashboards y alertas en todos los entornos. Corre como un contenedor en local y como una tarea de Fargate con almacenamiento en S3 en AWS.
 
-Un OpenTelemetry Collector recibe y reenvía todo: como capa ADOT en Lambda, como sidecar en Fargate y dentro de `docker-compose` en local. El `LoggerPort` escribe JSON con `trace_id` y `span_id`. La retención es de 14 días en dev y 30 en prod.
+Un OpenTelemetry Collector recibe y reenvía todo: como capa ADOT en Lambda, como sidecar en Fargate y dentro de `docker-compose` en local. El `LoggerPort` escribe JSON con `trace_id` y `span_id`, a un solo destino: OTLP con la telemetría encendida y stdout con ella apagada. La instrumentación de Valkey reaplica la de ioredis al módulo `iovalkey` y sus spans no llevan la llave. El ambiente de las trazas sale de `DEPLOY_ENVIRONMENT`. La retención es de 14 días en dev y 30 en prod.
 
 ## Consecuencias
 

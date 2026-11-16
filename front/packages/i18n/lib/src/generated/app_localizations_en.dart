@@ -30,27 +30,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSignOut => 'Sign out';
 
   @override
-  String get menuAccount => 'Account';
-
-  @override
-  String get menuTasks => 'Tasks';
-
-  @override
-  String get menuNotifications => 'Notifications';
-
-  @override
-  String get menuAssistant => 'Assistant';
-
-  @override
-  String get menuBilling => 'Billing';
-
-  @override
-  String get menuBackoffice => 'Administration';
-
-  @override
-  String get menuVerifier => 'Verifier';
-
-  @override
   String get menuMore => 'More';
 
   @override
@@ -129,6 +108,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorTraceIdLabel => 'Trace ID';
+
+  @override
+  String errorCodeLine(String code) {
+    return 'Code: $code';
+  }
+
+  @override
+  String errorTraceIdLine(String traceId) {
+    return 'Trace ID: $traceId';
+  }
+
+  @override
+  String get metaSeparator => ' · ';
 
   @override
   String get notFound => 'Page not found.';

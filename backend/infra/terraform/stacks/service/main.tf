@@ -3,6 +3,8 @@
 # Lambda. Lee red, plataforma, datos y mensajería de sus stacks; no los modifica, salvo las
 # rutas que agrega a la API compartida y las reglas de sus listeners.
 
+data "aws_caller_identity" "current" {}
+
 locals {
   svc  = var.service_name
   name = replace(var.service_name, "_", "-")
@@ -18,23 +20,24 @@ locals {
     send_queues    = []
     consume_queues = []
   })
-  own_queues = distinct(concat(
-    local.access.consume_queues,
-    [for w in values(var.workers) : w.queue],
-    [for c in values(var.consumers) : c.queue],
-  ))
+  component_queues = concat([for w in values(var.workers) : w.queue], [for c in values(var.consumers) : c.queue])
 
   databases     = try(local.data.service_databases[local.svc], null)
   db_secret_arn = var.database_access ? try(local.data.db_service_secret_arns[local.svc], null) : null
   valkey_user   = var.valkey_access ? try(local.data.valkey.user_names[local.svc], null) : null
-  files         = var.files_access ? local.platform.files_bucket : null
   observability = local.platform.observability
 
-  base_environment = merge(
+  # Contrato con los adaptadores de @platform: los nombres de estas variables son los que
+  # validan sus esquemas de configuración. Las variables propias del servicio van primero,
+  # así no pueden pisar el contrato.
+  common_environment = merge(
+    var.environment_variables,
     {
       SERVICE_NAME          = local.svc
       DEPLOY_ENVIRONMENT    = var.environment
       MESSAGING_NAME_PREFIX = local.messaging.name_prefix
+      # El adaptador de AWS arma los ARN de los tópicos sin llamar a STS.
+      AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
     },
     var.database_access ? {
       DB_PROXY_HOST   = local.data.db.proxy_endpoint
@@ -42,18 +45,41 @@ locals {
       DB_PORT         = tostring(local.data.db.port)
       DB_DATABASES    = jsonencode(local.databases)
     } : {},
-    var.valkey_access ? {
+    # Valkey serverless exige TLS y autenticación IAM: el cliente firma un token con su rol
+    # para VALKEY_CACHE_NAME y entra como VALKEY_USER. La ACL limita llaves y canales a
+    # VALKEY_KEY_PREFIX.
+    local.valkey_user == null ? {} : {
       VALKEY_HOST       = local.data.valkey.endpoint
       VALKEY_PORT       = tostring(local.data.valkey.port)
-      VALKEY_USER       = coalesce(local.valkey_user, "-")
+      VALKEY_TLS        = "true"
+      VALKEY_USER       = local.valkey_user
+      VALKEY_AUTH       = "iam-serverless"
+      VALKEY_CACHE_NAME = local.data.valkey.cache_name
       VALKEY_KEY_PREFIX = local.svc
-    } : {},
-    var.files_access ? { FILES_BUCKET = try(local.files.name, "") } : {},
-    var.environment_variables,
+    },
   )
 
-  # Políticas comunes a todos los roles del servicio.
-  messaging_statements = concat(
+  # Lambda define AWS_REGION por su cuenta (es una variable reservada); Fargate no la
+  # garantiza en todas las versiones de plataforma.
+  fargate_environment = merge(local.common_environment, { AWS_REGION = var.region })
+  lambda_environment  = merge(local.common_environment, local.db_secret_arn == null ? {} : { DB_SECRET_ARN = local.db_secret_arn })
+
+  # --- IAM por componente ---------------------------------------------------------
+  # Cada componente recibe solo lo que usa: la API y el tiempo real no consumen colas, cada
+  # worker consume solo la suya y archivos y SES se piden por componente. Las Lambdas
+  # consumidoras reciben el permiso de su cola del módulo service-lambda.
+  components = merge(
+    var.api == null ? {} : {
+      api = { publish = true, queue = null, files = var.api.files_access, ses = var.api.ses_send }
+    },
+    var.realtime == null ? {} : {
+      realtime = { publish = var.realtime.publish, queue = null, files = var.realtime.files_access, ses = var.realtime.ses_send }
+    },
+    { for k, w in var.workers : "worker-${k}" => { publish = true, queue = w.queue, files = w.files_access, ses = w.ses_send } },
+    { for k, c in var.consumers : "consumer-${k}" => { publish = true, queue = null, files = c.files_access, ses = c.ses_send } },
+  )
+
+  publish_statements = concat(
     length(local.access.publish_topics) == 0 ? [] : [{
       Sid      = "PublishTopics"
       Effect   = "Allow"
@@ -66,40 +92,52 @@ locals {
       Action   = ["sqs:SendMessage", "sqs:GetQueueUrl"]
       Resource = [for q in local.access.send_queues : local.messaging.queue_arns[q]]
     }],
-    length(local.own_queues) == 0 ? [] : [{
-      Sid      = "ConsumeQueues"
-      Effect   = "Allow"
-      Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"]
-      Resource = [for q in local.own_queues : local.messaging.queue_arns[q]]
-    }],
   )
 
-  policies = merge(
-    length(local.messaging_statements) == 0 ? {} : {
-      messaging = jsonencode({
-        Version = "2012-10-17"
-        Statement = concat(local.messaging_statements, [{
-          Sid      = "MessagingKey"
-          Effect   = "Allow"
-          Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
-          Resource = local.messaging.kms_key_arn
-        }])
-      })
-    },
-    local.valkey_user == null ? {} : {
-      valkey-connect = jsonencode({
-        Version = "2012-10-17"
-        Statement = [{
-          Effect   = "Allow"
-          Action   = ["elasticache:Connect"]
-          Resource = local.data.valkey.connect_resource_arns[local.svc]
-        }]
-      })
-    },
-    local.files == null ? {} : { files = local.files.read_write_policy_json },
-    var.ses_send && local.platform.ses != null ? { ses-send = local.platform.ses.send_policy_json } : {},
-    var.task_policies,
-  )
+  messaging_statements = {
+    for name, c in local.components : name => concat(
+      c.publish ? local.publish_statements : [],
+      c.queue == null ? [] : [{
+        Sid      = "ConsumeQueue"
+        Effect   = "Allow"
+        Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:GetQueueAttributes", "sqs:GetQueueUrl"]
+        Resource = [try(local.messaging.queue_arns[c.queue], "")]
+      }],
+    )
+  }
+
+  policies = {
+    for name, c in local.components : name => merge(
+      length(local.messaging_statements[name]) == 0 ? {} : {
+        messaging = jsonencode({
+          Version = "2012-10-17"
+          Statement = concat(local.messaging_statements[name], [{
+            Sid      = "MessagingKey"
+            Effect   = "Allow"
+            Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+            Resource = local.messaging.kms_key_arn
+          }])
+        })
+      },
+      local.valkey_user == null ? {} : {
+        valkey-connect = jsonencode({
+          Version = "2012-10-17"
+          Statement = [{
+            Effect   = "Allow"
+            Action   = ["elasticache:Connect"]
+            Resource = local.data.valkey.connect_resource_arns[local.svc]
+          }]
+        })
+      },
+      c.files ? { files = try(local.platform.files_bucket.read_write_policy_json, "") } : {},
+      c.ses ? { ses-send = try(local.platform.ses.send_policy_json, "") } : {},
+      var.task_policies,
+    )
+  }
+
+  component_environment = {
+    for name, c in local.components : name => c.files ? { FILES_BUCKET = try(local.platform.files_bucket.name, "") } : {}
+  }
 
   secret_kms_keys = distinct(concat(
     var.secrets_kms_key_arns,
@@ -109,8 +147,10 @@ locals {
 
   # Fargate recibe el secreto por valueFrom; Lambda recibe el ARN y lo lee al arrancar.
   fargate_secrets = merge(var.secrets, local.db_secret_arn == null ? {} : { DB_CREDENTIALS = local.db_secret_arn })
-  lambda_env      = merge(local.base_environment, local.db_secret_arn == null ? {} : { DB_SECRET_ARN = local.db_secret_arn })
   lambda_secrets  = distinct(concat([for v in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:[^:]+", v)], local.db_secret_arn == null ? [] : [local.db_secret_arn]))
+
+  # Una CMK de logs por ambiente para todo el cómputo (stack platform).
+  logs_kms_key_arn = local.platform.compute_logs_kms_key_arn
 
   data_security_groups = [local.data.clients_security_group_id]
 
@@ -147,15 +187,15 @@ resource "terraform_data" "service_check" {
       error_message = "valkey_access necesita el servicio en valkey_services del stack data."
     }
     precondition {
-      condition     = alltrue([for q in local.own_queues : contains(keys(local.messaging.queue_arns), q)])
+      condition     = alltrue([for q in local.component_queues : contains(keys(local.messaging.queue_arns), q)])
       error_message = "Un worker o consumidor usa una cola que no está en la topología ni es ses-events."
     }
     precondition {
-      condition     = !var.files_access || local.files != null
+      condition     = !anytrue([for c in values(local.components) : c.files]) || local.platform.files_bucket != null
       error_message = "files_access necesita el bucket de archivos (files_cors_allowed_origins en platform)."
     }
     precondition {
-      condition     = !var.ses_send || local.platform.ses != null
+      condition     = !anytrue([for c in values(local.components) : c.ses]) || local.platform.ses != null
       error_message = "ses_send necesita ses_domain en el stack platform."
     }
   }
@@ -183,11 +223,12 @@ module "api_lambda" {
   s3_object_version              = try(var.lambda_package.s3_object_version, null)
   source_code_hash               = try(var.lambda_package.source_code_hash, null)
 
-  environment_variables = local.lambda_env
+  environment_variables = merge(local.lambda_environment, local.component_environment["api"])
   secret_arns           = local.lambda_secrets
   secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies
+  task_policies         = local.policies["api"]
   otel_layer_arn        = var.lambda_otel_layer_arn
+  kms_key_arn           = local.logs_kms_key_arn
   log_retention_days    = var.log_retention_days
 
   vpc_enabled                   = true
@@ -225,10 +266,10 @@ module "api_fargate" {
 
   capacity_provider_strategy = [{ capacity_provider = var.api.spot ? "FARGATE_SPOT" : "FARGATE", weight = 1, base = 0 }]
 
-  environment_variables = local.base_environment
+  environment_variables = merge(local.fargate_environment, local.component_environment["api"])
   secrets               = local.fargate_secrets
   secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies
+  task_policies         = local.policies["api"]
 
   otlp_endpoint             = try(local.observability.otlp_endpoint, null)
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
@@ -243,6 +284,7 @@ module "api_fargate" {
 
   enable_execute_command = var.enable_execute_command
   exec_kms_key_arn       = var.enable_execute_command ? local.platform.ecs_cluster.kms_key_arn : null
+  kms_key_arn            = local.logs_kms_key_arn
   log_retention_days     = var.log_retention_days
 
   depends_on = [terraform_data.service_check]
@@ -297,10 +339,10 @@ module "realtime" {
   min_capacity   = var.realtime.min_capacity
   max_capacity   = var.realtime.max_capacity
 
-  environment_variables = local.base_environment
+  environment_variables = merge(local.fargate_environment, local.component_environment["realtime"])
   secrets               = local.fargate_secrets
   secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies
+  task_policies         = local.policies["realtime"]
 
   otlp_endpoint             = try(local.observability.otlp_endpoint, null)
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
@@ -316,6 +358,7 @@ module "realtime" {
 
   enable_execute_command = var.enable_execute_command
   exec_kms_key_arn       = var.enable_execute_command ? local.platform.ecs_cluster.kms_key_arn : null
+  kms_key_arn            = local.logs_kms_key_arn
   log_retention_days     = var.log_retention_days
 
   depends_on = [terraform_data.service_check]
@@ -347,10 +390,10 @@ module "worker" {
 
   capacity_provider_strategy = [{ capacity_provider = each.value.spot ? "FARGATE_SPOT" : "FARGATE", weight = 1, base = 0 }]
 
-  environment_variables = merge(local.base_environment, { QUEUE_URL = local.messaging.queue_urls[each.value.queue] })
+  environment_variables = merge(local.fargate_environment, local.component_environment["worker-${each.key}"], { QUEUE_URL = local.messaging.queue_urls[each.value.queue] })
   secrets               = local.fargate_secrets
   secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies
+  task_policies         = local.policies["worker-${each.key}"]
 
   otlp_endpoint             = try(local.observability.otlp_endpoint, null)
   otlp_authorization_secret = try(local.observability.otlp_authorization_value_from, null)
@@ -366,6 +409,7 @@ module "worker" {
 
   enable_execute_command = var.enable_execute_command
   exec_kms_key_arn       = var.enable_execute_command ? local.platform.ecs_cluster.kms_key_arn : null
+  kms_key_arn            = local.logs_kms_key_arn
   log_retention_days     = var.log_retention_days
 
   depends_on = [terraform_data.service_check]
@@ -390,11 +434,12 @@ module "consumer" {
   s3_object_version = try(var.lambda_package.s3_object_version, null)
   source_code_hash  = try(var.lambda_package.source_code_hash, null)
 
-  environment_variables = local.lambda_env
+  environment_variables = merge(local.lambda_environment, local.component_environment["consumer-${each.key}"])
   secret_arns           = local.lambda_secrets
   secrets_kms_key_arns  = local.secret_kms_keys
-  task_policies         = local.policies
+  task_policies         = local.policies["consumer-${each.key}"]
   otel_layer_arn        = var.lambda_otel_layer_arn
+  kms_key_arn           = local.logs_kms_key_arn
   log_retention_days    = var.log_retention_days
 
   vpc_enabled                   = true

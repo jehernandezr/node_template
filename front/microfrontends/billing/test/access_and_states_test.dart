@@ -15,13 +15,14 @@ import 'package:mf_billing/src/screens/invoices_screen.dart';
 import 'package:mf_billing/src/shared/types/billing_types.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 final _es = lookupBillingLocalizations(const Locale('es'));
 final _en = lookupBillingLocalizations(const Locale('en'));
 
-MicrofrontendScope _scope() =>
-    MicrofrontendScope(DefaultShellServices(session: UserSession.anonymous()));
+MicrofrontendScope _scope() => MicrofrontendScope(
+  ShellServices(mode: ShellMode.demo, session: UserSession.anonymous()),
+);
 
 /// Repository whose invoices never arrive, to keep a screen loading.
 base class _PendingRepository extends FakeBillingRepository {

@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
 
-import '../support/pump.dart';
+import '../utils/pump.dart';
 
 void main() {
   testWidgets('shows icon, title and message', (tester) async {
@@ -45,5 +45,13 @@ void main() {
       ),
     );
     expect(find.text('Create'), findsNothing);
+  });
+
+  testWidgets('draws the icon at the extra large size', (tester) async {
+    await pumpApp(
+      tester,
+      const EmptyState(icon: Icons.inbox_outlined, title: 'No tasks'),
+    );
+    expect(tester.widget<Icon>(find.byType(Icon)).size, AppIconSize.xl);
   });
 }

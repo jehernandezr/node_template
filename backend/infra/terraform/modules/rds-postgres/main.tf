@@ -71,45 +71,16 @@ resource "terraform_data" "input_check" {
 # Clave KMS (CMK): almacenamiento, Performance Insights y secretos.
 # ---------------------------------------------------------------------------
 
-resource "aws_kms_key" "this" {
-  description             = "Cifrado de RDS, Performance Insights y secretos de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${data.aws_region.current.region}.amazonaws.com" }
-        Action    = ["kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:Describe*"]
-        Resource  = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = [
-              "${local.log_group_arn_base}:/aws/rds/instance/${local.instance_identifier}*",
-              "${local.log_group_arn_base}:/aws/lambda/${var.name_prefix}-db-*",
-            ]
-          }
-        }
-      },
-    ]
-  })
-
+  alias       = "${var.name_prefix}-rds"
+  description = "Cifrado de RDS, Performance Insights y secretos de ${var.name_prefix}"
+  log_group_arns = [
+    "${local.log_group_arn_base}:/aws/rds/instance/${local.instance_identifier}*",
+    "${local.log_group_arn_base}:/aws/lambda/${var.name_prefix}-db-*",
+  ]
   tags = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  name          = "alias/${var.name_prefix}-rds"
-  target_key_id = aws_kms_key.this.key_id
 }
 
 # ---------------------------------------------------------------------------
@@ -307,7 +278,7 @@ resource "aws_cloudwatch_log_group" "postgresql" {
 
   name              = "/aws/rds/instance/${each.value}/postgresql"
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.this.arn
+  kms_key_id        = module.kms.arn
 
   tags = var.tags
 }
@@ -315,7 +286,7 @@ resource "aws_cloudwatch_log_group" "postgresql" {
 resource "aws_cloudwatch_log_group" "bootstrap" {
   name              = "/aws/lambda/${local.bootstrap_function}"
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.this.arn
+  kms_key_id        = module.kms.arn
 
   tags = var.tags
 }
@@ -325,7 +296,7 @@ resource "aws_cloudwatch_log_group" "rotation" {
 
   name              = "/aws/lambda/${local.rotation_function}"
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.this.arn
+  kms_key_id        = module.kms.arn
 
   tags = var.tags
 }
@@ -345,13 +316,13 @@ resource "aws_db_instance" "this" {
   max_allocated_storage = var.max_allocated_storage
   storage_type          = "gp3"
   storage_encrypted     = true
-  kms_key_id            = aws_kms_key.this.arn
+  kms_key_id            = module.kms.arn
 
   # Sin base inicial: el bootstrap crea el catálogo y las bases de cada servicio.
   username = var.db_username
 
   manage_master_user_password   = true
-  master_user_secret_kms_key_id = aws_kms_key.this.arn
+  master_user_secret_kms_key_id = module.kms.arn
 
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [aws_security_group.rds.id]
@@ -366,7 +337,7 @@ resource "aws_db_instance" "this" {
 
   enabled_cloudwatch_logs_exports       = ["postgresql"]
   performance_insights_enabled          = true
-  performance_insights_kms_key_id       = aws_kms_key.this.arn
+  performance_insights_kms_key_id       = module.kms.arn
   performance_insights_retention_period = var.performance_insights_retention_days
 
   skip_final_snapshot = var.skip_final_snapshot
@@ -390,7 +361,7 @@ resource "aws_db_instance" "replica" {
   instance_class      = var.instance_class
 
   storage_encrypted    = true
-  kms_key_id           = aws_kms_key.this.arn
+  kms_key_id           = module.kms.arn
   parameter_group_name = aws_db_parameter_group.this.name
 
   vpc_security_group_ids = [aws_security_group.replica[0].id]
@@ -401,7 +372,7 @@ resource "aws_db_instance" "replica" {
   deletion_protection                   = var.deletion_protection
   enabled_cloudwatch_logs_exports       = ["postgresql"]
   performance_insights_enabled          = true
-  performance_insights_kms_key_id       = aws_kms_key.this.arn
+  performance_insights_kms_key_id       = module.kms.arn
   performance_insights_retention_period = var.performance_insights_retention_days
 
   skip_final_snapshot = true
@@ -428,7 +399,7 @@ resource "aws_secretsmanager_secret" "service" {
 
   name                    = "${var.name_prefix}/db/${each.key}"
   description             = "Credenciales de PostgreSQL del servicio ${each.key}"
-  kms_key_id              = aws_kms_key.this.arn
+  kms_key_id              = module.kms.arn
   recovery_window_in_days = var.secret_recovery_window_days
 
   tags = merge(var.tags, { Service = each.key })
@@ -453,6 +424,8 @@ resource "aws_secretsmanager_secret_version" "service" {
   secret_string_wo_version = 1
 }
 
+# El paquete incluye rds-ca-bundle.pem (backend/infra/scripts/fetch-rds-ca-bundle.sh). Sin
+# él, el bootstrap se niega a conectarse y la invocación hace fallar el apply.
 data "archive_file" "bootstrap" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/db_bootstrap"
@@ -497,7 +470,7 @@ resource "aws_iam_role_policy" "bootstrap" {
         Sid      = "Decrypt"
         Effect   = "Allow"
         Action   = ["kms:Decrypt"]
-        Resource = [aws_kms_key.this.arn]
+        Resource = [module.kms.arn]
       },
     ]
   })
@@ -576,7 +549,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "rotation" {
   parameters = {
     endpoint            = "https://secretsmanager.${data.aws_region.current.region}.amazonaws.com"
     functionName        = local.rotation_function
-    kmsKeyArn           = aws_kms_key.this.arn
+    kmsKeyArn           = module.kms.arn
     vpcSubnetIds        = join(",", var.data_subnet_ids)
     vpcSecurityGroupIds = aws_security_group.tooling.id
   }
@@ -639,7 +612,7 @@ resource "aws_iam_role_policy" "proxy_read_secret" {
         Sid      = "DecryptThroughSecretsManager"
         Effect   = "Allow"
         Action   = ["kms:Decrypt"]
-        Resource = [aws_kms_key.this.arn]
+        Resource = [module.kms.arn]
         Condition = {
           StringEquals = {
             "kms:ViaService" = "secretsmanager.${data.aws_region.current.region}.amazonaws.com"
@@ -777,4 +750,14 @@ resource "aws_cloudwatch_metric_alarm" "replica_lag" {
   ok_actions    = local.alarm_actions
 
   tags = var.tags
+}
+
+moved {
+  from = aws_kms_key.this
+  to   = module.kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.this
+  to   = module.kms.aws_kms_alias.this
 }

@@ -1,0 +1,18 @@
+/// Dobles y utilitarios de prueba compartidos por los paquetes del front.
+/// Solo se usa como dev_dependency: el código de producción nunca lo importa.
+library;
+
+export 'src/a11y/expect_accessible.dart';
+export 'src/app/test_app.dart';
+export 'src/auth/fake_auth_repository.dart';
+export 'src/auth/fake_device_key_port.dart';
+export 'src/auth/fake_token_store.dart';
+export 'src/clock/fake_clock.dart';
+export 'src/errors/fake_failure.dart';
+export 'src/layout/pump_at_text_scale.dart';
+export 'src/layout/pump_at_widths.dart';
+export 'src/problem/problem_fixtures.dart';
+export 'src/scope/test_scope.dart';
+export 'src/session/session_builder.dart';
+export 'src/shell/deferred_libraries.dart';
+export 'src/shell/deferred_libraries_preloader.dart';

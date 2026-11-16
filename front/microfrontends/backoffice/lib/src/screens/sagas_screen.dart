@@ -8,78 +8,68 @@ import '../l10n/generated/backoffice_localizations.dart';
 import '../shared/constants/backoffice_paths.dart';
 import '../shared/enums/backoffice_enums.dart';
 import '../shared/types/backoffice_types.dart';
-import 'widgets.dart';
+import 'async_sliver.dart';
+import 'backoffice_page.dart';
+import 'enum_filter.dart';
+import 'sagas_controller.dart';
+import 'sliver_gap.dart';
 
 /// Saga list with a status filter. Sagas that need a person are highlighted.
-class SagasScreen extends StatefulWidget {
+class SagasScreen extends StatelessWidget {
   const SagasScreen({super.key, required this.repository});
 
   /// Data source of the screen.
   final BackofficeRepository repository;
 
   @override
-  State<SagasScreen> createState() => _SagasScreenState();
-}
-
-class _SagasScreenState extends State<SagasScreen> {
-  SagaStatus? _status;
-  late Future<List<Saga>> _sagas = widget.repository.listSagas(status: _status);
-
-  void _onStatusChanged(SagaStatus? value) => setState(() {
-    _status = value;
-    _sagas = widget.repository.listSagas(status: _status);
-  });
-
-  void _reload() => _onStatusChanged(_status);
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = BackofficeLocalizations.of(context);
-    return BackofficePage(
-      title: l10n.sagasTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: DropdownButton<SagaStatus?>(
-              key: const Key('saga-status-filter'),
-              value: _status,
-              items: [
-                DropdownMenuItem<SagaStatus?>(
-                  value: null,
-                  child: Text('${l10n.filterStatus}: ${l10n.filterAll}'),
-                ),
-                for (final status in SagaStatus.values)
-                  DropdownMenuItem<SagaStatus?>(
-                    value: status,
-                    child: Text(sagaStatusLabel(l10n, status)),
-                  ),
-              ],
-              onChanged: _onStatusChanged,
+  Widget build(BuildContext context) => ControllerBuilder<SagasController>(
+    create: (_) => SagasController(repository)..start(),
+    builder: (context, controller) {
+      final l10n = BackofficeLocalizations.of(context);
+      return BackofficePage(
+        title: l10n.sagasTitle,
+        slivers: [
+          SliverToBoxAdapter(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: EnumFilter<SagaStatus>(
+                key: const Key('saga-status-filter'),
+                label: l10n.filterStatus,
+                allLabel: l10n.filterStatusAll,
+                values: SagaStatus.values,
+                valueLabel: (status) => sagaStatusLabel(l10n, status),
+                value: controller.status,
+                onChanged: controller.filterByStatus,
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          AsyncBody<List<Saga>>(
-            future: _sagas,
-            onRetry: _reload,
-            builder: (context, sagas) {
-              if (sagas.isEmpty) {
-                return EmptyState(
-                  icon: Icons.account_tree_outlined,
-                  title: l10n.sagasEmpty,
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final saga in sagas) _SagaTile(saga: saga)],
-              );
-            },
+          const SliverGap(AppSpacing.md),
+          AsyncSliver<List<Saga>>(
+            value: controller.sagas,
+            onRetry: controller.start,
+            data: (sagas) => sagas.isEmpty
+                ? [
+                    SliverToBoxAdapter(
+                      child: EmptyState(
+                        icon: Icons.account_tree_outlined,
+                        title: l10n.sagasEmpty,
+                      ),
+                    ),
+                  ]
+                : [
+                    SliverList.separated(
+                      itemCount: sagas.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (context, index) =>
+                          _SagaTile(saga: sagas[index]),
+                    ),
+                  ],
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
 class _SagaTile extends StatelessWidget {
@@ -94,53 +84,50 @@ class _SagaTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final highlight = saga.needsIntervention;
     final foreground = highlight ? scheme.onErrorContainer : scheme.onSurface;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        key: highlight
-            ? ValueKey('saga-highlight-${saga.id}')
-            : ValueKey('saga-${saga.id}'),
-        color: highlight
-            ? scheme.errorContainer
-            : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => context.go(BackofficePaths.saga(saga.id)),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (highlight) ...[
-                      Icon(Icons.warning_amber_rounded, color: foreground),
-                      const SizedBox(width: AppSpacing.xs),
-                    ],
-                    Expanded(
-                      child: Text(
-                        '${saga.type} · ${saga.id}',
-                        style: textTheme.titleMedium?.copyWith(
-                          color: foreground,
-                        ),
-                      ),
-                    ),
+    final radius = BorderRadius.circular(AppRadius.md);
+    return Material(
+      key: highlight
+          ? ValueKey('saga-highlight-${saga.id}')
+          : ValueKey('saga-${saga.id}'),
+      color: highlight ? scheme.errorContainer : scheme.surfaceContainerHighest,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: () => context.go(BackofficePaths.saga(saga.id)),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (highlight) ...[
+                    Icon(Icons.warning_amber_rounded, color: foreground),
+                    const SizedBox(width: AppSpacing.xs),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${sagaStatusLabel(l10n, saga.status)} · ${saga.tenantId} · '
-                  '${saga.currentOperation ?? '-'}',
-                  style: textTheme.bodySmall?.copyWith(color: foreground),
-                ),
-                if (highlight)
-                  Text(
-                    l10n.sagaIntervention,
-                    style: textTheme.labelLarge?.copyWith(color: foreground),
+                  Expanded(
+                    child: MetaLine(
+                      parts: [saga.type, saga.id],
+                      style: textTheme.titleMedium?.copyWith(color: foreground),
+                    ),
                   ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              MetaLine(
+                parts: [
+                  sagaStatusLabel(l10n, saga.status),
+                  saga.tenantId,
+                  saga.currentOperation ?? l10n.valueNone,
+                ],
+                style: textTheme.bodySmall?.copyWith(color: foreground),
+              ),
+              if (highlight)
+                Text(
+                  l10n.sagaIntervention,
+                  style: textTheme.labelLarge?.copyWith(color: foreground),
+                ),
+            ],
           ),
         ),
       ),

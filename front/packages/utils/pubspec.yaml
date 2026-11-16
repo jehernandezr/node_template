@@ -5,18 +5,14 @@ version: 0.0.1
 
 environment:
   sdk: ^3.14.0
-  flutter: ">=1.17.0"
 
 dependencies:
   contracts:
     path: ../contracts
-  flutter:
-    sdk: flutter
-  intl: ^0.20.3
+  intl: 0.20.3
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
+  lints: 6.1.0
+  test: 1.32.0
 
 resolution: workspace

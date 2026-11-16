@@ -3,26 +3,26 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-  "description": "Ra\u00edz del monorepo: Nx como orquestador y herramientas de git. El backend vive en backend/ y el front en front/.",
+  "description": "Raíz del monorepo: Nx como orquestador y herramientas de git. El backend vive en backend/ y el front en front/.",
   "scripts": {
     "prepare": "husky",
-    "affected": "nx affected -t lint test typecheck build analyze",
-    "check": "nx run-many -t lint test typecheck build analyze",
+    "affected": "nx affected -t lint test typecheck build analyze format-check",
+    "check": "nx run-many -t lint test typecheck build analyze format-check",
     "graph": "nx graph"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.4",
-    "@commitlint/config-conventional": "^21.2.4",
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
     "@nx/eslint": "24.0.0",
     "@nx/jest": "24.0.0",
     "@nx/js": "24.0.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.6.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
     "nx": "24.0.0",
-    "prettier": "^3.8.1"
+    "prettier": "3.10.0"
   },
   "packageManager": "pnpm@10.11.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24.22.2 <25"
   }
 }

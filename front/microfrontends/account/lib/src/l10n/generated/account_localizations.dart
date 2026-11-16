@@ -162,6 +162,18 @@ abstract class AccountLocalizations {
   /// **'Términos, consentimientos y documentos firmados.'**
   String get agreementsLinkMessage;
 
+  /// No description provided for @sectionUnavailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no disponible'**
+  String get sectionUnavailableTitle;
+
+  /// No description provided for @sectionUnavailableMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección todavía no está conectada al servidor.'**
+  String get sectionUnavailableMessage;
+
   /// No description provided for @actionFailed.
   ///
   /// In es, this message translates to:
@@ -431,6 +443,12 @@ abstract class AccountLocalizations {
   /// In es, this message translates to:
   /// **'Al aceptar confirmas que revisaste este documento.'**
   String get reviewNotice;
+
+  /// No description provided for @reviewDialogMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Versión {version}. Al aceptar confirmas que revisaste este documento.'**
+  String reviewDialogMessage(String version);
 
   /// No description provided for @agreementAccepted.
   ///

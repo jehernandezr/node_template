@@ -6,7 +6,7 @@ import 'package:mf_notifications/mf_notifications.dart';
 import 'package:mf_notifications/src/data/notifications_scope.dart';
 import 'package:shell_core/shell_core.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 /// Scope con un repositorio sembrado. El lifecycle obtiene la misma instancia.
 FakeNotificationsRepository _seededRepo(
@@ -147,15 +147,6 @@ void main() {
         .then((_) => expect(repo.counts.hasListener, isFalse));
   });
 
-  test('without a scope initialize fails, so the runtime retries', () {
-    expect(
-      NotificationsLifecycle().initialize(
-        ShellContext(eventBus: bus, session: UserSession.anonymous),
-      ),
-      throwsStateError,
-    );
-  });
-
   group('with the shell runtime', () {
     late ValueNotifier<UserSession> session;
     late ShellRuntime runtime;
@@ -168,14 +159,14 @@ void main() {
         registry: registry,
         platform: AppPlatform.web,
         session: session,
-        servicesFactory: (s) => DefaultShellServices(session: s),
+        servicesFactory: (s) => ShellServices(mode: ShellMode.demo, session: s),
       );
       runtime = created;
       addTearDown(runtime.dispose);
     });
 
     FakeNotificationsRepository seedFor(List<AppNotification> seed) =>
-        _seededRepo(runtime.scopeFor(MicrofrontendId.notifications), seed);
+        _seededRepo(runtime.scopeFor(notificationsManifest.id), seed);
 
     Future<List<int>> replayedCounts() async {
       final counts = <int>[];
@@ -230,7 +221,7 @@ void main() {
 
     test('screens and lifecycle share the repository of the scope', () async {
       await runtime.start();
-      final scope = runtime.scopeFor(MicrofrontendId.notifications);
+      final scope = runtime.scopeFor(notificationsManifest.id);
       await notificationsRepositoryOf(scope).markAllAsRead();
       await Future<void>.delayed(Duration.zero);
       final counts = await replayedCounts();

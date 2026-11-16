@@ -36,14 +36,24 @@ hardware (Keychain/Keystore, Secure Enclave, WebCrypto) se agregan después.
     `ApiClient`.
 - **Conexión**: `IdentityConnection` reúne el `SessionManager`, el `ApiClient`
   con la sesión y el acceso de `GET /v1/me/access` (`access`), que se recarga
-  tras cada refresh y vuelve a null al cerrar la sesión. Su transporte
+  tras cada refresh y vuelve a null al cerrar la sesión. Ante un código de
+  `refreshCodes` el cliente refresca y reintenta una vez. La conexión es
+  dueña del transporte y lo cierra en `dispose`. Su transporte
   (`SessionInvalidationTransport`) avisa al gestor cuando una ruta
   autenticada rechaza el token con un código de invalidación, y
   `markMfaVerified` publica el `mfaVerifiedAt` de un paso adicional.
+- **Flujos**: `SignInFlow` (credenciales, método y código del segundo
+  factor) y `StepUpFlow` (paso adicional de una sesión abierta) son
+  `ChangeNotifier` con el estado de cada paso y la regla de qué se reinicia
+  ante cada error. Los formularios de `shell_host` solo los dibujan.
+- **Almacén temporal**: `InMemoryTokenStore` guarda el session token en
+  memoria hasta que exista el adaptador de Keychain/Keystore.
 - **Errores**: los del servidor son `ApiErrorException` con el código del
   contrato; `SignedOutException` indica que no hay sesión o que un logout
-  anuló la operación.
-- **Fakes**: `FakeAuthRepository`, `InMemoryTokenStore`, `FakeDeviceKeyPort`.
+  anuló la operación. Un fallo de red llega como `TransportException`.
+- **Dobles de prueba**: `FakeAuthRepository`, `FakeTokenStore` y
+  `FakeDeviceKeyPort` viven en el paquete `test_utils`, que solo se usa en
+  `dev_dependencies`.
 
 ## Uso
 

@@ -16,6 +16,8 @@ api = {
   runtime        = "lambda"
   route_prefixes = ["/identity"]
   memory_size    = 1024
+  # files_access = true  # lectura y escritura en el bucket de archivos
+  # ses_send     = true  # envío de correo por SES
 }
 
 # Tiempo real siempre en Fargate tras el ALB público (realtime_alb_certificate_arn en platform).
@@ -34,8 +36,7 @@ api = {
 #   events = { queue = "identity-tasks-events", handler = "lambda.sqsHandler" }
 # }
 
-# Tópicos y colas salen de producers y consumer de topology.json: no se repiten aquí.
+# Tópicos y colas salen de producers y consumer de topology.json: no se repiten aquí. Cada
+# worker o consumidor consume solo su cola; archivos y SES se piden por componente.
 database_access = true
 valkey_access   = true
-files_access    = false
-ses_send        = false

@@ -30,6 +30,37 @@ abstract final class AppRadius {
 
   /// 16px, cards and sheets.
   static const double lg = 16;
+
+  /// 999px, fully rounded shapes such as pills and avatars.
+  static const double full = 999;
+}
+
+/// Icon sizes in logical pixels.
+///
+/// Mirrors `icon-size` in `design-tokens.json`.
+abstract final class AppIconSize {
+  /// 16px, icons inline with text.
+  static const double sm = 16;
+
+  /// 24px, default icon size.
+  static const double md = 24;
+
+  /// 48px, illustrative icons of empty and error states.
+  static const double xl = 48;
+}
+
+/// Content widths in logical pixels.
+///
+/// Mirrors `layout` in `design-tokens.json`.
+abstract final class AppLayout {
+  /// 360px, the list pane of a two-pane layout.
+  static const double listPaneWidth = 360;
+
+  /// 720px, the widest column for reading text and forms.
+  static const double readingWidth = 720;
+
+  /// 1100px, the widest column for dense content such as tables.
+  static const double wideContentWidth = 1100;
 }
 
 /// Font sizes in logical pixels.

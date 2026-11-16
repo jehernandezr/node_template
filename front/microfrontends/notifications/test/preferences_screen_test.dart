@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mf_notifications/src/screens/screens.dart';
 
-import 'support/test_app.dart';
+import 'utils/test_app.dart';
 
 Future<void> _pumpPreferences(
   WidgetTester tester,
@@ -79,7 +79,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeNotificationsRepository()
-      ..saveError = StateError('save failed');
+      ..saveError = Exception('save failed');
     addTearDown(repo.dispose);
 
     await _pumpPreferences(tester, repo);

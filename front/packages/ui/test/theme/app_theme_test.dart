@@ -26,4 +26,22 @@ void main() {
     expect(text.titleLarge?.fontSize, AppTypeScale.title);
     expect(text.headlineMedium?.fontSize, AppTypeScale.headline);
   });
+
+  for (final (name, build) in <(String, ThemeData Function())>[
+    ('light', AppTheme.light),
+    ('dark', AppTheme.dark),
+  ]) {
+    test('$name theme gives buttons and fields a 48 pixel minimum', () {
+      final theme = build();
+      expect(
+        theme.filledButtonTheme.style?.minimumSize?.resolve({}),
+        const Size(48, 48),
+      );
+      expect(
+        theme.outlinedButtonTheme.style?.minimumSize?.resolve({}),
+        const Size(48, 48),
+      );
+      expect(theme.inputDecorationTheme.constraints?.minHeight, 48);
+    });
+  }
 }

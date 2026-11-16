@@ -3,22 +3,22 @@ import baseConfig from '../../../eslint.config.mjs';
 export default [
   ...baseConfig,
   {
-    files: ['**/*.json'],
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.spec.ts'],
     rules: {
-      '@nx/dependency-checks': [
+      'no-restricted-syntax': [
         'error',
         {
-          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
-          // tslib solo lo usa el build (importHelpers).
-          ignoredDependencies: ['tslib'],
+          selector: 'Literal[value=/^PLATFORM\\./]',
+          message:
+            'Usa PlatformErrorCode de @contracts/platform en lugar del código como texto.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
+          message:
+            'Usa PlatformErrorCode de @contracts/platform en lugar del código como texto.',
         },
       ],
     },
-    languageOptions: {
-      parser: await import('jsonc-eslint-parser'),
-    },
-  },
-  {
-    ignores: ['**/out-tsc'],
   },
 ];

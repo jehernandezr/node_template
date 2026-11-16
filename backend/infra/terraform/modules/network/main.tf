@@ -210,55 +210,23 @@ resource "aws_vpc_endpoint" "interface" {
 }
 
 # Flow logs de toda la VPC hacia CloudWatch Logs, cifrados con una CMK.
-resource "aws_kms_key" "flow_logs" {
-  description             = "Cifrado de los flow logs de ${var.name_prefix}"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
+module "flow_logs_kms" {
+  source = "../kms-key"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnableIamPolicies"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action    = "kms:*"
-        Resource  = "*"
-      },
-      {
-        Sid       = "AllowCloudWatchLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logs.${data.aws_region.current.region}.amazonaws.com" }
-        Action = [
-          "kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*",
-          "kms:GenerateDataKey*", "kms:Describe*",
-        ]
-        Resource = "*"
-        Condition = {
-          ArnLike = {
-            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:${local.flow_log_group_name}"
-          }
-        }
-      },
-    ]
-  })
-
-  tags = var.tags
-}
-
-resource "aws_kms_alias" "flow_logs" {
-  name          = "alias/${var.name_prefix}-flow-logs"
-  target_key_id = aws_kms_key.flow_logs.key_id
+  alias          = "${var.name_prefix}-flow-logs"
+  description    = "Cifrado de los flow logs de ${var.name_prefix}"
+  log_group_arns = ["arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:${local.flow_log_group_name}"]
+  tags           = var.tags
 }
 
 resource "aws_cloudwatch_log_group" "flow_logs" {
   name              = local.flow_log_group_name
   retention_in_days = var.flow_logs_retention_days
-  kms_key_id        = aws_kms_key.flow_logs.arn
+  kms_key_id        = module.flow_logs_kms.arn
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-flow-logs" })
 
-  depends_on = [aws_kms_key.flow_logs]
+  depends_on = [module.flow_logs_kms]
 }
 
 resource "aws_iam_role" "flow_logs" {
@@ -311,4 +279,14 @@ resource "aws_flow_log" "this" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-flow-logs" })
 
   depends_on = [aws_iam_role_policy.flow_logs]
+}
+
+moved {
+  from = aws_kms_key.flow_logs
+  to   = module.flow_logs_kms.aws_kms_key.this
+}
+
+moved {
+  from = aws_kms_alias.flow_logs
+  to   = module.flow_logs_kms.aws_kms_alias.this
 }

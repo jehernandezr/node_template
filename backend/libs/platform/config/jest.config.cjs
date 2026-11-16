@@ -15,8 +15,8 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
+  // NestJS 12 se publica solo como ESM; Jest corre en CommonJS, así que se transpila.
+  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?@nestjs[+/])'],
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // @platform/kernel usa uuid v14, que es ESM puro, y Jest corre en CJS.
-  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?uuid@|uuid/)'],
   coverageDirectory: 'test-output/jest/coverage',
 };

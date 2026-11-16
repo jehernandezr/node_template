@@ -1,4 +1,4 @@
-import type { Id } from './id.js';
+import type { Id } from './ids/id.js';
 
 /** Objeto con identidad: dos entidades son iguales si tienen el mismo `id`. */
 export abstract class Entity<TId extends Id = Id> {

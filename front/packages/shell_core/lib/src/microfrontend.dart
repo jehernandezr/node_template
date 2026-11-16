@@ -1,42 +1,73 @@
-import 'package:contracts/contracts.dart';
+import 'package:material_ui/material_ui.dart';
 
-import 'access_rule.dart';
-import 'enums.dart';
 import 'shell_context.dart';
-import 'user_session.dart';
+import 'shell_event_bus.dart';
+
+/// Text of a menu entry in each language the shells support.
+///
+/// It travels with the eager manifest, so the shell can draw the menu before
+/// any microfrontend library loads. The registry rejects a label that lacks
+/// a supported language.
+@immutable
+final class MenuLabel {
+  /// Creates a label from texts keyed by language code, for example
+  /// `{'es': 'Tareas', 'en': 'Tasks'}`.
+  const MenuLabel(this.byLanguage);
+
+  /// Text per language code.
+  final Map<String, String> byLanguage;
+
+  /// Text for [locale]: its language, or the first one declared.
+  String resolve(Locale locale) =>
+      byLanguage[locale.languageCode] ?? byLanguage.values.first;
+}
+
+/// Count shown on a menu entry, taken from the latest event of type [E].
+///
+/// [E] is replayable, so a menu built after the event still shows the count.
+/// The microfrontend that owns the event declares the badge; the shell only
+/// draws the number.
+final class MenuBadge<E extends ReplayableShellEvent> {
+  /// Creates a badge that reads the count of each [E] with [count].
+  const MenuBadge(this._count);
+
+  final int Function(E event) _count;
+
+  /// Counts published on [bus], starting with the replayed one if any.
+  Stream<int> watch(ShellEventBus bus) =>
+      bus.on<E>(replay: true).map((event) => _count(event));
+}
 
 /// Menu item a microfrontend contributes to the shell navigation.
+@immutable
 final class MenuEntry {
-  /// Creates a menu entry. [labelKey] is an i18n key, not a literal text.
+  /// Creates a menu entry.
   const MenuEntry({
-    required this.labelKey,
+    required this.label,
     required this.path,
     required this.order,
-  });
+    required this.icon,
+    IconData? selectedIcon,
+    this.badge,
+  }) : selectedIcon = selectedIcon ?? icon;
 
-  /// Key of the label in the i18n bundle.
-  final String labelKey;
+  /// Text of the entry.
+  final MenuLabel label;
 
   /// Absolute route path the entry navigates to.
   final String path;
 
   /// Sort position; lower values come first.
   final int order;
-}
 
-/// Metadata the registry needs to decide visibility.
-abstract interface class MicrofrontendDescriptor {
-  /// Unique id of the microfrontend.
-  MicrofrontendId get id;
+  /// Icon of the entry.
+  final IconData icon;
 
-  /// Platforms where the microfrontend is included.
-  Set<AppPlatform> get platforms;
+  /// Icon while the entry is selected. Defaults to [icon].
+  final IconData selectedIcon;
 
-  /// Rule that decides who can use the microfrontend.
-  AccessRule get access;
-
-  /// Feature flag that must be enabled to see the microfrontend, if any.
-  FeatureFlag? get flag;
+  /// Count drawn on the entry, or null for none.
+  final MenuBadge? badge;
 }
 
 /// Optional lifecycle hooks of a microfrontend.
@@ -61,33 +92,4 @@ abstract class Microfrontend {
 
   /// Releases resources. Default: no-op.
   Future<void> dispose() async {}
-}
-
-/// Visibility rules shared by the registry and the router.
-extension MicrofrontendVisibility on MicrofrontendDescriptor {
-  /// Whether [session] may see this microfrontend on [platform] at [now]
-  /// (default: the current time).
-  ///
-  /// Requires the platform to be supported, [access] to allow the session and,
-  /// when [flag] is set, the session to hold that flag.
-  bool isVisibleTo(
-    UserSession session,
-    AppPlatform platform, {
-    DateTime? now,
-  }) => _isAvailable(session, platform) && access.allows(session, now: now);
-
-  /// Like [isVisibleTo], but an MFA rule counts as passed for a signed-in
-  /// session. Menus use it so the user can open a section and step up there.
-  bool isReachableBy(
-    UserSession session,
-    AppPlatform platform, {
-    DateTime? now,
-  }) =>
-      _isAvailable(session, platform) && access.reachableBy(session, now: now);
-
-  bool _isAvailable(UserSession session, AppPlatform platform) {
-    if (!platforms.contains(platform)) return false;
-    final requiredFlag = flag;
-    return requiredFlag == null || session.featureFlags.contains(requiredFlag);
-  }
 }

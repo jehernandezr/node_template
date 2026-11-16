@@ -1,16 +1,33 @@
 import 'package:contracts/contracts.dart' show MfaRules;
+import 'package:shell_core/shell_core.dart';
 
-/// Ruta base del microfrontend.
+/// Microfrontend id and first segment of its routes.
+const MicrofrontendId accountId = MicrofrontendId('account');
+
+/// Base route of the microfrontend.
 const String accountBasePath = '/account';
 
-/// Tamaño de página al listar sesiones y dispositivos (máximo del contrato).
+/// Menu label. The shell draws it before loading the microfrontend, so it
+/// travels with the manifest and not in the deferred ARB files.
+const MenuLabel accountMenuLabel = MenuLabel({'es': 'Cuenta', 'en': 'Account'});
+
+/// Page size when listing sessions and devices (the contract maximum).
 const int accountPageSize = 100;
 
-/// Tope de páginas que el repositorio real recorre por listado.
+/// Most pages the live repository walks per listing.
 const int accountMaxPages = 50;
 
-/// Antigüedad máxima del segundo factor para acciones sensibles, la del
-/// contrato (`MfaRules.stepUpMaxAgeMinutes`).
+/// Maximum age of the second factor for sensitive actions, the contract one
+/// (`MfaRules.stepUpMaxAgeMinutes`).
 const Duration accountStepUpMaxAge = Duration(
   minutes: MfaRules.stepUpMaxAgeMinutes,
 );
+
+/// Artificial latency of the demo repository.
+const Duration accountDemoDelay = Duration(milliseconds: 400);
+
+/// Font of the recovery codes: fixed width, so similar characters stay apart.
+const String accountCodeFontFamily = 'monospace';
+
+/// Card width under which the action of a row moves below its text.
+const double accountCompactRowWidth = 480;
