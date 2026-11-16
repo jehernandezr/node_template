@@ -1,13 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Baseline } from './baseline.mjs';
 import { CheckMode } from './check-mode.mjs';
 import { FrontPaths } from './front-paths.mjs';
 
 export class FrontStructureCheck {
-  static BASELINE_FILE = 'front/tools/structure-baseline.json';
-
   // mode: uno de los valores de CheckMode.
   constructor(root, mode, rules) {
     this.root = root;
@@ -15,28 +12,14 @@ export class FrontStructureCheck {
     this.rules = rules;
   }
 
-  // Devuelve { violations: Violation[], warnings: string[], baselineWritten: number | null }.
+  // Devuelve { violations: Violation[] } con todas las violaciones de los archivos del modo:
+  // los cambiados frente a HEAD en CHANGED y todo front/ en ALL.
   run() {
-    const baselinePath = join(this.root, FrontStructureCheck.BASELINE_FILE);
-    if (this.mode === CheckMode.CHANGED) {
-      // Un archivo tocado debe quedar limpio: la línea base no cuenta.
-      return this.result(this.evaluate(this.changedFrontFiles()), [], null);
-    }
-    const all = this.evaluate(this.allFrontFiles());
-    if (this.mode === CheckMode.UPDATE_BASELINE) {
-      Baseline.fromViolations(all).save(baselinePath);
-      return this.result([], [], all.length);
-    }
-    const { fresh, stale } = Baseline.load(baselinePath).filterNew(all);
-    return this.result(
-      fresh,
-      stale.map((s) => `entrada de la línea base que ya no aplica: ${s}`),
-      null,
-    );
-  }
-
-  result(violations, warnings, baselineWritten) {
-    return { violations, warnings, baselineWritten };
+    const files =
+      this.mode === CheckMode.ALL
+        ? this.allFrontFiles()
+        : this.changedFrontFiles();
+    return { violations: this.evaluate(files) };
   }
 
   evaluate(files) {

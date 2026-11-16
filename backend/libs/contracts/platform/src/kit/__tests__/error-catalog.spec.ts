@@ -93,23 +93,63 @@ describe('ErrorCatalog', () => {
     expect(catalog.all()).toHaveLength(platformErrorCatalog.length);
   });
 
-  it('throws when a code is registered twice', () => {
+  it('ignores an equivalent entry registered again and keeps the first', () => {
     const catalog = new ErrorCatalog();
     catalog.register([sample('PLATFORM.TEST.ONE')]);
-    expect(() => catalog.register([sample('PLATFORM.TEST.ONE')])).toThrow(
-      /duplicado/,
-    );
+    expect(() =>
+      catalog.register([
+        { ...sample('PLATFORM.TEST.ONE'), description: 'Otra.' },
+      ]),
+    ).not.toThrow();
+    expect(catalog.all()).toHaveLength(1);
+    expect(catalog.get('PLATFORM.TEST.ONE')?.description).toBe('Ejemplo.');
   });
 
-  it('throws when a batch repeats a code and keeps the catalog unchanged', () => {
+  it('ignores an equivalent entry repeated inside the same batch', () => {
+    const catalog = new ErrorCatalog();
+    catalog.register([
+      sample('PLATFORM.TEST.ONE'),
+      sample('PLATFORM.TEST.ONE'),
+    ]);
+    expect(catalog.all()).toHaveLength(1);
+  });
+
+  it('throws when a repeated code has another status and keeps the catalog unchanged', () => {
+    const catalog = new ErrorCatalog();
+    catalog.register([sample('PLATFORM.TEST.ONE')]);
+    expect(() =>
+      catalog.register([
+        sample('PLATFORM.TEST.TWO'),
+        { ...sample('PLATFORM.TEST.ONE'), httpStatus: 409 },
+      ]),
+    ).toThrow(
+      'Código de error duplicado con otra definición: PLATFORM.TEST.ONE',
+    );
+    expect(catalog.all().map((e) => e.code)).toEqual(['PLATFORM.TEST.ONE']);
+  });
+
+  it('throws when a repeated code differs in retryable', () => {
     const catalog = new ErrorCatalog();
     expect(() =>
       catalog.register([
         sample('PLATFORM.TEST.ONE'),
-        sample('PLATFORM.TEST.ONE'),
+        { ...sample('PLATFORM.TEST.ONE'), retryable: true },
       ]),
-    ).toThrow(/duplicado/);
+    ).toThrow(/otra definición/);
     expect(catalog.all()).toHaveLength(0);
+  });
+
+  it('throws when a repeated code has another audience', () => {
+    const catalog = new ErrorCatalog();
+    catalog.register([sample('PLATFORM.TEST.ONE')]);
+    expect(() =>
+      catalog.register([
+        { ...sample('PLATFORM.TEST.ONE'), audience: ErrorAudience.Internal },
+      ]),
+    ).toThrow(/otra definición/);
+    expect(catalog.get('PLATFORM.TEST.ONE')?.audience).toBe(
+      ErrorAudience.Public,
+    );
   });
 
   it.each([

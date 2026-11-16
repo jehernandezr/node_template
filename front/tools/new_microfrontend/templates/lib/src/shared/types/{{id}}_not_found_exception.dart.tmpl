@@ -1,0 +1,10 @@
+/// Thrown when no {{id}} item has the requested id.
+final class {{Pascal}}NotFoundException implements Exception {
+  const {{Pascal}}NotFoundException(this.id);
+
+  /// The id that was not found.
+  final String id;
+
+  @override
+  String toString() => '{{Pascal}}NotFoundException: $id';
+}

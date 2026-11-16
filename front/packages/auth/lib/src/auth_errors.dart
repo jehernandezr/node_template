@@ -19,9 +19,10 @@ final class SignedOutException implements Exception {
 /// reutilizada (reusar un session token ya rotado revoca la sesión completa),
 /// access token revocado por la época del usuario o del tenant, y usuario o
 /// tenant suspendido. `IDENTITY.TOKEN.STALE_PERMISSIONS` no está: con él el
-/// cliente refresca y reintenta. `PLATFORM.AUTH.UNAUTHENTICATED` cierra la
-/// sesión cuando lo responde un refresh: lo decide `SessionManager`, porque no
-/// es un código de identity.
+/// cliente refresca y reintenta. `PLATFORM.AUTH.TOKEN_EXPIRED` tampoco: el
+/// access token vencido también refresca y reintenta, una sola vez.
+/// `PLATFORM.AUTH.UNAUTHENTICATED` cierra la sesión cuando lo responde un
+/// refresh: lo decide `SessionManager`, porque no es un código de identity.
 const Set<IdentityErrorCode> defaultInvalidationCodes = {
   IdentityErrorCode.sessionRevoked,
   IdentityErrorCode.sessionExpired,

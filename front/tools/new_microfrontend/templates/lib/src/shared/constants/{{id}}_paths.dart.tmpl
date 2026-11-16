@@ -1,0 +1,27 @@
+import 'package:shell_core/shell_core.dart';
+
+/// Id of the microfrontend and first segment of its routes.
+const MicrofrontendId {{id}}Id = MicrofrontendId('{{id}}');
+
+/// Menu label. The shell draws it before the microfrontend loads, so it
+/// travels with the manifest instead of the deferred ARB files.
+const MenuLabel {{id}}MenuLabel = MenuLabel({
+  'es': '{{menuEs}}',
+  'en': '{{menuEn}}',
+});
+
+/// Routes of the {{id}} microfrontend. The manifest and the screens build
+/// every location from here.
+abstract final class {{Pascal}}Paths {
+  /// The list, root of the microfrontend.
+  static const String list = '/{{id}}';
+
+  /// Name of the item id path parameter.
+  static const String idParam = 'id';
+
+  /// Segment of one item, child of [list].
+  static const String idSegment = ':$idParam';
+
+  /// Detail of the item [id].
+  static String detail(String id) => '$list/$id';
+}

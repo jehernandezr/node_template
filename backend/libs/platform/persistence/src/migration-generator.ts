@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Clock } from '@platform/kernel';
 import { DataSource } from 'typeorm';
-import { invalidConfiguration } from './errors.js';
+import { PersistenceError } from './errors/persistence-error.js';
 import type { MigrationStatement } from './model/migration-statement.js';
 import type { MigrationGenerateRequest } from './model/migration-generate-request.js';
 import type { MigrationSourceRenderer } from './migration-source-renderer.js';
@@ -22,7 +22,10 @@ export class MigrationGenerator {
   /** @returns la ruta del archivo escrito, o `null` si las entidades ya coinciden con las migraciones. */
   async generate(request: MigrationGenerateRequest): Promise<string | null> {
     if (!MigrationGenerator.NAME_PATTERN.test(request.name)) {
-      throw invalidConfiguration('name', 'PascalCase letters and digits');
+      throw PersistenceError.invalidConfiguration(
+        'name',
+        'PascalCase letters and digits',
+      );
     }
     const timestamp = this.clock.now().getTime();
     const tempDb = `migration_tmp_${timestamp}`;

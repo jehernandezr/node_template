@@ -382,17 +382,6 @@ describe('ResilienceRegistry', () => {
     );
   });
 
-  it('keeps the deprecated onEvent alias working', async () => {
-    const registry = TestPolicies.registry();
-    const seen: ResilienceEvent[] = [];
-    const unsubscribe = registry.onEvent((event) => {
-      seen.push(event);
-    });
-    await expect(registry.execute(API, async () => 'ok')).resolves.toBe('ok');
-    unsubscribe();
-    expect(seen).toEqual([]);
-  });
-
   it('rejects an unknown policy with UnknownPolicyError', async () => {
     const registry = new ResilienceRegistry();
     await expect(

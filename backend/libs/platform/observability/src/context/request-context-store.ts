@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Redactor } from '../redaction/redactor.js';
 import { TraceContextCodec } from '../propagation/trace-context-codec.js';
 import { Tracing } from '../tracing/tracing.js';
 import type { RequestContextData } from './request-context-data.js';
@@ -17,20 +16,6 @@ import type { RequestContextInit } from './request-context-init.js';
  * `RequestContextInterceptor` sabe que debe abrir uno.
  */
 export class RequestContextStore {
-  private static sharedInstance: RequestContextStore | undefined;
-
-  /**
-   * Instancia compartida que usa `RequestContext` mientras las demás librerías
-   * migran a inyectar el almacén. Se crea en el primer uso.
-   * @deprecated Inyecta `RequestContextStore`.
-   */
-  static shared(): RequestContextStore {
-    RequestContextStore.sharedInstance ??= new RequestContextStore(
-      new Tracing(new Redactor()),
-    );
-    return RequestContextStore.sharedInstance;
-  }
-
   private readonly storage = new AsyncLocalStorage<RequestContextData>();
 
   constructor(private readonly tracing: Tracing) {}

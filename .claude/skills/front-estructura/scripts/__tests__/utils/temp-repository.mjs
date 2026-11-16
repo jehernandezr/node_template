@@ -1,11 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,10 +57,6 @@ export class TempRepository {
       stdout: result.stdout,
       stderr: result.stderr,
     };
-  }
-
-  read(relativePath) {
-    return readFileSync(join(this.root, relativePath), 'utf8');
   }
 
   dispose() {

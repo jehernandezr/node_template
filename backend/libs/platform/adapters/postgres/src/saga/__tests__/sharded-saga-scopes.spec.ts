@@ -1,6 +1,9 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import { FixedClock } from '@platform/kernel/test-utils';
-import { PersistenceError, ShardScope } from '@platform/persistence';
+import {
+  PersistenceError,
+  ShardScope,
+  PersistenceErrorCode,
+} from '@platform/persistence';
 import { ShardedTestDatabase } from '@platform/persistence/test-utils';
 import { ShardKey, ShardRouter } from '@platform/sharding';
 import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
@@ -30,7 +33,7 @@ describe('ShardedSagaScopes', () => {
 
     expect(error).toBeInstanceOf(PersistenceError);
     expect((error as PersistenceError).code).toBe(
-      PlatformErrorCode.PersistenceTenantRequired,
+      PersistenceErrorCode.TenantRequired,
     );
   });
 

@@ -1,6 +1,6 @@
+import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Global, Injectable, Module } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { PlatformErrorCode } from '@contracts/platform';
 import { ConfigModule } from '@platform/config/nest';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { Clock, TransactionManager } from '@platform/kernel';
@@ -214,7 +214,7 @@ describe('PersistenceModule', () => {
       await expect(async () =>
         PersistenceModule.forRoot(options),
       ).rejects.toMatchObject({
-        code: PlatformErrorCode.PersistenceInvalidConfig,
+        code: PersistenceErrorCode.InvalidConfig,
       });
     });
   });

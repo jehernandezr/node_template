@@ -1,4 +1,10 @@
-import type { MfaFactor, SignInStatus } from '../enums/auth.enum.js';
+import type { PlatformRole } from '../enums/access.enum.js';
+import type {
+  AuthMethodReference,
+  MfaFactor,
+  SignInStatus,
+  TokenAudience,
+} from '../enums/auth.enum.js';
 
 /** Email y contraseña. `deviceId` es el id firmado que el cliente guardó en su primer login. */
 export interface SignInRequest {
@@ -83,4 +89,37 @@ export interface StepUpResult {
   tokens: SessionTokens;
   /** Instante ISO 8601 del segundo factor; es el nuevo `mfaVerifiedAt` de la sesión. */
   mfaVerifiedAt: string;
+}
+
+/** Claims del access token JWT (ADR 0022). Los instantes son epoch en segundos. */
+export interface AccessTokenClaims {
+  /** Emisor de la región. */
+  iss: string;
+  aud: TokenAudience;
+  /** Id del usuario. */
+  sub: string;
+  /** Tenant activo. */
+  tid: string;
+  /** Tenant de origen del usuario, con el que se enruta su shard. */
+  htid: string;
+  /** Sesión. */
+  sid: string;
+  /** Dispositivo, si la sesión tiene uno. */
+  did?: string;
+  amr: AuthMethodReference[];
+  /** Última autenticación interactiva, incluido el step-up. */
+  auth_time: number;
+  /** Roles del usuario en el tenant activo. */
+  roles: string[];
+  /** Roles de plataforma. */
+  proles: PlatformRole[];
+  /** Versión de permisos: `<versión del tenant>.<versión del usuario en el tenant>`. */
+  pv: string;
+  /** Región de residencia. */
+  rgn: string;
+  /** Tope absoluto de la sesión. */
+  sxp: number;
+  iat: number;
+  exp: number;
+  jti: string;
 }

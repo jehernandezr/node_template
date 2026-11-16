@@ -50,7 +50,7 @@ La saga guarda el `traceparent` en su instancia. Si quien la inicia no lo pasa, 
 
 ### Resultado incierto
 
-Un paso tiene resultado incierto cuando la llamada termina sin saber si el servicio destino aplicó el efecto. `SagaEngine` (`backend/libs/platform/saga`) da a cada llamada un plazo de `maxStepDurationMs` (25 segundos por defecto). Si el plazo se cumple, aborta la señal de la llamada y el resultado es `uncertain` (`CallOutcomeKind.Uncertain` de `@platform/primitives`). Lo mismo pasa cuando la llamada devuelve `uncertain` o lanza un error que `classifyFailure` clasifica como `Timeout` o `Cancelled`.
+Un paso tiene resultado incierto cuando la llamada termina sin saber si el servicio destino aplicó el efecto. `SagaEngine` (`backend/libs/platform/saga`) da a cada llamada un plazo de `maxStepDurationMs` (25 segundos por defecto). Si el plazo se cumple, aborta la señal de la llamada y el resultado es `uncertain` (`CallOutcomeKind.Uncertain` de `@platform/primitives`). Lo mismo pasa cuando la llamada devuelve `uncertain` o lanza un error que `FailureClassifier` clasifica como `Timeout` o `Cancelled`.
 
 El motor registra el paso como `Uncertain` en la bitácora y deja la saga en `Suspended` con el código `PLATFORM.SAGA.UNCERTAIN_OUTCOME`. El catálogo de plataforma lo declara interno, reintentable y con estado 504.
 

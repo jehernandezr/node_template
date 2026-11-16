@@ -133,6 +133,12 @@ variable "valkey_services" {
   default     = []
 }
 
+variable "valkey_auth_writer" {
+  description = "Servicio que escribe el estado de autenticación compartido (llaves y canal auth:*). Los demás servicios con usuario Valkey solo lo leen."
+  type        = string
+  default     = "identity"
+}
+
 variable "valkey_acl_overrides" {
   description = "ACL propia por servicio cuando el prefijo no alcanza. Revísala: una ACL con ~* da acceso a las llaves de todos."
   type        = map(string)

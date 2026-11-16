@@ -1,8 +1,8 @@
+import { FailureKind } from '@platform/kernel';
 import { FixedRandomSource } from '@platform/kernel/test-utils';
 import {
   BackoffStrategy,
   FailureClassifier,
-  FailureKind,
   FailureRule,
   RetryPolicy,
 } from '@platform/primitives';

@@ -1,10 +1,7 @@
 import { createHash } from 'node:crypto';
+import { FailureKind } from '@platform/kernel';
 import { FixedClock } from '@platform/kernel/test-utils';
-import {
-  FailureClassifier,
-  FailureKind,
-  InvalidArgumentError,
-} from '@platform/primitives';
+import { FailureClassifier, InvalidArgumentError } from '@platform/primitives';
 import type { RateLimitRule } from '@platform/rate-limit';
 import { ValkeyCommand } from '../valkey-command.enum.js';
 import { ValkeyCommandError } from '../valkey-command.error.js';

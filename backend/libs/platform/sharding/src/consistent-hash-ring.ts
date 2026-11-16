@@ -1,4 +1,4 @@
-import { fnv1a32 } from '@platform/primitives';
+import { Hashes } from '@platform/primitives';
 import { ShardingError } from './errors/sharding-error.js';
 import { ShardingErrorCode } from './errors/sharding-error-code.enum.js';
 
@@ -7,7 +7,7 @@ import { ShardingErrorCode } from './errors/sharding-error-code.enum.js';
  * así que su salida pasa por el finalizador de murmur3 para repartir los puntos de forma pareja.
  */
 function ringPosition(input: string): number {
-  let hash = fnv1a32(input);
+  let hash = Hashes.fnv1a32(input);
   hash ^= hash >>> 16;
   hash = Math.imul(hash, 0x85ebca6b);
   hash ^= hash >>> 13;

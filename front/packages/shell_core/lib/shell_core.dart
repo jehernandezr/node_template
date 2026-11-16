@@ -7,7 +7,6 @@ export 'package:contracts/contracts.dart'
 export 'src/access_rule.dart';
 export 'src/deferred_library_loader.dart';
 export 'src/deferred_localizations.dart';
-export 'src/deferred_page.dart';
 export 'src/demo_behavior.dart';
 export 'src/enums.dart';
 export 'src/microfrontend.dart';
@@ -19,7 +18,6 @@ export 'src/screen_route.dart';
 export 'src/shell_access.dart';
 export 'src/shell_context.dart';
 export 'src/shell_event_bus.dart';
-export 'src/shell_navigation.dart';
 export 'src/shell_navigator.dart';
 export 'src/shell_router.dart';
 export 'src/shell_runtime.dart';

@@ -29,7 +29,7 @@ El ORM es TypeORM sobre PostgreSQL. Se usan sus capacidades (entidades, `DataSou
 - Guardar es por agregado entero. El mapper reconstruye con `User.rehydrate(...)`, nunca con el constructor público ni con `Object.assign`.
 - El repositorio obtiene el `EntityManager` de la transacción actual desde `@platform/persistence`. Nunca abre conexiones ni `QueryRunner` por su cuenta, ni usa `dataSource.manager` global dentro de una transacción (saldría de ella).
 - Un método de repositorio expresa una necesidad del negocio (`findActiveByEmail`), no un filtro genérico.
-- Los errores de la base se traducen a errores de dominio dentro del repositorio (`23505` a la regla de unicidad). Ver `backend-errores`.
+- Los errores de la base se traducen a errores de dominio dentro del repositorio (`23505` a la regla de unicidad). Los que no tienen significado de negocio los traduce `PersistenceErrorTranslator` a `PersistenceError`, clasificados por `PostgresFailureClassifier`. Ver `backend-errores`.
 - Las lecturas de consulta devuelven DTO de lectura con `select` de las columnas necesarias, no entidades.
 
 ```ts

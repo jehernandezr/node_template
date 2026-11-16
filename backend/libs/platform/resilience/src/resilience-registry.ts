@@ -94,11 +94,4 @@ export class ResilienceRegistry {
   subscribe(listener: ResilienceEventListener): () => void {
     return this.events.subscribe(listener);
   }
-
-  /**
-   * @deprecated Usa `subscribe`.
-   */
-  onEvent(listener: ResilienceEventListener): () => void {
-    return this.subscribe(listener);
-  }
 }

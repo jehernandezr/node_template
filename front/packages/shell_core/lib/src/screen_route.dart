@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'access_rule.dart';
-import 'deferred_page.dart';
+import 'deferred_library_loader.dart';
 import 'microfrontend_scope.dart';
 import 'shell_access.dart';
 

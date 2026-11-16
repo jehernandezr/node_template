@@ -1,7 +1,6 @@
 export * from './aggregate-root.js';
 export * from './domain-event.js';
 export * from './entity.js';
-export * from './result.js';
 export * from './specification.js';
 export * from './use-case.js';
 export * from './value-object.js';

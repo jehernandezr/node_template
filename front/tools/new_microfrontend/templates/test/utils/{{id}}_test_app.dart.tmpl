@@ -1,0 +1,71 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mf_{{id}}/mf_{{id}}.dart';
+import 'package:mf_{{id}}/src/data/{{id}}_repository.dart';
+import 'package:mf_{{id}}/src/l10n/generated/{{id}}_localizations.dart';
+import 'package:mf_{{id}}/src/shared/constants/{{id}}_paths.dart';
+import 'package:shell_core/shell_core.dart';
+import 'package:test_utils/test_utils.dart';
+
+/// Harness of the {{id}} screens: the real manifest routes over a signed-in
+/// session, in the locale given.
+final class {{Pascal}}TestApp {
+  const {{Pascal}}TestApp({this.locale = const Locale('es')});
+
+  /// Texts in Spanish, to find widgets by their text.
+  static {{Pascal}}Localizations get es =>
+      lookup{{Pascal}}Localizations(const Locale('es'));
+
+  /// Texts in English.
+  static {{Pascal}}Localizations get en =>
+      lookup{{Pascal}}Localizations(const Locale('en'));
+
+  /// Locale of the app.
+  final Locale locale;
+
+  /// App that runs the manifest routes from [location].
+  Widget wrap(MicrofrontendScope scope, {String location = {{Pascal}}Paths.list}) {
+    final router = GoRouter(
+      initialLocation: location,
+      routes: {{id}}Manifest.buildRoutes(
+        DeferredLibraryLoader().page,
+        () => scope,
+      ),
+    );
+    return TestApp(locale: locale).wrapRouter(router);
+  }
+
+  /// Scope of one identity in demo mode. Each call is a new identity.
+  static MicrofrontendScope newScope() => TestScope().scope;
+
+  /// Scope whose repository is [repository].
+  static MicrofrontendScope scopeWith({{Pascal}}Repository repository) =>
+      TestScope().withRepository<{{Pascal}}Repository>(repository).scope;
+
+  /// Pumps [screen] alone, without the router, with the texts of the
+  /// microfrontend installed around it.
+  static Future<void> pumpScreen(
+    WidgetTester tester,
+    Widget screen, {
+    Locale locale = const Locale('es'),
+  }) => tester.pumpWidget(
+    TestApp(locale: locale).wrap(
+      DeferredLocalizations(
+        delegates: const [{{Pascal}}Localizations.delegate],
+        child: screen,
+      ),
+    ),
+  );
+
+  /// Pumps the app over a scope that holds [repository].
+  static Future<void> pump(
+    WidgetTester tester,
+    {{Pascal}}Repository repository, {
+    String location = {{Pascal}}Paths.list,
+    Locale locale = const Locale('es'),
+  }) => tester.pumpWidget(
+    {{Pascal}}TestApp(locale: locale)
+        .wrap(scopeWith(repository), location: location),
+  );
+}

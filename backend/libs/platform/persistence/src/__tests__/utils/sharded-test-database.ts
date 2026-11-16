@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Secret } from '@platform/config';
 import { SystemClock } from '@platform/kernel';
 import {
@@ -21,7 +21,7 @@ import { AcrossShards } from '../../across-shards.js';
 import { CatalogDataSource } from '../../catalog-data-source.js';
 import type { DatabaseSettings } from '../../config/database.config.js';
 import { RequestPersistenceContextProvider } from '../../context/request-persistence-context-provider.js';
-import { PersistenceError } from '../../errors.js';
+import { PersistenceError } from '../../errors/persistence-error.js';
 import { EntityManagerProvider } from '../../entity-manager-provider.js';
 import { EntityRegistry } from '../../entity-registry.js';
 import type { DatabaseSetDefinition } from '../../model/database-set-definition.js';
@@ -60,7 +60,7 @@ class ContainerEndpointResolver extends InstanceEndpointResolver {
   resolve(instance: string): InstanceEndpoints {
     if (instance !== this.instance) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceInvalidConfig,
+        PersistenceErrorCode.InvalidConfig,
         'The test database only knows its own instance',
       );
     }

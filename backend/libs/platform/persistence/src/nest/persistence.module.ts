@@ -18,7 +18,8 @@ import { DatabaseKind } from '../model/database-kind.enum.js';
 import type { PersistenceFeatureOptions } from '../model/persistence-feature-options.js';
 import type { PersistenceModuleOptions } from '../model/persistence-module-options.js';
 import { OptimisticWriter } from '../optimistic-writer.js';
-import { PersistenceError } from '../errors.js';
+import { PersistenceError } from '../errors/persistence-error.js';
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import { PersistenceFeature } from '../persistence-feature.js';
 import { PostgresDataSourceFactory } from '../postgres-data-source-factory.js';
 import { DataSourceFactory } from '../ports/data-source-factory.js';
@@ -30,7 +31,6 @@ import { ShardResolver } from '../shard-resolver.js';
 import { ShardScope } from '../shard-scope.js';
 import { ShardedMigrationRunner } from '../sharded-migration-runner.js';
 import { TypeOrmTransactionManager } from '../typeorm-transaction-manager.js';
-import { PlatformErrorCode } from '@contracts/platform';
 import type { PersistenceModuleExtras } from './persistence-module-extras.js';
 import {
   PERSISTENCE_OPTIONS,
@@ -126,7 +126,7 @@ export class PersistenceModule extends PersistenceModuleClass {
   ): DynamicModule {
     if (extras.shardLister === undefined) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceInvalidConfig,
+        PersistenceErrorCode.InvalidConfig,
         'PersistenceModule necesita el tipo que lista los shards en `shardLister`',
         { details: { option: 'shardLister' } },
       );

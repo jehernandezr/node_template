@@ -1,0 +1,24 @@
+# mf_{{id}}
+
+Microfrontend {{Pascal}}. Exporta `{{id}}Manifest` y todas sus rutas viven bajo `/{{id}}` (`{{Pascal}}Paths`). Solo modo demo: los datos vienen de `Fake{{Pascal}}Repository`.
+
+## Rutas
+
+- `/{{id}}`: lista de elementos. Cada elemento abre su detalle.
+- `/{{id}}/:id`: detalle de un elemento, hijo de la lista para que tenga botón atrás.
+
+Cada pantalla es un `StatelessWidget` que obtiene su controlador con `ControllerBuilder`. Las pantallas se reúnen en `lib/src/screens/{{id}}_screens.dart` (`{{Pascal}}Screens.list` y `{{Pascal}}Screens.detail`), que el manifiesto llama desde la biblioteca diferida. Cada una toma su repositorio del `MicrofrontendScope` de la identidad actual, a través de `{{Pascal}}Data`.
+
+## Por escribir
+
+- El dominio: el puerto `{{Pascal}}Repository`, sus tipos y los datos de demostración.
+- Los textos propios en `lib/src/l10n/app_es.arb` y `app_en.arb`.
+- Los permisos en `lib/src/shared/constants/{{id}}_access.dart`, cuando el dominio tenga los suyos.
+- El manifiesto en las apps `apps/web` y `apps/mobile`.
+
+## Pruebas
+
+```sh
+flutter analyze
+flutter test
+```

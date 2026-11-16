@@ -1,4 +1,3 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import {
   ManagerIntent,
   PersistenceError,
@@ -6,6 +5,7 @@ import {
   type EntityManagerProvider,
   type PersistenceFeature,
   type TypeOrmTransactionManager,
+  PersistenceErrorCode,
 } from '@platform/persistence';
 import type { DataSource, EntityManager } from 'typeorm';
 import type { ShardBinding } from './shard-binding.js';
@@ -56,7 +56,7 @@ export class PlatformEntityManagers {
     );
     if (outcome.partial) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceQueryFailed,
+        PersistenceErrorCode.QueryFailed,
         'The maintenance sweep failed in some shards',
         {
           details: { shards: outcome.failures.map((failure) => failure.shard) },

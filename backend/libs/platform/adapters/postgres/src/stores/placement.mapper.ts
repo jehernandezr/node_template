@@ -1,5 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
-import { PersistenceError } from '@platform/persistence';
+import { PersistenceError, PersistenceErrorCode } from '@platform/persistence';
 import { TenantStatus, type TenantPlacement } from '@platform/sharding';
 import type { ShardDirectoryEntity } from '../entities/shard-directory.entity.js';
 
@@ -12,7 +11,7 @@ export class PlacementMapper {
   static toPlacement(entity: ShardDirectoryEntity): TenantPlacement {
     if (!PlacementMapper.isWellFormed(entity)) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceCorruptRow,
+        PersistenceErrorCode.CorruptRow,
         'Shard directory row has an invalid shape',
       );
     }

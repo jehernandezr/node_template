@@ -88,7 +88,92 @@ const layoutPlugin = {
   },
 };
 
-export { layoutPlugin };
+// Reglas de dependencia entre proyectos del ADR 0015.
+const depConstraints = [
+  {
+    sourceTag: 'type:contracts',
+    onlyDependOnLibsWithTags: ['type:contracts'],
+  },
+  {
+    sourceTag: 'type:util',
+    onlyDependOnLibsWithTags: ['type:util', 'type:contracts'],
+  },
+  {
+    sourceTag: 'type:platform',
+    onlyDependOnLibsWithTags: ['type:platform', 'type:util', 'type:contracts'],
+  },
+  {
+    sourceTag: 'type:tool',
+    onlyDependOnLibsWithTags: ['type:contracts', 'type:util', 'type:platform'],
+  },
+  {
+    sourceTag: 'type:app',
+    onlyDependOnLibsWithTags: [
+      'type:app',
+      'type:platform',
+      'type:util',
+      'type:contracts',
+    ],
+  },
+  // Reglas por servicio: el código interno de un servicio es privado.
+  // De otro servicio solo se importa su paquete `@contracts/<servicio>`
+  // (`type:contracts`). Al crear un servicio, agrega aquí su `scope:<servicio>`
+  // con la misma forma que `scope:identity`.
+  {
+    sourceTag: 'scope:platform',
+    onlyDependOnLibsWithTags: ['scope:platform', 'scope:shared'],
+  },
+  {
+    sourceTag: 'scope:shared',
+    // Las herramientas compartidas leen los contratos de todos los servicios.
+    onlyDependOnLibsWithTags: [
+      'scope:shared',
+      'scope:platform',
+      'type:contracts',
+    ],
+  },
+  {
+    sourceTag: 'scope:identity',
+    onlyDependOnLibsWithTags: [
+      'scope:identity',
+      'scope:platform',
+      'scope:shared',
+      'type:contracts',
+    ],
+  },
+];
+
+/**
+ * Excepción del ADR 0022: `@platform/auth` lee el formato del token y sus códigos de
+ * `@contracts/identity`. La regla se vuelve a declarar completa porque una configuración
+ * posterior reemplaza las opciones de la anterior; solo cambia la restricción de
+ * `scope:platform`. Cada librería la usa con las rutas de `files` relativas a su proyecto.
+ */
+const allowIdentityContracts = (files) => ({
+  files,
+  rules: {
+    '@nx/enforce-module-boundaries': [
+      'error',
+      {
+        enforceBuildableLibDependency: true,
+        allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+        depConstraints: depConstraints.map((constraint) =>
+          constraint.sourceTag === 'scope:platform'
+            ? {
+                ...constraint,
+                onlyDependOnLibsWithTags: [
+                  ...constraint.onlyDependOnLibsWithTags,
+                  'scope:identity',
+                ],
+              }
+            : constraint,
+        ),
+      },
+    ],
+  },
+});
+
+export { allowIdentityContracts, layoutPlugin };
 
 export default [
   ...nx.configs['flat/base'],
@@ -116,67 +201,7 @@ export default [
           enforceBuildableLibDependency: true,
           allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
           // Reglas de dependencia entre proyectos del ADR 0015.
-          depConstraints: [
-            {
-              sourceTag: 'type:contracts',
-              onlyDependOnLibsWithTags: ['type:contracts'],
-            },
-            {
-              sourceTag: 'type:util',
-              onlyDependOnLibsWithTags: ['type:util', 'type:contracts'],
-            },
-            {
-              sourceTag: 'type:platform',
-              onlyDependOnLibsWithTags: [
-                'type:platform',
-                'type:util',
-                'type:contracts',
-              ],
-            },
-            {
-              sourceTag: 'type:tool',
-              onlyDependOnLibsWithTags: [
-                'type:contracts',
-                'type:util',
-                'type:platform',
-              ],
-            },
-            {
-              sourceTag: 'type:app',
-              onlyDependOnLibsWithTags: [
-                'type:app',
-                'type:platform',
-                'type:util',
-                'type:contracts',
-              ],
-            },
-            // Reglas por servicio: el código interno de un servicio es privado.
-            // De otro servicio solo se importa su paquete `@contracts/<servicio>`
-            // (`type:contracts`). Al crear un servicio, agrega aquí su `scope:<servicio>`
-            // con la misma forma que `scope:identity`.
-            {
-              sourceTag: 'scope:platform',
-              onlyDependOnLibsWithTags: ['scope:platform', 'scope:shared'],
-            },
-            {
-              sourceTag: 'scope:shared',
-              // Las herramientas compartidas leen los contratos de todos los servicios.
-              onlyDependOnLibsWithTags: [
-                'scope:shared',
-                'scope:platform',
-                'type:contracts',
-              ],
-            },
-            {
-              sourceTag: 'scope:identity',
-              onlyDependOnLibsWithTags: [
-                'scope:identity',
-                'scope:platform',
-                'scope:shared',
-                'type:contracts',
-              ],
-            },
-          ],
+          depConstraints,
         },
       ],
     },
@@ -198,6 +223,8 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
+  // Cuando ESLint corre desde backend/, la excepción de auth se declara con rutas de esta carpeta.
+  allowIdentityContracts(['libs/platform/auth/**/*.ts']),
   {
     files: ['**/domain/**/*.ts'],
     rules: {

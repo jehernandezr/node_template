@@ -209,7 +209,7 @@ describe('MessageDispatcher', () => {
       DispatchOutcome.DeadLetter,
     ],
   ])(
-    'classifies a handler failure as %s with the shared classifyFailure rule',
+    'classifies a handler failure as %s with the shared FailureClassifier rule',
     async (_label, error, expected) => {
       const { dispatcher } = setup();
       dispatcher.register(

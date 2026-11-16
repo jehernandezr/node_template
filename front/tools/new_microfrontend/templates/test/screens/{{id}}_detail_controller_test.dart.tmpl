@@ -1,0 +1,77 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mf_{{id}}/src/screens/{{id}}_detail_controller.dart';
+import 'package:mf_{{id}}/src/shared/types/{{id}}_item.dart';
+import 'package:mf_{{id}}/src/shared/types/{{id}}_not_found_exception.dart';
+import 'package:test_utils/test_utils.dart';
+import 'package:ui/ui.dart';
+
+import '../utils/scripted_{{id}}_repository.dart';
+
+const {{Pascal}}Item _item = {{Pascal}}Item(
+  id: '1',
+  title: 'Uno',
+  description: 'Primero',
+);
+
+void main() {
+  late Scripted{{Pascal}}Repository repository;
+
+  setUp(() {
+    repository = Scripted{{Pascal}}Repository();
+    addTearDown(repository.dispose);
+  });
+
+  test('starts loading and then shows the item', () async {
+    final controller = {{Pascal}}DetailController(repository, itemId: '1');
+    addTearDown(controller.dispose);
+    expect(controller.value, isA<AsyncLoading<{{Pascal}}Item>>());
+
+    unawaited(controller.start());
+    repository.gets.single.complete(_item);
+    await pumpEventQueue();
+
+    expect(controller.value.valueOrNull, _item);
+  });
+
+  test('a failed load shows the error and starting again recovers', () async {
+    final controller = {{Pascal}}DetailController(repository, itemId: '1');
+    addTearDown(controller.dispose);
+
+    unawaited(controller.start());
+    repository.gets.single.completeError(const FakeFailure());
+    await pumpEventQueue();
+    expect(controller.value, isA<AsyncError<{{Pascal}}Item>>());
+
+    unawaited(controller.start());
+    repository.gets[1].complete(_item);
+    await pumpEventQueue();
+    expect(controller.value.valueOrNull, _item);
+  });
+
+  test('a missing item ends in an error state', () async {
+    final controller = {{Pascal}}DetailController(repository, itemId: 'x');
+    addTearDown(controller.dispose);
+
+    unawaited(controller.start());
+    repository.gets.single.completeError({{Pascal}}NotFoundException('x'));
+    await pumpEventQueue();
+
+    expect(controller.value, isA<AsyncError<{{Pascal}}Item>>());
+  });
+
+  test('an answer that arrives after dispose does not notify', () async {
+    final controller = {{Pascal}}DetailController(repository, itemId: '1');
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+
+    unawaited(controller.start());
+    final beforeDispose = notifications;
+    controller.dispose();
+    repository.gets.single.complete(_item);
+    await pumpEventQueue();
+
+    expect(notifications, beforeDispose);
+  });
+}

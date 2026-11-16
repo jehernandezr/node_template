@@ -1,0 +1,17 @@
+/// One {{id}} item as the UI sees it.
+final class {{Pascal}}Item {
+  const {{Pascal}}Item({
+    required this.id,
+    required this.title,
+    required this.description,
+  });
+
+  /// Identifier used in the detail route.
+  final String id;
+
+  /// Short name shown in the list and on the detail.
+  final String title;
+
+  /// Longer text shown on the detail.
+  final String description;
+}

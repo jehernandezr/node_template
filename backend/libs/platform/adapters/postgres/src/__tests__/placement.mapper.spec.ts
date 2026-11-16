@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '@platform/persistence';
 import { TenantStatus } from '@platform/sharding';
 import { ShardDirectoryEntity } from '../entities/shard-directory.entity.js';
 import { PlacementMapper } from '../stores/placement.mapper.js';
@@ -49,7 +49,7 @@ describe('PlacementMapper', () => {
     ])('rejects %s with PersistenceCorruptRow', (_name, overrides) => {
       expect(() => PlacementMapper.toPlacement(aRow(overrides))).toThrow(
         expect.objectContaining({
-          code: PlatformErrorCode.PersistenceCorruptRow,
+          code: PersistenceErrorCode.CorruptRow,
         }),
       );
     });

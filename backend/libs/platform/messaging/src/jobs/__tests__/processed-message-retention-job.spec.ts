@@ -1,5 +1,6 @@
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { ClaimState, Deadline, type ClaimRequest } from '@platform/primitives';
+import { Deadline } from '@platform/primitives';
+import { ClaimState, type ClaimRequest } from '@platform/kernel';
 import { ProcessedMessageKey } from '../../dispatch/processed-message-key.js';
 import {
   AcquiredClaim,

@@ -1,8 +1,5 @@
-import type {
-  ClaimRequest,
-  ClaimResult,
-  FinalOutcome,
-} from '@platform/primitives';
+import type { FinalOutcome } from '@platform/primitives';
+import { ClaimRequest, ClaimResult } from '@platform/kernel';
 import { InMemoryProcessedOperationStore } from '../../../__tests__/utils/in-memory-processed-operation-store.js';
 
 /** Almacén en memoria que guarda cada `claim` recibido, para verificar la llave y el lease. */

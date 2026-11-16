@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import { FixedClock } from '@platform/kernel/test-utils';
 import { MigrationGenerator } from '../migration-generator.js';
 import { MigrationSourceRenderer } from '../migration-source-renderer.js';
@@ -23,7 +23,7 @@ describe('MigrationGenerator', () => {
             password: 'unused',
           }),
         ).rejects.toMatchObject({
-          code: PlatformErrorCode.PersistenceInvalidConfig,
+          code: PersistenceErrorCode.InvalidConfig,
         });
       },
     );

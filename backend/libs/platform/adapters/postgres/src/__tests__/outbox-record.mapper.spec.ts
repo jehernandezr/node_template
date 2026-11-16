@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '@platform/persistence';
 import { OutboxStatus } from '@platform/messaging';
 import { EnvelopeBuilder } from '@platform/messaging/test-utils';
 import { OutboxEntity } from '../entities/outbox.entity.js';
@@ -78,7 +78,7 @@ describe('OutboxRecordMapper', () => {
         OutboxRecordMapper.toRecord(aRow({ status: 'unknown' as never })),
       ).toThrow(
         expect.objectContaining({
-          code: PlatformErrorCode.PersistenceCorruptRow,
+          code: PersistenceErrorCode.CorruptRow,
         }),
       );
     });

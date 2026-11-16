@@ -40,16 +40,4 @@ void main() {
       expect(screenLoads, 1);
     });
   });
-
-  group(DeferredLibrariesLoader, () {
-    test('delegates to the preloader', () async {
-      final probe = ProbeManifest();
-
-      await const DeferredLibrariesLoader().load([probe.build()]);
-
-      expect(probe.screenLoads, 2);
-      expect(probe.initializeCalls, 1);
-      expect(probe.disposeCalls, 1);
-    });
-  });
 }

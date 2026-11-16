@@ -1,6 +1,5 @@
-import { PlatformErrorCode } from '@contracts/platform';
-import { PlatformError } from '@platform/kernel';
-import { classifyFailure, FailureKind } from '@platform/primitives';
+import { FailureKind, PlatformError } from '@platform/kernel';
+import { FailureClassifier } from '@platform/primitives';
 import { SagaError } from '../saga-error.js';
 import { SagaErrorCode } from '../saga-error-code.enum.js';
 
@@ -33,8 +32,10 @@ describe('SagaError', () => {
     const lost = new SagaError(SagaErrorCode.LeaseLost, 'lost');
     const invalid = new SagaError(SagaErrorCode.InvalidState, 'bad');
 
-    expect(classifyFailure(lost)).toBe(FailureKind.Transient);
-    expect(classifyFailure(invalid)).toBe(FailureKind.Permanent);
+    expect(new FailureClassifier().classify(lost)).toBe(FailureKind.Transient);
+    expect(new FailureClassifier().classify(invalid)).toBe(
+      FailureKind.Permanent,
+    );
   });
 
   it('acepta details sin cambiar el código ni la reintentabilidad', () => {
@@ -44,6 +45,6 @@ describe('SagaError', () => {
 
     expect(error.details).toEqual({ sagaId: 'a' });
     expect(error.retryable).toBe(false);
-    expect(PlatformErrorCode.SagaInvalidState).toBe(error.code);
+    expect(SagaErrorCode.InvalidState).toBe(error.code);
   });
 });

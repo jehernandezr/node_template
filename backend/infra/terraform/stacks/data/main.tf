@@ -46,9 +46,22 @@ locals {
     ]),
   )
 
-  # Cada servicio solo ve sus llaves y canales: la capa de caché antepone el nombre del servicio.
+  # Cada servicio ve sus llaves y canales: la capa de caché antepone el nombre del servicio. Además
+  # el estado de autenticación compartido (`auth:*`, ADR 0022) lo escribe solo el servicio dueño
+  # y los demás lo leen (`%R~`) y se suscriben al canal de revocaciones. La ACL de canales no separa
+  # publicar de suscribirse; un aviso falso solo cuesta una consulta, porque el verificador confirma
+  # cada revocación contra la llave `auth:revoked:{sid}`, que nadie más puede escribir.
+  valkey_auth_write_rules = "~auth:* &auth:*"
+  valkey_auth_read_rules  = "%R~auth:* &auth:revocations"
+
   valkey_users = merge(
-    { for name in var.valkey_services : name => "on ~${name}:* &${name}:* +@all -@dangerous" },
+    {
+      for name in var.valkey_services : name => join(" ", [
+        "on ~${name}:* &${name}:*",
+        name == var.valkey_auth_writer ? local.valkey_auth_write_rules : local.valkey_auth_read_rules,
+        "+@all -@dangerous",
+      ])
+    },
     var.valkey_acl_overrides,
   )
 

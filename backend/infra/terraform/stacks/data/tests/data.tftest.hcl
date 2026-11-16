@@ -86,8 +86,13 @@ run "one_database_per_shard_plus_catalog" {
   }
 
   assert {
-    condition     = local.valkey_users["tasks"] == "on ~tasks:* &tasks:* +@all -@dangerous"
-    error_message = "Cada usuario Valkey solo ve sus llaves y canales."
+    condition     = local.valkey_users["tasks"] == "on ~tasks:* &tasks:* %R~auth:* &auth:revocations +@all -@dangerous"
+    error_message = "Un servicio que no es dueño del estado de autenticación ve sus llaves y solo lee auth:*."
+  }
+
+  assert {
+    condition     = local.valkey_users["identity"] == "on ~identity:* &identity:* ~auth:* &auth:* +@all -@dangerous"
+    error_message = "El servicio dueño del estado de autenticación escribe auth:*."
   }
 
   assert {
@@ -109,4 +114,30 @@ run "rejects_unknown_catalog_access" {
   }
 
   expect_failures = [var.db_services]
+}
+
+run "auth_writer_is_configurable" {
+  command = plan
+
+  variables {
+    valkey_auth_writer = "tasks"
+  }
+
+  assert {
+    condition     = local.valkey_users["tasks"] == "on ~tasks:* &tasks:* ~auth:* &auth:* +@all -@dangerous" && local.valkey_users["identity"] == "on ~identity:* &identity:* %R~auth:* &auth:revocations +@all -@dangerous"
+    error_message = "El dueño de auth:* sale de valkey_auth_writer."
+  }
+}
+
+run "acl_overrides_replace_the_generated_rules" {
+  command = plan
+
+  variables {
+    valkey_acl_overrides = { tasks = "on ~* +@all" }
+  }
+
+  assert {
+    condition     = local.valkey_users["tasks"] == "on ~* +@all"
+    error_message = "Una ACL propia reemplaza la generada."
+  }
 }

@@ -1,10 +1,6 @@
 import type { FixedClock } from '@platform/kernel/test-utils';
-import {
-  ClaimState,
-  Deadline,
-  type ClaimRequest,
-  StaleClaimError,
-} from '@platform/primitives';
+import { Deadline, StaleClaimError } from '@platform/primitives';
+import { ClaimState, type ClaimRequest } from '@platform/kernel';
 import { ProcessedMessageKey } from '../../dispatch/processed-message-key.js';
 import { AcquiredClaim } from './acquired-claim.js';
 import type { ProcessedMessageStore } from '../../dispatch/processed-message-store.js';

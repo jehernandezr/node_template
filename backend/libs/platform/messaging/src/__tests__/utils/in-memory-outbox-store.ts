@@ -1,5 +1,4 @@
-import { type Clock, SystemClock } from '@platform/kernel';
-import type { TransactionManager } from '@platform/primitives';
+import { type Clock, SystemClock, TransactionManager } from '@platform/kernel';
 import type { MessageEnvelope } from '../../envelope/message-envelope.js';
 import {
   type ClaimOutboxRequest,

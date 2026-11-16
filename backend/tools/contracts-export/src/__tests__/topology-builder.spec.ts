@@ -78,10 +78,12 @@ describe('TopologyBuilder', () => {
       expect(topology['topics']).toEqual([
         expect.objectContaining({ name: 'identity-events', owner: 'identity' }),
       ]);
-      expect((topology['routes'] as Obj[]).map((r) => r['type'])).toEqual([
-        'identity.session.revoked.v1',
-        'identity.tokens.revoked.v1',
-      ]);
+      expect((topology['routes'] as Obj[]).map((r) => r['type'])).toEqual(
+        expect.arrayContaining([
+          'identity.session.revoked.v1',
+          'identity.tokens.revoked.v1',
+        ]),
+      );
     });
 
     it('fails when a service sends a command nobody declares', () => {

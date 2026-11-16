@@ -8,11 +8,11 @@ Contracts and composition shared by the web and mobile Flutter shells. It knows 
 - `ShellRuntime`: follows the session. For each identity (userId + tenantId) it builds `ShellServices`, owns one `MicrofrontendScope` per microfrontend, clears replayable events and disposes lifecycles. Tears all of it down when the identity changes.
 - `ShellServices`: session, `mode`, `api` (the `ApiClient` with the session; a `StateError` in demo mode), sign-out and step-up for one identity. There is no event bus here: lifecycles emit with `ShellContext.emit` and screens with `MicrofrontendScope.emit`, which drop events once the identity rotates.
 - `MicrofrontendScope`: per-identity container of a microfrontend's objects. One instance per type.
-- `buildShellRouter`: one `GoRouter` for all manifests, inside one `ShellRoute` drawn by the shell, guarded by the first path segment.
-- `ScreenLoader` / `deferredPage`: screens load on demand; a failed load shows an error view with a retry. `resetDeferredPageCache()` (`@visibleForTesting`) forgets cached loads; call it in `setUp` of widget tests.
+- `ShellRouterFactory`: builds one `GoRouter` for all manifests, inside one `ShellRoute` drawn by the shell, guarded by the first path segment.
+- `DeferredLibraryLoader`: screens load on demand; a failed load shows an error view with a retry. The cache lives in the instance that `ShellHost` creates, so tests build their own and need no reset.
 - `AccessRule`, `AccessGate`, `context.can`, `accessRedirect`, `StepUpRequests`, `UserSession` and the access enums (from `contracts`) mirror the backend.
 
-The `test_utils` package has `DeferredLibrariesLoader` for `setUpAll` of tests that open screens of several microfrontends.
+The `test_utils` package has `DeferredLibrariesPreloader` for `setUpAll` of tests that open screens of several microfrontends.
 
 ## How to write a microfrontend
 

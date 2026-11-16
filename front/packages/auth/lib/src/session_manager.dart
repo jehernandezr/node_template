@@ -166,8 +166,9 @@ class SessionManager {
   }
 
   /// Fuerza un refresh aunque el access token siga vigente, por ejemplo cuando
-  /// la API responde `IDENTITY.TOKEN.STALE_PERMISSIONS` (es el
-  /// `onStalePermissions` de `ApiClient`). Comparte el refresh en vuelo.
+  /// la API responde `IDENTITY.TOKEN.STALE_PERMISSIONS` o
+  /// `PLATFORM.AUTH.TOKEN_EXPIRED` (es el `sessionRefresh` de `ApiClient`, que
+  /// reintenta la ruta una vez). Comparte el refresh en vuelo.
   ///
   /// Lanza [SignedOutException] si no hay sesión y [ApiErrorException] si el
   /// refresh falla en el servidor.

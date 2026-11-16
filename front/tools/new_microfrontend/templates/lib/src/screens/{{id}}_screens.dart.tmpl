@@ -1,0 +1,37 @@
+/// Entry points of the {{id}} screens, used by the manifest.
+///
+/// This file is imported as `deferred`, so the repository, the sample data
+/// and the texts travel with the screens.
+library;
+
+import 'package:material_ui/material_ui.dart';
+import 'package:shell_core/shell_core.dart';
+
+import '../data/{{id}}_data.dart';
+import '../data/{{id}}_repository.dart';
+import '../l10n/generated/{{id}}_localizations.dart';
+import '{{id}}_detail_screen.dart';
+import '{{id}}_list_screen.dart';
+
+/// Builds each {{id}} screen for a [MicrofrontendScope]. The repository is the
+/// scope's, so every identity has its own and releases it on close.
+abstract final class {{Pascal}}Screens {
+  /// Route `/{{id}}`.
+  static Widget list(MicrofrontendScope scope) =>
+      _withTexts({{Pascal}}ListScreen(repository: _repository(scope)));
+
+  /// Route `/{{id}}/:id`.
+  static Widget detail(MicrofrontendScope scope, {required String itemId}) =>
+      _withTexts(
+        {{Pascal}}DetailScreen(repository: _repository(scope), itemId: itemId),
+      );
+
+  static {{Pascal}}Repository _repository(MicrofrontendScope scope) =>
+      scope.repository({{Pascal}}Data.repository);
+
+  /// The delegates load with the deferred screens, not with the shell.
+  static Widget _withTexts(Widget child) => DeferredLocalizations(
+    delegates: const [{{Pascal}}Localizations.delegate],
+    child: child,
+  );
+}

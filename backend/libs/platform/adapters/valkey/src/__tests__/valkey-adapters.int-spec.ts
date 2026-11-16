@@ -4,16 +4,18 @@ import { CacheAside, VersionedKeyspace } from '@platform/cache';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { HealthState, SystemRandomSource } from '@platform/kernel';
-import { ResiliencePolicyName, ResilienceRegistry } from '@platform/resilience';
+import { PolicyName, ResilienceRegistry } from '@platform/resilience';
 import {
-  InMemoryDirectoryStore,
   ShardAccess,
   ShardKey,
   ShardRouter,
   TenantStatus,
   type TenantPlacement,
 } from '@platform/sharding';
-import { runRoutingCacheContract } from '@platform/sharding/test-utils';
+import {
+  InMemoryDirectoryStore,
+  runRoutingCacheContract,
+} from '@platform/sharding/test-utils';
 import {
   CountingLoader,
   runCachePortContract,
@@ -191,7 +193,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       const aside = new CacheAside(store, new VersionedKeyspace(store), {
         // Un runner cargado puede pasar el tiempo agotado por defecto; esta prueba trata del viaje al servidor.
         resilience: new ResilienceRegistry({
-          [ResiliencePolicyName.Cache]: { timeoutMs: 5_000 },
+          [PolicyName.Cache.value]: { timeoutMs: 5_000 },
         }),
       });
       const loader = new CountingLoader({ total: 3 });

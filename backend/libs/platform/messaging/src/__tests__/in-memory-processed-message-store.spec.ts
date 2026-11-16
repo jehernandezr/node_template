@@ -1,5 +1,6 @@
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { ClaimState, Deadline, StaleClaimError } from '@platform/primitives';
+import { Deadline, StaleClaimError } from '@platform/primitives';
+import { ClaimState } from '@platform/kernel';
 import { ProcessedMessageKey } from '../dispatch/processed-message-key.js';
 import { AcquiredClaim } from './utils/acquired-claim.js';
 import { InMemoryProcessedMessageStore } from './utils/in-memory-processed-message-store.js';

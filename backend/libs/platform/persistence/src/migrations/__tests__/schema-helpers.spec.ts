@@ -1,4 +1,4 @@
-import { PlatformErrorCode } from '@contracts/platform';
+import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { PartitionBy, PartitionInterval } from '../../enums.js';
 import { Audited, auditedOptionsOf } from '../../metadata/entity-metadata.js';
 import {
@@ -91,7 +91,7 @@ describe('schema helpers', () => {
     );
     expect(() => uuidV7LowerBound(new Date(-1))).toThrow(
       expect.objectContaining({
-        code: PlatformErrorCode.PersistenceInvalidConfig,
+        code: PersistenceErrorCode.InvalidConfig,
       }),
     );
   });

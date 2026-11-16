@@ -1,0 +1,29 @@
+import 'package:flutter/foundation.dart';
+import 'package:ui/ui.dart';
+
+import '../data/{{id}}_repository.dart';
+import '../shared/types/{{id}}_item.dart';
+
+/// State of the {{id}} list. The screen draws it; the rules live here so they
+/// can be tested without widgets.
+final class {{Pascal}}ListController extends ChangeNotifier {
+  /// Controller over [repository]. Call [start] once.
+  {{Pascal}}ListController({{Pascal}}Repository repository)
+    : _loader = AsyncLoader<List<{{Pascal}}Item>>(repository.list) {
+    _loader.addListener(notifyListeners);
+  }
+
+  final AsyncLoader<List<{{Pascal}}Item>> _loader;
+
+  /// The items, or the state of the load.
+  AsyncValue<List<{{Pascal}}Item>> get value => _loader.value;
+
+  /// Loads the list. Call it again to retry after an error.
+  Future<void> start() => _loader.load();
+
+  @override
+  void dispose() {
+    _loader.dispose();
+    super.dispose();
+  }
+}

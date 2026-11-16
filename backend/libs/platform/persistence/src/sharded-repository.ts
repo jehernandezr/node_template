@@ -1,4 +1,3 @@
-import { PlatformErrorCode } from '@contracts/platform';
 import type { Criteria, CursorCodec, Page } from '@platform/criteria';
 import {
   type EntityManager,
@@ -7,7 +6,8 @@ import {
   type QueryDeepPartialEntity,
 } from 'typeorm';
 import type { AuditedEntity } from './entities/audited-entity.js';
-import { PersistenceError } from './errors.js';
+import { PersistenceError } from './errors/persistence-error.js';
+import { PersistenceErrorCode } from './errors/persistence-error-code.enum.js';
 import { CriteriaFieldMap } from './criteria-field-map.js';
 import type { EntityMapper } from './model/entity-mapper.js';
 import { ManagerIntent } from './model/manager-intent.enum.js';
@@ -72,7 +72,7 @@ export abstract class ShardedRepository<
       this.kit.scope.current()?.tenantId ?? this.kit.context.current().tenantId;
     if (tenantId === undefined) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceTenantRequired,
+        PersistenceErrorCode.TenantRequired,
         'The request context has no tenant',
       );
     }
@@ -108,7 +108,7 @@ export abstract class ShardedRepository<
       declaredTenant !== tenantId
     ) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceTenantMismatch,
+        PersistenceErrorCode.TenantMismatch,
         'The entity belongs to another tenant',
       );
     }

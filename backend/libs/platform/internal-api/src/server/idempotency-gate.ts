@@ -1,11 +1,10 @@
 import {
   CallOutcome,
-  ClaimState,
   type CallOutcomeFactory,
-  type ClaimResult,
   type Deadline,
   type FinalOutcome,
 } from '@platform/primitives';
+import { ClaimState, type ClaimResult } from '@platform/kernel';
 import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
 import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js';
 import type { ClaimedOperation } from './claimed-operation.js';

@@ -50,8 +50,8 @@ describe('ObservabilityModule', () => {
     expect(moduleRef.get(HealthRegistry)).toBeInstanceOf(HealthRegistry);
     expect(moduleRef.get(Tracing)).toBeInstanceOf(Tracing);
     expect(moduleRef.get(Redactor)).toBeInstanceOf(Redactor);
-    expect(moduleRef.get(RequestContextStore)).toBe(
-      RequestContextStore.shared(),
+    expect(moduleRef.get(RequestContextStore)).toBeInstanceOf(
+      RequestContextStore,
     );
     expect(moduleRef.get(TraceContextCodec)).toBeInstanceOf(TraceContextCodec);
     expect(moduleRef.get(TraceContextRestorer)).toBeInstanceOf(

@@ -11,12 +11,12 @@ export default [
         {
           selector: 'Literal[value=/^PLATFORM\\./]',
           message:
-            'Usa PlatformErrorCode de @contracts/platform en lugar del código como texto.',
+            'Usa PersistenceErrorCode, o PlatformErrorCode para los códigos públicos, en lugar del código como texto.',
         },
         {
           selector: 'TemplateElement[value.raw=/^PLATFORM\\./]',
           message:
-            'Usa PlatformErrorCode de @contracts/platform en lugar del código como texto.',
+            'Usa PersistenceErrorCode, o PlatformErrorCode para los códigos públicos, en lugar del código como texto.',
         },
       ],
     },
@@ -44,5 +44,10 @@ export default [
         },
       ],
     },
+  },
+  {
+    // Aquí se declaran los códigos: es el único lugar donde van como texto.
+    files: ['src/errors/persistence-error-code.enum.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
   },
 ];

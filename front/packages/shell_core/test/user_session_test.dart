@@ -11,6 +11,8 @@ void main() {
       'tenantId': '0193f1c2-0000-7000-8000-0000000000b1',
       'sessionId': '0193f1c2-0000-7000-8000-0000000000c1',
       'permissions': ['tasks:read', 'billing:read', 'billing:write', ?extra],
+      'roles': <String>[],
+      'permissionVersion': '1.1',
       'platformRoles': ['support'],
       'features': ['billing', 'ai_assistant'],
       'flags': ['new_reports'],

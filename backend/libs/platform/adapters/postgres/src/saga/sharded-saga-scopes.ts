@@ -1,5 +1,8 @@
-import { PlatformErrorCode } from '@contracts/platform';
-import { PersistenceError, ShardScope } from '@platform/persistence';
+import {
+  PersistenceError,
+  ShardScope,
+  PersistenceErrorCode,
+} from '@platform/persistence';
 import { ShardKey } from '@platform/sharding';
 import { SagaScopes, type SagaInstance } from '@platform/saga';
 
@@ -18,7 +21,7 @@ export class ShardedSagaScopes extends SagaScopes {
     const tenantId = instance.tenantId;
     if (tenantId === null) {
       throw new PersistenceError(
-        PlatformErrorCode.PersistenceTenantRequired,
+        PersistenceErrorCode.TenantRequired,
         'The saga has no tenant to route it',
       );
     }

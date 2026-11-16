@@ -41,6 +41,14 @@ void main() {
       );
       expect(reader.home(), '/tasks');
 
+      final readerMobile = ShellNavigator(
+        registry: registry,
+        session: ValueNotifier<UserSession>(_reader),
+        platform: AppPlatform.mobile,
+        paths: const ShellPaths(),
+      );
+      expect(readerMobile.home(), '/tasks');
+
       final anonymousWeb = ShellNavigator(
         registry: registry,
         session: ValueNotifier<UserSession>(UserSession.anonymous()),
