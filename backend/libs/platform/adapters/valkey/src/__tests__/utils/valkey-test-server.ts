@@ -1,3 +1,4 @@
+import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { randomUUID } from 'node:crypto';
 import { Valkey } from 'iovalkey';
 import {
@@ -26,6 +27,7 @@ export class ValkeyTestServer {
 
   async start(): Promise<void> {
     this.container = await new GenericContainer(ValkeyTestServer.IMAGE)
+      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
       .withExposedPorts(6379)
       .withWaitStrategy(Wait.forLogMessage(/Ready to accept connections/))
       .start();

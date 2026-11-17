@@ -1,1 +1,1 @@
-export { ApiKeysModule } from './presentation/api-keys.module.js';
+export { IdentityApiKeyResolver } from './infrastructure/identity-api-key-resolver.js';

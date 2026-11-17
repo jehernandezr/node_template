@@ -20,4 +20,13 @@ export class InMemoryPasswordsFacade extends PasswordsFacade {
   async setInitial(ref: UserRef, password: string): Promise<void> {
     this.passwords.set(ref.userId, password);
   }
+
+  /** Acepta todo salvo las contraseñas de la lista `rejected`. */
+  readonly rejected = new Set<string>();
+
+  async assertAcceptable(password: string): Promise<void> {
+    if (this.rejected.has(password)) {
+      throw new Error('Password rejected');
+    }
+  }
 }

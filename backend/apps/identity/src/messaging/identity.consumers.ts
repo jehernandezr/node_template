@@ -1,7 +1,10 @@
 import { Module, type Type } from '@nestjs/common';
+import { AccessProjectionConsumer } from './access-projection.consumer.js';
 
-/** Consumidores de mensajes de identity. Cada módulo de negocio agrega el suyo cuando lo necesita. */
-export const IDENTITY_CONSUMERS: readonly Type<unknown>[] = [];
+/** Consumidores de mensajes de identity. Usan las fachadas de los módulos, como cualquier otro cliente. */
+export const IDENTITY_CONSUMERS: readonly Type<unknown>[] = [
+  AccessProjectionConsumer,
+];
 
 @Module({ providers: [...IDENTITY_CONSUMERS] })
 export class IdentityConsumersModule {}

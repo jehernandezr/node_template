@@ -4,6 +4,7 @@ import {
   type MigrationClass,
 } from '@platform/persistence';
 import { CreatePlatformCatalogTables1794800001101 } from './migrations/catalog/1794800001101-CreatePlatformCatalogTables.js';
+import { CreateCatalogIdempotencyKeys1794800001102 } from './migrations/catalog/1794800001102-CreateCatalogIdempotencyKeys.js';
 import { CreatePlatformShardTables1794800001001 } from './migrations/shard/1794800001001-CreatePlatformShardTables.js';
 import { IdempotencyKeyEntity } from './entities/idempotency-key.entity.js';
 import { OutboxEntity } from './entities/outbox.entity.js';
@@ -19,11 +20,15 @@ export const platformShardEntities: readonly EntityClass[] = [
   IdempotencyKeyEntity,
 ];
 
-/** Entidades de las tablas de la plataforma que viven en el catálogo global. */
+/**
+ * Entidades de las tablas de la plataforma que viven en el catálogo global. `idempotency_keys` está también
+ * aquí para los servicios con `requireScope`, cuyas operaciones internas eligen su shard en el handler.
+ */
 export const platformCatalogEntities: readonly EntityClass[] = [
   ShardDirectoryEntity,
   ShardInstanceEntity,
   ShardLockEntity,
+  IdempotencyKeyEntity,
 ];
 
 /** Migraciones de cada shard: las funciones y `audit_log` de `@platform/persistence` y las tablas de la plataforma. */
@@ -35,4 +40,5 @@ export const platformShardMigrations: readonly MigrationClass[] = [
 /** Migraciones del catálogo global. */
 export const platformCatalogMigrations: readonly MigrationClass[] = [
   CreatePlatformCatalogTables1794800001101,
+  CreateCatalogIdempotencyKeys1794800001102,
 ];

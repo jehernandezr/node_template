@@ -1,3 +1,4 @@
+import type { AuthMethodReference } from '@contracts/identity';
 import type { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { ClientInfo } from '../../../shared/types/client-info.type.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
@@ -7,6 +8,8 @@ export interface StartPendingInput {
   readonly user: UserRef;
   readonly purpose: PendingPurpose;
   readonly client: ClientInfo;
+  /** Métodos ya cumplidos: la contraseña en un inicio de sesión, los de la sesión en un step-up. */
+  readonly authMethods: readonly AuthMethodReference[];
   readonly deviceId?: string;
   /** Sesión a elevar, solo con `PendingPurpose.StepUp`. */
   readonly sessionId?: string;

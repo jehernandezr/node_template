@@ -1,0 +1,43 @@
+import { Injectable } from '@nestjs/common';
+import {
+  IdentityErrorCode,
+  type TenantSummary,
+  type UpdateTenantRequest,
+} from '@contracts/identity';
+import { TransactionManager } from '@platform/kernel';
+import { IdentityError } from '../../../shared/errors/identity.error.js';
+import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
+import { TenantRepository } from '../domain/tenant.repository.js';
+import { TenantSummaryView } from './tenant-summary-view.js';
+
+/** Cambia el nombre del tenant activo. */
+@Injectable()
+export class UpdateTenant {
+  constructor(
+    private readonly tenants: TenantRepository,
+    private readonly scopes: IdentityShardScopes,
+    private readonly transactions: TransactionManager,
+  ) {}
+
+  async execute(
+    tenantId: string,
+    changes: UpdateTenantRequest,
+  ): Promise<TenantSummary> {
+    const tenant = await this.scopes.inTenantShard(tenantId, () =>
+      this.transactions.runInTransaction(async () => {
+        const found = await this.tenants.find(tenantId);
+        if (found === undefined) {
+          throw new IdentityError(IdentityErrorCode.TenantNotFound);
+        }
+        if (changes.name !== undefined) {
+          found.rename(changes.name);
+          await this.tenants.update(found);
+        }
+        return found;
+      }),
+    );
+    return TenantSummaryView.summary(
+      TenantSummaryView.snapshot(tenant.snapshot()),
+    );
+  }
+}

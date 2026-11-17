@@ -1,4 +1,4 @@
-import type { Provider, Type } from '@nestjs/common';
+import type { Abstract, Provider, Type } from '@nestjs/common';
 import type { SNSClient } from '@aws-sdk/client-sns';
 import type { SQSClient } from '@aws-sdk/client-sqs';
 import {
@@ -14,6 +14,7 @@ import { AwsClientFactory } from '../aws-client-factory.js';
 import { AwsErrorTranslator } from '../aws-error-translator.js';
 import { AwsMessagingNames } from '../aws-messaging-names.js';
 import { type AwsSettings, AwsConfig } from '../aws.config.js';
+import { AwsCredentialsProvider } from '../aws-credentials-provider.js';
 import { ElastiCacheIamAuthTokenProvider } from '../elasticache-iam-auth-token-provider.js';
 import { SdkClientCredentialsProvider } from '../sdk-client-credentials-provider.js';
 import { SnsSqsEnvelopePublisher } from '../sns-sqs-envelope-publisher.js';
@@ -100,6 +101,11 @@ export class AwsProviders {
         ],
       });
     }
+    providers.push({
+      provide: AwsCredentialsProvider,
+      useFactory: (sqs: SQSClient) => new SdkClientCredentialsProvider(sqs),
+      inject: [SQS_CLIENT],
+    });
     if (options.elastiCache === true) {
       providers.push({
         provide: ElastiCacheIamAuthTokenProvider,
@@ -117,13 +123,16 @@ export class AwsProviders {
   }
 
   /** Lo que otros módulos reciben: los clientes, los nombres y los puertos que se registraron. */
-  static exports(options: AwsModuleOptions): Array<symbol | Type<unknown>> {
-    const exported: Array<symbol | Type<unknown>> = [
+  static exports(
+    options: AwsModuleOptions,
+  ): Array<symbol | Type<unknown> | Abstract<unknown>> {
+    const exported: Array<symbol | Type<unknown> | Abstract<unknown>> = [
       SNS_CLIENT,
       SQS_CLIENT,
       AwsErrorTranslator,
       AwsMessagingNames,
       SnsSqsEnvelopePublisher,
+      AwsCredentialsProvider,
     ];
     if (options.messaging !== undefined) {
       exported.push(SnsSqsMessageBus);

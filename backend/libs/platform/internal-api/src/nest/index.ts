@@ -6,4 +6,5 @@ export * from './internal-handler.decorator.js';
 export * from './internal-handler.explorer.js';
 export * from './internal-handler.metadata.js';
 export * from './internal-transport-kind.enum.js';
+export * from './handler-unit-of-work.enum.js';
 export * from './published-contracts.js';

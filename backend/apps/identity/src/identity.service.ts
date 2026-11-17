@@ -6,6 +6,7 @@ import {
   type ServiceDefinition,
 } from '@platform/service';
 import { AppModule } from './app.module.js';
+import { IdentityInternalHttp } from './config/identity-internal-http.js';
 import {
   identityConfigSchema,
   type IdentityConfig,
@@ -28,10 +29,8 @@ export const identityService: ServiceDefinition<IdentityConfig> = {
   sharding: { defaultKey: ShardKey.Tenant, requireScope: true },
   internalApi: {
     transport: ServiceInternalTransport.Http,
-    http: (config) => ({
-      baseUrls: {},
-      secret: config.root<IdentityConfig>().INTERNAL_API_SHARED_SECRET.reveal(),
-    }),
+    http: (config, context) =>
+      new IdentityInternalHttp().settings(config, context),
   },
   errorCatalogs: IDENTITY_ERROR_CATALOGS,
 };

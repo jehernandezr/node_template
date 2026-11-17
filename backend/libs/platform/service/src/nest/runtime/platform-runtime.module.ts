@@ -5,11 +5,15 @@ import {
   type Type,
 } from '@nestjs/common';
 import {
+  AwsConfig,
+  AwsCredentialsProvider,
   ElastiCacheIamAuthTokenProvider,
   SnsSqsEnvelopePublisher,
+  type AwsSettings,
 } from '@platform/adapters-aws';
 import { AwsModule } from '@platform/adapters-aws/nest';
 import {
+  CatalogIdempotencyStore,
   DirectoryShardLister,
   ShardedRelayScopes,
   ShardedSagaScopes,
@@ -38,7 +42,12 @@ import { ConfigModule } from '@platform/config/nest';
 import { BloomModule } from '@platform/bloom/nest';
 import { CacheModule } from '@platform/cache/nest';
 import { Clock, TransactionManager } from '@platform/kernel';
-import { LoggerPort, MetricsPort, Tracing } from '@platform/observability';
+import {
+  LoggerPort,
+  MetricsPort,
+  RequestContextStore,
+  Tracing,
+} from '@platform/observability';
 import { ObservabilityModule } from '@platform/observability/nest';
 import {
   type EnvelopePublisher,
@@ -47,18 +56,22 @@ import {
 } from '@platform/messaging';
 import { MessagingModule } from '@platform/messaging/nest';
 import {
+  HandlerUnitOfWork,
   InternalApiModule,
   InternalTransportKind,
 } from '@platform/internal-api/nest';
+import { ShardScope } from '@platform/persistence';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { RateLimitModule } from '@platform/rate-limit/nest';
 import { ResilienceModule } from '@platform/resilience/nest';
 import { SagaModule } from '@platform/saga/nest';
 import { SchedulingMode } from '@platform/scheduling';
 import { SchedulingModule } from '@platform/scheduling/nest';
-import { ShardKey } from '@platform/sharding';
+import { ShardKey, ShardRouter } from '@platform/sharding';
 import { ShardingModule } from '@platform/sharding/nest';
 import { HealthModule } from '../health/health.module.js';
+import { PlacedTenantVerifier } from '../../messaging/placed-tenant-verifier.js';
+import { TenantShardDeliveryContext } from '../../messaging/tenant-shard-delivery-context.js';
 import type { ServiceDefinition } from '../../service-definition.js';
 import { ServiceDatabaseSets } from '../../service-database-sets.js';
 import { ServiceInternalTransport } from '../../service-internal-api.js';
@@ -108,6 +121,10 @@ export class PlatformRuntimeModule {
     const ownPublishers = PlatformRuntimeModule.ownPublishers(
       options.publisher,
     );
+    const deliveryProviders =
+      definition.sharding?.requireScope === true
+        ? PlatformRuntimeModule.tenantDeliveryProviders()
+        : [];
 
     return {
       module: PlatformRuntimeModule,
@@ -179,8 +196,13 @@ export class PlatformRuntimeModule {
       providers: [
         PlatformRuntimeModule.useCaseRunnerProvider(),
         ...ownPublishers,
+        ...deliveryProviders,
       ],
-      exports: [UseCaseRunner, ...ownPublishers],
+      exports: [
+        UseCaseRunner,
+        ...ownPublishers,
+        ...deliveryProviders.map((provider) => provider.provide),
+      ],
     };
   }
 
@@ -208,14 +230,23 @@ export class PlatformRuntimeModule {
 
   /**
    * `MessagingModule` inyecta el publicador por su tipo, así que uno propio se registra aquí. El de
-   * AWS lo registra `AwsModule`.
+   * AWS lo registra `AwsModule`. Con `requireScope` cada entrega corre en el shard del tenant de su sobre
+   * (el claim de `processed_messages` vive ahí) y solo se aceptan tenants que el directorio ubica.
    */
   private static messagingModule(
     definition: ServiceDefinition,
     topology: Topology,
     publisher: Type<EnvelopePublisher> | undefined,
   ): DynamicModule {
+    const scoped =
+      definition.sharding?.requireScope === true
+        ? {
+            tenantVerifier: PlacedTenantVerifier,
+            deliveryContext: TenantShardDeliveryContext,
+          }
+        : {};
     return MessagingModule.forRoot({
+      ...scoped,
       source: definition.name,
       consumer: definition.name,
       topology,
@@ -240,17 +271,28 @@ export class PlatformRuntimeModule {
         definition.internalApi?.transport === ServiceInternalTransport.Http
           ? InternalTransportKind.Http
           : InternalTransportKind.InProcess,
-      processedStore: TypeOrmIdempotencyStore,
-      purgeableStore: TypeOrmIdempotencyStore,
+      ...PlatformRuntimeModule.idempotencyFor(definition),
     };
     if (resolveHttp !== undefined) {
       return InternalApiModule.forRootAsync({
-        useFactory: (config: AppConfig) => ({
+        useFactory: (
+          config: AppConfig,
+          credentials?: AwsCredentialsProvider,
+          aws?: AwsSettings,
+        ) => ({
           operations,
           remoteOperations,
-          http: resolveHttp(config),
+          http: resolveHttp(config, {
+            ...(credentials === undefined || aws === undefined
+              ? {}
+              : { aws: { credentials, region: aws.AWS_REGION } }),
+          }),
         }),
-        inject: [AppConfig],
+        inject: [
+          AppConfig,
+          { token: AwsCredentialsProvider, optional: true },
+          { token: AwsConfig.token, optional: true },
+        ],
         ...extras,
       });
     }
@@ -259,6 +301,49 @@ export class PlatformRuntimeModule {
       remoteOperations,
       ...extras,
     });
+  }
+
+  /**
+   * Con `requireScope` el shard de una operación interna lo decide su handler con la entrada (por ejemplo
+   * el usuario y su tenant de origen), así que la llave de idempotencia no puede vivir en un shard que aún no
+   * se conoce: va al catálogo y el handler abre sus propias transacciones dentro de su `ShardScope`.
+   */
+  private static idempotencyFor(definition: ServiceDefinition): {
+    processedStore: typeof TypeOrmIdempotencyStore;
+    purgeableStore: typeof TypeOrmIdempotencyStore;
+    unitOfWork: HandlerUnitOfWork;
+  } {
+    if (definition.sharding?.requireScope === true) {
+      return {
+        processedStore: CatalogIdempotencyStore,
+        purgeableStore: CatalogIdempotencyStore,
+        unitOfWork: HandlerUnitOfWork.Handler,
+      };
+    }
+    return {
+      processedStore: TypeOrmIdempotencyStore,
+      purgeableStore: TypeOrmIdempotencyStore,
+      unitOfWork: HandlerUnitOfWork.Shared,
+    };
+  }
+
+  /** El verificador de tenants y el contexto de entrega de un servicio con shards, armados con fábricas. */
+  private static tenantDeliveryProviders(): Array<
+    Provider & { provide: Type<unknown> }
+  > {
+    return [
+      {
+        provide: PlacedTenantVerifier,
+        useFactory: (router: ShardRouter) => new PlacedTenantVerifier(router),
+        inject: [ShardRouter],
+      },
+      {
+        provide: TenantShardDeliveryContext,
+        useFactory: (scope: ShardScope, context: RequestContextStore) =>
+          new TenantShardDeliveryContext(scope, context),
+        inject: [ShardScope, RequestContextStore],
+      },
+    ];
   }
 
   /** `UseCaseRunner` no lleva decoradores para que el núcleo no importe NestJS; por eso se arma con una fábrica. */

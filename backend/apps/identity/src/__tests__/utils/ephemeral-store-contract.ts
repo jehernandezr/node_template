@@ -1,0 +1,87 @@
+import type { FixedClock } from '@platform/kernel/test-utils';
+import type { EphemeralStore } from '../../ephemeral/ephemeral-store.js';
+
+/** Un `EphemeralStore` recién creado y, si el adaptador lo permite, cómo hacer pasar el tiempo. */
+export interface EphemeralStoreFixture {
+  readonly store: EphemeralStore;
+  /** Llaves únicas por prueba: el adaptador real comparte el servidor. */
+  readonly key: (name: string) => string;
+  readonly clock?: FixedClock;
+}
+
+/** Prueba de contrato de `EphemeralStore`: la cumplen el doble en memoria y el adaptador de Valkey. */
+export function runEphemeralStoreContract(
+  name: string,
+  create: () => Promise<EphemeralStoreFixture>,
+): void {
+  describe(`${name} as an EphemeralStore`, () => {
+    it('reads what it stores and forgets what it deletes', async () => {
+      const { store, key } = await create();
+
+      await store.set(key('a'), 'uno', 60_000);
+      const read = await store.get(key('a'));
+      await store.delete(key('a'));
+
+      expect(read).toBe('uno');
+      await expect(store.get(key('a'))).resolves.toBeUndefined();
+    });
+
+    it('stores only the first of two writers with setIfAbsent', async () => {
+      const { store, key } = await create();
+
+      await expect(
+        store.setIfAbsent(key('b'), 'primero', 60_000),
+      ).resolves.toBe(true);
+      await expect(
+        store.setIfAbsent(key('b'), 'segundo', 60_000),
+      ).resolves.toBe(false);
+      await expect(store.get(key('b'))).resolves.toBe('primero');
+    });
+
+    it('takes a value once', async () => {
+      const { store, key } = await create();
+      await store.set(key('c'), 'una vez', 60_000);
+
+      const [first, second] = await Promise.all([
+        store.take(key('c')),
+        store.take(key('c')),
+      ]);
+
+      expect([first, second].filter((value) => value !== undefined)).toEqual([
+        'una vez',
+      ]);
+    });
+
+    it('counts concurrent increments without losing any and keeps the first expiry', async () => {
+      const { store, key } = await create();
+
+      const counts = await Promise.all(
+        Array.from({ length: 10 }, () => store.increment(key('d'), 60_000)),
+      );
+      const remaining = await store.remainingMs(key('d'));
+
+      expect([...counts].sort((a, b) => a - b)).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+      ]);
+      expect(remaining).toBeGreaterThan(0);
+      expect(remaining).toBeLessThanOrEqual(60_000);
+      await expect(store.remainingMs(key('nada'))).resolves.toBeUndefined();
+    });
+
+    it('keeps the last value of each field and hands the map over once', async () => {
+      const { store, key } = await create();
+      await store.putField(key('e'), 'k-1', 'uno', 60_000);
+      await store.putField(key('e'), 'k-2', 'dos', 60_000);
+      await store.putField(key('e'), 'k-1', 'tres', 60_000);
+
+      const taken = await store.takeFields(key('e'));
+      const again = await store.takeFields(key('e'));
+
+      expect(Object.fromEntries(taken)).toEqual({
+        'k-1': 'tres',
+        'k-2': 'dos',
+      });
+      expect(again.size).toBe(0);
+    });
+  });
+}

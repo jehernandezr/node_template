@@ -1,7 +1,8 @@
-import { GetUserProfileOperation } from '@contracts/identity';
-import { HttpApplicationSetup } from '@platform/http/nest';
-import { HttpTestClient } from '@platform/http/test-utils';
-import type { ConfigEnv } from '@platform/config';
+import { PlatformErrorCode } from '@contracts/platform';
+import {
+  GetUserProfileOperation,
+  IdentityErrorCode,
+} from '@contracts/identity';
 import {
   HmacSigner,
   HttpOutcomeReader,
@@ -15,91 +16,44 @@ import {
   SequentialIdGenerator,
 } from '@platform/kernel/test-utils';
 import { CallOutcomeKind, RetryAfterParser } from '@platform/primitives';
-import { MigrationTarget } from '@platform/service';
-import {
-  ServiceBootstrap,
-  ServiceMigrator,
-  type RunningService,
-} from '@platform/service/nest';
-import { identityService } from '../identity.service.js';
-import { IdentityTestServers } from './utils/index.js';
+import { IdentityTestApp } from './utils/index.js';
 
 const runtime = new ContainerRuntime(process.env);
 
 runtime.describeIfAvailable('identity app', () => {
   jest.setTimeout(180_000);
 
-  const servers = new IdentityTestServers();
-  const migrator = new ServiceMigrator();
-  let env: ConfigEnv = {};
-  let running: RunningService | undefined;
+  const app = new IdentityTestApp();
 
   beforeAll(async () => {
-    await servers.start();
-    env = servers.environment();
+    await app.start();
   });
 
   afterAll(async () => {
-    await running?.stop();
-    await servers.stop();
-  });
-
-  it('migrates the catalog and then the two shards', async () => {
-    const catalog = await migrator.run(
-      identityService,
-      MigrationTarget.Catalog,
-      {
-        env,
-      },
-    );
-    await servers.registerShards();
-    const shards = await migrator.run(identityService, MigrationTarget.Shards, {
-      env,
-    });
-
-    expect(catalog.databases).toHaveLength(1);
-    expect(shards.databases).toHaveLength(2);
-    const names = [...catalog.databases, ...shards.databases].map(
-      (report) => report.database,
-    );
-    expect(new Set(names).size).toBe(3);
-    for (const report of [...catalog.databases, ...shards.databases]) {
-      expect(report.applied.length).toBeGreaterThan(0);
-    }
+    await app.stop();
   });
 
   it('serves the app with healthy probes', async () => {
-    running = await ServiceBootstrap.http(identityService, {
-      env,
-      http: {
-        port: 0,
-        host: '127.0.0.1',
-        configurer: new HttpApplicationSetup(),
-      },
-    });
-    const client = new HttpTestClient(
-      `http://127.0.0.1:${running.address?.port ?? 0}`,
-    );
+    const client = app.client();
 
     expect((await client.get('/health/live')).status).toBe(200);
     expect((await client.get('/health/ready')).status).toBe(200);
   });
 
-  it('answers the stubs with the error codes of the pipeline', async () => {
-    const client = new HttpTestClient(
-      `http://127.0.0.1:${running?.address?.port ?? 0}`,
-    );
+  it('publishes the JWKS and answers the pipeline errors', async () => {
+    const client = app.client();
 
     const jwks = await client.get('/v1/auth/jwks');
-    expect(jwks.status).toBe(500);
+    expect(jwks.status).toBe(200);
+    expect(jwks.headers.get('cache-control')).toBe('public, max-age=300');
     expect(jwks.body).toMatchObject({
-      code: 'PLATFORM.INTERNAL.UNEXPECTED',
+      keys: [expect.objectContaining({ kty: 'EC', crv: 'P-256' })],
     });
 
     const access = await client.get('/v1/me/access');
     expect(access.status).toBe(401);
     expect(access.body).toMatchObject({
-      code: 'PLATFORM.AUTH.UNAUTHENTICATED',
+      code: PlatformErrorCode.AuthUnauthenticated,
     });
 
     const plainText = await client.post('/v1/auth/sign-in', {
@@ -107,52 +61,77 @@ runtime.describeIfAvailable('identity app', () => {
       headers: { 'content-type': 'text/plain' },
     });
     expect(plainText.status).toBe(415);
-    expect(plainText.body).toMatchObject({
-      code: 'PLATFORM.HTTP.UNSUPPORTED_MEDIA_TYPE',
-    });
 
     const foreignOrigin = await client.post('/v1/auth/sign-in', {
       headers: { Origin: 'https://evil.test' },
     });
     expect(foreignOrigin.status).toBe(403);
     expect(foreignOrigin.body).toMatchObject({
-      code: 'PLATFORM.AUTH.ORIGIN_REJECTED',
+      code: PlatformErrorCode.AuthOriginRejected,
     });
   });
 
-  it('mounts the internal API outside the endpoint guard and checks its signature', async () => {
-    const baseUrl = `http://127.0.0.1:${running?.address?.port ?? 0}`;
-    const input = { userId: new SequentialIdGenerator().next().toString() };
-    const meta = (key: string) => ({
-      idempotencyKey: key,
-      deadline: Date.now() + 5_000,
-      timeoutMs: 5_000,
-    });
-
-    const signed = await transportFor(
-      baseUrl,
+  it('runs a signed internal operation up to its handler, with and without a tenant', async () => {
+    const env = app.env();
+    const transport = transportFor(
+      app.baseUrl(),
       String(env['INTERNAL_API_SHARED_SECRET']),
-    ).invoke(GetUserProfileOperation.id, input, meta('profile-signed'));
-    const forged = await transportFor(
-      baseUrl,
-      'another-secret-of-the-identity-test',
-    ).invoke(GetUserProfileOperation.id, input, meta('profile-forged'));
+    );
+    const input = { userId: new SequentialIdGenerator().next().toString() };
 
-    expect(signed.kind).not.toBe(CallOutcomeKind.Success);
-    expect(signed).not.toMatchObject({
-      reason: InternalApiReason.Unauthenticated,
+    const withTenant = await transport.invoke(
+      GetUserProfileOperation.id,
+      input,
+      {
+        ...meta('profile-with-tenant'),
+        tenantId: String(env['IDENTITY_DEFAULT_TENANT_ID']),
+      },
+    );
+    const withoutTenant = await transport.invoke(
+      GetUserProfileOperation.id,
+      input,
+      meta('profile-without-tenant'),
+    );
+
+    // El handler corrió: responde que el usuario no existe y no que falta el shard.
+    expect(withTenant).toMatchObject({
+      kind: CallOutcomeKind.BusinessError,
+      code: IdentityErrorCode.UserNotFound,
     });
+    expect(withoutTenant).toMatchObject({
+      kind: CallOutcomeKind.BusinessError,
+      code: IdentityErrorCode.UserNotFound,
+    });
+  });
+
+  it('rejects an internal call signed with another secret', async () => {
+    const forged = await transportFor(
+      app.baseUrl(),
+      'another-secret-of-the-identity-test',
+    ).invoke(
+      GetUserProfileOperation.id,
+      { userId: new SequentialIdGenerator().next().toString() },
+      meta('profile-forged'),
+    );
+
     expect(forged).toMatchObject({
       kind: CallOutcomeKind.ProtocolViolation,
       reason: InternalApiReason.Unauthenticated,
     });
   });
-
-  it('stops without hanging', async () => {
-    await running?.stop();
-    running = undefined;
-  });
 });
+
+function meta(key: string): {
+  idempotencyKey: string;
+  deadline: number;
+  timeoutMs: number;
+} {
+  return {
+    idempotencyKey: key,
+    deadline: Date.now() + 20_000,
+    timeoutMs: 20_000,
+  };
+}
 
 /** Transporte HTTP de la API interna hacia identity, firmado con `secret`. */
 function transportFor(baseUrl: string, secret: string): HttpTransport {

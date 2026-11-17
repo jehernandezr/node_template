@@ -40,5 +40,10 @@ export const persistenceErrorCatalog = defineErrorCatalog(
       true,
       'Hay contención sobre el mismo registro; reintentar.',
     ),
+    [PersistenceErrorCode.ShuttingDown]: ErrorSpecs.internal(
+      503,
+      true,
+      'El proceso se está apagando y ya cerró sus conexiones a los shards; otro proceso puede atender.',
+    ),
   },
 );

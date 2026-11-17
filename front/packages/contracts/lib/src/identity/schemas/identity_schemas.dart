@@ -15329,12 +15329,6 @@ abstract final class TenantCreatedPayloadSchema {
           );
         }
       }
-    } else {
-      addFieldError(
-        errors,
-        joinPath(path, 'ownerUserId'),
-        PlatformErrorCode.validationRequired.code,
-      );
     }
     if (json.containsKey('createdAt')) {
       final value416 = json['createdAt'];

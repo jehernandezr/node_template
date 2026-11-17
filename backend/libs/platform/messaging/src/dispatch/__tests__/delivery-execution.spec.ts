@@ -216,4 +216,19 @@ describe('DeliveryExecution', () => {
     expect(handler.calls).toHaveLength(1);
     expect(store.claims).toHaveLength(1);
   });
+
+  it('releases a failed claim while the context is still open', async () => {
+    const runInContext = new RecordingRunInContext();
+    const { execution, store } = setup(recording, runInContext);
+    store.contextProbe = runInContext;
+    const { envelope, delivery } = deliveryFor(
+      new RecordingMessageHandler({ error: transient('busy') }),
+    );
+
+    expect(
+      (await execution.execute(envelope, delivery, 'fp', options)).outcome,
+    ).toBe(DispatchOutcome.RetryLater);
+    expect(store.releasesInContext).toEqual([true]);
+    expect(runInContext.active).toBe(false);
+  });
 });

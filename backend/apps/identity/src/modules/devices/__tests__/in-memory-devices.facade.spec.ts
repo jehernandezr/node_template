@@ -18,10 +18,10 @@ const APPROVAL: DeviceApproval = {
 };
 
 describe('InMemoryDevicesFacade', () => {
-  it('issues a device id derived from the user', async () => {
-    await expect(new InMemoryDevicesFacade().issueDeviceId(ANA)).resolves.toBe(
-      `dv1_${ANA.userId}`,
-    );
+  it('issues a device id with the route to the user shard', async () => {
+    await expect(
+      new InMemoryDevicesFacade().issueDeviceId(ANA, 'd-1'),
+    ).resolves.toBe(`dv1_${ANA.userId}_${ANA.homeTenantId}_d-1`);
   });
 
   it('recognizes the device id of a user with a device', async () => {
@@ -32,7 +32,9 @@ describe('InMemoryDevicesFacade', () => {
       ip: '203.0.113.5',
     });
 
-    await expect(facade.recognize(ANA, `dv1_${ANA.userId}`)).resolves.toEqual({
+    await expect(
+      facade.recognize(ANA, await facade.issueDeviceId(ANA, device.id)),
+    ).resolves.toEqual({
       recognized: true,
       device,
     });

@@ -101,7 +101,7 @@ export const TenantCreatedPayloadSchema = z
       .max(IdentityLimits.tenantSlugMaxLength),
     kind: z.enum(TenantKind),
     region: z.string().min(1).max(IdentityLimits.regionMaxLength),
-    ownerUserId: IdSchema,
+    ownerUserId: IdSchema.optional(),
     createdAt: TimestampSchema,
   })
   .describe('Se creó un tenant.') satisfies z.ZodType<TenantCreatedPayload>;

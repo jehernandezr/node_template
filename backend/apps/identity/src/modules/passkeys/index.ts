@@ -1,1 +1,2 @@
-export { PasskeysModule } from './presentation/passkeys.module.js';
+export { PasskeysFacade } from './application/passkeys.facade.js';
+export type { Passkey } from './domain/passkey.js';

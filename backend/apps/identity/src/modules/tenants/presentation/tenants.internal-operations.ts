@@ -1,4 +1,7 @@
+import { Injectable } from '@nestjs/common';
 import { InternalHandler } from '@platform/internal-api/nest';
+import type { HandlerResult } from '@platform/internal-api';
+import { CallOutcome } from '@platform/primitives';
 import {
   CreateTenantOperation,
   DiscardTenantOperation,
@@ -6,34 +9,69 @@ import {
   ReactivateTenantOperation,
   ActivateTenantOperation,
   identityContract,
+  type CreateTenantInput,
+  type SuspendTenantInput,
+  type TenantOperationResult,
+  type TenantRefInput,
+  type TenantSummary,
 } from '@contracts/identity';
 import { RouteNotImplementedError } from '../../../shared/errors/route-not-implemented.error.js';
+import { ChangeTenantStatus } from '../application/change-tenant-status.use-case.js';
+import { ProvisionTenant } from '../application/provision-tenant.use-case.js';
 
-/** Operaciones internas de tenants. El arranque exige un handler por cada operación del contrato, así que responden como no implementadas hasta tener su caso de uso. */
+/** Operaciones internas de tenants. Las de traslado llegan con `MoveTenant`. */
+@Injectable()
 export class TenantsInternalOperations {
+  constructor(
+    private readonly provision: ProvisionTenant,
+    private readonly status: ChangeTenantStatus,
+  ) {}
+
   @InternalHandler(CreateTenantOperation)
-  createTenant(): never {
-    throw new RouteNotImplementedError(CreateTenantOperation.id);
+  async createTenant(
+    input: CreateTenantInput,
+  ): Promise<HandlerResult<TenantSummary>> {
+    return {
+      outcome: CallOutcome.success(await this.provision.execute(input)),
+    };
   }
 
   @InternalHandler(DiscardTenantOperation)
-  discardTenant(): never {
-    throw new RouteNotImplementedError(DiscardTenantOperation.id);
+  async discardTenant(
+    input: TenantRefInput,
+  ): Promise<HandlerResult<TenantOperationResult>> {
+    return {
+      outcome: CallOutcome.success(await this.status.discard(input.tenantId)),
+    };
   }
 
   @InternalHandler(SuspendTenantOperation)
-  suspendTenant(): never {
-    throw new RouteNotImplementedError(SuspendTenantOperation.id);
+  async suspendTenant(
+    input: SuspendTenantInput,
+  ): Promise<HandlerResult<TenantOperationResult>> {
+    return {
+      outcome: CallOutcome.success(await this.status.suspend(input.tenantId)),
+    };
   }
 
   @InternalHandler(ReactivateTenantOperation)
-  reactivateTenant(): never {
-    throw new RouteNotImplementedError(ReactivateTenantOperation.id);
+  async reactivateTenant(
+    input: TenantRefInput,
+  ): Promise<HandlerResult<TenantOperationResult>> {
+    return {
+      outcome: CallOutcome.success(
+        await this.status.reactivate(input.tenantId),
+      ),
+    };
   }
 
   @InternalHandler(ActivateTenantOperation)
-  activateTenant(): never {
-    throw new RouteNotImplementedError(ActivateTenantOperation.id);
+  async activateTenant(
+    input: TenantRefInput,
+  ): Promise<HandlerResult<TenantOperationResult>> {
+    return {
+      outcome: CallOutcome.success(await this.status.activate(input.tenantId)),
+    };
   }
 
   @InternalHandler(identityContract.operations.tenantMoveSync)

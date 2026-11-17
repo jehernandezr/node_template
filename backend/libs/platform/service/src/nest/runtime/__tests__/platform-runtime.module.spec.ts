@@ -1,4 +1,20 @@
 import type { FactoryProvider } from '@nestjs/common';
+import {
+  CatalogIdempotencyStore,
+  TypeOrmIdempotencyStore,
+} from '@platform/adapters-postgres';
+import { ProcessedOperationStore } from '@platform/internal-api';
+import { DeliveryContext, TenantVerifier } from '@platform/messaging';
+import {
+  Redactor,
+  RequestContextStore,
+  Tracing,
+} from '@platform/observability';
+import { ShardKey, ShardRouter } from '@platform/sharding';
+import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
+import { ShardScope } from '@platform/persistence';
+import { PlacedTenantVerifier } from '../../../messaging/placed-tenant-verifier.js';
+import { TenantShardDeliveryContext } from '../../../messaging/tenant-shard-delivery-context.js';
 import { AppConfig } from '@platform/config';
 import { ValkeyAuthMode } from '@platform/adapters-valkey';
 import { AwsModule } from '@platform/adapters-aws/nest';
@@ -123,6 +139,102 @@ describe('PlatformRuntimeModule', () => {
           operations: [],
           remoteOperations: [],
           http: { baseUrls: {}, secret: 'test-secret' },
+        });
+      });
+    });
+
+    describe('when the service requires a ShardScope', () => {
+      it('keeps the idempotency keys of its internal API in the catalog', () => {
+        const definition = ServiceDefinitionBuilder.aDefinition()
+          .with({ sharding: { defaultKey: ShardKey.User, requireScope: true } })
+          .build();
+
+        const internalApi = ImportedModules.find(
+          PlatformRuntimeModule.forService(definition, {
+            env: {},
+            adapters: { valkey: false, aws: false },
+          }),
+          InternalApiModule,
+        );
+
+        expect(internalApi?.providers).toContainEqual({
+          provide: ProcessedOperationStore,
+          useExisting: CatalogIdempotencyStore,
+        });
+      });
+
+      it('delivers each message in the shard of the tenant of its envelope', async () => {
+        const definition = ServiceDefinitionBuilder.aDefinition()
+          .with({ sharding: { defaultKey: ShardKey.User, requireScope: true } })
+          .build();
+
+        const dynamic = PlatformRuntimeModule.forService(definition, {
+          env: {},
+          adapters: { valkey: false, aws: false },
+        });
+        const messaging = ImportedModules.find(dynamic, MessagingModule);
+        const providers = (dynamic.providers ?? []) as FactoryProvider[];
+        const factoryOf = (token: unknown) =>
+          providers.find((provider) => provider.provide === token)?.useFactory;
+        const router = new ShardRouter({
+          directory: new InMemoryDirectoryStore(),
+        });
+        const built = [
+          factoryOf(PlacedTenantVerifier)?.(router),
+          factoryOf(TenantShardDeliveryContext)?.(
+            new ShardScope(router),
+            new RequestContextStore(new Tracing(new Redactor())),
+          ),
+        ];
+
+        expect(messaging?.providers).toEqual(
+          expect.arrayContaining([
+            { provide: TenantVerifier, useExisting: PlacedTenantVerifier },
+            {
+              provide: DeliveryContext,
+              useExisting: TenantShardDeliveryContext,
+            },
+          ]),
+        );
+        expect(dynamic.exports).toEqual(
+          expect.arrayContaining([
+            PlacedTenantVerifier,
+            TenantShardDeliveryContext,
+          ]),
+        );
+        expect(built).toEqual([
+          expect.any(PlacedTenantVerifier),
+          expect.any(TenantShardDeliveryContext),
+        ]);
+      });
+
+      it('keeps the delivery of a service without shards as it was', () => {
+        const dynamic = PlatformRuntimeModule.forService(
+          ServiceDefinitionBuilder.aDefinition().build(),
+          { env: {}, adapters: { valkey: false, aws: false } },
+        );
+
+        expect(
+          ImportedModules.find(dynamic, MessagingModule)?.providers,
+        ).not.toContainEqual(
+          expect.objectContaining({ provide: DeliveryContext }),
+        );
+      });
+
+      it('keeps them in the shards when the service does not require one', () => {
+        const definition = ServiceDefinitionBuilder.aDefinition().build();
+
+        const internalApi = ImportedModules.find(
+          PlatformRuntimeModule.forService(definition, {
+            env: {},
+            adapters: { valkey: false, aws: false },
+          }),
+          InternalApiModule,
+        );
+
+        expect(internalApi?.providers).toContainEqual({
+          provide: ProcessedOperationStore,
+          useExisting: TypeOrmIdempotencyStore,
         });
       });
     });

@@ -1,0 +1,218 @@
+import { Injectable } from '@nestjs/common';
+import {
+  AuthMethodReference,
+  IdentityErrorCode,
+  SecurityAlertType,
+  UserStatus,
+  type SignInRequest,
+  type SignInResponse,
+} from '@contracts/identity';
+import { Clock, IdGenerator } from '@platform/kernel';
+import { RequestContextStore } from '@platform/observability';
+import { IdentitySettings } from '../../../config/identity-settings.js';
+import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
+import { IdentityError } from '../../../shared/errors/identity.error.js';
+import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
+import { SignInResponses } from '../../../shared/utils/sign-in-responses.js';
+import type { ClientInfo } from '../../../shared/types/client-info.type.js';
+import type { UserRef } from '../../../shared/types/user-ref.type.js';
+import { AccessFacade } from '../../access/index.js';
+import { SecurityAlerts } from '../../alerts/index.js';
+import { DevicesFacade } from '../../devices/index.js';
+import { MfaFacade } from '../../mfa/index.js';
+import { PasswordsFacade } from '../../passwords/index.js';
+import { SessionsFacade } from '../../sessions/index.js';
+import { UsersFacade, type UserSnapshot } from '../../users/index.js';
+import { MfaRequirementPolicy } from '../domain/mfa-requirement-policy.js';
+import { LockoutKeys } from './lockout-keys.js';
+import { LoginLockout } from './login-lockout.js';
+import {
+  LoginAttemptReason,
+  LoginAttemptResult,
+} from '../domain/login-attempt.js';
+import { LoginAttemptRepository } from '../domain/login-attempt.repository.js';
+
+/** Inicio de sesión con email y contraseña desde un cliente. */
+export interface SignInCommand {
+  readonly request: SignInRequest;
+  readonly client: ClientInfo;
+}
+
+/**
+ * Inicio de sesión con contraseña: revisa los bloqueos, verifica la contraseña (también sin usuario, con el
+ * mismo costo), reconoce el dispositivo y decide si hace falta segundo factor. Un fallo cuenta para el
+ * origen, la cuenta y la IP; un email inexistente cuenta igual, sin dejar rastro en un shard.
+ */
+@Injectable()
+export class SignInWithPassword {
+  private readonly mfaPolicy = new MfaRequirementPolicy();
+
+  constructor(
+    private readonly users: UsersFacade,
+    private readonly passwords: PasswordsFacade,
+    private readonly devices: DevicesFacade,
+    private readonly access: AccessFacade,
+    private readonly mfa: MfaFacade,
+    private readonly sessions: SessionsFacade,
+    private readonly alerts: SecurityAlerts,
+    private readonly lockout: LoginLockout,
+    private readonly attempts: LoginAttemptRepository,
+    private readonly keys: LockoutKeys,
+    private readonly scopes: IdentityShardScopes,
+    private readonly context: RequestContextStore,
+    private readonly ids: IdGenerator,
+    private readonly clock: Clock,
+    private readonly settings: IdentitySettings,
+  ) {}
+
+  async execute(command: SignInCommand): Promise<SignInResponse> {
+    const { request, client } = command;
+    const account = this.keys.account(request.email);
+    const locked = await this.lockout.remainingLockMs(account, client.ip);
+    if (locked !== undefined) {
+      throw IdentityError.retryAfter(
+        IdentityErrorCode.AuthInvalidCredentials,
+        locked,
+      );
+    }
+    const user = await this.users.findByEmail(request.email);
+    const ref = user === undefined ? undefined : SignInWithPassword.refOf(user);
+    if (!(await this.passwords.verify(ref, request.password))) {
+      await this.fail(ref, account, client);
+    }
+    if (user === undefined || ref === undefined) {
+      return this.fail(undefined, account, client);
+    }
+    await this.assertCanSignIn(user, ref, client, account);
+    await this.lockout.clear(account, client.ip);
+    await this.record(ref, client, LoginAttemptResult.Succeeded);
+    return this.continueWith(ref, request.deviceId, client, account);
+  }
+
+  private async continueWith(
+    ref: UserRef,
+    deviceIdToken: string | undefined,
+    client: ClientInfo,
+    account: string,
+  ): Promise<SignInResponse> {
+    const recognition = await this.devices.recognize(ref, deviceIdToken);
+    const tenantId = await this.access.defaultTenant(ref);
+    const needsMfa = this.mfaPolicy.requiresSecondFactor({
+      deviceRecognized: recognition.recognized,
+      privileged: await this.access.requiresMfaOnEveryLogin(ref, tenantId),
+      protectedMode: await this.lockout.isProtected(account),
+    });
+    const deviceId = recognition.device?.id;
+    if (needsMfa) {
+      return SignInResponses.mfaRequired(
+        await this.mfa.startPending({
+          user: ref,
+          purpose: PendingPurpose.SignIn,
+          client,
+          ...(deviceId === undefined ? {} : { deviceId }),
+          authMethods: [AuthMethodReference.Password],
+        }),
+      );
+    }
+    const session = await this.sessions.createSession({
+      user: ref,
+      ...(deviceId === undefined ? {} : { deviceId }),
+      authMethods: [AuthMethodReference.Password],
+      authTime: this.clock.now(),
+      client,
+    });
+    return SignInResponses.authenticated(
+      session,
+      this.settings.values.IDENTITY_REGION,
+    );
+  }
+
+  private async assertCanSignIn(
+    user: UserSnapshot,
+    ref: UserRef,
+    client: ClientInfo,
+    account: string,
+  ): Promise<void> {
+    if (user.status === UserStatus.Deleted) {
+      // Una cuenta borrada responde como un email que no existe: no revela que existió.
+      await this.fail(undefined, account, client);
+    }
+    if (user.status === UserStatus.Suspended) {
+      await this.record(
+        ref,
+        client,
+        LoginAttemptResult.Failed,
+        LoginAttemptReason.Suspended,
+      );
+      throw new IdentityError(IdentityErrorCode.UserSuspended);
+    }
+    if (user.status === UserStatus.PendingVerification) {
+      await this.record(
+        ref,
+        client,
+        LoginAttemptResult.Failed,
+        LoginAttemptReason.EmailNotVerified,
+      );
+      throw new IdentityError(IdentityErrorCode.AuthEmailNotVerified);
+    }
+  }
+
+  /** Cuenta el fallo y responde `INVALID_CREDENTIALS`, con `Retry-After` si este fallo bloqueó el origen. */
+  private async fail(
+    ref: UserRef | undefined,
+    account: string,
+    client: ClientInfo,
+  ): Promise<never> {
+    const outcome = await this.lockout.recordFailure(account, client.ip);
+    if (ref !== undefined) {
+      await this.record(
+        ref,
+        client,
+        LoginAttemptResult.Failed,
+        LoginAttemptReason.InvalidPassword,
+      );
+      if (outcome.lockedForMs !== undefined) {
+        await this.alerts.raise({
+          type: SecurityAlertType.AccountLocked,
+          user: ref,
+        });
+      }
+      if (outcome.protectedModeEnabled) {
+        await this.alerts.raise({
+          type: SecurityAlertType.ProtectedModeEnabled,
+          user: ref,
+        });
+      }
+    }
+    throw outcome.lockedForMs === undefined
+      ? new IdentityError(IdentityErrorCode.AuthInvalidCredentials)
+      : IdentityError.retryAfter(
+          IdentityErrorCode.AuthInvalidCredentials,
+          outcome.lockedForMs,
+        );
+  }
+
+  private async record(
+    ref: UserRef,
+    client: ClientInfo,
+    result: LoginAttemptResult,
+    reason?: LoginAttemptReason,
+  ): Promise<void> {
+    const traceId = this.context.current()?.traceId;
+    await this.scopes.inUserShard(ref, () =>
+      this.attempts.record({
+        id: this.ids.next().toString(),
+        userId: ref.userId,
+        result,
+        ...(reason === undefined ? {} : { reason }),
+        ip: client.ip,
+        ...(traceId === undefined ? {} : { traceId }),
+        attemptedAt: this.clock.now(),
+      }),
+    );
+  }
+
+  private static refOf(user: UserSnapshot): UserRef {
+    return { userId: user.id, homeTenantId: user.homeTenantId };
+  }
+}

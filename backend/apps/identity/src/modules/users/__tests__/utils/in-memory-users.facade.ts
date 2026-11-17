@@ -36,6 +36,13 @@ export class InMemoryUsersFacade extends UsersFacade {
     return user;
   }
 
+  async refOf(userId: string): Promise<UserRef | undefined> {
+    const user = this.users.get(userId);
+    return user === undefined
+      ? undefined
+      : { userId: user.id, homeTenantId: user.homeTenantId };
+  }
+
   async register(input: RegisterUserInput): Promise<UserRef> {
     const email = normalizeEmail(input.email);
     if ((await this.findByEmail(email)) !== undefined) {

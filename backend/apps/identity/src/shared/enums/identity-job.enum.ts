@@ -8,6 +8,4 @@ export enum IdentityJob {
   RotateLoginAttemptPartitions = 'identity.rotate-login-attempt-partitions',
   /** Pasa a `Expired` las invitaciones vencidas. */
   ExpireInvitations = 'identity.expire-invitations',
-  /** Recarga el Bloom de contraseñas filtradas. */
-  RebuildBreachedPasswords = 'identity.rebuild-breached-passwords',
 }

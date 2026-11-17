@@ -46,6 +46,7 @@ await this.transactions.runInTransaction(async () => {
 
 - Un consumidor es una clase de `presentation/` con un método decorado con `@Subscribe(Contrato)`. `MessagingExplorer` lo descubre y lo registra en `MessageDispatcher`. El dispatcher valida el sobre y el esquema zod antes de llamar al método; un mensaje inválido es permanente: va a la DLQ, no se reintenta.
 - La idempotencia la hace el `MessageDispatcher`, no el consumidor: toma un claim de tres estados del `IdempotencyStore` (`ProcessedMessageStore`) con la llave `(consumidor, id del mensaje)`. `claim` responde `ClaimState.Acquired`, `ClaimState.InProgress` o `ClaimState.Completed`: si otro reparto está en curso deja el mensaje para reentrega y si ya está completado lo confirma sin ejecutar. `complete` corre en la misma transacción que los efectos del manejador (`runInContext`) y `release` si el manejador falla. El consumidor no registra ids a mano.
+- Un servicio con `requireScope` (sus datos viven en shards y cada transacción declara su `ShardScope`) entrega cada mensaje en el shard del tenant del sobre: `PlatformRuntimeModule` registra `PlacedTenantVerifier` (solo acepta tenants que el directorio ubica en la región; un sobre sin tenant o con uno desconocido va a la DLQ) y `TenantShardDeliveryContext` (abre el `ShardScope` y el contexto del tenant alrededor del claim, el manejador y el `complete`). Ese contexto no abre transacción, porque el manejador puede tocar otros shards: los efectos y el `complete` no se confirman juntos, y el consumidor tiene que ser idempotente por su entrada (reaplicar el mismo mensaje no duplica nada). Un servicio sin shards no cambia: `processed_messages` se confirma con los efectos.
 
 ```ts
 @Injectable()
@@ -88,6 +89,7 @@ export class CreateTenantHandler {
 
 - Una operación que modifica datos y puede reintentarse (pagos, altas, sagas) recibe una llave de idempotencia (`Idempotency-Key` en HTTP, `sagaId:paso:dirección` en la API interna).
 - El resultado se guarda con `IdempotencyGate`, que hace `claim`, `complete` y `release` sobre `ProcessedOperationStore`, y `UnitOfWorkRunner` confirma el manejador y el `complete` en una sola transacción. Una repetición con la misma llave y la misma entrada devuelve el resultado guardado. Con la misma llave y distinta entrada responde 409 o 422.
+- Excepción, servicios con `requireScope` (ADR 0023): el shard de la operación lo decide su handler con la entrada, así que la llave vive en el catálogo (`CatalogIdempotencyStore`) y el handler abre sus propias transacciones (`HandlerUnitOfWork.Handler`). El `complete` no se confirma con los efectos: si el proceso cae entre los dos, la reintentada vuelve a correr el handler. Por eso cada operación que modifica datos de ese servicio es idempotente por su entrada (la misma entrada con otra llave no duplica efectos ni eventos), y una prueba de integración por operación la invoca dos veces con llaves distintas y verifica sus efectos y su outbox.
 - Operaciones naturalmente idempotentes (`PUT` de un estado, borrar si existe) no necesitan llave, pero su caso de uso se escribe para que repetirlo sea inocuo.
 - Las llaves caducan (por ejemplo, 24 horas) y la limpieza es `ProcessedOperationRetentionJob`, un `ScheduledJob` que corre cada hora.
 
@@ -118,5 +120,6 @@ export class CreateTenantHandler {
 
 - Dominio y mapper de eventos: unitarias.
 - Outbox y consumidor: integración con PostgreSQL y LocalStack. Casos obligatorios: evento duplicado, evento fuera de orden, mensaje inválido a DLQ, falla de la base a mitad del consumidor.
+- Servicio con `requireScope`: un consumidor se prueba de punta a punta por el `MessageDispatcher` con el sobre real del outbox (el claim cae en el shard del tenant, la reentrega es `Duplicate`), y cada operación interna que modifica datos con dos llaves para la misma entrada.
 - Contrato: el esquema del evento publicado se valida contra el del consumidor.
 - Los dobles (`InMemoryBus`, `InMemoryOutboxStore`, `InMemoryProcessedMessageStore`) salen de `@platform/messaging/test-utils` y pasan `runOutboxStoreContract` y `runProcessedMessageStoreContract`, igual que los stores reales.

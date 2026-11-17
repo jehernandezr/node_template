@@ -8,4 +8,9 @@ export abstract class PasswordsFacade {
    */
   abstract verify(ref: UserRef | undefined, password: string): Promise<boolean>;
   abstract setInitial(ref: UserRef, password: string): Promise<void>;
+  /**
+   * Revisa una contraseña nueva sin guardarla.
+   * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` o `IDENTITY.PASSWORD.BREACHED`.
+   */
+  abstract assertAcceptable(password: string, email: string): Promise<void>;
 }

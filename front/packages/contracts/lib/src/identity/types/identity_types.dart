@@ -5686,7 +5686,7 @@ final class TenantCreatedPayload {
     required this.slug,
     required this.kind,
     required this.region,
-    required this.ownerUserId,
+    this.ownerUserId,
     required this.createdAt,
   });
 
@@ -5698,7 +5698,7 @@ final class TenantCreatedPayload {
         slug: json['slug'] as String,
         kind: json['kind'] as String,
         region: json['region'] as String,
-        ownerUserId: json['ownerUserId'] as String,
+        ownerUserId: json['ownerUserId'] as String?,
         createdAt: DateTime.parse(json['createdAt'] as String),
       );
     } on TypeError catch (error) {
@@ -5714,7 +5714,7 @@ final class TenantCreatedPayload {
 
   final String region;
 
-  final String ownerUserId;
+  final String? ownerUserId;
 
   final DateTime createdAt;
 
@@ -5724,7 +5724,7 @@ final class TenantCreatedPayload {
     'slug': slug,
     'kind': kind,
     'region': region,
-    'ownerUserId': ownerUserId,
+    'ownerUserId': ?ownerUserId,
     'createdAt': createdAt.toUtc().toIso8601String(),
   };
 

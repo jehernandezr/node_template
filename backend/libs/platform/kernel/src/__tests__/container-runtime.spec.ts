@@ -111,3 +111,19 @@ describe('ContainerRuntime', () => {
     });
   });
 });
+
+describe('ContainerRuntime auto cleanup', () => {
+  it('registers containers in the reaper unless Ryuk is disabled', () => {
+    expect(new ContainerRuntime({}).autoCleanup()).toBe(true);
+    expect(
+      new ContainerRuntime({
+        TESTCONTAINERS_RYUK_DISABLED: 'false',
+      }).autoCleanup(),
+    ).toBe(true);
+    expect(
+      new ContainerRuntime({
+        TESTCONTAINERS_RYUK_DISABLED: 'true',
+      }).autoCleanup(),
+    ).toBe(false);
+  });
+});

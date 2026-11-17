@@ -1,19 +1,45 @@
+import { Injectable } from '@nestjs/common';
 import { InternalHandler } from '@platform/internal-api/nest';
+import type { HandlerResult } from '@platform/internal-api';
+import { CallOutcome } from '@platform/primitives';
 import {
   GetUserAccessOperation,
   ListMembersByPermissionOperation,
+  type GetUserAccessInput,
+  type ListMembersByPermissionInput,
+  type UserAccess,
+  type UserRefPage,
 } from '@contracts/identity';
-import { RouteNotImplementedError } from '../../../shared/errors/route-not-implemented.error.js';
+import { AccessResolver } from '../application/access-resolver.js';
+import { ListMembersByPermission } from '../application/list-members-by-permission.use-case.js';
 
-/** Operaciones internas de access. El arranque exige un handler por cada operación del contrato, así que responden como no implementadas hasta tener su caso de uso. */
+/** Operaciones internas de access. */
+@Injectable()
 export class AccessInternalOperations {
+  constructor(
+    private readonly resolver: AccessResolver,
+    private readonly membersByPermission: ListMembersByPermission,
+  ) {}
+
   @InternalHandler(GetUserAccessOperation)
-  getUserAccess(): never {
-    throw new RouteNotImplementedError(GetUserAccessOperation.id);
+  async getUserAccess(
+    input: GetUserAccessInput,
+  ): Promise<HandlerResult<UserAccess>> {
+    return {
+      outcome: CallOutcome.success(
+        await this.resolver.resolve(input.userId, input.tenantId),
+      ),
+    };
   }
 
   @InternalHandler(ListMembersByPermissionOperation)
-  listMembersByPermission(): never {
-    throw new RouteNotImplementedError(ListMembersByPermissionOperation.id);
+  async listMembersByPermission(
+    input: ListMembersByPermissionInput,
+  ): Promise<HandlerResult<UserRefPage>> {
+    return {
+      outcome: CallOutcome.success(
+        await this.membersByPermission.execute(input),
+      ),
+    };
   }
 }

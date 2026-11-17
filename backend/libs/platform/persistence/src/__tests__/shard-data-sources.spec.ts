@@ -1,4 +1,5 @@
 import { FixedClock } from '@platform/kernel/test-utils';
+import { PersistenceErrorCode } from '../errors/persistence-error-code.enum.js';
 import { ShardDataSources } from '../shard-data-sources.js';
 import { FakeDataSourceFactory } from './utils/fake-data-source-factory.js';
 import { FakeInstanceEndpointResolver } from './utils/fake-instance-endpoint-resolver.js';
@@ -99,6 +100,35 @@ describe('ShardDataSources', () => {
       await sources.close();
 
       expect(factory.created.map((ds) => ds.destroyCalls)).toEqual([1, 1]);
+      expect(sources.activeShards()).toEqual([]);
+    });
+
+    it('refuses to open a shard again, so nothing is left open after shutdown', async () => {
+      const factory = new FakeDataSourceFactory();
+      const sources = buildSources(new FixedClock(), factory);
+      await sources.get(SHARD_A);
+
+      await sources.close();
+
+      await expect(sources.get(SHARD_B)).rejects.toMatchObject({
+        code: PersistenceErrorCode.ShuttingDown,
+      });
+      expect(factory.created).toHaveLength(1);
+      expect(sources.activeShards()).toEqual([]);
+    });
+
+    it('does not keep a shard that was moving to another instance while it closed', async () => {
+      const factory = new FakeDataSourceFactory();
+      const sources = buildSources(new FixedClock(), factory);
+      await sources.get(SHARD_A);
+
+      const moving = sources.get({ ...SHARD_A, instance: 'instance-2' });
+      await sources.close();
+
+      await expect(moving).rejects.toMatchObject({
+        code: PersistenceErrorCode.ShuttingDown,
+      });
+      expect(factory.created).toHaveLength(1);
       expect(sources.activeShards()).toEqual([]);
     });
   });

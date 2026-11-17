@@ -4,6 +4,7 @@ import type { PurgeableStore } from '@platform/kernel';
 import type { FinalOutcome } from '@platform/primitives';
 import { IdempotencyStore } from '@platform/kernel';
 import type { InternalRequestSigner } from '../signing/internal-request-signer.js';
+import type { HandlerUnitOfWork } from './handler-unit-of-work.enum.js';
 import type { InternalTransportKind } from './internal-transport-kind.enum.js';
 
 /** Cómo se llega por HTTP a otros servicios y cómo se firman y verifican las llamadas. */
@@ -61,6 +62,8 @@ export interface InternalApiModuleExtras {
    * ser la misma clase que `processedStore`.
    */
   readonly purgeableStore?: Type<PurgeableStore>;
+  /** Por defecto `HandlerUnitOfWork.Shared`. */
+  readonly unitOfWork?: HandlerUnitOfWork;
   /** `false` para importar el módulo en cada módulo que lo use. Por defecto, global. */
   readonly isGlobal?: boolean;
 }

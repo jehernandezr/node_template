@@ -1,5 +1,7 @@
 import type { Clock } from '@platform/kernel';
 import type { DataSource } from 'typeorm';
+import { PersistenceErrorCode } from './errors/persistence-error-code.enum.js';
+import { PersistenceError } from './errors/persistence-error.js';
 import { DatabaseKind } from './model/database-kind.enum.js';
 import type { ShardDataSourcesOptions } from './model/shard-data-sources-options.js';
 import type { ShardLocation } from './model/shard-location.js';
@@ -21,6 +23,7 @@ interface Entry {
  */
 export class ShardDataSources {
   private readonly entries = new Map<string, Entry>();
+  private shutDown = false;
 
   constructor(
     private readonly factory: DataSourceFactory,
@@ -29,8 +32,13 @@ export class ShardDataSources {
     private readonly options: ShardDataSourcesOptions,
   ) {}
 
-  /** `DataSource` inicializado del shard. */
+  /**
+   * `DataSource` inicializado del shard.
+   * @throws PersistenceError `ShuttingDown` si ya se cerraron: un job que sigue corriendo durante el apagado
+   * abriría un pool que nadie cierra.
+   */
   async get(location: ShardLocation): Promise<DataSource> {
+    this.assertOpen();
     const now = this.clock.now().getTime();
     const existing = this.entries.get(location.logicalShard);
     if (existing !== undefined && existing.instance === location.instance) {
@@ -40,6 +48,7 @@ export class ShardDataSources {
     if (existing !== undefined) {
       this.entries.delete(location.logicalShard);
       await this.dispose(existing);
+      this.assertOpen();
     }
 
     const resolved = this.endpoints.resolve(location.instance);
@@ -91,9 +100,19 @@ export class ShardDataSources {
 
   /** Cierra todos. Se llama al apagar el proceso. */
   async close(): Promise<void> {
+    this.shutDown = true;
     const all = [...this.entries.values()];
     this.entries.clear();
     await Promise.all(all.map((entry) => this.dispose(entry)));
+  }
+
+  private assertOpen(): void {
+    if (this.shutDown) {
+      throw new PersistenceError(
+        PersistenceErrorCode.ShuttingDown,
+        'Shard data sources are closed',
+      );
+    }
   }
 
   private async dispose(entry: Entry): Promise<void> {

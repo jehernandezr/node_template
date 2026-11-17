@@ -7,7 +7,7 @@ import type { DeviceRecognition } from '../../domain/device-recognition.js';
 import type { DeviceSnapshot } from '../../domain/device-snapshot.js';
 import type { RegisterDeviceInput } from '../../domain/register-device-input.js';
 
-/** Dispositivos en memoria. El `deviceId` de prueba es `dv1_<userId>`. */
+/** Dispositivos en memoria. El id público es `dv1_<usuario>_<tenant de origen>_<dispositivo>`, como el real. */
 export class InMemoryDevicesFacade extends DevicesFacade {
   private readonly devices = new Map<string, DeviceSnapshot>();
   private readonly approvals = new Map<string, DeviceApproval[]>();
@@ -21,19 +21,22 @@ export class InMemoryDevicesFacade extends DevicesFacade {
     return this;
   }
 
-  async issueDeviceId(ref: UserRef): Promise<string> {
-    return `dv1_${ref.userId}`;
+  async issueDeviceId(ref: UserRef, deviceId: string): Promise<string> {
+    return `dv1_${ref.userId}_${ref.homeTenantId}_${deviceId}`;
   }
 
   async recognize(
     ref: UserRef,
     deviceIdToken?: string,
   ): Promise<DeviceRecognition> {
-    const device = this.userDevices(ref.userId)[0];
-    if (deviceIdToken === `dv1_${ref.userId}` && device !== undefined) {
-      return { recognized: true, device };
-    }
-    return { recognized: false };
+    const device = this.userDevices(ref.userId).find(
+      (candidate) =>
+        deviceIdToken ===
+        `dv1_${ref.userId}_${ref.homeTenantId}_${candidate.id}`,
+    );
+    return device === undefined
+      ? { recognized: false }
+      : { recognized: true, device };
   }
 
   async register(
@@ -56,6 +59,12 @@ export class InMemoryDevicesFacade extends DevicesFacade {
 
   async verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]> {
     return this.userDevices(ref.userId).filter((device) => device.verifier);
+  }
+
+  async retireVerifiers(ref: UserRef): Promise<void> {
+    for (const device of this.userDevices(ref.userId)) {
+      this.devices.set(device.id, { ...device, verifier: false });
+    }
   }
 
   async enqueueApproval(

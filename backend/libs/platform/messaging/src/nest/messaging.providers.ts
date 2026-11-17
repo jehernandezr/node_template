@@ -13,6 +13,7 @@ import { FailureClassifier } from '@platform/primitives';
 import { JobRunner } from '@platform/scheduling';
 import { MessageBus } from '../bus/message-bus.js';
 import { OutboxMessageBus } from '../bus/outbox-message-bus.js';
+import { DeliveryContext } from '../dispatch/delivery-context.js';
 import { MessageDispatcher } from '../dispatch/message-dispatcher.js';
 import { ProcessedMessageStore } from '../dispatch/processed-message-store.js';
 import { TenantVerifier } from '../dispatch/tenant-verifier.js';
@@ -48,6 +49,9 @@ export class MessagingProviders {
       ...(extras.tenantVerifier === undefined
         ? []
         : [{ provide: TenantVerifier, useExisting: extras.tenantVerifier }]),
+      ...(extras.deliveryContext === undefined
+        ? []
+        : [{ provide: DeliveryContext, useExisting: extras.deliveryContext }]),
       MessagingProviders.dispatcher(),
       MessagingProviders.bus(extras),
       MessagingExplorer,
@@ -66,6 +70,7 @@ export class MessagingProviders {
         restorer: TraceContextRestorer,
         verifier: TenantVerifier | undefined,
         failures: FailureClassifier | undefined,
+        deliveryContext: DeliveryContext | undefined,
       ) =>
         new MessageDispatcher(
           {
@@ -77,6 +82,12 @@ export class MessagingProviders {
               ? {}
               : { expectedTenantId: options.expectedTenantId }),
             ...(verifier === undefined ? {} : { verifyTenant: verifier }),
+            ...(deliveryContext === undefined
+              ? {}
+              : {
+                  runInContext: (envelope, fn) =>
+                    deliveryContext.run(envelope, fn),
+                }),
           },
           {
             random,
@@ -94,6 +105,7 @@ export class MessagingProviders {
         TraceContextRestorer,
         { token: TenantVerifier, optional: true },
         { token: FailureClassifier, optional: true },
+        { token: DeliveryContext, optional: true },
       ],
     };
   }

@@ -1,4 +1,13 @@
-import { MfaFactor, type PendingMfa } from '@contracts/identity';
+import {
+  MfaFactor,
+  SignInStatus,
+  type AuthMethodReference,
+  type PendingMfa,
+  type SignInResponse,
+  type StepUpResult,
+} from '@contracts/identity';
+import type { PendingPurpose } from '../../../../shared/enums/pending-purpose.enum.js';
+import type { PendingAuthentication } from '../../../../shared/types/pending-authentication.type.js';
 import { MfaFacade } from '../../application/mfa.facade.js';
 import type { StartPendingInput } from '../../domain/start-pending-input.js';
 
@@ -6,12 +15,54 @@ import type { StartPendingInput } from '../../domain/start-pending-input.js';
 export class InMemoryMfaFacade extends MfaFacade {
   /** Métodos que se ofrecen en cada desafío. */
   methods: MfaFactor[] = [MfaFactor.EmailOtp];
-  readonly pending: StartPendingInput[] = [];
+  readonly started: StartPendingInput[] = [];
+  readonly denied: string[] = [];
   private counter = 0;
 
   async startPending(input: StartPendingInput): Promise<PendingMfa> {
-    this.pending.push(input);
+    this.started.push(input);
     this.counter += 1;
     return { mfaToken: `mfa-${this.counter}`, methods: [...this.methods] };
+  }
+
+  async denyChallenge(challengeId: string): Promise<void> {
+    this.denied.push(challengeId);
+  }
+
+  /** Autenticaciones pendientes por `mfaToken` que devuelve `pending`. */
+  readonly pendings = new Map<string, PendingAuthentication>();
+  readonly completed: Array<{
+    mfaToken: string;
+    methods: readonly AuthMethodReference[];
+  }> = [];
+
+  async pending(
+    mfaToken: string,
+    purpose: PendingPurpose,
+  ): Promise<PendingAuthentication | undefined> {
+    const found = this.pendings.get(mfaToken);
+    return found?.purpose === purpose ? found : undefined;
+  }
+
+  async completeSignIn(
+    mfaToken: string,
+    methods: readonly AuthMethodReference[],
+  ): Promise<SignInResponse> {
+    this.completed.push({ mfaToken, methods });
+    return { status: SignInStatus.Authenticated };
+  }
+
+  async completeStepUp(
+    mfaToken: string,
+    method: AuthMethodReference,
+  ): Promise<StepUpResult> {
+    this.completed.push({ mfaToken, methods: [method] });
+    return {
+      tokens: {
+        accessToken: `access-${mfaToken}`,
+        accessExpiresAt: new Date(0).toISOString(),
+      },
+      mfaVerifiedAt: new Date(0).toISOString(),
+    };
   }
 }

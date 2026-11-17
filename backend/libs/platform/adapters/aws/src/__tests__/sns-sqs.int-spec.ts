@@ -62,6 +62,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
 
   beforeAll(async () => {
     container = await new GenericContainer(IMAGE)
+      .withAutoCleanup(runtime.autoCleanup())
       .withEnvironment({ SERVICES: 'sns,sqs' })
       .withExposedPorts(4566)
       .withWaitStrategy(

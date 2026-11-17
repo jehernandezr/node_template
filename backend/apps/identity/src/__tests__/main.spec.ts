@@ -12,12 +12,16 @@ describe('entry points', () => {
   const main = read('main.ts');
   const worker = read('worker.ts');
   const migrate = read('migrate.ts');
+  const seed = read('seed.ts');
+  const lambda = read('lambda.ts');
   const instrumentation = read('instrumentation.ts');
 
   it.each([
     ['main.ts', main],
     ['worker.ts', worker],
     ['migrate.ts', migrate],
+    ['seed.ts', seed],
+    ['lambda.ts', lambda],
   ])('loads the instrumentation first in %s', (_, text) => {
     const firstImport = /^import\s+['"]([^'"]+)['"];?/m.exec(text);
 
@@ -31,6 +35,16 @@ describe('entry points', () => {
   it('serves HTTP with ServiceBootstrap.http and the HTTP setup', () => {
     expect(main).toContain('ServiceBootstrap.http(');
     expect(main).toContain('HttpApplicationSetup');
+  });
+
+  it('seeds the region tenants without running jobs', () => {
+    expect(seed).toContain('SeedRegionTenants');
+    expect(seed).toContain('SchedulingMode.External');
+  });
+
+  it('exports the Lambda handler of the API with LambdaBootstrap.http', () => {
+    expect(lambda).toContain('export const handler = LambdaBootstrap.http(');
+    expect(lambda).toContain('HttpApplicationSetup');
   });
 
   it('runs the worker with ServiceBootstrap.worker', () => {

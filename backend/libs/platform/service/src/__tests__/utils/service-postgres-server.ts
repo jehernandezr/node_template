@@ -1,3 +1,4 @@
+import { ContainerRuntime } from '@platform/kernel/test-utils';
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -14,9 +15,9 @@ export class ServicePostgresServer {
   private provisioned = 0;
 
   async start(): Promise<void> {
-    this.container = await new PostgreSqlContainer(
-      ServicePostgresServer.IMAGE,
-    ).start();
+    this.container = await new PostgreSqlContainer(ServicePostgresServer.IMAGE)
+      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
+      .start();
   }
 
   async stop(): Promise<void> {

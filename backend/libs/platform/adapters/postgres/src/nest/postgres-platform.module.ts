@@ -9,6 +9,7 @@ import {
   TypeOrmTransactionManager,
 } from '@platform/persistence';
 import { ShardKey } from '@platform/sharding';
+import { CatalogClaimManagers } from '../database/catalog-claim-managers.js';
 import { CatalogEntityManagers } from '../database/catalog-entity-managers.js';
 import { PlatformEntityManagers } from '../database/platform-entity-managers.js';
 import { ShardBinding } from '../database/shard-binding.js';
@@ -18,6 +19,7 @@ import { ProcessedMessageEntity } from '../entities/processed-message.entity.js'
 import type { PostgresPlatformModuleOptions } from '../model/postgres-platform-module-options.js';
 import { platformShardEntities } from '../platform-database-sets.js';
 import { ShardedRelayScopes } from '../relay/sharded-relay-scopes.js';
+import { CatalogIdempotencyStore } from '../stores/catalog-idempotency-store.js';
 import { ClaimTable } from '../stores/claim-table.js';
 import { OutboxClaimQuery } from '../stores/outbox-claim-query.js';
 import { TypeOrmDirectoryStore } from '../stores/typeorm-directory-store.js';
@@ -32,7 +34,7 @@ import {
 
 /**
  * Registra las tablas de la plataforma sobre TypeORM: `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`,
- * `TypeOrmIdempotencyStore`, `TypeOrmDirectoryStore`, `DirectoryShardLister` y `ShardedRelayScopes`, con el cableado
+ * `TypeOrmIdempotencyStore`, `CatalogIdempotencyStore`, `TypeOrmDirectoryStore`, `DirectoryShardLister` y `ShardedRelayScopes`, con el cableado
  * de `PlatformEntityManagers`. Es global y exporta cada clase: el servicio pasa su tipo a `MessagingModule`
  * (`outboxStore`, `processedStore`, `relayScopes`), a `ShardingModule` (directorio) y a `PersistenceModule`
  * (`shardLister: DirectoryShardLister`). Requiere `PersistenceModule` y `ShardingModule`.
@@ -69,6 +71,7 @@ export class PostgresPlatformModule extends PostgresPlatformModuleClass {
         TypeOrmOutboxStore,
         TypeOrmProcessedMessageStore,
         TypeOrmIdempotencyStore,
+        CatalogIdempotencyStore,
         IdempotencyStore,
         TypeOrmDirectoryStore,
         DirectoryShardLister,
@@ -145,6 +148,23 @@ export class PostgresPlatformModule extends PostgresPlatformModuleClass {
             new ClaimTable(IdempotencyKeyEntity, managers, ids, clock),
           ),
         inject: [PlatformEntityManagers, IdGenerator, Clock],
+      },
+      {
+        provide: CatalogIdempotencyStore,
+        useFactory: (
+          catalog: CatalogEntityManagers,
+          ids: IdGenerator,
+          clock: Clock,
+        ) =>
+          new CatalogIdempotencyStore(
+            new ClaimTable(
+              IdempotencyKeyEntity,
+              new CatalogClaimManagers(catalog),
+              ids,
+              clock,
+            ),
+          ),
+        inject: [CatalogEntityManagers, IdGenerator, Clock],
       },
       { provide: IdempotencyStore, useExisting: TypeOrmIdempotencyStore },
       {

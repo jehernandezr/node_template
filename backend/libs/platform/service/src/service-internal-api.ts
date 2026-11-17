@@ -1,3 +1,4 @@
+import type { AwsCredentialsProvider } from '@platform/adapters-aws';
 import type { AppConfig } from '@platform/config';
 import type { InternalRequestSigner } from '@platform/internal-api';
 
@@ -20,9 +21,27 @@ export interface ServiceInternalHttpSettings {
   readonly signatureWindowMs?: number;
 }
 
+/** Credenciales y región del rol del servicio, con las que se firma con SigV4. */
+export interface ServiceAwsIdentity {
+  readonly credentials: AwsCredentialsProvider;
+  readonly region: string;
+}
+
+/** Lo que el runtime ofrece al servicio para armar su transporte HTTP. */
+export interface ServiceInternalHttpContext {
+  /** Solo con el adaptador de AWS activo. */
+  readonly aws?: ServiceAwsIdentity;
+}
+
 /** Cómo declara el servicio su API interna. */
 export interface ServiceInternalApi {
   readonly transport: ServiceInternalTransport;
-  /** Obligatorio con `ServiceInternalTransport.Http`; también autentica las llamadas entrantes. */
-  readonly http?: (config: AppConfig) => ServiceInternalHttpSettings;
+  /**
+   * Obligatorio con `ServiceInternalTransport.Http`; también autentica las llamadas entrantes. El servicio
+   * elige aquí su firmador según `INTERNAL_API_SIGNER`.
+   */
+  readonly http?: (
+    config: AppConfig,
+    context: ServiceInternalHttpContext,
+  ) => ServiceInternalHttpSettings;
 }

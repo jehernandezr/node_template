@@ -77,6 +77,13 @@ export class InMemorySessionsFacade extends SessionsFacade {
     return this.revokeCount;
   }
 
+  /** Último MFA de cada sesión que devuelve `mfaVerifiedAt`. */
+  readonly mfaTimes = new Map<string, Date>();
+
+  async mfaVerifiedAt(session: SessionRef): Promise<Date | undefined> {
+    return this.mfaTimes.get(session.sessionId);
+  }
+
   async markMfaVerified(
     session: SessionRef,
     at: Date,

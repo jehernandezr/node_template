@@ -23,6 +23,8 @@ export abstract class SessionsFacade {
     reason: RevocationReason,
   ): Promise<number>;
   /** Sube `mfaVerifiedAt`, `auth_time` y `amr` de la sesión y emite un access token nuevo; el session token no cambia. */
+  /** Instante del último segundo factor de la sesión, o `undefined` si nunca lo pidió o no existe. */
+  abstract mfaVerifiedAt(session: SessionRef): Promise<Date | undefined>;
   abstract markMfaVerified(
     session: SessionRef,
     at: Date,

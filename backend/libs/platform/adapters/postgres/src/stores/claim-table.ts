@@ -20,8 +20,8 @@ import type {
   EntityTarget,
   QueryDeepPartialEntity,
 } from 'typeorm';
-import type { PlatformEntityManagers } from '../database/platform-entity-managers.js';
 import type { ClaimRecordEntity } from '../entities/claim-record.entity.js';
+import type { ClaimRecordManagers } from '../model/claim-record-managers.js';
 import type { ClaimTableOptions } from '../model/claim-table-options.js';
 
 /** Fila que devuelve el `INSERT ... ON CONFLICT` de `claim`. El SQL crudo entrega los nombres de columna tal cual. */
@@ -42,7 +42,7 @@ export class ClaimTable<R> {
 
   constructor(
     private readonly entity: EntityTarget<ClaimRecordEntity>,
-    private readonly managers: PlatformEntityManagers,
+    private readonly managers: ClaimRecordManagers,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     options: ClaimTableOptions<R> = {},

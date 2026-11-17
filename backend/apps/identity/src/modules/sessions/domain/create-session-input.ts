@@ -10,5 +10,7 @@ export interface CreateSessionInput {
   readonly deviceId?: string;
   readonly authMethods: readonly AuthMethodReference[];
   readonly authTime: Date;
+  /** Instante del segundo factor si el inicio de sesión lo pidió. */
+  readonly mfaVerifiedAt?: Date;
   readonly client: ClientInfo;
 }
