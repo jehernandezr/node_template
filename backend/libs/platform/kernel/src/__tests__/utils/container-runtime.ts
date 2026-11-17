@@ -40,6 +40,17 @@ export class ContainerRuntime {
     );
   }
 
+  /**
+   * Si los contenedores se registran en el reaper de Testcontainers. Con `TESTCONTAINERS_RYUK_DISABLED=true`
+   * no hay reaper que los limpie, pero Testcontainers igual toma un candado de archivo compartido por todos
+   * los procesos y lista los contenedores antes de cada arranque. Con muchas suites en paralelo un proceso
+   * cargado no renueva ese candado a tiempo, otro lo da por vencido y la suite falla con "Lock is already
+   * released" o queda esperando. Sin reaper no hay nada que registrar, así que se omite el candado.
+   */
+  autoCleanup(): boolean {
+    return this.env['TESTCONTAINERS_RYUK_DISABLED'] !== 'true';
+  }
+
   /** Indica si hay un runtime de contenedores. Consulta la sonda una sola vez. */
   isAvailable(): boolean {
     this.available ??= this.probe.isRunning();

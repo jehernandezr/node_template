@@ -7,4 +7,5 @@ export enum PersistenceErrorCode {
   TenantMismatch = 'PLATFORM.PERSISTENCE.TENANT_MISMATCH',
   CorruptRow = 'PLATFORM.PERSISTENCE.CORRUPT_ROW',
   Contention = 'PLATFORM.PERSISTENCE.CONTENTION',
+  ShuttingDown = 'PLATFORM.PERSISTENCE.SHUTTING_DOWN',
 }

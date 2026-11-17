@@ -1,5 +1,35 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { IdentitySettings } from '../../../config/identity-settings.js';
+import { IdentityMailerKind } from '../../../config/identity-mailer-kind.enum.js';
+import { IdentityMailer } from '../domain/identity-mailer.js';
+import { SecurityAlerts } from '../domain/security-alerts.js';
+import { ConsoleIdentityMailer } from '../infrastructure/console-identity-mailer.js';
+import { MemoryIdentityMailer } from '../infrastructure/memory-identity-mailer.js';
+import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.js';
 
-/** Alertas y correo no exponen rutas: sus adaptadores son puertos sin controller. */
-@Module({})
+/**
+ * Alertas de seguridad y correo transaccional. El correo se elige con `IDENTITY_MAILER`. Es global porque
+ * todos los módulos de identity avisan y envían correo.
+ */
+@Global()
+@Module({
+  providers: [
+    MemoryIdentityMailer,
+    ConsoleIdentityMailer,
+    {
+      provide: IdentityMailer,
+      useFactory: (
+        settings: IdentitySettings,
+        memory: MemoryIdentityMailer,
+        console: ConsoleIdentityMailer,
+      ): IdentityMailer =>
+        settings.values.IDENTITY_MAILER === IdentityMailerKind.Console
+          ? console
+          : memory,
+      inject: [IdentitySettings, MemoryIdentityMailer, ConsoleIdentityMailer],
+    },
+    { provide: SecurityAlerts, useClass: OutboxSecurityAlerts },
+  ],
+  exports: [IdentityMailer, SecurityAlerts, MemoryIdentityMailer],
+})
 export class AlertsModule {}

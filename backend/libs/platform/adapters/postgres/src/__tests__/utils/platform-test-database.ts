@@ -31,6 +31,7 @@ export class PlatformTestDatabase {
     'shard_directory',
     'shard_instances',
     'shard_locks',
+    'idempotency_keys',
   ];
 
   readonly db = new ShardedTestDatabase({

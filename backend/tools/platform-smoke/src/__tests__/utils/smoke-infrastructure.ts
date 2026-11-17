@@ -1,6 +1,7 @@
 import { SmokeService } from '../../smoke-service.enum.js';
 import type { SmokeEnvironment } from '../../smoke-environment.js';
 import { ValkeyTestServer } from '@platform/adapters-valkey/test-utils';
+import { ContainerRuntime } from '@platform/kernel/test-utils';
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -24,9 +25,9 @@ export class SmokeInfrastructure {
   private readonly sources = new Map<string, DataSource>();
 
   async start(): Promise<void> {
-    this.container = await new PostgreSqlContainer(
-      'postgres:17-alpine',
-    ).start();
+    this.container = await new PostgreSqlContainer('postgres:17-alpine')
+      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
+      .start();
     await this.createDatabases();
     await this.valkey.start();
   }

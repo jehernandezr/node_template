@@ -20,6 +20,7 @@ import { ProcessedOperationRetentionJob } from '../server/processed-operation-re
 import { ProcessedOperationStore } from '../server/processed-operation-store.js';
 import { UnitOfWorkRunner } from '../server/unit-of-work-runner.js';
 import { CallMetaReader } from '../transport/call-meta-reader.js';
+import { HandlerUnitOfWork } from './handler-unit-of-work.enum.js';
 import { InternalHandlerExplorer } from './internal-handler.explorer.js';
 import type {
   InternalApiModuleOptions,
@@ -33,13 +34,15 @@ export class InternalApiServerProviders {
   static build(extras: ResolvedInternalApiExtras): Provider[] {
     return [
       { provide: ProcessedOperationStore, useExisting: extras.processedStore },
-      ...InternalApiServerProviders.pipeline(),
+      ...InternalApiServerProviders.pipeline(
+        extras.unitOfWork ?? HandlerUnitOfWork.Shared,
+      ),
       ...InternalApiServerProviders.edge(),
       ...InternalApiServerProviders.retention(extras.purgeableStore),
     ];
   }
 
-  private static pipeline(): Provider[] {
+  private static pipeline(unitOfWork: HandlerUnitOfWork): Provider[] {
     return [
       {
         provide: IdempotencyGate,
@@ -75,7 +78,13 @@ export class InternalApiServerProviders {
           checker: HandlerOutcomeChecker,
           outcomes: CallOutcomeFactory,
           transactions?: TransactionManager,
-        ) => new UnitOfWorkRunner(gate, checker, outcomes, transactions),
+        ) =>
+          new UnitOfWorkRunner(
+            gate,
+            checker,
+            outcomes,
+            unitOfWork === HandlerUnitOfWork.Shared ? transactions : undefined,
+          ),
         inject: [
           IdempotencyGate,
           HandlerOutcomeChecker,

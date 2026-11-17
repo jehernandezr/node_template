@@ -20,6 +20,7 @@ export class PersistenceError extends PlatformError {
     [PersistenceErrorCode.TenantMismatch]: FailureKind.ProtocolViolation,
     [PersistenceErrorCode.CorruptRow]: FailureKind.Permanent,
     [PersistenceErrorCode.Contention]: FailureKind.Transient,
+    [PersistenceErrorCode.ShuttingDown]: FailureKind.Transient,
   };
 
   override readonly code: PersistenceErrorCode;

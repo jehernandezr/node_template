@@ -26,3 +26,17 @@ export const SystemRolePermissions: Readonly<
     Permission.IdentityMembersRead,
   ],
 };
+
+/**
+ * Permisos que hacen administrador a quien los tiene, venga de un grupo de sistema o de uno propio del
+ * tenant: con cualquiera de ellos el inicio de sesión pide segundo factor siempre.
+ */
+export const AdministrativePermissions: readonly Permission[] = [
+  Permission.IdentityTenantManage,
+  Permission.IdentityMembersManage,
+  Permission.IdentityGroupsManage,
+  Permission.IdentityRolesManage,
+  Permission.IdentityInvitationsManage,
+  Permission.IdentityServiceAccountsManage,
+  Permission.IdentityApiKeysManage,
+];

@@ -1,6 +1,8 @@
 import {
   platformCatalogEntities,
   platformCatalogMigrations,
+  platformSagaShardEntities,
+  platformSagaShardMigrations,
   platformShardEntities,
   platformShardMigrations,
 } from '@platform/adapters-postgres';
@@ -37,6 +39,17 @@ describe('ServiceDatabaseSets', () => {
       platformShardMigrations,
     );
     expect(shard.migrations.at(-1)).toBe(ServiceShardMigration1900000000010);
+  });
+
+  it('adds the saga log to every shard, which the runtime reads on start', () => {
+    const { shard } = new ServiceDatabaseSets().merge(serviceMigrations());
+
+    expect(shard.entities).toEqual(
+      expect.arrayContaining([...platformSagaShardEntities]),
+    );
+    expect(shard.migrations).toEqual(
+      expect.arrayContaining([...platformSagaShardMigrations]),
+    );
   });
 
   it('puts the platform catalog entities and migrations before the service ones', () => {

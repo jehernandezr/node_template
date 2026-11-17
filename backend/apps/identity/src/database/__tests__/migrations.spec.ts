@@ -3,10 +3,29 @@ import { identityCatalogMigrations } from '../catalog-migrations.js';
 import { identityShardMigrations } from '../shard-migrations.js';
 
 describe('identity migrations', () => {
-  it('has no migrations yet in either database set', () => {
-    expect(identityShardMigrations).toEqual([]);
-    expect(identityCatalogMigrations).toEqual([]);
-  });
+  it.each([
+    ['shard', identityShardMigrations],
+    ['catalog', identityCatalogMigrations],
+  ])(
+    'orders the %s migrations by the timestamp of their name, inside the module blocks',
+    (_, migrations) => {
+      const timestamps = migrations.map((migration) =>
+        Number(/(\d{13})$/.exec(migration.name)?.[1]),
+      );
+      const blocks = Object.values(MigrationRange).filter(
+        (value): value is number => typeof value === 'number',
+      );
+
+      expect(timestamps).toEqual([...timestamps].sort((a, b) => a - b));
+      expect(
+        timestamps.every((timestamp) =>
+          blocks.some(
+            (start) => timestamp >= start && timestamp < start + 100_000,
+          ),
+        ),
+      ).toBe(true);
+    },
+  );
 
   it('gives each module a timestamp block, in increasing order, 100 000 apart', () => {
     const starts = Object.values(MigrationRange).filter(

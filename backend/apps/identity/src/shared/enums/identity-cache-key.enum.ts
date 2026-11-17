@@ -12,6 +12,10 @@ export enum IdentityCacheKey {
   WebAuthnChallenge = 'webauthn-challenge',
   LockoutOrigin = 'lockout-origin',
   LockoutProtected = 'lockout-protected',
-  AttemptCounter = 'attempt-counter',
+  LockoutLevel = 'lockout-level',
+  LockoutIp = 'lockout-ip',
+  LockoutEpoch = 'lockout-epoch',
   ApiKeyUsage = 'api-key-usage',
+  MfaRecovery = 'mfa-recovery',
+  TotpEnrollment = 'totp-enrollment',
 }

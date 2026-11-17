@@ -1,5 +1,6 @@
 import type { Abstract, Type } from '@nestjs/common';
 import type { RetryPolicy } from '@platform/primitives';
+import type { DeliveryContext } from '../dispatch/delivery-context.js';
 import type { TenantVerifier } from '../dispatch/tenant-verifier.js';
 import type { ProcessedMessageStore } from '../dispatch/processed-message-store.js';
 import type { MessageBus } from '../bus/message-bus.js';
@@ -56,4 +57,6 @@ export interface MessagingModuleExtras {
   readonly relayScopes?: Type<RelayScopes> | Abstract<RelayScopes>;
   /** Por defecto ninguno: sin `expectedTenantId`, el dispatcher rechaza todo sobre con tenant. */
   readonly tenantVerifier?: Type<TenantVerifier> | Abstract<TenantVerifier>;
+  /** Por defecto ninguno: el claim y el manejador corren en el contexto de quien entrega el mensaje. */
+  readonly deliveryContext?: Type<DeliveryContext> | Abstract<DeliveryContext>;
 }

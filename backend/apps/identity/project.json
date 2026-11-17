@@ -8,7 +8,7 @@
     "typecheck": {},
     "build": {
       "options": {
-        "command": "tsx backend/tools/app-bundler/src/main.ts {projectName} {projectRoot} --entry=src/worker.ts --entry=src/migrate.ts"
+        "command": "tsx backend/tools/app-bundler/src/main.ts {projectName} {projectRoot} --entry=src/worker.ts --entry=src/migrate.ts --entry=src/seed.ts --entry=src/lambda.ts"
       }
     },
     "serve": {
@@ -38,6 +38,14 @@
     "test": {
       "options": {
         "passWithNoTests": true
+      }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/identity/seed.mjs",
+        "cwd": "{workspaceRoot}"
       }
     }
   }

@@ -5,6 +5,7 @@ export * from './contracts/message-contract.js';
 export * from './dispatch/accept-any-tenant-verifier.js';
 export * from './dispatch/claim-guard.js';
 export * from './dispatch/claim-outcome.js';
+export * from './dispatch/delivery-context.js';
 export * from './dispatch/delivery-classifier.js';
 export * from './dispatch/dispatch-options.js';
 export * from './dispatch/dispatch-outcome.enum.js';

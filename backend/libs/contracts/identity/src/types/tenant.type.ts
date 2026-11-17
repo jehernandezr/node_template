@@ -78,7 +78,8 @@ export interface TenantCreatedPayload {
   slug: string;
   kind: TenantKind;
   region: string;
-  ownerUserId: string;
+  /** Dueño inicial. Falta en los tenants que siembra la plataforma, que nacen sin dueño. */
+  ownerUserId?: string;
   createdAt: string;
 }
 

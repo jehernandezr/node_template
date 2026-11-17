@@ -64,11 +64,9 @@ export class DeliveryExecution {
     } catch (err) {
       switch (state.stage) {
         case Stage.Handler:
-          await this.releaseHeld(state);
           return this.classifier.failure(envelope.id, err, options, false);
         case Stage.Complete:
           // Los efectos pudieron deshacerse junto con la falla de complete.
-          await this.releaseHeld(state);
           return this.classifier.failure(envelope.id, err, options, true);
         case Stage.Claim:
         case Stage.Done:
@@ -124,11 +122,18 @@ export class DeliveryExecution {
       return;
     }
     state.claim = outcome.claim;
-    state.stage = Stage.Handler;
-    await delivery.run();
+    try {
+      state.stage = Stage.Handler;
+      await delivery.run();
 
-    state.stage = Stage.Complete;
-    await this.claimGuard.complete(outcome.claim);
+      state.stage = Stage.Complete;
+      await this.claimGuard.complete(outcome.claim);
+    } catch (err) {
+      // El claim se libera aquí, todavía dentro del contexto de la entrega: en un servicio con shards, el
+      // almacén solo sabe a qué shard ir mientras ese contexto está abierto.
+      await this.releaseHeld(state);
+      throw err;
+    }
     state.stage = Stage.Done;
   }
 

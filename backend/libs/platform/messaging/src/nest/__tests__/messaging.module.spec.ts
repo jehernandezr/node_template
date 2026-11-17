@@ -26,7 +26,9 @@ import type {
   MessagingModuleExtras,
   MessagingModuleOptions,
 } from '../messaging-module-options.js';
+import { AcceptAnyTenantVerifier } from '../../dispatch/accept-any-tenant-verifier.js';
 import {
+  RecordingDeliveryContext,
   RecordingUserConsumer,
   RejectingTenantVerifier,
   TestPlatformModule,
@@ -91,6 +93,13 @@ class DirectBusModule {}
   exports: [RejectingTenantVerifier],
 })
 class TenantVerifierModule {}
+
+@Global()
+@Module({
+  providers: [AcceptAnyTenantVerifier, RecordingDeliveryContext],
+  exports: [AcceptAnyTenantVerifier, RecordingDeliveryContext],
+})
+class DeliveryContextModule {}
 
 @Module({ providers: [RecordingUserConsumer] })
 class ConsumerModule {}
@@ -265,6 +274,35 @@ describe('MessagingModule', () => {
         outcome: DispatchOutcome.DeadLetter,
         code: MessagingErrorCode.TenantMismatch,
       });
+    });
+  });
+
+  describe('when the service declares a delivery context', () => {
+    it('claims and runs the handler inside the context opened for the envelope', async () => {
+      moduleRef = await Test.createTestingModule({
+        imports: [
+          TestPlatformModule,
+          DeliveryContextModule,
+          ConsumerModule,
+          MessagingModule.forRoot(
+            rootOptions({
+              tenantVerifier: AcceptAnyTenantVerifier,
+              deliveryContext: RecordingDeliveryContext,
+            }),
+          ),
+        ],
+      }).compile();
+      await moduleRef.init();
+
+      const result = await moduleRef
+        .get(MessageDispatcher)
+        .dispatch(userRegistered('e-ctx', 'tenant-a'), { receiveCount: 1 });
+
+      expect(result.outcome).toBe(DispatchOutcome.Processed);
+      expect(moduleRef.get(RecordingDeliveryContext).tenants).toEqual([
+        'tenant-a',
+      ]);
+      expect(moduleRef.get(RecordingUserConsumer).received).toEqual(['u-1']);
     });
   });
 });

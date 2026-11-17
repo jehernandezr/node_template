@@ -25,7 +25,9 @@ runtime.describeIfAvailable('MigrationGenerator against PostgreSQL', () => {
   let generator: MigrationGenerator;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:17-alpine').start();
+    container = await new PostgreSqlContainer('postgres:17-alpine')
+      .withAutoCleanup(runtime.autoCleanup())
+      .start();
     outputDir = await mkdtemp(join(tmpdir(), 'migration-'));
     generator = new MigrationGenerator(
       new SystemClock(),

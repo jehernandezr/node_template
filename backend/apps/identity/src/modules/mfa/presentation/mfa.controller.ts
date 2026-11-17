@@ -1,4 +1,12 @@
-import { Endpoint, Resource } from '@platform/http/nest';
+import {
+  CurrentActor,
+  Endpoint,
+  Exchange,
+  Input,
+  Resource,
+} from '@platform/http/nest';
+import { SessionCookieMode, type HttpExchange } from '@platform/http';
+import type { Actor } from '@platform/auth';
 import {
   RequestMfaChallengeRoute,
   VerifyMfaRoute,
@@ -11,64 +19,128 @@ import {
   RegenerateRecoveryCodesRoute,
   StartMfaRecoveryRoute,
   ConfirmMfaRecoveryRoute,
+  type MfaChallenge,
+  type MfaChallengeRequest,
+  type MfaRecoveryConfirmRequest,
+  type MfaRecoveryStartRequest,
+  type MfaRecoveryStarted,
+  type MfaVerifyRequest,
+  type PendingMfa,
+  type RecoveryCodes,
+  type SignInResponse,
+  type StepUpResult,
+  type StepUpVerifyRequest,
+  type TotpConfirmRequest,
+  type TotpEnrollment,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { RouteNotImplementedError } from '../../../shared/errors/route-not-implemented.error.js';
+import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
+import { SessionDelivery } from '../../../shared/utils/session-delivery.js';
+import {
+  requireUserActor,
+  userRefOf,
+} from '../../../shared/utils/user-actor.js';
+import { ManageMfaFactors } from '../application/manage-mfa-factors.use-case.js';
+import { MfaRecoveryUseCase } from '../application/mfa-recovery.use-case.js';
+import { RequestMfaChallenge } from '../application/request-mfa-challenge.use-case.js';
+import { StepUp } from '../application/step-up.use-case.js';
+import { VerifyMfa } from '../application/verify-mfa.use-case.js';
 
 @Resource(IdentityResource.Mfa)
 export class MfaController {
+  constructor(
+    private readonly challenge: RequestMfaChallenge,
+    private readonly verify: VerifyMfa,
+    private readonly stepUp: StepUp,
+    private readonly factors: ManageMfaFactors,
+    private readonly recovery: MfaRecoveryUseCase,
+    private readonly delivery: SessionDelivery,
+  ) {}
+
   @Endpoint(RequestMfaChallengeRoute)
-  requestMfaChallenge(): never {
-    throw new RouteNotImplementedError(RequestMfaChallengeRoute.id);
+  requestMfaChallenge(
+    @Input() input: MfaChallengeRequest,
+  ): Promise<MfaChallenge> {
+    return this.challenge.execute(input, PendingPurpose.SignIn);
   }
 
-  @Endpoint(VerifyMfaRoute)
-  verifyMfa(): never {
-    throw new RouteNotImplementedError(VerifyMfaRoute.id);
+  @Endpoint(VerifyMfaRoute, { sessionCookie: SessionCookieMode.Issue })
+  async verifyMfa(
+    @Input() input: MfaVerifyRequest,
+    @Exchange() http: HttpExchange,
+  ): Promise<SignInResponse> {
+    return this.delivery.deliver(await this.verify.execute(input), http);
   }
 
   @Endpoint(StartStepUpRoute)
-  startStepUp(): never {
-    throw new RouteNotImplementedError(StartStepUpRoute.id);
+  startStepUp(
+    @CurrentActor() actor: Actor | undefined,
+    @Exchange() http: HttpExchange,
+  ): Promise<PendingMfa> {
+    return this.stepUp.begin(requireUserActor(actor), http.client);
   }
 
   @Endpoint(RequestStepUpChallengeRoute)
-  requestStepUpChallenge(): never {
-    throw new RouteNotImplementedError(RequestStepUpChallengeRoute.id);
+  requestStepUpChallenge(
+    @Input() input: MfaChallengeRequest,
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<MfaChallenge> {
+    requireUserActor(actor);
+    return this.challenge.execute(input, PendingPurpose.StepUp);
   }
 
   @Endpoint(VerifyStepUpRoute)
-  verifyStepUp(): never {
-    throw new RouteNotImplementedError(VerifyStepUpRoute.id);
+  verifyStepUp(
+    @Input() input: StepUpVerifyRequest,
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<StepUpResult> {
+    return this.stepUp.verify(requireUserActor(actor), input);
   }
 
   @Endpoint(StartTotpEnrollmentRoute)
-  startTotpEnrollment(): never {
-    throw new RouteNotImplementedError(StartTotpEnrollmentRoute.id);
+  startTotpEnrollment(
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<TotpEnrollment> {
+    return this.factors.startTotp(userRefOf(requireUserActor(actor)));
   }
 
   @Endpoint(ConfirmTotpEnrollmentRoute)
-  confirmTotpEnrollment(): never {
-    throw new RouteNotImplementedError(ConfirmTotpEnrollmentRoute.id);
+  confirmTotpEnrollment(
+    @Input() input: TotpConfirmRequest,
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<RecoveryCodes> {
+    return this.factors.confirmTotp(
+      userRefOf(requireUserActor(actor)),
+      input.code,
+    );
   }
 
   @Endpoint(RemoveTotpRoute)
-  removeTotp(): never {
-    throw new RouteNotImplementedError(RemoveTotpRoute.id);
+  async removeTotp(@CurrentActor() actor: Actor | undefined): Promise<void> {
+    await this.factors.removeTotp(userRefOf(requireUserActor(actor)));
   }
 
   @Endpoint(RegenerateRecoveryCodesRoute)
-  regenerateRecoveryCodes(): never {
-    throw new RouteNotImplementedError(RegenerateRecoveryCodesRoute.id);
+  regenerateRecoveryCodes(
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<RecoveryCodes> {
+    return this.factors.regenerateRecoveryCodes(
+      userRefOf(requireUserActor(actor)),
+    );
   }
 
   @Endpoint(StartMfaRecoveryRoute)
-  startMfaRecovery(): never {
-    throw new RouteNotImplementedError(StartMfaRecoveryRoute.id);
+  startMfaRecovery(
+    @Input() input: MfaRecoveryStartRequest,
+  ): Promise<MfaRecoveryStarted> {
+    return this.recovery.start(input.mfaToken);
   }
 
-  @Endpoint(ConfirmMfaRecoveryRoute)
-  confirmMfaRecovery(): never {
-    throw new RouteNotImplementedError(ConfirmMfaRecoveryRoute.id);
+  @Endpoint(ConfirmMfaRecoveryRoute, { sessionCookie: SessionCookieMode.Issue })
+  async confirmMfaRecovery(
+    @Input() input: MfaRecoveryConfirmRequest,
+    @Exchange() http: HttpExchange,
+  ): Promise<SignInResponse> {
+    return this.delivery.deliver(await this.recovery.confirm(input), http);
   }
 }

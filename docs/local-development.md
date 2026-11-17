@@ -101,6 +101,19 @@ Al arrancar, LocalStack corre `backend/infra/local/localstack/init-aws.sh`, que 
 
 LocalStack se fija en una versión que corre sin token. Las versiones con fecha (2026.x) pueden exigir `LOCALSTACK_AUTH_TOKEN`; antes de subir de versión, valida que el plan vigente cubra SQS, SNS, S3, S3 Control, KMS, Scheduler, SES, Secrets Manager, STS, IAM, CloudWatch y Logs.
 
+## Correr identity
+
+Con la infraestructura arriba y `backend/.env` copiado de `backend/.env.example` (con claves y pimientas propias en lugar de los valores `CAMBIAR_...`):
+
+```sh
+pnpm nx run identity:migrate --args="--target=all"   # el catálogo y luego los shards que lista su directorio
+pnpm nx run identity:seed      # tenants fijos de la región: el de la plataforma y el compartido de clientes
+pnpm nx run identity:serve     # API en http://localhost:3000
+pnpm nx run identity:worker    # relay del outbox, consumidores y jobs
+```
+
+`IDENTITY_MAILER=console` escribe en el log los correos con códigos y enlaces; con `memory` quedan solo en el proceso, como en las pruebas. Las pruebas de extremo a extremo de identity (`backend/apps/identity/e2e`) levantan su propio PostgreSQL y Valkey con Testcontainers y no usan esta infraestructura.
+
 ## Terraform contra el entorno local
 
 El ambiente `local` de Terraform apunta a LocalStack. Desde la raíz:

@@ -10,14 +10,16 @@ export abstract class DevicesFacade {
     ref: UserRef,
     deviceIdToken?: string,
   ): Promise<DeviceRecognition>;
-  /** Firma un `deviceId` nuevo (`dv1_...`) para un dispositivo del usuario. */
-  abstract issueDeviceId(ref: UserRef): Promise<string>;
+  /** El id público (`dv1_...`) de un dispositivo del usuario, con la ruta a su shard. */
+  abstract issueDeviceId(ref: UserRef, deviceId: string): Promise<string>;
   /** @throws DomainError `IDENTITY.DEVICE.KEY_INVALID` si la clave no es P-256. */
   abstract register(
     ref: UserRef,
     input: RegisterDeviceInput,
   ): Promise<DeviceSnapshot>;
   abstract verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]>;
+  /** Quita el rol de verificador a todos los dispositivos: la recuperación sin dispositivo los da por perdidos. */
+  abstract retireVerifiers(ref: UserRef): Promise<void>;
   abstract enqueueApproval(
     deviceId: string,
     approval: DeviceApproval,

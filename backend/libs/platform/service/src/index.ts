@@ -9,6 +9,8 @@ export * from './lambda/api-gateway-request-mapper.js';
 export * from './lambda/api-gateway-response-mapper.js';
 export * from './lambda/lambda-http-handler.js';
 export * from './lambda/loopback-forwarder.js';
+export * from './messaging/placed-tenant-verifier.js';
+export * from './messaging/tenant-shard-delivery-context.js';
 export * from './migration-target.enum.js';
 export * from './service-database-sets.js';
 export * from './service-definition-validator.js';

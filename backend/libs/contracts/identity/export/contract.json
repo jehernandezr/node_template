@@ -2753,14 +2753,7 @@
           "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
         }
       },
-      "required": [
-        "tenantId",
-        "slug",
-        "kind",
-        "region",
-        "ownerUserId",
-        "createdAt"
-      ],
+      "required": ["tenantId", "slug", "kind", "region", "createdAt"],
       "description": "Se creó un tenant."
     },
     "TenantSuspendedPayload": {

@@ -1,3 +1,4 @@
+import { ContainerRuntime } from '@platform/kernel/test-utils';
 import { PersistenceErrorCode } from '../../errors/persistence-error-code.enum.js';
 import { Secret } from '@platform/config';
 import { SystemClock } from '@platform/kernel';
@@ -108,9 +109,9 @@ export class ShardedTestDatabase {
 
   /** Arranca el contenedor, crea las tres bases y arma la capa. No migra: llama a `migrate()`. */
   async start(): Promise<void> {
-    const container = await new PostgreSqlContainer(
-      'postgres:17-alpine',
-    ).start();
+    const container = await new PostgreSqlContainer('postgres:17-alpine')
+      .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
+      .start();
     this.container = container;
     await this.createDatabases(container);
     this.wire(container);

@@ -19,6 +19,12 @@ El ADR 0005 decide que identity emite los tokens y que los demás servicios solo
 - Cada proceso mantiene un Bloom en memoria de sesiones revocadas, alimentado por el canal y reconstruido cada 10 s desde el índice, y una caché local de 5 s para épocas y versiones. Si Valkey no responde y no hay valor en caché, el verificador responde 503 en lugar de aceptar el token.
 - `@platform/auth` y `@platform/http` pueden importar `@contracts/identity` (excepción explícita en `backend/eslint.config.mjs`): el formato del token y sus códigos son contrato de identity.
 
+## Implementación en identity
+
+- El módulo `tokens` firma con la clave activa de `IDENTITY_SIGNING_KEYS` y publica en `GET /v1/auth/jwks` la activa y las de verificación, con `Cache-Control: public, max-age=300`. La rotación planeada y la de emergencia están en el [runbook de claves](../runbooks/rotacion-claves-identity.md).
+- Una API key válida se copia en `auth:apikey:{prefix}` por 60 s (o hasta que vence o termina su gracia de rotación) y revocarla borra la copia. Una key limitada por CIDR nunca se copia: quien lee la copia no conoce la IP del cliente, y sin IP identity la rechaza (`IDENTITY.API_KEY.IP_NOT_ALLOWED`). Los fallos cuentan por prefijo e IP con las reglas de bloqueo del inicio de sesión, y el último uso se acumula en Valkey y lo vuelca un job.
+- Las rutas toman el acceso del contrato. La [matriz de acceso](../identity/matriz-de-acceso.md) se genera desde `@contracts/identity`, una prueba falla si una ruta pública no está aprobada y el e2e `access-matrix.e2e-spec.ts` recorre cada ruta con sesión sin token, sin permiso y sin MFA reciente.
+
 ## Consecuencias
 
 ### Positivas

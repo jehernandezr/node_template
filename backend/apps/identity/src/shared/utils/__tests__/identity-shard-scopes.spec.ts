@@ -1,15 +1,17 @@
 import { randomBytes } from 'node:crypto';
-import { ShardScope } from '@platform/persistence';
-import { ShardKey, ShardRouter } from '@platform/sharding';
-import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
-import { IdentityShardScopes } from '../identity-shard-scopes.js';
+import type { ShardScope } from '@platform/persistence';
+import { ShardKey } from '@platform/sharding';
+import { TestShardScopes } from '../../../__tests__/utils/index.js';
+import type { IdentityShardScopes } from '../identity-shard-scopes.js';
 
 describe('IdentityShardScopes', () => {
-  const build = (): { scopes: IdentityShardScopes; scope: ShardScope } => {
-    const scope = new ShardScope(
-      new ShardRouter({ directory: new InMemoryDirectoryStore() }),
-    );
-    return { scopes: new IdentityShardScopes(scope), scope };
+  const build = (): {
+    scopes: IdentityShardScopes;
+    scope: ShardScope;
+    kit: TestShardScopes;
+  } => {
+    const kit = new TestShardScopes();
+    return { scopes: kit.scopes, scope: kit.scope, kit };
   };
 
   it('runs a user block with the home tenant and the user id as key', async () => {
@@ -35,6 +37,17 @@ describe('IdentityShardScopes', () => {
     );
 
     expect(seen).toEqual({ tenantId: 'tenant-x', keyKind: ShardKey.Tenant });
+  });
+
+  it('puts the tenant of the block in the request context, over the one of the caller', async () => {
+    const { scopes, kit } = build();
+
+    const seen = await kit.context.run(
+      { tenantId: 'tenant-sesion', actorId: 'u-1' },
+      () => scopes.inTenantShard('tenant-x', async () => kit.context.current()),
+    );
+
+    expect(seen).toMatchObject({ tenantId: 'tenant-x', actorId: 'u-1' });
   });
 
   it('returns the value of the block and propagates its failure', async () => {

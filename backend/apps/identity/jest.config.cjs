@@ -16,6 +16,11 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
+  // Además de las pruebas de `src/**/__tests__`, las de extremo a extremo de la app completa.
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.?(int-|contract-)spec.ts',
+    '<rootDir>/e2e/**/*.e2e-spec.ts',
+  ],
   // @nestjs/*, uid y load-esm se publican solo como ESM: Jest tiene que transformarlos para cargarlos.
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm/)?(@nestjs\\+|@nestjs/|uid@|uid/|load-esm@|load-esm/))',
@@ -24,9 +29,12 @@ module.exports = {
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',
+    '/e2e/',
     'src/main.ts',
     'src/worker.ts',
     'src/migrate.ts',
+    'src/seed.ts',
+    'src/lambda.ts',
     'src/instrumentation.ts',
   ],
   // SWC emite una rama `typeof X === 'undefined'` por cada tipo de parámetro decorado que Istanbul cuenta como no cubierta; V8 mide solo el código que se ejecuta.

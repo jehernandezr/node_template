@@ -18,6 +18,7 @@ import {
 } from '@platform/sharding/test-utils';
 import {
   CountingLoader,
+  RecordingCacheErrorReporter,
   runCachePortContract,
 } from '@platform/cache/test-utils';
 import { ValkeyAuthTokenProvider } from '../valkey-auth-token-provider.js';
@@ -49,6 +50,13 @@ import {
 jest.setTimeout(60_000);
 
 const PREFIX = 'orders';
+/**
+ * La prueba de CacheAside cuenta cargas: una entrada que vence a mitad de la prueba vuelve a cargar. Con
+ * todas las suites de integración en paralelo la prueba puede durar varios segundos, así que la entrada
+ * vive mucho más que la prueba y su vencimiento no entra en juego.
+ */
+const CACHE_ASIDE_ENTRY_TTL_MS = 10 * 60_000;
+const CACHE_ASIDE_CALL_BUDGET_MS = 10_000;
 const keyspace = new ValkeyKeyspace(PREFIX);
 const T1 = '01941f29-7c00-7000-8000-000000000001';
 const READ = {
@@ -189,19 +197,27 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
     });
 
     it('serves CacheAside reads and invalidations', async () => {
+      const absorbed = new RecordingCacheErrorReporter();
       const store = cache();
       const aside = new CacheAside(store, new VersionedKeyspace(store), {
-        // Un runner cargado puede pasar el tiempo agotado por defecto; esta prueba trata del viaje al servidor.
+        // La política por defecto corta cada llamada a los 100 ms y la llamada completa a los 200 ms; con
+        // todas las suites en paralelo una respuesta de Valkey tarda más, CacheAside la absorbe cargando
+        // directo y la cuenta de cargas cambia. Esta prueba trata del viaje al servidor, no de los plazos:
+        // los dos presupuestos se amplían juntos (ampliar solo el del intento deja el total en 200 ms).
         resilience: new ResilienceRegistry({
-          [PolicyName.Cache.value]: { timeoutMs: 5_000 },
+          [PolicyName.Cache.value]: {
+            timeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
+            totalTimeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
+          },
         }),
+        reporter: absorbed,
       });
       const loader = new CountingLoader({ total: 3 });
       const read = () =>
         aside.getOrLoad({
           namespace: ['t1', 'orders'],
           params: { page: 1 },
-          ttlMs: 5_000,
+          ttlMs: CACHE_ASIDE_ENTRY_TTL_MS,
           load: loader.load,
         });
 
@@ -219,6 +235,8 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await aside.invalidate(['t1', 'orders']);
       await read();
       expect(loader.calls).toBe(cachedLoads + 1);
+      // Si algo se absorbió, la cuenta de cargas ya no prueba el viaje al servidor: que lo diga.
+      expect(absorbed.errors).toEqual([]);
     });
   });
 

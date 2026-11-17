@@ -1,4 +1,9 @@
-import { identityContract } from '@contracts/identity';
+import {
+  CreateTenantRoute,
+  GetSagaRoute,
+  identityContract,
+  StartAccountDeletionRoute,
+} from '@contracts/identity';
 import {
   HttpMetadataKey,
   type EndpointMetadata,
@@ -18,7 +23,7 @@ import { TokensController } from '../modules/tokens/presentation/tokens.controll
 import { UsersController } from '../modules/users/presentation/users.controller.js';
 import { RouteNotImplementedError } from '../shared/errors/route-not-implemented.error.js';
 
-type ControllerClass = new () => object;
+type ControllerClass = abstract new (...args: never[]) => object;
 
 const CONTROLLERS: readonly ControllerClass[] = [
   UsersController,
@@ -60,9 +65,19 @@ function endpointsOf(controller: ControllerClass): StubEndpoint[] {
     });
 }
 
-/** Lo que lanza invocar el método del stub. */
+/** Rutas que llegan con las sagas de identity: siguen respondiendo como no implementadas. */
+const DEFERRED_ROUTES: readonly string[] = [
+  StartAccountDeletionRoute.id,
+  CreateTenantRoute.id,
+  GetSagaRoute.id,
+];
+
+/** Lo que lanza invocar el método del stub. Los stubs no usan dependencias, así que no hace falta construirlos. */
 function errorOf(endpoint: StubEndpoint): unknown {
-  const instance = new endpoint.controller() as Record<string, () => unknown>;
+  const instance = Object.create(endpoint.controller.prototype) as Record<
+    string,
+    () => unknown
+  >;
   try {
     instance[endpoint.method]?.();
   } catch (error) {
@@ -71,7 +86,7 @@ function errorOf(endpoint: StubEndpoint): unknown {
   return undefined;
 }
 
-describe('route stubs', () => {
+describe('identity routes', () => {
   const endpoints = CONTROLLERS.flatMap(endpointsOf);
 
   it('covers every route of the identity contract exactly once', () => {
@@ -84,8 +99,12 @@ describe('route stubs', () => {
     expect([...declared].sort()).toEqual([...contractIds].sort());
   });
 
-  it.each(endpoints.map((endpoint) => [endpoint.routeId, endpoint]))(
-    'the handler of %s throws RouteNotImplementedError with its route id',
+  it.each(
+    endpoints
+      .filter((endpoint) => DEFERRED_ROUTES.includes(endpoint.routeId))
+      .map((endpoint) => [endpoint.routeId, endpoint]),
+  )(
+    'the deferred handler of %s throws RouteNotImplementedError with its route id',
     (_, endpoint) => {
       const error = errorOf(endpoint);
 
