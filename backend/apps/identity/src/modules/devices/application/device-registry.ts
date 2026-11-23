@@ -132,6 +132,18 @@ export class DeviceRegistry {
     );
   }
 
+  async forget(ref: UserRef): Promise<void> {
+    const now = this.clock.now();
+    await this.scopes.inUserShard(ref, () =>
+      this.transactions.runInTransaction(async () => {
+        for (const device of await this.devices.listActive(ref.userId)) {
+          device.remove(now);
+          await this.devices.update(device);
+        }
+      }),
+    );
+  }
+
   async enqueueApproval(
     deviceId: string,
     approval: DeviceApproval,

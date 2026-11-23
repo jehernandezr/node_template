@@ -60,7 +60,12 @@ export class IdentityStub {
   private readonly clock = new SystemClock();
   private readonly members = new Map<string, StubMember>();
   private readonly server: Server = createServer((request, response) => {
-    void this.answer(request, response);
+    this.answer(request, response).catch((error: unknown) => {
+      if (!response.headersSent) {
+        response.writeHead(500);
+      }
+      response.end(String(error));
+    });
   });
   private writer: ValkeyAuthStateWriter | undefined;
 

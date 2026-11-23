@@ -26,4 +26,10 @@ export class TenantEntity extends AuditedEntity {
     nullable: true,
   })
   pinnedApiVersion!: string | null;
+
+  @Column({ type: 'text', array: true, name: 'plan_features', nullable: true })
+  planFeatures!: string[] | null;
+
+  @Column({ type: 'timestamptz', name: 'plan_changed_at', nullable: true })
+  planChangedAt!: Date | null;
 }

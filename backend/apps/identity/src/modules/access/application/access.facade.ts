@@ -35,4 +35,8 @@ export abstract class AccessFacade {
   abstract projectMembership(tenantId: string, ref: UserRef): Promise<void>;
   /** Tenants del usuario según su proyección `user_tenants`. */
   abstract tenantsOf(ref: UserRef): Promise<readonly UserTenant[]>;
+  /** Quita al usuario de todos sus tenants, para el borrado de su cuenta. Es idempotente. */
+  abstract removeFromAllTenants(ref: UserRef): Promise<void>;
+  /** Sube la versión de permisos del tenant: el acceso de todos sus miembros se vuelve a calcular. */
+  abstract refreshTenant(tenantId: string): Promise<void>;
 }

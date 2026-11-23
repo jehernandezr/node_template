@@ -1,5 +1,7 @@
+import { UsageMetric } from '@contracts/billing';
 import {
   ActivateTenantOperation,
+  BillingReference,
   AuthenticateApiKeyOperation,
   CreateTenantOperation,
   DiscardTenantOperation,
@@ -323,6 +325,58 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     expect(lastOwner.body).toMatchObject({
       code: IdentityErrorCode.AccessLastOwner,
     });
+  });
+
+  it('refuses to add a member when the plan of the tenant has no room for another user', async () => {
+    const rita = new IdentityJourney(app, 'rita.sin.cupo@example.com');
+    await rita.register();
+    const session = await rita.signInWithEmailCode();
+    await owner.post('/v1/tenant/invitations', {
+      body: { email: rita.email, groupIds: [] },
+    });
+    const token = rita.mailTo(IdentityEmailTemplate.TenantInvitation)['token'];
+    app.peers.limit(tenantId, UsageMetric.Users, { limit: 3, used: 3 });
+
+    const refused = await rita
+      .bearer(session.accessToken)
+      .post('/v1/invitations/accept', { body: { token } });
+    const members = await owner.get('/v1/tenant/members');
+
+    expect(refused.status).toBe(403);
+    expect(refused.body).toMatchObject({
+      code: BillingReference.QuotaExceeded,
+    });
+    expect(
+      (members.body as { items: Array<{ email: string }> }).items,
+    ).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ email: rita.email })]),
+    );
+  });
+
+  it('does not create the account of an invited person when the plan has no room for her', async () => {
+    const tere = new IdentityJourney(app, 'tere.sin.cupo@example.com');
+    await owner.post('/v1/tenant/invitations', {
+      body: { email: tere.email, groupIds: [] },
+    });
+    const token = tere.mailTo(IdentityEmailTemplate.TenantInvitation)['token'];
+    app.peers.limit(tenantId, UsageMetric.Users, { limit: 3, used: 3 });
+
+    const refused = await tere.signUp(token);
+    const signIn = await tere.signIn();
+    const members = await owner.get('/v1/tenant/members');
+
+    expect(refused.status).toBe(403);
+    expect(refused.body).toMatchObject({
+      code: BillingReference.QuotaExceeded,
+    });
+    expect(signIn.body).toMatchObject({
+      code: IdentityErrorCode.AuthInvalidCredentials,
+    });
+    expect(
+      (members.body as { items: Array<{ email: string }> }).items,
+    ).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ email: tere.email })]),
+    );
   });
 
   it('creates service accounts and API keys that authenticate, rotate and revoke', async () => {

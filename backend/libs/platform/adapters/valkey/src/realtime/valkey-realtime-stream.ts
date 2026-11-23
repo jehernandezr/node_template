@@ -86,16 +86,11 @@ return id
     return ValkeyRealtimeStream.entries(reply, ValkeyCommand.Xrange);
   }
 
+  /** Un id con forma válida pero posterior a la última trama (de otro Valkey o inventado) cuenta como el final. */
   async resumePoint(
     channel: string,
     lastEventId: string | undefined,
   ): Promise<string | undefined> {
-    if (
-      lastEventId !== undefined &&
-      ValkeyRealtimeStream.isStreamId(lastEventId)
-    ) {
-      return lastEventId;
-    }
     const reply = await this.executor.run(ValkeyCommand.Xrevrange, [
       this.streamKey(channel),
       '+',
@@ -103,7 +98,17 @@ return id
       'COUNT',
       1,
     ]);
-    return ValkeyRealtimeStream.entries(reply, ValkeyCommand.Xrevrange)[0]?.id;
+    const last = ValkeyRealtimeStream.entries(reply, ValkeyCommand.Xrevrange)[0]
+      ?.id;
+    if (
+      lastEventId !== undefined &&
+      last !== undefined &&
+      ValkeyRealtimeStream.isStreamId(lastEventId) &&
+      ValkeyRealtimeStream.notAfter(lastEventId, last)
+    ) {
+      return lastEventId;
+    }
+    return last;
   }
 
   async subscribe(
@@ -148,6 +153,12 @@ return id
 
   private noticeChannel(channel: string): string {
     return this.keyspace.key('rt-appended', channel);
+  }
+
+  private static notAfter(id: string, last: string): boolean {
+    const [idMs = 0n, idSeq = 0n] = id.split('-').map(BigInt);
+    const [lastMs = 0n, lastSeq = 0n] = last.split('-').map(BigInt);
+    return idMs < lastMs || (idMs === lastMs && idSeq <= lastSeq);
   }
 
   private static isStreamId(id: string): boolean {

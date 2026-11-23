@@ -15,6 +15,9 @@ export class TenantSummaryView {
       ...(state.pinnedApiVersion === undefined
         ? {}
         : { pinnedApiVersion: state.pinnedApiVersion }),
+      ...(state.planFeatures === undefined
+        ? {}
+        : { planFeatures: state.planFeatures }),
     };
   }
 

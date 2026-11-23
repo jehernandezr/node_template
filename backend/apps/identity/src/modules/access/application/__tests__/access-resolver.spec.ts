@@ -3,7 +3,7 @@ import { FlagEvaluator, InMemoryFlagStore } from '@platform/flags';
 import { TestShardScopes } from '../../../../__tests__/utils/index.js';
 import {
   InMemoryTenantsFacade,
-  KindEntitlementsProvider,
+  PlanEntitlementsProvider,
 } from '../../../tenants/__tests__/utils/index.js';
 import {
   InMemoryTenantAccessRepository,
@@ -28,7 +28,7 @@ describe('AccessResolver', () => {
       kind: TenantKind.Organization,
       status: TenantLifecycle.Active,
     }),
-    new KindEntitlementsProvider(),
+    new PlanEntitlementsProvider(),
     TestShardScopes.create(),
     new FlagEvaluator(flags),
   );

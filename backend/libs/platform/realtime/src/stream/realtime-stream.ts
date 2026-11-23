@@ -22,9 +22,9 @@ export abstract class RealtimeStream {
   ): Promise<readonly StoredFrame[]>;
 
   /**
-   * Desde dónde lee una conexión que abre: `lastEventId` si es un id de este stream; si falta o no lo es, el
-   * id de la última trama del canal (`undefined` si no tiene ninguna). Un id inventado o corrupto no reproduce
-   * lo retenido: lo anterior ya lo trae la API.
+   * Desde dónde lee una conexión que abre: `lastEventId` si es un id de este stream que no pasa de la última
+   * trama; si falta, no lo es o es posterior, el id de la última trama del canal (`undefined` si no tiene
+   * ninguna). Un id inventado o corrupto no reproduce lo retenido: lo anterior ya lo trae la API.
    */
   abstract resumePoint(
     channel: string,

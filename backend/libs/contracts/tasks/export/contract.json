@@ -428,6 +428,7 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.QUOTA.EXCEEDED",
         "PLATFORM.VALIDATION.INVALID_INPUT",
         "TASKS.SEARCH.QUERY_TOO_SHORT"
       ],
@@ -453,6 +454,7 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.QUOTA.EXCEEDED",
         "TASKS.TASK.NOT_FOUND"
       ],
       "access": { "kind": "authenticated", "permissions": ["tasks:read"] },
@@ -477,6 +479,7 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.QUOTA.EXCEEDED",
         "PLATFORM.VALIDATION.INVALID_INPUT"
       ],
       "access": { "kind": "authenticated", "permissions": ["tasks:write"] },
@@ -501,6 +504,7 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.QUOTA.EXCEEDED",
         "PLATFORM.VALIDATION.INVALID_INPUT",
         "TASKS.TASK.NOT_FOUND",
         "TASKS.TASK.VERSION_CONFLICT"
@@ -527,6 +531,7 @@
         "IDENTITY.USER.SUSPENDED",
         "IDENTITY.TENANT.SUSPENDED",
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
+        "BILLING.QUOTA.EXCEEDED",
         "TASKS.TASK.NOT_FOUND"
       ],
       "access": { "kind": "authenticated", "permissions": ["tasks:write"] },

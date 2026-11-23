@@ -12,4 +12,5 @@ export enum IdentityResource {
   Access = 'access',
   Invitations = 'invitations',
   ApiKeys = 'api-keys',
+  Sagas = 'sagas',
 }

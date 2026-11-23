@@ -5,3 +5,4 @@ export { FakeAccessGrantSource } from './fake-access-grant-source.js';
 export { FakeApiKeyResolver } from './fake-api-key-resolver.js';
 export { InMemoryAuthState } from './in-memory-auth-state.js';
 export { TestKeyPair } from './test-key-pair.js';
+export { TestActors } from './test-actors.js';

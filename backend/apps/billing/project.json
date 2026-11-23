@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "billing",
+  "sourceRoot": "backend/apps/billing/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:billing"],
+  "targets": {
+    "typecheck": {},
+    "build": {
+      "options": {
+        "command": "tsx backend/tools/app-bundler/src/main.ts {projectName} {projectRoot} --entry=src/worker.ts --entry=src/migrate.ts --entry=src/seed.ts --entry=src/lambda.ts"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/billing/main.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "worker": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/billing/worker.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/billing/migrate.mjs {args.target}",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/billing/seed.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

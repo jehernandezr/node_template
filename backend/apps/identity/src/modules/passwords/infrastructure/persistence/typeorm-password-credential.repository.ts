@@ -29,6 +29,12 @@ export class TypeOrmPasswordCredentialRepository
         };
   }
 
+  async delete(userId: string): Promise<void> {
+    await this.write((manager) =>
+      manager.delete(PasswordCredentialEntity, { id: userId }),
+    );
+  }
+
   async save(credential: PasswordCredential): Promise<void> {
     const row = new PasswordCredentialEntity();
     row.id = credential.userId;

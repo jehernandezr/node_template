@@ -5,6 +5,7 @@ import type { SagaDefinition } from '../definition/saga-definition.js';
 import { SagaRegistry } from '../definition/saga-registry.js';
 import { SagaEngine } from '../engine/saga-engine.js';
 import { Sagas } from '../engine/sagas.js';
+import { SagaStore } from '../store/saga-store.js';
 import { SagaRecoveryJob } from '../jobs/saga-recovery-job.js';
 import { SagaRetentionJob } from '../jobs/saga-retention-job.js';
 import type { SagaModuleExtras } from './saga-module-extras.js';
@@ -16,7 +17,8 @@ import {
 import { SagaProviders } from './saga.providers.js';
 
 /**
- * Cableado de sagas. Provee `Sagas` (lo que inyecta un caso de uso),
+ * Cableado de sagas. Provee `Sagas` (lo que inyecta un caso de uso), `SagaStore` (para consultar el estado
+ * de una instancia),
  * `SagaEngine`, `SagaRegistry`, los jobs de recuperación y de retención, que
  * `SchedulingModule` descubre sin que este módulo lo importe. Es global para
  * que los casos de uso inyecten `Sagas` sin importarlo.
@@ -107,6 +109,7 @@ export class SagaModule extends SagaModuleClass {
       providers: [...(base.providers ?? []), ...SagaProviders.build(extras)],
       exports: [
         Sagas,
+        SagaStore,
         SagaEngine,
         SagaRegistry,
         SagaRecoveryJob,

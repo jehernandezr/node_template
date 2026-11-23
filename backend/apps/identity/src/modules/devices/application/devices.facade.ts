@@ -20,6 +20,8 @@ export abstract class DevicesFacade {
   abstract verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]>;
   /** Quita el rol de verificador a todos los dispositivos: la recuperación sin dispositivo los da por perdidos. */
   abstract retireVerifiers(ref: UserRef): Promise<void>;
+  /** Da de baja todos los dispositivos del usuario: su cuenta se borra. */
+  abstract forget(ref: UserRef): Promise<void>;
   abstract enqueueApproval(
     deviceId: string,
     approval: DeviceApproval,

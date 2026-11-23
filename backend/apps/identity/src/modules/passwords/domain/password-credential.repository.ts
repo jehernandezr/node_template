@@ -6,4 +6,6 @@ export abstract class PasswordCredentialRepository {
 
   /** Inserta o reemplaza la contraseña del usuario. */
   abstract save(credential: PasswordCredential): Promise<void>;
+
+  abstract delete(userId: string): Promise<void>;
 }

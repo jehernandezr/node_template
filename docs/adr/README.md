@@ -51,3 +51,4 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0028   | [Tiempo real sobre un stream por usuario](0028-tiempo-real-sobre-un-stream-por-usuario.md)                                   | Aceptada                 |
 | 0029   | [Mantenimiento entre tenants con RLS y búsqueda por shard](0029-mantenimiento-entre-tenants-y-busqueda-por-shard.md)         | Aceptada                 |
 | 0030   | [Correo de identity por notifications](0030-correo-de-identity-por-notifications.md)                                         | Aceptada                 |
+| 0031   | [Reportes, facturación y sagas de identity](0031-reportes-facturacion-y-sagas-de-identity.md)                                | Aceptada                 |

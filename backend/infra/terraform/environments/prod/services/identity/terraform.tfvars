@@ -24,9 +24,12 @@ workers = {
 }
 
 # Valores no secretos. Los dominios son los del ambiente y se ajustan al desplegar.
-# Con IDENTITY_MAILER = "notifications", INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON
-# con la dirección interna de notifications, por ejemplo "{\"notifications\":\"http://notifications.prod.internal\"}".
-# Sin esa URL el servicio no arranca.
+# INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON con la dirección interna de billing
+# (alta del tenant y cuota de usuarios), notifications (correo y bienvenida), tasks y reports (borrado de
+# cuenta) en este ambiente, por ejemplo "{\"billing\":\"http://billing.prod.internal\",
+# \"notifications\":\"http://notifications.prod.internal\",\"tasks\":\"http://tasks.prod.internal\",
+# \"reports\":\"http://reports.prod.internal\"}" en una sola línea. Sin alguna de esas URLs el servicio no
+# arranca.
 environment_variables = {
   IDENTITY_REGION     = "us-east-1"
   IDENTITY_AUDIENCES  = "api"

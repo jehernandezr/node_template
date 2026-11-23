@@ -35,3 +35,4 @@ export * from './valkey-health-indicator.js';
 export * from './auth/index.js';
 export * from './realtime/valkey-presence-tracker.js';
 export * from './realtime/valkey-realtime-stream.js';
+export * from './metering/valkey-usage-counter-store.js';

@@ -6,6 +6,14 @@ const ISSUER = 'https://identity.test';
 
 /** Variables de entorno válidas para `identityConfigSchema`, con secretos nuevos en cada llamada. */
 export class IdentityTestEnvironment {
+  /** URLs de los servicios a los que llaman las sagas; las pruebas que las ejercitan las reemplazan por stubs. */
+  static readonly PEERS = {
+    billing: 'http://billing.test',
+    notifications: 'http://notifications.test',
+    tasks: 'http://tasks.test',
+    reports: 'http://reports.test',
+  } as const;
+
   /**
    * `base` gana sobre los valores por defecto y `SERVICE_NAME` siempre queda en `identity`, aunque
    * el entorno de otro servicio (por ejemplo el de Valkey) traiga otro nombre.
@@ -35,6 +43,7 @@ export class IdentityTestEnvironment {
       IDENTITY_DEVICE_ID_KEY: IdentityTestEnvironment.secret(),
       IDENTITY_DATA_KEY: IdentityTestEnvironment.secret(),
       INTERNAL_API_SHARED_SECRET: IdentityTestEnvironment.secret(),
+      INTERNAL_API_BASE_URLS: JSON.stringify(IdentityTestEnvironment.PEERS),
       IDENTITY_DEFAULT_TENANT_ID: ids.next().toString(),
       IDENTITY_PLATFORM_TENANT_ID: ids.next().toString(),
       WEBAUTHN_RP_ID: 'identity.test',

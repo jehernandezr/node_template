@@ -11,7 +11,7 @@ import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { SystemRolePermissions } from '../../../shared/constants/system-roles.constants.js';
 import {
   InMemoryTenantsFacade,
-  KindEntitlementsProvider,
+  PlanEntitlementsProvider,
 } from '../../tenants/__tests__/utils/index.js';
 import { InMemoryUsersFacade } from '../../users/__tests__/utils/index.js';
 import {
@@ -54,7 +54,7 @@ describe('GrantCeiling', () => {
     tenantAccess,
     userAccess,
     new InMemoryTenantsFacade(),
-    new KindEntitlementsProvider(),
+    new PlanEntitlementsProvider(),
     scopes,
     new FlagEvaluator(new InMemoryFlagStore()),
   );

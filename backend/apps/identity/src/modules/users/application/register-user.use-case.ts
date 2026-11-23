@@ -17,7 +17,8 @@ import { UserRegistrar } from './user-registrar.js';
 /**
  * Registro desde la ruta pública. Responde igual exista o no el email: si ya tiene cuenta, se envía un
  * correo "ya tienes cuenta" en lugar del de verificación. La política de contraseña se revisa antes de
- * mirar el email, para que su error tampoco revele nada.
+ * mirar el email, para que su error tampoco revele nada. El cupo del plan del tenant que invita también se
+ * revisa antes de crear la cuenta: si no alcanza, no queda un usuario sin membresía que bloquee el reintento.
  */
 @Injectable()
 export class RegisterUser implements UseCase<SignUpCommand, void> {
@@ -40,6 +41,9 @@ export class RegisterUser implements UseCase<SignUpCommand, void> {
         ? undefined
         : await this.invitations.preview(command.invitationToken);
     const invited = invitation !== undefined && invitation.email === email;
+    if (invited) {
+      await this.invitations.assertRoomForNewUser(invitation);
+    }
     const homeTenantId = invited
       ? invitation.tenantId
       : this.settings.values.IDENTITY_DEFAULT_TENANT_ID;

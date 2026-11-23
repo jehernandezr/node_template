@@ -30,6 +30,7 @@ export * from './transport/call-meta-reader.js';
 export * from './transport/http-outcome-reader.js';
 export * from './transport/http-transport.js';
 export * from './transport/in-process-transport.js';
+export * from './transport/local-first-transport.js';
 export * from './transport/internal-api-route.js';
 export * from './transport/internal-header.enum.js';
 export * from './transport/internal-request.js';

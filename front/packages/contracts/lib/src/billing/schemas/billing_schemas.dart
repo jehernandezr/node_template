@@ -4401,3 +4401,479 @@ extension InvoiceStateResultValidation on InvoiceStateResult {
   /// Errores de este objeto, o una lista vacía si cumple el contrato.
   List<FieldError> validate() => InvoiceStateResultSchema.validate(toJson());
 }
+
+/// Validador de [InvoiceChange] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class InvoiceChangeSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('id')) {
+      final value131 = json['id'];
+      if (value131 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'id'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern2.hasMatch(value131)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'id'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'id'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('number')) {
+      final value132 = json['number'];
+      if (value132 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'number'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value132.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'number'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value132.length > 32) {
+          addFieldError(
+            errors,
+            joinPath(path, 'number'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'number'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('period')) {
+      final value133 = json['period'];
+      BillingPeriodSchema.check(
+        value133,
+        joinPath(path, 'period'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'period'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('status')) {
+      final value134 = json['status'];
+      if (value134 is! String ||
+          !const <String>{
+            'draft',
+            'issued',
+            'paid',
+            'failed',
+            'void',
+          }.contains(value134)) {
+        addFieldError(
+          errors,
+          joinPath(path, 'status'),
+          PlatformErrorCode.validationInvalidEnum.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'status'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('currency')) {
+      final value135 = json['currency'];
+      if (value135 is! String ||
+          !const <String>{'COP', 'USD'}.contains(value135)) {
+        addFieldError(
+          errors,
+          joinPath(path, 'currency'),
+          PlatformErrorCode.validationInvalidEnum.code,
+        );
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'currency'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('total')) {
+      final value136 = json['total'];
+      MoneyAmountSchema.check(
+        value136,
+        joinPath(path, 'total'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'total'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('issuedAt')) {
+      final value137 = json['issuedAt'];
+      if (value137 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'issuedAt'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern1.hasMatch(value137)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'issuedAt'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'issuedAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('paidAt')) {
+      final value138 = json['paidAt'];
+      if (value138 != null) {
+        if (value138 is! String) {
+          addFieldError(
+            errors,
+            joinPath(path, 'paidAt'),
+            PlatformErrorCode.validationInvalidType.code,
+          );
+        } else {
+          if (!_pattern1.hasMatch(value138)) {
+            addFieldError(
+              errors,
+              joinPath(path, 'paidAt'),
+              PlatformErrorCode.validationInvalidFormat.code,
+            );
+          }
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'paidAt'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [InvoiceChange] contra su contrato.
+extension InvoiceChangeValidation on InvoiceChange {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => InvoiceChangeSchema.validate(toJson());
+}
+
+/// Validador de [InvoiceChangePage] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class InvoiceChangePageSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('items')) {
+      final value139 = json['items'];
+      if (value139 is! List) {
+        addFieldError(
+          errors,
+          joinPath(path, 'items'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value139.length > 100) {
+          addFieldError(
+            errors,
+            joinPath(path, 'items'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        for (var i140 = 0; i140 < value139.length; i140++) {
+          final item141 = value139[i140];
+          InvoiceChangeSchema.check(
+            item141,
+            joinPath(joinPath(path, 'items'), '$i140'),
+            errors,
+            acceptUnknownEnums: acceptUnknownEnums,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'items'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('nextCursor')) {
+      final value142 = json['nextCursor'];
+      if (value142 != null) {
+        if (value142 is! String) {
+          addFieldError(
+            errors,
+            joinPath(path, 'nextCursor'),
+            PlatformErrorCode.validationInvalidType.code,
+          );
+        } else {
+          if (value142.isEmpty) {
+            addFieldError(
+              errors,
+              joinPath(path, 'nextCursor'),
+              PlatformErrorCode.validationTooShort.code,
+            );
+          }
+          if (value142.length > 512) {
+            addFieldError(
+              errors,
+              joinPath(path, 'nextCursor'),
+              PlatformErrorCode.validationTooLong.code,
+            );
+          }
+          if (!_pattern3.hasMatch(value142)) {
+            addFieldError(
+              errors,
+              joinPath(path, 'nextCursor'),
+              PlatformErrorCode.validationInvalidFormat.code,
+            );
+          }
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'nextCursor'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+  }
+}
+
+/// Validación de [InvoiceChangePage] contra su contrato.
+extension InvoiceChangePageValidation on InvoiceChangePage {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => InvoiceChangePageSchema.validate(toJson());
+}
+
+/// Validador de [ListInvoiceChangesInput] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class ListInvoiceChangesInputSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('tenantId')) {
+      final value143 = json['tenantId'];
+      if (value143 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'tenantId'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (!_pattern2.hasMatch(value143)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'tenantId'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    } else {
+      addFieldError(
+        errors,
+        joinPath(path, 'tenantId'),
+        PlatformErrorCode.validationRequired.code,
+      );
+    }
+    if (json.containsKey('limit')) {
+      final value144 = json['limit'];
+      if (value144 is! num ||
+          !value144.isFinite ||
+          value144 != value144.roundToDouble()) {
+        addFieldError(
+          errors,
+          joinPath(path, 'limit'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value144 < 1) {
+          addFieldError(
+            errors,
+            joinPath(path, 'limit'),
+            PlatformErrorCode.validationTooSmall.code,
+          );
+        }
+        if (value144 > 100) {
+          addFieldError(
+            errors,
+            joinPath(path, 'limit'),
+            PlatformErrorCode.validationTooLarge.code,
+          );
+        }
+      }
+    }
+    if (json.containsKey('after')) {
+      final value145 = json['after'];
+      if (value145 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'after'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value145.isEmpty) {
+          addFieldError(
+            errors,
+            joinPath(path, 'after'),
+            PlatformErrorCode.validationTooShort.code,
+          );
+        }
+        if (value145.length > 512) {
+          addFieldError(
+            errors,
+            joinPath(path, 'after'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+        if (!_pattern3.hasMatch(value145)) {
+          addFieldError(
+            errors,
+            joinPath(path, 'after'),
+            PlatformErrorCode.validationInvalidFormat.code,
+          );
+        }
+      }
+    }
+    for (final key in json.keys) {
+      if (!const <String>{'tenantId', 'limit', 'after'}.contains(key)) {
+        addFieldError(
+          errors,
+          joinPath(path, key),
+          PlatformErrorCode.validationUnknownField.code,
+        );
+      }
+    }
+  }
+}
+
+/// Validación de [ListInvoiceChangesInput] contra su contrato.
+extension ListInvoiceChangesInputValidation on ListInvoiceChangesInput {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() =>
+      ListInvoiceChangesInputSchema.validate(toJson());
+}

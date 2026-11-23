@@ -27,6 +27,8 @@ export class TasksTestApp {
   static readonly TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
   /** Tenant ubicado en el segundo shard. */
   static readonly TENANT_B = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
+  /** Billing solo responde cuotas de service accounts, y las pruebas llaman como personas: nadie la consulta. */
+  private static readonly BILLING_URL = 'http://billing.test';
 
   readonly servers = new ServiceTestServers(
     'tasks',
@@ -40,9 +42,16 @@ export class TasksTestApp {
   async start(): Promise<void> {
     await this.servers.start();
     await this.identity.start(this.servers.valkey);
+    const identityEnv = this.identity.environment();
     const env: ConfigEnv = {
       ...this.servers.environment(),
-      ...this.identity.environment(),
+      ...identityEnv,
+      INTERNAL_API_BASE_URLS: JSON.stringify({
+        ...(JSON.parse(
+          identityEnv['INTERNAL_API_BASE_URLS'] ?? '{}',
+        ) as object),
+        billing: TasksTestApp.BILLING_URL,
+      }),
       NODE_ENV: 'test',
       OTEL_SDK_DISABLED: 'true',
       INTERNAL_API_SHARED_SECRET: this.internalSecret,
@@ -64,9 +73,15 @@ export class TasksTestApp {
   }
 
   async stop(): Promise<void> {
-    await this.running?.stop();
-    await this.identity.stop();
-    await this.servers.stop();
+    try {
+      await this.running?.stop();
+    } finally {
+      try {
+        await this.identity.stop();
+      } finally {
+        await this.servers.stop();
+      }
+    }
   }
 
   baseUrl(): string {

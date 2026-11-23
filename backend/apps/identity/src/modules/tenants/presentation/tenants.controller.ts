@@ -5,18 +5,19 @@ import {
   GetTenantRoute,
   UpdateTenantRoute,
   ListMyTenantsRoute,
-  GetSagaRoute,
+  type CreateTenantRequest,
   type MyTenantPage,
+  type TenantCreation,
   type TenantSummary,
   type UpdateTenantRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { RouteNotImplementedError } from '../../../shared/errors/route-not-implemented.error.js';
 import {
   requireUserActor,
   userRefOf,
 } from '../../../shared/utils/user-actor.js';
 import { ListMyTenants } from '../application/list-my-tenants.use-case.js';
+import { StartTenantOnboarding } from '../application/start-tenant-onboarding.use-case.js';
 import { TenantReader } from '../application/tenant-reader.js';
 import { TenantSummaryView } from '../application/tenant-summary-view.js';
 import { UpdateTenant } from '../application/update-tenant.use-case.js';
@@ -27,12 +28,15 @@ export class TenantsController {
     private readonly reader: TenantReader,
     private readonly update: UpdateTenant,
     private readonly mine: ListMyTenants,
+    private readonly onboarding: StartTenantOnboarding,
   ) {}
 
-  /** El alta pública corre la saga `TenantOnboarding`, que llega con su ciclo. */
   @Endpoint(CreateTenantRoute)
-  createTenant(): never {
-    throw new RouteNotImplementedError(CreateTenantRoute.id);
+  createTenant(
+    @Input() input: CreateTenantRequest,
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<TenantCreation> {
+    return this.onboarding.execute(userRefOf(requireUserActor(actor)), input);
   }
 
   @Endpoint(GetTenantRoute)
@@ -56,11 +60,5 @@ export class TenantsController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<MyTenantPage> {
     return this.mine.execute(userRefOf(requireUserActor(actor)));
-  }
-
-  /** La consulta de sagas llega con las sagas de identity. */
-  @Endpoint(GetSagaRoute)
-  getSaga(): never {
-    throw new RouteNotImplementedError(GetSagaRoute.id);
   }
 }

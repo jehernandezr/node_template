@@ -196,9 +196,10 @@ export enum IdentitySagaStatus {
 }
 
 /**
- * Nombres de los mensajes de billing que identity consume o envía. Se repiten
- * aquí porque billing ya importa a identity y un contrato no puede importar a
- * quien lo importa; `contracts-export` comprueba que existan.
+ * Nombres de los mensajes de billing que identity consume o envía, y el código
+ * de la cuota que identity responde al agregar un miembro. Se repiten aquí
+ * porque billing ya importa a identity y un contrato no puede importar a quien
+ * lo importa; `contracts-export` comprueba que existan los mensajes.
  */
 export enum BillingReference {
   Topic = 'billing-events',
@@ -206,4 +207,5 @@ export enum BillingReference {
   SubscriptionReactivated = 'billing.subscription.reactivated.v1',
   EntitlementsChanged = 'billing.entitlements.changed.v1',
   RecordUsage = 'billing.usage.record.v1',
+  QuotaExceeded = 'BILLING.QUOTA.EXCEEDED',
 }

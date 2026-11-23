@@ -1,0 +1,98 @@
+import {
+  EntitlementsChangedEvent,
+  SubscriptionChangedEvent,
+  SubscriptionReactivatedEvent,
+  SubscriptionSuspendedEvent,
+} from '@contracts/billing';
+import { MessageBus } from '@platform/messaging';
+import { Injectable } from '@nestjs/common';
+import { Clock } from '@platform/kernel';
+import type { Plan } from '../../plans/index.js';
+import type { Subscription } from '../domain/subscription.js';
+import { EntitlementsOf } from './entitlements-of.js';
+
+/** Los eventos de integración de una suscripción, publicados por el outbox de la transacción abierta. */
+@Injectable()
+export class SubscriptionEvents {
+  constructor(
+    private readonly bus: MessageBus,
+    private readonly clock: Clock,
+  ) {}
+
+  async planChanged(
+    tenantId: string,
+    subscription: Subscription,
+    previousPlanId: string | null,
+    plan: Plan,
+  ): Promise<void> {
+    const state = subscription.snapshot();
+    await this.bus.publish(
+      SubscriptionChangedEvent,
+      {
+        tenantId,
+        subscriptionId: state.id,
+        previousPlanId,
+        planId: state.planId,
+        changedAt: this.now(),
+      },
+      { tenantId },
+    );
+    await this.entitlementsChanged(tenantId, subscription, plan);
+  }
+
+  async suspended(
+    tenantId: string,
+    subscription: Subscription,
+    plan: Plan,
+  ): Promise<void> {
+    await this.bus.publish(
+      SubscriptionSuspendedEvent,
+      {
+        tenantId,
+        subscriptionId: subscription.snapshot().id,
+        suspendedAt: this.now(),
+      },
+      { tenantId },
+    );
+    await this.entitlementsChanged(tenantId, subscription, plan);
+  }
+
+  async reactivated(
+    tenantId: string,
+    subscription: Subscription,
+    plan: Plan,
+  ): Promise<void> {
+    await this.bus.publish(
+      SubscriptionReactivatedEvent,
+      {
+        tenantId,
+        subscriptionId: subscription.snapshot().id,
+        reactivatedAt: this.now(),
+      },
+      { tenantId },
+    );
+    await this.entitlementsChanged(tenantId, subscription, plan);
+  }
+
+  private async entitlementsChanged(
+    tenantId: string,
+    subscription: Subscription,
+    plan: Plan,
+  ): Promise<void> {
+    const entitlements = EntitlementsOf.subscription(subscription, plan);
+    await this.bus.publish(
+      EntitlementsChangedEvent,
+      {
+        tenantId,
+        features: [...entitlements.features],
+        quotas: [...entitlements.quotas],
+        changedAt: this.now(),
+      },
+      { tenantId },
+    );
+  }
+
+  private now(): string {
+    return this.clock.now().toISOString();
+  }
+}

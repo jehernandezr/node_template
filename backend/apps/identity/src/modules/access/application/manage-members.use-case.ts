@@ -11,6 +11,7 @@ import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
+import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { UsersFacade } from '../../users/index.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import type { Group } from '../domain/group.js';
@@ -76,19 +77,7 @@ export class ManageMembers {
           groups,
           await this.tenantAccess.listMemberships(),
         );
-        await this.tenantAccess.deleteMembership(userId);
-        await this.publishMembership(
-          tenantId,
-          userId,
-          MembershipChangeKind.Removed,
-          [],
-        );
-        await this.versions.memberChanged(
-          tenantId,
-          userId,
-          await this.tenantAccess.tenantVersion(),
-          membership.permissionVersion + 1,
-        );
+        await this.deleteMembership(tenantId, membership);
         return membership;
       },
     );
@@ -96,6 +85,23 @@ export class ManageMembers {
       userId,
       homeTenantId: removed.homeTenantId,
     });
+  }
+
+  /**
+   * Quita a un usuario que se está borrando de un tenant, sin las reglas de quien edita: el borrado de una
+   * cuenta no espera a que el tenant tenga otro dueño. Repetirlo no cambia nada.
+   */
+  async removeErased(tenantId: string, ref: UserRef): Promise<void> {
+    await this.scopes.inTenantShard(tenantId, () =>
+      this.transactions.runInTransaction(async () => {
+        await this.tenantAccess.lockForChanges();
+        const membership = await this.tenantAccess.findMembership(ref.userId);
+        if (membership !== undefined) {
+          await this.deleteMembership(tenantId, membership);
+        }
+      }),
+    );
+    await this.setup.project(tenantId, ref);
   }
 
   async setGroups(
@@ -182,6 +188,25 @@ export class ManageMembers {
     if (isOwner(changed.groupIds) && remaining.length === 0) {
       throw new IdentityError(IdentityErrorCode.AccessLastOwner);
     }
+  }
+
+  private async deleteMembership(
+    tenantId: string,
+    membership: Membership,
+  ): Promise<void> {
+    await this.tenantAccess.deleteMembership(membership.userId);
+    await this.publishMembership(
+      tenantId,
+      membership.userId,
+      MembershipChangeKind.Removed,
+      [],
+    );
+    await this.versions.memberChanged(
+      tenantId,
+      membership.userId,
+      await this.tenantAccess.tenantVersion(),
+      membership.permissionVersion + 1,
+    );
   }
 
   private async publishMembership(

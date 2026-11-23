@@ -1,9 +1,4 @@
-import {
-  CreateTenantRoute,
-  GetSagaRoute,
-  identityContract,
-  StartAccountDeletionRoute,
-} from '@contracts/identity';
+import { identityContract } from '@contracts/identity';
 import {
   HttpMetadataKey,
   type EndpointMetadata,
@@ -17,11 +12,11 @@ import { InvitationsController } from '../modules/invitations/presentation/invit
 import { MfaController } from '../modules/mfa/presentation/mfa.controller.js';
 import { PasskeysController } from '../modules/passkeys/presentation/passkeys.controller.js';
 import { PasswordsController } from '../modules/passwords/presentation/passwords.controller.js';
+import { SagasController } from '../modules/sagas/presentation/sagas.controller.js';
 import { SessionsController } from '../modules/sessions/presentation/sessions.controller.js';
 import { TenantsController } from '../modules/tenants/presentation/tenants.controller.js';
 import { TokensController } from '../modules/tokens/presentation/tokens.controller.js';
 import { UsersController } from '../modules/users/presentation/users.controller.js';
-import { RouteNotImplementedError } from '../shared/errors/route-not-implemented.error.js';
 
 type ControllerClass = abstract new (...args: never[]) => object;
 
@@ -38,6 +33,7 @@ const CONTROLLERS: readonly ControllerClass[] = [
   AccessController,
   InvitationsController,
   ApiKeysController,
+  SagasController,
 ];
 
 interface StubEndpoint {
@@ -65,27 +61,6 @@ function endpointsOf(controller: ControllerClass): StubEndpoint[] {
     });
 }
 
-/** Rutas que llegan con las sagas de identity: siguen respondiendo como no implementadas. */
-const DEFERRED_ROUTES: readonly string[] = [
-  StartAccountDeletionRoute.id,
-  CreateTenantRoute.id,
-  GetSagaRoute.id,
-];
-
-/** Lo que lanza invocar el método del stub. Los stubs no usan dependencias, así que no hace falta construirlos. */
-function errorOf(endpoint: StubEndpoint): unknown {
-  const instance = Object.create(endpoint.controller.prototype) as Record<
-    string,
-    () => unknown
-  >;
-  try {
-    instance[endpoint.method]?.();
-  } catch (error) {
-    return error;
-  }
-  return undefined;
-}
-
 describe('identity routes', () => {
   const endpoints = CONTROLLERS.flatMap(endpointsOf);
 
@@ -98,22 +73,6 @@ describe('identity routes', () => {
     expect(new Set(declared).size).toBe(declared.length);
     expect([...declared].sort()).toEqual([...contractIds].sort());
   });
-
-  it.each(
-    endpoints
-      .filter((endpoint) => DEFERRED_ROUTES.includes(endpoint.routeId))
-      .map((endpoint) => [endpoint.routeId, endpoint]),
-  )(
-    'the deferred handler of %s throws RouteNotImplementedError with its route id',
-    (_, endpoint) => {
-      const error = errorOf(endpoint);
-
-      expect(error).toBeInstanceOf(RouteNotImplementedError);
-      expect((error as RouteNotImplementedError).routeId).toBe(
-        endpoint.routeId,
-      );
-    },
-  );
 
   it.each(CONTROLLERS.map((controller) => [controller.name, controller]))(
     '%s declares its resource name',

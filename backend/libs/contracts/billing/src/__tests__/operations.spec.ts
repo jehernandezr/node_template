@@ -1,7 +1,7 @@
 import { Compensation, validateContract } from '@contracts/platform';
 import { billingContract } from '../contract.js';
 import { BillingOperation } from '../enums/identifiers.enum.js';
-import { UsageMetric } from '../enums/billing.enum.js';
+import { Currency, InvoiceStatus, UsageMetric } from '../enums/billing.enum.js';
 import { Ids, Now, UuidV4 } from './utils/fixtures.js';
 
 const operations = Object.values(billingContract.operations);
@@ -24,6 +24,7 @@ describe('billing internal operations', () => {
     for (const op of [
       billingContract.operations.getEntitlements,
       billingContract.operations.checkQuota,
+      billingContract.operations.listInvoiceChanges,
     ]) {
       expect(op.mutating).toBe(false);
       expect(op.compensatedBy).toBeUndefined();
@@ -103,6 +104,33 @@ describe('billing internal operations', () => {
       validateContract(input, { ...valid, reason: 'Tarjeta rechazada' }).ok,
     ).toBe(true);
     expect(validateContract(input, { ...valid, reason: '' }).ok).toBe(false);
+  });
+
+  it('pages the invoices of a tenant with their issue and payment dates', () => {
+    const { input, output } = billingContract.operations.listInvoiceChanges;
+    const invoice = {
+      id: Ids.item,
+      number: 'FAC-000001',
+      period: { start: '2026-10-01', end: '2026-10-31' },
+      status: InvoiceStatus.Paid,
+      currency: Currency.Cop,
+      total: { amountMinor: 49_900, currency: Currency.Cop },
+      issuedAt: Now,
+      paidAt: Now,
+    };
+    expect(
+      validateContract(input, { tenantId: Ids.tenant, limit: 50 }).ok,
+    ).toBe(true);
+    expect(validateContract(input, { tenantId: UuidV4 }).ok).toBe(false);
+    expect(
+      validateContract(output, { items: [invoice], nextCursor: null }).ok,
+    ).toBe(true);
+    expect(
+      validateContract(output, {
+        items: [{ ...invoice, paidAt: undefined }],
+        nextCursor: null,
+      }).ok,
+    ).toBe(false);
   });
 
   it('validates the input of the account opening', () => {

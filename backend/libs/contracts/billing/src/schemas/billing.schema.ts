@@ -26,10 +26,13 @@ import type {
   GetEntitlementsInput,
   GetInvoiceRequest,
   Invoice,
+  InvoiceChange,
+  InvoiceChangePage,
   InvoiceLine,
   InvoicePage,
   InvoiceStateResult,
   InvoiceSummary,
+  ListInvoiceChangesInput,
   ListInvoicesRequest,
   MarkInvoiceFailedInput,
   MarkInvoicePaidInput,
@@ -159,6 +162,28 @@ export const InvoicePageSchema = pageOf(
   InvoiceSummarySchema,
   'Página de facturas, más nuevas primero.',
 ) satisfies z.ZodType<InvoicePage>;
+
+export const InvoiceChangeSchema = InvoiceSummarySchema.extend({
+  issuedAt: TimestampSchema,
+  paidAt: TimestampSchema.nullable(),
+}).describe(
+  'Factura con sus fechas de emisión y de pago, para sincronizar otro servicio.',
+) satisfies z.ZodType<InvoiceChange>;
+
+export const InvoiceChangePageSchema = pageOf(
+  InvoiceChangeSchema,
+  'Página de facturas de un tenant, más nuevas primero.',
+) satisfies z.ZodType<InvoiceChangePage>;
+
+export const ListInvoiceChangesInputSchema = z
+  .strictObject({
+    tenantId: IdSchema,
+    limit: PageLimitSchema.optional(),
+    after: CursorSchema.optional(),
+  })
+  .describe(
+    'Entrada para paginar las facturas de un tenant.',
+  ) satisfies z.ZodType<ListInvoiceChangesInput>;
 
 export const ChangePlanRequestSchema = z
   .strictObject({ planId: IdSchema })

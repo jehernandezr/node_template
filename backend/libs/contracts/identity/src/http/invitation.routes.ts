@@ -6,7 +6,11 @@ import {
   PlatformErrorCode,
 } from '@contracts/platform';
 import { Permission } from '../enums/access.enum.js';
-import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
+import {
+  BillingReference,
+  IdentityErrorCode,
+  IdentityRoute,
+} from '../enums/identifiers.enum.js';
 import {
   AcceptInvitationRequestSchema,
   InvitationPageSchema,
@@ -74,8 +78,9 @@ export const AcceptInvitationRoute = defineRoute({
     IdentityErrorCode.InvitationInvalid,
     IdentityErrorCode.InvitationEmailMismatch,
     IdentityErrorCode.AuthEmailNotVerified,
+    BillingReference.QuotaExceeded,
   ],
   access: Access.authenticated(),
   description:
-    'Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado.',
+    'Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios.',
 });

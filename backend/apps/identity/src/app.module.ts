@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ValkeyUsageCounterStore } from '@platform/adapters-valkey';
+import { ValkeyMeteringModule } from '@platform/adapters-valkey/nest';
 import { identityContract } from '@contracts/identity';
 import { FlagsModule } from '@platform/flags/nest';
 import { HttpModule } from '@platform/http/nest';
+import { MeteringModule } from '@platform/metering/nest';
+import { QuotasModule } from '@platform/quotas/nest';
 import { IdentityAuthModule } from './auth/identity-auth.module.js';
 import { IdentityEphemeralModule } from './ephemeral/identity-ephemeral.module.js';
 import { IdentitySecurityModule } from './security/identity-security.module.js';
@@ -17,6 +21,7 @@ import { InvitationsModule } from './modules/invitations/presentation/invitation
 import { MfaModule } from './modules/mfa/presentation/mfa.module.js';
 import { PasskeysModule } from './modules/passkeys/presentation/passkeys.module.js';
 import { PasswordsModule } from './modules/passwords/presentation/passwords.module.js';
+import { SagasModule } from './modules/sagas/presentation/sagas.module.js';
 import { SessionsModule } from './modules/sessions/presentation/sessions.module.js';
 import { TenantsModule } from './modules/tenants/presentation/tenants.module.js';
 import { TokensModule } from './modules/tokens/presentation/tokens.module.js';
@@ -33,7 +38,14 @@ import { UsersModule } from './modules/users/presentation/users.module.js';
       contract: identityContract,
       catalogs: IDENTITY_ERROR_CATALOGS,
     }),
+    ValkeyMeteringModule,
+    MeteringModule.forRoot({
+      service: identityContract.service,
+      counters: ValkeyUsageCounterStore,
+    }),
+    QuotasModule,
     IdentityConsumersModule,
+    SagasModule,
     UsersModule,
     PasswordsModule,
     AuthenticationModule,

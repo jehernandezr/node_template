@@ -73,6 +73,21 @@ export interface InvoiceSummary {
 
 export type InvoicePage = Page<InvoiceSummary>;
 
+/** Factura tal como la ve la sincronización de otro servicio, con las fechas de emisión y de pago. */
+export interface InvoiceChange extends InvoiceSummary {
+  issuedAt: string;
+  paidAt: string | null;
+}
+
+export type InvoiceChangePage = Page<InvoiceChange>;
+
+/** Entrada de la operación que pagina las facturas de un tenant. */
+export interface ListInvoiceChangesInput {
+  tenantId: string;
+  limit?: number;
+  after?: string;
+}
+
 /** Cambio de plan de la suscripción del tenant. */
 export interface ChangePlanRequest {
   planId: string;

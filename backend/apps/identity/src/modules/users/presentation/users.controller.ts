@@ -16,9 +16,9 @@ import {
   type SignUpRequest,
   type UpdateProfileRequest,
   type UserProfile,
+  type AccountDeletionStarted,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import { RouteNotImplementedError } from '../../../shared/errors/route-not-implemented.error.js';
 import {
   requireUserActor,
   userRefOf,
@@ -28,6 +28,7 @@ import { ConfirmEmailVerification } from '../application/confirm-email-verificat
 import { RegisterUser } from '../application/register-user.use-case.js';
 import { RequestEmailChange } from '../application/request-email-change.use-case.js';
 import { ResendEmailVerification } from '../application/resend-email-verification.use-case.js';
+import { StartAccountDeletion } from '../application/start-account-deletion.use-case.js';
 import { UpdateMyProfile } from '../application/update-my-profile.use-case.js';
 import { UserProfileView } from '../application/user-profile-view.js';
 import { UserReader } from '../application/user-reader.js';
@@ -42,6 +43,7 @@ export class UsersController {
     private readonly update: UpdateMyProfile,
     private readonly requestChange: RequestEmailChange,
     private readonly confirmChange: ConfirmEmailChange,
+    private readonly accountDeletion: StartAccountDeletion,
   ) {}
 
   @Endpoint(SignUpRoute)
@@ -101,9 +103,10 @@ export class UsersController {
     );
   }
 
-  /** El borrado de cuenta es la saga `DeleteAccount`, que llega con su ciclo. */
   @Endpoint(StartAccountDeletionRoute)
-  startAccountDeletion(): never {
-    throw new RouteNotImplementedError(StartAccountDeletionRoute.id);
+  startAccountDeletion(
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<AccountDeletionStarted> {
+    return this.accountDeletion.execute(userRefOf(requireUserActor(actor)));
   }
 }

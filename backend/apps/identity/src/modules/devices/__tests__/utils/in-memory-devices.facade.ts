@@ -87,4 +87,12 @@ export class InMemoryDevicesFacade extends DevicesFacade {
       (device) => device.userId === userId,
     );
   }
+
+  async forget(ref: UserRef): Promise<void> {
+    for (const [key, device] of this.devices) {
+      if (device.userId === ref.userId) {
+        this.devices.delete(key);
+      }
+    }
+  }
 }

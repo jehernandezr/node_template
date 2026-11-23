@@ -1,5 +1,7 @@
-import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
+import { UsageMetric } from '@contracts/billing';
 import type { Actor } from '@platform/auth';
+import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
+import { Quota } from '@platform/quotas/nest';
 import {
   CreateTaskRoute,
   DeleteTaskRoute,
@@ -33,6 +35,7 @@ export class TasksController {
   ) {}
 
   @Endpoint(ListTasksRoute)
+  @Quota(UsageMetric.ApiCalls)
   list(
     @Input() input: ListTasksRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -41,6 +44,7 @@ export class TasksController {
   }
 
   @Endpoint(GetTaskRoute)
+  @Quota(UsageMetric.ApiCalls)
   get(
     @Input() input: GetTaskRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -49,6 +53,7 @@ export class TasksController {
   }
 
   @Endpoint(CreateTaskRoute)
+  @Quota(UsageMetric.ApiCalls)
   create(
     @Input() input: CreateTaskRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -63,6 +68,7 @@ export class TasksController {
   }
 
   @Endpoint(UpdateTaskRoute)
+  @Quota(UsageMetric.ApiCalls)
   update(
     @Input() input: UpdateTaskRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -82,6 +88,7 @@ export class TasksController {
   }
 
   @Endpoint(DeleteTaskRoute)
+  @Quota(UsageMetric.ApiCalls)
   async delete(
     @Input() input: DeleteTaskRequest,
     @CurrentActor() actor: Actor | undefined,

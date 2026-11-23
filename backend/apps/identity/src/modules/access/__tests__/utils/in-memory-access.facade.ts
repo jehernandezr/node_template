@@ -121,6 +121,20 @@ export class InMemoryAccessFacade extends AccessFacade {
     this.projected.push({ tenantId, ref });
   }
 
+  async removeFromAllTenants(ref: UserRef): Promise<void> {
+    for (const key of [...this.memberships]) {
+      if (key.startsWith(`${ref.userId}@`)) {
+        this.memberships.delete(key);
+      }
+    }
+  }
+
+  readonly refreshed: string[] = [];
+
+  async refreshTenant(tenantId: string): Promise<void> {
+    this.refreshed.push(tenantId);
+  }
+
   async tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
     return [...this.memberships]
       .filter((key) => key.startsWith(`${ref.userId}@`))

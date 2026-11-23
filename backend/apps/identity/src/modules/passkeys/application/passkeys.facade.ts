@@ -4,4 +4,6 @@ import type { UserRef } from '../../../shared/types/user-ref.type.js';
 export abstract class PasskeysFacade {
   /** Si el usuario tiene alguna passkey: entonces `mfa` la ofrece como segundo factor. */
   abstract hasPasskeys(user: UserRef): Promise<boolean>;
+  /** Borra las passkeys del usuario y su índice global: su cuenta se borra. */
+  abstract forget(user: UserRef): Promise<void>;
 }

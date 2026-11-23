@@ -1,4 +1,8 @@
-import type { TenantKind, TenantLifecycle } from '@contracts/identity';
+import type {
+  PlanFeature,
+  TenantKind,
+  TenantLifecycle,
+} from '@contracts/identity';
 
 /** Vista de solo lectura de un tenant. */
 export interface TenantSnapshot {
@@ -9,4 +13,5 @@ export interface TenantSnapshot {
   readonly kind: TenantKind;
   readonly status: TenantLifecycle;
   readonly pinnedApiVersion?: string;
+  readonly planFeatures?: readonly PlanFeature[];
 }

@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-metering",
+  "sourceRoot": "backend/libs/platform/metering/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {}
+  }
+}

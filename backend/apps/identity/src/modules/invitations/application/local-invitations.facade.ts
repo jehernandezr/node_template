@@ -18,4 +18,8 @@ export class LocalInvitationsFacade extends InvitationsFacade {
   acceptForNewUser(token: string, user: UserRef): Promise<void> {
     return this.accept.forNewUser(token, user);
   }
+
+  assertRoomForNewUser(invitation: InvitationPreview): Promise<void> {
+    return this.accept.assertRoomForNewUser(invitation.tenantId);
+  }
 }

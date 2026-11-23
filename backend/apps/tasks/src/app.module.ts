@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
+import { ValkeyUsageCounterStore } from '@platform/adapters-valkey';
+import { ValkeyMeteringModule } from '@platform/adapters-valkey/nest';
 import { tasksContract } from '@contracts/tasks';
 import { HttpModule } from '@platform/http/nest';
+import { MeteringModule } from '@platform/metering/nest';
+import { QuotasModule } from '@platform/quotas/nest';
 import { SearchModule } from '@platform/search/nest';
 import { RemoteIdentityAuthModule } from '@platform/service/nest';
 import { TASKS_ERROR_CATALOGS } from './shared/constants/tasks-error-catalogs.constants.js';
@@ -15,6 +19,12 @@ import { TasksModule } from './modules/tasks/presentation/tasks.module.js';
       contract: tasksContract,
       catalogs: TASKS_ERROR_CATALOGS,
     }),
+    ValkeyMeteringModule,
+    MeteringModule.forRoot({
+      service: tasksContract.service,
+      counters: ValkeyUsageCounterStore,
+    }),
+    QuotasModule,
     TasksModule,
     PrivacyModule,
   ],
