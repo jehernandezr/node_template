@@ -23,8 +23,11 @@ export class RequestPasswordReset {
       userId: user.id,
       homeTenantId: user.homeTenantId,
     });
-    await this.mailer.send(IdentityEmailTemplate.PasswordReset, user.email, {
-      token,
+    await this.mailer.send({
+      template: IdentityEmailTemplate.PasswordReset,
+      to: user.email,
+      locale: user.locale,
+      variables: { token },
     });
   }
 }

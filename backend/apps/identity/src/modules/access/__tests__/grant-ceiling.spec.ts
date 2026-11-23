@@ -1,3 +1,4 @@
+import { FlagEvaluator, InMemoryFlagStore } from '@platform/flags';
 import { TestShardScopes } from '../../../__tests__/utils/index.js';
 import { Permission, TenantRole } from '@contracts/identity';
 import { PlatformErrorCode } from '@contracts/platform';
@@ -55,6 +56,7 @@ describe('GrantCeiling', () => {
     new InMemoryTenantsFacade(),
     new KindEntitlementsProvider(),
     scopes,
+    new FlagEvaluator(new InMemoryFlagStore()),
   );
   const ceiling = new GrantCeiling(
     new ActorPermissions(resolver),

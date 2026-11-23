@@ -18,7 +18,10 @@ export class EndpointAuthorizer {
     private readonly clock: Clock,
   ) {}
 
-  /** @throws HttpProblemError (`PLATFORM.AUTH.FORBIDDEN` o `IDENTITY.MFA.STEP_UP_REQUIRED`). */
+  /**
+   * @throws HttpProblemError (`PLATFORM.AUTH.FORBIDDEN`, `PLATFORM.ACCESS.FEATURE_NOT_INCLUDED`,
+   * `PLATFORM.ACCESS.FLAG_DISABLED` o `IDENTITY.MFA.STEP_UP_REQUIRED`).
+   */
   async authorize(route: RouteDefinition, actor: Actor): Promise<void> {
     if (route.access.kind === AccessKind.Public) {
       return;
@@ -30,23 +33,33 @@ export class EndpointAuthorizer {
       grant,
       now: this.clock.now(),
     });
-    if (decision.outcome === AccessOutcome.Forbidden) {
-      throw HttpProblemError.forbidden(decision.missing);
-    }
-    if (decision.outcome === AccessOutcome.StepUpRequired) {
-      throw HttpProblemError.stepUpRequired();
+    switch (decision.outcome) {
+      case AccessOutcome.Allowed:
+        return;
+      case AccessOutcome.Forbidden:
+        throw HttpProblemError.forbidden(decision.missing);
+      case AccessOutcome.FeatureNotIncluded:
+        throw HttpProblemError.featureNotIncluded(decision.missing);
+      case AccessOutcome.FlagDisabled:
+        throw HttpProblemError.flagDisabled();
+      case AccessOutcome.StepUpRequired:
+        throw HttpProblemError.stepUpRequired();
     }
   }
 
-  /** Un usuario trae el grant de su tenant solo si la ruta pide permisos o roles. */
+  /**
+   * Un usuario trae el grant de su tenant solo si la ruta pide permisos, roles, funcionalidades o flags. Una
+   * service account no tiene grant propio de plan ni flags, así que no cumple rutas que los exigen.
+   */
   private async grantFor(
     route: RouteDefinition,
     actor: Actor,
   ): Promise<AccessGrant> {
     if (ActorGuards.isUser(actor)) {
-      const needsGrant =
-        (route.access.permissions?.length ?? 0) > 0 ||
-        (route.access.platformRoles?.length ?? 0) > 0;
+      const { permissions, platformRoles, features, flags } = route.access;
+      const needsGrant = [permissions, platformRoles, features, flags].some(
+        (required) => (required?.length ?? 0) > 0,
+      );
       if (!needsGrant) {
         return EndpointAuthorizer.emptyGrant(actor.permissionVersion);
       }

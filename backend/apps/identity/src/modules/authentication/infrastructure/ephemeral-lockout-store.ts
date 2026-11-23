@@ -72,12 +72,18 @@ export class EphemeralLockoutStore extends LockoutStore {
   }
 
   async unlock(account: string, ttlMs: number): Promise<void> {
-    await this.store.increment(
-      this.key(IdentityCacheKey.LockoutEpoch, account),
-      ttlMs,
-    );
+    const epoch = this.key(IdentityCacheKey.LockoutEpoch, account);
+    await this.store.increment(epoch, ttlMs);
+    await this.store.extend(epoch, ttlMs);
     await this.store.delete(
       this.key(IdentityCacheKey.LockoutProtected, account),
+    );
+  }
+
+  async retainEpoch(account: string, ttlMs: number): Promise<void> {
+    await this.store.extend(
+      this.key(IdentityCacheKey.LockoutEpoch, account),
+      ttlMs,
     );
   }
 

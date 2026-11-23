@@ -30,12 +30,12 @@ export class RequestEmailChange {
       ...ref,
       email,
     });
-    await this.mailer.send(
-      IdentityEmailTemplate.EmailChangeConfirmation,
-      email,
-      {
-        token,
-      },
-    );
+    const { locale } = await this.reader.getByRef(ref);
+    await this.mailer.send({
+      template: IdentityEmailTemplate.EmailChangeConfirmation,
+      to: email,
+      locale,
+      variables: { token },
+    });
   }
 }

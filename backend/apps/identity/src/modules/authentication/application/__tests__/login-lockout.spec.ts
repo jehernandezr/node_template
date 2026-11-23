@@ -4,6 +4,7 @@ import { LockoutRules } from '../../../../shared/constants/lockout.constants.js'
 import { TestLoginLockout } from '../../__tests__/utils/index.js';
 
 const IP = '203.0.113.10';
+const MINUTE_MS = 60_000;
 
 class LockoutHarness {
   readonly clock = new FixedClock(new Date('2026-11-16T10:00:00.000Z'));
@@ -107,6 +108,19 @@ describe('LoginLockout', () => {
       );
       const [next] = await harness.failFrom(IP, 1);
       expect(next?.lockedForMs).toBeUndefined();
+    });
+
+    it('keeps a lock written just before the epoch would expire until the lock ends', async () => {
+      const harness = new LockoutHarness();
+      await harness.lockout.unlock(harness.account);
+      harness.clock.advance(LockoutRules.unlockEpochTtlMs - 5 * MINUTE_MS);
+      await harness.failFrom(IP, LockoutRules.origin.maxFailures);
+
+      harness.clock.advance(6 * MINUTE_MS);
+
+      await expect(
+        harness.lockout.remainingLockMs(harness.account, IP),
+      ).resolves.toBeGreaterThan(0);
     });
   });
 });

@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { IdentityErrorCode, type UserAccess } from '@contracts/identity';
+import {
+  FeatureFlag,
+  IdentityErrorCode,
+  type UserAccess,
+} from '@contracts/identity';
+import { FlagEvaluator, type FlagContext } from '@platform/flags';
 import { AdministrativePermissions } from '../../../shared/constants/system-roles.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
@@ -23,6 +28,7 @@ export class AccessResolver {
     private readonly tenants: TenantsFacade,
     private readonly entitlements: EntitlementsProvider,
     private readonly scopes: IdentityShardScopes,
+    private readonly flags: FlagEvaluator,
   ) {}
 
   /** @throws IdentityError `IDENTITY.TENANT.NOT_MEMBER` si el usuario no es miembro del tenant. */
@@ -54,8 +60,19 @@ export class AccessResolver {
       permissionVersion: access.version,
       platformRoles: [...platformRoles],
       features: [...this.entitlements.features(tenant.kind)],
-      flags: [],
+      flags: await this.flagsFor({
+        tenantId,
+        userId,
+        plan: tenant.kind,
+        groups: access.roles,
+      }),
     };
+  }
+
+  /** Solo los flags que el contrato conoce: una regla de otro servicio no viaja en el token. */
+  private async flagsFor(context: FlagContext): Promise<FeatureFlag[]> {
+    const enabled = await this.flags.enabledFlags(context);
+    return Object.values(FeatureFlag).filter((flag) => enabled.includes(flag));
   }
 
   async isMember(userId: string, tenantId: string): Promise<boolean> {

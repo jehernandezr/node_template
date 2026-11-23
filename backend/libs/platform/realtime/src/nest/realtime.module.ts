@@ -1,0 +1,131 @@
+import { Module, type DynamicModule, type Provider } from '@nestjs/common';
+import { AccessTokenVerifier, AuthStateReader } from '@platform/auth';
+import { HttpConfig, type HttpSettings } from '@platform/http';
+import { Clock, IdGenerator } from '@platform/kernel';
+import { LoggerPort } from '@platform/observability';
+import { AppConfig } from '@platform/config';
+import { ConfigModule } from '@platform/config/nest';
+import { AuthStateStreamRevocations } from '../auth/auth-state-stream-revocations.js';
+import { InMemoryPresenceTracker } from '../presence/in-memory-presence-tracker.js';
+import { PresenceTracker } from '../presence/presence-tracker.js';
+import { RealtimeComponents } from '../realtime-components.js';
+import { RealtimeConfig, type RealtimeSettings } from '../realtime.config.js';
+import { RealtimePublisher } from '../realtime-publisher.js';
+import { RealtimeConnections } from '../session/realtime-connections.js';
+import { InMemoryRealtimeStream } from '../stream/in-memory-realtime-stream.js';
+import { RealtimeStream } from '../stream/realtime-stream.js';
+import type { RealtimeModuleOptions } from './realtime-module-options.js';
+import { RealtimeLifecycle } from './realtime-lifecycle.js';
+import { RealtimeTransports } from './realtime-transports.js';
+
+/**
+ * Tiempo real de un servicio: `RealtimePublisher` para quien decide qué enviar y, con `serveConnections`,
+ * los transportes de `REALTIME_TRANSPORTS` montados en el servidor HTTP del proceso. Necesita `AuthModule`
+ * para verificar los tokens de las conexiones.
+ */
+@Module({})
+export class RealtimeModule {
+  static forRoot(options: RealtimeModuleOptions): DynamicModule {
+    return {
+      module: RealtimeModule,
+      global: true,
+      imports: [
+        ConfigModule.forFeature(RealtimeConfig),
+        ConfigModule.forFeature(HttpConfig),
+      ],
+      providers: [
+        RealtimeModule.storeProvider(RealtimeStream, options.stream, {
+          useFactory: (settings: RealtimeSettings) =>
+            new InMemoryRealtimeStream(settings.REALTIME_STREAM_RETAINED),
+          inject: [RealtimeConfig.token],
+        }),
+        RealtimeModule.storeProvider(PresenceTracker, options.presence, {
+          useFactory: (clock: Clock) => new InMemoryPresenceTracker(clock),
+          inject: [Clock],
+        }),
+        {
+          provide: RealtimePublisher,
+          useFactory: (stream: RealtimeStream, presence: PresenceTracker) =>
+            new RealtimePublisher(stream, presence),
+          inject: [RealtimeStream, PresenceTracker],
+        },
+        {
+          provide: RealtimeConnections,
+          useFactory: (
+            stream: RealtimeStream,
+            presence: PresenceTracker,
+            state: AuthStateReader,
+            ids: IdGenerator,
+            clock: Clock,
+            logger: LoggerPort,
+            settings: RealtimeSettings,
+          ) =>
+            new RealtimeConnections(
+              stream,
+              presence,
+              new AuthStateStreamRevocations(state),
+              ids,
+              clock,
+              logger,
+              settings.REALTIME_HEARTBEAT,
+            ),
+          inject: [
+            RealtimeStream,
+            PresenceTracker,
+            AuthStateReader,
+            IdGenerator,
+            Clock,
+            LoggerPort,
+            RealtimeConfig.token,
+          ],
+        },
+        {
+          provide: RealtimeTransports,
+          useFactory: (
+            config: AppConfig,
+            settings: RealtimeSettings,
+            http: HttpSettings,
+            verifier: AccessTokenVerifier,
+            connections: RealtimeConnections,
+          ) => {
+            if (!options.serveConnections(config)) {
+              return new RealtimeTransports([]);
+            }
+            const components = new RealtimeComponents(settings);
+            return new RealtimeTransports(
+              components.transports(
+                connections,
+                components.authenticator(verifier),
+                {
+                  ssePath: options.ssePath,
+                  socketNamespace: options.socketNamespace,
+                  allowedOrigins: http.WEB_ORIGINS,
+                },
+              ),
+            );
+          },
+          inject: [
+            AppConfig,
+            RealtimeConfig.token,
+            HttpConfig.token,
+            AccessTokenVerifier,
+            RealtimeConnections,
+          ],
+        },
+        RealtimeLifecycle,
+      ],
+      exports: [RealtimePublisher, RealtimeStream, PresenceTracker],
+    };
+  }
+
+  /** El adaptador que pide el servicio, ya provisto por su módulo (`ValkeyModule`), o el de memoria de un solo proceso. */
+  private static storeProvider<T>(
+    token: abstract new (...args: never[]) => T,
+    adapter: (new (...args: never[]) => T) | undefined,
+    fallback: Omit<Extract<Provider, { useFactory: unknown }>, 'provide'>,
+  ): Provider {
+    return adapter === undefined
+      ? { provide: token, ...fallback }
+      : { provide: token, useExisting: adapter };
+  }
+}

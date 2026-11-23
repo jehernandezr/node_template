@@ -5,8 +5,7 @@ import type {
   Permission,
   ServiceAccountStatus,
 } from '@contracts/identity';
-import { RepositoryKit } from '@platform/persistence';
-import { TenantShardRepository } from '../../../../database/tenant-shard-repository.js';
+import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { ApiKeyRepository } from '../../domain/api-key-store.js';
 import { ApiKey } from '../../domain/api-key.js';
 import type { ServiceAccount } from '../../domain/service-account.js';
@@ -16,7 +15,7 @@ import { ServiceAccountEntity } from './entities/service-account.entity.js';
 /** `ApiKeyRepository` sobre `service_accounts` y `api_keys` del shard del tenant. */
 @Injectable()
 export class TypeOrmApiKeyRepository
-  extends TenantShardRepository
+  extends TenantIsolatedRepository
   implements ApiKeyRepository
 {
   constructor(kit: RepositoryKit) {
@@ -36,7 +35,7 @@ export class TypeOrmApiKeyRepository
 
   async findServiceAccount(id: string): Promise<ServiceAccount | undefined> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(ServiceAccountEntity, { id, tenantId }),
     );
     return row === null ? undefined : this.accountOf(row);
@@ -63,7 +62,7 @@ export class TypeOrmApiKeyRepository
 
   async findKey(id: string): Promise<ApiKey | undefined> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(ApiKeyEntity, { id, tenantId }),
     );
     return row === null ? undefined : this.keyOf(row);
@@ -71,7 +70,7 @@ export class TypeOrmApiKeyRepository
 
   async findKeyByPrefix(prefix: string): Promise<ApiKey | undefined> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(ApiKeyEntity, { prefix, tenantId }),
     );
     return row === null ? undefined : this.keyOf(row);

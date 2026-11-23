@@ -2,4 +2,5 @@
 export enum IdentityMailerKind {
   Memory = 'memory',
   Console = 'console',
+  Notifications = 'notifications',
 }

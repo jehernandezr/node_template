@@ -3,6 +3,7 @@ import { HttpApplicationSetup } from '@platform/http/nest';
 import { HttpTestClient } from '@platform/http/test-utils';
 import { MigrationTarget } from '@platform/service';
 import { ShardRouter } from '@platform/sharding';
+import { InternalOperationsClient } from '@platform/service/test-utils';
 import {
   ServiceBootstrap,
   ServiceMigrator,
@@ -12,7 +13,6 @@ import { identityService } from '../../identity.service.js';
 import { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 import { SeedRegionTenants } from '../../modules/tenants/index.js';
 import { IdentityTestServers } from './identity-test-servers.js';
-import { InternalOperationsClient } from './internal-operations-client.js';
 import { ShardProbe } from './shard-probe.js';
 
 /**
@@ -82,6 +82,7 @@ export class IdentityTestApp {
   /** Cliente firmado de la API interna de esta app. */
   internal(): InternalOperationsClient {
     return new InternalOperationsClient(
+      'identity',
       this.baseUrl(),
       String(this.environment['INTERNAL_API_SHARED_SECRET']),
     );

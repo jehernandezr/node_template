@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { TokenAudience } from '@contracts/identity';
 import { IdSchema } from '@contracts/platform';
-import { sigV4ConfigSchema } from '@platform/adapters-aws';
-import { internalApiSignerConfigSchema } from '@platform/internal-api';
+import { internalHttpConfigSchema } from '@platform/service';
 import {
   envDuration,
   envList,
@@ -32,9 +31,7 @@ export const identityConfigSchema = serviceConfigSchema
     IDENTITY_API_KEY_PEPPER: secret({ minLength: 32 }),
     IDENTITY_DEVICE_ID_KEY: secret({ minLength: 32 }),
     IDENTITY_DATA_KEY: secret({ minLength: 32 }),
-    INTERNAL_API_SHARED_SECRET: secret({ minLength: 32 }),
-    ...internalApiSignerConfigSchema.shape,
-    ...sigV4ConfigSchema.shape,
+    ...internalHttpConfigSchema.shape,
     ACCESS_TOKEN_TTL: envDuration()
       .pipe(z.number().min(600_000).max(900_000))
       .default(IdentityDefaults.defaultAccessTokenTtlMs),

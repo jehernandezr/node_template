@@ -1,0 +1,44 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "notifications",
+  "sourceRoot": "backend/apps/notifications/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:notifications"],
+  "targets": {
+    "typecheck": {},
+    "build": {
+      "options": {
+        "command": "tsx backend/tools/app-bundler/src/main.ts {projectName} {projectRoot} --entry=src/worker.ts --entry=src/migrate.ts --entry=src/lambda.ts"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/notifications/main.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "worker": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/notifications/worker.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "migrate": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/notifications/migrate.mjs {args.target}",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    }
+  }
+}

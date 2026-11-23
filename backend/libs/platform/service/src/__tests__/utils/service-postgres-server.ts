@@ -9,13 +9,17 @@ import { ServiceDatabases } from './service-databases.js';
 
 /** PostgreSQL real en un contenedor, compartido por una suite; cada prueba crea sus propias bases. */
 export class ServicePostgresServer {
-  private static readonly IMAGE = 'postgres:17-alpine';
+  static readonly IMAGE = 'postgres:17-alpine';
+  /** La de los servicios que guardan vectores de búsqueda; la misma versión de PostgreSQL. */
+  static readonly PGVECTOR_IMAGE = 'pgvector/pgvector:0.8.7-pg17';
 
   private container: StartedPostgreSqlContainer | undefined;
   private provisioned = 0;
 
+  constructor(private readonly image = ServicePostgresServer.IMAGE) {}
+
   async start(): Promise<void> {
-    this.container = await new PostgreSqlContainer(ServicePostgresServer.IMAGE)
+    this.container = await new PostgreSqlContainer(this.image)
       .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
       .start();
   }

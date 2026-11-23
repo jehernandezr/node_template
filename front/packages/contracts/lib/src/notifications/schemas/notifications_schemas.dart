@@ -1016,6 +1016,7 @@ abstract final class TemplateParameterValueSchema {
             'display_name',
             'tenant_name',
             'reference',
+            'available_at',
           }.contains(value29)) {
         addFieldError(
           errors,
@@ -1149,6 +1150,8 @@ abstract final class SendEmailInputSchema {
             'mfa_code',
             'email_change',
             'invitation',
+            'email_already_registered',
+            'mfa_recovery',
           }.contains(value32)) {
         addFieldError(
           errors,

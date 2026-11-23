@@ -23,3 +23,7 @@ export type { OutboxStoreContractEnv } from './run-outbox-store-contract.js';
 export { runProcessedMessageStoreContract } from './run-processed-message-store-contract.js';
 export type { ProcessedMessageStoreContractEnv } from './run-processed-message-store-contract.js';
 export { SilentLogger } from './silent-logger.js';
+export {
+  RecordingMessageBus,
+  type RecordedMessage,
+} from './recording-message-bus.js';

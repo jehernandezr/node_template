@@ -6,4 +6,5 @@ export enum AwsOperation {
   ReceiveMessage = 'sqs:ReceiveMessage',
   DeleteMessageBatch = 'sqs:DeleteMessageBatch',
   ChangeMessageVisibility = 'sqs:ChangeMessageVisibility',
+  SendEmail = 'ses:SendEmail',
 }

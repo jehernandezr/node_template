@@ -1,0 +1,35 @@
+import type { RepositoryKit } from '@platform/persistence';
+import type { SearchLanguage } from '../search-language.enum.js';
+import type { SearchQuery } from '../search-query.js';
+import { SearchSchema } from '../search-schema.js';
+import {
+  PostgresSearchIndex,
+  type RankingSql,
+} from './postgres-search-index.js';
+
+/**
+ * Búsqueda de texto completo con `websearch_to_tsquery`: acepta frases entre comillas, `or` y `-palabra`.
+ * Solo devuelve documentos que contienen los términos, ordenados por `ts_rank_cd`.
+ */
+export class PostgresTextSearch extends PostgresSearchIndex {
+  constructor(kit: RepositoryKit, language: SearchLanguage) {
+    super(kit, language);
+  }
+
+  protected async embeddingOf(): Promise<null> {
+    return null;
+  }
+
+  protected async rankingSql(query: SearchQuery): Promise<RankingSql> {
+    return {
+      sql: `SELECT "document_id" AS id, ts_rank_cd("search_vector", q) AS score FROM "${SearchSchema.TABLE}", websearch_to_tsquery($3::regconfig, $4) q WHERE "tenant_id" = $1 AND "collection" = $2 AND "search_vector" @@ q ORDER BY score DESC, "document_id" LIMIT $5 OFFSET $6`,
+      parameters: [
+        query.collection,
+        this.language,
+        query.text,
+        query.limit,
+        query.offset,
+      ],
+    };
+  }
+}

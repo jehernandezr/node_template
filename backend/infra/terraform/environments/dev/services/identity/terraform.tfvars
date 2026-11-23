@@ -24,10 +24,13 @@ workers = {
 }
 
 # Valores no secretos. Los dominios son los del ambiente y se ajustan al desplegar.
+# Con IDENTITY_MAILER = "notifications", INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON
+# con la dirección interna de notifications, por ejemplo "{\"notifications\":\"http://notifications.dev.internal\"}".
+# Sin esa URL el servicio no arranca.
 environment_variables = {
   IDENTITY_REGION     = "us-east-1"
   IDENTITY_AUDIENCES  = "api"
-  IDENTITY_MAILER     = "memory"
+  IDENTITY_MAILER     = "notifications"
   INTERNAL_API_SIGNER = "hmac"
   TRUST_PROXY_HOPS    = "2"
 }

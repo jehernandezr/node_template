@@ -3,7 +3,6 @@ export { IdentityTestServers } from './identity-test-servers.js';
 export { StaticAppConfig } from './static-app-config.js';
 export { IdentityTestApp } from './identity-test-app.js';
 export { InMemoryEphemeralStore } from './in-memory-ephemeral-store.js';
-export { InternalOperationsClient } from './internal-operations-client.js';
 export {
   runEphemeralStoreContract,
   type EphemeralStoreFixture,

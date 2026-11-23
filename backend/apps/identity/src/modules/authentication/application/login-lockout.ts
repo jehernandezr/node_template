@@ -53,6 +53,7 @@ export class LoginLockout {
     );
     const lockedForMs = this.policy.originLockMs(level);
     await this.store.lockOrigin(origin, lockedForMs);
+    await this.store.retainEpoch(account, LockoutRules.unlockEpochTtlMs);
     await this.counters.clearOrigin(origin);
     return { lockedForMs, protectedModeEnabled };
   }
@@ -64,7 +65,7 @@ export class LoginLockout {
 
   /** Quita los bloqueos de todos los orígenes de la cuenta, su modo protegido y sus fallos. */
   async unlock(account: string): Promise<void> {
-    await this.store.unlock(account, LockoutRules.origin.maxLockMs);
+    await this.store.unlock(account, LockoutRules.unlockEpochTtlMs);
     await this.counters.clearAccount(account);
   }
 

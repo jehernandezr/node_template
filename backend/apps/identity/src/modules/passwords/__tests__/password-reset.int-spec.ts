@@ -6,6 +6,7 @@ import {
   ShardedUsers,
 } from '../../../__tests__/utils/index.js';
 import { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
+import { PurgePasswordResetsJob } from '../application/purge-password-resets.job.js';
 import { PasswordResetToken } from '../domain/password-reset-token.js';
 
 const runtime = new ContainerRuntime(process.env);
@@ -115,5 +116,37 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
     expect(response.body).toMatchObject({
       code: IdentityErrorCode.PasswordResetInvalid,
     });
+  });
+
+  it('purges the resets that expired beyond the retention in every shard and keeps the recent ones', async () => {
+    const placed = await new ShardedUsers(app).oneInEachShard('retencion');
+    const tokens = await Promise.all(
+      [...placed.values()].map((user) =>
+        requestReset(new IdentityJourney(app, user.email)),
+      ),
+    );
+    const [stale, fresh] = tokens.map((token) =>
+      String(PasswordResetToken.parse(token)?.resetId),
+    );
+    const staleShard = [...placed.keys()][0];
+    await app
+      .shards()
+      .rowsIn(
+        String(staleShard),
+        `UPDATE password_resets SET expires_at = now() - interval '8 days' WHERE id = '${stale}' RETURNING id`,
+      );
+
+    await app.get(PurgePasswordResetsJob).run();
+
+    await expect(
+      app
+        .shards()
+        .shardsWith(`SELECT 1 FROM password_resets WHERE id = '${stale}'`),
+    ).resolves.toEqual([]);
+    await expect(
+      app
+        .shards()
+        .shardsWith(`SELECT 1 FROM password_resets WHERE id = '${fresh}'`),
+    ).resolves.toHaveLength(1);
   });
 });

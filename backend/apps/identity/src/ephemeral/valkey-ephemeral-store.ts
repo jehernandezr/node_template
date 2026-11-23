@@ -14,6 +14,9 @@ export class ValkeyEphemeralStore extends EphemeralStore {
   private static readonly INCREMENT = new LuaScript(
     "local n = redis.call('INCR', KEYS[1]); if n == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end; return n",
   );
+  private static readonly EXTEND = new LuaScript(
+    "local t = redis.call('PTTL', KEYS[1]); if t >= 0 and t < tonumber(ARGV[1]) then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end; return 1",
+  );
   private static readonly REMAINING = new LuaScript(
     "return redis.call('PTTL', KEYS[1])",
   );
@@ -85,6 +88,14 @@ export class ValkeyEphemeralStore extends EphemeralStore {
         [this.keyOf(key)],
         [Math.max(1, Math.ceil(ttlMs))],
       ),
+    );
+  }
+
+  async extend(key: string, ttlMs: number): Promise<void> {
+    await this.executor.script(
+      ValkeyEphemeralStore.EXTEND,
+      [this.keyOf(key)],
+      [Math.max(1, Math.ceil(ttlMs))],
     );
   }
 

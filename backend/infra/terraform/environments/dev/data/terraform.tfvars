@@ -14,13 +14,14 @@ db_skip_final_snapshot     = true # Sin snapshot final en dev.
 
 # Una base por shard de cada servicio y el catálogo, igual que backend/infra/local/postgres/init.sql.
 db_services = {
-  identity = { shards = 2, catalog = "owner" }
-  tasks    = { shards = 1, catalog = "read" }
+  identity      = { shards = 2, catalog = "owner" }
+  tasks         = { shards = 1, catalog = "read" }
+  notifications = { shards = 2, catalog = "owner" }
 }
 db_secret_recovery_window_days = 0
 
 # Un usuario Valkey por servicio, limitado a sus llaves <servicio>:*.
-valkey_services                 = ["identity", "tasks"]
+valkey_services                 = ["identity", "tasks", "notifications"]
 valkey_snapshot_retention_limit = 0
 
 log_retention_days = 14

@@ -86,9 +86,11 @@ export class MfaRecoveryUseCase {
       }),
     );
     const user = await this.users.getByRef(pending.user);
-    await this.mailer.send(IdentityEmailTemplate.MfaRecoveryLink, user.email, {
-      token,
-      availableAt: availableAt.toISOString(),
+    await this.mailer.send({
+      template: IdentityEmailTemplate.MfaRecoveryLink,
+      to: user.email,
+      locale: user.locale,
+      variables: { token, availableAt: availableAt.toISOString() },
     });
     await this.alerts.raise({
       type: SecurityAlertType.MfaRecoveryStarted,

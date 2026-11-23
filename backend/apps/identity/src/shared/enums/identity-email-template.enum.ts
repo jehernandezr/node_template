@@ -6,7 +6,5 @@ export enum IdentityEmailTemplate {
   EmailChangeConfirmation = 'email-change-confirmation',
   MfaCode = 'mfa-code',
   MfaRecoveryLink = 'mfa-recovery-link',
-  AccountUnlock = 'account-unlock',
   TenantInvitation = 'tenant-invitation',
-  SecurityAlert = 'security-alert',
 }

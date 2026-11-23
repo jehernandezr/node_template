@@ -81,7 +81,9 @@ enum EmailTemplate {
   passwordReset('password_reset'),
   mfaCode('mfa_code'),
   emailChange('email_change'),
-  invitation('invitation');
+  invitation('invitation'),
+  emailAlreadyRegistered('email_already_registered'),
+  mfaRecovery('mfa_recovery');
 
   const EmailTemplate(this.wireCode);
 
@@ -106,7 +108,8 @@ enum TemplateParameter {
   link('link'),
   displayName('display_name'),
   tenantName('tenant_name'),
-  reference('reference');
+  reference('reference'),
+  availableAt('available_at');
 
   const TemplateParameter(this.wireCode);
 

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Permission, TenantRole } from '@contracts/identity';
-import { RepositoryKit } from '@platform/persistence';
-import { TenantShardRepository } from '../../../../database/tenant-shard-repository.js';
+import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { TenantAccessRepository } from '../../domain/access-store.js';
 import type { Group } from '../../domain/group.js';
 import type { Membership } from '../../domain/membership.js';
@@ -14,7 +13,7 @@ import { TenantMemberEntity } from './entities/tenant-member.entity.js';
 /** `TenantAccessRepository` sobre las tablas de acceso del shard del tenant. */
 @Injectable()
 export class TypeOrmTenantAccessRepository
-  extends TenantShardRepository
+  extends TenantIsolatedRepository
   implements TenantAccessRepository
 {
   constructor(kit: RepositoryKit) {
@@ -23,7 +22,7 @@ export class TypeOrmTenantAccessRepository
 
   async findMembership(userId: string): Promise<Membership | undefined> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(TenantMemberEntity, { tenantId, userId }),
     );
     return row === null ? undefined : this.membershipOf(row);
@@ -57,7 +56,7 @@ export class TypeOrmTenantAccessRepository
 
   async listGroups(): Promise<readonly Group[]> {
     const tenantId = this.tenantId();
-    const rows = await this.read((manager) =>
+    const rows = await this.readPrimary((manager) =>
       manager.find(GroupEntity, {
         where: { tenantId },
         order: { name: 'ASC' },
@@ -90,7 +89,7 @@ export class TypeOrmTenantAccessRepository
 
   async listRoles(): Promise<readonly Role[]> {
     const tenantId = this.tenantId();
-    const rows = await this.read((manager) =>
+    const rows = await this.readPrimary((manager) =>
       manager.find(RoleEntity, { where: { tenantId }, order: { name: 'ASC' } }),
     );
     return rows.map((row) => ({
@@ -139,7 +138,7 @@ export class TypeOrmTenantAccessRepository
 
   async tenantVersion(): Promise<number> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(TenantAccessVersionEntity, { id: tenantId, tenantId }),
     );
     return row?.permissionVersion ?? 0;

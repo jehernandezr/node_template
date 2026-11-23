@@ -29,7 +29,7 @@ export class IdentityShardScopes {
 
   /**
    * Corre el bloque en el shard del tenant y con ese tenant en el contexto: la persistencia lo fija en
-   * `app.tenant_id` al abrir cada transacción, `TenantShardRepository` lo fija también en cada lectura, y las
+   * `app.tenant_id` al abrir cada transacción, `TenantIsolatedRepository` lo fija también en cada lectura, y las
    * políticas de RLS de las tablas de tenant no dejan ver ninguna fila sin él.
    * Identity trabaja sobre tenants que no son el de la sesión (aceptar una invitación, cambiar de tenant,
    * las operaciones internas), así que el tenant del contexto es el del bloque, no el de quien llama.

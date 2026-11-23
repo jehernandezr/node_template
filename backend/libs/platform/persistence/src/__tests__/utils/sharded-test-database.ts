@@ -47,6 +47,8 @@ export interface ShardedTestDatabaseOptions {
   readonly catalog: DatabaseSetDefinition;
   /** Por defecto `false`. */
   readonly requireScope?: boolean;
+  /** Imagen de PostgreSQL; por defecto `postgres:17-alpine`. Las suites que usan pgvector piden su imagen. */
+  readonly image?: string;
 }
 
 /** Resuelve la única instancia del arnés al contenedor que la aloja. */
@@ -80,6 +82,7 @@ class ContainerEndpointResolver extends InstanceEndpointResolver {
  * la capa cableada a mano (sin NestJS). El tenant A vive en el shard 0 y el tenant B en el shard 1.
  */
 export class ShardedTestDatabase {
+  static readonly DEFAULT_IMAGE = 'postgres:17-alpine';
   static readonly TENANT_A = '0193f1c2-0000-7000-8000-0000000000a1';
   static readonly TENANT_B = '0193f1c2-0000-7000-8000-0000000000b2';
   static readonly SHARD_A = 'test_shard_0';
@@ -109,7 +112,9 @@ export class ShardedTestDatabase {
 
   /** Arranca el contenedor, crea las tres bases y arma la capa. No migra: llama a `migrate()`. */
   async start(): Promise<void> {
-    const container = await new PostgreSqlContainer('postgres:17-alpine')
+    const container = await new PostgreSqlContainer(
+      this.options.image ?? ShardedTestDatabase.DEFAULT_IMAGE,
+    )
       .withAutoCleanup(new ContainerRuntime(process.env).autoCleanup())
       .start();
     this.container = container;

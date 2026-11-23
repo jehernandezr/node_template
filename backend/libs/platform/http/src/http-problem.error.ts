@@ -104,6 +104,22 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
+  static featureNotIncluded(missing: readonly string[]): HttpProblemError {
+    return new HttpProblemError(
+      'The plan does not include this feature',
+      PlatformErrorCode.AccessFeatureNotIncluded,
+      { details: { missing: [...missing] } },
+    );
+  }
+
+  /** El flag apagado se responde como una ruta inexistente: no revela que la funcionalidad existe. */
+  static flagDisabled(): HttpProblemError {
+    return new HttpProblemError(
+      'Not found',
+      PlatformErrorCode.AccessFlagDisabled,
+    );
+  }
+
   static stepUpRequired(): HttpProblemError {
     return new HttpProblemError(
       'Recent multi-factor authentication is required',

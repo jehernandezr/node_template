@@ -5,20 +5,16 @@ import type { OutgoingEmail } from '../domain/outgoing-email.js';
 
 /**
  * Correo en memoria (`IDENTITY_MAILER=memory`): guarda los últimos envíos para que las pruebas de extremo a
- * extremo lean los códigos y enlaces. Mientras no hay `notifications`, es el modo por defecto fuera de
- * desarrollo y no envía nada.
+ * extremo lean los códigos y enlaces. Es el modo por defecto y no envía nada: un ambiente real usa
+ * `notifications`.
  */
 @Injectable()
 export class MemoryIdentityMailer extends IdentityMailer {
   private static readonly KEPT = 200;
   private readonly outbox: OutgoingEmail[] = [];
 
-  async send(
-    template: IdentityEmailTemplate,
-    to: string,
-    variables: Readonly<Record<string, string>>,
-  ): Promise<void> {
-    this.outbox.push({ template, to, variables });
+  async send(email: OutgoingEmail): Promise<void> {
+    this.outbox.push(email);
     if (this.outbox.length > MemoryIdentityMailer.KEPT) {
       this.outbox.shift();
     }

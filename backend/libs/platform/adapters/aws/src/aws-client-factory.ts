@@ -1,3 +1,4 @@
+import { SESv2Client } from '@aws-sdk/client-sesv2';
 import { SNSClient } from '@aws-sdk/client-sns';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import type { AwsSettings } from './aws.config.js';
@@ -19,6 +20,10 @@ export class AwsClientFactory {
 
   sqs(settings: AwsClientSettings): SQSClient {
     return new SQSClient(this.options(settings));
+  }
+
+  ses(settings: AwsClientSettings): SESv2Client {
+    return new SESv2Client(this.options(settings));
   }
 
   private options(settings: AwsClientSettings) {

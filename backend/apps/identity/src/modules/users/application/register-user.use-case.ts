@@ -48,11 +48,12 @@ export class RegisterUser implements UseCase<SignUpCommand, void> {
       invited ? this.clock.now() : undefined,
     );
     if (ref === undefined) {
-      await this.mailer.send(
-        IdentityEmailTemplate.EmailAlreadyRegistered,
-        email,
-        {},
-      );
+      await this.mailer.send({
+        template: IdentityEmailTemplate.EmailAlreadyRegistered,
+        to: email,
+        locale: command.locale,
+        variables: {},
+      });
       return;
     }
     if (invited && command.invitationToken !== undefined) {
@@ -64,8 +65,11 @@ export class RegisterUser implements UseCase<SignUpCommand, void> {
       ...ref,
       email,
     });
-    await this.mailer.send(IdentityEmailTemplate.EmailVerification, email, {
-      token,
+    await this.mailer.send({
+      template: IdentityEmailTemplate.EmailVerification,
+      to: email,
+      locale: command.locale,
+      variables: { token },
     });
   }
 }
