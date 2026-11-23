@@ -27,6 +27,8 @@ export enum EmailTemplate {
   MfaCode = 'mfa_code',
   EmailChange = 'email_change',
   Invitation = 'invitation',
+  EmailAlreadyRegistered = 'email_already_registered',
+  MfaRecovery = 'mfa_recovery',
 }
 
 /** Nombres de los datos que llenan una plantilla o el texto de una notificación. */
@@ -36,4 +38,5 @@ export enum TemplateParameter {
   DisplayName = 'display_name',
   TenantName = 'tenant_name',
   Reference = 'reference',
+  AvailableAt = 'available_at',
 }

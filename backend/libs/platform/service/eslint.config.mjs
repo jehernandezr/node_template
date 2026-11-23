@@ -1,7 +1,12 @@
-import baseConfig from '../../../eslint.config.mjs';
+import baseConfig, { allowIdentityContracts } from '../../../eslint.config.mjs';
 
 export default [
   ...baseConfig,
+  allowIdentityContracts([
+    'src/auth/**/*.ts',
+    'src/nest/auth/**/*.ts',
+    'src/__tests__/utils/**/*.ts',
+  ]),
   {
     files: ['src/**/*.ts'],
     ignores: ['**/*.spec.ts'],

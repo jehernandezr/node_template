@@ -141,6 +141,15 @@ const depConstraints = [
       'type:contracts',
     ],
   },
+  ...['tasks', 'notifications', 'realtime'].map((service) => ({
+    sourceTag: `scope:${service}`,
+    onlyDependOnLibsWithTags: [
+      `scope:${service}`,
+      'scope:platform',
+      'scope:shared',
+      'type:contracts',
+    ],
+  })),
 ];
 
 /**
@@ -227,6 +236,10 @@ export default [
   allowIdentityContracts([
     'libs/platform/auth/**/*.ts',
     'libs/platform/http/**/*.ts',
+    'libs/platform/realtime/**/*.ts',
+    'libs/platform/service/src/auth/**/*.ts',
+    'libs/platform/service/src/nest/auth/**/*.ts',
+    'libs/platform/service/src/__tests__/utils/**/*.ts',
   ]),
   {
     files: ['**/domain/**/*.ts'],

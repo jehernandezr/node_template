@@ -66,6 +66,11 @@
       "@platform/config": ["./libs/platform/config/src/index.ts"],
       "@platform/config/nest": ["./libs/platform/config/src/nest/index.ts"],
       "@platform/criteria": ["./libs/platform/criteria/src/index.ts"],
+      "@platform/flags": ["./libs/platform/flags/src/index.ts"],
+      "@platform/flags/nest": ["./libs/platform/flags/src/nest/index.ts"],
+      "@platform/flags/test-utils": [
+        "./libs/platform/flags/src/__tests__/utils/index.ts"
+      ],
       "@platform/internal-api": ["./libs/platform/internal-api/src/index.ts"],
       "@platform/internal-api/nest": [
         "./libs/platform/internal-api/src/nest/index.ts"
@@ -112,6 +117,11 @@
       "@platform/rate-limit/test-utils": [
         "./libs/platform/rate-limit/src/__tests__/utils/index.ts"
       ],
+      "@platform/realtime": ["./libs/platform/realtime/src/index.ts"],
+      "@platform/realtime/nest": ["./libs/platform/realtime/src/nest/index.ts"],
+      "@platform/realtime/test-utils": [
+        "./libs/platform/realtime/src/__tests__/utils/index.ts"
+      ],
       "@platform/resilience": ["./libs/platform/resilience/src/index.ts"],
       "@platform/resilience/nest": [
         "./libs/platform/resilience/src/nest/index.ts"
@@ -129,6 +139,11 @@
       "@platform/http/nest": ["./libs/platform/http/src/nest/index.ts"],
       "@platform/http/test-utils": [
         "./libs/platform/http/src/__tests__/utils/index.ts"
+      ],
+      "@platform/search": ["./libs/platform/search/src/index.ts"],
+      "@platform/search/nest": ["./libs/platform/search/src/nest/index.ts"],
+      "@platform/search/test-utils": [
+        "./libs/platform/search/src/__tests__/utils/index.ts"
       ],
       "@platform/service": ["./libs/platform/service/src/index.ts"],
       "@platform/service/nest": ["./libs/platform/service/src/nest/index.ts"],

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { identityContract } from '@contracts/identity';
+import { FlagsModule } from '@platform/flags/nest';
 import { HttpModule } from '@platform/http/nest';
 import { IdentityAuthModule } from './auth/identity-auth.module.js';
 import { IdentityEphemeralModule } from './ephemeral/identity-ephemeral.module.js';
@@ -27,6 +28,7 @@ import { UsersModule } from './modules/users/presentation/users.module.js';
     IdentitySharedModule,
     IdentitySecurityModule,
     IdentityEphemeralModule,
+    FlagsModule.forRoot(),
     HttpModule.forRoot({
       contract: identityContract,
       catalogs: IDENTITY_ERROR_CATALOGS,

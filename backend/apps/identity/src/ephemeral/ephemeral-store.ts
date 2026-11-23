@@ -22,6 +22,12 @@ export abstract class EphemeralStore {
   /** Suma uno y devuelve el valor nuevo. La vida corre desde el primer incremento. */
   abstract increment(key: string, ttlMs: number): Promise<number>;
 
+  /**
+   * Alarga la vida de una llave existente hasta `ttlMs` desde ahora, sin acortarla nunca. Una llave que no
+   * existe sigue sin existir.
+   */
+  abstract extend(key: string, ttlMs: number): Promise<void>;
+
   /** Milisegundos que le quedan a la llave, o `undefined` si no existe. */
   abstract remainingMs(key: string): Promise<number | undefined>;
 

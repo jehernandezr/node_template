@@ -28,12 +28,11 @@ export class ResendEmailVerification implements UseCase<string, void> {
       homeTenantId: user.homeTenantId,
       email: user.email,
     });
-    await this.mailer.send(
-      IdentityEmailTemplate.EmailVerification,
-      user.email,
-      {
-        token,
-      },
-    );
+    await this.mailer.send({
+      template: IdentityEmailTemplate.EmailVerification,
+      to: user.email,
+      locale: user.locale,
+      variables: { token },
+    });
   }
 }

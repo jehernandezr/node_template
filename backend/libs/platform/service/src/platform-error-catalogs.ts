@@ -1,0 +1,30 @@
+import type { ErrorCatalogEntry } from '@contracts/platform';
+import { valkeyErrorCatalog } from '@platform/adapters-valkey';
+import { cacheErrorCatalog } from '@platform/cache';
+import { configErrorCatalog } from '@platform/config';
+import { internalApiErrorCatalog } from '@platform/internal-api';
+import { messagingErrorCatalog } from '@platform/messaging';
+import { observabilityErrorCatalog } from '@platform/observability';
+import { persistenceErrorCatalog } from '@platform/persistence';
+import { resilienceErrorCatalog } from '@platform/resilience';
+import { sagaErrorCatalog } from '@platform/saga';
+import { schedulingErrorCatalog } from '@platform/scheduling';
+import { shardingErrorCatalog } from '@platform/sharding';
+import { serviceErrorCatalog } from './errors/service-error-catalog.js';
+
+/** Catálogos de las librerías que corren en todo servicio; cada servicio les suma los de su contrato. */
+export const PLATFORM_LIBRARY_ERROR_CATALOGS: readonly (readonly ErrorCatalogEntry[])[] =
+  [
+    shardingErrorCatalog,
+    persistenceErrorCatalog,
+    resilienceErrorCatalog,
+    cacheErrorCatalog,
+    messagingErrorCatalog,
+    internalApiErrorCatalog,
+    sagaErrorCatalog,
+    schedulingErrorCatalog,
+    serviceErrorCatalog,
+    observabilityErrorCatalog,
+    configErrorCatalog,
+    valkeyErrorCatalog,
+  ];

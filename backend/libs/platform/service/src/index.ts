@@ -24,3 +24,7 @@ export * from './service-sharding.js';
 export * from './use-case-outcome.enum.js';
 export * from './use-case-run-options.js';
 export * from './use-case-runner.js';
+export * from './auth/internal-access-grant-source.js';
+export * from './internal-http/internal-http.config.js';
+export * from './internal-http/signed-internal-http.js';
+export * from './platform-error-catalogs.js';

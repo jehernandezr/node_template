@@ -60,6 +60,16 @@ export class InMemoryEphemeralStore extends EphemeralStore {
     return next;
   }
 
+  async extend(key: string, ttlMs: number): Promise<void> {
+    const entry = this.live(key);
+    if (entry !== undefined) {
+      this.entries.set(key, {
+        value: entry.value,
+        expiresAt: Math.max(entry.expiresAt, this.now() + ttlMs),
+      });
+    }
+  }
+
   async remainingMs(key: string): Promise<number | undefined> {
     const entry = this.live(key);
     return entry === undefined ? undefined : entry.expiresAt - this.now();

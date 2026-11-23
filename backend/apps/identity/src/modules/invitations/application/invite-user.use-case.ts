@@ -66,11 +66,11 @@ export class InviteUser {
         this.invitations.insert(invitation),
       ),
     );
-    await this.mailer.send(
-      IdentityEmailTemplate.TenantInvitation,
-      invitation.snapshot().email,
-      { token: token.format(), tenantName: tenant.name },
-    );
+    await this.mailer.send({
+      template: IdentityEmailTemplate.TenantInvitation,
+      to: invitation.snapshot().email,
+      variables: { token: token.format(), tenantName: tenant.name },
+    });
     return InvitationView.of(invitation, now);
   }
 

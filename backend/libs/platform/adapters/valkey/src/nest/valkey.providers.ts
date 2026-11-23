@@ -223,6 +223,7 @@ export class ValkeyProviders {
       ValkeyBloomFilterFactory,
       ValkeyJobLock,
       ValkeyHealthIndicator,
+      ValkeySubscriberSource,
     ];
   }
 }

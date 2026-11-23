@@ -73,7 +73,7 @@ Verificación (todo en verde antes de terminar):
 ${VERIFY[t.area]}
 Nunca hagas commit ni uses --no-verify.
 
-MEMORIA: la máquina es limitada. Corre las pruebas de integración de a un proyecto o con --parallel=2, nunca todas a la vez. Al terminar cada corrida borra los contenedores de prueba (docker rm -f $(docker ps -aq --filter label=org.testcontainers=true)), mata los Jest colgados y detén el daemon de Nx de tu copia (pnpm nx daemon --stop). En fixtures, nada de literales con forma de credencial junto a llaves como token, key, secret o credential (gitleaks).`;
+CPU Y MEMORIA: la máquina es una Raspberry Pi con 4 núcleos y 8 GB. Un solo comando pesado a la vez: no lances tsc, lint o nx mientras corre Jest, ni comandos en segundo plano en paralelo. Nx con --parallel=1; Jest con --maxWorkers=2 en unitarias y --runInBand en integración; las pruebas de integración de a un proyecto, nunca todas a la vez. Al terminar cada corrida borra los contenedores de prueba (docker rm -f $(docker ps -aq --filter label=org.testcontainers=true)), mata los Jest colgados y detén el daemon de Nx de tu copia (pnpm nx daemon --stop). En fixtures, nada de literales con forma de credencial junto a llaves como token, key, secret o credential (gitleaks).`;
 
 const REPORT_SCHEMA = {
   type: 'object',

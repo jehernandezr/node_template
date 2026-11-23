@@ -33,3 +33,5 @@ export * from './valkey-bloom-filter-factory.js';
 export * from './valkey-job-lock.js';
 export * from './valkey-health-indicator.js';
 export * from './auth/index.js';
+export * from './realtime/valkey-presence-tracker.js';
+export * from './realtime/valkey-realtime-stream.js';

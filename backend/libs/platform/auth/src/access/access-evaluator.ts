@@ -1,8 +1,10 @@
-import { AccessKind } from '@contracts/platform';
+import { AccessKind, type AccessRequirement } from '@contracts/platform';
 import { AuthMethodReference } from '@contracts/identity';
+import type { Actor } from '../actor/actor.js';
 import { ActorGuards } from '../actor/actor-guards.js';
 import type { AccessDecision } from './access-decision.js';
 import type { AccessEvaluation } from './access-evaluation.js';
+import type { AccessGrant } from './access-grant.js';
 import { AccessOutcome } from './access-outcome.enum.js';
 
 /**
@@ -10,10 +12,13 @@ import { AccessOutcome } from './access-outcome.enum.js';
  *
  * - Ruta pública: `Allowed`.
  * - `SystemActor`: `Forbidden` en cualquier ruta autenticada.
+ * - `flags`: el grant los tiene todos encendidos; si no, `FlagDisabled`. Se evalúa primero porque un flag
+ *   apagado hace que la ruta no exista para el usuario, tenga o no permisos.
  * - `permissions`: el grant las tiene todas (`missing` lista las que faltan).
  * - `platformRoles`: el grant tiene alguno. Un `ServiceAccountActor` nunca lo cumple.
+ * - `features`: el plan del tenant las incluye todas; si no, `FeatureNotIncluded` con las que faltan.
  * - `mfaMaxAgeMinutes`: el actor es un usuario cuyo `authMethods` incluye algún método distinto de `Password` y `now - authTime` cabe en la ventana. Un `ServiceAccountActor` nunca lo cumple y recibe `Forbidden`.
- * - Con varios incumplimientos gana `Forbidden` sobre `StepUpRequired`.
+ * - Con varios incumplimientos gana `Forbidden` sobre `FeatureNotIncluded` y este sobre `StepUpRequired`.
  */
 export class AccessEvaluator {
   evaluate(evaluation: AccessEvaluation): AccessDecision {
@@ -21,49 +26,83 @@ export class AccessEvaluator {
     if (requirement.kind === AccessKind.Public) {
       return { outcome: AccessOutcome.Allowed };
     }
-
-    const requiredPermissions = requirement.permissions ?? [];
-    const requiredRoles = requirement.platformRoles ?? [];
     if (ActorGuards.isSystem(actor)) {
       return {
         outcome: AccessOutcome.Forbidden,
-        missing: [...requiredPermissions, ...requiredRoles],
+        missing: [
+          ...(requirement.permissions ?? []),
+          ...(requirement.platformRoles ?? []),
+        ],
       };
     }
-
-    const owned = new Set<string>(grant.permissions);
-    const missing: string[] = requiredPermissions.filter(
-      (permission) => !owned.has(permission),
-    );
-
-    if (requiredRoles.length > 0) {
-      const ownedRoles = new Set<string>(grant.platformRoles);
-      const satisfied =
-        ActorGuards.isUser(actor) &&
-        requiredRoles.some((role) => ownedRoles.has(role));
-      if (!satisfied) {
-        missing.push(...requiredRoles);
-      }
+    if (AccessEvaluator.lacking(requirement.flags, grant.flags).length > 0) {
+      return { outcome: AccessOutcome.FlagDisabled };
     }
 
+    const missing = [
+      ...AccessEvaluator.lacking(requirement.permissions, grant.permissions),
+      ...AccessEvaluator.missingRoles(requirement, actor, grant),
+    ];
     if (missing.length > 0) {
       return { outcome: AccessOutcome.Forbidden, missing };
     }
 
-    if (requirement.mfaMaxAgeMinutes !== undefined) {
-      if (!ActorGuards.isUser(actor)) {
-        return { outcome: AccessOutcome.Forbidden, missing: [] };
-      }
-      const hasSecondFactor = actor.authMethods.some(
-        (method) => method !== AuthMethodReference.Password,
-      );
-      const ageSeconds = now.getTime() / 1000 - actor.authTime;
-      const withinWindow = ageSeconds <= requirement.mfaMaxAgeMinutes * 60;
-      if (!hasSecondFactor || !withinWindow) {
-        return { outcome: AccessOutcome.StepUpRequired };
-      }
+    const missingFeatures = AccessEvaluator.lacking(
+      requirement.features,
+      grant.features,
+    );
+    if (missingFeatures.length > 0) {
+      return {
+        outcome: AccessOutcome.FeatureNotIncluded,
+        missing: missingFeatures,
+      };
     }
 
-    return { outcome: AccessOutcome.Allowed };
+    return AccessEvaluator.secondFactor(requirement, actor, now);
+  }
+
+  private static lacking(
+    required: readonly string[] | undefined,
+    owned: readonly string[],
+  ): string[] {
+    const available = new Set<string>(owned);
+    return (required ?? []).filter((value) => !available.has(value));
+  }
+
+  private static missingRoles(
+    requirement: AccessRequirement,
+    actor: Actor,
+    grant: AccessGrant,
+  ): readonly string[] {
+    const requiredRoles = requirement.platformRoles ?? [];
+    if (requiredRoles.length === 0) {
+      return [];
+    }
+    const ownedRoles = new Set<string>(grant.platformRoles);
+    const satisfied =
+      ActorGuards.isUser(actor) &&
+      requiredRoles.some((role) => ownedRoles.has(role));
+    return satisfied ? [] : requiredRoles;
+  }
+
+  private static secondFactor(
+    requirement: AccessRequirement,
+    actor: Actor,
+    now: Date,
+  ): AccessDecision {
+    if (requirement.mfaMaxAgeMinutes === undefined) {
+      return { outcome: AccessOutcome.Allowed };
+    }
+    if (!ActorGuards.isUser(actor)) {
+      return { outcome: AccessOutcome.Forbidden, missing: [] };
+    }
+    const hasSecondFactor = actor.authMethods.some(
+      (method) => method !== AuthMethodReference.Password,
+    );
+    const ageSeconds = now.getTime() / 1000 - actor.authTime;
+    const withinWindow = ageSeconds <= requirement.mfaMaxAgeMinutes * 60;
+    return hasSecondFactor && withinWindow
+      ? { outcome: AccessOutcome.Allowed }
+      : { outcome: AccessOutcome.StepUpRequired };
   }
 }

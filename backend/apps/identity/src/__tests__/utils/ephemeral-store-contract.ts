@@ -68,6 +68,20 @@ export function runEphemeralStoreContract(
       await expect(store.remainingMs(key('nada'))).resolves.toBeUndefined();
     });
 
+    it('extends the life of an existing key but never shortens it nor creates one', async () => {
+      const { store, key } = await create();
+      await store.set(key('f'), 'valor', 1_000);
+      await store.set(key('g'), 'valor', 120_000);
+
+      await store.extend(key('f'), 60_000);
+      await store.extend(key('g'), 60_000);
+      await store.extend(key('nada'), 60_000);
+
+      expect(await store.remainingMs(key('f'))).toBeGreaterThan(1_000);
+      expect(await store.remainingMs(key('g'))).toBeGreaterThan(60_000);
+      await expect(store.get(key('nada'))).resolves.toBeUndefined();
+    });
+
     it('keeps the last value of each field and hands the map over once', async () => {
       const { store, key } = await create();
       await store.putField(key('e'), 'k-1', 'uno', 60_000);

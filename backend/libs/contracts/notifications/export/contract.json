@@ -33,7 +33,12 @@
         { "name": "PasswordReset", "value": "password_reset" },
         { "name": "MfaCode", "value": "mfa_code" },
         { "name": "EmailChange", "value": "email_change" },
-        { "name": "Invitation", "value": "invitation" }
+        { "name": "Invitation", "value": "invitation" },
+        {
+          "name": "EmailAlreadyRegistered",
+          "value": "email_already_registered"
+        },
+        { "name": "MfaRecovery", "value": "mfa_recovery" }
       ]
     },
     "TemplateParameter": {
@@ -42,7 +47,8 @@
         { "name": "Link", "value": "link" },
         { "name": "DisplayName", "value": "display_name" },
         { "name": "TenantName", "value": "tenant_name" },
-        { "name": "Reference", "value": "reference" }
+        { "name": "Reference", "value": "reference" },
+        { "name": "AvailableAt", "value": "available_at" }
       ]
     },
     "NotificationsErrorCode": {
@@ -284,13 +290,22 @@
         "password_reset",
         "mfa_code",
         "email_change",
-        "invitation"
+        "invitation",
+        "email_already_registered",
+        "mfa_recovery"
       ],
       "description": "Plantilla de correo transaccional."
     },
     "TemplateParameter": {
       "type": "string",
-      "enum": ["code", "link", "display_name", "tenant_name", "reference"],
+      "enum": [
+        "code",
+        "link",
+        "display_name",
+        "tenant_name",
+        "reference",
+        "available_at"
+      ],
       "description": "Nombre de un dato que llena una plantilla."
     },
     "TemplateParameterValue": {

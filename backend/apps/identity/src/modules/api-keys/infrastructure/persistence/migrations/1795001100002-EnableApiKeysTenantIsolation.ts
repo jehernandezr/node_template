@@ -1,5 +1,5 @@
+import { TenantIsolationSql } from '@platform/persistence';
 import type { MigrationInterface, QueryRunner } from 'typeorm';
-import { TenantIsolationSql } from '../../../../../database/tenant-isolation-sql.js';
 
 /** RLS por `tenant_id` en las tablas de tenant del módulo. */
 export class EnableApiKeysTenantIsolation1795001100002 implements MigrationInterface {

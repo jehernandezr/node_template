@@ -8,6 +8,8 @@ export enum SessionSetting {
   ActorType = 'app.actor_type',
   TenantId = 'app.tenant_id',
   TraceId = 'app.trace_id',
+  /** `on` en la transacción de un mantenimiento que recorre todos los tenants de un shard. */
+  Maintenance = 'app.maintenance',
 }
 
 /** Operación registrada en `audit_log`. Coincide con `TG_OP` de Postgres. */

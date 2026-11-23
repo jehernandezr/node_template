@@ -34,15 +34,15 @@ describe('InMemoryIdentityMailer', () => {
 
     expect(mailer.last()).toBeUndefined();
 
-    await mailer.send(
-      IdentityEmailTemplate.EmailVerification,
-      'ana@example.com',
-      {
-        code: 'enlace-de-prueba',
-      },
-    );
-    await mailer.send(IdentityEmailTemplate.MfaCode, 'ana@example.com', {
-      name: 'Ana',
+    await mailer.send({
+      template: IdentityEmailTemplate.EmailVerification,
+      to: 'ana@example.com',
+      variables: { code: 'enlace-de-prueba' },
+    });
+    await mailer.send({
+      template: IdentityEmailTemplate.MfaCode,
+      to: 'ana@example.com',
+      variables: { name: 'Ana' },
     });
 
     expect(mailer.sent).toHaveLength(2);

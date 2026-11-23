@@ -31,12 +31,12 @@ runtime.describeIfAvailable('identity end to end', () => {
     await app.stop();
   });
 
-  it('signs up and confirms the email', async () => {
+  it('signs up and mails the verification in the language of the sign-up', async () => {
     await ana.register();
 
     expect(
       app.mailer().lastTo(ana.email, IdentityEmailTemplate.EmailVerification),
-    ).toBeDefined();
+    ).toMatchObject({ locale: 'es-MX' });
   });
 
   it('asks for the email code from a new device', async () => {

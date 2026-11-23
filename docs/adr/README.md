@@ -31,7 +31,7 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0008   | [Sagas orquestadas con bitácora persistente](0008-sagas-orquestadas-bitacora-persistente.md)                                 | Aceptada                 |
 | 0009   | [RDS PostgreSQL con capa de persistencia propia](0009-rds-postgresql-capa-persistencia-propia.md)                            | Reemplazada por ADR 0024 |
 | 0010   | [Sharding lógico por grupos y residencia por región](0010-sharding-logico-residencia-region.md)                              | Aceptada                 |
-| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                          | Aceptada                 |
+| 0011   | [Tiempo real con Socket.IO y SSE](0011-tiempo-real-socketio-sse.md)                                                          | Modificada por ADR 0028  |
 | 0012   | [Front en Flutter con shells y microfrontends](0012-front-flutter-shells-microfrontends.md)                                  | Aceptada                 |
 | 0013   | [Módulo de IA con puertos y Claude por defecto](0013-modulo-ia-puertos-claude.md)                                            | Aceptada                 |
 | 0014   | [Acuerdos y documentos firmados](0014-acuerdos-documentos-firmados.md)                                                       | Aceptada                 |
@@ -48,3 +48,6 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0025   | [Capa NestJS por sub-entrada y puertos como clases abstractas](0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md)     | Aceptada                 |
 | 0026   | [Jobs programados: ScheduledJob, JobLock y @platform/scheduling](0026-jobs-programados-scheduledjob-y-joblock.md)            | Aceptada                 |
 | 0027   | [Patrones de pantalla y pruebas compartidas del front](0027-patrones-de-pantalla-y-pruebas-del-front.md)                     | Aceptada                 |
+| 0028   | [Tiempo real sobre un stream por usuario](0028-tiempo-real-sobre-un-stream-por-usuario.md)                                   | Aceptada                 |
+| 0029   | [Mantenimiento entre tenants con RLS y búsqueda por shard](0029-mantenimiento-entre-tenants-y-busqueda-por-shard.md)         | Aceptada                 |
+| 0030   | [Correo de identity por notifications](0030-correo-de-identity-por-notifications.md)                                         | Aceptada                 |

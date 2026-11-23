@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "realtime",
+  "sourceRoot": "backend/apps/realtime/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:realtime"],
+  "targets": {
+    "typecheck": {},
+    "build": {
+      "options": {
+        "command": "tsx backend/tools/app-bundler/src/main.ts {projectName} {projectRoot}"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node --env-file-if-exists=backend/.env backend/dist/realtime/main.mjs",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    }
+  }
+}

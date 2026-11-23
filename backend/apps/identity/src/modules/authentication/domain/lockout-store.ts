@@ -27,6 +27,9 @@ export abstract class LockoutStore {
    */
   abstract unlockEpoch(account: string): Promise<number>;
 
-  /** Sube la época de desbloqueo y quita el modo protegido. */
+  /** Sube la época de desbloqueo, que vive `ttlMs` desde ahora, y quita el modo protegido. */
   abstract unlock(account: string, ttlMs: number): Promise<void>;
+
+  /** Alarga la época vigente para que viva `ttlMs` más: los bloqueos recién escritos con ella siguen viéndose. */
+  abstract retainEpoch(account: string, ttlMs: number): Promise<void>;
 }

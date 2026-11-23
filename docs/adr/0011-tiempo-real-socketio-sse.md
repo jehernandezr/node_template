@@ -1,6 +1,6 @@
 # 0011. Tiempo real con Socket.IO y SSE
 
-- Estado: Aceptada
+- Estado: Aceptada, modificada por [ADR 0028](0028-tiempo-real-sobre-un-stream-por-usuario.md)
 - Fecha: 2026-11-11
 
 ## Contexto

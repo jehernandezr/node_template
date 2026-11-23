@@ -1,6 +1,8 @@
 import { AccessKind, Access } from '@contracts/platform';
 import {
   AuthMethodReference,
+  FeatureFlag,
+  PlanFeature,
   PlatformRole,
   Permission,
   TokenAudience,
@@ -191,6 +193,63 @@ describe('AccessEvaluator', () => {
       expect(decide(requirement, Fixtures.user())).toEqual({
         outcome: AccessOutcome.Forbidden,
         missing: [PlatformRole.Support],
+      });
+    });
+  });
+
+  describe('plan features', () => {
+    const requirement = Access.authenticated({
+      permissions: [Permission.TasksRead],
+      features: [PlanFeature.AdvancedReports],
+    });
+
+    it('allows a user whose tenant plan includes the feature', () => {
+      const grant = Fixtures.grant({
+        features: [PlanFeature.AdvancedReports],
+      });
+
+      expect(decide(requirement, Fixtures.user(), grant)).toEqual({
+        outcome: AccessOutcome.Allowed,
+      });
+    });
+
+    it('reports the features the plan does not include', () => {
+      expect(decide(requirement, Fixtures.user())).toEqual({
+        outcome: AccessOutcome.FeatureNotIncluded,
+        missing: [PlanFeature.AdvancedReports],
+      });
+    });
+
+    it('prefers a missing permission over a missing feature', () => {
+      const grant = Fixtures.grant({ permissions: [] });
+
+      expect(decide(requirement, Fixtures.user(), grant)).toEqual({
+        outcome: AccessOutcome.Forbidden,
+        missing: [Permission.TasksRead],
+      });
+    });
+  });
+
+  describe('feature flags', () => {
+    const requirement = Access.authenticated({
+      permissions: [Permission.BillingWrite],
+      flags: [FeatureFlag.NewReports],
+    });
+
+    it('allows a user with the flag on and the permission held', () => {
+      const grant = Fixtures.grant({
+        permissions: [Permission.BillingWrite],
+        flags: [FeatureFlag.NewReports],
+      });
+
+      expect(decide(requirement, Fixtures.user(), grant)).toEqual({
+        outcome: AccessOutcome.Allowed,
+      });
+    });
+
+    it('hides the route behind a disabled flag even without the permission', () => {
+      expect(decide(requirement, Fixtures.user())).toEqual({
+        outcome: AccessOutcome.FlagDisabled,
       });
     });
   });

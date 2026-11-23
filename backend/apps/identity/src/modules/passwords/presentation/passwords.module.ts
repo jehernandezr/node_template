@@ -8,14 +8,17 @@ import { LocalPasswordsFacade } from '../application/local-passwords.facade.js';
 import { PasswordAcceptance } from '../application/password-acceptance.js';
 import { PasswordVerifier } from '../application/password-verifier.js';
 import { PasswordsFacade } from '../application/passwords.facade.js';
+import { PurgePasswordResetsJob } from '../application/purge-password-resets.job.js';
 import { RequestPasswordReset } from '../application/request-password-reset.use-case.js';
 import { BreachedPasswordList } from '../domain/breached-password-list.js';
 import { PasswordCredentialRepository } from '../domain/password-credential.repository.js';
 import { PasswordHasher } from '../domain/password-hasher.js';
 import { PasswordResetRepository } from '../domain/password-reset.repository.js';
+import { PasswordResetRetention } from '../domain/password-reset-retention.js';
 import { PasswordResetTokens } from '../application/password-reset-tokens.js';
 import { PasswordResetEntity } from '../infrastructure/persistence/entities/password-reset.entity.js';
 import { TypeOrmPasswordResetRepository } from '../infrastructure/persistence/typeorm-password-reset.repository.js';
+import { TypeOrmPasswordResetRetention } from '../infrastructure/persistence/typeorm-password-reset-retention.js';
 import { NodeArgon2idHasher } from '../infrastructure/node-argon2id-hasher.js';
 import { PasswordCredentialEntity } from '../infrastructure/persistence/entities/password-credential.entity.js';
 import { TypeOrmPasswordCredentialRepository } from '../infrastructure/persistence/typeorm-password-credential.repository.js';
@@ -56,6 +59,11 @@ import { PasswordsController } from './passwords.controller.js';
       provide: PasswordResetRepository,
       useClass: TypeOrmPasswordResetRepository,
     },
+    {
+      provide: PasswordResetRetention,
+      useClass: TypeOrmPasswordResetRetention,
+    },
+    PurgePasswordResetsJob,
     PasswordResetTokens,
     PasswordAcceptance,
     PasswordVerifier,

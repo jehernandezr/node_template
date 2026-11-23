@@ -69,6 +69,8 @@ describe('notifications schemas', () => {
       'mfa_code',
       'email_change',
       'invitation',
+      'email_already_registered',
+      'mfa_recovery',
     ]);
     expect(
       validateContract(EmailTemplateSchema, EmailTemplate.MfaCode).ok,
@@ -82,6 +84,7 @@ describe('notifications schemas', () => {
       'display_name',
       'tenant_name',
       'reference',
+      'available_at',
     ]);
     expect(validateContract(TemplateParameterSchema, 'nope').ok).toBe(false);
   });

@@ -8,7 +8,9 @@ import { ActorType } from '@platform/observability';
 import { SystemClock } from '@platform/kernel';
 import {
   AuthMethodReference,
+  FeatureFlag,
   Permission,
+  PlanFeature,
   TokenAudience,
 } from '@contracts/identity';
 import {
@@ -32,12 +34,16 @@ class CountingResolver extends AccessResolver {
   }
 }
 
-const grant = (permissions: Permission[] = []): AccessGrant => ({
+const grant = (
+  permissions: Permission[] = [],
+  extra: Partial<AccessGrant> = {},
+): AccessGrant => ({
   permissions,
   platformRoles: [],
   features: [],
   flags: [],
   permissionVersion: '1.1',
+  ...extra,
 });
 
 const user: Actor = {
@@ -112,6 +118,50 @@ describe('EndpointAuthorizer', () => {
     const resolver = new CountingResolver(grant([Permission.TasksRead]));
     const route = routeWith(
       Access.authenticated({ permissions: [Permission.TasksRead] }),
+    );
+
+    await expect(
+      new EndpointAuthorizer(resolver, evaluator, clock).authorize(route, user),
+    ).resolves.toBeUndefined();
+  });
+
+  it('answers feature not included when the plan lacks the feature', async () => {
+    const route = routeWith(
+      Access.authenticated({ features: [PlanFeature.AdvancedReports] }),
+    );
+
+    await expect(
+      new EndpointAuthorizer(
+        new CountingResolver(grant()),
+        evaluator,
+        clock,
+      ).authorize(route, user),
+    ).rejects.toMatchObject({
+      code: 'PLATFORM.ACCESS.FEATURE_NOT_INCLUDED',
+      details: { missing: [PlanFeature.AdvancedReports] },
+    });
+  });
+
+  it('answers flag disabled when the flag is off for the user', async () => {
+    const route = routeWith(
+      Access.authenticated({ flags: [FeatureFlag.NewReports] }),
+    );
+
+    await expect(
+      new EndpointAuthorizer(
+        new CountingResolver(grant()),
+        evaluator,
+        clock,
+      ).authorize(route, user),
+    ).rejects.toMatchObject({ code: 'PLATFORM.ACCESS.FLAG_DISABLED' });
+  });
+
+  it('lets a flagged route through when the user has the flag on', async () => {
+    const route = routeWith(
+      Access.authenticated({ flags: [FeatureFlag.NewReports] }),
+    );
+    const resolver = new CountingResolver(
+      grant([], { flags: [FeatureFlag.NewReports] }),
     );
 
     await expect(

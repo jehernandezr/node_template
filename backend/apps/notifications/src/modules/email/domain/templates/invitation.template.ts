@@ -1,0 +1,26 @@
+import { EmailTemplate as EmailTemplateKey } from '@contracts/notifications';
+import type { EmailCopy } from './email-copy.js';
+import { EmailTemplate } from './email-template.js';
+
+export class InvitationTemplate extends EmailTemplate {
+  readonly key = EmailTemplateKey.Invitation;
+  readonly version = 1;
+  protected readonly copies: Readonly<Record<string, EmailCopy>> = {
+    es: {
+      subject: 'Te invitaron a {tenant_name}',
+      lines: [
+        '{display_name} te invitó a unirte a {tenant_name}.',
+        'Tu código de invitación es {code}.',
+      ],
+      action: 'Aceptar invitación',
+    },
+    en: {
+      subject: 'You were invited to {tenant_name}',
+      lines: [
+        '{display_name} invited you to join {tenant_name}.',
+        'Your invitation code is {code}.',
+      ],
+      action: 'Accept invitation',
+    },
+  };
+}

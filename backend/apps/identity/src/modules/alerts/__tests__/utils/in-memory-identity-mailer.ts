@@ -1,20 +1,15 @@
-import type { IdentityEmailTemplate } from '../../../../shared/enums/identity-email-template.enum.js';
 import { IdentityMailer } from '../../domain/identity-mailer.js';
-import type { SentEmail } from './sent-email.js';
+import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 
 /** Correo de identity en memoria: guarda cada envío y expone el último. */
 export class InMemoryIdentityMailer extends IdentityMailer {
-  readonly sent: SentEmail[] = [];
+  readonly sent: OutgoingEmail[] = [];
 
-  async send(
-    template: IdentityEmailTemplate,
-    to: string,
-    variables: Readonly<Record<string, string>>,
-  ): Promise<void> {
-    this.sent.push({ template, to, variables });
+  async send(email: OutgoingEmail): Promise<void> {
+    this.sent.push(email);
   }
 
-  last(): SentEmail | undefined {
+  last(): OutgoingEmail | undefined {
     return this.sent[this.sent.length - 1];
   }
 }

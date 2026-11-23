@@ -103,8 +103,11 @@ export class RequestMfaChallenge {
   ): Promise<void> {
     if (method === MfaFactor.EmailOtp) {
       const user = await this.users.getByRef(pending.user);
-      await this.mailer.send(IdentityEmailTemplate.MfaCode, user.email, {
-        code: challenge.code,
+      await this.mailer.send({
+        template: IdentityEmailTemplate.MfaCode,
+        to: user.email,
+        locale: user.locale,
+        variables: { code: challenge.code },
       });
       return;
     }

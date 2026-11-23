@@ -5,6 +5,7 @@ import { IdentityMailer } from '../domain/identity-mailer.js';
 import { SecurityAlerts } from '../domain/security-alerts.js';
 import { ConsoleIdentityMailer } from '../infrastructure/console-identity-mailer.js';
 import { MemoryIdentityMailer } from '../infrastructure/memory-identity-mailer.js';
+import { NotificationsIdentityMailer } from '../infrastructure/notifications-identity-mailer.js';
 import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.js';
 
 /**
@@ -16,17 +17,30 @@ import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.j
   providers: [
     MemoryIdentityMailer,
     ConsoleIdentityMailer,
+    NotificationsIdentityMailer,
     {
       provide: IdentityMailer,
       useFactory: (
         settings: IdentitySettings,
         memory: MemoryIdentityMailer,
         console: ConsoleIdentityMailer,
-      ): IdentityMailer =>
-        settings.values.IDENTITY_MAILER === IdentityMailerKind.Console
-          ? console
-          : memory,
-      inject: [IdentitySettings, MemoryIdentityMailer, ConsoleIdentityMailer],
+        notifications: NotificationsIdentityMailer,
+      ): IdentityMailer => {
+        switch (settings.values.IDENTITY_MAILER) {
+          case IdentityMailerKind.Memory:
+            return memory;
+          case IdentityMailerKind.Console:
+            return console;
+          case IdentityMailerKind.Notifications:
+            return notifications;
+        }
+      },
+      inject: [
+        IdentitySettings,
+        MemoryIdentityMailer,
+        ConsoleIdentityMailer,
+        NotificationsIdentityMailer,
+      ],
     },
     { provide: SecurityAlerts, useClass: OutboxSecurityAlerts },
   ],

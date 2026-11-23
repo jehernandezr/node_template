@@ -1,0 +1,116 @@
+import { NotificationType, TemplateParameter } from '@contracts/notifications';
+import type { UserRef } from '@contracts/platform';
+import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
+import {
+  InMemoryTransactionManager,
+  RecordingMessageBus,
+} from '@platform/messaging/test-utils';
+import { ShardScope } from '@platform/persistence';
+import { ShardRouter } from '@platform/sharding';
+import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
+import { UserShard } from '../../../../shared/utils/user-shard.js';
+import { ChannelDeliverer } from '../../application/channel-deliverer.js';
+import type { NotifyCommand } from '../../application/notify-command.js';
+import { NotifyUser } from '../../application/notify-user.use-case.js';
+import { RetryDeliveriesJob } from '../../application/retry-deliveries.job.js';
+import { DeliveryStatus } from '../../domain/delivery.js';
+import { FailedDeliveries } from '../../domain/failed-deliveries.js';
+import type { Delivery } from '../../domain/delivery.js';
+import {
+  FixedPreferences,
+  InMemoryDeliveries,
+  InMemoryInbox,
+  RecordingEmail,
+  RecordingPush,
+  RecordingRealtime,
+  StaticRecipients,
+} from './dispatch-fakes.js';
+
+/** Las entregas pendientes o fallidas de la memoria cuyo próximo intento ya llegó, como las vería el job. */
+class InMemoryFailedDeliveries extends FailedDeliveries {
+  constructor(private readonly deliveries: InMemoryDeliveries) {
+    super();
+  }
+
+  async due(now: Date, limit: number): Promise<readonly Delivery[]> {
+    return this.deliveries
+      .all()
+      .filter(
+        (d) =>
+          (d.status === DeliveryStatus.Pending ||
+            d.status === DeliveryStatus.Failed) &&
+          d.nextAttemptAt <= now,
+      )
+      .sort((a, b) => a.nextAttemptAt.getTime() - b.nextAttemptAt.getTime())
+      .slice(0, limit);
+  }
+}
+
+/** `NotifyUser` y su job de reintentos sobre fakes, con reloj e ids deterministas. */
+export class DispatchHarness {
+  static readonly TENANT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
+  static readonly ANA: UserRef = {
+    userId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b01',
+    homeTenantId: DispatchHarness.TENANT,
+  };
+
+  readonly clock = new FixedClock(new Date('2026-11-20T15:00:00.000Z'));
+  readonly preferences = new FixedPreferences();
+  readonly inbox = new InMemoryInbox();
+  readonly realtime = new RecordingRealtime();
+  readonly deliveries = new InMemoryDeliveries();
+  readonly recipients = new StaticRecipients().add({
+    ref: DispatchHarness.ANA,
+    email: 'ana@example.com',
+    locale: 'es',
+    displayName: 'Ana',
+  });
+  readonly email = new RecordingEmail();
+  readonly push = new RecordingPush();
+  readonly transactions = new InMemoryTransactionManager();
+  readonly bus = new RecordingMessageBus(this.transactions);
+  private readonly shard = new UserShard(
+    new ShardScope(
+      new ShardRouter({ directory: new InMemoryDirectoryStore() }),
+    ),
+  );
+  private readonly deliverer = new ChannelDeliverer(
+    this.email,
+    this.push,
+    this.clock,
+  );
+  private readonly ids = new SequentialIdGenerator();
+
+  readonly notifyUser = new NotifyUser(
+    this.recipients,
+    this.preferences,
+    this.inbox,
+    this.realtime,
+    this.deliveries,
+    this.deliverer,
+    this.bus,
+    this.shard,
+    this.transactions,
+    this.ids,
+    this.clock,
+  );
+  readonly retry = new RetryDeliveriesJob(
+    new InMemoryFailedDeliveries(this.deliveries),
+    this.recipients,
+    this.deliverer,
+    this.deliveries,
+    this.shard,
+    this.clock,
+  );
+
+  command(overrides: Partial<NotifyCommand> = {}): NotifyCommand {
+    return {
+      notificationId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9d01',
+      user: DispatchHarness.ANA,
+      tenantId: DispatchHarness.TENANT,
+      type: NotificationType.InvoiceIssued,
+      parameters: new Map([[TemplateParameter.Reference, 'F-0042']]),
+      ...overrides,
+    };
+  }
+}

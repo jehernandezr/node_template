@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LoggerPort } from '@platform/observability';
-import type { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
 import { IdentityMailer } from '../domain/identity-mailer.js';
+import type { OutgoingEmail } from '../domain/outgoing-email.js';
 
 /**
  * Correo de desarrollo (`IDENTITY_MAILER=console`): escribe el envío en el log para copiar el enlace o el
@@ -13,11 +13,7 @@ export class ConsoleIdentityMailer extends IdentityMailer {
     super();
   }
 
-  async send(
-    template: IdentityEmailTemplate,
-    to: string,
-    variables: Readonly<Record<string, string>>,
-  ): Promise<void> {
-    this.logger.info('identity email', { template, to, variables });
+  async send(email: OutgoingEmail): Promise<void> {
+    this.logger.info('identity email', { ...email });
   }
 }

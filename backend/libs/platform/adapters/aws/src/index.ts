@@ -27,3 +27,5 @@ export * from './sigv4/sigv4.config.js';
 export * from './sigv4/sigv4-service.enum.js';
 export * from './sigv4/sigv4-signer.js';
 export * from './sigv4/sigv4-signer-settings.js';
+export * from './ses/outbound-email.js';
+export * from './ses/ses-email-client.js';

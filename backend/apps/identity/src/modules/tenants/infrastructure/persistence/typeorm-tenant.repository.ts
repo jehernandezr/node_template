@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { TenantKind, TenantLifecycle } from '@contracts/identity';
-import { RepositoryKit } from '@platform/persistence';
-import { TenantShardRepository } from '../../../../database/tenant-shard-repository.js';
+import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { Tenant } from '../../domain/tenant.js';
 import { TenantRepository } from '../../domain/tenant.repository.js';
 import { TenantEntity } from './entities/tenant.entity.js';
@@ -9,7 +8,7 @@ import { TenantEntity } from './entities/tenant.entity.js';
 /** `TenantRepository` sobre `tenants` del shard del tenant. */
 @Injectable()
 export class TypeOrmTenantRepository
-  extends TenantShardRepository
+  extends TenantIsolatedRepository
   implements TenantRepository
 {
   constructor(kit: RepositoryKit) {
@@ -21,7 +20,7 @@ export class TypeOrmTenantRepository
   }
 
   async find(tenantId: string): Promise<Tenant | undefined> {
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(TenantEntity, { id: tenantId, tenantId }),
     );
     return row === null ? undefined : this.toDomain(row);

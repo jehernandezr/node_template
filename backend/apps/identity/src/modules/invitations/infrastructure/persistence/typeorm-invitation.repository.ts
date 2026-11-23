@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { InvitationStatus } from '@contracts/identity';
-import { RepositoryKit } from '@platform/persistence';
-import { TenantShardRepository } from '../../../../database/tenant-shard-repository.js';
+import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { Invitation } from '../../domain/invitation.js';
 import { InvitationRepository } from '../../domain/invitation.repository.js';
 import { InvitationEntity } from './entities/invitation.entity.js';
@@ -9,7 +8,7 @@ import { InvitationEntity } from './entities/invitation.entity.js';
 /** `InvitationRepository` sobre `invitations` del shard del tenant. */
 @Injectable()
 export class TypeOrmInvitationRepository
-  extends TenantShardRepository
+  extends TenantIsolatedRepository
   implements InvitationRepository
 {
   constructor(kit: RepositoryKit) {
@@ -22,7 +21,7 @@ export class TypeOrmInvitationRepository
 
   async find(invitationId: string): Promise<Invitation | undefined> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(InvitationEntity, { id: invitationId, tenantId }),
     );
     return row === null ? undefined : this.toDomain(row);
@@ -30,7 +29,7 @@ export class TypeOrmInvitationRepository
 
   async findByTokenHash(tokenHash: string): Promise<Invitation | undefined> {
     const tenantId = this.tenantId();
-    const row = await this.read((manager) =>
+    const row = await this.readPrimary((manager) =>
       manager.findOneBy(InvitationEntity, { tokenHash, tenantId }),
     );
     return row === null ? undefined : this.toDomain(row);

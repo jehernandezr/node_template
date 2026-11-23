@@ -6,6 +6,7 @@
   "description": "Dependencias externas del backend. Las librerías, apps y herramientas de backend/ no tienen package.json propio: se importan por alias de TypeScript.",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-sesv2": "3.1160.0",
     "@aws-sdk/client-sns": "3.1160.0",
     "@aws-sdk/client-sqs": "3.1160.0",
     "@nestjs/common": "12.3.2",
@@ -35,6 +36,7 @@
     "pg": "8.23.1",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
+    "socket.io": "4.8.4",
     "tslib": "2.9.1",
     "typeorm": "1.1.2",
     "zod": "4.6.7"
@@ -58,6 +60,7 @@
     "jest-environment-node": "30.3.0",
     "jest-util": "30.3.0",
     "prettier": "3.10.0",
+    "socket.io-client": "4.8.4",
     "testcontainers": "12.2.1",
     "ts-jest": "29.4.15",
     "ts-node": "10.9.2",

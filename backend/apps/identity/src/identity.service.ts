@@ -1,16 +1,18 @@
 import { billingContract } from '@contracts/billing';
 import { identityContract } from '@contracts/identity';
+import { notificationsContract } from '@contracts/notifications';
 import { ShardKey } from '@platform/sharding';
 import {
   ServiceInternalTransport,
+  SignedInternalHttp,
   type ServiceDefinition,
 } from '@platform/service';
 import { AppModule } from './app.module.js';
-import { IdentityInternalHttp } from './config/identity-internal-http.js';
 import {
   identityConfigSchema,
   type IdentityConfig,
 } from './config/identity.config.js';
+import { IdentityMailerKind } from './config/identity-mailer-kind.enum.js';
 import { identityCatalogMigrations } from './database/catalog-migrations.js';
 import { identityShardMigrations } from './database/shard-migrations.js';
 import { IDENTITY_ERROR_CATALOGS } from './shared/constants/identity-error-catalogs.constants.js';
@@ -21,7 +23,7 @@ export const identityService: ServiceDefinition<IdentityConfig> = {
   configSchema: identityConfigSchema,
   rootModule: AppModule,
   contract: identityContract,
-  peerContracts: [billingContract],
+  peerContracts: [billingContract, notificationsContract],
   migrations: {
     catalog: { entities: [], migrations: identityCatalogMigrations },
     shard: { entities: [], migrations: identityShardMigrations },
@@ -30,7 +32,12 @@ export const identityService: ServiceDefinition<IdentityConfig> = {
   internalApi: {
     transport: ServiceInternalTransport.Http,
     http: (config, context) =>
-      new IdentityInternalHttp().settings(config, context),
+      new SignedInternalHttp(
+        config.root<IdentityConfig>().IDENTITY_MAILER ===
+          IdentityMailerKind.Notifications
+          ? [notificationsContract.service]
+          : [],
+      ).settings(config, context),
   },
   errorCatalogs: IDENTITY_ERROR_CATALOGS,
 };
