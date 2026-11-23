@@ -18,6 +18,7 @@ import { InternalRouter } from '../server/internal-router.js';
 import { HttpOutcomeReader } from '../transport/http-outcome-reader.js';
 import { HttpTransport } from '../transport/http-transport.js';
 import { InProcessTransport } from '../transport/in-process-transport.js';
+import { LocalFirstTransport } from '../transport/local-first-transport.js';
 import { ServiceBaseUrls } from '../transport/service-base-urls.js';
 import { Transport } from '../transport/transport.js';
 import type {
@@ -103,16 +104,23 @@ export class InternalApiClientProviders {
 
   private static inProcess(): Provider[] {
     return [
-      {
-        provide: InProcessTransport,
-        useFactory: (router: InternalRouter) => new InProcessTransport(router),
-        inject: [InternalRouter],
-      },
+      InternalApiClientProviders.local(),
       { provide: Transport, useExisting: InProcessTransport },
     ];
   }
 
-  /** Sin las opciones `http` el transporte no puede firmar ni llegar a nadie: el arranque falla. */
+  private static local(): Provider {
+    return {
+      provide: InProcessTransport,
+      useFactory: (router: InternalRouter) => new InProcessTransport(router),
+      inject: [InternalRouter],
+    };
+  }
+
+  /**
+   * Las operaciones propias van por el router del proceso y las demás por HTTP. Sin las opciones `http` el
+   * transporte no puede firmar ni llegar a nadie: el arranque falla.
+   */
   private static http(): Provider[] {
     return [
       {
@@ -151,7 +159,21 @@ export class InternalApiClientProviders {
           InternalApiOptionalDependency.CLOCK,
         ],
       },
-      { provide: Transport, useExisting: HttpTransport },
+      InternalApiClientProviders.local(),
+      {
+        provide: Transport,
+        useFactory: (
+          options: InternalApiModuleOptions,
+          local: InProcessTransport,
+          remote: HttpTransport,
+        ) =>
+          new LocalFirstTransport(
+            new Set(options.operations.map((operation) => operation.id)),
+            local,
+            remote,
+          ),
+        inject: [INTERNAL_API_OPTIONS, InProcessTransport, HttpTransport],
+      },
     ];
   }
 

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { Transport } from '../../transport/transport.js';
 import { InProcessTransport } from '../../transport/in-process-transport.js';
-import { HttpTransport } from '../../transport/http-transport.js';
+import { LocalFirstTransport } from '../../transport/local-first-transport.js';
 import { InternalClient } from '../../client/internal-client.js';
 import { ContractRegistry } from '../../contract/contract-registry.js';
 import { InternalApiErrorCode } from '../../errors/internal-api-error-code.enum.js';
@@ -37,7 +37,7 @@ describe('InternalApiModule wiring', () => {
     expect(ref.get(ContractRegistry)).not.toBe(ref.get(PublishedContracts));
   });
 
-  it('uses the HTTP transport when the service asks for it', async () => {
+  it('uses the HTTP transport for other services and the local router for its own operations when the service asks for it', async () => {
     const ref = await Test.createTestingModule({
       imports: [
         InternalApiPlatformTestingModule,
@@ -50,7 +50,7 @@ describe('InternalApiModule wiring', () => {
       ],
     }).compile();
 
-    expect(ref.get(Transport)).toBeInstanceOf(HttpTransport);
+    expect(ref.get(Transport)).toBeInstanceOf(LocalFirstTransport);
   });
 
   it('refuses to compose the module without a transport or a store', () => {

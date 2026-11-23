@@ -3419,6 +3419,7 @@
         "IDENTITY.PASSWORD.POLICY_VIOLATION",
         "IDENTITY.PASSWORD.BREACHED",
         "IDENTITY.INVITATION.INVALID",
+        "BILLING.QUOTA.EXCEEDED",
         "PLATFORM.RATE_LIMIT.EXCEEDED"
       ],
       "access": { "kind": "public" },
@@ -4714,10 +4715,11 @@
         "IDENTITY.TOKEN.STALE_PERMISSIONS",
         "IDENTITY.INVITATION.INVALID",
         "IDENTITY.INVITATION.EMAIL_MISMATCH",
-        "IDENTITY.AUTH.EMAIL_NOT_VERIFIED"
+        "IDENTITY.AUTH.EMAIL_NOT_VERIFIED",
+        "BILLING.QUOTA.EXCEEDED"
       ],
       "access": { "kind": "authenticated" },
-      "description": "Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado."
+      "description": "Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios."
     },
     {
       "name": "listServiceAccounts",

@@ -1,13 +1,18 @@
 import { AccessKind, PlatformErrorCode } from '@contracts/platform';
 import { identityContract } from '../contract.js';
 import { MfaRules } from '../constants/identity.constants.js';
-import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
+import {
+  BillingReference,
+  IdentityErrorCode,
+  IdentityRoute,
+} from '../enums/identifiers.enum.js';
 import { Permission } from '../enums/access.enum.js';
 
 const routes = Object.values(identityContract.routes);
 const knownErrorCodes = new Set<string>([
   ...Object.values(IdentityErrorCode),
   ...Object.values(PlatformErrorCode),
+  BillingReference.QuotaExceeded,
 ]);
 
 /** Rutas con paso adicional: operaciones sensibles que exigen MFA reciente. */

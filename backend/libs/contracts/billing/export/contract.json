@@ -98,6 +98,10 @@
           "name": "MarkInvoiceFailed",
           "value": "billing.invoices.mark-failed.v1"
         },
+        {
+          "name": "ListInvoiceChanges",
+          "value": "billing.invoices.list-changes.v1"
+        },
         { "name": "TenantMoveSync", "value": "billing.tenant-move.sync.v1" },
         {
           "name": "TenantMoveFinalize",
@@ -763,6 +767,76 @@
       },
       "required": ["invoiceId", "status"],
       "description": "Estado de una factura después de la operación."
+    },
+    "InvoiceChange": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "../../platform/export/contract.json#/schemas/Id" },
+        "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "period": { "$ref": "#/schemas/BillingPeriod" },
+        "status": { "$ref": "#/schemas/InvoiceStatus" },
+        "currency": { "$ref": "#/schemas/Currency" },
+        "total": {
+          "$ref": "../../platform/export/contract.json#/schemas/MoneyAmount"
+        },
+        "issuedAt": {
+          "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+        },
+        "paidAt": {
+          "anyOf": [
+            {
+              "$ref": "../../platform/export/contract.json#/schemas/Timestamp"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "number",
+        "period",
+        "status",
+        "currency",
+        "total",
+        "issuedAt",
+        "paidAt"
+      ],
+      "description": "Factura con sus fechas de emisión y de pago, para sincronizar otro servicio."
+    },
+    "InvoiceChangePage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 100,
+          "type": "array",
+          "items": { "$ref": "#/schemas/InvoiceChange" }
+        },
+        "nextCursor": {
+          "anyOf": [
+            { "$ref": "../../platform/export/contract.json#/schemas/Cursor" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["items", "nextCursor"],
+      "description": "Página de facturas de un tenant, más nuevas primero."
+    },
+    "ListInvoiceChangesInput": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "$ref": "../../platform/export/contract.json#/schemas/Id"
+        },
+        "limit": {
+          "$ref": "../../platform/export/contract.json#/schemas/PageLimit"
+        },
+        "after": {
+          "$ref": "../../platform/export/contract.json#/schemas/Cursor"
+        }
+      },
+      "required": ["tenantId"],
+      "additionalProperties": false,
+      "description": "Entrada para paginar las facturas de un tenant."
     }
   },
   "routes": [
@@ -1003,6 +1077,18 @@
       "errors": ["BILLING.INVOICE.NOT_FOUND", "BILLING.INVOICE.INVALID_STATE"],
       "timeoutMs": 5000,
       "description": "Marca una factura como fallida después de un cobro rechazado."
+    },
+    {
+      "name": "listInvoiceChanges",
+      "id": "billing.invoices.list-changes.v1",
+      "version": 1,
+      "input": { "$ref": "#/schemas/ListInvoiceChangesInput" },
+      "output": { "$ref": "#/schemas/InvoiceChangePage" },
+      "idempotent": true,
+      "mutating": false,
+      "errors": [],
+      "timeoutMs": 5000,
+      "description": "Pagina las facturas de un tenant con sus fechas de emisión y de pago."
     },
     {
       "name": "tenantMoveSync",

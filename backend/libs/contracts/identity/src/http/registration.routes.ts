@@ -4,7 +4,11 @@ import {
   HttpMethod,
   PlatformErrorCode,
 } from '@contracts/platform';
-import { IdentityErrorCode, IdentityRoute } from '../enums/identifiers.enum.js';
+import {
+  BillingReference,
+  IdentityErrorCode,
+  IdentityRoute,
+} from '../enums/identifiers.enum.js';
 import {
   EmailVerificationConfirmRequestSchema,
   EmailVerificationRequestSchema,
@@ -22,6 +26,7 @@ export const SignUpRoute = defineRoute({
     IdentityErrorCode.PasswordPolicyViolation,
     IdentityErrorCode.PasswordBreached,
     IdentityErrorCode.InvitationInvalid,
+    BillingReference.QuotaExceeded,
     PlatformErrorCode.RateLimitExceeded,
   ],
   access: Access.public(),

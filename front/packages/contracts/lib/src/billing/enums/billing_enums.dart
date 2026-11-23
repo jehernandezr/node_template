@@ -295,6 +295,7 @@ enum BillingOperation {
   checkQuota('billing.quotas.check.v1'),
   markInvoicePaid('billing.invoices.mark-paid.v1'),
   markInvoiceFailed('billing.invoices.mark-failed.v1'),
+  listInvoiceChanges('billing.invoices.list-changes.v1'),
   tenantMoveSync('billing.tenant-move.sync.v1'),
   tenantMoveFinalize('billing.tenant-move.finalize.v1'),
   tenantMoveAbort('billing.tenant-move.abort.v1'),

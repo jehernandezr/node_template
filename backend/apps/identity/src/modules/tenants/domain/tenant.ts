@@ -1,4 +1,8 @@
-import { TenantLifecycle, type TenantKind } from '@contracts/identity';
+import {
+  TenantLifecycle,
+  type PlanFeature,
+  type TenantKind,
+} from '@contracts/identity';
 
 /** Estado completo de un tenant, tal como se guarda. */
 export interface TenantState {
@@ -9,6 +13,10 @@ export interface TenantState {
   readonly kind: TenantKind;
   readonly status: TenantLifecycle;
   readonly pinnedApiVersion?: string;
+  /** Funcionalidades del plan vigente según billing; sin valor, las del tipo de tenant. */
+  readonly planFeatures?: readonly PlanFeature[];
+  /** Cuándo decidió billing las funcionalidades guardadas: un cambio anterior que llega tarde no las pisa. */
+  readonly planChangedAt?: Date;
   readonly version?: number;
 }
 
@@ -31,6 +39,23 @@ export class Tenant {
 
   snapshot(): TenantState {
     return this.state;
+  }
+
+  /**
+   * Guarda las funcionalidades que billing decidió en `changedAt`. Devuelve `false` si ya tiene una decisión
+   * posterior; repetir la misma decisión la aplica otra vez, para que quien la reintenta termine su efecto.
+   */
+  applyPlan(features: readonly PlanFeature[], changedAt: Date): boolean {
+    const current = this.state.planChangedAt;
+    if (current !== undefined && changedAt.getTime() < current.getTime()) {
+      return false;
+    }
+    this.state = {
+      ...this.state,
+      planFeatures: [...features],
+      planChangedAt: changedAt,
+    };
+    return true;
   }
 
   isActive(): boolean {

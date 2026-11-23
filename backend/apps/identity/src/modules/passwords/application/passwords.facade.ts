@@ -13,4 +13,6 @@ export abstract class PasswordsFacade {
    * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` o `IDENTITY.PASSWORD.BREACHED`.
    */
   abstract assertAcceptable(password: string, email: string): Promise<void>;
+  /** Borra la contraseña del usuario: su cuenta se borra. */
+  abstract forget(ref: UserRef): Promise<void>;
 }

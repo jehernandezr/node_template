@@ -4,6 +4,7 @@ import {
   HttpMethod,
   PlatformErrorCode,
 } from '@contracts/platform';
+import { BillingErrorCode } from '@contracts/billing';
 import { Permission, SessionGuardErrors } from '@contracts/identity';
 import { TasksErrorCode, TasksRoute } from '../enums/identifiers.enum.js';
 import {
@@ -16,7 +17,11 @@ import {
   UpdateTaskRequestSchema,
 } from '../schemas/task.schema.js';
 
-const guard = SessionGuardErrors;
+/** Las rutas de tareas son las de integración: una service account consume su cuota de llamadas. */
+const integrationErrors = [
+  ...SessionGuardErrors,
+  BillingErrorCode.QuotaExceeded,
+];
 
 /** `GET /v1/tasks`: listado paginado o búsqueda por texto, con filtro de estado. */
 export const ListTasksRoute = defineRoute({
@@ -26,7 +31,7 @@ export const ListTasksRoute = defineRoute({
   request: ListTasksRequestSchema,
   response: TaskPageSchema,
   errors: [
-    ...guard,
+    ...integrationErrors,
     PlatformErrorCode.ValidationInvalidInput,
     TasksErrorCode.SearchQueryTooShort,
   ],
@@ -41,7 +46,7 @@ export const GetTaskRoute = defineRoute({
   path: '/v1/tasks/{taskId}',
   request: GetTaskRequestSchema,
   response: TaskSchema,
-  errors: [...guard, TasksErrorCode.TaskNotFound],
+  errors: [...integrationErrors, TasksErrorCode.TaskNotFound],
   access: Access.authenticated({ permissions: [Permission.TasksRead] }),
   description: 'Devuelve una tarea del tenant activo.',
 });
@@ -54,7 +59,7 @@ export const CreateTaskRoute = defineRoute({
   request: CreateTaskRequestSchema,
   response: TaskSchema,
   successStatus: 201,
-  errors: [...guard, PlatformErrorCode.ValidationInvalidInput],
+  errors: [...integrationErrors, PlatformErrorCode.ValidationInvalidInput],
   access: Access.authenticated({ permissions: [Permission.TasksWrite] }),
   description: 'Crea una tarea en el tenant activo.',
 });
@@ -67,7 +72,7 @@ export const UpdateTaskRoute = defineRoute({
   request: UpdateTaskRequestSchema,
   response: TaskSchema,
   errors: [
-    ...guard,
+    ...integrationErrors,
     PlatformErrorCode.ValidationInvalidInput,
     TasksErrorCode.TaskNotFound,
     TasksErrorCode.TaskVersionConflict,
@@ -83,7 +88,7 @@ export const DeleteTaskRoute = defineRoute({
   method: HttpMethod.Delete,
   path: '/v1/tasks/{taskId}',
   request: DeleteTaskRequestSchema,
-  errors: [...guard, TasksErrorCode.TaskNotFound],
+  errors: [...integrationErrors, TasksErrorCode.TaskNotFound],
   access: Access.authenticated({ permissions: [Permission.TasksWrite] }),
   description: 'Borra una tarea de forma lógica.',
 });

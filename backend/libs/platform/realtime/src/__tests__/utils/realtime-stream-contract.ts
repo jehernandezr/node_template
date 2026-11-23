@@ -1,10 +1,17 @@
 import { Eventually } from '@platform/messaging/test-utils';
 import type { RealtimeStream } from '../../stream/realtime-stream.js';
 
+/** Lo que cambia entre adaptadores en el contrato de `RealtimeStream`. */
+export interface RealtimeStreamContractOptions {
+  /** Un id con la forma de los del adaptador pero posterior a cualquiera que pueda dar en la prueba. */
+  readonly futureId: string;
+}
+
 /** Lo que todo `RealtimeStream` cumple. Cada prueba usa un canal propio, así la fábrica puede compartir estado. */
 export function runRealtimeStreamContract(
   name: string,
   factory: () => RealtimeStream,
+  options: RealtimeStreamContractOptions,
 ): void {
   describe(`${name} (RealtimeStream contract)`, () => {
     let channelCount = 0;
@@ -81,6 +88,23 @@ export function runRealtimeStreamContract(
 
       expect(start).toBe(last);
       await expect(stream.readAfter(user, start, 10)).resolves.toEqual([]);
+    });
+
+    it('treats a well formed id from the future as the end and delivers what arrives next', async () => {
+      const stream = factory();
+      const user = channel();
+      await stream.append(user, { type: 'a', data: 1 });
+      const last = await stream.append(user, { type: 'b', data: 2 });
+
+      const start = await stream.resumePoint(user, options.futureId);
+      await stream.append(user, { type: 'c', data: 3 });
+
+      expect(start).toBe(last);
+      await expect(
+        stream
+          .readAfter(user, start, 10)
+          .then((frames) => frames.map((frame) => frame.type)),
+      ).resolves.toEqual(['c']);
     });
 
     it('reads nothing after an id that is not one of its own', async () => {

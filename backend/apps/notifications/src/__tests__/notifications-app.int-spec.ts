@@ -14,6 +14,13 @@ import { Eventually } from '@platform/messaging/test-utils';
 import { CallOutcomeKind } from '@platform/primitives';
 import { SseTestClient } from '@platform/realtime/test-utils';
 import { RetryDeliveriesJob } from '../modules/dispatch/application/retry-deliveries.job.js';
+import { DeliveryStatus } from '../modules/dispatch/domain/delivery.js';
+import { DeliveryRepository } from '../modules/dispatch/domain/delivery.repository.js';
+import {
+  EmailLedger,
+  EmailStatus,
+} from '../modules/email/domain/email-ledger.js';
+import { UserShard } from '../shared/utils/user-shard.js';
 import { PurgeReadNotificationsJob } from '../modules/inbox/application/purge-read-notifications.job.js';
 import { NotificationsTestApp } from './utils/index.js';
 
@@ -317,6 +324,61 @@ new ContainerRuntime(process.env).describeIfAvailable(
           `SELECT 1 FROM notification_deliveries WHERE user_id = '${ANA.userId}'`,
         ),
       ).resolves.toEqual([]);
+    });
+
+    it('records the same email twice at once without a duplicate key and counts both writes', async () => {
+      const ledger = app.get(EmailLedger);
+      const messageId = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f71';
+      const record = (status: EmailStatus) =>
+        ledger.record({
+          messageId,
+          template: EmailTemplate.VerifyEmail,
+          templateVersion: 1,
+          recipientHash: 'a'.repeat(64),
+          status,
+        });
+
+      await Promise.all([record(EmailStatus.Failed), record(EmailStatus.Sent)]);
+
+      const rows = await app.servers
+        .catalog()
+        .rows(
+          `SELECT version FROM email_messages WHERE message_id = '${messageId}'`,
+        );
+      expect(rows).toEqual([{ version: 2 }]);
+    });
+
+    it('saves the same new delivery twice at once without a duplicate key and counts both writes', async () => {
+      const ref = { userId: ANA.userId, homeTenantId: ANA.tenantId };
+      const id = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f72';
+      const save = (status: DeliveryStatus, attempts: number) =>
+        app.get(UserShard).run(ref, () =>
+          app.get(DeliveryRepository).save({
+            id,
+            notificationId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f73',
+            userId: ref.userId,
+            homeTenantId: ref.homeTenantId,
+            channel: NotificationChannel.Email,
+            status,
+            attempts,
+            nextAttemptAt: new Date('2026-11-20T10:00:00.000Z'),
+            title: 'Factura',
+            body: 'Tu factura está lista',
+            locale: 'es',
+          }),
+        );
+
+      await Promise.all([
+        save(DeliveryStatus.Pending, 0),
+        save(DeliveryStatus.Failed, 1),
+      ]);
+
+      await expect(
+        rowsIn(
+          0,
+          `SELECT version FROM notification_deliveries WHERE id = '${id}'`,
+        ),
+      ).resolves.toEqual([{ version: 2 }]);
     });
   },
 );

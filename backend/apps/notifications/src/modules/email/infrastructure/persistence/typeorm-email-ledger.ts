@@ -33,27 +33,25 @@ export class TypeOrmEmailLedger extends EmailLedger {
         };
   }
 
-  /** Actualiza la fila o la crea: el `UPDATE` de TypeORM sube `version` y `updated_at`, un upsert no. */
+  /**
+   * Un solo `INSERT ... ON CONFLICT` para que dos escrituras del mismo mensaje no choquen por llave; el
+   * conflicto sube `version` y `updated_at` a mano porque el upsert de TypeORM no lo hace.
+   */
   async record(entry: EmailRecord): Promise<void> {
-    const { messageId } = entry;
-    const fields = {
-      template: entry.template,
-      templateVersion: entry.templateVersion,
-      recipientHash: entry.recipientHash,
-      status: entry.status,
-      providerId: entry.providerId ?? null,
-      traceId: entry.traceId ?? null,
-    };
-    await this.run(async (manager) => {
-      const updated = await manager.update(
-        EmailMessageEntity,
-        { messageId },
-        fields,
-      );
-      if (updated.affected === 0) {
-        await manager.insert(EmailMessageEntity, { messageId, ...fields });
-      }
-    });
+    await this.run((manager) =>
+      manager.query(
+        `INSERT INTO "email_messages" ("message_id", "template", "template_version", "recipient_hash", "status", "provider_id", "trace_id", "version") VALUES ($1, $2, $3, $4, $5, $6, $7, 1) ON CONFLICT ("message_id") DO UPDATE SET "template" = EXCLUDED."template", "template_version" = EXCLUDED."template_version", "recipient_hash" = EXCLUDED."recipient_hash", "status" = EXCLUDED."status", "provider_id" = EXCLUDED."provider_id", "trace_id" = EXCLUDED."trace_id", "version" = "email_messages"."version" + 1, "updated_at" = now()`,
+        [
+          entry.messageId,
+          entry.template,
+          entry.templateVersion,
+          entry.recipientHash,
+          entry.status,
+          entry.providerId ?? null,
+          entry.traceId ?? null,
+        ],
+      ),
+    );
   }
 
   async isSuppressed(recipientHash: string): Promise<boolean> {

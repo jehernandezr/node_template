@@ -9,6 +9,8 @@ export abstract class UserDirectory {
 
   /** Libera una reserva que no llegó a tener usuario. */
   abstract release(fingerprint: Buffer, userId: string): Promise<void>;
+  /** Borra la fila del usuario, en cualquier estado: su email deja de llevar a él. */
+  abstract forget(userId: string): Promise<void>;
 
   abstract findByFingerprint(
     fingerprint: Buffer,

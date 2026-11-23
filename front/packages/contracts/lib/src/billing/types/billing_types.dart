@@ -1799,3 +1799,196 @@ final class InvoiceStateResult {
   @override
   int get hashCode => contractHash([invoiceId, status]);
 }
+
+/// Factura con sus fechas de emisión y de pago, para sincronizar otro servicio.
+@immutable
+final class InvoiceChange {
+  const InvoiceChange({
+    required this.id,
+    required this.number,
+    required this.period,
+    required this.status,
+    required this.currency,
+    required this.total,
+    required this.issuedAt,
+    required this.paidAt,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory InvoiceChange.fromJson(Map<String, dynamic> json) {
+    try {
+      return InvoiceChange(
+        id: json['id'] as String,
+        number: json['number'] as String,
+        period: BillingPeriod.fromJson(json['period'] as Map<String, dynamic>),
+        status: decodeEnum(
+          json['status'],
+          InvoiceStatus.tryParse,
+          'InvoiceStatus',
+        ),
+        currency: decodeEnum(json['currency'], Currency.tryParse, 'Currency'),
+        total: MoneyAmount.fromJson(json['total'] as Map<String, dynamic>),
+        issuedAt: DateTime.parse(json['issuedAt'] as String),
+        paidAt: json['paidAt'] == null
+            ? null
+            : DateTime.parse(json['paidAt'] as String),
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid InvoiceChange: $error', json);
+    }
+  }
+
+  final String id;
+
+  final String number;
+
+  final BillingPeriod period;
+
+  final InvoiceStatus status;
+
+  final Currency currency;
+
+  final MoneyAmount total;
+
+  final DateTime issuedAt;
+
+  final DateTime? paidAt;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'number': number,
+    'period': period.toJson(),
+    'status': status.wireCode,
+    'currency': currency.wireCode,
+    'total': total.toJson(),
+    'issuedAt': issuedAt.toUtc().toIso8601String(),
+    'paidAt': switch (paidAt) {
+      final value? => value.toUtc().toIso8601String(),
+      null => null,
+    },
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(InvoiceChange value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InvoiceChange &&
+          contractEquals(id, other.id) &&
+          contractEquals(number, other.number) &&
+          contractEquals(period, other.period) &&
+          contractEquals(status, other.status) &&
+          contractEquals(currency, other.currency) &&
+          contractEquals(total, other.total) &&
+          contractEquals(issuedAt, other.issuedAt) &&
+          contractEquals(paidAt, other.paidAt);
+
+  @override
+  int get hashCode => contractHash([
+    id,
+    number,
+    period,
+    status,
+    currency,
+    total,
+    issuedAt,
+    paidAt,
+  ]);
+}
+
+/// Página de facturas de un tenant, más nuevas primero.
+@immutable
+final class InvoiceChangePage {
+  const InvoiceChangePage({required this.items, required this.nextCursor});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory InvoiceChangePage.fromJson(Map<String, dynamic> json) {
+    try {
+      return InvoiceChangePage(
+        items: [
+          for (final e0 in json['items'] as List<dynamic>)
+            InvoiceChange.fromJson(e0 as Map<String, dynamic>),
+        ],
+        nextCursor: json['nextCursor'] as String?,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid InvoiceChangePage: $error', json);
+    }
+  }
+
+  final List<InvoiceChange> items;
+
+  final String? nextCursor;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'items': [for (final e0 in items) e0.toJson()],
+    'nextCursor': nextCursor,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(InvoiceChangePage value) => value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InvoiceChangePage &&
+          contractEquals(items, other.items) &&
+          contractEquals(nextCursor, other.nextCursor);
+
+  @override
+  int get hashCode => contractHash([items, nextCursor]);
+}
+
+/// Entrada para paginar las facturas de un tenant.
+@immutable
+final class ListInvoiceChangesInput {
+  const ListInvoiceChangesInput({
+    required this.tenantId,
+    this.limit,
+    this.after,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory ListInvoiceChangesInput.fromJson(Map<String, dynamic> json) {
+    try {
+      return ListInvoiceChangesInput(
+        tenantId: json['tenantId'] as String,
+        limit: json['limit'] == null ? null : (json['limit'] as num).toInt(),
+        after: json['after'] as String?,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid ListInvoiceChangesInput: $error', json);
+    }
+  }
+
+  final String tenantId;
+
+  final int? limit;
+
+  final String? after;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'tenantId': tenantId,
+    'limit': ?limit,
+    'after': ?after,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(ListInvoiceChangesInput value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ListInvoiceChangesInput &&
+          contractEquals(tenantId, other.tenantId) &&
+          contractEquals(limit, other.limit) &&
+          contractEquals(after, other.after);
+
+  @override
+  int get hashCode => contractHash([tenantId, limit, after]);
+}

@@ -114,22 +114,26 @@ new ContainerRuntime(process.env).describeIfAvailable(
         await Promise.all(subscribers.map((source) => source.close()));
       });
 
-      runRealtimeStreamContract('ValkeyRealtimeStream', () => {
-        const source = new ValkeySubscriberSource({
-          create: async () => {
-            const client = server.connect();
-            await client.connect();
-            return client;
-          },
-        });
-        subscribers.push(source);
-        return new ValkeyRealtimeStream(
-          ValkeyExecutors.over(server.connect()),
-          source,
-          new ValkeyKeyspace(PREFIX),
-          { retained: 100, ttlMs: 60_000 },
-        );
-      });
+      runRealtimeStreamContract(
+        'ValkeyRealtimeStream',
+        () => {
+          const source = new ValkeySubscriberSource({
+            create: async () => {
+              const client = server.connect();
+              await client.connect();
+              return client;
+            },
+          });
+          subscribers.push(source);
+          return new ValkeyRealtimeStream(
+            ValkeyExecutors.over(server.connect()),
+            source,
+            new ValkeyKeyspace(PREFIX),
+            { retained: 100, ttlMs: 60_000 },
+          );
+        },
+        { futureId: '9999999999999-0' },
+      );
 
       runPresenceTrackerContract('ValkeyPresenceTracker', () => {
         const clock = new FixedClock();

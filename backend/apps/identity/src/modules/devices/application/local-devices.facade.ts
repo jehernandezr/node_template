@@ -35,6 +35,10 @@ export class LocalDevicesFacade extends DevicesFacade {
     return this.registry.retireVerifiers(ref);
   }
 
+  forget(ref: UserRef): Promise<void> {
+    return this.registry.forget(ref);
+  }
+
   enqueueApproval(deviceId: string, approval: DeviceApproval): Promise<void> {
     return this.registry.enqueueApproval(deviceId, approval);
   }

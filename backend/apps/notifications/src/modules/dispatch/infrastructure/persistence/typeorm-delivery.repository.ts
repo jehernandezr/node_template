@@ -15,30 +15,31 @@ export class TypeOrmDeliveryRepository extends DeliveryRepository {
     super();
   }
 
-  /** Actualiza la fila o la crea: el `UPDATE` de TypeORM sube `version` y `updated_at`, un upsert no. */
+  /**
+   * Un solo `INSERT ... ON CONFLICT` para que dos escrituras de la misma entrega no choquen por llave; el
+   * conflicto sube `version` y `updated_at` a mano porque el upsert de TypeORM no lo hace.
+   */
   async save(delivery: Delivery): Promise<void> {
-    const { id, ...fields } = {
-      id: delivery.id,
-      notificationId: delivery.notificationId,
-      userId: delivery.userId,
-      homeTenantId: delivery.homeTenantId,
-      channel: delivery.channel,
-      status: delivery.status,
-      attempts: delivery.attempts,
-      nextAttemptAt: delivery.nextAttemptAt,
-      title: delivery.title,
-      body: delivery.body,
-      locale: delivery.locale,
-      providerId: delivery.providerId ?? null,
-      error:
-        delivery.error?.slice(0, TypeOrmDeliveryRepository.ERROR_MAX) ?? null,
-    };
-    await this.run(ManagerIntent.Write, async (manager) => {
-      const updated = await manager.update(DeliveryEntity, { id }, fields);
-      if (updated.affected === 0) {
-        await manager.insert(DeliveryEntity, { id, ...fields });
-      }
-    });
+    await this.run(ManagerIntent.Write, (manager) =>
+      manager.query(
+        `INSERT INTO "notification_deliveries" ("id", "notification_id", "user_id", "home_tenant_id", "channel", "status", "attempts", "next_attempt_at", "title", "body", "locale", "provider_id", "error", "version") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 1) ON CONFLICT ("id") DO UPDATE SET "status" = EXCLUDED."status", "attempts" = EXCLUDED."attempts", "next_attempt_at" = EXCLUDED."next_attempt_at", "title" = EXCLUDED."title", "body" = EXCLUDED."body", "locale" = EXCLUDED."locale", "provider_id" = EXCLUDED."provider_id", "error" = EXCLUDED."error", "version" = "notification_deliveries"."version" + 1, "updated_at" = now()`,
+        [
+          delivery.id,
+          delivery.notificationId,
+          delivery.userId,
+          delivery.homeTenantId,
+          delivery.channel,
+          delivery.status,
+          delivery.attempts,
+          delivery.nextAttemptAt,
+          delivery.title,
+          delivery.body,
+          delivery.locale,
+          delivery.providerId ?? null,
+          delivery.error?.slice(0, TypeOrmDeliveryRepository.ERROR_MAX) ?? null,
+        ],
+      ),
+    );
   }
 
   async ofNotification(notificationId: string): Promise<readonly Delivery[]> {

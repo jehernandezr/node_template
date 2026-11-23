@@ -46,8 +46,24 @@ describe('identityService', () => {
 
     expect(Secret.is(config.INTERNAL_API_SHARED_SECRET)).toBe(true);
     expect(settings?.secret).toBe(config.INTERNAL_API_SHARED_SECRET.reveal());
-    expect(settings?.baseUrls).toEqual({});
+    expect(settings?.baseUrls).toEqual(IdentityTestEnvironment.PEERS);
     expect(settings?.signer).toBeUndefined();
+  });
+
+  it('refuses to start without the URL of a service that its sagas call', () => {
+    const withoutBilling = Object.fromEntries(
+      Object.entries(IdentityTestEnvironment.PEERS).filter(
+        ([service]) => service !== 'billing',
+      ),
+    );
+    const config = identityConfigSchema.parse({
+      ...IdentityTestEnvironment.build(),
+      INTERNAL_API_BASE_URLS: JSON.stringify(withoutBilling),
+    });
+
+    expect(() =>
+      identityService.internalApi?.http?.(new StaticAppConfig(config), {}),
+    ).toThrow('INTERNAL_API_BASE_URLS no tiene la URL de billing');
   });
 
   it('signs with SigV4 and the role of the service when INTERNAL_API_SIGNER asks for it', () => {

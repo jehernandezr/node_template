@@ -20,3 +20,5 @@ export { TotpCodes } from './totp-codes.js';
 export { CborWriter, type CborValue } from './cbor-writer.js';
 export { SoftwareAuthenticator } from './software-authenticator.js';
 export { Eventually } from './eventually.js';
+export { RecordingParticipants } from './recording-participants.js';
+export { PeerServicesStub } from './peer-services-stub.js';

@@ -1,0 +1,60 @@
+import { Injectable } from '@nestjs/common';
+import { AppConfig } from '@platform/config';
+import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
+import type { BillingConfig } from '../../../config/billing.config.js';
+import { TenantShard } from '../../../shared/utils/tenant-shard.js';
+import { PlansFacade } from '../../plans/index.js';
+import { BillingPeriod } from '../domain/billing-period.js';
+import { SubscriptionRepository } from '../domain/subscription.repository.js';
+import { Subscription } from '../domain/subscription.js';
+import type { CurrentSubscription } from './current-subscription.js';
+import { SubscriptionEvents } from './subscription-events.js';
+
+/**
+ * Abre la suscripción de un tenant nuevo con el plan de `BILLING_TRIAL_PLAN`, en prueba por
+ * `BILLING_TRIAL_DAYS`. Es idempotente: la saga de alta puede repetirla.
+ */
+@Injectable()
+export class OpenSubscription {
+  private readonly settings: BillingConfig;
+
+  constructor(
+    private readonly subscriptions: SubscriptionRepository,
+    private readonly plans: PlansFacade,
+    private readonly events: SubscriptionEvents,
+    private readonly shard: TenantShard,
+    private readonly transactions: TransactionManager,
+    private readonly ids: IdGenerator,
+    private readonly clock: Clock,
+    config: AppConfig,
+  ) {
+    this.settings = config.root<BillingConfig>();
+  }
+
+  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` si el plan de prueba no está en el catálogo. */
+  execute(tenantId: string): Promise<CurrentSubscription> {
+    return this.shard.run(tenantId, () =>
+      this.transactions.runInTransaction(async () => {
+        const existing = await this.subscriptions.find();
+        if (existing !== undefined) {
+          return {
+            subscription: existing.snapshot(),
+            plan: await this.plans.require(existing.snapshot().planId),
+          };
+        }
+        const plan = await this.plans.requireCode(
+          this.settings.BILLING_TRIAL_PLAN,
+        );
+        const subscription = Subscription.open({
+          id: this.ids.next().toString(),
+          plan: plan.snapshot(),
+          today: BillingPeriod.dateOf(this.clock.now()),
+          trialDays: this.settings.BILLING_TRIAL_DAYS,
+        });
+        await this.subscriptions.insert(subscription);
+        await this.events.planChanged(tenantId, subscription, null, plan);
+        return { subscription: subscription.snapshot(), plan };
+      }),
+    );
+  }
+}

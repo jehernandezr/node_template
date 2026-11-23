@@ -17,6 +17,9 @@ export interface UserState {
 
 /** Un usuario de la plataforma. Vive en el shard de su tenant de origen. */
 export class User {
+  private static readonly ERASED_EMAIL_DOMAIN = '@erased.invalid';
+  private static readonly ERASED_NAME = '-';
+
   private constructor(private state: UserState) {}
 
   /** Usuario recién registrado: espera la verificación de su email. */
@@ -100,5 +103,28 @@ export class User {
 
   setLastTenant(tenantId: string): void {
     this.state = { ...this.state, lastTenantId: tenantId };
+  }
+
+  /**
+   * Borra los datos personales: queda una fila `Deleted` sin email ni nombre reales, para que lo que la
+   * referencia en otros tenants no apunte a la nada. Devuelve `false` si ya estaba borrado.
+   */
+  erase(): boolean {
+    if (this.state.status === UserStatus.Deleted) {
+      return false;
+    }
+    this.state = {
+      id: this.state.id,
+      homeTenantId: this.state.homeTenantId,
+      email: `${this.state.id}${User.ERASED_EMAIL_DOMAIN}`,
+      emailFingerprint: Buffer.from(this.state.id),
+      status: UserStatus.Deleted,
+      displayName: User.ERASED_NAME,
+      locale: this.state.locale,
+      ...(this.state.version === undefined
+        ? {}
+        : { version: this.state.version }),
+    };
+    return true;
   }
 }

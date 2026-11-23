@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { UsageMetric } from '@contracts/billing';
 import { IdentityErrorCode } from '@contracts/identity';
 import { Clock, TransactionManager } from '@platform/kernel';
+import { QuotaChecker } from '@platform/quotas';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
@@ -13,7 +15,8 @@ import { InvitationToken } from '../domain/invitation-token.js';
 import type { Invitation } from '../domain/invitation.js';
 
 /**
- * Acepta invitaciones. Aceptar exige un email verificado igual al invitado.
+ * Acepta invitaciones. Aceptar exige un email verificado igual al invitado y que el plan del tenant tenga
+ * cupo para un usuario más.
  */
 @Injectable()
 export class AcceptInvitation {
@@ -21,6 +24,7 @@ export class AcceptInvitation {
     private readonly invitations: InvitationRepository,
     private readonly access: AccessFacade,
     private readonly users: UsersFacade,
+    private readonly quotas: QuotaChecker,
     private readonly hasher: SecretHasher,
     private readonly scopes: IdentityShardScopes,
     private readonly transactions: TransactionManager,
@@ -40,6 +44,14 @@ export class AcceptInvitation {
   async forNewUser(text: string, user: UserRef): Promise<void> {
     const snapshot = await this.users.getByRef(user);
     await this.accept(text, user, snapshot.email);
+  }
+
+  /**
+   * Una cuenta que aún no existe no es miembro de ningún tenant, así que siempre ocupa un cupo nuevo.
+   * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` si el plan ya no admite otro usuario.
+   */
+  async assertRoomForNewUser(tenantId: string): Promise<void> {
+    await this.quotas.enforce(tenantId, UsageMetric.Users);
   }
 
   async preview(text: string): Promise<InvitationPreview | undefined> {
@@ -84,6 +96,7 @@ export class AcceptInvitation {
     if (invitation.snapshot().email !== email) {
       throw new IdentityError(IdentityErrorCode.InvitationEmailMismatch);
     }
+    await this.assertRoomFor(user, token.tenantId);
     await this.access.addMember(
       token.tenantId,
       user,
@@ -96,6 +109,16 @@ export class AcceptInvitation {
         await this.invitations.update(current);
       }),
     );
+  }
+
+  /**
+   * Quien ya es miembro (un reintento después de agregarlo) no ocupa un cupo nuevo.
+   * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` si el plan ya no admite otro usuario.
+   */
+  private async assertRoomFor(user: UserRef, tenantId: string): Promise<void> {
+    if (!(await this.access.isMember(user.userId, tenantId))) {
+      await this.quotas.enforce(tenantId, UsageMetric.Users);
+    }
   }
 
   private async usable(token: InvitationToken): Promise<Invitation> {

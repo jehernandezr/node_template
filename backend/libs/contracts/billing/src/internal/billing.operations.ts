@@ -10,7 +10,9 @@ import {
   CloseBillingAccountInputSchema,
   EntitlementsSchema,
   GetEntitlementsInputSchema,
+  InvoiceChangePageSchema,
   InvoiceStateResultSchema,
+  ListInvoiceChangesInputSchema,
   MarkInvoiceFailedInputSchema,
   MarkInvoicePaidInputSchema,
   OpenBillingAccountInputSchema,
@@ -112,4 +114,16 @@ export const MarkInvoiceFailedOperation = defineOperation({
   ],
   timeoutMs: 5000,
   description: 'Marca una factura como fallida después de un cobro rechazado.',
+});
+
+/** Pagina las facturas de un tenant, de la más nueva a la más vieja, para que otro servicio rellene su copia. */
+export const ListInvoiceChangesOperation = defineOperation({
+  id: BillingOperation.ListInvoiceChanges,
+  input: ListInvoiceChangesInputSchema,
+  output: InvoiceChangePageSchema,
+  idempotent: true,
+  mutating: false,
+  timeoutMs: 5000,
+  description:
+    'Pagina las facturas de un tenant con sus fechas de emisión y de pago.',
 });

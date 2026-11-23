@@ -39,6 +39,12 @@ export class TypeOrmTenantDirectory
     );
   }
 
+  isTaken(slug: string): Promise<boolean> {
+    return this.read((manager) =>
+      manager.existsBy(TenantLookupEntity, { slug }),
+    );
+  }
+
   async slugOf(tenantId: string): Promise<string | undefined> {
     const row = await this.read((manager) =>
       manager.findOneBy(TenantLookupEntity, { tenantId }),

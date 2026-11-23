@@ -7,23 +7,26 @@ import {
   ReactivateUserOperation,
   GetUserProfileOperation,
   EraseUserOperation,
+  type EraseUserInput,
+  type EraseUserResult,
   type GetUserProfileInput,
   type ReactivateUserInput,
   type SuspendUserInput,
   type UserOperationResult,
   type UserProfile,
 } from '@contracts/identity';
-import { RouteNotImplementedError } from '../../../shared/errors/route-not-implemented.error.js';
 import { ChangeUserStatus } from '../application/change-user-status.use-case.js';
+import { EraseUser } from '../application/erase-user.use-case.js';
 import { UserProfileView } from '../application/user-profile-view.js';
 import { UserReader } from '../application/user-reader.js';
 
-/** Operaciones internas de users. El borrado llega con la saga de baja de cuenta. */
+/** Operaciones internas de users: suspensión, reactivación, perfil y el borrado de la saga de baja. */
 @Injectable()
 export class UsersInternalOperations {
   constructor(
     private readonly status: ChangeUserStatus,
     private readonly reader: UserReader,
+    private readonly eraser: EraseUser,
   ) {}
 
   @InternalHandler(SuspendUserOperation)
@@ -59,7 +62,11 @@ export class UsersInternalOperations {
   }
 
   @InternalHandler(EraseUserOperation)
-  eraseUser(): never {
-    throw new RouteNotImplementedError(EraseUserOperation.id);
+  async eraseUser(
+    input: EraseUserInput,
+  ): Promise<HandlerResult<EraseUserResult>> {
+    return {
+      outcome: CallOutcome.success(await this.eraser.execute(input.userId)),
+    };
   }
 }

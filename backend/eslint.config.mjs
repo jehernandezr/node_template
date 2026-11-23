@@ -141,24 +141,27 @@ const depConstraints = [
       'type:contracts',
     ],
   },
-  ...['tasks', 'notifications', 'realtime'].map((service) => ({
-    sourceTag: `scope:${service}`,
-    onlyDependOnLibsWithTags: [
-      `scope:${service}`,
-      'scope:platform',
-      'scope:shared',
-      'type:contracts',
-    ],
-  })),
+  ...['tasks', 'notifications', 'realtime', 'reports', 'billing'].map(
+    (service) => ({
+      sourceTag: `scope:${service}`,
+      onlyDependOnLibsWithTags: [
+        `scope:${service}`,
+        'scope:platform',
+        'scope:shared',
+        'type:contracts',
+      ],
+    }),
+  ),
 ];
 
 /**
- * Excepción del ADR 0022: `@platform/auth` lee el formato del token y sus códigos de
- * `@contracts/identity`. La regla se vuelve a declarar completa porque una configuración
- * posterior reemplaza las opciones de la anterior; solo cambia la restricción de
- * `scope:platform`. Cada librería la usa con las rutas de `files` relativas a su proyecto.
+ * Excepciones a `scope:platform` para leer contratos de un servicio: `@platform/auth` y sus vecinos leen el
+ * formato del token y sus códigos de `@contracts/identity` (ADR 0022); `@platform/quotas` y
+ * `@platform/metering` hablan con billing por su operación de cuotas y su comando de uso. La regla se vuelve a
+ * declarar completa porque una configuración posterior reemplaza las opciones de la anterior; solo cambia la
+ * restricción de `scope:platform`. Cada librería la usa con las rutas de `files` relativas a su proyecto.
  */
-const allowIdentityContracts = (files) => ({
+const allowServiceContracts = (scopes) => (files) => ({
   files,
   rules: {
     '@nx/enforce-module-boundaries': [
@@ -172,7 +175,7 @@ const allowIdentityContracts = (files) => ({
                 ...constraint,
                 onlyDependOnLibsWithTags: [
                   ...constraint.onlyDependOnLibsWithTags,
-                  'scope:identity',
+                  ...scopes,
                 ],
               }
             : constraint,
@@ -182,7 +185,13 @@ const allowIdentityContracts = (files) => ({
   },
 });
 
-export { allowIdentityContracts, layoutPlugin };
+const allowIdentityContracts = allowServiceContracts(['scope:identity']);
+const allowBillingContracts = allowServiceContracts([
+  'scope:billing',
+  'scope:identity',
+]);
+
+export { allowBillingContracts, allowIdentityContracts, layoutPlugin };
 
 export default [
   ...nx.configs['flat/base'],
@@ -240,6 +249,10 @@ export default [
     'libs/platform/service/src/auth/**/*.ts',
     'libs/platform/service/src/nest/auth/**/*.ts',
     'libs/platform/service/src/__tests__/utils/**/*.ts',
+  ]),
+  allowBillingContracts([
+    'libs/platform/quotas/**/*.ts',
+    'libs/platform/metering/**/*.ts',
   ]),
   {
     files: ['**/domain/**/*.ts'],

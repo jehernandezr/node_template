@@ -388,6 +388,7 @@ abstract final class IdentityRoutes {
       'IDENTITY.PASSWORD.POLICY_VIOLATION',
       'IDENTITY.PASSWORD.BREACHED',
       'IDENTITY.INVITATION.INVALID',
+      'BILLING.QUOTA.EXCEEDED',
       'PLATFORM.RATE_LIMIT.EXCEEDED',
     ],
     requiresAuth: false,
@@ -1822,7 +1823,7 @@ abstract final class IdentityRoutes {
         validateRequest: RevokeInvitationRequestSchema.validate,
       );
 
-  /// Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado.
+  /// Acepta una invitación. El email de la sesión debe ser el invitado y estar verificado, y el plan del tenant debe tener cupo de usuarios.
   ///
   /// `POST /v1/invitations/accept`
   static const acceptInvitation =
@@ -1844,6 +1845,7 @@ abstract final class IdentityRoutes {
           'IDENTITY.INVITATION.INVALID',
           'IDENTITY.INVITATION.EMAIL_MISMATCH',
           'IDENTITY.AUTH.EMAIL_NOT_VERIFIED',
+          'BILLING.QUOTA.EXCEEDED',
         ],
         requiresAuth: true,
         permissions: <String>[],

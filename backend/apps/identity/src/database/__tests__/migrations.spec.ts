@@ -32,7 +32,7 @@ describe('identity migrations', () => {
       (value): value is number => typeof value === 'number',
     );
 
-    expect(starts).toHaveLength(11);
+    expect(starts).toHaveLength(12);
     for (let index = 1; index < starts.length; index += 1) {
       const previous = starts[index - 1] ?? 0;
       const current = starts[index] ?? 0;

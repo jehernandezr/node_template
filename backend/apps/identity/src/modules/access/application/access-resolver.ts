@@ -59,7 +59,7 @@ export class AccessResolver {
       roles: [...access.roles],
       permissionVersion: access.version,
       platformRoles: [...platformRoles],
-      features: [...this.entitlements.features(tenant.kind)],
+      features: [...this.entitlements.features(tenant)],
       flags: await this.flagsFor({
         tenantId,
         userId,

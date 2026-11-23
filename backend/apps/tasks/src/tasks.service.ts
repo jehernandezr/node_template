@@ -27,10 +27,10 @@ export const tasksService: ServiceDefinition<TasksConfig> = {
   internalApi: {
     transport: ServiceInternalTransport.Http,
     http: (config, context) =>
-      new SignedInternalHttp([identityContract.service]).settings(
-        config,
-        context,
-      ),
+      new SignedInternalHttp([
+        identityContract.service,
+        billingContract.service,
+      ]).settings(config, context),
   },
   errorCatalogs: TASKS_ERROR_CATALOGS,
 };

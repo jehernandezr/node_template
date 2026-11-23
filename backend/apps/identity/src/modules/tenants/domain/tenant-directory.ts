@@ -9,6 +9,9 @@ export abstract class TenantDirectory {
 
   abstract release(slug: string, tenantId: string): Promise<void>;
 
+  /** Si algún tenant tiene reservado el slug. */
+  abstract isTaken(slug: string): Promise<boolean>;
+
   /** El slug del tenant, si lo tiene reservado. */
   abstract slugOf(tenantId: string): Promise<string | undefined>;
 }

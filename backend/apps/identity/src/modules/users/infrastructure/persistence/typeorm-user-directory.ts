@@ -46,6 +46,12 @@ export class TypeOrmUserDirectory
     );
   }
 
+  async forget(userId: string): Promise<void> {
+    await this.write((manager) =>
+      manager.delete(IdentityLookupEntity, { userId }),
+    );
+  }
+
   async release(fingerprint: Buffer, userId: string): Promise<void> {
     await this.write((manager) =>
       manager.delete(IdentityLookupEntity, {

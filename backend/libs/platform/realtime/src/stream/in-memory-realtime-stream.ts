@@ -43,10 +43,16 @@ export class InMemoryRealtimeStream extends RealtimeStream {
     channel: string,
     lastEventId: string | undefined,
   ): Promise<string | undefined> {
-    return lastEventId !== undefined &&
-      InMemoryRealtimeStream.ID.test(lastEventId)
-      ? lastEventId
-      : this.frames.get(channel)?.at(-1)?.id;
+    const last = this.frames.get(channel)?.at(-1)?.id;
+    if (
+      lastEventId !== undefined &&
+      last !== undefined &&
+      InMemoryRealtimeStream.ID.test(lastEventId) &&
+      Number(lastEventId) <= Number(last)
+    ) {
+      return lastEventId;
+    }
+    return last;
   }
 
   async subscribe(

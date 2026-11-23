@@ -9,6 +9,7 @@ import {
 runRealtimeStreamContract(
   'InMemoryRealtimeStream',
   () => new InMemoryRealtimeStream(),
+  { futureId: '999999999' },
 );
 
 runPresenceTrackerContract('InMemoryPresenceTracker', () => {

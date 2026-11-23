@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ValkeyUsageCounterStore } from '@platform/adapters-valkey';
+import { ValkeyMeteringModule } from '@platform/adapters-valkey/nest';
 import { notificationsContract } from '@contracts/notifications';
 import { HttpModule } from '@platform/http/nest';
+import { MeteringModule } from '@platform/metering/nest';
 import { RemoteIdentityAuthModule } from '@platform/service/nest';
 import { NOTIFICATIONS_ERROR_CATALOGS } from './shared/constants/notifications-error-catalogs.constants.js';
 import { DispatchModule } from './modules/dispatch/presentation/dispatch.module.js';
@@ -18,6 +21,11 @@ import { TriggersModule } from './modules/triggers/presentation/triggers.module.
     HttpModule.forRoot({
       contract: notificationsContract,
       catalogs: NOTIFICATIONS_ERROR_CATALOGS,
+    }),
+    ValkeyMeteringModule,
+    MeteringModule.forRoot({
+      service: notificationsContract.service,
+      counters: ValkeyUsageCounterStore,
     }),
     NotificationsRealtimeModule,
     PreferencesModule,

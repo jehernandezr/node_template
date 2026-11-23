@@ -29,4 +29,8 @@ export class InMemoryPasswordsFacade extends PasswordsFacade {
       throw new Error('Password rejected');
     }
   }
+
+  async forget(ref: UserRef): Promise<void> {
+    this.passwords.delete(ref.userId);
+  }
 }

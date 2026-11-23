@@ -27,3 +27,19 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE DATABASE notifications_shard_1;
 \c notifications_shard_1
 CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE DATABASE reports_shard_0;
+\c reports_shard_0
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE DATABASE reports_shard_1;
+\c reports_shard_1
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE DATABASE billing_shard_0;
+\c billing_shard_0
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE DATABASE billing_shard_1;
+\c billing_shard_1
+CREATE EXTENSION IF NOT EXISTS vector;

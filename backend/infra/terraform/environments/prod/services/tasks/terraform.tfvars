@@ -21,9 +21,10 @@ api = {
 
 # Valores no secretos.
 # INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON con la dirección interna de identity
-# en este ambiente, por ejemplo "{\"identity\":\"http://identity.prod.internal\"}". La API interna de todos
-# los servicios responde en el mismo path, así que el ALB compartido no sirve para llegar a identity. Sin
-# esa URL el servicio no arranca.
+# (verificación de acceso) y de billing (cuotas de las rutas de integración) en este ambiente, por ejemplo
+# "{\"identity\":\"http://identity.prod.internal\",\"billing\":\"http://billing.prod.internal\"}". La API
+# interna de todos los servicios responde en el mismo path, así que el ALB compartido no sirve para llegar a
+# ellos. Sin alguna de esas URLs el servicio no arranca.
 environment_variables = {
   INTERNAL_API_SIGNER          = "hmac"
   SEARCH_MODE                  = "text"

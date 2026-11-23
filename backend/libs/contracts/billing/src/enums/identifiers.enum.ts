@@ -27,6 +27,7 @@ export enum BillingOperation {
   CheckQuota = 'billing.quotas.check.v1',
   MarkInvoicePaid = 'billing.invoices.mark-paid.v1',
   MarkInvoiceFailed = 'billing.invoices.mark-failed.v1',
+  ListInvoiceChanges = 'billing.invoices.list-changes.v1',
   TenantMoveSync = 'billing.tenant-move.sync.v1',
   TenantMoveFinalize = 'billing.tenant-move.finalize.v1',
   TenantMoveAbort = 'billing.tenant-move.abort.v1',

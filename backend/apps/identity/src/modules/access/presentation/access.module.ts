@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import { AccessFacade } from '../application/access.facade.js';
+import { RefreshTenantAccess } from '../application/refresh-tenant-access.use-case.js';
 import { AccessResolver } from '../application/access-resolver.js';
 import { AccessVersionPublisher } from '../application/access-version-publisher.js';
 import { ActorPermissions } from '../application/actor-permissions.js';
@@ -61,6 +62,7 @@ import { AccessInternalOperations } from './access.internal-operations.js';
     ActorPermissions,
     GrantCeiling,
     ListMembersByPermission,
+    RefreshTenantAccess,
     { provide: AccessFacade, useClass: LocalAccessFacade },
     AccessInternalOperations,
   ],

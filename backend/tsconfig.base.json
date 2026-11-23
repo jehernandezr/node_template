@@ -89,6 +89,11 @@
       "@platform/messaging/test-utils": [
         "./libs/platform/messaging/src/__tests__/utils/index.ts"
       ],
+      "@platform/metering": ["./libs/platform/metering/src/index.ts"],
+      "@platform/metering/nest": ["./libs/platform/metering/src/nest/index.ts"],
+      "@platform/metering/test-utils": [
+        "./libs/platform/metering/src/__tests__/utils/index.ts"
+      ],
       "@platform/observability": ["./libs/platform/observability/src/index.ts"],
       "@platform/observability/nest": [
         "./libs/platform/observability/src/nest/index.ts"
@@ -109,6 +114,11 @@
       "@platform/primitives": ["./libs/platform/primitives/src/index.ts"],
       "@platform/primitives/test-utils": [
         "./libs/platform/primitives/src/__tests__/utils/index.ts"
+      ],
+      "@platform/quotas": ["./libs/platform/quotas/src/index.ts"],
+      "@platform/quotas/nest": ["./libs/platform/quotas/src/nest/index.ts"],
+      "@platform/quotas/test-utils": [
+        "./libs/platform/quotas/src/__tests__/utils/index.ts"
       ],
       "@platform/rate-limit": ["./libs/platform/rate-limit/src/index.ts"],
       "@platform/rate-limit/nest": [

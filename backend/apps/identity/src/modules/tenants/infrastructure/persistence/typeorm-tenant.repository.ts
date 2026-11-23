@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { TenantKind, TenantLifecycle } from '@contracts/identity';
+import type {
+  PlanFeature,
+  TenantKind,
+  TenantLifecycle,
+} from '@contracts/identity';
 import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { Tenant } from '../../domain/tenant.js';
 import { TenantRepository } from '../../domain/tenant.repository.js';
@@ -47,6 +51,12 @@ export class TypeOrmTenantRepository
       ...(row.pinnedApiVersion === null
         ? {}
         : { pinnedApiVersion: row.pinnedApiVersion }),
+      ...(row.planFeatures === null
+        ? {}
+        : { planFeatures: row.planFeatures as PlanFeature[] }),
+      ...(row.planChangedAt === null
+        ? {}
+        : { planChangedAt: row.planChangedAt }),
       ...(row.version === undefined ? {} : { version: row.version }),
     });
   }
@@ -62,6 +72,9 @@ export class TypeOrmTenantRepository
     row.kind = state.kind;
     row.status = state.status;
     row.pinnedApiVersion = state.pinnedApiVersion ?? null;
+    row.planFeatures =
+      state.planFeatures === undefined ? null : [...state.planFeatures];
+    row.planChangedAt = state.planChangedAt ?? null;
     if (state.version !== undefined) {
       row.version = state.version;
     }

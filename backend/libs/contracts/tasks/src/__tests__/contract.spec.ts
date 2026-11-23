@@ -1,3 +1,4 @@
+import { BillingErrorCode } from '@contracts/billing';
 import { IdentityErrorCode } from '@contracts/identity';
 import {
   Compensation,
@@ -30,6 +31,7 @@ const knownErrorCodes = new Set<string>([
   ...Object.values(PlatformErrorCode),
   ...Object.values(IdentityErrorCode),
   ...Object.values(TasksErrorCode),
+  BillingErrorCode.QuotaExceeded,
 ]);
 
 describe('tasksContract', () => {

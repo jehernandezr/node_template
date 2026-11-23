@@ -13,28 +13,33 @@ import { identityService } from '../../identity.service.js';
 import { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 import { SeedRegionTenants } from '../../modules/tenants/index.js';
 import { IdentityTestServers } from './identity-test-servers.js';
+import { PeerServicesStub } from './peer-services-stub.js';
 import { ShardProbe } from './shard-probe.js';
 
 /**
  * Identity completo sobre PostgreSQL y Valkey reales: migra el catálogo y los dos shards, siembra los
- * tenants de la región y sirve HTTP en un puerto libre. Lo comparten las pruebas de integración y las e2e.
+ * tenants de la región y sirve HTTP en un puerto libre. Los servicios a los que llama son `peers`. Lo
+ * comparten las pruebas de integración y las e2e.
  */
 export class IdentityTestApp {
   /** Origen web permitido por el entorno de prueba. */
   static readonly WEB_ORIGIN = 'https://app.identity.test';
   static readonly DEFAULT_IP = '198.51.100.1';
 
+  readonly peers = new PeerServicesStub();
   private readonly servers = new IdentityTestServers();
   private running: RunningService | undefined;
   private environment: ConfigEnv = {};
 
   async start(overrides: ConfigEnv = {}): Promise<void> {
     await this.servers.start();
+    await this.peers.start();
     // Un proxy delante: cada cliente de prueba declara su IP en `X-Forwarded-For`, así el límite por IP
     // de las rutas públicas no se reparte entre todas las pruebas.
     this.environment = {
       ...this.servers.environment(),
       TRUST_PROXY_HOPS: '1',
+      INTERNAL_API_BASE_URLS: JSON.stringify(this.peers.baseUrls()),
       ...overrides,
     };
     const migrator = new ServiceMigrator();
@@ -57,8 +62,15 @@ export class IdentityTestApp {
   }
 
   async stop(): Promise<void> {
-    await this.running?.stop();
-    await this.servers.stop();
+    try {
+      await this.running?.stop();
+    } finally {
+      try {
+        await this.peers.stop();
+      } finally {
+        await this.servers.stop();
+      }
+    }
   }
 
   env(): ConfigEnv {
