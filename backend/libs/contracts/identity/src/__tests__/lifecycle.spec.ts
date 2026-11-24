@@ -104,6 +104,7 @@ describe('identity lifecycle contract', () => {
   it.each([
     [IdentityOperation.ActivateTenant, Compensation.None],
     [IdentityOperation.EraseUser, Compensation.None],
+    [IdentityOperation.FinishTenantMove, Compensation.None],
   ])('declares %s as an irreversible step after the pivot', (id, reverse) => {
     const op = Object.values(identityContract.operations).find(
       (candidate) => candidate.id === id,
@@ -144,13 +145,14 @@ describe('identity lifecycle contract', () => {
     ).toBe(true);
   });
 
-  it('exposes the four tenant move operations of the service', () => {
+  it('exposes the five tenant move operations of the service', () => {
     const ids = Object.values(identityContract.operations).map((op) => op.id);
     expect(ids).toEqual(
       expect.arrayContaining([
         IdentityOperation.TenantMoveSync,
         IdentityOperation.TenantMoveFinalize,
         IdentityOperation.TenantMoveAbort,
+        IdentityOperation.TenantMoveSwitch,
         IdentityOperation.TenantMoveCleanup,
       ]),
     );

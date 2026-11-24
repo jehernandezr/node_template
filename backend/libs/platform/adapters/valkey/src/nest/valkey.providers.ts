@@ -23,6 +23,7 @@ import { ValkeyConnectionResolver } from '../valkey-connection-resolver.js';
 import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
 import { ValkeyHealthIndicator } from '../valkey-health-indicator.js';
 import { ValkeyJobLock } from '../valkey-job-lock.js';
+import { ValkeyWriteGate } from '../valkey-write-gate.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyRateLimiter } from '../valkey-rate-limiter.js';
 import { ValkeyRoutingCache } from '../valkey-routing-cache.js';
@@ -197,6 +198,14 @@ export class ValkeyProviders {
         inject: [ValkeyCommandExecutor, ValkeyKeyspace, RandomSource],
       },
       {
+        provide: ValkeyWriteGate,
+        useFactory: (
+          executor: ValkeyCommandExecutor,
+          keyspace: ValkeyKeyspace,
+        ) => new ValkeyWriteGate(executor, keyspace),
+        inject: [ValkeyCommandExecutor, ValkeyKeyspace],
+      },
+      {
         provide: ValkeyHealthIndicator,
         useFactory: (executor: ValkeyCommandExecutor) =>
           new ValkeyHealthIndicator(executor),
@@ -222,6 +231,7 @@ export class ValkeyProviders {
       ValkeyAuthRevocationFeed,
       ValkeyBloomFilterFactory,
       ValkeyJobLock,
+      ValkeyWriteGate,
       ValkeyHealthIndicator,
       ValkeySubscriberSource,
     ];

@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "generators",
+  "sourceRoot": "backend/tools/generators/src",
+  "projectType": "application",
+  "tags": ["type:tool", "scope:shared"],
+  "targets": {
+    "typecheck": {},
+    "service": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig tools/generators/tsconfig.lib.json tools/generators/src/main.ts service",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "cache": false
+    },
+    "module": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig tools/generators/tsconfig.lib.json tools/generators/src/main.ts module",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "cache": false
+    },
+    "verify": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig tools/generators/tsconfig.lib.json tools/generators/src/main.ts verify",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "inputs": [
+        "{projectRoot}/src/**/*",
+        "{projectRoot}/templates/**/*",
+        "{workspaceRoot}/backend/apps/tasks/**/*"
+      ],
+      "cache": true
+    },
+    "smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig tools/generators/tsconfig.lib.json tools/generators/src/main.ts smoke",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "cache": false
+    }
+  }
+}

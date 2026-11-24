@@ -119,6 +119,10 @@ jobs:
 
       - run: pnpm nx format:check
 
+      # Un servicio y un módulo recién generados pasan lint, test, typecheck y build en una copia del workspace.
+      - name: Humo de los generadores
+        run: pnpm nx run generators:smoke
+
   contracts:
     name: Contratos
     needs: changes

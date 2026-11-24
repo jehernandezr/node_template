@@ -63,14 +63,29 @@ export class InMemoryApiKeyRepository extends ApiKeyRepository {
 
 /** El catálogo de prefijos en memoria. */
 export class InMemoryApiKeyDirectory extends ApiKeyDirectory {
-  private readonly tenants = new Map<string, string>();
+  private readonly entries = new Map<
+    string,
+    { tenantId: string; region: string }
+  >();
 
-  async register(prefix: string, tenantId: string): Promise<void> {
-    this.tenants.set(prefix, tenantId);
+  async register(
+    prefix: string,
+    tenantId: string,
+    region: string,
+  ): Promise<void> {
+    this.entries.set(prefix, { tenantId, region });
   }
 
   async tenantOf(prefix: string): Promise<string | undefined> {
-    return this.tenants.get(prefix);
+    return this.entries.get(prefix)?.tenantId;
+  }
+
+  async relocateTenant(tenantId: string, region: string): Promise<void> {
+    for (const [prefix, entry] of this.entries) {
+      if (entry.tenantId === tenantId) {
+        this.entries.set(prefix, { tenantId, region });
+      }
+    }
   }
 }
 

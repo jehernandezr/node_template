@@ -31,6 +31,7 @@ export enum BillingOperation {
   TenantMoveSync = 'billing.tenant-move.sync.v1',
   TenantMoveFinalize = 'billing.tenant-move.finalize.v1',
   TenantMoveAbort = 'billing.tenant-move.abort.v1',
+  TenantMoveSwitch = 'billing.tenant-move.switch.v1',
   TenantMoveCleanup = 'billing.tenant-move.cleanup.v1',
 }
 

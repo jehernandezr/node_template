@@ -11,7 +11,7 @@ import {
   type OperationDefinition,
 } from './define-operation.js';
 
-/** Las cuatro operaciones de traslado de un servicio, con las claves que usa su contrato. */
+/** Las cinco operaciones de traslado de un servicio, con las claves que usa su contrato. */
 export interface TenantMoveOperations {
   readonly tenantMoveSync: OperationDefinition<
     typeof TenantMoveRefSchema,
@@ -25,6 +25,10 @@ export interface TenantMoveOperations {
     typeof TenantMoveRefSchema,
     typeof TenantMoveAckSchema
   >;
+  readonly tenantMoveSwitch: OperationDefinition<
+    typeof TenantMoveRefSchema,
+    typeof TenantMoveAckSchema
+  >;
   readonly tenantMoveCleanup: OperationDefinition<
     typeof TenantMoveRefSchema,
     typeof TenantMoveAckSchema
@@ -32,7 +36,7 @@ export interface TenantMoveOperations {
 }
 
 /**
- * Declara las operaciones `<servicio>.tenant-move.{sync,finalize,abort,cleanup}.v1`
+ * Declara las operaciones `<servicio>.tenant-move.{sync,finalize,abort,switch,cleanup}.v1`
  * que `@platform/tenant-move` registra en cada servicio. Los ids se arman con el
  * nombre del servicio y el enum `<S>Operation` de cada contrato debe repetirlos.
  */
@@ -71,6 +75,17 @@ export function defineTenantMoveOperations(
       description: `Copia la última ronda de ${service} con el tenant congelado y verifica conteos y sumas.`,
     }),
     tenantMoveAbort,
+    tenantMoveSwitch: defineOperation({
+      id: id('switch'),
+      input: TenantMoveRefSchema,
+      output: TenantMoveAckSchema,
+      idempotent: true,
+      compensatedBy: Compensation.None,
+      compensationReason:
+        'Corre después del pivote: el tenant ya vive en el destino y se reintenta hasta completarse.',
+      timeoutMs: TenantMoveLimits.switchTimeoutMs,
+      description: `Apunta ${service} al destino del tenant trasladado y vuelve a abrir sus escrituras.`,
+    }),
     tenantMoveCleanup: defineOperation({
       id: id('cleanup'),
       input: TenantMoveRefSchema,

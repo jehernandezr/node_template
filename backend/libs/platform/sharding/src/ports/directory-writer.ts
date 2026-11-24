@@ -20,6 +20,11 @@ import type { TenantPlacement } from '../model/tenant-placement.js';
  * `ShardingEvent.ShardDirectoryChanged` cuando el router tiene un publicador.
  */
 export abstract class DirectoryWriter {
+  /** Placement de un tenant leído del primario, la base de una escritura condicional. */
+  abstract readPlacement(
+    tenantId: string,
+  ): Promise<TenantPlacement | undefined>;
+
   /** Placements de una región, la entrada de una `ShardPlacementPolicy`. */
   abstract listPlacements(region: string): Promise<readonly TenantPlacement[]>;
 

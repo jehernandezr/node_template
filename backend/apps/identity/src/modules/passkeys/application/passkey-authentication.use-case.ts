@@ -11,7 +11,7 @@ import {
   type StepUpResult,
 } from '@contracts/identity';
 import { Clock } from '@platform/kernel';
-import { IdentitySettings } from '../../../config/identity-settings.js';
+import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { SignInResponses } from '../../../shared/utils/sign-in-responses.js';
@@ -41,7 +41,7 @@ export class PasskeyAuthentication {
     private readonly devices: DevicesFacade,
     private readonly mfa: MfaFacade,
     private readonly sessions: SessionsFacade,
-    private readonly settings: IdentitySettings,
+    private readonly deployment: DeploymentRegion,
     private readonly clock: Clock,
   ) {}
 
@@ -94,10 +94,7 @@ export class PasskeyAuthentication {
       mfaVerifiedAt: now,
       client,
     });
-    return SignInResponses.authenticated(
-      session,
-      this.settings.values.IDENTITY_REGION,
-    );
+    return SignInResponses.authenticated(session, this.deployment.location());
   }
 
   async mfaOptions(mfaToken: string): Promise<PasskeyOptions> {

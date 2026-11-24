@@ -38,6 +38,10 @@ export class InMemoryDirectoryStore implements DirectoryStore, DirectoryWriter {
     return this.instances.get(logicalShard);
   }
 
+  async readPlacement(tenantId: string): Promise<TenantPlacement | undefined> {
+    return this.placements.get(tenantId);
+  }
+
   async listPlacements(region: string): Promise<readonly TenantPlacement[]> {
     return [...this.placements.values()].filter(
       (placement) => placement.region === region,

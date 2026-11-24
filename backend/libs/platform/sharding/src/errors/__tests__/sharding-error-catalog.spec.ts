@@ -26,6 +26,7 @@ describe('shardingErrorCatalog', () => {
           ShardingErrorCode.CrossShardTransaction,
           ShardingErrorCode.TenantMigrating,
           ShardingErrorCode.TenantNotWritable,
+          ShardingErrorCode.WrongRegion,
         ].sort(),
       );
     });

@@ -23,6 +23,7 @@ export enum ReportsOperation {
   TenantMoveSync = 'reports.tenant-move.sync.v1',
   TenantMoveFinalize = 'reports.tenant-move.finalize.v1',
   TenantMoveAbort = 'reports.tenant-move.abort.v1',
+  TenantMoveSwitch = 'reports.tenant-move.switch.v1',
   TenantMoveCleanup = 'reports.tenant-move.cleanup.v1',
 }
 

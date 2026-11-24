@@ -74,6 +74,7 @@
   "error_platform_validation_too_large": "The value is above the allowed maximum.",
   "error_platform_validation_unknown_field": "The request includes unexpected data.",
   "error_platform_sharding_tenant_not_writable": "We are doing maintenance. For now you can only view data.",
+  "error_platform_sharding_wrong_region": "Your organization lives in another region. Retrying there.",
   "error_platform_criteria_unknown_field": "You cannot filter or sort by that field.",
   "error_platform_criteria_invalid_value": "The search has an invalid value.",
   "error_platform_criteria_invalid_limit": "The number of results per page is not valid.",

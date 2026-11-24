@@ -12,7 +12,7 @@ import type { ErrorCatalogRegistry } from './error-catalog-registry.js';
 
 /**
  * Convierte cualquier error de la petición en Problem Details. Solo sale el título del catálogo: nunca
- * el `message` ni el `detail` del error. Lo que no está en el catálogo es `PLATFORM.INTERNAL.UNEXPECTED`.
+ * el `message` ni el `detail` del error, y de sus datos solo los que el código declara públicos. Lo que no está en el catálogo es `PLATFORM.INTERNAL.UNEXPECTED`.
  */
 export class ProblemDetailsMapper {
   constructor(
@@ -33,6 +33,9 @@ export class ProblemDetailsMapper {
       instance: context.instance,
       traceId: context.traceId,
       errors,
+      ...(PlatformError.is(error) && error.details !== undefined
+        ? { details: error.details }
+        : {}),
     });
     const headers: Record<string, string> = {
       [HttpHeader.ContentType]: 'application/problem+json',

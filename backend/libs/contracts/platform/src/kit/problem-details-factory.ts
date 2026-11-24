@@ -3,7 +3,10 @@ import { PlatformErrorCode } from '../enums/platform-error-code.enum.js';
 import { platformErrorCatalog } from '../errors/platform-error-catalog.js';
 import type { ErrorCatalogEntry } from '../types/error-catalog-entry.type.js';
 import type { ProblemDetailsInput } from '../types/problem-details-input.type.js';
-import type { ProblemDetails } from '../types/problem-details.type.js';
+import type {
+  ProblemDetails,
+  ProblemDetailsDetails,
+} from '../types/problem-details.type.js';
 
 const UNEXPECTED = platformErrorCatalog.find(
   (entry) => entry.code === PlatformErrorCode.InternalUnexpected,
@@ -37,6 +40,21 @@ export class ProblemDetailsFactory {
     if (instance !== undefined) problem.instance = instance;
     if (traceId !== undefined) problem.traceId = traceId;
     if (!internal && input.errors !== undefined) problem.errors = input.errors;
+    const details = internal ? undefined : this.publicDetails(input);
+    if (details !== undefined) problem.details = details;
     return problem;
+  }
+
+  /** Solo los datos de texto que la entrada declara públicos; los demás nunca salen. */
+  private publicDetails(
+    input: ProblemDetailsInput,
+  ): ProblemDetailsDetails | undefined {
+    const allowed = input.entry.publicDetails ?? [];
+    const source = input.details ?? {};
+    const picked = allowed.flatMap((key) => {
+      const value = source[key];
+      return typeof value === 'string' ? [[key, value] as const] : [];
+    });
+    return picked.length === 0 ? undefined : Object.fromEntries(picked);
   }
 }

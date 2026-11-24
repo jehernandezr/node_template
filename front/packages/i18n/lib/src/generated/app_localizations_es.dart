@@ -237,6 +237,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Estamos haciendo mantenimiento. Por ahora solo puedes consultar.';
 
   @override
+  String get error_platform_sharding_wrong_region =>
+      'Tu organización vive en otra región. Reintentando allá.';
+
+  @override
   String get error_platform_criteria_unknown_field =>
       'No se puede filtrar ni ordenar por ese campo.';
 

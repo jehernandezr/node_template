@@ -2,14 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode, TenantLifecycle } from '@contracts/identity';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
+import { RelocateTenant } from './relocate-tenant.use-case.js';
 import { TenantReader } from './tenant-reader.js';
 import { TenantsFacade } from './tenants.facade.js';
 
 /** `TenantsFacade` dentro del proceso. */
 @Injectable()
 export class LocalTenantsFacade extends TenantsFacade {
-  constructor(private readonly reader: TenantReader) {
+  constructor(
+    private readonly reader: TenantReader,
+    private readonly relocation: RelocateTenant,
+  ) {
     super();
+  }
+
+  relocate(tenantId: string, region: string): Promise<void> {
+    return this.relocation.execute(tenantId, region);
   }
 
   get(tenantId: string): Promise<TenantSnapshot> {

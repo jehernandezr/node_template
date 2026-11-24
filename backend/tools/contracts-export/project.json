@@ -63,6 +63,14 @@
         }
       ],
       "cache": true
+    },
+    "openapi": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx --tsconfig tools/contracts-export/tsconfig.lib.json tools/contracts-export/src/main.ts openapi",
+        "cwd": "{workspaceRoot}/backend"
+      },
+      "cache": false
     }
   }
 }

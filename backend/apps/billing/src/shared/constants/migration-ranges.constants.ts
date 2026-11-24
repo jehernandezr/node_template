@@ -5,4 +5,5 @@ export enum MigrationRange {
   Usage = 1_796_200_300_000,
   Invoices = 1_796_200_400_000,
   Payments = 1_796_200_500_000,
+  // generated:modules
 }

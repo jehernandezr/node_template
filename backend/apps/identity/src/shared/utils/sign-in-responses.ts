@@ -3,6 +3,7 @@ import {
   type PendingMfa,
   type SignInResponse,
 } from '@contracts/identity';
+import type { RegionLocation } from './deployment-region.js';
 
 /** Los tokens de una sesión recién abierta. */
 export interface OpenedSession {
@@ -13,7 +14,10 @@ export interface OpenedSession {
 
 /** Las dos respuestas de un inicio de sesión: sesión abierta o segundo factor pendiente. */
 export class SignInResponses {
-  static authenticated(session: OpenedSession, region: string): SignInResponse {
+  static authenticated(
+    session: OpenedSession,
+    location: RegionLocation,
+  ): SignInResponse {
     return {
       status: SignInStatus.Authenticated,
       tokens: {
@@ -21,7 +25,7 @@ export class SignInResponses {
         accessExpiresAt: session.accessExpiresAt.toISOString(),
         sessionToken: session.sessionToken,
       },
-      region,
+      ...location,
     };
   }
 

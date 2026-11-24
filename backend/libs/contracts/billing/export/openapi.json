@@ -1,0 +1,992 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "billing",
+    "version": "2",
+    "description": "Facturación: planes, suscripción del tenant, medición de uso, entitlements, cuotas, facturas y morosidad."
+  },
+  "paths": {
+    "/v1/billing/subscription": {
+      "get": {
+        "operationId": "billing.subscription.get",
+        "description": "Consulta la suscripción del tenant con su plan.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Subscription" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.SUBSCRIPTION.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.SUBSCRIPTION.NOT_FOUND"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["billing:read"]
+      }
+    },
+    "/v1/billing/usage": {
+      "get": {
+        "operationId": "billing.usage.get",
+        "description": "Consulta el uso del periodo vigente de cada métrica con cuota.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageOverview" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.SUBSCRIPTION.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.SUBSCRIPTION.NOT_FOUND"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["billing:read"]
+      }
+    },
+    "/v1/billing/plans": {
+      "get": {
+        "operationId": "billing.plan.list",
+        "description": "Lista los planes del catálogo con su precio y sus límites.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlanCatalog" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["billing:read"]
+      }
+    },
+    "/v1/billing/subscription/plan": {
+      "put": {
+        "operationId": "billing.subscription.change-plan",
+        "description": "Cambia el plan de la suscripción del tenant.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Subscription" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT, BILLING.SUBSCRIPTION.NOT_FOUND, BILLING.SUBSCRIPTION.NOT_CHANGEABLE, BILLING.PLAN.NOT_AVAILABLE, BILLING.PLAN.USAGE_EXCEEDS_LIMIT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.VALIDATION.INVALID_INPUT",
+          "BILLING.SUBSCRIPTION.NOT_FOUND",
+          "BILLING.SUBSCRIPTION.NOT_CHANGEABLE",
+          "BILLING.PLAN.NOT_AVAILABLE",
+          "BILLING.PLAN.USAGE_EXCEEDS_LIMIT"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChangePlanRequest" }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["billing:write"]
+      }
+    },
+    "/v1/billing/invoices": {
+      "get": {
+        "operationId": "billing.invoice.list",
+        "description": "Lista las facturas del tenant, con filtro y paginación.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvoicePage" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.VALIDATION.INVALID_INPUT"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["billing:read"]
+      }
+    },
+    "/v1/billing/invoices/{invoiceId}": {
+      "get": {
+        "operationId": "billing.invoice.get",
+        "description": "Consulta una factura con sus líneas.",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Invoice" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.INVOICE.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.INVOICE.NOT_FOUND"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["billing:read"]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UsageMetric": {
+        "type": "string",
+        "enum": ["users", "api_calls", "storage_gb"],
+        "description": "Métrica de uso que tiene cuota."
+      },
+      "SubscriptionStatus": {
+        "type": "string",
+        "enum": ["trialing", "active", "past_due", "suspended", "canceled"],
+        "description": "Estado de una suscripción."
+      },
+      "InvoiceStatus": {
+        "type": "string",
+        "enum": ["draft", "issued", "paid", "failed", "void"],
+        "description": "Estado de una factura."
+      },
+      "InvoiceLineKind": {
+        "type": "string",
+        "enum": ["fixed_fee", "usage"],
+        "description": "Tipo de línea de una factura."
+      },
+      "PlanPeriodicity": {
+        "type": "string",
+        "enum": ["monthly", "annual"],
+        "description": "Periodicidad de cobro de un plan."
+      },
+      "Currency": {
+        "type": "string",
+        "enum": ["COP", "USD"],
+        "description": "Moneda en que se factura."
+      },
+      "BillingPeriod": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/CalendarDate"
+          },
+          "end": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/CalendarDate"
+          }
+        },
+        "required": ["start", "end"],
+        "description": "Periodo de facturación con fechas de calendario."
+      },
+      "QuotaLimit": {
+        "type": "object",
+        "properties": {
+          "metric": { "$ref": "#/components/schemas/UsageMetric" },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["metric", "limit"],
+        "description": "Límite de una métrica en un plan."
+      },
+      "UsageRecord": {
+        "type": "object",
+        "properties": {
+          "metric": { "$ref": "#/components/schemas/UsageMetric" },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "windowStart": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "key": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "required": ["metric", "quantity", "windowStart", "key"],
+        "additionalProperties": false,
+        "description": "Uso de una métrica en una ventana, con su llave de idempotencia."
+      },
+      "RecordUsagePayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "records": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UsageRecord" }
+          }
+        },
+        "required": ["tenantId", "records"],
+        "additionalProperties": false,
+        "description": "Lote de registros de uso de un tenant."
+      },
+      "SubscriptionChangedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "subscriptionId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "previousPlanId": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+              },
+              { "type": "null" }
+            ]
+          },
+          "planId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "changedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "subscriptionId",
+          "previousPlanId",
+          "planId",
+          "changedAt"
+        ],
+        "description": "Cambió el plan de una suscripción."
+      },
+      "SubscriptionSuspendedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "subscriptionId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "suspendedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": ["tenantId", "subscriptionId", "suspendedAt"],
+        "description": "Se suspendió una suscripción por falta de pago."
+      },
+      "SubscriptionReactivatedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "subscriptionId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "reactivatedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": ["tenantId", "subscriptionId", "reactivatedAt"],
+        "description": "Se reactivó una suscripción suspendida."
+      },
+      "EntitlementsChangedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "features": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "../../identity/export/openapi.json#/components/schemas/PlanFeature"
+            }
+          },
+          "quotas": {
+            "maxItems": 10,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/QuotaLimit" }
+          },
+          "changedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": ["tenantId", "features", "quotas", "changedAt"],
+        "description": "Cambiaron las funcionalidades o cuotas vigentes de un tenant."
+      },
+      "InvoiceIssuedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "period": { "$ref": "#/components/schemas/BillingPeriod" },
+          "total": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          },
+          "issuedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "invoiceId",
+          "number",
+          "period",
+          "total",
+          "issuedAt"
+        ],
+        "description": "Se emitió una factura."
+      },
+      "InvoicePaidPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "total": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          },
+          "paidAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": ["tenantId", "invoiceId", "number", "total", "paidAt"],
+        "description": "Se pagó una factura."
+      },
+      "InvoiceFailedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "total": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "failedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "invoiceId",
+          "number",
+          "total",
+          "attempts",
+          "failedAt"
+        ],
+        "description": "Falló el cobro de una factura."
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "price": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          },
+          "periodicity": { "$ref": "#/components/schemas/PlanPeriodicity" },
+          "quotas": {
+            "maxItems": 10,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/QuotaLimit" }
+          },
+          "features": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "../../identity/export/openapi.json#/components/schemas/PlanFeature"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "periodicity",
+          "quotas",
+          "features"
+        ],
+        "description": "Plan del catálogo con su precio y sus límites."
+      },
+      "PlanCatalog": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 20,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Plan" }
+          }
+        },
+        "required": ["items"],
+        "description": "Catálogo de planes disponibles."
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "plan": { "$ref": "#/components/schemas/Plan" },
+          "status": { "$ref": "#/components/schemas/SubscriptionStatus" },
+          "period": { "$ref": "#/components/schemas/BillingPeriod" }
+        },
+        "required": ["id", "plan", "status", "period"],
+        "description": "Suscripción del tenant con su plan y el periodo vigente."
+      },
+      "QuotaUsage": {
+        "type": "object",
+        "properties": {
+          "metric": { "$ref": "#/components/schemas/UsageMetric" },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["metric", "limit", "used"],
+        "description": "Uso de una métrica frente a su límite."
+      },
+      "UsageOverview": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 10,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/QuotaUsage" }
+          }
+        },
+        "required": ["items"],
+        "description": "Uso del periodo vigente de cada métrica con cuota."
+      },
+      "InvoiceLine": {
+        "type": "object",
+        "properties": {
+          "kind": { "$ref": "#/components/schemas/InvoiceLineKind" },
+          "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "amount": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          }
+        },
+        "required": ["kind", "description", "amount"],
+        "description": "Línea de una factura."
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "period": { "$ref": "#/components/schemas/BillingPeriod" },
+          "status": { "$ref": "#/components/schemas/InvoiceStatus" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "lines": {
+            "maxItems": 200,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/InvoiceLine" }
+          },
+          "total": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "period",
+          "status",
+          "currency",
+          "lines",
+          "total"
+        ],
+        "description": "Factura completa con sus líneas."
+      },
+      "InvoiceSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "period": { "$ref": "#/components/schemas/BillingPeriod" },
+          "status": { "$ref": "#/components/schemas/InvoiceStatus" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "total": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          }
+        },
+        "required": ["id", "number", "period", "status", "currency", "total"],
+        "description": "Factura sin líneas, para listados."
+      },
+      "InvoicePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/InvoiceSummary" }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"],
+        "description": "Página de facturas, más nuevas primero."
+      },
+      "ChangePlanRequest": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["planId"],
+        "additionalProperties": false,
+        "description": "Plan al que cambia la suscripción."
+      },
+      "ListInvoicesRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/InvoiceStatus" },
+          "limit": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/PageLimit"
+          },
+          "after": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Filtros y paginación del listado de facturas."
+      },
+      "GetInvoiceRequest": {
+        "type": "object",
+        "properties": {
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["invoiceId"],
+        "additionalProperties": false,
+        "description": "Factura a consultar."
+      },
+      "OpenBillingAccountInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "ownerUserId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["tenantId", "ownerUserId"],
+        "additionalProperties": false,
+        "description": "Abre la cuenta de facturación de un tenant nuevo."
+      },
+      "BillingAccountResult": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "subscriptionId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "status": { "$ref": "#/components/schemas/SubscriptionStatus" }
+        },
+        "required": ["tenantId", "subscriptionId", "status"],
+        "description": "Cuenta de facturación abierta con su suscripción."
+      },
+      "CloseBillingAccountInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["tenantId"],
+        "additionalProperties": false,
+        "description": "Cierra la cuenta de facturación de un tenant."
+      },
+      "BillingAccountClosed": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["tenantId"],
+        "description": "Cuenta de facturación cerrada."
+      },
+      "GetEntitlementsInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["tenantId"],
+        "additionalProperties": false,
+        "description": "Tenant cuyas funcionalidades y cuotas se consultan."
+      },
+      "Entitlements": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "status": { "$ref": "#/components/schemas/SubscriptionStatus" },
+          "features": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "../../identity/export/openapi.json#/components/schemas/PlanFeature"
+            }
+          },
+          "quotas": {
+            "maxItems": 10,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/QuotaLimit" }
+          }
+        },
+        "required": ["tenantId", "status", "features", "quotas"],
+        "description": "Funcionalidades y cuotas vigentes de un tenant."
+      },
+      "CheckQuotaInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "metric": { "$ref": "#/components/schemas/UsageMetric" },
+          "requested": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000000
+          }
+        },
+        "required": ["tenantId", "metric"],
+        "additionalProperties": false,
+        "description": "Consulta si un tenant puede consumir una cantidad de una métrica."
+      },
+      "QuotaCheck": {
+        "type": "object",
+        "properties": {
+          "metric": { "$ref": "#/components/schemas/UsageMetric" },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "allowed": { "type": "boolean" }
+        },
+        "required": ["metric", "limit", "used", "allowed"],
+        "description": "Resultado de consultar una cuota."
+      },
+      "MarkInvoicePaidInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "paidAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "reference": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
+        "required": ["tenantId", "invoiceId", "paidAt", "reference"],
+        "additionalProperties": false,
+        "description": "Marca una factura como pagada con la referencia del proveedor."
+      },
+      "MarkInvoiceFailedInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "failedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "required": ["tenantId", "invoiceId", "failedAt"],
+        "additionalProperties": false,
+        "description": "Marca una factura como fallida después de un cobro rechazado."
+      },
+      "InvoiceStateResult": {
+        "type": "object",
+        "properties": {
+          "invoiceId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "status": { "$ref": "#/components/schemas/InvoiceStatus" }
+        },
+        "required": ["invoiceId", "status"],
+        "description": "Estado de una factura después de la operación."
+      },
+      "InvoiceChange": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "number": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "period": { "$ref": "#/components/schemas/BillingPeriod" },
+          "status": { "$ref": "#/components/schemas/InvoiceStatus" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "total": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/MoneyAmount"
+          },
+          "issuedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "period",
+          "status",
+          "currency",
+          "total",
+          "issuedAt",
+          "paidAt"
+        ],
+        "description": "Factura con sus fechas de emisión y de pago, para sincronizar otro servicio."
+      },
+      "InvoiceChangePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/InvoiceChange" }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"],
+        "description": "Página de facturas de un tenant, más nuevas primero."
+      },
+      "ListInvoiceChangesInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "limit": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/PageLimit"
+          },
+          "after": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+          }
+        },
+        "required": ["tenantId"],
+        "additionalProperties": false,
+        "description": "Entrada para paginar las facturas de un tenant."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

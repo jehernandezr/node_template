@@ -74,6 +74,7 @@
   "error_platform_validation_too_large": "El valor es mayor que el máximo permitido.",
   "error_platform_validation_unknown_field": "La solicitud incluye un dato que no se esperaba.",
   "error_platform_sharding_tenant_not_writable": "Estamos haciendo mantenimiento. Por ahora solo puedes consultar.",
+  "error_platform_sharding_wrong_region": "Tu organización vive en otra región. Reintentando allá.",
   "error_platform_criteria_unknown_field": "No se puede filtrar ni ordenar por ese campo.",
   "error_platform_criteria_invalid_value": "La búsqueda tiene un valor no válido.",
   "error_platform_criteria_invalid_limit": "La cantidad de resultados por página no es válida.",

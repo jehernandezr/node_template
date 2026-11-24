@@ -273,6 +273,18 @@
         { "name": "TenantNotFound", "value": "IDENTITY.TENANT.NOT_FOUND" },
         { "name": "TenantSlugTaken", "value": "IDENTITY.TENANT.SLUG_TAKEN" },
         { "name": "TenantNotMember", "value": "IDENTITY.TENANT.NOT_MEMBER" },
+        {
+          "name": "TenantMoveNotMovable",
+          "value": "IDENTITY.TENANT_MOVE.NOT_MOVABLE"
+        },
+        {
+          "name": "TenantMoveUnknownTarget",
+          "value": "IDENTITY.TENANT_MOVE.UNKNOWN_TARGET"
+        },
+        {
+          "name": "TenantMoveInProgress",
+          "value": "IDENTITY.TENANT_MOVE.IN_PROGRESS"
+        },
         { "name": "AccessLastOwner", "value": "IDENTITY.ACCESS.LAST_OWNER" },
         {
           "name": "AccessSystemRoleImmutable",
@@ -493,8 +505,16 @@
         },
         { "name": "TenantMoveAbort", "value": "identity.tenant-move.abort.v1" },
         {
+          "name": "TenantMoveSwitch",
+          "value": "identity.tenant-move.switch.v1"
+        },
+        {
           "name": "TenantMoveCleanup",
           "value": "identity.tenant-move.cleanup.v1"
+        },
+        {
+          "name": "FinishTenantMove",
+          "value": "identity.tenant-moves.finish.v1"
         }
       ]
     },
@@ -5251,6 +5271,24 @@
       "description": "Cancela el traslado de un tenant y descarta lo copiado de identity al destino."
     },
     {
+      "name": "tenantMoveSwitch",
+      "id": "identity.tenant-move.switch.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Corre después del pivote: el tenant ya vive en el destino y se reintenta hasta completarse.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Apunta identity al destino del tenant trasladado y vuelve a abrir sus escrituras."
+    },
+    {
       "name": "tenantMoveCleanup",
       "id": "identity.tenant-move.cleanup.v1",
       "version": 1,
@@ -5267,6 +5305,24 @@
       "errors": [],
       "timeoutMs": 6000,
       "description": "Borra de identity los datos del tenant trasladado cuando pasa el periodo de gracia."
+    },
+    {
+      "name": "finishTenantMove",
+      "id": "identity.tenant-moves.finish.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Corre después del pivote de la saga: se repite hasta completarse y no se revierte.",
+      "errors": [],
+      "timeoutMs": 3000,
+      "description": "Marca un traslado de tenant como cambiado en todos los servicios."
     }
   ],
   "events": [
@@ -5688,6 +5744,33 @@
         "audience": "public",
         "messageKey": "error_identity_tenant_not_member",
         "description": "No eres miembro de ese tenant."
+      },
+      {
+        "name": "TenantMoveNotMovable",
+        "code": "IDENTITY.TENANT_MOVE.NOT_MOVABLE",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_identity_tenant_move_not_movable",
+        "description": "El tenant compartido de clientes y el de plataforma reparten sus datos en todos los shards y no se trasladan."
+      },
+      {
+        "name": "TenantMoveUnknownTarget",
+        "code": "IDENTITY.TENANT_MOVE.UNKNOWN_TARGET",
+        "httpStatus": 400,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_identity_tenant_move_unknown_target",
+        "description": "El destino del traslado no es un grupo de shards configurado o ya es la ubicación del tenant."
+      },
+      {
+        "name": "TenantMoveInProgress",
+        "code": "IDENTITY.TENANT_MOVE.IN_PROGRESS",
+        "httpStatus": 409,
+        "retryable": false,
+        "audience": "internal",
+        "messageKey": "error_identity_tenant_move_in_progress",
+        "description": "El tenant ya tiene un traslado en curso."
       },
       {
         "name": "AccessLastOwner",

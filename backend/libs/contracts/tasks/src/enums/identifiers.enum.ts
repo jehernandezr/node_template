@@ -21,6 +21,7 @@ export enum TasksOperation {
   TenantMoveSync = 'tasks.tenant-move.sync.v1',
   TenantMoveFinalize = 'tasks.tenant-move.finalize.v1',
   TenantMoveAbort = 'tasks.tenant-move.abort.v1',
+  TenantMoveSwitch = 'tasks.tenant-move.switch.v1',
   TenantMoveCleanup = 'tasks.tenant-move.cleanup.v1',
 }
 

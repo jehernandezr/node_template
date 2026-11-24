@@ -4,4 +4,6 @@ export interface ClaimTableOptions<R> {
   readonly serialize?: (result: R) => unknown;
   /** Reconstruye el resultado desde el `jsonb` guardado. */
   readonly deserialize?: (stored: unknown) => R;
+  /** La tabla tiene `tenant_id` y guarda ahí el `tenantId` del claim. */
+  readonly tenantColumn?: boolean;
 }

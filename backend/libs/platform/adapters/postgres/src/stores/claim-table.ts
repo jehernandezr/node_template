@@ -39,6 +39,7 @@ interface ClaimedRow {
 export class ClaimTable<R> {
   private readonly serialize: (result: R) => unknown;
   private readonly deserialize: (stored: unknown) => R;
+  private readonly tenantColumn: boolean;
 
   constructor(
     private readonly entity: EntityTarget<ClaimRecordEntity>,
@@ -50,6 +51,7 @@ export class ClaimTable<R> {
     this.serialize = options.serialize ?? ((result: R): unknown => result);
     this.deserialize =
       options.deserialize ?? ((stored: unknown): R => stored as R);
+    this.tenantColumn = options.tenantColumn ?? false;
   }
 
   async claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>> {
@@ -143,9 +145,12 @@ export class ClaimTable<R> {
     const table = this.tableName(manager);
     // `orUpdate` de TypeORM no admite el WHERE del conflicto, y Postgres no devuelve fila si ese WHERE no se cumple.
     // El token propio dice si se tomó la llave.
+    const tenant = this.tenantColumn
+      ? { column: ', tenant_id', value: ', $7' }
+      : { column: '', value: '' };
     const claimed: ClaimedRow[] = await manager.query(
-      `INSERT INTO ${table} (key, state, fingerprint, claim_token, lease_until, attempt, created_at, updated_at) ` +
-        'VALUES ($1, $2, $3, $4, $5, 1, $6, $6) ' +
+      `INSERT INTO ${table} (key, state, fingerprint, claim_token, lease_until, attempt, created_at, updated_at${tenant.column}) ` +
+        `VALUES ($1, $2, $3, $4, $5, 1, $6, $6${tenant.value}) ` +
         `ON CONFLICT (key) DO UPDATE SET claim_token = EXCLUDED.claim_token, lease_until = EXCLUDED.lease_until, ` +
         `attempt = ${table}.attempt + 1, updated_at = EXCLUDED.updated_at ` +
         `WHERE ${table}.state = $2 AND ${table}.lease_until <= EXCLUDED.updated_at ` +
@@ -157,6 +162,7 @@ export class ClaimTable<R> {
         claimToken,
         new Date(leaseUntil),
         now,
+        ...(this.tenantColumn ? [request.tenantId ?? null] : []),
       ],
     );
     const row = claimed[0];

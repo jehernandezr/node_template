@@ -19,6 +19,11 @@ export interface PersistenceModuleOptions {
   readonly defaultSharding?: DefaultShardingOptions;
   /** Con `true`, sin un `ShardScope` activo toda resolución falla con `PLATFORM.SHARDING.KEY_MISSING`. Por defecto `false`. */
   readonly requireScope?: boolean;
+  /**
+   * Con `true` cada escritura espera a que se abra la compuerta de traslado de su tenant y pasa por la barrera de
+   * `tenant_write_fences`, que el shard debe tener migrada. Por defecto `false`.
+   */
+  readonly tenantMoves?: boolean;
   /** Milisegundos sin uso tras los que `ShardDataSources` cierra un `DataSource`. Por defecto 300 000. */
   readonly idleTtlMs?: number;
 }

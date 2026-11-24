@@ -299,6 +299,7 @@ enum BillingOperation {
   tenantMoveSync('billing.tenant-move.sync.v1'),
   tenantMoveFinalize('billing.tenant-move.finalize.v1'),
   tenantMoveAbort('billing.tenant-move.abort.v1'),
+  tenantMoveSwitch('billing.tenant-move.switch.v1'),
   tenantMoveCleanup('billing.tenant-move.cleanup.v1');
 
   const BillingOperation(this.wireCode);

@@ -166,4 +166,16 @@ describe('IdempotencyGate', () => {
       minLeaseMs: 100,
     });
   });
+
+  it('claim, call with a tenant, passes the tenant to the store and leaves it out without one', async () => {
+    const { clock, store, gate } = setup();
+
+    await gate.claim('k1', 'fp', Deadline.after(1000, clock), 'tenant-1');
+    await gate.claim('k2', 'fp', Deadline.after(1000, clock));
+
+    expect(store.claims.map((claim) => claim.request.tenantId)).toEqual([
+      'tenant-1',
+      undefined,
+    ]);
+  });
 });

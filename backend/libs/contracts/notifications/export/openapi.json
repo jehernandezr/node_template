@@ -1,0 +1,559 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "notifications",
+    "version": "2",
+    "description": "Notificaciones: bandeja del usuario, preferencias, despacho por canal, correo transaccional y tiempo real."
+  },
+  "paths": {
+    "/v1/notifications": {
+      "get": {
+        "operationId": "notifications.inbox.list",
+        "description": "Lista las notificaciones de la bandeja del usuario.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificationPage" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": []
+      }
+    },
+    "/v1/notifications/unread-count": {
+      "get": {
+        "operationId": "notifications.inbox.unread-count",
+        "description": "Cuenta las notificaciones sin leer de la bandeja del usuario.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnreadCount" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": []
+      }
+    },
+    "/v1/notifications/{notificationId}/read": {
+      "post": {
+        "operationId": "notifications.inbox.mark-read",
+        "description": "Marca como leída una notificación; repetirlo no falla.",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Sin contenido." },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, NOTIFICATIONS.INBOX.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "NOTIFICATIONS.INBOX.NOT_FOUND"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkNotificationReadRequest"
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": []
+      }
+    },
+    "/v1/notifications/read-all": {
+      "post": {
+        "operationId": "notifications.inbox.mark-all-read",
+        "description": "Marca como leídas todas las notificaciones del usuario.",
+        "parameters": [],
+        "responses": {
+          "204": { "description": "Sin contenido." },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": []
+      }
+    },
+    "/v1/notification-preferences": {
+      "get": {
+        "operationId": "notifications.preferences.get",
+        "description": "Devuelve las preferencias de notificaciones del usuario.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": []
+      },
+      "put": {
+        "operationId": "notifications.preferences.save",
+        "description": "Guarda las preferencias de notificaciones del usuario.",
+        "parameters": [],
+        "responses": {
+          "204": { "description": "Sin contenido." },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT, NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.VALIDATION.INVALID_INPUT",
+          "NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationPreferences"
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NotificationType": {
+        "type": "string",
+        "enum": [
+          "security_alert",
+          "task_updated",
+          "invoice_issued",
+          "account_activity"
+        ],
+        "description": "Tipo de notificación."
+      },
+      "NotificationChannel": {
+        "type": "string",
+        "enum": ["in_app", "push", "email"],
+        "description": "Canal de una notificación."
+      },
+      "NotificationCreatedPayload": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "type": { "$ref": "#/components/schemas/NotificationType" },
+          "channels": {
+            "maxItems": 3,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NotificationChannel" }
+          },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "notificationId",
+          "tenantId",
+          "type",
+          "channels",
+          "createdAt"
+        ],
+        "description": "Se creó una notificación."
+      },
+      "AppNotification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "type": { "$ref": "#/components/schemas/NotificationType" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "body": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "read": { "type": "boolean" }
+        },
+        "required": ["id", "type", "title", "body", "createdAt", "read"],
+        "description": "Notificación de la bandeja del usuario."
+      },
+      "NotificationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AppNotification" }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"],
+        "description": "Página de la bandeja, de la más nueva a la más antigua."
+      },
+      "UnreadCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["count"],
+        "description": "Notificaciones sin leer de la bandeja."
+      },
+      "MarkNotificationReadRequest": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["notificationId"],
+        "additionalProperties": false,
+        "description": "Notificación a marcar como leída."
+      },
+      "NotificationPreferenceEntry": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/NotificationType" },
+          "channels": {
+            "maxItems": 3,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NotificationChannel" }
+          }
+        },
+        "required": ["type", "channels"],
+        "description": "Canales por los que el usuario recibe un tipo de notificación."
+      },
+      "NotificationPreferences": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationPreferenceEntry"
+            }
+          },
+          "quietStart": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 5,
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "quietEnd": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 5,
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "timezone": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["enabled", "quietStart", "quietEnd", "timezone"],
+        "additionalProperties": false,
+        "description": "Preferencias de notificaciones del usuario."
+      },
+      "EmailTemplate": {
+        "type": "string",
+        "enum": [
+          "verify_email",
+          "password_reset",
+          "mfa_code",
+          "email_change",
+          "invitation",
+          "email_already_registered",
+          "mfa_recovery"
+        ],
+        "description": "Plantilla de correo transaccional."
+      },
+      "TemplateParameter": {
+        "type": "string",
+        "enum": [
+          "code",
+          "link",
+          "display_name",
+          "tenant_name",
+          "reference",
+          "available_at"
+        ],
+        "description": "Nombre de un dato que llena una plantilla."
+      },
+      "TemplateParameterValue": {
+        "type": "object",
+        "properties": {
+          "name": { "$ref": "#/components/schemas/TemplateParameter" },
+          "value": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "required": ["name", "value"],
+        "additionalProperties": false,
+        "description": "Valor de un dato de plantilla."
+      },
+      "SendEmailInput": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "template": { "$ref": "#/components/schemas/EmailTemplate" },
+          "to": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "locale": { "type": "string", "minLength": 2, "maxLength": 35 },
+          "parameters": {
+            "maxItems": 10,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TemplateParameterValue" }
+          }
+        },
+        "required": ["messageId", "template", "to", "parameters"],
+        "additionalProperties": false,
+        "description": "Correo transaccional a enviar, con sus datos de plantilla."
+      },
+      "SendEmailResult": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["messageId"],
+        "description": "Correo transaccional aceptado para envío."
+      },
+      "NotifyUserInput": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "user": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "type": { "$ref": "#/components/schemas/NotificationType" },
+          "parameters": {
+            "maxItems": 10,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TemplateParameterValue" }
+          }
+        },
+        "required": [
+          "notificationId",
+          "user",
+          "tenantId",
+          "type",
+          "parameters"
+        ],
+        "additionalProperties": false,
+        "description": "Notificación a entregar a un usuario por sus canales."
+      },
+      "NotifyUserResult": {
+        "type": "object",
+        "properties": {
+          "notificationId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "channels": {
+            "maxItems": 3,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NotificationChannel" }
+          }
+        },
+        "required": ["notificationId", "channels"],
+        "description": "Canales por los que salió una notificación."
+      },
+      "EraseNotificationsUserInput": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          }
+        },
+        "required": ["user"],
+        "additionalProperties": false,
+        "description": "Usuario cuyos datos de notificaciones se borran."
+      },
+      "EraseNotificationsUserResult": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "affectedRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["userId", "affectedRows"],
+        "description": "Filas de notificaciones borradas para un usuario."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

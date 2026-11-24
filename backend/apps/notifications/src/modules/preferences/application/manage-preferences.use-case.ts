@@ -34,9 +34,7 @@ export class ManagePreferences extends PreferencesFacade {
   /** @throws InvalidQuietHoursError si el horario no es válido; no guarda nada. */
   async save(user: UserRef, view: PreferencesView): Promise<void> {
     const preferences = NotificationPreferences.of(view);
-    await this.shard.run(user, () =>
-      this.preferences.save(user.userId, preferences),
-    );
+    await this.shard.run(user, () => this.preferences.save(user, preferences));
   }
 
   erase(user: UserRef): Promise<number> {

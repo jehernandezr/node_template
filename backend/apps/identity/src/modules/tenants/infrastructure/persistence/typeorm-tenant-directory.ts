@@ -51,4 +51,10 @@ export class TypeOrmTenantDirectory
     );
     return row?.slug;
   }
+
+  async relocate(tenantId: string, region: string): Promise<void> {
+    await this.write((manager) =>
+      manager.update(TenantLookupEntity, { tenantId }, { region }),
+    );
+  }
 }

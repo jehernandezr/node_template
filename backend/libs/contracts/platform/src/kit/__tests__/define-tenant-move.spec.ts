@@ -5,19 +5,24 @@ import { defineServiceContract } from '../define-service-contract.js';
 describe('defineTenantMoveOperations', () => {
   const moves = defineTenantMoveOperations('sample');
 
-  it('names the four operations after the service', () => {
+  it('names the five operations after the service', () => {
     expect(moves.tenantMoveSync.id).toBe('sample.tenant-move.sync.v1');
     expect(moves.tenantMoveFinalize.id).toBe('sample.tenant-move.finalize.v1');
     expect(moves.tenantMoveAbort.id).toBe('sample.tenant-move.abort.v1');
+    expect(moves.tenantMoveSwitch.id).toBe('sample.tenant-move.switch.v1');
     expect(moves.tenantMoveCleanup.id).toBe('sample.tenant-move.cleanup.v1');
   });
 
-  it('reverts the copy with the abort and leaves the abort and the cleanup without reverse', () => {
+  it('reverts the copy with the abort and leaves the abort, the switch and the cleanup without reverse', () => {
     expect(moves.tenantMoveSync.compensatedBy).toBe(moves.tenantMoveAbort.id);
     expect(moves.tenantMoveFinalize.compensatedBy).toBe(
       moves.tenantMoveAbort.id,
     );
-    for (const op of [moves.tenantMoveAbort, moves.tenantMoveCleanup]) {
+    for (const op of [
+      moves.tenantMoveAbort,
+      moves.tenantMoveSwitch,
+      moves.tenantMoveCleanup,
+    ]) {
       expect(op.compensatedBy).toBe(Compensation.None);
       expect(op.compensationReason?.length).toBeGreaterThan(0);
     }
@@ -40,6 +45,7 @@ describe('defineTenantMoveOperations', () => {
       'tenantMoveSync',
       'tenantMoveFinalize',
       'tenantMoveAbort',
+      'tenantMoveSwitch',
       'tenantMoveCleanup',
     ]);
   });

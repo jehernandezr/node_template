@@ -21,7 +21,8 @@ export class IdempotencyGate {
   ) {}
 
   /**
-   * Pide el claim de `key` con la huella `fingerprint`; el lease dura hasta `deadline` más el margen.
+   * Pide el claim de `key` con la huella `fingerprint`, del tenant de la llamada si la trae; el lease dura hasta
+   * `deadline` más el margen.
    * - El almacén lanza: `Respond` con `outcomes.fromError(error)`.
    * - La huella guardada difiere: si el claim se adquirió se libera sin ruido, y `Respond`
    *   con `protocol-violation` `idempotency-key-reuse`.
@@ -33,12 +34,14 @@ export class IdempotencyGate {
     key: string,
     fingerprint: string,
     deadline: Deadline,
+    tenantId?: string,
   ): Promise<GateDecision> {
     let claim: ClaimResult<FinalOutcome<unknown>>;
     try {
       claim = await this.store.claim(key, {
         fingerprint,
         deadline,
+        ...(tenantId !== undefined && { tenantId }),
         ...(this.options.leaseMarginMs !== undefined && {
           leaseMarginMs: this.options.leaseMarginMs,
         }),

@@ -19,4 +19,9 @@ export interface ClaimRequest {
    * nunca sea menor que el visibility timeout de la cola.
    */
   readonly minLeaseMs?: number;
+  /**
+   * Tenant cuyos datos protege la llave. El almacén lo guarda junto a la llave para que el traslado del tenant a
+   * otro shard se lleve sus llaves y un reintento después del cambio no repita los efectos en el destino.
+   */
+  readonly tenantId?: string;
 }

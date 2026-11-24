@@ -1,6 +1,7 @@
 import { ArtifactWriter } from '../artifact-writer.js';
 import { AsyncApiBuilder } from '../async-api-builder.js';
 import { ContractExporter } from '../contract-exporter.js';
+import { OpenApiBuilder } from '../open-api-builder.js';
 import { ExportScope } from '../export-constants.js';
 import { ExportPaths } from '../export-paths.js';
 import { GlobalUniquenessChecker } from '../global-uniqueness-checker.js';
@@ -26,6 +27,7 @@ describe('ContractExporter', () => {
         new SchemaExportBuilder(new SchemaOwnership(), uniqueness),
         topology,
         new AsyncApiBuilder(new SchemaOwnership(), topology),
+        new OpenApiBuilder(),
         paths,
       );
 
@@ -51,6 +53,9 @@ describe('ContractExporter', () => {
           `Escrito ${paths.contractExportOf('platform')}`,
           `Escrito ${paths.contractExportOf('identity')}`,
           `Escrito ${paths.contractExportOf('billing')}`,
+          `Escrito ${paths.openApiOf('platform')}`,
+          `Escrito ${paths.openApiOf('identity')}`,
+          `Escrito ${paths.openApiOf('billing')}`,
           `Escrito ${paths.topology}`,
           `Escrito ${paths.asyncApi}`,
         ],
@@ -66,6 +71,7 @@ describe('ContractExporter', () => {
         new SchemaExportBuilder(new SchemaOwnership(), uniqueness),
         topology,
         new AsyncApiBuilder(new SchemaOwnership(), topology),
+        new OpenApiBuilder(),
         paths,
       );
 
@@ -83,6 +89,40 @@ describe('ContractExporter', () => {
         ok: true,
         lines: [`Escrito ${paths.topology}`],
       });
+    });
+
+    it('writes only the OpenAPI of each contract with the openapi-only scope', async () => {
+      const fileSystem = new InMemoryFileSystem();
+      const uniqueness = new GlobalUniquenessChecker();
+      const topology = new TopologyBuilder(uniqueness);
+      const exporter = new ContractExporter(
+        new StaticContractRegistry(ContractFixtures.registered()),
+        new SchemaExportBuilder(new SchemaOwnership(), uniqueness),
+        topology,
+        new AsyncApiBuilder(new SchemaOwnership(), topology),
+        new OpenApiBuilder(),
+        paths,
+      );
+
+      const report = await exporter.run(
+        ExportScope.OpenApiOnly,
+        new ArtifactWriter(
+          new IndentedJsonRenderer(),
+          new WriteMode(fileSystem),
+        ),
+      );
+
+      expect(report.lines).toEqual([
+        `Escrito ${paths.openApiOf('platform')}`,
+        `Escrito ${paths.openApiOf('identity')}`,
+        `Escrito ${paths.openApiOf('billing')}`,
+      ]);
+      expect(
+        fileSystem.contentOf(paths.contractExportOf('identity')),
+      ).toBeUndefined();
+      expect(
+        JSON.parse(fileSystem.contentOf(paths.openApiOf('identity')) ?? '{}'),
+      ).toMatchObject({ openapi: '3.1.0', info: { title: 'identity' } });
     });
   });
 });

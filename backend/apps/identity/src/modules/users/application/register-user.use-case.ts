@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Clock, UseCase } from '@platform/kernel';
+import { Clock, Id, UseCase } from '@platform/kernel';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 import { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
 import { normalizeEmail } from '../../../shared/utils/email-normalization.js';
@@ -12,6 +12,9 @@ import {
   EmailProofStore,
 } from '../domain/email-proof-store.js';
 import type { SignUpCommand } from '../domain/sign-up-command.js';
+import type { UserRef } from '../../../shared/types/user-ref.type.js';
+import type { InvitationPreview } from '../../invitations/index.js';
+import { UserReader } from './user-reader.js';
 import { UserRegistrar } from './user-registrar.js';
 
 /**
@@ -19,11 +22,14 @@ import { UserRegistrar } from './user-registrar.js';
  * correo "ya tienes cuenta" en lugar del de verificación. La política de contraseña se revisa antes de
  * mirar el email, para que su error tampoco revele nada. El cupo del plan del tenant que invita también se
  * revisa antes de crear la cuenta: si no alcanza, no queda un usuario sin membresía que bloquee el reintento.
+ * Si otro miembro toma el último cupo entre esa revisión y la aceptación, la cuenta queda creada sin membresía;
+ * el reintento con la misma invitación la acepta para esa cuenta en lugar de responder que el email ya existe.
  */
 @Injectable()
 export class RegisterUser implements UseCase<SignUpCommand, void> {
   constructor(
     private readonly registrar: UserRegistrar,
+    private readonly reader: UserReader,
     private readonly passwords: PasswordsFacade,
     private readonly invitations: InvitationsFacade,
     private readonly access: AccessFacade,
@@ -51,6 +57,16 @@ export class RegisterUser implements UseCase<SignUpCommand, void> {
       { ...command, email, homeTenantId },
       invited ? this.clock.now() : undefined,
     );
+    if (ref === undefined && invited) {
+      const pending = await this.accountLeftByInvitation(email, invitation);
+      if (pending !== undefined && command.invitationToken !== undefined) {
+        await this.invitations.acceptForNewUser(
+          command.invitationToken,
+          pending,
+        );
+        return;
+      }
+    }
     if (ref === undefined) {
       await this.mailer.send({
         template: IdentityEmailTemplate.EmailAlreadyRegistered,
@@ -75,5 +91,28 @@ export class RegisterUser implements UseCase<SignUpCommand, void> {
       locale: command.locale,
       variables: { token },
     });
+  }
+
+  /**
+   * La cuenta que dejó un registro con esta invitación cuya aceptación falló: tiene el email invitado, su tenant de
+   * origen es el que invita, se verificó después de emitirse la invitación (que sigue pendiente) y no es miembro de
+   * ningún tenant. Una cuenta que ya era miembro, o que salió de un tenant antes de esta invitación, no lo cumple.
+   */
+  private async accountLeftByInvitation(
+    email: string,
+    invitation: InvitationPreview,
+  ): Promise<UserRef | undefined> {
+    const existing = await this.reader.findByEmail(email);
+    const issuedAt = Id.from(invitation.invitationId).timestamp();
+    if (
+      existing?.homeTenantId !== invitation.tenantId ||
+      existing.emailVerifiedAt === undefined ||
+      existing.emailVerifiedAt < issuedAt
+    ) {
+      return undefined;
+    }
+    const ref = { userId: existing.id, homeTenantId: existing.homeTenantId };
+    const tenants = await this.access.tenantsOf(ref);
+    return tenants.length === 0 ? ref : undefined;
   }
 }

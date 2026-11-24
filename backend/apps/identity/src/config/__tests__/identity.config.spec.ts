@@ -76,6 +76,19 @@ describe('identityConfigSchema', () => {
     ).toContain('AUTH_ISSUER');
   });
 
+  it('refuses a SERVICE_REGION different from IDENTITY_REGION and accepts the same one', () => {
+    const region = IdentityTestEnvironment.build()['IDENTITY_REGION'];
+
+    expect(
+      parseIssues(
+        IdentityTestEnvironment.build({ SERVICE_REGION: 'otra-region' }),
+      ),
+    ).toContain('IDENTITY_REGION');
+    expect(
+      parseIssues(IdentityTestEnvironment.build({ SERVICE_REGION: region })),
+    ).toEqual([]);
+  });
+
   it('refuses a secret shorter than its minimum', () => {
     const short = randomBytes(23).toString('base64url');
 

@@ -70,6 +70,12 @@ export class ShardRouterAssembler {
       clock,
       strategy: options.strategy ?? new ConsistentHashStrategy(),
       currentRegion: options.currentRegion,
+      regionUrls: new Map(
+        (options.regions ?? []).map((region) => [
+          region.code,
+          region.apiBaseUrl,
+        ]),
+      ),
       normalizer,
       cache,
       loader: new PlacementLoader(

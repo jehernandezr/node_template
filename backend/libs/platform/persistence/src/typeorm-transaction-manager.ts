@@ -10,6 +10,7 @@ import type { ShardHandle } from './model/shard-handle.js';
 import type { ShardedTransactionOptions } from './model/sharded-transaction-options.js';
 import type { PersistenceFeature } from './persistence-feature.js';
 import type { ShardResolver } from './shard-resolver.js';
+import type { TenantWriteFence } from './tenant-write-fence.js';
 import { TypeOrmUnitOfWork } from './typeorm-unit-of-work.js';
 
 /**
@@ -21,14 +22,21 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     'Transaction afterCommit hook failed';
   private static readonly ROLLBACK_HOOK_FAILED =
     'Transaction afterRollback hook failed';
+  private static readonly FENCE_RELEASE_FAILED =
+    'Tenant write fence lock release failed';
 
   private readonly storage = new AsyncLocalStorage<TypeOrmUnitOfWork>();
 
+  /**
+   * @param fence Barrera de traslado de tenants. Sin ella las escrituras no la consultan, como en las bases que no
+   *   tienen `tenant_write_fences`.
+   */
   constructor(
     private readonly resolver: ShardResolver,
     private readonly defaultFeature: PersistenceFeature,
     private readonly context: PersistenceContextProvider,
     private readonly logger: LoggerPort,
+    private readonly fence?: TenantWriteFence,
   ) {
     super();
   }
@@ -87,6 +95,11 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     const shard = handle.resolved.logicalShard;
     TransactionShardGuard.current()?.touch(shard);
     const qr = handle.dataSource.createQueryRunner('master');
+    const fencedTenant =
+      this.fence !== undefined && options?.readOnly !== true
+        ? handle.resolved.tenantId
+        : undefined;
+    let admitted = false;
     let active = false;
     let uow: TypeOrmUnitOfWork | undefined;
     let hooks: readonly TransactionHook[] = [];
@@ -94,6 +107,10 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     try {
       try {
         await qr.connect();
+        if (fencedTenant !== undefined) {
+          await this.fence?.admit(qr, fencedTenant);
+          admitted = true;
+        }
         await qr.startTransaction(options?.isolation);
         active = true;
         await this.applySession(qr, options);
@@ -119,16 +136,51 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
         }
         hooks = uow?.takeRollbackHooks() ?? [];
       }
-      await qr.release();
+      await this.release(qr, admitted ? fencedTenant : undefined);
       await this.runHooks(
         hooks,
         TypeOrmTransactionManager.ROLLBACK_HOOK_FAILED,
       );
       throw error;
     }
-    await qr.release();
+    await this.release(qr, fencedTenant);
     await this.runHooks(hooks, TypeOrmTransactionManager.COMMIT_HOOK_FAILED);
     return result;
+  }
+
+  /**
+   * Suelta el candado de la barrera y devuelve la conexión al pool. Si el candado no se suelta, cierra la conexión
+   * antes de devolverla, así el pool la descarta y Postgres suelta el candado al cerrar la sesión: si volviera al
+   * pool con el candado tomado, el traslado del tenant esperaría para siempre. El resultado de la transacción no
+   * cambia.
+   */
+  private async release(
+    qr: QueryRunner,
+    tenantId: string | undefined,
+  ): Promise<void> {
+    if (tenantId !== undefined && this.fence !== undefined) {
+      try {
+        await this.fence.leave(qr, tenantId);
+      } catch (error) {
+        this.logger.error(TypeOrmTransactionManager.FENCE_RELEASE_FAILED, {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        await this.close(qr);
+      }
+    }
+    await qr.release();
+  }
+
+  /** Cierra la sesión de la conexión; una conexión ya cortada no tiene nada que cerrar. */
+  private async close(qr: QueryRunner): Promise<void> {
+    const connection: { end(): Promise<void> } = await qr.connect();
+    try {
+      await connection.end();
+    } catch (error) {
+      this.logger.error(TypeOrmTransactionManager.FENCE_RELEASE_FAILED, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private async applySession(

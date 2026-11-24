@@ -6,4 +6,6 @@ export abstract class TenantsFacade {
   abstract get(tenantId: string): Promise<TenantSnapshot>;
   /** @throws DomainError `IDENTITY.TENANT.SUSPENDED` si el tenant no está activo. */
   abstract assertActive(tenantId: string): Promise<void>;
+  /** Apunta el índice de slugs a la región nueva del tenant después de trasladarlo. Idempotente. */
+  abstract relocate(tenantId: string, region: string): Promise<void>;
 }

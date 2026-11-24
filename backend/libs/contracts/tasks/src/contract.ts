@@ -23,7 +23,8 @@ import * as http from './http/index.js';
 import * as internal from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-const tenantMove = defineTenantMoveOperations('tasks');
+/** Las operaciones de traslado de tenant de tasks, con su tipo exacto para registrarlas y llamarlas. */
+export const TasksTenantMoveOperations = defineTenantMoveOperations('tasks');
 
 /** Contrato del servicio tasks: tareas del tenant, búsqueda y eventos. */
 export const tasksContract = defineServiceContract({
@@ -69,10 +70,11 @@ export const tasksContract = defineServiceContract({
   operations: {
     listChanges: internal.ListTaskChangesOperation,
     eraseUserData: internal.EraseTasksUserDataOperation,
-    tenantMoveSync: tenantMove.tenantMoveSync,
-    tenantMoveFinalize: tenantMove.tenantMoveFinalize,
-    tenantMoveAbort: tenantMove.tenantMoveAbort,
-    tenantMoveCleanup: tenantMove.tenantMoveCleanup,
+    tenantMoveSync: TasksTenantMoveOperations.tenantMoveSync,
+    tenantMoveFinalize: TasksTenantMoveOperations.tenantMoveFinalize,
+    tenantMoveAbort: TasksTenantMoveOperations.tenantMoveAbort,
+    tenantMoveSwitch: TasksTenantMoveOperations.tenantMoveSwitch,
+    tenantMoveCleanup: TasksTenantMoveOperations.tenantMoveCleanup,
   },
   events: {
     taskCreated: TaskCreatedEvent,

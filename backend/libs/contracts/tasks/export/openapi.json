@@ -1,0 +1,620 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "tasks",
+    "version": "2",
+    "description": "Tareas de la organización: alta, lectura, búsqueda, cambio y borrado, y los eventos que otros servicios consumen."
+  },
+  "paths": {
+    "/v1/tasks": {
+      "get": {
+        "operationId": "tasks.task.list",
+        "description": "Lista las tareas del tenant activo o las busca por texto.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TaskPage" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT, TASKS.SEARCH.QUERY_TOO_SHORT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.QUOTA.EXCEEDED",
+          "PLATFORM.VALIDATION.INVALID_INPUT",
+          "TASKS.SEARCH.QUERY_TOO_SHORT"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["tasks:read"]
+      },
+      "post": {
+        "operationId": "tasks.task.create",
+        "description": "Crea una tarea en el tenant activo.",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.QUOTA.EXCEEDED",
+          "PLATFORM.VALIDATION.INVALID_INPUT"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateTaskRequest" }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["tasks:write"]
+      }
+    },
+    "/v1/tasks/{taskId}": {
+      "get": {
+        "operationId": "tasks.task.get",
+        "description": "Devuelve una tarea del tenant activo.",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, TASKS.TASK.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.QUOTA.EXCEEDED",
+          "TASKS.TASK.NOT_FOUND"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["tasks:read"]
+      },
+      "patch": {
+        "operationId": "tasks.task.update",
+        "description": "Cambia campos de una tarea. Con expectedVersion, rechaza el cambio si la tarea se modificó antes.",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT, TASKS.TASK.NOT_FOUND, TASKS.TASK.VERSION_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.QUOTA.EXCEEDED",
+          "PLATFORM.VALIDATION.INVALID_INPUT",
+          "TASKS.TASK.NOT_FOUND",
+          "TASKS.TASK.VERSION_CONFLICT"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateTaskRequest" }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["tasks:write"]
+      },
+      "delete": {
+        "operationId": "tasks.task.delete",
+        "description": "Borra una tarea de forma lógica.",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Sin contenido." },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, TASKS.TASK.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "BILLING.QUOTA.EXCEEDED",
+          "TASKS.TASK.NOT_FOUND"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["tasks:write"]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TaskStatus": {
+        "type": "string",
+        "enum": ["open", "in_progress", "done"],
+        "description": "Estado de una tarea."
+      },
+      "TaskField": {
+        "type": "string",
+        "enum": ["title", "description", "status"],
+        "description": "Campo de una tarea que un cambio puede modificar."
+      },
+      "TaskCreatedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "taskId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "status": { "$ref": "#/components/schemas/TaskStatus" },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "createdBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "taskId",
+          "status",
+          "version",
+          "createdBy",
+          "createdAt"
+        ],
+        "description": "Se creó una tarea."
+      },
+      "TaskUpdatedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "taskId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "changedFields": {
+            "maxItems": 3,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TaskField" }
+          },
+          "statusBefore": { "$ref": "#/components/schemas/TaskStatus" },
+          "statusAfter": { "$ref": "#/components/schemas/TaskStatus" },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "actor": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "createdBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "updatedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "taskId",
+          "changedFields",
+          "statusBefore",
+          "statusAfter",
+          "version",
+          "actor",
+          "createdBy",
+          "updatedAt"
+        ],
+        "description": "Se cambió una tarea."
+      },
+      "TaskDeletedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "taskId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "status": { "$ref": "#/components/schemas/TaskStatus" },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "actor": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "deletedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "taskId",
+          "status",
+          "version",
+          "actor",
+          "deletedAt"
+        ],
+        "description": "Se borró una tarea."
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 5000 },
+          "status": { "$ref": "#/components/schemas/TaskStatus" },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "createdBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "createdBy"
+        ],
+        "description": "Una tarea de la organización."
+      },
+      "TaskPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Task" }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"],
+        "description": "Página de tareas del tenant."
+      },
+      "ListTasksRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/TaskStatus" },
+          "q": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "limit": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/PageLimit"
+          },
+          "after": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Listado o búsqueda de tareas, con filtro de estado opcional."
+      },
+      "GetTaskRequest": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false,
+        "description": "Tarea a consultar."
+      },
+      "CreateTaskRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 5000 }
+        },
+        "required": ["title"],
+        "additionalProperties": false,
+        "description": "Alta de una tarea."
+      },
+      "UpdateTaskRequest": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 5000 },
+          "status": { "$ref": "#/components/schemas/TaskStatus" },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false,
+        "description": "Cambios parciales de una tarea, con versión esperada opcional."
+      },
+      "DeleteTaskRequest": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["taskId"],
+        "additionalProperties": false,
+        "description": "Tarea a borrar."
+      },
+      "TaskChange": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 5000 },
+          "status": { "$ref": "#/components/schemas/TaskStatus" },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "createdBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "deletedAt": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "createdBy",
+          "deletedAt"
+        ],
+        "description": "Tarea con la fecha de borrado lógico, si la hubo."
+      },
+      "TaskChangePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TaskChange" }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"],
+        "description": "Página de cambios de tareas."
+      },
+      "ListTaskChangesInput": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "updatedAfter": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "limit": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/PageLimit"
+          },
+          "after": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+          }
+        },
+        "required": ["tenantId"],
+        "additionalProperties": false,
+        "description": "Entrada para paginar los cambios de tareas de un tenant."
+      },
+      "EraseTasksUserInput": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          }
+        },
+        "required": ["user"],
+        "additionalProperties": false,
+        "description": "Usuario cuyos datos se anonimizan en las tareas."
+      },
+      "EraseTasksUserResult": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "affectedRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["userId", "affectedRows"],
+        "description": "Filas de tareas anonimizadas para un usuario."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

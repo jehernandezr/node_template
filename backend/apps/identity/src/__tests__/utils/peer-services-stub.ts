@@ -44,6 +44,7 @@ export class PeerServicesStub {
   readonly received: string[] = [];
   private readonly refused = new Set<string>();
   private readonly quotas = new Map<string, StubQuota>();
+  private readonly unlimitedChecks = new Map<string, number>();
   private readonly server: Server = createServer((request, response) => {
     this.answer(request, response).catch((error: unknown) => {
       if (!response.headersSent) {
@@ -79,6 +80,21 @@ export class PeerServicesStub {
   /** Fija la cuota de una métrica del tenant, como si tuviera una suscripción con ese plan. */
   limit(tenantId: string, metric: UsageMetric, quota: StubQuota): void {
     this.quotas.set(`${tenantId}:${metric}`, quota);
+  }
+
+  /**
+   * Las primeras `checks` consultas de la métrica responden que el tenant no tiene suscripción, sin límite, y las
+   * siguientes con `quota`: así otro miembro toma el último cupo entre dos revisiones. Una respuesta sin
+   * suscripción no queda en el caché de cuotas del servicio, así que la segunda revisión llega aquí.
+   */
+  fillAfter(
+    tenantId: string,
+    metric: UsageMetric,
+    quota: StubQuota,
+    checks: number,
+  ): void {
+    this.limit(tenantId, metric, quota);
+    this.unlimitedChecks.set(`${tenantId}:${metric}`, checks);
   }
 
   private async answer(
@@ -136,8 +152,13 @@ export class PeerServicesStub {
   }
 
   private quotaOf(tenantId: string, input: Input): unknown {
-    const quota = this.quotas.get(`${tenantId}:${String(input.metric)}`);
-    if (quota === undefined) {
+    const key = `${tenantId}:${String(input.metric)}`;
+    const quota = this.quotas.get(key);
+    const unlimited = this.unlimitedChecks.get(key) ?? 0;
+    if (unlimited > 0) {
+      this.unlimitedChecks.set(key, unlimited - 1);
+    }
+    if (quota === undefined || unlimited > 0) {
       return CallOutcome.businessError(BillingErrorCode.SubscriptionNotFound);
     }
     const requested = Number(input['requested'] ?? 1);

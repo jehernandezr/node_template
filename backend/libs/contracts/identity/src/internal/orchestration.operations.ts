@@ -1,4 +1,9 @@
-import { Compensation, defineOperation } from '@contracts/platform';
+import {
+  Compensation,
+  defineOperation,
+  TenantMoveAckSchema,
+  TenantMoveRefSchema,
+} from '@contracts/platform';
 import {
   IdentityErrorCode,
   IdentityOperation,
@@ -66,4 +71,21 @@ export const ListMembersByPermissionOperation = defineOperation({
   errors: [IdentityErrorCode.TenantNotFound],
   timeoutMs: 3000,
   description: 'Pagina los miembros de un tenant que tienen un permiso.',
+});
+
+/**
+ * Cierra un traslado de tenant cuando cada servicio ya apunta al destino. Es el último paso de `MoveTenant`: desde
+ * ahí corre la gracia antes de limpiar el origen.
+ */
+export const FinishTenantMoveOperation = defineOperation({
+  id: IdentityOperation.FinishTenantMove,
+  input: TenantMoveRefSchema,
+  output: TenantMoveAckSchema,
+  idempotent: true,
+  compensatedBy: Compensation.None,
+  compensationReason:
+    'Corre después del pivote de la saga: se repite hasta completarse y no se revierte.',
+  timeoutMs: 3000,
+  description:
+    'Marca un traslado de tenant como cambiado en todos los servicios.',
 });

@@ -1,20 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import {
   EraseNotificationsUserDataOperation,
-  notificationsContract,
   type EraseNotificationsUserInput,
   type EraseNotificationsUserResult,
 } from '@contracts/notifications';
 import type { HandlerResult } from '@platform/internal-api';
 import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
-import { OperationNotImplementedError } from '../../../shared/errors/operation-not-implemented.error.js';
 import { UserShard } from '../../../shared/utils/user-shard.js';
 import { DeliveryRepository } from '../../dispatch/index.js';
 import { InboxFacade } from '../../inbox/index.js';
 import { PreferencesFacade } from '../../preferences/index.js';
 
-/** Borrado de los datos de notificaciones de un usuario y, después, el traslado de tenants. */
+/** Borrado de los datos de notificaciones de un usuario. */
 @Injectable()
 export class PrivacyInternalOperations {
   constructor(
@@ -40,33 +38,5 @@ export class PrivacyInternalOperations {
         affectedRows: deliveries + notifications + preferences,
       }),
     };
-  }
-
-  @InternalHandler(notificationsContract.operations.tenantMoveSync)
-  tenantMoveSync(): never {
-    throw new OperationNotImplementedError(
-      notificationsContract.operations.tenantMoveSync.id,
-    );
-  }
-
-  @InternalHandler(notificationsContract.operations.tenantMoveFinalize)
-  tenantMoveFinalize(): never {
-    throw new OperationNotImplementedError(
-      notificationsContract.operations.tenantMoveFinalize.id,
-    );
-  }
-
-  @InternalHandler(notificationsContract.operations.tenantMoveAbort)
-  tenantMoveAbort(): never {
-    throw new OperationNotImplementedError(
-      notificationsContract.operations.tenantMoveAbort.id,
-    );
-  }
-
-  @InternalHandler(notificationsContract.operations.tenantMoveCleanup)
-  tenantMoveCleanup(): never {
-    throw new OperationNotImplementedError(
-      notificationsContract.operations.tenantMoveCleanup.id,
-    );
   }
 }

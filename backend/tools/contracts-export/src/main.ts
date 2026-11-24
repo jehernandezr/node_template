@@ -8,6 +8,7 @@ import { ExportPaths } from './export-paths.js';
 import { GlobalUniquenessChecker } from './global-uniqueness-checker.js';
 import { NodeFileSystem } from './node-file-system.js';
 import { NodeModuleLoader } from './node-module-loader.js';
+import { OpenApiBuilder } from './open-api-builder.js';
 import { PrettierArtifactRenderer } from './prettier-artifact-renderer.js';
 import { SchemaExportBuilder } from './schema-export-builder.js';
 import { SchemaOwnership } from './schema-ownership.js';
@@ -25,6 +26,7 @@ async function main(args: readonly string[]): Promise<ExitCode> {
     new SchemaExportBuilder(ownership, uniqueness),
     topology,
     new AsyncApiBuilder(ownership, topology),
+    new OpenApiBuilder(),
     paths,
   );
   const command = new ExportCommand(

@@ -1,6 +1,7 @@
 import type { ArtifactWriter } from './artifact-writer.js';
 import type { Artifact, ExportReport } from './artifact.type.js';
 import type { AsyncApiBuilder } from './async-api-builder.js';
+import type { OpenApiBuilder } from './open-api-builder.js';
 import type { ContractRegistry } from './contract-registry.js';
 import { ExportScope } from './export-constants.js';
 import type { ExportPaths } from './export-paths.js';
@@ -14,6 +15,7 @@ export class ContractExporter {
     private readonly schemas: SchemaExportBuilder,
     private readonly topology: TopologyBuilder,
     private readonly asyncApi: AsyncApiBuilder,
+    private readonly openApi: OpenApiBuilder,
     private readonly paths: ExportPaths,
   ) {}
 
@@ -26,14 +28,21 @@ export class ContractExporter {
     if (scope === ExportScope.TopologyOnly) {
       return writer.write([topology]);
     }
-    const contractArtifacts: Artifact[] = [
-      ...this.schemas.build(contracts),
-    ].map(([service, value]) => ({
+    const exported = [...this.schemas.build(contracts)];
+    const openApiArtifacts: Artifact[] = exported.map(([service, value]) => ({
+      path: this.paths.openApiOf(service),
+      value: this.openApi.build(value),
+    }));
+    if (scope === ExportScope.OpenApiOnly) {
+      return writer.write(openApiArtifacts);
+    }
+    const contractArtifacts: Artifact[] = exported.map(([service, value]) => ({
       path: this.paths.contractExportOf(service),
       value,
     }));
     return writer.write([
       ...contractArtifacts,
+      ...openApiArtifacts,
       topology,
       { path: this.paths.asyncApi, value: this.asyncApi.build(contracts) },
     ]);

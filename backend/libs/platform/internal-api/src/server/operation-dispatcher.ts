@@ -84,7 +84,12 @@ export class OperationDispatcher {
       );
     }
 
-    const decision = await this.gate.claim(key, fingerprint, deadline);
+    const decision = await this.gate.claim(
+      key,
+      fingerprint,
+      deadline,
+      meta.tenantId,
+    );
     if (decision.kind === GateDecisionKind.Respond) {
       return decision.outcome;
     }

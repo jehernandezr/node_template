@@ -117,4 +117,13 @@ export class TypeOrmUserDirectory
       createdAt: row.createdAt,
     };
   }
+
+  async relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void> {
+    await this.write((manager) =>
+      manager.update(IdentityLookupEntity, { homeTenantId }, { region }),
+    );
+  }
 }

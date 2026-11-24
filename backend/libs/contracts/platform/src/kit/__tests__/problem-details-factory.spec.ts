@@ -138,5 +138,42 @@ describe('ProblemDetailsFactory', () => {
         detail: 'Indica el código.',
       });
     });
+
+    it('publishes only the details that the code declares public, as text', () => {
+      const wrongRegion = platformErrorCatalog.find(
+        (e) => e.code === PlatformErrorCode.ShardingWrongRegion,
+      ) as ErrorCatalogEntry;
+      const factory = new ProblemDetailsFactory(typeBaseUrl);
+
+      const problem = factory.create({
+        entry: wrongRegion,
+        title: wrongRegion.description,
+        details: {
+          apiBaseUrl: 'https://sa.example.com',
+          region: 'sa-east-1',
+          tenantId: 'not-public',
+          attempts: 3,
+        },
+      });
+
+      expect(problem.status).toBe(421);
+      expect(problem.details).toEqual({
+        apiBaseUrl: 'https://sa.example.com',
+        region: 'sa-east-1',
+      });
+      expect(ProblemDetailsSchema.parse(problem)).toEqual(problem);
+    });
+
+    it('never publishes details of a code that declares none', () => {
+      const factory = new ProblemDetailsFactory(typeBaseUrl);
+
+      const problem = factory.create({
+        entry: validationEntry,
+        title: 'Falta un dato',
+        details: { apiBaseUrl: 'https://sa.example.com' },
+      });
+
+      expect(problem.details).toBeUndefined();
+    });
   });
 });

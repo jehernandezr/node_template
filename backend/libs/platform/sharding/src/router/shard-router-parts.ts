@@ -12,6 +12,8 @@ export interface ShardRouterParts {
   readonly clock: Clock;
   readonly strategy: ShardingStrategy;
   readonly currentRegion: string | undefined;
+  /** URL de la API de cada región conocida, por código. */
+  readonly regionUrls: ReadonlyMap<string, string>;
   readonly normalizer: RoutingKeyNormalizer;
   readonly cache: PlacementCache;
   readonly loader: PlacementLoader;

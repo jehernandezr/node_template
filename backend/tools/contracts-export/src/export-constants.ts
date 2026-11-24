@@ -26,18 +26,26 @@ export const EXPORT_DIR = 'export';
 /** Archivo que lee el generador Dart, dentro de `EXPORT_DIR`. */
 export const CONTRACT_EXPORT_FILE = 'contract.json';
 
+/** OpenAPI de las rutas de cada servicio, dentro de `EXPORT_DIR`. */
+export const OPENAPI_EXPORT_FILE = 'openapi.json';
+
+/** Versión de OpenAPI de los documentos generados. */
+export const OPENAPI_VERSION = '3.1.0';
+
 /** Subcomandos de la línea de comandos. */
 export enum ExportCommandName {
   Export = 'export',
   Check = 'check',
   TopologyExport = 'topology-export',
   TopologyCheck = 'topology-check',
+  OpenApi = 'openapi',
 }
 
 /** Qué artefactos genera un subcomando. */
 export enum ExportScope {
   All = 'all',
   TopologyOnly = 'topology-only',
+  OpenApiOnly = 'openapi-only',
 }
 
 /** Códigos de salida del proceso. */

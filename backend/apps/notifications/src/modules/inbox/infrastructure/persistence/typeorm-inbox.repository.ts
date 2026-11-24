@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { NotificationType } from '@contracts/notifications';
+import type { UserRef } from '@contracts/platform';
 import { ManagerIntent, RepositoryKit } from '@platform/persistence';
 import { IsNull, type EntityManager } from 'typeorm';
 import { InboxRepository } from '../../domain/inbox.repository.js';
@@ -13,7 +14,10 @@ export class TypeOrmInboxRepository extends InboxRepository {
     super();
   }
 
-  async add(notification: NotificationState): Promise<NotificationState> {
+  async add(
+    owner: UserRef,
+    notification: NotificationState,
+  ): Promise<NotificationState> {
     return this.write(async (manager) => {
       await manager
         .createQueryBuilder()
@@ -22,6 +26,7 @@ export class TypeOrmInboxRepository extends InboxRepository {
         .values({
           id: notification.id,
           userId: notification.userId,
+          homeTenantId: owner.homeTenantId,
           type: notification.type,
           title: notification.title,
           body: notification.body,

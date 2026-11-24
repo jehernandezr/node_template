@@ -1,4 +1,5 @@
 import type { ErrorAudience } from '../enums/error-audience.enum.js';
+import type { ProblemDetailKey } from '../enums/problem-detail-key.enum.js';
 
 /**
  * Entrada del catálogo de errores: estado HTTP, si el cliente puede reintentar,
@@ -12,4 +13,6 @@ export interface ErrorCatalogEntry {
   /** Clave ARB del front, por ejemplo `error_platform_auth_forbidden`. */
   readonly messageKey: string;
   readonly description: string;
+  /** Datos del error que salen al cliente en `ProblemDetails.details`. Solo los códigos públicos los publican. */
+  readonly publicDetails?: readonly ProblemDetailKey[];
 }

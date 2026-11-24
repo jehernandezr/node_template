@@ -31,6 +31,9 @@ export enum IdentityErrorCode {
   TenantNotFound = 'IDENTITY.TENANT.NOT_FOUND',
   TenantSlugTaken = 'IDENTITY.TENANT.SLUG_TAKEN',
   TenantNotMember = 'IDENTITY.TENANT.NOT_MEMBER',
+  TenantMoveNotMovable = 'IDENTITY.TENANT_MOVE.NOT_MOVABLE',
+  TenantMoveUnknownTarget = 'IDENTITY.TENANT_MOVE.UNKNOWN_TARGET',
+  TenantMoveInProgress = 'IDENTITY.TENANT_MOVE.IN_PROGRESS',
   AccessLastOwner = 'IDENTITY.ACCESS.LAST_OWNER',
   AccessSystemRoleImmutable = 'IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE',
   AccessNameTaken = 'IDENTITY.ACCESS.NAME_TAKEN',
@@ -142,7 +145,9 @@ export enum IdentityOperation {
   TenantMoveSync = 'identity.tenant-move.sync.v1',
   TenantMoveFinalize = 'identity.tenant-move.finalize.v1',
   TenantMoveAbort = 'identity.tenant-move.abort.v1',
+  TenantMoveSwitch = 'identity.tenant-move.switch.v1',
   TenantMoveCleanup = 'identity.tenant-move.cleanup.v1',
+  FinishTenantMove = 'identity.tenant-moves.finish.v1',
 }
 
 /** Tipos CloudEvents de los eventos que publica identity. */

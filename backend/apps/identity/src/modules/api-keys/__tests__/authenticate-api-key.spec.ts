@@ -66,7 +66,7 @@ describe('AuthenticateApiKey', () => {
     );
     const job = new FlushApiKeyUsageJob(usage, repository, scopes);
     const addKey = async (allowedCidrs: readonly string[]): Promise<void> => {
-      await directory.register(PREFIX, TENANT);
+      await directory.register(PREFIX, TENANT, 'eu');
       await repository.insertServiceAccount({
         id: 'sa-1',
         tenantId: TENANT,

@@ -113,6 +113,10 @@
           "value": "PLATFORM.SHARDING.TENANT_NOT_WRITABLE"
         },
         {
+          "name": "ShardingWrongRegion",
+          "value": "PLATFORM.SHARDING.WRONG_REGION"
+        },
+        {
           "name": "CriteriaUnknownField",
           "value": "PLATFORM.CRITERIA.UNKNOWN_FIELD"
         },
@@ -202,6 +206,7 @@
       "syncTimeoutMs": 6000,
       "finalizeTimeoutMs": 6000,
       "abortTimeoutMs": 6000,
+      "switchTimeoutMs": 6000,
       "cleanupTimeoutMs": 6000
     }
   },
@@ -281,6 +286,14 @@
         "errors": {
           "type": "array",
           "items": { "$ref": "#/schemas/FieldError" }
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "apiBaseUrl": { "type": "string", "maxLength": 2048 },
+            "region": { "type": "string", "maxLength": 64 }
+          },
+          "description": "Datos públicos del error, por ejemplo la URL de la región del tenant."
         }
       },
       "required": ["type", "title", "status", "code"],
@@ -670,6 +683,15 @@
         "audience": "public",
         "messageKey": "error_platform_sharding_tenant_not_writable",
         "description": "El tenant está en solo lectura por mantenimiento. Intenta más tarde."
+      },
+      {
+        "name": "ShardingWrongRegion",
+        "code": "PLATFORM.SHARDING.WRONG_REGION",
+        "httpStatus": 421,
+        "retryable": false,
+        "audience": "public",
+        "messageKey": "error_platform_sharding_wrong_region",
+        "description": "El tenant vive en otra región. Repite la petición contra la URL de `details.apiBaseUrl`."
       },
       {
         "name": "CriteriaUnknownField",

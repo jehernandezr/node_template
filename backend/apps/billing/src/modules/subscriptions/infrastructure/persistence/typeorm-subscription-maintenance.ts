@@ -1,11 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { SubscriptionStatus } from '@contracts/billing';
-import { AcrossShards, TenantMaintenanceSession } from '@platform/persistence';
-import { In, LessThan, type EntityManager } from 'typeorm';
+import {
+  AcrossShards,
+  TenantMaintenanceSession,
+  TenantWriteFence,
+} from '@platform/persistence';
+import type { EntityManager } from 'typeorm';
 import { SubscriptionMaintenance } from '../../domain/subscription-maintenance.js';
 import { SubscriptionEntity } from './entities/subscription.entity.js';
 
-/** Consultas de `subscriptions` en todos los shards, en transacciones de mantenimiento entre tenants. */
+/**
+ * Consultas de `subscriptions` en todos los shards, en transacciones de mantenimiento entre tenants, sin los tenants
+ * que ya se trasladaron a otro shard.
+ */
 @Injectable()
 export class TypeOrmSubscriptionMaintenance extends SubscriptionMaintenance {
   private static readonly OPEN = [
@@ -20,25 +27,29 @@ export class TypeOrmSubscriptionMaintenance extends SubscriptionMaintenance {
 
   dueForClosing(today: string): Promise<readonly string[]> {
     return this.tenantsWhere((manager) =>
-      manager.find(SubscriptionEntity, {
-        select: { tenantId: true },
-        where: {
-          status: In(TypeOrmSubscriptionMaintenance.OPEN),
-          periodEnd: LessThan(today),
-        },
-      }),
+      manager
+        .createQueryBuilder(SubscriptionEntity, 'subscription')
+        .select(['subscription.id', 'subscription.tenantId'])
+        .where('subscription.status IN (:...open)', {
+          open: TypeOrmSubscriptionMaintenance.OPEN,
+        })
+        .andWhere('subscription.periodEnd < :today', { today })
+        .andWhere(TenantWriteFence.unfenced('subscription.tenant_id'))
+        .getMany(),
     );
   }
 
   pastDueBefore(cutoff: Date): Promise<readonly string[]> {
     return this.tenantsWhere((manager) =>
-      manager.find(SubscriptionEntity, {
-        select: { tenantId: true },
-        where: {
+      manager
+        .createQueryBuilder(SubscriptionEntity, 'subscription')
+        .select(['subscription.id', 'subscription.tenantId'])
+        .where('subscription.status = :status', {
           status: SubscriptionStatus.PastDue,
-          pastDueSince: LessThan(cutoff),
-        },
-      }),
+        })
+        .andWhere('subscription.pastDueSince < :cutoff', { cutoff })
+        .andWhere(TenantWriteFence.unfenced('subscription.tenant_id'))
+        .getMany(),
     );
   }
 

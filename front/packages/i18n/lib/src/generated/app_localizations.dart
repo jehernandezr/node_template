@@ -489,6 +489,12 @@ abstract class AppLocalizations {
   /// **'Estamos haciendo mantenimiento. Por ahora solo puedes consultar.'**
   String get error_platform_sharding_tenant_not_writable;
 
+  /// No description provided for @error_platform_sharding_wrong_region.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu organización vive en otra región. Reintentando allá.'**
+  String get error_platform_sharding_wrong_region;
+
   /// No description provided for @error_platform_criteria_unknown_field.
   ///
   /// In es, this message translates to:

@@ -11,6 +11,7 @@ import type { UserSnapshot } from '../../domain/user-snapshot.js';
 export class InMemoryUsersFacade extends UsersFacade {
   readonly registered: RegisterUserInput[] = [];
   private readonly users = new Map<string, UserSnapshot>();
+  private readonly regions = new Map<string, string>();
 
   constructor(private readonly ids: IdGenerator = new SequentialIdGenerator()) {
     super();
@@ -67,5 +68,17 @@ export class InMemoryUsersFacade extends UsersFacade {
       throw new Error('User not found');
     }
     this.users.set(ref.userId, { ...user, lastTenantId: tenantId });
+  }
+
+  async relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void> {
+    this.regions.set(homeTenantId, region);
+  }
+
+  /** La región a la que se apuntó el índice de los usuarios de un tenant de origen. */
+  regionOfHomeTenant(homeTenantId: string): string | undefined {
+    return this.regions.get(homeTenantId);
   }
 }

@@ -23,6 +23,7 @@ describe('reports internal operations', () => {
     const uncompensated = [
       reportsContract.operations.eraseUserData,
       reportsContract.operations.tenantMoveAbort,
+      reportsContract.operations.tenantMoveSwitch,
       reportsContract.operations.tenantMoveCleanup,
     ];
     for (const op of uncompensated) {

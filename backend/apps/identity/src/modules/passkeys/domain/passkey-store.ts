@@ -25,4 +25,9 @@ export abstract class PasskeyDirectory {
   ): Promise<void>;
   abstract ownerOf(credentialId: string): Promise<UserRef | undefined>;
   abstract remove(credentialId: string): Promise<void>;
+  /** Apunta a `region` las credenciales de los usuarios cuyo tenant de origen es `homeTenantId`. */
+  abstract relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void>;
 }

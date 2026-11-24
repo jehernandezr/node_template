@@ -109,6 +109,10 @@
         },
         { "name": "TenantMoveAbort", "value": "billing.tenant-move.abort.v1" },
         {
+          "name": "TenantMoveSwitch",
+          "value": "billing.tenant-move.switch.v1"
+        },
+        {
           "name": "TenantMoveCleanup",
           "value": "billing.tenant-move.cleanup.v1"
         }
@@ -1141,6 +1145,24 @@
       "errors": [],
       "timeoutMs": 6000,
       "description": "Cancela el traslado de un tenant y descarta lo copiado de billing al destino."
+    },
+    {
+      "name": "tenantMoveSwitch",
+      "id": "billing.tenant-move.switch.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Corre después del pivote: el tenant ya vive en el destino y se reintenta hasta completarse.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Apunta billing al destino del tenant trasladado y vuelve a abrir sus escrituras."
     },
     {
       "name": "tenantMoveCleanup",

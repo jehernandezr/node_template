@@ -1,14 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ValkeyUsageCounterStore } from '@platform/adapters-valkey';
 import { ValkeyMeteringModule } from '@platform/adapters-valkey/nest';
-import { reportsContract } from '@contracts/reports';
+import {
+  ReportsTenantMoveOperations,
+  reportsContract,
+} from '@contracts/reports';
 import { HttpModule } from '@platform/http/nest';
 import { MeteringModule } from '@platform/metering/nest';
 import { RemoteIdentityAuthModule } from '@platform/service/nest';
+import { TenantMoveModule } from '@platform/tenant-move/nest';
+import { ReportsTenantMoveManifest } from './database/reports-tenant-move.manifest.js';
 import { REPORTS_ERROR_CATALOGS } from './shared/constants/reports-error-catalogs.constants.js';
 import { CatalogModule } from './modules/catalog/presentation/catalog.module.js';
 import { ProjectionsModule } from './modules/projections/presentation/projections.module.js';
 import { RunsModule } from './modules/runs/presentation/runs.module.js';
+// generated:modules:imports
 
 @Module({
   imports: [
@@ -25,6 +31,11 @@ import { RunsModule } from './modules/runs/presentation/runs.module.js';
     ProjectionsModule,
     CatalogModule,
     RunsModule,
+    TenantMoveModule.forFeature({
+      operations: ReportsTenantMoveOperations,
+      manifest: ReportsTenantMoveManifest,
+    }),
+    // generated:modules
   ],
 })
 export class AppModule {}

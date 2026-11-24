@@ -41,4 +41,8 @@ export class LocalPasskeysFacade extends PasskeysFacade {
       await this.directory.remove(passkey.credentialId);
     }
   }
+
+  relocateHomeTenant(homeTenantId: string, region: string): Promise<void> {
+    return this.directory.relocateHomeTenant(homeTenantId, region);
+  }
 }

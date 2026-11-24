@@ -6,4 +6,9 @@ export abstract class PasskeysFacade {
   abstract hasPasskeys(user: UserRef): Promise<boolean>;
   /** Borra las passkeys del usuario y su índice global: su cuenta se borra. */
   abstract forget(user: UserRef): Promise<void>;
+  /** Apunta a `region` el índice de credenciales de los usuarios cuyo tenant de origen se trasladó. Idempotente. */
+  abstract relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void>;
 }

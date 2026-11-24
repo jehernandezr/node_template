@@ -36,3 +36,4 @@ export * from './auth/index.js';
 export * from './realtime/valkey-presence-tracker.js';
 export * from './realtime/valkey-realtime-stream.js';
 export * from './metering/valkey-usage-counter-store.js';
+export * from './valkey-write-gate.js';

@@ -1,4 +1,5 @@
 import { PlatformErrorCode as C } from '../enums/platform-error-code.enum.js';
+import { ProblemDetailKey } from '../enums/problem-detail-key.enum.js';
 import { defineErrorCatalog, ErrorSpecs } from '../kit/error-catalog.js';
 
 const pub = ErrorSpecs.pub;
@@ -151,6 +152,12 @@ export const platformErrorCatalog = defineErrorCatalog(C, {
     503,
     true,
     'El tenant está en solo lectura por mantenimiento. Intenta más tarde.',
+  ),
+  [C.ShardingWrongRegion]: pub(
+    421,
+    false,
+    'El tenant vive en otra región. Repite la petición contra la URL de `details.apiBaseUrl`.',
+    [ProblemDetailKey.ApiBaseUrl, ProblemDetailKey.Region],
   ),
   [C.CriteriaUnknownField]: pub(
     400,

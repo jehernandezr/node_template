@@ -1,4 +1,8 @@
-import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
+import {
+  defineErrorCatalog,
+  ErrorSpecs,
+  ProblemDetailKey,
+} from '@contracts/platform';
 import { ShardingErrorCode } from './sharding-error-code.enum.js';
 
 /**
@@ -36,10 +40,11 @@ export const shardingErrorCatalog = defineErrorCatalog(ShardingErrorCode, {
     false,
     'El fragmento indicado no existe en la configuración.',
   ),
-  [ShardingErrorCode.WrongRegion]: ErrorSpecs.internal(
-    500,
+  [ShardingErrorCode.WrongRegion]: ErrorSpecs.pub(
+    421,
     false,
-    'El tenant pertenece a otra región; la petición debió enrutarse allá.',
+    'El tenant vive en otra región. Repite la petición contra la URL de `details.apiBaseUrl`.',
+    [ProblemDetailKey.ApiBaseUrl, ProblemDetailKey.Region],
   ),
   [ShardingErrorCode.InvalidTenantId]: ErrorSpecs.internal(
     400,

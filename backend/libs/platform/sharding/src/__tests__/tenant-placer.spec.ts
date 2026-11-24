@@ -14,6 +14,10 @@ const SHARDS: readonly AvailableShard[] = [
 
 /** Directorio donde otro escritor gana siempre la escritura. */
 class AlwaysTakenDirectory extends DirectoryWriter {
+  async readPlacement(): Promise<TenantPlacement | undefined> {
+    return undefined;
+  }
+
   async listPlacements(): Promise<readonly TenantPlacement[]> {
     return [];
   }

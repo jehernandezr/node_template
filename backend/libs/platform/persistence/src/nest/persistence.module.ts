@@ -2,7 +2,7 @@ import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 import { ConfigModule } from '@platform/config/nest';
 import { Clock, SystemClock, TransactionManager } from '@platform/kernel';
 import { LoggerPort, RequestContextStore } from '@platform/observability';
-import { ShardKey, ShardRouter } from '@platform/sharding';
+import { ShardKey, ShardRouter, TenantWriteWaiter } from '@platform/sharding';
 import { AcrossShards } from '../across-shards.js';
 import { CatalogDataSource } from '../catalog-data-source.js';
 import { ConfigInstanceEndpointResolver } from '../config-instance-endpoint-resolver.js';
@@ -30,6 +30,7 @@ import { ShardDataSources } from '../shard-data-sources.js';
 import { ShardResolver } from '../shard-resolver.js';
 import { ShardScope } from '../shard-scope.js';
 import { ShardedMigrationRunner } from '../sharded-migration-runner.js';
+import { TenantWriteFence } from '../tenant-write-fence.js';
 import { TypeOrmTransactionManager } from '../typeorm-transaction-manager.js';
 import type { PersistenceModuleExtras } from './persistence-module-extras.js';
 import {
@@ -155,6 +156,8 @@ export class PersistenceModule extends PersistenceModuleClass {
         PersistenceContextProvider,
         OptimisticWriter,
         EntityRegistry,
+        TenantWriteFence,
+        ShardLister,
       ],
     };
   }
@@ -227,6 +230,7 @@ export class PersistenceModule extends PersistenceModuleClass {
         useFactory: (router: ShardRouter) => new ShardScope(router),
         inject: [ShardRouter],
       },
+      TenantWriteFence,
       {
         provide: ShardResolver,
         useFactory: (
@@ -235,16 +239,23 @@ export class PersistenceModule extends PersistenceModuleClass {
           scope: ShardScope,
           context: PersistenceContextProvider,
           options: PersistenceModuleOptions,
+          waiter: TenantWriteWaiter | undefined,
         ) =>
-          new ShardResolver(router, sources, scope, context, {
-            requireScope: options.requireScope ?? false,
-          }),
+          new ShardResolver(
+            router,
+            sources,
+            scope,
+            context,
+            { requireScope: options.requireScope ?? false },
+            options.tenantMoves === true ? waiter : undefined,
+          ),
         inject: [
           ShardRouter,
           ShardDataSources,
           ShardScope,
           PersistenceContextProvider,
           PERSISTENCE_OPTIONS,
+          { token: TenantWriteWaiter, optional: true },
         ],
       },
       {
@@ -254,6 +265,7 @@ export class PersistenceModule extends PersistenceModuleClass {
           context: PersistenceContextProvider,
           logger: LoggerPort,
           options: PersistenceModuleOptions,
+          fence: TenantWriteFence,
         ) =>
           new TypeOrmTransactionManager(
             resolver,
@@ -264,12 +276,14 @@ export class PersistenceModule extends PersistenceModuleClass {
             }),
             context,
             logger,
+            options.tenantMoves === true ? fence : undefined,
           ),
         inject: [
           ShardResolver,
           PersistenceContextProvider,
           LoggerPort,
           PERSISTENCE_OPTIONS,
+          TenantWriteFence,
         ],
       },
       { provide: TransactionManager, useExisting: TypeOrmTransactionManager },

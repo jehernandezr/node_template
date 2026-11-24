@@ -39,6 +39,37 @@ services:
       timeout: 3s
       retries: 20
 
+  # Región B simulada (sa-east-1): su propio PostgreSQL y su propio Valkey, en otros puertos. Los servicios
+  # corren una segunda vez con SERVICE_REGION=sa-east-1 apuntando aquí.
+  postgres-b:
+    image: pgvector/pgvector:0.8.7-pg17@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - postgres-b-data:/var/lib/postgresql/data
+      - ./infra/local/postgres/init-region-b.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U platform -d platform']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey-b:
+    image: valkey/valkey-bundle:8.1.11@sha256:3f57cc71a102e0e66991ae203b069038d8c3f6214ca887ff32f9a381091af8de
+    ports:
+      - '127.0.0.1:6380:6379'
+    command: ['valkey-server', '--appendonly', 'yes']
+    volumes:
+      - valkey-b-data:/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   localstack:
     # 4.14.0 es la última versión 4.x. Las versiones con fecha (2026.x) pueden exigir
     # LOCALSTACK_AUTH_TOKEN: valida el plan vigente antes de subir (docs/local-development.md).
@@ -116,6 +147,8 @@ services:
 
 volumes:
   postgres-data:
+  postgres-b-data:
   valkey-data:
+  valkey-b-data:
   localstack-data:
   openobserve-data:

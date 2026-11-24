@@ -21,6 +21,7 @@ export * from './postgres-data-source-factory.js';
 export * from './repository-kit.js';
 export * from './shard-data-sources.js';
 export * from './shard-resolver.js';
+export * from './tenant-write-fence.js';
 export * from './shard-scope.js';
 export * from './sharded-migration-runner.js';
 export * from './sharded-repository.js';

@@ -7,6 +7,7 @@ import { ChangeTenantStatus } from '../application/change-tenant-status.use-case
 import { ListMyTenants } from '../application/list-my-tenants.use-case.js';
 import { LocalTenantsFacade } from '../application/local-tenants.facade.js';
 import { ProvisionTenant } from '../application/provision-tenant.use-case.js';
+import { RelocateTenant } from '../application/relocate-tenant.use-case.js';
 import { SeedRegionTenants } from '../application/seed-region-tenants.use-case.js';
 import { StartTenantOnboarding } from '../application/start-tenant-onboarding.use-case.js';
 import { TenantOnboardingSaga } from '../application/tenant-onboarding.saga.js';
@@ -54,6 +55,7 @@ import { TenantsInternalOperations } from './tenants.internal-operations.js';
     ListMyTenants,
     SeedRegionTenants,
     StartTenantOnboarding,
+    RelocateTenant,
     { provide: TenantsFacade, useClass: LocalTenantsFacade },
     TenantsInternalOperations,
   ],

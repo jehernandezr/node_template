@@ -9,4 +9,6 @@ export interface ProblemDetailsInput {
   readonly instance?: string;
   readonly traceId?: string;
   readonly errors?: FieldError[];
+  /** Datos del error; solo salen los que la entrada del catálogo declara en `publicDetails`. */
+  readonly details?: Readonly<Record<string, unknown>>;
 }

@@ -39,7 +39,9 @@ import {
 } from './http/report.routes.js';
 import * as schemas from './schemas/index.js';
 
-const tenantMove = defineTenantMoveOperations('reports');
+/** Las operaciones de traslado de tenant de reports, con su tipo exacto para registrarlas y llamarlas. */
+export const ReportsTenantMoveOperations =
+  defineTenantMoveOperations('reports');
 
 /** Contrato del servicio reports: catálogo de reportes, ejecuciones y proyecciones por eventos. */
 export const reportsContract = defineServiceContract({
@@ -96,10 +98,11 @@ export const reportsContract = defineServiceContract({
   },
   operations: {
     eraseUserData: EraseReportsUserDataOperation,
-    tenantMoveSync: tenantMove.tenantMoveSync,
-    tenantMoveFinalize: tenantMove.tenantMoveFinalize,
-    tenantMoveAbort: tenantMove.tenantMoveAbort,
-    tenantMoveCleanup: tenantMove.tenantMoveCleanup,
+    tenantMoveSync: ReportsTenantMoveOperations.tenantMoveSync,
+    tenantMoveFinalize: ReportsTenantMoveOperations.tenantMoveFinalize,
+    tenantMoveAbort: ReportsTenantMoveOperations.tenantMoveAbort,
+    tenantMoveSwitch: ReportsTenantMoveOperations.tenantMoveSwitch,
+    tenantMoveCleanup: ReportsTenantMoveOperations.tenantMoveCleanup,
   },
   events: { runCompleted: RunCompletedEvent },
   commands: { executeRun: ExecuteRunCommand },

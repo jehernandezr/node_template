@@ -247,6 +247,14 @@ enum PlatformErrorCode {
     messageKey: 'error_platform_sharding_tenant_not_writable',
   ),
 
+  /// El tenant vive en otra región. Repite la petición contra la URL de `details.apiBaseUrl`.
+  shardingWrongRegion(
+    'PLATFORM.SHARDING.WRONG_REGION',
+    httpStatus: 421,
+    retryable: false,
+    messageKey: 'error_platform_sharding_wrong_region',
+  ),
+
   /// La consulta filtra u ordena por un campo que no existe.
   criteriaUnknownField(
     'PLATFORM.CRITERIA.UNKNOWN_FIELD',

@@ -48,7 +48,7 @@ describe('SessionDelivery', () => {
     });
 
     const response = delivery.deliver(
-      SignInResponses.authenticated(SESSION, 'eu'),
+      SignInResponses.authenticated(SESSION, { region: 'eu' }),
       exchange,
     );
 
@@ -71,8 +71,10 @@ describe('SessionDelivery', () => {
     });
 
     expect(
-      delivery.deliver(SignInResponses.authenticated(SESSION, 'eu'), native)
-        .tokens,
+      delivery.deliver(
+        SignInResponses.authenticated(SESSION, { region: 'eu' }),
+        native,
+      ).tokens,
     ).toMatchObject({ sessionToken: 'st1_token' });
     expect(delivery.deliver(pending, web)).toEqual({
       status: SignInStatus.MfaRequired,

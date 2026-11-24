@@ -50,6 +50,12 @@ export class IdentitySagas {
     SagaStatus.CompensationFailed,
   ]);
 
+  /** Terminaron bien o se deshicieron por completo: nada queda a medias. */
+  private static readonly SETTLED: ReadonlySet<SagaStatus> = new Set([
+    SagaStatus.Completed,
+    SagaStatus.Compensated,
+  ]);
+
   constructor(
     private readonly sagas: Sagas,
     private readonly store: SagaStore,
@@ -75,6 +81,21 @@ export class IdentitySagas {
         context: { tenantId: start.tenantId, actorId: start.requestedBy },
       }),
     );
+  }
+
+  /**
+   * Si la saga todavía puede cambiar algo: corre, espera un reintento, compensa o pide intervención. Una saga que
+   * nunca llegó a arrancar no está en curso.
+   */
+  async isUnsettled(sagaId: string): Promise<boolean> {
+    const entry = await this.directory.find(sagaId);
+    if (entry === undefined) {
+      return false;
+    }
+    const instance = await this.scopes.inTenantShard(entry.tenantId, () =>
+      this.store.get(sagaId),
+    );
+    return instance !== null && !IdentitySagas.SETTLED.has(instance.status);
   }
 
   /** @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` si la saga no existe o la pidió otra persona. */

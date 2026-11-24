@@ -3,6 +3,7 @@ export enum ValkeyCommand {
   Get = 'GET',
   Set = 'SET',
   Del = 'DEL',
+  Exists = 'EXISTS',
   Hget = 'HGET',
   Hset = 'HSET',
   Hgetall = 'HGETALL',
