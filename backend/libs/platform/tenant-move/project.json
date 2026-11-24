@@ -1,0 +1,10 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "platform-tenant-move",
+  "sourceRoot": "backend/libs/platform/tenant-move/src",
+  "projectType": "library",
+  "tags": ["type:platform", "scope:platform"],
+  "targets": {
+    "typecheck": {}
+  }
+}

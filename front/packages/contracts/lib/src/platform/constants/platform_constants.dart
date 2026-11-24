@@ -43,5 +43,6 @@ abstract final class TenantMoveLimits {
   static const int syncTimeoutMs = 6000;
   static const int finalizeTimeoutMs = 6000;
   static const int abortTimeoutMs = 6000;
+  static const int switchTimeoutMs = 6000;
   static const int cleanupTimeoutMs = 6000;
 }

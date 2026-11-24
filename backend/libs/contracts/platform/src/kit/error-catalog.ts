@@ -1,5 +1,6 @@
 import { ValidationRules } from '../constants/validation.constants.js';
 import { ErrorAudience } from '../enums/error-audience.enum.js';
+import type { ProblemDetailKey } from '../enums/problem-detail-key.enum.js';
 import type { ErrorCatalogEntry } from '../types/error-catalog-entry.type.js';
 import { ContractDefinitionError } from './contract-definition-error.js';
 
@@ -25,6 +26,7 @@ export interface ErrorSpec {
   readonly retryable: boolean;
   readonly audience: ErrorAudience;
   readonly description: string;
+  readonly publicDetails?: readonly ProblemDetailKey[];
 }
 
 /**
@@ -36,12 +38,14 @@ export class ErrorSpecs {
     httpStatus: number,
     retryable: boolean,
     description: string,
+    publicDetails?: readonly ProblemDetailKey[],
   ): ErrorSpec {
     return {
       httpStatus,
       retryable,
       audience: ErrorAudience.Public,
       description,
+      ...(publicDetails !== undefined && { publicDetails }),
     };
   }
 

@@ -34,6 +34,7 @@ export enum PlatformErrorCode {
   ShardingCrossShardTx = 'PLATFORM.SHARDING.CROSS_SHARD_TX',
   ShardingTenantMigrating = 'PLATFORM.SHARDING.TENANT_MIGRATING',
   ShardingTenantNotWritable = 'PLATFORM.SHARDING.TENANT_NOT_WRITABLE',
+  ShardingWrongRegion = 'PLATFORM.SHARDING.WRONG_REGION',
   CriteriaUnknownField = 'PLATFORM.CRITERIA.UNKNOWN_FIELD',
   CriteriaInvalidValue = 'PLATFORM.CRITERIA.INVALID_VALUE',
   CriteriaInvalidLimit = 'PLATFORM.CRITERIA.INVALID_LIMIT',

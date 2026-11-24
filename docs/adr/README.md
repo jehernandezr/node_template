@@ -52,3 +52,5 @@ Los números no se reutilizan. Los nombres de archivo van en kebab-case y en esp
 | 0029   | [Mantenimiento entre tenants con RLS y búsqueda por shard](0029-mantenimiento-entre-tenants-y-busqueda-por-shard.md)         | Aceptada                 |
 | 0030   | [Correo de identity por notifications](0030-correo-de-identity-por-notifications.md)                                         | Aceptada                 |
 | 0031   | [Reportes, facturación y sagas de identity](0031-reportes-facturacion-y-sagas-de-identity.md)                                | Aceptada                 |
+| 0032   | [Traslado de tenants y regiones](0032-traslado-de-tenants-y-regiones.md)                                                     | Aceptada                 |
+| 0033   | [Generadores de servicio y de módulo, y OpenAPI desde los contratos](0033-generadores-y-openapi.md)                          | Aceptada                 |

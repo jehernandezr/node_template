@@ -12,6 +12,8 @@ export * from './entities/processed-message.entity.js';
 export * from './entities/shard-directory.entity.js';
 export * from './entities/shard-instance.entity.js';
 export * from './entities/shard-lock.entity.js';
+export * from './entities/tenant-move-checkpoint.entity.js';
+export * from './entities/tenant-write-fence.entity.js';
 export * from './migrations/catalog/1794800001101-CreatePlatformCatalogTables.js';
 export * from './migrations/catalog/1794800001102-CreateCatalogIdempotencyKeys.js';
 export * from './migrations/shard/1794800001001-CreatePlatformShardTables.js';

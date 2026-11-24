@@ -39,7 +39,7 @@ export class ManageInbox extends InboxFacade {
     notification: NotificationState,
   ): Promise<AppNotification> {
     const stored = await this.shard.run(user, () =>
-      this.inbox.add(notification),
+      this.inbox.add(user, notification),
     );
     return NotificationViews.of(stored);
   }

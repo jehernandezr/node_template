@@ -1,0 +1,20 @@
+import { Injectable } from '@nestjs/common';
+import { FinishTenantMoveOperation } from '@contracts/identity';
+import type { TenantMoveAck, TenantMoveRef } from '@contracts/platform';
+import type { HandlerResult } from '@platform/internal-api';
+import { InternalHandler } from '@platform/internal-api/nest';
+import { CallOutcome } from '@platform/primitives';
+import { FinishTenantMove } from '../application/finish-tenant-move.use-case.js';
+
+/** El último paso de `MoveTenant`, que solo identity atiende: la bitácora de traslados vive en su catálogo. */
+@Injectable()
+export class TenantMovesInternalOperations {
+  constructor(private readonly finishMove: FinishTenantMove) {}
+
+  @InternalHandler(FinishTenantMoveOperation)
+  async finish(input: TenantMoveRef): Promise<HandlerResult<TenantMoveAck>> {
+    return {
+      outcome: CallOutcome.success(await this.finishMove.execute(input)),
+    };
+  }
+}

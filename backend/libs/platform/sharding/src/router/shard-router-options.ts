@@ -1,4 +1,5 @@
 import type { Clock } from '@platform/kernel';
+import type { Region } from '../model/region.js';
 import type { ShardingStrategy } from '../sharding-strategy.js';
 import type { DirectoryStore } from '../ports/directory-store.js';
 import type { RoutingCache } from '../ports/routing-cache.js';
@@ -25,6 +26,8 @@ export interface ShardRouterOptions {
   readonly strategy?: ShardingStrategy;
   /** Región que sirve este proceso. Los placements de otras regiones lanzan `WrongRegionError`. */
   readonly currentRegion?: string;
+  /** Regiones conocidas: dan a `WrongRegionError` la URL de la región del tenant. */
+  readonly regions?: readonly Region[];
   /**
    * Recibe las fallas del caché compartido y del canal de cambios, y los
    * cambios malformados. Un caché o canal caído nunca hace fallar un `resolve` ni un `invalidate`.

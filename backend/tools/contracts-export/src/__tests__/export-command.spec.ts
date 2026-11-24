@@ -1,5 +1,6 @@
 import { AsyncApiBuilder } from '../async-api-builder.js';
 import { ContractExporter } from '../contract-exporter.js';
+import { OpenApiBuilder } from '../open-api-builder.js';
 import { ExportCommand } from '../export-command.js';
 import { ExitCode } from '../export-constants.js';
 import { ExportPaths } from '../export-paths.js';
@@ -17,7 +18,7 @@ import { StaticContractRegistry } from './utils/static-contract-registry.js';
 
 const paths = new ExportPaths('/backend');
 const USAGE =
-  'Uso: contracts-export <export|check|topology-export|topology-check>';
+  'Uso: contracts-export <export|check|topology-export|topology-check|openapi>';
 const UP_TO_DATE = 'Archivos generados al día.';
 
 /** Comando con el exportador real de los contratos registrados, sobre el disco dado. */
@@ -29,6 +30,7 @@ function commandOver(fileSystem: FileSystem, output: Output): ExportCommand {
     new SchemaExportBuilder(new SchemaOwnership(), uniqueness),
     topology,
     new AsyncApiBuilder(new SchemaOwnership(), topology),
+    new OpenApiBuilder(),
     paths,
   );
   return new ExportCommand(
@@ -61,7 +63,7 @@ describe('ExportCommand', () => {
       expect(output.errorLines).toEqual([USAGE]);
     });
 
-    it('export writes the four generated files', async () => {
+    it('export writes every generated file', async () => {
       const code = await command.run(['export']);
 
       expect(code).toBe(ExitCode.Success);
@@ -73,8 +75,9 @@ describe('ExportCommand', () => {
       ).toBeDefined();
       expect(fileSystem.contentOf(paths.topology)).toBeDefined();
       expect(fileSystem.contentOf(paths.asyncApi)).toBeDefined();
-      // platform, identity y billing, la topología y el asyncapi.
-      expect(output.infoLines).toHaveLength(5);
+      expect(fileSystem.contentOf(paths.openApiOf('identity'))).toBeDefined();
+      // contract.json y openapi.json de platform, identity y billing, la topología y el asyncapi.
+      expect(output.infoLines).toHaveLength(8);
     });
 
     it('check passes when the files match the contracts', async () => {
@@ -105,6 +108,14 @@ describe('ExportCommand', () => {
       expect(
         fileSystem.contentOf(paths.contractExportOf('platform')),
       ).toBeUndefined();
+    });
+
+    it('openapi writes only the OpenAPI of each contract', async () => {
+      const code = await command.run(['openapi']);
+
+      expect(code).toBe(ExitCode.Success);
+      expect(fileSystem.contentOf(paths.openApiOf('billing'))).toBeDefined();
+      expect(fileSystem.contentOf(paths.topology)).toBeUndefined();
     });
 
     it('topology-check fails without files and names only topology.json', async () => {

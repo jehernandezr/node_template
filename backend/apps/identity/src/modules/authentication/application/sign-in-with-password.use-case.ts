@@ -9,7 +9,7 @@ import {
 } from '@contracts/identity';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { RequestContextStore } from '@platform/observability';
-import { IdentitySettings } from '../../../config/identity-settings.js';
+import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
@@ -62,7 +62,7 @@ export class SignInWithPassword {
     private readonly context: RequestContextStore,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
-    private readonly settings: IdentitySettings,
+    private readonly deployment: DeploymentRegion,
   ) {}
 
   async execute(command: SignInCommand): Promise<SignInResponse> {
@@ -121,10 +121,7 @@ export class SignInWithPassword {
       authTime: this.clock.now(),
       client,
     });
-    return SignInResponses.authenticated(
-      session,
-      this.settings.values.IDENTITY_REGION,
-    );
+    return SignInResponses.authenticated(session, this.deployment.location());
   }
 
   private async assertCanSignIn(

@@ -55,6 +55,8 @@ String errorMessageFor(AppLocalizations l10n, String code) {
       l10n.error_platform_sharding_tenant_migrating,
     'PLATFORM.SHARDING.TENANT_NOT_WRITABLE' =>
       l10n.error_platform_sharding_tenant_not_writable,
+    'PLATFORM.SHARDING.WRONG_REGION' =>
+      l10n.error_platform_sharding_wrong_region,
     'PLATFORM.CRITERIA.UNKNOWN_FIELD' =>
       l10n.error_platform_criteria_unknown_field,
     'PLATFORM.CRITERIA.INVALID_VALUE' =>

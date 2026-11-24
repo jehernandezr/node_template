@@ -3,6 +3,7 @@ import { invoiceShardMigrations } from '../modules/invoices/infrastructure/persi
 import { paymentShardMigrations } from '../modules/payments/infrastructure/persistence/migrations/index.js';
 import { subscriptionShardMigrations } from '../modules/subscriptions/infrastructure/persistence/migrations/index.js';
 import { usageShardMigrations } from '../modules/usage/infrastructure/persistence/migrations/index.js';
+// generated:modules:imports
 
 /** Migraciones de los shards de billing, en el orden de los módulos. */
 export const billingShardMigrations: readonly MigrationClass[] = [
@@ -10,4 +11,5 @@ export const billingShardMigrations: readonly MigrationClass[] = [
   ...usageShardMigrations,
   ...invoiceShardMigrations,
   ...paymentShardMigrations,
+  // generated:modules
 ];

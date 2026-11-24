@@ -14,6 +14,8 @@ export const TenantMoveLimits = {
   finalizeTimeoutMs: 6_000,
   /** Plazo de una llamada de cancelación, por lotes. */
   abortTimeoutMs: 6_000,
+  /** Plazo del cambio de directorio de un servicio al destino. */
+  switchTimeoutMs: 6_000,
   /** Plazo de una llamada de limpieza del origen, por lotes. */
   cleanupTimeoutMs: 6_000,
 } as const;

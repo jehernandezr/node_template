@@ -4,6 +4,7 @@ import {
   CONTRACT_EXPORT_FILE,
   CONTRACTS_DIR,
   EXPORT_DIR,
+  OPENAPI_EXPORT_FILE,
   TOPOLOGY_PATH,
 } from './export-constants.js';
 
@@ -25,6 +26,10 @@ export class ExportPaths {
 
   contractExportOf(service: string): string {
     return join(this.contractsDir, service, EXPORT_DIR, CONTRACT_EXPORT_FILE);
+  }
+
+  openApiOf(service: string): string {
+    return join(this.contractsDir, service, EXPORT_DIR, OPENAPI_EXPORT_FILE);
   }
 
   contractIndexOf(service: string): string {

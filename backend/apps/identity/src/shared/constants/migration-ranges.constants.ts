@@ -15,4 +15,6 @@ export enum MigrationRange {
   Invitations = 1_795_001_000_000,
   ApiKeys = 1_795_001_100_000,
   Sagas = 1_795_001_200_000,
+  TenantMoves = 1_795_001_300_000,
+  // generated:modules
 }

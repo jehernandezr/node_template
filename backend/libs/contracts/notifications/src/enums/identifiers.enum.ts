@@ -25,6 +25,7 @@ export enum NotificationsOperation {
   TenantMoveSync = 'notifications.tenant-move.sync.v1',
   TenantMoveFinalize = 'notifications.tenant-move.finalize.v1',
   TenantMoveAbort = 'notifications.tenant-move.abort.v1',
+  TenantMoveSwitch = 'notifications.tenant-move.switch.v1',
   TenantMoveCleanup = 'notifications.tenant-move.cleanup.v1',
 }
 

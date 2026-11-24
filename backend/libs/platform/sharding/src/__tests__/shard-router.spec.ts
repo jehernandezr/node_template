@@ -72,6 +72,30 @@ describe('ShardRouter', () => {
       ).rejects.toBeInstanceOf(WrongRegionError);
     });
 
+    it('tells a tenant of another region where its API lives', async () => {
+      const router = routerWith({
+        currentRegion: 'us',
+        regions: [
+          { code: 'us', apiBaseUrl: 'https://us.api', issuer: 'https://us.id' },
+          { code: 'eu', apiBaseUrl: 'https://eu.api', issuer: 'https://eu.id' },
+        ],
+      });
+
+      await expect(router.resolve(READ)).rejects.toMatchObject({
+        code: ShardingErrorCode.WrongRegion,
+        details: { region: 'eu', apiBaseUrl: 'https://eu.api' },
+      });
+    });
+
+    it('reads the placement of a tenant without checking its region', async () => {
+      const router = routerWith({ currentRegion: 'us' });
+
+      await expect(router.placement(TestTenants.One)).resolves.toMatchObject({
+        region: 'eu',
+        shardGroup: ['shard-1'],
+      });
+    });
+
     it('picks the shard of a multi-shard group with the consistent hash strategy', async () => {
       directory.setInstance('shard-2', 'node-b');
       directory.setPlacement(

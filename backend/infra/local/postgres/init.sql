@@ -20,6 +20,10 @@ CREATE DATABASE tasks_shard_0;
 \c tasks_shard_0
 CREATE EXTENSION IF NOT EXISTS vector;
 
+CREATE DATABASE tasks_shard_1;
+\c tasks_shard_1
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE DATABASE notifications_shard_0;
 \c notifications_shard_0
 CREATE EXTENSION IF NOT EXISTS vector;

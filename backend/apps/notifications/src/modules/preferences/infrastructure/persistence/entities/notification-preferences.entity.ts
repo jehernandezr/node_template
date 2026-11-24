@@ -8,6 +8,10 @@ export class NotificationPreferencesEntity extends VersionedEntity {
   @Column({ type: 'uuid', name: 'user_id', nullable: false })
   userId!: string;
 
+  /** Nulo solo en las filas anteriores a la columna. */
+  @Column({ type: 'uuid', name: 'home_tenant_id', nullable: true })
+  homeTenantId!: string | null;
+
   @Column({ type: 'jsonb', name: 'enabled', nullable: false })
   enabled!: Array<{ type: string; channels: string[] }>;
 

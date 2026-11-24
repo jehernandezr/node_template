@@ -1,0 +1,639 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "reports",
+    "version": "2",
+    "description": "Reportes sobre los datos del tenant: catálogo, ejecuciones calculadas en segundo plano y resultado guardado."
+  },
+  "paths": {
+    "/v1/reports": {
+      "get": {
+        "operationId": "reports.catalog.list",
+        "description": "Lista los tipos de reporte, con sus formatos y granularidades.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportCatalog" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.ACCESS.FLAG_DISABLED"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["reports:read"]
+      }
+    },
+    "/v1/reports/runs": {
+      "post": {
+        "operationId": "reports.run.create",
+        "description": "Crea una ejecución de reporte. Responde 202 con su id.",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportRunCreated" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, PLATFORM.VALIDATION.INVALID_INPUT, PLATFORM.ACCESS.FEATURE_NOT_INCLUDED, REPORTS.TYPE.UNKNOWN, REPORTS.PARAMS.INVALID_RANGE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.ACCESS.FLAG_DISABLED",
+          "PLATFORM.VALIDATION.INVALID_INPUT",
+          "PLATFORM.ACCESS.FEATURE_NOT_INCLUDED",
+          "REPORTS.TYPE.UNKNOWN",
+          "REPORTS.PARAMS.INVALID_RANGE"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportRunRequest"
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["reports:write"]
+      },
+      "get": {
+        "operationId": "reports.run.list",
+        "description": "Lista las ejecuciones de reporte, con filtros y paginación.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportRunPage" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, PLATFORM.VALIDATION.INVALID_INPUT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.ACCESS.FLAG_DISABLED",
+          "PLATFORM.VALIDATION.INVALID_INPUT"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["reports:read"]
+      }
+    },
+    "/v1/reports/runs/{runId}": {
+      "get": {
+        "operationId": "reports.run.get",
+        "description": "Consulta una ejecución de reporte y su resultado.",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportRunDetail" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, REPORTS.RUN.NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.ACCESS.FLAG_DISABLED",
+          "REPORTS.RUN.NOT_FOUND"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["reports:read"]
+      }
+    },
+    "/v1/reports/runs/{runId}/download": {
+      "get": {
+        "operationId": "reports.run.download",
+        "description": "Descarga el resultado de una ejecución lista en su formato.",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta exitosa.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportDownload" }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, REPORTS.RUN.NOT_FOUND, REPORTS.RUN.NOT_READY, REPORTS.RUN.EXPIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "../../platform/export/openapi.json#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          "IDENTITY.SESSION.REVOKED",
+          "IDENTITY.SESSION.EXPIRED",
+          "IDENTITY.TOKEN.REVOKED",
+          "IDENTITY.USER.SUSPENDED",
+          "IDENTITY.TENANT.SUSPENDED",
+          "IDENTITY.TOKEN.STALE_PERMISSIONS",
+          "PLATFORM.ACCESS.FLAG_DISABLED",
+          "REPORTS.RUN.NOT_FOUND",
+          "REPORTS.RUN.NOT_READY",
+          "REPORTS.RUN.EXPIRED"
+        ],
+        "security": [{ "bearerAuth": [] }],
+        "x-permissions": ["reports:read"]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReportType": {
+        "type": "string",
+        "enum": [
+          "tasks_by_status",
+          "tasks_activity",
+          "invoices_summary",
+          "notifications_delivery"
+        ],
+        "description": "Tipo de reporte."
+      },
+      "ReportRunStatus": {
+        "type": "string",
+        "enum": ["queued", "running", "ready", "failed", "expired"],
+        "description": "Estado de una ejecución de reporte."
+      },
+      "ReportFormat": {
+        "type": "string",
+        "enum": ["json", "csv"],
+        "description": "Formato de un reporte."
+      },
+      "ReportGranularity": {
+        "type": "string",
+        "enum": ["day", "week", "month"],
+        "description": "Granularidad temporal de un reporte."
+      },
+      "RunCompletedPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "runId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "status": { "$ref": "#/components/schemas/ReportRunStatus" },
+          "requestedBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "completedAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "tenantId",
+          "runId",
+          "type",
+          "status",
+          "requestedBy",
+          "completedAt"
+        ],
+        "description": "Terminó una ejecución de reporte."
+      },
+      "ExecuteRunPayload": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "runId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["tenantId", "runId"],
+        "additionalProperties": false,
+        "description": "Retoma una ejecución de reporte en un worker."
+      },
+      "ReportColumnKind": {
+        "type": "string",
+        "enum": ["text", "integer", "date"],
+        "description": "Tipo de dato de una columna del resultado."
+      },
+      "ReportParams": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/CalendarDate"
+          },
+          "to": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/CalendarDate"
+          },
+          "granularity": { "$ref": "#/components/schemas/ReportGranularity" }
+        },
+        "required": ["from", "to", "granularity"],
+        "additionalProperties": false,
+        "description": "Rango de fechas y granularidad de un reporte."
+      },
+      "ReportColumn": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "header": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "kind": { "$ref": "#/components/schemas/ReportColumnKind" }
+        },
+        "required": ["key", "header", "kind"],
+        "description": "Columna del resultado de un reporte."
+      },
+      "ReportRow": {
+        "type": "object",
+        "properties": {
+          "cells": {
+            "maxItems": 20,
+            "type": "array",
+            "items": { "type": "string", "maxLength": 1000 }
+          }
+        },
+        "required": ["cells"],
+        "description": "Fila del resultado de un reporte."
+      },
+      "ReportResult": {
+        "type": "object",
+        "properties": {
+          "columns": {
+            "maxItems": 20,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportColumn" }
+          },
+          "rows": {
+            "maxItems": 10000,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportRow" }
+          }
+        },
+        "required": ["columns", "rows"],
+        "description": "Resultado tabular de una ejecución terminada."
+      },
+      "ReportCatalogEntry": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "formats": {
+            "minItems": 1,
+            "maxItems": 2,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportFormat" }
+          },
+          "granularities": {
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportGranularity" }
+          }
+        },
+        "required": ["type", "formats", "granularities"],
+        "description": "Tipo de reporte disponible, con sus formatos y granularidades."
+      },
+      "ReportCatalog": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 20,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportCatalogEntry" }
+          }
+        },
+        "required": ["items"],
+        "description": "Catálogo de reportes que puede pedir el tenant."
+      },
+      "CreateReportRunRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "format": { "$ref": "#/components/schemas/ReportFormat" },
+          "params": { "$ref": "#/components/schemas/ReportParams" }
+        },
+        "required": ["type", "format", "params"],
+        "additionalProperties": false,
+        "description": "Petición de una ejecución de reporte."
+      },
+      "ReportRunCreated": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["runId"],
+        "description": "Ejecución aceptada; su resultado se consulta por el id."
+      },
+      "ReportRunSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "status": { "$ref": "#/components/schemas/ReportRunStatus" },
+          "format": { "$ref": "#/components/schemas/ReportFormat" },
+          "params": { "$ref": "#/components/schemas/ReportParams" },
+          "requestedBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+              },
+              { "type": "null" }
+            ]
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "format",
+          "params",
+          "requestedBy",
+          "createdAt",
+          "completedAt",
+          "expiresAt"
+        ],
+        "description": "Ejecución de reporte sin su resultado."
+      },
+      "ReportRunPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ReportRunSummary" }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["items", "nextCursor"],
+        "description": "Página de ejecuciones de reporte."
+      },
+      "ListReportRunsRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "status": { "$ref": "#/components/schemas/ReportRunStatus" },
+          "limit": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/PageLimit"
+          },
+          "after": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Filtros y paginación del listado de ejecuciones."
+      },
+      "GetReportRunRequest": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["runId"],
+        "additionalProperties": false,
+        "description": "Ejecución de reporte a consultar."
+      },
+      "ReportRunDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "type": { "$ref": "#/components/schemas/ReportType" },
+          "status": { "$ref": "#/components/schemas/ReportRunStatus" },
+          "format": { "$ref": "#/components/schemas/ReportFormat" },
+          "params": { "$ref": "#/components/schemas/ReportParams" },
+          "requestedBy": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          },
+          "createdAt": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+              },
+              { "type": "null" }
+            ]
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "$ref": "../../platform/export/openapi.json#/components/schemas/Timestamp"
+              },
+              { "type": "null" }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ReportResult" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "format",
+          "params",
+          "requestedBy",
+          "createdAt",
+          "completedAt",
+          "expiresAt",
+          "result"
+        ],
+        "description": "Ejecución de reporte con su resultado, nulo mientras no esté lista."
+      },
+      "DownloadReportRunRequest": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          }
+        },
+        "required": ["runId"],
+        "additionalProperties": false,
+        "description": "Ejecución de reporte cuyo resultado se descarga."
+      },
+      "ReportDownload": {
+        "type": "object",
+        "properties": {
+          "fileName": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "contentType": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "content": { "type": "string", "maxLength": 8000000 }
+        },
+        "required": ["fileName", "contentType", "content"],
+        "description": "Contenido de un reporte listo para descargar."
+      },
+      "EraseReportsUserInput": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/UserRef"
+          }
+        },
+        "required": ["user"],
+        "additionalProperties": false,
+        "description": "Usuario cuyos datos se borran de reports."
+      },
+      "EraseReportsUserResult": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "../../platform/export/openapi.json#/components/schemas/Id"
+          },
+          "affectedRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["userId", "affectedRows"],
+        "description": "Filas de reports que dejaron de guardar al usuario."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

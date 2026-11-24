@@ -42,6 +42,15 @@ export class TypeOrmPasskeyDirectory
       : { userId: row.userId, homeTenantId: row.homeTenantId };
   }
 
+  async relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void> {
+    await this.write((manager) =>
+      manager.update(PasskeyLookupEntity, { homeTenantId }, { region }),
+    );
+  }
+
   async remove(credentialId: string): Promise<void> {
     await this.write((manager) =>
       manager.delete(PasskeyLookupEntity, {

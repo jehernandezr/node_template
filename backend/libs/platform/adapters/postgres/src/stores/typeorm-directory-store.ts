@@ -48,6 +48,13 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     return entity === null ? undefined : entity.instance;
   }
 
+  async readPlacement(tenantId: string): Promise<TenantPlacement | undefined> {
+    const entity = await this.catalog.readPrimary((manager) =>
+      manager.findOneBy(ShardDirectoryEntity, { tenantId }),
+    );
+    return entity === null ? undefined : PlacementMapper.toPlacement(entity);
+  }
+
   /** Siempre del primario: la política de ubicación no tolera datos atrasados. */
   async listPlacements(region: string): Promise<readonly TenantPlacement[]> {
     if (typeof region !== 'string' || region.length === 0) {

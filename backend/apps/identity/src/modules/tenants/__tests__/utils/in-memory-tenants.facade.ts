@@ -25,4 +25,8 @@ export class InMemoryTenantsFacade extends TenantsFacade {
       throw new Error('Tenant not active');
     }
   }
+
+  async relocate(tenantId: string, region: string): Promise<void> {
+    this.tenants.set(tenantId, { ...(await this.get(tenantId)), region });
+  }
 }

@@ -1,7 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
+import { ApiKeysFacade } from '../application/api-keys.facade.js';
 import { AuthenticateApiKey } from '../application/authenticate-api-key.use-case.js';
+import { LocalApiKeysFacade } from '../application/local-api-keys.facade.js';
 import { FlushApiKeyUsageJob } from '../application/flush-api-key-usage.job.js';
 import { GrantablePermissions } from '../application/grantable-permissions.js';
 import { ManageApiKeys } from '../application/manage-api-keys.use-case.js';
@@ -25,7 +27,7 @@ import { ApiKeysInternalOperations } from './api-keys.internal-operations.js';
 
 /**
  * Cuentas de servicio y API keys. Es global para exportar `IdentityApiKeyResolver`, con el que la
- * verificación de identity valida las keys dentro del proceso.
+ * verificación de identity valida las keys dentro del proceso, y su fachada.
  */
 @Global()
 @Module({
@@ -43,6 +45,7 @@ import { ApiKeysInternalOperations } from './api-keys.internal-operations.js';
   providers: [
     { provide: ApiKeyRepository, useClass: TypeOrmApiKeyRepository },
     { provide: ApiKeyDirectory, useClass: TypeOrmApiKeyDirectory },
+    { provide: ApiKeysFacade, useClass: LocalApiKeysFacade },
     { provide: ApiKeySecretHasher, useClass: HmacApiKeySecretHasher },
     { provide: ApiKeyUsageBuffer, useClass: EphemeralApiKeyUsageBuffer },
     FlushApiKeyUsageJob,
@@ -53,6 +56,6 @@ import { ApiKeysInternalOperations } from './api-keys.internal-operations.js';
     IdentityApiKeyResolver,
     ApiKeysInternalOperations,
   ],
-  exports: [IdentityApiKeyResolver],
+  exports: [IdentityApiKeyResolver, ApiKeysFacade],
 })
 export class ApiKeysModule {}

@@ -145,7 +145,9 @@ export class PostgresPlatformModule extends PostgresPlatformModuleClass {
           clock: Clock,
         ) =>
           new TypeOrmIdempotencyStore(
-            new ClaimTable(IdempotencyKeyEntity, managers, ids, clock),
+            new ClaimTable(IdempotencyKeyEntity, managers, ids, clock, {
+              tenantColumn: true,
+            }),
           ),
         inject: [PlatformEntityManagers, IdGenerator, Clock],
       },
@@ -162,6 +164,7 @@ export class PostgresPlatformModule extends PostgresPlatformModuleClass {
               new CatalogClaimManagers(catalog),
               ids,
               clock,
+              { tenantColumn: true },
             ),
           ),
         inject: [CatalogEntityManagers, IdGenerator, Clock],

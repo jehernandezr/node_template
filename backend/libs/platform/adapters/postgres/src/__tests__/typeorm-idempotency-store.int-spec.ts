@@ -174,6 +174,41 @@ runtime.describeIfAvailable('TypeOrmIdempotencyStore over PostgreSQL', () => {
       });
     });
 
+    it('keeps the tenant of the claim next to the key so a tenant move can carry it', async () => {
+      const tenanted = new TypeOrmIdempotencyStore<ContractOrder>(
+        new ClaimTable<ContractOrder>(
+          IdempotencyKeyEntity,
+          database.managers,
+          new SequentialIdGenerator(),
+          clock,
+          { tenantColumn: true },
+        ),
+      );
+
+      await inTenantA(() =>
+        tenanted.claim(KEY, {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+          tenantId: PlatformTestDatabase.TENANT_A,
+        }),
+      );
+      await inTenantA(() =>
+        tenanted.claim('without-tenant', {
+          fingerprint: FINGERPRINT,
+          deadline: Deadline.after(1_000, clock),
+        }),
+      );
+
+      const raw = await database.pinned(PlatformTestDatabase.SHARD_A);
+      const rows = await raw.run(ManagerIntent.ReadPrimary, (manager) =>
+        manager.find(IdempotencyKeyEntity, { order: { key: 'ASC' } }),
+      );
+      expect(rows.map((row) => [row.key, row.tenantId])).toEqual([
+        [KEY, PlatformTestDatabase.TENANT_A],
+        ['without-tenant', null],
+      ]);
+    });
+
     it('purges only the completed results older than the cutoff, in the shard it is pinned to', async () => {
       const managers = await database.pinned(PlatformTestDatabase.SHARD_A);
       const pinned = new TypeOrmIdempotencyStore<ContractOrder>(

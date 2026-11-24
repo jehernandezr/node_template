@@ -28,6 +28,8 @@ export abstract class ApiKeyDirectory {
     region: string,
   ): Promise<void>;
   abstract tenantOf(prefix: string): Promise<string | undefined>;
+  /** Apunta a `region` los prefijos del tenant después de trasladarlo. */
+  abstract relocateTenant(tenantId: string, region: string): Promise<void>;
 }
 
 /** Huella guardada del secreto: HMAC con `IDENTITY_API_KEY_PEPPER` del SHA-256 que calculan los servicios. */

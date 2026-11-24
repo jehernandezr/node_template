@@ -14,4 +14,7 @@ export abstract class TenantDirectory {
 
   /** El slug del tenant, si lo tiene reservado. */
   abstract slugOf(tenantId: string): Promise<string | undefined>;
+
+  /** Apunta el slug del tenant a su región nueva después de un traslado. */
+  abstract relocate(tenantId: string, region: string): Promise<void>;
 }

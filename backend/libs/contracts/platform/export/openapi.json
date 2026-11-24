@@ -1,0 +1,225 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "platform",
+    "version": "2",
+    "description": "Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, traslado de tenants y errores."
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Id": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+        "description": "Identificador UUIDv7."
+      },
+      "Timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+        "description": "Instante ISO 8601 en UTC."
+      },
+      "Cursor": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "description": "Cursor opaco de paginación."
+      },
+      "PageLimit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "description": "Tamaño de página."
+      },
+      "PageQuery": {
+        "type": "object",
+        "properties": {
+          "limit": { "$ref": "#/components/schemas/PageLimit" },
+          "after": { "$ref": "#/components/schemas/Cursor" }
+        },
+        "additionalProperties": false,
+        "description": "Parámetros de paginación por cursor."
+      },
+      "CurrencyCode": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "description": "Código de moneda ISO 4217."
+      },
+      "MoneyAmount": {
+        "type": "object",
+        "properties": {
+          "amountMinor": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": { "$ref": "#/components/schemas/CurrencyCode" }
+        },
+        "required": ["amountMinor", "currency"],
+        "description": "Monto en unidades menores de la moneda."
+      },
+      "FieldError": {
+        "type": "object",
+        "properties": {
+          "field": { "type": "string", "maxLength": 512 },
+          "code": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "message": { "type": "string", "maxLength": 1024 }
+        },
+        "required": ["code"],
+        "description": "Error de un campo."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+          "detail": { "type": "string" },
+          "instance": { "type": "string" },
+          "code": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "traceId": { "type": "string" },
+          "errors": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FieldError" }
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "apiBaseUrl": { "type": "string", "maxLength": 2048 },
+              "region": { "type": "string", "maxLength": 64 }
+            },
+            "description": "Datos públicos del error, por ejemplo la URL de la región del tenant."
+          }
+        },
+        "required": ["type", "title", "status", "code"],
+        "description": "Respuesta de error RFC 9457."
+      },
+      "Empty": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "Petición sin campos."
+      },
+      "CalendarDate": {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "description": "Fecha de calendario AAAA-MM-DD, sin hora ni zona."
+      },
+      "UserRef": {
+        "type": "object",
+        "properties": {
+          "userId": { "$ref": "#/components/schemas/Id" },
+          "homeTenantId": { "$ref": "#/components/schemas/Id" }
+        },
+        "required": ["userId", "homeTenantId"],
+        "description": "Referencia a un usuario con su tenant de origen."
+      },
+      "TenantMoveRef": {
+        "type": "object",
+        "properties": {
+          "moveId": { "$ref": "#/components/schemas/Id" },
+          "tenantId": { "$ref": "#/components/schemas/Id" },
+          "targetGroup": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "targetRegion": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "required": ["moveId", "tenantId", "targetGroup", "targetRegion"],
+        "additionalProperties": false,
+        "description": "Traslado de un tenant a otro grupo de shards o región."
+      },
+      "TenantMoveTableProgress": {
+        "type": "object",
+        "properties": {
+          "table": { "type": "string", "minLength": 1, "maxLength": 63 },
+          "copiedRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pendingRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["table", "copiedRows", "pendingRows"],
+        "description": "Avance de la copia de una tabla."
+      },
+      "TenantMoveProgress": {
+        "type": "object",
+        "properties": {
+          "tables": {
+            "maxItems": 64,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TenantMoveTableProgress" }
+          },
+          "caughtUp": { "type": "boolean" }
+        },
+        "required": ["tables", "caughtUp"],
+        "description": "Resultado de una ronda de copia."
+      },
+      "TenantMoveTableCheck": {
+        "type": "object",
+        "properties": {
+          "table": { "type": "string", "minLength": 1, "maxLength": 63 },
+          "sourceRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "targetRows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sourceChecksum": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "targetChecksum": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "table",
+          "sourceRows",
+          "targetRows",
+          "sourceChecksum",
+          "targetChecksum"
+        ],
+        "description": "Conteo y suma de verificación de una tabla en el origen y el destino."
+      },
+      "TenantMoveVerification": {
+        "type": "object",
+        "properties": {
+          "verified": { "type": "boolean" },
+          "tables": {
+            "maxItems": 64,
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TenantMoveTableCheck" }
+          }
+        },
+        "required": ["verified", "tables"],
+        "description": "Resultado de la última ronda y de la verificación de un traslado."
+      },
+      "TenantMoveAck": {
+        "type": "object",
+        "properties": { "moveId": { "$ref": "#/components/schemas/Id" } },
+        "required": ["moveId"],
+        "description": "Acuse de una cancelación o una limpieza de traslado."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

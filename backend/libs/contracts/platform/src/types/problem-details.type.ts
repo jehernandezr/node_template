@@ -23,4 +23,13 @@ export interface ProblemDetails {
   code: string;
   traceId?: string;
   errors?: FieldError[];
+  /** Datos que el código del error declara públicos, por ejemplo la URL de la región del tenant. */
+  details?: ProblemDetailsDetails;
+}
+
+/** Datos públicos de un error, cada uno con la clave de `ProblemDetailKey`. */
+export interface ProblemDetailsDetails {
+  /** URL de la API de la región donde vive el tenant. */
+  apiBaseUrl?: string;
+  region?: string;
 }

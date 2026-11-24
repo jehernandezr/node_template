@@ -33,7 +33,9 @@ import * as http from './http/index.js';
 import * as internal from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-const tenantMove = defineTenantMoveOperations('notifications');
+/** Las operaciones de traslado de tenant de notifications, con su tipo exacto para registrarlas y llamarlas. */
+export const NotificationsTenantMoveOperations =
+  defineTenantMoveOperations('notifications');
 
 /** Contrato del servicio notifications: bandeja, preferencias, despacho por canal, correo transaccional y tiempo real. */
 export const notificationsContract = defineServiceContract({
@@ -86,10 +88,11 @@ export const notificationsContract = defineServiceContract({
     sendEmail: internal.SendEmailOperation,
     notifyUser: internal.NotifyUserOperation,
     eraseUserData: internal.EraseNotificationsUserDataOperation,
-    tenantMoveSync: tenantMove.tenantMoveSync,
-    tenantMoveFinalize: tenantMove.tenantMoveFinalize,
-    tenantMoveAbort: tenantMove.tenantMoveAbort,
-    tenantMoveCleanup: tenantMove.tenantMoveCleanup,
+    tenantMoveSync: NotificationsTenantMoveOperations.tenantMoveSync,
+    tenantMoveFinalize: NotificationsTenantMoveOperations.tenantMoveFinalize,
+    tenantMoveAbort: NotificationsTenantMoveOperations.tenantMoveAbort,
+    tenantMoveSwitch: NotificationsTenantMoveOperations.tenantMoveSwitch,
+    tenantMoveCleanup: NotificationsTenantMoveOperations.tenantMoveCleanup,
   },
   events: { notificationCreated: NotificationCreatedEvent },
   topics: { events: NotificationsEventsTopic },

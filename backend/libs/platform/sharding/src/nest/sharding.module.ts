@@ -7,6 +7,12 @@ import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 import { InProcessDirectoryChannel } from '../in-process-directory-channel.js';
 import { NullRoutingCache } from '../null-routing-cache.js';
 import { DirectoryStore } from '../ports/directory-store.js';
+import { DirectoryWriter } from '../ports/directory-writer.js';
+import { TenantWriteGate } from '../ports/tenant-write-gate.js';
+import { DirectoryWriteGate } from '../write-gate/directory-write-gate.js';
+import { PlacementTransition } from '../write-gate/placement-transition.js';
+import { TenantWriteWaiter } from '../write-gate/tenant-write-waiter.js';
+import type { TenantWriteWaiterOptions } from '../write-gate/tenant-write-waiter-options.js';
 import { RoutingCache } from '../ports/routing-cache.js';
 import { ShardDirectoryChannel } from '../ports/shard-directory-channel.js';
 import { ShardRouter } from '../shard-router.js';
@@ -30,6 +36,11 @@ export class ShardingModule
   extends ShardingModuleClass
   implements OnModuleInit, OnModuleDestroy
 {
+  private static readonly DEFAULT_WRITE_WAIT: TenantWriteWaiterOptions = {
+    maxWaitMs: 5_000,
+    pollMs: 100,
+  };
+
   constructor(private readonly subscription: DirectoryChangeSubscription) {
     super();
   }
@@ -73,8 +84,49 @@ export class ShardingModule
         ...(base.providers ?? []),
         ...ShardingModule.providersFor(extras.directory, extras),
       ],
-      exports: [ShardRouter, DirectoryChangeSubscription],
+      exports: [
+        ShardRouter,
+        DirectoryChangeSubscription,
+        DirectoryStore,
+        DirectoryWriter,
+        PlacementTransition,
+        TenantWriteGate,
+        TenantWriteWaiter,
+      ],
     };
+  }
+
+  private static writeGateProviders(extras: ShardingModuleExtras): Provider[] {
+    return [
+      extras.writeGate === undefined
+        ? {
+            provide: TenantWriteGate,
+            useFactory: (
+              router: ShardRouter,
+              transition: PlacementTransition,
+            ) => new DirectoryWriteGate(router, transition),
+            inject: [ShardRouter, PlacementTransition],
+          }
+        : { provide: TenantWriteGate, useExisting: extras.writeGate },
+      {
+        provide: TenantWriteWaiter,
+        useFactory: (
+          options: ShardingModuleOptions,
+          gate: TenantWriteGate,
+          clock: Clock | undefined,
+        ) =>
+          new TenantWriteWaiter(
+            gate,
+            clock ?? new SystemClock(),
+            options.writeWait ?? ShardingModule.DEFAULT_WRITE_WAIT,
+          ),
+        inject: [
+          SHARDING_OPTIONS,
+          TenantWriteGate,
+          { token: Clock, optional: true },
+        ],
+      },
+    ];
   }
 
   private static providersFor(
@@ -85,6 +137,14 @@ export class ShardingModule
       NullRoutingCache,
       InProcessDirectoryChannel,
       { provide: DirectoryStore, useExisting: directory },
+      { provide: DirectoryWriter, useExisting: directory },
+      {
+        provide: PlacementTransition,
+        useFactory: (writer: DirectoryWriter, router: ShardRouter) =>
+          new PlacementTransition(writer, router),
+        inject: [DirectoryWriter, ShardRouter],
+      },
+      ...ShardingModule.writeGateProviders(extras),
       {
         provide: RoutingCache,
         useExisting: extras.routingCache ?? NullRoutingCache,

@@ -3,6 +3,7 @@ import type {
   NotificationChannel,
   NotificationType,
 } from '@contracts/notifications';
+import type { UserRef } from '@contracts/platform';
 import { IdGenerator } from '@platform/kernel';
 import { ManagerIntent, RepositoryKit } from '@platform/persistence';
 import { NotificationPreferences } from '../../domain/notification-preferences.js';
@@ -39,7 +40,7 @@ export class TypeOrmPreferencesRepository extends PreferencesRepository {
 
   /** Reemplaza la fila entera: guardar las mismas preferencias dos veces deja una sola fila igual. */
   async save(
-    userId: string,
+    owner: UserRef,
     preferences: NotificationPreferences,
   ): Promise<void> {
     const view = preferences.toView();
@@ -52,14 +53,21 @@ export class TypeOrmPreferencesRepository extends PreferencesRepository {
           .into(NotificationPreferencesEntity)
           .values({
             id: this.ids.next().toString(),
-            userId,
+            userId: owner.userId,
+            homeTenantId: owner.homeTenantId,
             enabled: view.enabled,
             quietStart: view.quietStart,
             quietEnd: view.quietEnd,
             timezone: view.timezone,
           })
           .orUpdate(
-            ['enabled', 'quiet_start', 'quiet_end', 'timezone'],
+            [
+              'enabled',
+              'quiet_start',
+              'quiet_end',
+              'timezone',
+              'home_tenant_id',
+            ],
             ['user_id'],
           )
           .execute(),

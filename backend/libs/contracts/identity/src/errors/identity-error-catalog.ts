@@ -202,6 +202,26 @@ export const identityErrorCatalog = defineErrorCatalog(C, {
     audience: ErrorAudience.Public,
     description: 'No eres miembro de ese tenant.',
   },
+  [C.TenantMoveNotMovable]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Internal,
+    description:
+      'El tenant compartido de clientes y el de plataforma reparten sus datos en todos los shards y no se trasladan.',
+  },
+  [C.TenantMoveUnknownTarget]: {
+    httpStatus: 400,
+    retryable: false,
+    audience: ErrorAudience.Internal,
+    description:
+      'El destino del traslado no es un grupo de shards configurado o ya es la ubicación del tenant.',
+  },
+  [C.TenantMoveInProgress]: {
+    httpStatus: 409,
+    retryable: false,
+    audience: ErrorAudience.Internal,
+    description: 'El tenant ya tiene un traslado en curso.',
+  },
   [C.AccessLastOwner]: {
     httpStatus: 409,
     retryable: false,

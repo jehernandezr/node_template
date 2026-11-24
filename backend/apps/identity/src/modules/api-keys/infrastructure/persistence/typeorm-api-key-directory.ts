@@ -30,4 +30,10 @@ export class TypeOrmApiKeyDirectory
     );
     return row?.tenantId;
   }
+
+  async relocateTenant(tenantId: string, region: string): Promise<void> {
+    await this.write((manager) =>
+      manager.update(ApiKeyLookupEntity, { tenantId }, { region }),
+    );
+  }
 }

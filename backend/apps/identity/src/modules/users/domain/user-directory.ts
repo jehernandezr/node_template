@@ -27,4 +27,10 @@ export abstract class UserDirectory {
 
   /** Borra las reservas anteriores a `before`. Devuelve cuántas borró. */
   abstract sweepReserved(before: Date): Promise<number>;
+
+  /** Apunta a `region` las entradas de los usuarios cuyo tenant de origen es `homeTenantId`. */
+  abstract relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void>;
 }

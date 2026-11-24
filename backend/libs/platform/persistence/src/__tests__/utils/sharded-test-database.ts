@@ -36,6 +36,7 @@ import { ShardDataSources } from '../../shard-data-sources.js';
 import { ShardResolver } from '../../shard-resolver.js';
 import { ShardScope } from '../../shard-scope.js';
 import { ShardedMigrationRunner } from '../../sharded-migration-runner.js';
+import type { TenantWriteFence } from '../../tenant-write-fence.js';
 import { TypeOrmTransactionManager } from '../../typeorm-transaction-manager.js';
 import { StaticShardLister } from './static-shard-lister.js';
 import { RecordingLogger } from './recording-logger.js';
@@ -49,6 +50,8 @@ export interface ShardedTestDatabaseOptions {
   readonly requireScope?: boolean;
   /** Imagen de PostgreSQL; por defecto `postgres:17-alpine`. Las suites que usan pgvector piden su imagen. */
   readonly image?: string;
+  /** Barrera de traslado que consultan las escrituras; las migraciones deben crear `tenant_write_fences`. */
+  readonly fence?: TenantWriteFence;
 }
 
 /** Resuelve la única instancia del arnés al contenedor que la aloja. */
@@ -101,6 +104,7 @@ export class ShardedTestDatabase {
   writer!: OptimisticWriter;
   acrossShards!: AcrossShards;
   runner!: ShardedMigrationRunner;
+  lister!: StaticShardLister;
 
   private container?: StartedPostgreSqlContainer;
   private readonly store = new RequestContextStore(new Tracing(new Redactor()));
@@ -152,6 +156,18 @@ export class ShardedTestDatabase {
         debugSampled: false,
       },
       fn,
+    );
+  }
+
+  /** Otro gestor de transacciones sobre los mismos shards, con otra barrera de traslado. */
+  transactionsWith(fence: TenantWriteFence): TypeOrmTransactionManager {
+    this.requireStarted();
+    return new TypeOrmTransactionManager(
+      this.resolver,
+      new PersistenceFeature({ key: ShardKey.Tenant }),
+      this.contextProvider,
+      new RecordingLogger(),
+      fence,
     );
   }
 
@@ -258,10 +274,11 @@ export class ShardedTestDatabase {
       new PersistenceFeature({ key: ShardKey.Tenant }),
       this.contextProvider,
       new RecordingLogger(),
+      this.options.fence,
     );
     this.provider = new EntityManagerProvider(this.resolver, this.transactions);
     this.writer = new OptimisticWriter();
-    const lister = new StaticShardLister([
+    this.lister = new StaticShardLister([
       {
         logicalShard: ShardedTestDatabase.SHARD_A,
         instance: ShardedTestDatabase.INSTANCE,
@@ -272,13 +289,13 @@ export class ShardedTestDatabase {
       },
     ]);
     this.acrossShards = new AcrossShards(
-      lister,
+      this.lister,
       this.sources,
       this.transactions,
       new SystemClock(),
     );
     this.runner = new ShardedMigrationRunner(
-      lister,
+      this.lister,
       this.sources,
       this.catalog,
     );

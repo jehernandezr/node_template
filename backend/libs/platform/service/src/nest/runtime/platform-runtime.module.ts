@@ -35,6 +35,7 @@ import {
   ValkeyRateLimiter,
   ValkeyRoutingCache,
   ValkeyShardDirectoryChannel,
+  ValkeyWriteGate,
 } from '@platform/adapters-valkey';
 import { ValkeyModule } from '@platform/adapters-valkey/nest';
 import { AppConfig, type ConfigEnv } from '@platform/config';
@@ -69,6 +70,18 @@ import { SchedulingMode } from '@platform/scheduling';
 import { SchedulingModule } from '@platform/scheduling/nest';
 import { ShardKey, ShardRouter } from '@platform/sharding';
 import { ShardingModule } from '@platform/sharding/nest';
+import { InvalidServiceDefinitionError } from '../../errors/invalid-service-definition.error.js';
+import {
+  RegionsConfig,
+  ServiceRegions,
+  type RegionsSettings,
+} from '../../regions/regions.config.js';
+import { TenantWriteGateKind } from '../../regions/tenant-write-gate-kind.enum.js';
+import {
+  TenantWritesConfig,
+  tenantWritesConfigSchema,
+  type TenantWritesSettings,
+} from '../../regions/tenant-writes.config.js';
 import { HealthModule } from '../health/health.module.js';
 import { PlacedTenantVerifier } from '../../messaging/placed-tenant-verifier.js';
 import { TenantShardDeliveryContext } from '../../messaging/tenant-shard-delivery-context.js';
@@ -99,6 +112,9 @@ enum RuntimeVariable {
  */
 @Module({})
 export class PlatformRuntimeModule {
+  /** Cada cuánto vuelve a mirar la compuerta una escritura que espera. */
+  private static readonly WRITE_GATE_POLL_MS = 100;
+
   static forService(
     definition: ServiceDefinition,
     options: PlatformRuntimeOptions,
@@ -135,6 +151,7 @@ export class PlatformRuntimeModule {
           schema: definition.configSchema,
           env: options.env,
         }),
+        ConfigModule.forFeature(RegionsConfig),
         ObservabilityModule.forRoot(
           options.telemetry === undefined
             ? {}
@@ -154,17 +171,14 @@ export class PlatformRuntimeModule {
           },
           requireScope: definition.sharding?.requireScope ?? false,
           shardLister: DirectoryShardLister,
+          tenantMoves: true,
         }),
         PostgresPlatformModule.forRoot(),
-        ShardingModule.forRoot({
-          directory: TypeOrmDirectoryStore,
-          ...(adapters.valkey
-            ? {
-                routingCache: ValkeyRoutingCache,
-                channel: ValkeyShardDirectoryChannel,
-              }
-            : {}),
-        }),
+        PlatformRuntimeModule.shardingModule(
+          definition.name,
+          options.env,
+          adapters,
+        ),
         CacheModule.forRoot({
           metrics: MetricsPort,
           ...(adapters.valkey ? { store: ValkeyCache } : {}),
@@ -195,14 +209,90 @@ export class PlatformRuntimeModule {
       ],
       providers: [
         PlatformRuntimeModule.useCaseRunnerProvider(),
+        PlatformRuntimeModule.regionsProvider(),
         ...ownPublishers,
         ...deliveryProviders,
       ],
       exports: [
         UseCaseRunner,
+        ServiceRegions,
         ...ownPublishers,
         ...deliveryProviders.map((provider) => provider.provide),
       ],
+    };
+  }
+
+  /**
+   * El router rechaza los tenants de otra región con la URL de su API (`REGIONS` y `SERVICE_REGION`), y la compuerta
+   * de escritura de los traslados se cierra en el directorio o, con `TENANT_WRITE_GATE=valkey`, en Valkey.
+   * @throws InvalidServiceDefinitionError si `TENANT_WRITE_GATE` no es un valor conocido o pide Valkey sin Valkey.
+   */
+  private static shardingModule(
+    serviceName: string,
+    env: ConfigEnv,
+    adapters: RuntimeAdapters,
+  ): DynamicModule {
+    return ShardingModule.forRootAsync({
+      imports: [
+        ConfigModule.forFeature(RegionsConfig),
+        ConfigModule.forFeature(TenantWritesConfig),
+      ],
+      useFactory: (regions: RegionsSettings, writes: TenantWritesSettings) => ({
+        router: {
+          currentRegion: regions.SERVICE_REGION,
+          regions: regions.REGIONS,
+        },
+        writeWait: {
+          maxWaitMs: writes.TENANT_MOVE_MAX_WAIT_MS,
+          pollMs: PlatformRuntimeModule.WRITE_GATE_POLL_MS,
+        },
+      }),
+      inject: [RegionsConfig.token, TenantWritesConfig.token],
+      directory: TypeOrmDirectoryStore,
+      ...(adapters.valkey
+        ? {
+            routingCache: ValkeyRoutingCache,
+            channel: ValkeyShardDirectoryChannel,
+          }
+        : {}),
+      ...(PlatformRuntimeModule.writeGateOf(serviceName, env, adapters) ===
+      TenantWriteGateKind.Valkey
+        ? { writeGate: ValkeyWriteGate }
+        : {}),
+    });
+  }
+
+  /**
+   * La compuerta se elige al componer los módulos, antes de que exista el contexto de configuración, así que su
+   * sección se valida aquí con el mismo esquema que después la inyecta.
+   */
+  private static writeGateOf(
+    serviceName: string,
+    env: ConfigEnv,
+    adapters: RuntimeAdapters,
+  ): TenantWriteGateKind {
+    const parsed = tenantWritesConfigSchema.safeParse(env);
+    if (!parsed.success) {
+      throw new InvalidServiceDefinitionError(
+        serviceName,
+        `TENANT_WRITE_GATE must be one of ${Object.values(TenantWriteGateKind).join(', ')} and TENANT_MOVE_MAX_WAIT_MS a number of milliseconds`,
+      );
+    }
+    const kind = parsed.data.TENANT_WRITE_GATE;
+    if (kind === TenantWriteGateKind.Valkey && !adapters.valkey) {
+      throw new InvalidServiceDefinitionError(
+        serviceName,
+        'TENANT_WRITE_GATE=valkey needs Valkey configured',
+      );
+    }
+    return kind;
+  }
+
+  private static regionsProvider(): Provider {
+    return {
+      provide: ServiceRegions,
+      useFactory: (settings: RegionsSettings) => new ServiceRegions(settings),
+      inject: [RegionsConfig.token],
     };
   }
 

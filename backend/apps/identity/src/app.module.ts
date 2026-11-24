@@ -23,9 +23,11 @@ import { PasskeysModule } from './modules/passkeys/presentation/passkeys.module.
 import { PasswordsModule } from './modules/passwords/presentation/passwords.module.js';
 import { SagasModule } from './modules/sagas/presentation/sagas.module.js';
 import { SessionsModule } from './modules/sessions/presentation/sessions.module.js';
+import { TenantMovesModule } from './modules/tenant-moves/presentation/tenant-moves.module.js';
 import { TenantsModule } from './modules/tenants/presentation/tenants.module.js';
 import { TokensModule } from './modules/tokens/presentation/tokens.module.js';
 import { UsersModule } from './modules/users/presentation/users.module.js';
+// generated:modules:imports
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { UsersModule } from './modules/users/presentation/users.module.js';
     InvitationsModule,
     ApiKeysModule,
     AlertsModule,
+    TenantMovesModule,
+    // generated:modules
   ],
 })
 export class AppModule {}

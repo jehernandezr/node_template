@@ -8,6 +8,10 @@ export class NotificationEntity extends VersionedEntity {
   @Column({ type: 'uuid', name: 'user_id', nullable: false })
   userId!: string;
 
+  /** Nulo solo en las filas anteriores a la columna. */
+  @Column({ type: 'uuid', name: 'home_tenant_id', nullable: true })
+  homeTenantId!: string | null;
+
   @Column({ type: 'varchar', length: 32, name: 'type', nullable: false })
   type!: string;
 

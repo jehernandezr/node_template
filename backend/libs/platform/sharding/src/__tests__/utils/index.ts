@@ -12,4 +12,8 @@ export {
   runRoutingCacheContract,
   type RoutingCacheContractSubject,
 } from './run-routing-cache-contract.js';
+export {
+  runTenantWriteGateContract,
+  type TenantWriteGateContractSubject,
+} from './run-tenant-write-gate-contract.js';
 export { TestTenants } from './test-tenants.js';

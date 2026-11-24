@@ -240,6 +240,7 @@ enum ReportsOperation {
   tenantMoveSync('reports.tenant-move.sync.v1'),
   tenantMoveFinalize('reports.tenant-move.finalize.v1'),
   tenantMoveAbort('reports.tenant-move.abort.v1'),
+  tenantMoveSwitch('reports.tenant-move.switch.v1'),
   tenantMoveCleanup('reports.tenant-move.cleanup.v1');
 
   const ReportsOperation(this.wireCode);

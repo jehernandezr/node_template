@@ -57,7 +57,9 @@ import {
 } from './internal/billing.operations.js';
 import * as schemas from './schemas/index.js';
 
-const tenantMove = defineTenantMoveOperations('billing');
+/** Las operaciones de traslado de tenant de billing, con su tipo exacto para registrarlas y llamarlas. */
+export const BillingTenantMoveOperations =
+  defineTenantMoveOperations('billing');
 
 /** Contrato del servicio billing: planes, suscripciones, uso, facturas, cuotas y eventos. */
 export const billingContract = defineServiceContract({
@@ -143,10 +145,11 @@ export const billingContract = defineServiceContract({
     markInvoicePaid: MarkInvoicePaidOperation,
     markInvoiceFailed: MarkInvoiceFailedOperation,
     listInvoiceChanges: ListInvoiceChangesOperation,
-    tenantMoveSync: tenantMove.tenantMoveSync,
-    tenantMoveFinalize: tenantMove.tenantMoveFinalize,
-    tenantMoveAbort: tenantMove.tenantMoveAbort,
-    tenantMoveCleanup: tenantMove.tenantMoveCleanup,
+    tenantMoveSync: BillingTenantMoveOperations.tenantMoveSync,
+    tenantMoveFinalize: BillingTenantMoveOperations.tenantMoveFinalize,
+    tenantMoveAbort: BillingTenantMoveOperations.tenantMoveAbort,
+    tenantMoveSwitch: BillingTenantMoveOperations.tenantMoveSwitch,
+    tenantMoveCleanup: BillingTenantMoveOperations.tenantMoveCleanup,
   },
   events: {
     subscriptionChanged: SubscriptionChangedEvent,

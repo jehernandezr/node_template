@@ -153,6 +153,7 @@ import {
   CreateTenantOperation,
   DiscardTenantOperation,
   EraseUserOperation,
+  FinishTenantMoveOperation,
   GetUserAccessOperation,
   GetUserProfileOperation,
   ListMembersByPermissionOperation,
@@ -165,7 +166,9 @@ import {
 } from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-const tenantMove = defineTenantMoveOperations('identity');
+/** Las operaciones de traslado de tenant de identity, con su tipo exacto para registrarlas y llamarlas. */
+export const IdentityTenantMoveOperations =
+  defineTenantMoveOperations('identity');
 
 /** Contrato del servicio identity: acceso, sesiones, cuentas, tenants, API keys y eventos. */
 export const identityContract = defineServiceContract({
@@ -457,10 +460,12 @@ export const identityContract = defineServiceContract({
     eraseUser: EraseUserOperation,
     listPushTargets: ListPushTargetsOperation,
     listMembersByPermission: ListMembersByPermissionOperation,
-    tenantMoveSync: tenantMove.tenantMoveSync,
-    tenantMoveFinalize: tenantMove.tenantMoveFinalize,
-    tenantMoveAbort: tenantMove.tenantMoveAbort,
-    tenantMoveCleanup: tenantMove.tenantMoveCleanup,
+    tenantMoveSync: IdentityTenantMoveOperations.tenantMoveSync,
+    tenantMoveFinalize: IdentityTenantMoveOperations.tenantMoveFinalize,
+    tenantMoveAbort: IdentityTenantMoveOperations.tenantMoveAbort,
+    tenantMoveSwitch: IdentityTenantMoveOperations.tenantMoveSwitch,
+    tenantMoveCleanup: IdentityTenantMoveOperations.tenantMoveCleanup,
+    finishTenantMove: FinishTenantMoveOperation,
   },
   events: {
     sessionRevoked: SessionRevokedEvent,

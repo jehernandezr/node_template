@@ -6,7 +6,7 @@ import {
   type SignInResponse,
 } from '@contracts/identity';
 import { Clock } from '@platform/kernel';
-import { IdentitySettings } from '../../../config/identity-settings.js';
+import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
@@ -31,7 +31,7 @@ export class VerifyMfa {
     private readonly verifier: ChallengeVerifier,
     private readonly devices: DevicesFacade,
     private readonly sessions: SessionsFacade,
-    private readonly settings: IdentitySettings,
+    private readonly deployment: DeploymentRegion,
     private readonly clock: Clock,
   ) {}
 
@@ -87,9 +87,6 @@ export class VerifyMfa {
       mfaVerifiedAt: now,
       client: pending.client,
     });
-    return SignInResponses.authenticated(
-      session,
-      this.settings.values.IDENTITY_REGION,
-    );
+    return SignInResponses.authenticated(session, this.deployment.location());
   }
 }

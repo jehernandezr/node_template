@@ -4,3 +4,4 @@ export {
   TestApiKeySecretHasher,
 } from './in-memory-api-key-store.js';
 export { InterleavingAuthState } from './interleaving-auth-state.js';
+export { InMemoryApiKeysFacade } from './in-memory-api-keys.facade.js';

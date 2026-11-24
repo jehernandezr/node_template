@@ -987,7 +987,9 @@ enum IdentityOperation {
   tenantMoveSync('identity.tenant-move.sync.v1'),
   tenantMoveFinalize('identity.tenant-move.finalize.v1'),
   tenantMoveAbort('identity.tenant-move.abort.v1'),
-  tenantMoveCleanup('identity.tenant-move.cleanup.v1');
+  tenantMoveSwitch('identity.tenant-move.switch.v1'),
+  tenantMoveCleanup('identity.tenant-move.cleanup.v1'),
+  finishTenantMove('identity.tenant-moves.finish.v1');
 
   const IdentityOperation(this.wireCode);
 

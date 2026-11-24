@@ -13,7 +13,7 @@ import type { ResolveRequest } from './router/resolve-request.js';
 import { ShardRouterAssembler } from './router/shard-router-assembler.js';
 import type { ShardRouterOptions } from './router/shard-router-options.js';
 import type { ShardRouterParts } from './router/shard-router-parts.js';
-import { TenantWriteGate } from './router/tenant-write-gate.js';
+import { PlacementWriteRule } from './router/placement-write-rule.js';
 
 /**
  * Enruta una petición a su instancia física: tenant, región, grupo de shards,
@@ -65,10 +65,13 @@ export class ShardRouter {
       this.parts.currentRegion !== undefined &&
       placement.region !== this.parts.currentRegion
     ) {
-      throw new WrongRegionError(placement.region);
+      throw new WrongRegionError(
+        placement.region,
+        this.parts.regionUrls.get(placement.region),
+      );
     }
     if (request.access === ShardAccess.Write) {
-      TenantWriteGate.assertWritable(tenantId, placement.status);
+      PlacementWriteRule.assertWritable(tenantId, placement.status);
     }
     const logicalShard = this.selectLogicalShard(placement, routingKey);
     const instance =
@@ -83,9 +86,19 @@ export class ShardRouter {
     };
   }
 
+  /**
+   * Placement del tenant, del caché en proceso o cargado, sin comprobar región ni estado.
+   * @throws ShardingError `KeyMissing`, `InvalidTenantId` o `UnknownTenant`.
+   */
+  async placement(tenantId: string): Promise<TenantPlacement> {
+    const { normalizer, cache, loader } = this.parts;
+    const normalized = normalizer.tenantId(tenantId);
+    return cache.local(normalized) ?? loader.loadOrJoin(normalized);
+  }
+
   /** Lanza los mismos errores que un `resolve` de escritura, para un resultado que ya se tiene. */
   assertWritable(resolved: ResolvedShard): void {
-    TenantWriteGate.assertWritable(resolved.tenantId, resolved.status);
+    PlacementWriteRule.assertWritable(resolved.tenantId, resolved.status);
   }
 
   /**

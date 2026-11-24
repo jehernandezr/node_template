@@ -10,4 +10,6 @@ export enum IdentityJob {
   ExpireInvitations = 'identity.expire-invitations',
   /** Borra las recuperaciones de contraseña vencidas o usadas hace más de su retención. */
   PurgePasswordResets = 'identity.purge-password-resets',
+  /** Borra del origen los datos de los tenants trasladados cuando pasa `TENANT_MOVE_GRACE_DAYS`. */
+  CleanUpTenantMoves = 'identity.clean-up-tenant-moves',
 }

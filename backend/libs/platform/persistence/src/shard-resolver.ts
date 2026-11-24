@@ -1,8 +1,10 @@
 import {
+  ShardAccess,
   ShardingError,
   ShardingErrorCode,
   type ShardKey,
   type ShardRouter,
+  type TenantWriteWaiter,
 } from '@platform/sharding';
 import type { PersistenceContextProvider } from './context/persistence-context-provider.js';
 import type { ShardHandle } from './model/shard-handle.js';
@@ -22,11 +24,14 @@ export class ShardResolver {
     private readonly scope: ShardScope,
     private readonly context: PersistenceContextProvider,
     private readonly options: ShardResolverOptions,
+    private readonly writeWaiter?: TenantWriteWaiter,
   ) {}
 
   /**
    * @throws ShardingError `KeyMissing` sin tenant, sin la llave que declara el módulo o, con `requireScope`, sin scope.
    * @throws ShardingError y `WrongRegionError` que lance `ShardRouter.resolve`.
+   * @throws ShardingError `TenantMigrating` si una escritura espera más de lo permitido a que su tenant termine de
+   *   trasladarse.
    */
   async resolve(request: ShardRequest): Promise<ShardHandle> {
     const scope = this.scope.current();
@@ -64,6 +69,9 @@ export class ShardResolver {
       keyValue = key.keyValue;
     }
 
+    if (request.access === ShardAccess.Write) {
+      await this.writeWaiter?.awaitOpen(tenantId);
+    }
     const resolved = await this.router.resolve({
       tenantId,
       keyKind,

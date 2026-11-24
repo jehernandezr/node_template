@@ -12,4 +12,9 @@ export abstract class UsersFacade {
   abstract refOf(userId: string): Promise<UserRef | undefined>;
   abstract register(input: RegisterUserInput): Promise<UserRef>;
   abstract setLastTenant(ref: UserRef, tenantId: string): Promise<void>;
+  /** Apunta a `region` el índice de emails de los usuarios cuyo tenant de origen se trasladó. Idempotente. */
+  abstract relocateHomeTenant(
+    homeTenantId: string,
+    region: string,
+  ): Promise<void>;
 }

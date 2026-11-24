@@ -13,7 +13,7 @@ import type { Output } from './output.js';
 import { WriteMode } from './write-mode.js';
 
 const USAGE =
-  'Uso: contracts-export <export|check|topology-export|topology-check>';
+  'Uso: contracts-export <export|check|topology-export|topology-check|openapi>';
 
 /** Interpreta el subcomando, elige modo y alcance y devuelve el código de salida. */
 export class ExportCommand {
@@ -67,6 +67,11 @@ export class ExportCommand {
         return {
           mode: new CheckMode(this.fileSystem),
           scope: ExportScope.TopologyOnly,
+        };
+      case ExportCommandName.OpenApi:
+        return {
+          mode: new WriteMode(this.fileSystem),
+          scope: ExportScope.OpenApiOnly,
         };
       default:
         return null;

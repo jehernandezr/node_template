@@ -32,6 +32,13 @@ import {
 } from '../src/__tests__/utils/index.js';
 
 const runtime = new ContainerRuntime(process.env);
+/**
+ * Las cuotas que identity consultó a billing valen 10 s en su caché: el reintento se repite hasta que vencen, con
+ * este plazo máximo para no colgar la prueba si nunca pasa.
+ */
+const RETRY_DEADLINE_MS = 30_000;
+/** Pausa entre reintentos del registro, para no llegar al límite de tasa de las rutas de autenticación. */
+const RETRY_PAUSE_MS = 1_500;
 
 interface Named {
   readonly id: string;
@@ -377,6 +384,72 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     ).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ email: tere.email })]),
     );
+  });
+
+  it('lets the invited person retry her sign up and join when another member took the last seat in between', async () => {
+    const uma = new IdentityJourney(app, 'uma.reintento@example.com');
+    await owner.post('/v1/tenant/invitations', {
+      body: { email: uma.email, groupIds: [] },
+    });
+    const token = uma.mailTo(IdentityEmailTemplate.TenantInvitation)['token'];
+    app.peers.fillAfter(tenantId, UsageMetric.Users, { limit: 3, used: 3 }, 1);
+
+    const raced = await uma.signUp(token);
+    app.peers.limit(tenantId, UsageMetric.Users, { limit: 5, used: 3 });
+    let retried = raced;
+    const giveUpAt = performance.now() + RETRY_DEADLINE_MS;
+    while (retried.status === 403 && performance.now() < giveUpAt) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS));
+      retried = await uma.signUp(token);
+    }
+    const signIn = await uma.signIn();
+    const members = await owner.get('/v1/tenant/members');
+    const invitations = await owner.get('/v1/tenant/invitations');
+
+    expect(raced.status).toBe(403);
+    expect(raced.body).toMatchObject({
+      code: BillingReference.QuotaExceeded,
+    });
+    expect(retried.status).toBe(202);
+    expect(
+      app
+        .mailer()
+        .lastTo(uma.email, IdentityEmailTemplate.EmailAlreadyRegistered),
+    ).toBeUndefined();
+    expect(signIn.body).toMatchObject({ status: 'mfa_required' });
+    expect((members.body as { items: Array<{ email: string }> }).items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ email: uma.email })]),
+    );
+    expect((invitations.body as { items: unknown[] }).items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ email: uma.email, status: 'accepted' }),
+      ]),
+    );
+  });
+
+  it('answers that the email is taken when a member signs up again with a later invitation to her email', async () => {
+    const vera = new IdentityJourney(app, 'vera.repetida@example.com');
+    app.peers.limit(tenantId, UsageMetric.Users, { limit: 50, used: 3 });
+    await owner.post('/v1/tenant/invitations', {
+      body: { email: vera.email, groupIds: [] },
+    });
+    const joined = await vera.signUp(
+      vera.mailTo(IdentityEmailTemplate.TenantInvitation)['token'],
+    );
+    await owner.post('/v1/tenant/invitations', {
+      body: { email: vera.email, groupIds: [] },
+    });
+    const token = vera.mailTo(IdentityEmailTemplate.TenantInvitation)['token'];
+
+    const again = await vera.signUp(token);
+
+    expect(joined.status).toBe(202);
+    expect(again.status).toBe(202);
+    expect(
+      app
+        .mailer()
+        .lastTo(vera.email, IdentityEmailTemplate.EmailAlreadyRegistered),
+    ).toBeDefined();
   });
 
   it('creates service accounts and API keys that authenticate, rotate and revoke', async () => {

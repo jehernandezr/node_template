@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import type { UserRef } from '@contracts/platform';
-import { AcrossShards, TenantMaintenanceSession } from '@platform/persistence';
-import { LessThan, type EntityManager } from 'typeorm';
+import {
+  AcrossShards,
+  TenantMaintenanceSession,
+  TenantWriteFence,
+  type AcrossShardsResult,
+} from '@platform/persistence';
+import type { EntityManager } from 'typeorm';
 import { TaskMaintenance } from '../../domain/task-maintenance.js';
 import { TaskEntity } from './entities/task.entity.js';
 
 /**
  * Mantenimiento de `tasks` en todos los shards, cada uno en una transacción de mantenimiento: estas
- * operaciones tocan todos los tenants del shard. Un shard caído se reintenta en la próxima corrida.
+ * operaciones tocan todos los tenants del shard, salvo los que ya se trasladaron a otro. Un shard caído se
+ * reintenta en la próxima corrida.
  */
 @Injectable()
 export class TypeOrmTaskMaintenance extends TaskMaintenance {
@@ -15,18 +21,23 @@ export class TypeOrmTaskMaintenance extends TaskMaintenance {
     super();
   }
 
-  purgeDeletedBefore(cutoff: Date): Promise<number> {
-    return this.inEveryShard(async (manager) => {
-      const result = await manager.delete(TaskEntity, {
-        deletedAt: LessThan(cutoff),
-      });
+  async purgeDeletedBefore(cutoff: Date): Promise<number> {
+    const outcome = await this.inEveryShard(async (manager) => {
+      const result = await manager
+        .createQueryBuilder()
+        .delete()
+        .from(TaskEntity)
+        .where('"deleted_at" < :cutoff', { cutoff })
+        .andWhere(TenantWriteFence.unfenced('"tasks"."tenant_id"'))
+        .execute();
       return result.affected ?? 0;
     });
+    return TypeOrmTaskMaintenance.total(outcome);
   }
 
   /** Una sola sentencia por shard: cada tarea cuenta una vez aunque el usuario la haya creado y editado. */
-  replaceAuthor(userId: string, replacement: UserRef): Promise<number> {
-    return this.inEveryShard(async (manager) => {
+  async replaceAuthor(userId: string, replacement: UserRef): Promise<number> {
+    const outcome = await this.inEveryShard(async (manager) => {
       const result = await manager
         .createQueryBuilder()
         .update(TaskEntity)
@@ -38,7 +49,8 @@ export class TypeOrmTaskMaintenance extends TaskMaintenance {
           updatedBy: () =>
             `CASE WHEN "updated_by" = :userId THEN :replacement ELSE "updated_by" END`,
         })
-        .where('"created_by" = :userId OR "updated_by" = :userId')
+        .where('("created_by" = :userId OR "updated_by" = :userId)')
+        .andWhere(TenantWriteFence.unfenced('"tasks"."tenant_id"'))
         .setParameters({
           userId,
           replacement: replacement.userId,
@@ -47,14 +59,19 @@ export class TypeOrmTaskMaintenance extends TaskMaintenance {
         .execute();
       return result.affected ?? 0;
     });
+    TenantMaintenanceSession.requireEveryShard(outcome);
+    return TypeOrmTaskMaintenance.total(outcome);
   }
 
-  private async inEveryShard(
+  private inEveryShard(
     fn: (manager: EntityManager) => Promise<number>,
-  ): Promise<number> {
-    const outcome = await this.shards.run((connection) =>
+  ): Promise<AcrossShardsResult<number>> {
+    return this.shards.run((connection) =>
       TenantMaintenanceSession.run(connection.dataSource.manager, fn),
     );
+  }
+
+  private static total(outcome: AcrossShardsResult<number>): number {
     return outcome.results.reduce((total, result) => total + result.value, 0);
   }
 }

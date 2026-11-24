@@ -26,6 +26,10 @@ class DetailedError extends PlatformError {
   override readonly code = PlatformErrorCode.RateLimitExceeded;
 }
 
+class WrongRegion extends PlatformError {
+  override readonly code = PlatformErrorCode.ShardingWrongRegion;
+}
+
 class InternalCoded extends PlatformError {
   override readonly code = InternalCode.Hidden;
 }
@@ -145,6 +149,32 @@ describe('ProblemDetailsMapper', () => {
     expect(
       mapperWith().map(HttpProblemError.notFound(), context).headers,
     ).not.toHaveProperty('retry-after');
+  });
+
+  it('tells a client of another region where to repeat the request, and nothing else of the error', () => {
+    const error = new WrongRegion('elsewhere', {
+      details: {
+        region: 'sa-east-1',
+        apiBaseUrl: 'https://sa.api.test',
+        tenantId: 'not-for-the-client',
+      },
+    });
+
+    const response = mapperWith().map(error, context);
+
+    expect(response.status).toBe(421);
+    expect(response.body.details).toEqual({
+      region: 'sa-east-1',
+      apiBaseUrl: 'https://sa.api.test',
+    });
+  });
+
+  it('never publishes the details of an internal code', () => {
+    const error = new InternalCoded('internal', {
+      details: { apiBaseUrl: 'https://sa.api.test' },
+    });
+
+    expect(mapperWith().map(error, context).body.details).toBeUndefined();
   });
 
   it('uses the audience of the catalog to decide the public response', () => {

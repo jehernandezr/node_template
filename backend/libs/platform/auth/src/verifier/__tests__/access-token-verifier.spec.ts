@@ -184,6 +184,15 @@ describe('AccessTokenVerifier', () => {
           ),
       ],
       [
+        'a token issued by the identity of another region, signed with the same keys',
+        (h) =>
+          h.token(
+            AccessTokenBuilder.aToken(h.nowSeconds).withClaims({
+              iss: 'https://identity.region-b.test',
+            }),
+          ),
+      ],
+      [
         'a missing sid',
         (h) =>
           h.token(AccessTokenBuilder.aToken(h.nowSeconds).withoutClaim('sid')),

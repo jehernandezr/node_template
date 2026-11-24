@@ -106,6 +106,10 @@
           "value": "notifications.tenant-move.abort.v1"
         },
         {
+          "name": "TenantMoveSwitch",
+          "value": "notifications.tenant-move.switch.v1"
+        },
+        {
           "name": "TenantMoveCleanup",
           "value": "notifications.tenant-move.cleanup.v1"
         }
@@ -666,6 +670,24 @@
       "errors": [],
       "timeoutMs": 6000,
       "description": "Cancela el traslado de un tenant y descarta lo copiado de notifications al destino."
+    },
+    {
+      "name": "tenantMoveSwitch",
+      "id": "notifications.tenant-move.switch.v1",
+      "version": 1,
+      "input": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveRef"
+      },
+      "output": {
+        "$ref": "../../platform/export/contract.json#/schemas/TenantMoveAck"
+      },
+      "idempotent": true,
+      "mutating": true,
+      "compensatedBy": "none",
+      "compensationReason": "Corre después del pivote: el tenant ya vive en el destino y se reintenta hasta completarse.",
+      "errors": [],
+      "timeoutMs": 6000,
+      "description": "Apunta notifications al destino del tenant trasladado y vuelve a abrir sus escrituras."
     },
     {
       "name": "tenantMoveCleanup",

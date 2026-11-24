@@ -19,6 +19,8 @@ import { IdentityMailerKind } from './identity-mailer-kind.enum.js';
 export const identityConfigSchema = serviceConfigSchema
   .extend({
     IDENTITY_REGION: z.string().trim().min(1).max(32),
+    /** La región del proceso para el enrutamiento (`@platform/service`); si se declara, es `IDENTITY_REGION`. */
+    SERVICE_REGION: z.string().trim().min(1).max(32).optional(),
     IDENTITY_ISSUER: z.url(),
     AUTH_ISSUER: z.url(),
     AUTH_JWKS_URL: z.url(),
@@ -62,6 +64,16 @@ export const identityConfigSchema = serviceConfigSchema
         code: 'custom',
         path: ['AUTH_ISSUER'],
         message: 'AUTH_ISSUER debe ser igual a IDENTITY_ISSUER',
+      });
+    }
+    if (
+      config.SERVICE_REGION !== undefined &&
+      config.SERVICE_REGION !== config.IDENTITY_REGION
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['IDENTITY_REGION'],
+        message: 'IDENTITY_REGION debe ser igual a SERVICE_REGION',
       });
     }
     if (config.SESSION_ABSOLUTE_TTL < config.SESSION_IDLE_TTL) {

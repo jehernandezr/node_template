@@ -447,3 +447,45 @@ final class TenantMoveAck {
   @override
   int get hashCode => contractHash([moveId]);
 }
+
+/// Datos públicos del error, por ejemplo la URL de la región del tenant.
+@immutable
+final class ProblemDetailsDetails {
+  const ProblemDetailsDetails({this.apiBaseUrl, this.region});
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory ProblemDetailsDetails.fromJson(Map<String, dynamic> json) {
+    try {
+      return ProblemDetailsDetails(
+        apiBaseUrl: json['apiBaseUrl'] as String?,
+        region: json['region'] as String?,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid ProblemDetailsDetails: $error', json);
+    }
+  }
+
+  final String? apiBaseUrl;
+
+  final String? region;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'apiBaseUrl': ?apiBaseUrl,
+    'region': ?region,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(ProblemDetailsDetails value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProblemDetailsDetails &&
+          contractEquals(apiBaseUrl, other.apiBaseUrl) &&
+          contractEquals(region, other.region);
+
+  @override
+  int get hashCode => contractHash([apiBaseUrl, region]);
+}

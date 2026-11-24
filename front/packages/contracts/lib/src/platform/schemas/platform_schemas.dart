@@ -523,6 +523,15 @@ abstract final class ProblemDetailsSchema {
         }
       }
     }
+    if (json.containsKey('details')) {
+      final value17 = json['details'];
+      ProblemDetailsDetailsSchema.check(
+        value17,
+        joinPath(path, 'details'),
+        errors,
+        acceptUnknownEnums: acceptUnknownEnums,
+      );
+    }
   }
 }
 
@@ -617,15 +626,15 @@ abstract final class UserRefSchema {
       return;
     }
     if (json.containsKey('userId')) {
-      final value17 = json['userId'];
-      if (value17 is! String) {
+      final value18 = json['userId'];
+      if (value18 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'userId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value17)) {
+        if (!_pattern2.hasMatch(value18)) {
           addFieldError(
             errors,
             joinPath(path, 'userId'),
@@ -641,15 +650,15 @@ abstract final class UserRefSchema {
       );
     }
     if (json.containsKey('homeTenantId')) {
-      final value18 = json['homeTenantId'];
-      if (value18 is! String) {
+      final value19 = json['homeTenantId'];
+      if (value19 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'homeTenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value18)) {
+        if (!_pattern2.hasMatch(value19)) {
           addFieldError(
             errors,
             joinPath(path, 'homeTenantId'),
@@ -710,15 +719,15 @@ abstract final class TenantMoveRefSchema {
       return;
     }
     if (json.containsKey('moveId')) {
-      final value19 = json['moveId'];
-      if (value19 is! String) {
+      final value20 = json['moveId'];
+      if (value20 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'moveId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value19)) {
+        if (!_pattern2.hasMatch(value20)) {
           addFieldError(
             errors,
             joinPath(path, 'moveId'),
@@ -734,15 +743,15 @@ abstract final class TenantMoveRefSchema {
       );
     }
     if (json.containsKey('tenantId')) {
-      final value20 = json['tenantId'];
-      if (value20 is! String) {
+      final value21 = json['tenantId'];
+      if (value21 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'tenantId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value20)) {
+        if (!_pattern2.hasMatch(value21)) {
           addFieldError(
             errors,
             joinPath(path, 'tenantId'),
@@ -758,22 +767,22 @@ abstract final class TenantMoveRefSchema {
       );
     }
     if (json.containsKey('targetGroup')) {
-      final value21 = json['targetGroup'];
-      if (value21 is! String) {
+      final value22 = json['targetGroup'];
+      if (value22 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'targetGroup'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value21.isEmpty) {
+        if (value22.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'targetGroup'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value21.length > 64) {
+        if (value22.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'targetGroup'),
@@ -789,22 +798,22 @@ abstract final class TenantMoveRefSchema {
       );
     }
     if (json.containsKey('targetRegion')) {
-      final value22 = json['targetRegion'];
-      if (value22 is! String) {
+      final value23 = json['targetRegion'];
+      if (value23 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'targetRegion'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value22.isEmpty) {
+        if (value23.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'targetRegion'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value22.length > 64) {
+        if (value23.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'targetRegion'),
@@ -879,22 +888,22 @@ abstract final class TenantMoveTableProgressSchema {
       return;
     }
     if (json.containsKey('table')) {
-      final value23 = json['table'];
-      if (value23 is! String) {
+      final value24 = json['table'];
+      if (value24 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'table'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value23.isEmpty) {
+        if (value24.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'table'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value23.length > 63) {
+        if (value24.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'table'),
@@ -910,24 +919,24 @@ abstract final class TenantMoveTableProgressSchema {
       );
     }
     if (json.containsKey('copiedRows')) {
-      final value24 = json['copiedRows'];
-      if (value24 is! num ||
-          !value24.isFinite ||
-          value24 != value24.roundToDouble()) {
+      final value25 = json['copiedRows'];
+      if (value25 is! num ||
+          !value25.isFinite ||
+          value25 != value25.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'copiedRows'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value24 < 0) {
+        if (value25 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'copiedRows'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value24 > 9007199254740991) {
+        if (value25 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'copiedRows'),
@@ -943,24 +952,24 @@ abstract final class TenantMoveTableProgressSchema {
       );
     }
     if (json.containsKey('pendingRows')) {
-      final value25 = json['pendingRows'];
-      if (value25 is! num ||
-          !value25.isFinite ||
-          value25 != value25.roundToDouble()) {
+      final value26 = json['pendingRows'];
+      if (value26 is! num ||
+          !value26.isFinite ||
+          value26 != value26.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'pendingRows'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value25 < 0) {
+        if (value26 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'pendingRows'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value25 > 9007199254740991) {
+        if (value26 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'pendingRows'),
@@ -1022,26 +1031,26 @@ abstract final class TenantMoveProgressSchema {
       return;
     }
     if (json.containsKey('tables')) {
-      final value26 = json['tables'];
-      if (value26 is! List) {
+      final value27 = json['tables'];
+      if (value27 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'tables'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value26.length > 64) {
+        if (value27.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'tables'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i27 = 0; i27 < value26.length; i27++) {
-          final item28 = value26[i27];
+        for (var i28 = 0; i28 < value27.length; i28++) {
+          final item29 = value27[i28];
           TenantMoveTableProgressSchema.check(
-            item28,
-            joinPath(joinPath(path, 'tables'), '$i27'),
+            item29,
+            joinPath(joinPath(path, 'tables'), '$i28'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -1055,8 +1064,8 @@ abstract final class TenantMoveProgressSchema {
       );
     }
     if (json.containsKey('caughtUp')) {
-      final value29 = json['caughtUp'];
-      if (value29 is! bool) {
+      final value30 = json['caughtUp'];
+      if (value30 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'caughtUp'),
@@ -1116,22 +1125,22 @@ abstract final class TenantMoveTableCheckSchema {
       return;
     }
     if (json.containsKey('table')) {
-      final value30 = json['table'];
-      if (value30 is! String) {
+      final value31 = json['table'];
+      if (value31 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'table'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value30.isEmpty) {
+        if (value31.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'table'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value30.length > 63) {
+        if (value31.length > 63) {
           addFieldError(
             errors,
             joinPath(path, 'table'),
@@ -1147,24 +1156,24 @@ abstract final class TenantMoveTableCheckSchema {
       );
     }
     if (json.containsKey('sourceRows')) {
-      final value31 = json['sourceRows'];
-      if (value31 is! num ||
-          !value31.isFinite ||
-          value31 != value31.roundToDouble()) {
+      final value32 = json['sourceRows'];
+      if (value32 is! num ||
+          !value32.isFinite ||
+          value32 != value32.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'sourceRows'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value31 < 0) {
+        if (value32 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'sourceRows'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value31 > 9007199254740991) {
+        if (value32 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'sourceRows'),
@@ -1180,24 +1189,24 @@ abstract final class TenantMoveTableCheckSchema {
       );
     }
     if (json.containsKey('targetRows')) {
-      final value32 = json['targetRows'];
-      if (value32 is! num ||
-          !value32.isFinite ||
-          value32 != value32.roundToDouble()) {
+      final value33 = json['targetRows'];
+      if (value33 is! num ||
+          !value33.isFinite ||
+          value33 != value33.roundToDouble()) {
         addFieldError(
           errors,
           joinPath(path, 'targetRows'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value32 < 0) {
+        if (value33 < 0) {
           addFieldError(
             errors,
             joinPath(path, 'targetRows'),
             PlatformErrorCode.validationTooSmall.code,
           );
         }
-        if (value32 > 9007199254740991) {
+        if (value33 > 9007199254740991) {
           addFieldError(
             errors,
             joinPath(path, 'targetRows'),
@@ -1213,22 +1222,22 @@ abstract final class TenantMoveTableCheckSchema {
       );
     }
     if (json.containsKey('sourceChecksum')) {
-      final value33 = json['sourceChecksum'];
-      if (value33 is! String) {
+      final value34 = json['sourceChecksum'];
+      if (value34 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'sourceChecksum'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value33.isEmpty) {
+        if (value34.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'sourceChecksum'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value33.length > 64) {
+        if (value34.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'sourceChecksum'),
@@ -1244,22 +1253,22 @@ abstract final class TenantMoveTableCheckSchema {
       );
     }
     if (json.containsKey('targetChecksum')) {
-      final value34 = json['targetChecksum'];
-      if (value34 is! String) {
+      final value35 = json['targetChecksum'];
+      if (value35 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'targetChecksum'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value34.isEmpty) {
+        if (value35.isEmpty) {
           addFieldError(
             errors,
             joinPath(path, 'targetChecksum'),
             PlatformErrorCode.validationTooShort.code,
           );
         }
-        if (value34.length > 64) {
+        if (value35.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'targetChecksum'),
@@ -1320,8 +1329,8 @@ abstract final class TenantMoveVerificationSchema {
       return;
     }
     if (json.containsKey('verified')) {
-      final value35 = json['verified'];
-      if (value35 is! bool) {
+      final value36 = json['verified'];
+      if (value36 is! bool) {
         addFieldError(
           errors,
           joinPath(path, 'verified'),
@@ -1336,26 +1345,26 @@ abstract final class TenantMoveVerificationSchema {
       );
     }
     if (json.containsKey('tables')) {
-      final value36 = json['tables'];
-      if (value36 is! List) {
+      final value37 = json['tables'];
+      if (value37 is! List) {
         addFieldError(
           errors,
           joinPath(path, 'tables'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (value36.length > 64) {
+        if (value37.length > 64) {
           addFieldError(
             errors,
             joinPath(path, 'tables'),
             PlatformErrorCode.validationTooLong.code,
           );
         }
-        for (var i37 = 0; i37 < value36.length; i37++) {
-          final item38 = value36[i37];
+        for (var i38 = 0; i38 < value37.length; i38++) {
+          final item39 = value37[i38];
           TenantMoveTableCheckSchema.check(
-            item38,
-            joinPath(joinPath(path, 'tables'), '$i37'),
+            item39,
+            joinPath(joinPath(path, 'tables'), '$i38'),
             errors,
             acceptUnknownEnums: acceptUnknownEnums,
           );
@@ -1415,15 +1424,15 @@ abstract final class TenantMoveAckSchema {
       return;
     }
     if (json.containsKey('moveId')) {
-      final value39 = json['moveId'];
-      if (value39 is! String) {
+      final value40 = json['moveId'];
+      if (value40 is! String) {
         addFieldError(
           errors,
           joinPath(path, 'moveId'),
           PlatformErrorCode.validationInvalidType.code,
         );
       } else {
-        if (!_pattern2.hasMatch(value39)) {
+        if (!_pattern2.hasMatch(value40)) {
           addFieldError(
             errors,
             joinPath(path, 'moveId'),
@@ -1445,4 +1454,85 @@ abstract final class TenantMoveAckSchema {
 extension TenantMoveAckValidation on TenantMoveAck {
   /// Errores de este objeto, o una lista vacía si cumple el contrato.
   List<FieldError> validate() => TenantMoveAckSchema.validate(toJson());
+}
+
+/// Validador de [ProblemDetailsDetails] generado desde el JSON Schema del contrato.
+///
+/// Devuelve los mismos códigos y rutas de campo que el servidor.
+abstract final class ProblemDetailsDetailsSchema {
+  /// Errores de [json], o una lista vacía si cumple el contrato.
+  static List<FieldError> validate(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors);
+    return errors;
+  }
+
+  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  ///
+  /// Igual que [validate], pero acepta valores de enum que este cliente
+  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
+  /// `fromJson` los descarta en lugar de fallar.
+  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
+    final errors = <FieldError>[];
+    check(json, path, errors, acceptUnknownEnums: true);
+    return errors;
+  }
+
+  /// Agrega a [errors] los errores de [json] bajo [path].
+  ///
+  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
+  /// una lista no es un error.
+  static void check(
+    Object? json,
+    String path,
+    List<FieldError> errors, {
+    bool acceptUnknownEnums = false,
+  }) {
+    if (json is! Map<String, Object?>) {
+      addFieldError(errors, path, PlatformErrorCode.validationInvalidType.code);
+      return;
+    }
+    if (json.containsKey('apiBaseUrl')) {
+      final value41 = json['apiBaseUrl'];
+      if (value41 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'apiBaseUrl'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value41.length > 2048) {
+          addFieldError(
+            errors,
+            joinPath(path, 'apiBaseUrl'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    }
+    if (json.containsKey('region')) {
+      final value42 = json['region'];
+      if (value42 is! String) {
+        addFieldError(
+          errors,
+          joinPath(path, 'region'),
+          PlatformErrorCode.validationInvalidType.code,
+        );
+      } else {
+        if (value42.length > 64) {
+          addFieldError(
+            errors,
+            joinPath(path, 'region'),
+            PlatformErrorCode.validationTooLong.code,
+          );
+        }
+      }
+    }
+  }
+}
+
+/// Validación de [ProblemDetailsDetails] contra su contrato.
+extension ProblemDetailsDetailsValidation on ProblemDetailsDetails {
+  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  List<FieldError> validate() => ProblemDetailsDetailsSchema.validate(toJson());
 }

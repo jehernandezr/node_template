@@ -27,6 +27,22 @@ import { SagaModule } from '@platform/saga/nest';
 import { RecordingEnvelopePublisher } from '@platform/messaging/test-utils';
 import { ServiceInternalTransport } from '../../../service-internal-api.js';
 import { UseCaseRunner } from '../../../use-case-runner.js';
+import {
+  regionsConfigSchema,
+  ServiceRegions,
+} from '../../../regions/regions.config.js';
+import {
+  TenantWritesConfig,
+  tenantWritesConfigSchema,
+} from '../../../regions/tenant-writes.config.js';
+import { InvalidServiceDefinitionError } from '../../../errors/invalid-service-definition.error.js';
+import { ValkeyWriteGate } from '@platform/adapters-valkey';
+import { TenantWriteGate } from '@platform/sharding';
+import {
+  ShardingModule,
+  type ShardingModuleOptions,
+} from '@platform/sharding/nest';
+import type { Provider } from '@nestjs/common';
 import { ServiceDefinitionBuilder } from '../../../__tests__/utils/index.js';
 import { HealthModule } from '../../health/health.module.js';
 import { PlatformKernelModule } from '../platform-kernel.module.js';
@@ -36,7 +52,7 @@ import { ImportedModules } from './utils/index.js';
 describe('PlatformRuntimeModule', () => {
   describe('forService', () => {
     describe('when no adapter is enabled', () => {
-      it('is global, exports only the use case runner and starts with the kernel', () => {
+      it('is global, exports only the use case runner and the regions, and starts with the kernel', () => {
         const definition = ServiceDefinitionBuilder.aDefinition().build();
 
         const dynamic = PlatformRuntimeModule.forService(definition, {
@@ -45,7 +61,7 @@ describe('PlatformRuntimeModule', () => {
         });
 
         expect(dynamic.global).toBe(true);
-        expect(dynamic.exports).toEqual([UseCaseRunner]);
+        expect(dynamic.exports).toEqual([UseCaseRunner, ServiceRegions]);
         expect(ImportedModules.of(dynamic)[0]).toBe(PlatformKernelModule);
       });
 
@@ -255,7 +271,7 @@ describe('PlatformRuntimeModule', () => {
     });
 
     describe('when there is no publisher and AWS is disabled', () => {
-      it('exports only the use case runner', () => {
+      it('exports only the use case runner and the regions', () => {
         const definition = ServiceDefinitionBuilder.aDefinition().build();
 
         const dynamic = PlatformRuntimeModule.forService(definition, {
@@ -263,7 +279,74 @@ describe('PlatformRuntimeModule', () => {
           adapters: { valkey: false, aws: false },
         });
 
-        expect(dynamic.exports).toEqual([UseCaseRunner]);
+        expect(dynamic.exports).toEqual([UseCaseRunner, ServiceRegions]);
+      });
+    });
+
+    describe('when choosing the write gate of the tenant moves', () => {
+      const writeGateOf = (
+        env: Record<string, string>,
+        valkey: boolean,
+      ): Provider | undefined => {
+        const dynamic = PlatformRuntimeModule.forService(
+          ServiceDefinitionBuilder.aDefinition().build(),
+          { env, adapters: { valkey, aws: false } },
+        );
+        const sharding = ImportedModules.find(dynamic, ShardingModule);
+        return (sharding?.providers ?? []).find(
+          (provider) =>
+            (provider as { provide?: unknown }).provide === TenantWriteGate,
+        );
+      };
+
+      it('closes it in the directory by default', () => {
+        expect(writeGateOf({}, true)).not.toHaveProperty(
+          'useExisting',
+          ValkeyWriteGate,
+        );
+      });
+
+      it('closes it in Valkey when asked to', () => {
+        expect(
+          writeGateOf({ TENANT_WRITE_GATE: 'valkey' }, true),
+        ).toHaveProperty('useExisting', ValkeyWriteGate);
+      });
+
+      it('lets a write wait for the gate as long as TENANT_MOVE_MAX_WAIT_MS says', () => {
+        const dynamic = PlatformRuntimeModule.forService(
+          ServiceDefinitionBuilder.aDefinition().build(),
+          { env: {}, adapters: { valkey: false, aws: false } },
+        );
+        const sharding = ImportedModules.find(dynamic, ShardingModule);
+        const options = (sharding?.providers ?? []).find((provider) =>
+          (provider as { inject?: unknown[] }).inject?.includes(
+            TenantWritesConfig.token,
+          ),
+        ) as
+          | { useFactory: (...settings: unknown[]) => ShardingModuleOptions }
+          | undefined;
+
+        const built = options?.useFactory(
+          regionsConfigSchema.parse({}),
+          tenantWritesConfigSchema.parse({ TENANT_MOVE_MAX_WAIT_MS: '1500' }),
+        );
+
+        expect(built?.writeWait).toEqual({ maxWaitMs: 1_500, pollMs: 100 });
+      });
+
+      it('refuses a max wait that is not a number of milliseconds', () => {
+        expect(() =>
+          writeGateOf({ TENANT_MOVE_MAX_WAIT_MS: 'soon' }, true),
+        ).toThrow(InvalidServiceDefinitionError);
+      });
+
+      it('refuses Valkey without Valkey and an unknown gate', () => {
+        expect(() =>
+          writeGateOf({ TENANT_WRITE_GATE: 'valkey' }, false),
+        ).toThrow(InvalidServiceDefinitionError);
+        expect(() => writeGateOf({ TENANT_WRITE_GATE: 'etcd' }, true)).toThrow(
+          InvalidServiceDefinitionError,
+        );
       });
     });
   });

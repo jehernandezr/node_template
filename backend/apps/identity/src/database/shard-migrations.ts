@@ -10,6 +10,7 @@ import { passwordsShardMigrations } from '../modules/passwords/infrastructure/pe
 import { sessionsShardMigrations } from '../modules/sessions/infrastructure/persistence/migrations/index.js';
 import { tenantsShardMigrations } from '../modules/tenants/infrastructure/persistence/migrations/index.js';
 import { usersShardMigrations } from '../modules/users/infrastructure/persistence/migrations/index.js';
+// generated:modules:imports
 
 /** Migraciones de los shards de identity, en el orden de los módulos. */
 export const identityShardMigrations: readonly MigrationClass[] = [
@@ -24,4 +25,5 @@ export const identityShardMigrations: readonly MigrationClass[] = [
   ...accessShardMigrations,
   ...invitationsShardMigrations,
   ...apiKeysShardMigrations,
+  // generated:modules
 ];

@@ -157,6 +157,13 @@
       ],
       "@platform/service": ["./libs/platform/service/src/index.ts"],
       "@platform/service/nest": ["./libs/platform/service/src/nest/index.ts"],
+      "@platform/tenant-move": ["./libs/platform/tenant-move/src/index.ts"],
+      "@platform/tenant-move/nest": [
+        "./libs/platform/tenant-move/src/nest/index.ts"
+      ],
+      "@platform/tenant-move/test-utils": [
+        "./libs/platform/tenant-move/src/__tests__/utils/index.ts"
+      ],
       "@platform/service/test-utils": [
         "./libs/platform/service/src/__tests__/utils/index.ts"
       ],
