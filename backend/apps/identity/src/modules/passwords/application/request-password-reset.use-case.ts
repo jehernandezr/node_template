@@ -1,9 +1,9 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { SendPasswordResetCommand } from '@contracts/identity';
 import { TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentitySettings } from '../../../config/identity-settings.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 
 /**
  * `POST /v1/auth/password-resets`: queues the request through the outbox of the default tenant shard and
@@ -14,7 +14,7 @@ import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes
 export class RequestPasswordReset {
   constructor(
     private readonly settings: IdentitySettings,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
   ) {}

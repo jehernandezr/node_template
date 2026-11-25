@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { TaskDeletedEvent } from '@contracts/tasks';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { TaskRepository } from '../domain/task.repository.js';
 import { TaskSearch } from '../domain/task-search.js';
 import { TasksError } from '../domain/tasks.error.js';
@@ -16,14 +16,14 @@ export class DeleteTask {
     private readonly tasks: TaskRepository,
     private readonly search: TaskSearch,
     private readonly bus: MessageBus,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}
 
   /** @throws TasksError `TASKS.TASK.NOT_FOUND` if it does not exist or was already deleted. */
   execute(command: DeleteTaskCommand): Promise<void> {
-    return this.shard.run(command.tenantId, () =>
+    return this.shard.inTenantShard(command.tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const task = await this.tasks.find(command.taskId);
         if (task === undefined) {

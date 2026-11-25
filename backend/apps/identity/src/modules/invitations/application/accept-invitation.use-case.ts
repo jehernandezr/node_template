@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { UsageMetric } from '@contracts/billing';
 import { IdentityErrorCode, type Permission } from '@contracts/identity';
@@ -5,7 +6,6 @@ import { Clock, TransactionManager } from '@platform/kernel';
 import { QuotaChecker, QuotaExceededError } from '@platform/quotas';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../access/index.js';
 import { ApiKeysFacade } from '../../api-keys/index.js';
@@ -31,7 +31,7 @@ export class AcceptInvitation {
     private readonly users: UsersFacade,
     private readonly quotas: QuotaChecker,
     private readonly hasher: SecretHasher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}

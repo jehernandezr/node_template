@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   DeviceRegisteredEvent,
@@ -6,7 +7,6 @@ import {
 } from '@contracts/identity';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { SecurityAlerts } from '../../alerts/index.js';
 import { DeviceApprovalStore } from '../domain/device-approval-store.js';
@@ -30,7 +30,7 @@ export class DeviceRegistry {
     private readonly signedRequests: SignedDeviceRequest,
     private readonly push: PushNotifier,
     private readonly alerts: SecurityAlerts,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly ids: IdGenerator,

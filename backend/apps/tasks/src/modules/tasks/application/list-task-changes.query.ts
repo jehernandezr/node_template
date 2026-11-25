@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { ListTaskChangesInput, TaskChangePage } from '@contracts/tasks';
 import { TasksDefaults } from '../../../shared/constants/tasks-defaults.constants.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { TaskRepository } from '../domain/task.repository.js';
 import { TaskCursors } from './task-cursors.js';
 import { TaskViews } from './task-view.js';
@@ -13,12 +13,12 @@ export class ListTaskChanges {
 
   constructor(
     private readonly tasks: TaskRepository,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
   ) {}
 
   execute(query: ListTaskChangesInput): Promise<TaskChangePage> {
     const limit = query.limit ?? TasksDefaults.pageSize;
-    return this.shard.run(query.tenantId, async () => {
+    return this.shard.inTenantShard(query.tenantId, async () => {
       const changes = await this.tasks.changes({
         updatedAfter:
           query.updatedAfter === undefined

@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { CollectInvoice } from '../application/collect-invoice.use-case.js';
 import { CloseInvoicePeriodsJob } from '../application/close-invoice-periods.job.js';
 import { InvoiceQueries } from '../application/invoice-queries.js';
@@ -32,7 +31,6 @@ import { InvoicesInternalOperations } from './invoices.internal-operations.js';
   ],
   controllers: [InvoicesController],
   providers: [
-    TenantShard,
     { provide: InvoiceRepository, useClass: TypeOrmInvoiceRepository },
     { provide: InvoiceNumbering, useClass: TypeOrmInvoiceNumbering },
     { provide: InvoiceMaintenance, useClass: TypeOrmInvoiceMaintenance },

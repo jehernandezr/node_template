@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { TransactionManager } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { UserRepository } from '../domain/user.repository.js';
 
@@ -9,7 +9,7 @@ import { UserRepository } from '../domain/user.repository.js';
 export class SetLastTenant {
   constructor(
     private readonly users: UserRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

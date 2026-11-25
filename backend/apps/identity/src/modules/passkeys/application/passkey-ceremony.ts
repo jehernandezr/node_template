@@ -1,10 +1,10 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode, type PasskeyOptions } from '@contracts/identity';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { SecretGenerator } from '../../../security/secret-generator.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { decodeBase64Url } from '../../../shared/utils/base64url.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { Passkey } from '../domain/passkey.js';
 import { PasskeyRepository } from '../domain/passkey-store.js';
@@ -28,7 +28,7 @@ export class PasskeyCeremony {
     private readonly passkeys: PasskeyRepository,
     private readonly webauthn: WebAuthnVerifier,
     private readonly generator: SecretGenerator,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

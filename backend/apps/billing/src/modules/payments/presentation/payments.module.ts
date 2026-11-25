@@ -3,7 +3,6 @@ import { AppConfig } from '@platform/config';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import type { BillingConfig } from '../../../config/billing.config.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { ChargeInvoice } from '../application/charge-invoice.use-case.js';
 import { LocalPaymentsFacade } from '../application/local-payments.facade.js';
 import { PaymentsFacade } from '../application/payments.facade.js';
@@ -24,7 +23,6 @@ import { TypeOrmPaymentAttempts } from '../infrastructure/persistence/typeorm-pa
     }),
   ],
   providers: [
-    TenantShard,
     {
       provide: PaymentProvider,
       useFactory: (config: AppConfig) =>

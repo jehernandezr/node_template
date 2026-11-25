@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import {
   BillingCommand,
   BillingErrorCode,
@@ -44,7 +45,6 @@ import { SettleInvoice } from '../modules/invoices/application/settle-invoice.us
 import { RendezvousInvoiceRepository } from '../modules/invoices/__tests__/utils/index.js';
 import { InvoiceRepository } from '../modules/invoices/domain/invoice.repository.js';
 import { SubscriptionsFacade } from '../modules/subscriptions/index.js';
-import { TenantShard } from '../shared/utils/tenant-shard.js';
 import { AdvanceDunningJob } from '../modules/subscriptions/application/advance-dunning.job.js';
 import { BillingTestApp } from './utils/index.js';
 
@@ -675,7 +675,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
           new RendezvousInvoiceRepository(app.get(InvoiceRepository), 2, 1_000),
           app.get(SubscriptionsFacade),
           app.get(MessageBus),
-          app.get(TenantShard),
+          app.get(ShardScopes),
           app.get(TransactionManager),
         );
 

@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { AppConfig } from '@platform/config';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import type { BillingConfig } from '../../../config/billing.config.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PlansFacade } from '../../plans/index.js';
 import { BillingPeriod } from '../domain/billing-period.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
@@ -22,7 +22,7 @@ export class OpenSubscription {
     private readonly subscriptions: SubscriptionRepository,
     private readonly plans: PlansFacade,
     private readonly events: SubscriptionEvents,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
@@ -33,7 +33,7 @@ export class OpenSubscription {
 
   /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog. */
   execute(tenantId: string): Promise<CurrentSubscription> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const existing = await this.subscriptions.find();
         if (existing !== undefined) {

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   NotificationChannel,
@@ -5,7 +6,6 @@ import {
 } from '@contracts/notifications';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { InboxFacade } from '../../inbox/index.js';
 import { DeliveryPolicy, PreferencesFacade } from '../../preferences/index.js';
 import { RealtimeFacade } from '../../realtime/index.js';
@@ -39,7 +39,7 @@ export class NotifyUser extends DispatchFacade {
     private readonly deliveries: DeliveryRepository,
     private readonly deliverer: ChannelDeliverer,
     private readonly bus: MessageBus,
-    private readonly shard: UserShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
@@ -50,7 +50,7 @@ export class NotifyUser extends DispatchFacade {
   async notify(
     command: NotifyCommand,
   ): Promise<readonly NotificationChannel[]> {
-    const previous = await this.shard.run(command.user, () =>
+    const previous = await this.shard.inUserShard(command.user, () =>
       this.deliveries.ofNotification(command.notificationId),
     );
     if (previous.length > 0) {
@@ -75,7 +75,7 @@ export class NotifyUser extends DispatchFacade {
     const pending = channels.map((channel) =>
       this.deliveryOf(command, channel, text, recipient.locale, now),
     );
-    const notification = await this.shard.run(command.user, () =>
+    const notification = await this.shard.inUserShard(command.user, () =>
       this.transactions.runInTransaction(async () => {
         const stored = await this.inbox.add(command.user, {
           id: command.notificationId,
@@ -144,7 +144,9 @@ export class NotifyUser extends DispatchFacade {
     );
     for (const delivery of outOfApp) {
       const result = await this.deliverer.deliver(delivery, recipient);
-      await this.shard.run(recipient.ref, () => this.deliveries.save(result));
+      await this.shard.inUserShard(recipient.ref, () =>
+        this.deliveries.save(result),
+      );
     }
   }
 }

@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { SecurityAlertRaisedEvent } from '@contracts/identity';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { SecurityAlert } from '../domain/security-alert.js';
 import { SecurityAlerts } from '../domain/security-alerts.js';
 
@@ -14,7 +14,7 @@ import { SecurityAlerts } from '../domain/security-alerts.js';
 export class OutboxSecurityAlerts extends SecurityAlerts {
   constructor(
     private readonly bus: MessageBus,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

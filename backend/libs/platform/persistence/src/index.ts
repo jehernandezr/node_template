@@ -25,6 +25,7 @@ export * from './shard-data-sources.js';
 export * from './shard-resolver.js';
 export * from './tenant-write-fence.js';
 export * from './shard-scope.js';
+export * from './shard-scopes.js';
 export * from './sharded-migration-runner.js';
 export * from './sharded-repository.js';
 export * from './typeorm-criteria-translator.js';

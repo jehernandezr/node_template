@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   BillingErrorCode,
@@ -8,7 +9,6 @@ import {
 import { TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { BillingError } from '../../../shared/errors/billing.error.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { SubscriptionsFacade } from '../../subscriptions/index.js';
 import { CollectionRetrySchedule } from '../domain/collection-retry-schedule.js';
 import { InvoiceRepository } from '../domain/invoice.repository.js';
@@ -26,7 +26,7 @@ export class SettleInvoice {
     private readonly invoices: InvoiceRepository,
     private readonly subscriptions: SubscriptionsFacade,
     private readonly bus: MessageBus,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -96,7 +96,7 @@ export class SettleInvoice {
     invoiceId: string,
     apply: (invoice: Invoice) => Promise<void>,
   ): Promise<InvoiceState> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         await this.subscriptions.lock(tenantId);
         const invoice = await this.invoices.find(invoiceId);

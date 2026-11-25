@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   EraseNotificationsUserDataOperation,
@@ -7,7 +8,6 @@ import {
 import type { HandlerResult } from '@platform/internal-api';
 import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { DeliveryRepository } from '../../dispatch/index.js';
 import { InboxFacade } from '../../inbox/index.js';
 import { PreferencesFacade } from '../../preferences/index.js';
@@ -19,7 +19,7 @@ export class PrivacyInternalOperations {
     private readonly inbox: InboxFacade,
     private readonly preferences: PreferencesFacade,
     private readonly deliveries: DeliveryRepository,
-    private readonly shard: UserShard,
+    private readonly shard: ShardScopes,
   ) {}
 
   /** Repeating it changes nothing: nothing of the user remains. */
@@ -27,7 +27,7 @@ export class PrivacyInternalOperations {
   async eraseUserData(
     input: EraseNotificationsUserInput,
   ): Promise<HandlerResult<EraseNotificationsUserResult>> {
-    const deliveries = await this.shard.run(input.user, () =>
+    const deliveries = await this.shard.inUserShard(input.user, () =>
       this.deliveries.erase(input.user.userId),
     );
     const notifications = await this.inbox.erase(input.user);

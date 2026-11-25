@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   Clock,
@@ -6,7 +7,6 @@ import {
   type JobSchedule,
 } from '@platform/kernel';
 import { NotificationsJob } from '../../../shared/enums/notifications-job.enum.js';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { DeliveryRepository } from '../domain/delivery.repository.js';
 import { DeliveryStatus } from '../domain/delivery.js';
 import { FailedDeliveries } from '../domain/failed-deliveries.js';
@@ -31,7 +31,7 @@ export class RetryDeliveriesJob extends ScheduledJob {
     private readonly recipients: RecipientDirectory,
     private readonly deliverer: ChannelDeliverer,
     private readonly deliveries: DeliveryRepository,
-    private readonly shard: UserShard,
+    private readonly shard: ShardScopes,
     private readonly clock: Clock,
   ) {
     super();
@@ -51,7 +51,7 @@ export class RetryDeliveriesJob extends ScheduledJob {
         recipient === undefined
           ? { ...delivery, status: DeliveryStatus.Abandoned }
           : await this.deliverer.deliver(delivery, recipient);
-      await this.shard.run(ref, () => this.deliveries.save(result));
+      await this.shard.inUserShard(ref, () => this.deliveries.save(result));
     }
   }
 }

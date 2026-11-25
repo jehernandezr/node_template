@@ -4,7 +4,6 @@ import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
 import type { ReportsConfig } from '../../../config/reports.config.js';
 import { ReportResultStoreKind } from '../../../shared/enums/report-result-store-kind.enum.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { CreateRun } from '../application/create-run.use-case.js';
 import { EraseRequester } from '../application/erase-requester.use-case.js';
 import { ExecuteRun } from '../application/execute-run.use-case.js';
@@ -33,7 +32,6 @@ import { RunsInternalOperations } from './runs.internal-operations.js';
   ],
   controllers: [RunsController],
   providers: [
-    TenantShard,
     { provide: ReportRunRepository, useClass: TypeOrmReportRunRepository },
     { provide: ReportRunMaintenance, useClass: TypeOrmReportRunMaintenance },
     RowReportResultStore,

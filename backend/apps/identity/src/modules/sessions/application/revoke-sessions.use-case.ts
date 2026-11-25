@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   RevocationReason,
@@ -7,7 +8,6 @@ import {
 import { AuthStateWriter } from '@platform/auth';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { UserRef } from '../../../shared/types/user-ref.type.js';
 import { Session } from '../domain/session.js';
 import { SessionRepository } from '../domain/session.repository.js';
@@ -36,7 +36,7 @@ export class RevokeSessions {
   constructor(
     private readonly sessions: SessionRepository,
     private readonly revoker: SessionRevoker,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly writer: AuthStateWriter,

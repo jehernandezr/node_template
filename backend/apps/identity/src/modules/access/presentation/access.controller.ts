@@ -1,3 +1,4 @@
+import { ActingMember, ActingUser } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
 import { AuthMethod } from '@platform/http';
@@ -33,10 +34,6 @@ import {
   type UpdateRoleRequest,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import {
-  requireUserActor,
-  tenantOfActor,
-} from '../../../shared/utils/user-actor.js';
 import { ActorPermissions } from '../application/actor-permissions.js';
 import { GetSessionAccess } from '../application/get-session-access.use-case.js';
 import { ListMembers } from '../application/list-members.use-case.js';
@@ -65,7 +62,7 @@ export class AccessController {
   getSessionAccess(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<SessionAccess> {
-    return this.sessionAccess.execute(requireUserActor(actor));
+    return this.sessionAccess.execute(ActingUser.of(actor));
   }
 
   /**
@@ -79,7 +76,7 @@ export class AccessController {
     @Input() input: PageQuery,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<MemberPage> {
-    return this.listing.execute(tenantOfActor(actor), input);
+    return this.listing.execute(ActingMember.of(actor).tenantId, input);
   }
 
   /**
@@ -93,7 +90,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.members.remove(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input.userId,
       await this.actorPermissions.of(actor),
     );
@@ -110,7 +107,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.members.setGroups(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input.userId,
       input.groupIds,
       await this.actorPermissions.of(actor),
@@ -124,7 +121,7 @@ export class AccessController {
    */
   @Endpoint(ListGroupsRoute)
   listGroups(@CurrentActor() actor: Actor | undefined): Promise<GroupPage> {
-    return this.groups.list(tenantOfActor(actor));
+    return this.groups.list(ActingMember.of(actor).tenantId);
   }
 
   /**
@@ -138,7 +135,7 @@ export class AccessController {
     @Input() input: CreateGroupRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<GroupSummary> {
-    return this.groups.create(tenantOfActor(actor), input.name);
+    return this.groups.create(ActingMember.of(actor).tenantId, input.name);
   }
 
   /**
@@ -152,7 +149,11 @@ export class AccessController {
     @Input() input: UpdateGroupRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<GroupSummary> {
-    return this.groups.rename(tenantOfActor(actor), input.groupId, input.name);
+    return this.groups.rename(
+      ActingMember.of(actor).tenantId,
+      input.groupId,
+      input.name,
+    );
   }
 
   /**
@@ -166,7 +167,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.groups.delete(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input.groupId,
       await this.actorPermissions.of(actor),
     );
@@ -183,7 +184,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.groups.setRoles(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input.groupId,
       input.roleIds,
       await this.actorPermissions.of(actor),
@@ -197,7 +198,7 @@ export class AccessController {
    */
   @Endpoint(ListRolesRoute)
   listRoles(@CurrentActor() actor: Actor | undefined): Promise<RolePage> {
-    return this.roles.list(tenantOfActor(actor));
+    return this.roles.list(ActingMember.of(actor).tenantId);
   }
 
   /**
@@ -212,7 +213,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<RoleSummary> {
     return this.roles.create(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input.name,
       input.permissions,
       await this.actorPermissions.of(actor),
@@ -231,7 +232,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<RoleSummary> {
     return this.roles.update(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input,
       await this.actorPermissions.of(actor),
     );
@@ -248,7 +249,7 @@ export class AccessController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.roles.delete(
-      tenantOfActor(actor),
+      ActingMember.of(actor).tenantId,
       input.roleId,
       await this.actorPermissions.of(actor),
     );

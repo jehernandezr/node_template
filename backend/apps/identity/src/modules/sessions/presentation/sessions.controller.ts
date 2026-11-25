@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import { Headers } from '@nestjs/common';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import { HttpProblemError, SessionCookieMode } from '@platform/http';
@@ -19,10 +20,6 @@ import {
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
 import { sessionTokenFrom } from '../../../shared/utils/session-token-source.js';
-import {
-  requireUserActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
 import { ListMySessions } from '../application/list-my-sessions.use-case.js';
 import { RefreshSession } from '../application/refresh-session.use-case.js';
 import { RevokeSessions } from '../application/revoke-sessions.use-case.js';
@@ -61,7 +58,7 @@ export class SessionsController {
 
   @Endpoint(ListSessionsRoute)
   listSessions(@CurrentActor() actor: Actor | undefined): Promise<SessionPage> {
-    return this.list.execute(requireUserActor(actor));
+    return this.list.execute(ActingUser.of(actor));
   }
 
   @Endpoint(RevokeSessionRoute)
@@ -69,9 +66,9 @@ export class SessionsController {
     @Input() input: RevokeSessionRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    const user = requireUserActor(actor);
+    const user = ActingUser.of(actor);
     const revoked = await this.revoke.execute({
-      user: userRefOf(user),
+      user: ActingUser.refOf(user),
       reason: RevocationReason.UserAction,
       sessionId: input.sessionId,
     });
@@ -84,9 +81,9 @@ export class SessionsController {
   async revokeOtherSessions(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<RevokedSessions> {
-    const user = requireUserActor(actor);
+    const user = ActingUser.of(actor);
     const revoked = await this.revoke.execute({
-      user: userRefOf(user),
+      user: ActingUser.refOf(user),
       reason: RevocationReason.UserAction,
       except: user.sessionId,
     });
@@ -99,7 +96,7 @@ export class SessionsController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<SessionTokens> {
     return this.switchTenantUseCase.execute({
-      actor: requireUserActor(actor),
+      actor: ActingUser.of(actor),
       tenantId: input.tenantId,
     });
   }

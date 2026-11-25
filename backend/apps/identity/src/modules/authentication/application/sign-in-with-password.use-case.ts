@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   AuthMethodReference,
@@ -14,7 +15,6 @@ import { IdentitySettings } from '../../../config/identity-settings.js';
 import { DeploymentRegion } from '../../../shared/utils/deployment-region.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SignInResponses } from '../../../shared/utils/sign-in-responses.js';
 import type { ClientInfo } from '../../../shared/types/client-info.type.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
@@ -62,7 +62,7 @@ export class SignInWithPassword {
     private readonly lockout: LoginLockout,
     private readonly attempts: LoginAttemptRepository,
     private readonly keys: LockoutKeys,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly context: RequestContextStore,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   Clock,
@@ -7,7 +8,6 @@ import {
 } from '@platform/kernel';
 import { LoggerPort } from '@platform/observability';
 import { ReportsJob } from '../../../shared/enums/reports-job.enum.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { ReportResultStore } from '../domain/report-result-store.js';
 import { ReportRunMaintenance } from '../domain/report-run-maintenance.js';
 
@@ -29,7 +29,7 @@ export class ExpireRunsJob extends ScheduledJob {
   constructor(
     private readonly maintenance: ReportRunMaintenance,
     private readonly results: ReportResultStore,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly clock: Clock,
     private readonly logger: LoggerPort,
   ) {
@@ -41,7 +41,9 @@ export class ExpireRunsJob extends ScheduledJob {
       this.clock.now(),
     )) {
       try {
-        await this.shard.run(tenantId, () => this.results.discard(runId));
+        await this.shard.inTenantShard(tenantId, () =>
+          this.results.discard(runId),
+        );
       } catch (error) {
         this.logger.error('expired report result not discarded', {
           tenantId,

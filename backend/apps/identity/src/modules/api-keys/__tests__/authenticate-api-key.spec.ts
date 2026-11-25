@@ -1,3 +1,4 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import {
   ApiKeyEnvironment,
   IdentityErrorCode,
@@ -8,10 +9,7 @@ import {
 } from '@contracts/identity';
 import { ApiKeyFormat } from '@platform/auth';
 import { FixedClock } from '@platform/kernel/test-utils';
-import {
-  InMemoryEphemeralStore,
-  TestShardScopes,
-} from '../../../__tests__/utils/index.js';
+import { InMemoryEphemeralStore } from '../../../__tests__/utils/index.js';
 import { LockoutRules } from '../../../shared/constants/lockout.constants.js';
 import { TestLoginLockout } from '../../authentication/__tests__/utils/index.js';
 import { InMemoryTenantsFacade } from '../../tenants/__tests__/utils/index.js';
@@ -43,7 +41,7 @@ describe('AuthenticateApiKey', () => {
     const hasher = new TestApiKeySecretHasher();
     const state = new InterleavingAuthState();
     const usage = new EphemeralApiKeyUsageBuffer(ephemeral);
-    const scopes = TestShardScopes.create();
+    const scopes = UnroutedShardScopes.create();
     const lockout = new TestLoginLockout(ephemeral, clock);
     const useCase = new AuthenticateApiKey(
       directory,

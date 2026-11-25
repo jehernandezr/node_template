@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import {
   GetUnreadCountRoute,
   ListInboxRoute,
@@ -11,7 +12,6 @@ import type { PageQuery } from '@contracts/platform';
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import { NotificationsResource } from '../../../shared/enums/notifications-resource.enum.js';
-import { UserOfActor } from '../../../shared/utils/user-of-actor.js';
 import { ManageInbox } from '../application/manage-inbox.use-case.js';
 
 @Resource(NotificationsResource.Inbox)
@@ -23,14 +23,14 @@ export class InboxController {
     @Input() input: PageQuery,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<NotificationPage> {
-    return this.inbox.list(UserOfActor.of(actor), input);
+    return this.inbox.list(ActingUser.refOf(actor), input);
   }
 
   @Endpoint(GetUnreadCountRoute)
   async unreadCount(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<UnreadCount> {
-    return { count: await this.inbox.unreadCount(UserOfActor.of(actor)) };
+    return { count: await this.inbox.unreadCount(ActingUser.refOf(actor)) };
   }
 
   @Endpoint(MarkReadRoute)
@@ -38,11 +38,11 @@ export class InboxController {
     @Input() input: MarkNotificationReadRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    return this.inbox.markRead(UserOfActor.of(actor), input.notificationId);
+    return this.inbox.markRead(ActingUser.refOf(actor), input.notificationId);
   }
 
   @Endpoint(MarkAllReadRoute)
   markAllRead(@CurrentActor() actor: Actor | undefined): Promise<void> {
-    return this.inbox.markAllRead(UserOfActor.of(actor));
+    return this.inbox.markAllRead(ActingUser.refOf(actor));
   }
 }

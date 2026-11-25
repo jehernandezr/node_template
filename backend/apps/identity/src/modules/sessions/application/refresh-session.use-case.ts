@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -9,7 +10,6 @@ import { AuthenticationError } from '@platform/auth';
 import { Clock, TransactionManager, UseCase } from '@platform/kernel';
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { TenantsFacade } from '../../tenants/index.js';
 import { UsersFacade } from '../../users/index.js';
@@ -45,7 +45,7 @@ export class RefreshSession implements UseCase<
     private readonly revoker: SessionRevoker,
     private readonly users: UsersFacade,
     private readonly tenants: TenantsFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
     private readonly settings: IdentitySettings,

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -11,7 +12,6 @@ import { RateLimitRule, RateLimiter } from '@platform/rate-limit';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { LockoutRules } from '../../../shared/constants/lockout.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
 import { SecurityAlerts } from '../../alerts/index.js';
 import { ChallengeStore } from '../domain/challenge-store.js';
@@ -43,7 +43,7 @@ export class ChallengeVerifier {
     private readonly hasher: SecretHasher,
     private readonly alerts: SecurityAlerts,
     private readonly limiter: RateLimiter,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}

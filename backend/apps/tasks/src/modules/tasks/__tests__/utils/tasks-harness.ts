@@ -4,15 +4,7 @@ import {
   InMemoryTransactionManager,
   RecordingMessageBus,
 } from '@platform/messaging/test-utils';
-import {
-  Redactor,
-  RequestContextStore,
-  Tracing,
-} from '@platform/observability';
-import { ShardScope } from '@platform/persistence';
-import { ShardRouter } from '@platform/sharding';
-import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
-import { TenantShard } from '../../../../shared/utils/tenant-shard.js';
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { CreateTask } from '../../application/create-task.use-case.js';
 import { DeleteTask } from '../../application/delete-task.use-case.js';
 import { GetTask } from '../../application/get-task.query.js';
@@ -38,13 +30,9 @@ export class TasksHarness {
   readonly clock = new FixedClock(new Date('2026-11-20T10:00:00.000Z'));
   readonly transactions = new InMemoryTransactionManager();
   readonly bus = new RecordingMessageBus(this.transactions);
-  private readonly scope = new ShardScope(
-    new ShardRouter({ directory: new InMemoryDirectoryStore() }),
-  );
-  private readonly shard = new TenantShard(
-    this.scope,
-    new RequestContextStore(new Tracing(new Redactor())),
-  );
+  private readonly scopes = new UnroutedShardScopes();
+  private readonly scope = this.scopes.scope;
+  private readonly shard = this.scopes.scopes;
   readonly tasks = new InMemoryTaskRepository(this.scope);
   readonly search = new InMemoryTaskSearch(this.tasks);
   private readonly ids = new SequentialIdGenerator();

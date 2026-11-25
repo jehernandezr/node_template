@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import { RateLimitTier } from '@platform/http';
 import { Endpoint, CurrentActor, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
@@ -20,10 +21,6 @@ import {
   type AccountDeletionStarted,
 } from '@contracts/identity';
 import { IdentityResource } from '../../../shared/enums/identity-resource.enum.js';
-import {
-  requireUserActor,
-  userRefOf,
-} from '../../../shared/utils/user-actor.js';
 import { ConfirmEmailChange } from '../application/confirm-email-change.use-case.js';
 import { ConfirmEmailVerification } from '../application/confirm-email-verification.use-case.js';
 import { RegisterUser } from '../application/register-user.use-case.js';
@@ -88,8 +85,10 @@ export class UsersController {
   async getProfile(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<UserProfile> {
-    const user = requireUserActor(actor);
-    return UserProfileView.of(await this.reader.getByRef(userRefOf(user)));
+    const user = ActingUser.of(actor);
+    return UserProfileView.of(
+      await this.reader.getByRef(ActingUser.refOf(user)),
+    );
   }
 
   /**
@@ -103,7 +102,7 @@ export class UsersController {
     @Input() input: UpdateProfileRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<UserProfile> {
-    return this.update.execute(userRefOf(requireUserActor(actor)), input);
+    return this.update.execute(ActingUser.refOf(ActingUser.of(actor)), input);
   }
 
   /**
@@ -117,7 +116,7 @@ export class UsersController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.requestChange.execute(
-      userRefOf(requireUserActor(actor)),
+      ActingUser.refOf(ActingUser.of(actor)),
       input.newEmail,
     );
   }
@@ -133,7 +132,7 @@ export class UsersController {
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
     await this.confirmChange.execute(
-      userRefOf(requireUserActor(actor)),
+      ActingUser.refOf(ActingUser.of(actor)),
       input.token,
     );
   }
@@ -147,6 +146,6 @@ export class UsersController {
   startAccountDeletion(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<AccountDeletionStarted> {
-    return this.accountDeletion.execute(userRefOf(requireUserActor(actor)));
+    return this.accountDeletion.execute(ActingUser.refOf(ActingUser.of(actor)));
   }
 }

@@ -8,3 +8,4 @@ export {
   ShardedTestDatabase,
   type ShardedTestDatabaseOptions,
 } from './sharded-test-database.js';
+export { UnroutedShardScopes } from './unrouted-shard-scopes.js';

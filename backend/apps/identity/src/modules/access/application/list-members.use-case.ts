@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { MemberPage } from '@contracts/identity';
 import { Pagination, type PageQuery } from '@contracts/platform';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { UsersFacade } from '../../users/index.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import type { Membership } from '../domain/membership.js';
@@ -19,7 +19,7 @@ export class ListMembers {
   constructor(
     private readonly tenantAccess: TenantAccessRepository,
     private readonly users: UsersFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   /**

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   ReportsErrorCode,
@@ -11,7 +12,6 @@ import { Clock } from '@platform/kernel';
 import { ReportsDefaults } from '../../../shared/constants/reports-defaults.constants.js';
 import { ReportsError } from '../../../shared/errors/reports.error.js';
 import { IdCursors } from '../../../shared/utils/id-cursors.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { ReportResultStore } from '../domain/report-result-store.js';
 import { ReportRunRepository } from '../domain/report-run.repository.js';
 import type { ReportRun } from '../domain/report-run.js';
@@ -26,7 +26,7 @@ export class RunQueries {
   constructor(
     private readonly runs: ReportRunRepository,
     private readonly results: ReportResultStore,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly clock: Clock,
   ) {}
 
@@ -35,7 +35,7 @@ export class RunQueries {
     request: ListReportRunsRequest,
   ): Promise<ReportRunPage> {
     const limit = request.limit ?? ReportsDefaults.pageSize;
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const page = await this.runs.page({
         type: request.type,
         status: request.status,
@@ -56,7 +56,7 @@ export class RunQueries {
 
   /** @throws ReportsError `REPORTS.RUN.NOT_FOUND`. */
   get(tenantId: string, runId: string): Promise<ReportRunDetail> {
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const run = await this.require(runId);
       const result = run.isReady() ? await this.results.load(runId) : undefined;
       return RunViews.detail(run.snapshot(), result);
@@ -65,7 +65,7 @@ export class RunQueries {
 
   /** @throws ReportsError `REPORTS.RUN.NOT_FOUND`, `REPORTS.RUN.NOT_READY` o `REPORTS.RUN.EXPIRED`. */
   download(tenantId: string, runId: string): Promise<ReportDownload> {
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const run = await this.require(runId);
       run.assertReady(this.clock.now());
       return ReportFiles.of(run.snapshot(), await this.stored(run));

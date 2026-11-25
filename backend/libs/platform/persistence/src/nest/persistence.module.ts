@@ -29,6 +29,7 @@ import { RepositoryKit } from '../repository-kit.js';
 import { ShardDataSources } from '../shard-data-sources.js';
 import { ShardResolver } from '../shard-resolver.js';
 import { ShardScope } from '../shard-scope.js';
+import { ShardScopes } from '../shard-scopes.js';
 import { ShardedMigrationRunner } from '../sharded-migration-runner.js';
 import { TenantWriteFence } from '../tenant-write-fence.js';
 import { TypeOrmTransactionManager } from '../typeorm-transaction-manager.js';
@@ -148,6 +149,7 @@ export class PersistenceModule extends PersistenceModuleClass {
         TypeOrmTransactionManager,
         ShardResolver,
         ShardScope,
+        ShardScopes,
         ShardDataSources,
         CatalogDataSource,
         EntityManagerProvider,
@@ -229,6 +231,12 @@ export class PersistenceModule extends PersistenceModuleClass {
         provide: ShardScope,
         useFactory: (router: ShardRouter) => new ShardScope(router),
         inject: [ShardRouter],
+      },
+      {
+        provide: ShardScopes,
+        useFactory: (scope: ShardScope, context: RequestContextStore) =>
+          new ShardScopes(scope, context),
+        inject: [ShardScope, RequestContextStore],
       },
       TenantWriteFence,
       {

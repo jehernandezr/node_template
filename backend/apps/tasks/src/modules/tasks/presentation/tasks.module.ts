@@ -3,7 +3,6 @@ import { PersistenceModule } from '@platform/persistence/nest';
 import { RepositoryKit } from '@platform/persistence';
 import { SearchIndex, SearchIndexFactory } from '@platform/search';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { CreateTask } from '../application/create-task.use-case.js';
 import { DeleteTask } from '../application/delete-task.use-case.js';
 import { GetTask } from '../application/get-task.query.js';
@@ -33,7 +32,6 @@ import { TasksController } from './tasks.controller.js';
   ],
   controllers: [TasksController],
   providers: [
-    TenantShard,
     { provide: TaskRepository, useClass: TypeOrmTaskRepository },
     { provide: TaskMaintenance, useClass: TypeOrmTaskMaintenance },
     {

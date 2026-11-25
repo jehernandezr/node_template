@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   BillingErrorCode,
@@ -10,7 +11,6 @@ import {
 import { BillingDefaults } from '../../../shared/constants/billing-defaults.constants.js';
 import { BillingError } from '../../../shared/errors/billing.error.js';
 import { IdCursors } from '../../../shared/utils/id-cursors.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { InvoiceRepository } from '../domain/invoice.repository.js';
 import type { InvoiceState } from '../domain/invoice.js';
 import { InvoicesFacade } from './invoices.facade.js';
@@ -26,7 +26,7 @@ export class InvoiceQueries extends InvoicesFacade {
 
   constructor(
     private readonly invoices: InvoiceRepository,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
   ) {
     super();
   }
@@ -52,7 +52,7 @@ export class InvoiceQueries extends InvoicesFacade {
 
   /** @throws BillingError `BILLING.INVOICE.NOT_FOUND` if the invoice does not belong to the tenant. */
   get(tenantId: string, invoiceId: string): Promise<Invoice> {
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const invoice = await this.invoices.find(invoiceId);
       if (invoice === undefined) {
         throw new BillingError(BillingErrorCode.InvoiceNotFound);
@@ -62,7 +62,7 @@ export class InvoiceQueries extends InvoicesFacade {
   }
 
   hasInvoices(tenantId: string): Promise<boolean> {
-    return this.shard.run(tenantId, () => this.invoices.any());
+    return this.shard.inTenantShard(tenantId, () => this.invoices.any());
   }
 
   private page(
@@ -70,7 +70,7 @@ export class InvoiceQueries extends InvoicesFacade {
     request: ListInvoicesRequest,
   ): Promise<{ items: InvoiceState[]; nextCursor: string | null }> {
     const limit = request.limit ?? BillingDefaults.pageSize;
-    return this.shard.run(tenantId, async () => {
+    return this.shard.inTenantShard(tenantId, async () => {
       const page = await this.invoices.page({
         status: request.status,
         afterId: this.cursors.idOf(request.after),

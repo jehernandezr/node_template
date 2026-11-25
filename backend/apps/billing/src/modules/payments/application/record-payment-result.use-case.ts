@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { BillingErrorCode } from '@contracts/billing';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { BillingError } from '../../../shared/errors/billing.error.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import {
   OPEN_PAYMENT_STATUSES,
   type PaymentAttempt,
@@ -22,7 +22,7 @@ import type { PaymentNotice } from './payments.facade.js';
 export class RecordPaymentResult {
   constructor(
     private readonly attempts: PaymentAttempts,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
   ) {}
@@ -36,7 +36,7 @@ export class RecordPaymentResult {
    *   attempt it would take is open on behalf of another charge.
    */
   execute(notice: PaymentNotice): Promise<number> {
-    return this.shard.run(notice.tenantId, async () => {
+    return this.shard.inTenantShard(notice.tenantId, async () => {
       const target = await this.targetOf(notice);
       if (target !== undefined && OPEN_PAYMENT_STATUSES.has(target.status)) {
         await this.attempts.resolve(target.id, notice.result);

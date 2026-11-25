@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { Clock } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { PasswordCredentialRepository } from '../domain/password-credential.repository.js';
 import { PasswordHasher } from '../domain/password-hasher.js';
@@ -17,7 +17,7 @@ export class PasswordVerifier {
   constructor(
     private readonly credentials: PasswordCredentialRepository,
     private readonly hasher: PasswordHasher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly clock: Clock,
   ) {}
 

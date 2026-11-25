@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -6,7 +7,6 @@ import {
 import { Clock } from '@platform/kernel';
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { DeviceApprovalStore } from '../domain/device-approval-store.js';
 import { DeviceRepository } from '../domain/device.repository.js';
 import { DeviceRoute } from '../domain/device-route.js';
@@ -30,7 +30,7 @@ export class SignedDeviceRequest {
     private readonly devices: DeviceRepository,
     private readonly approvals: DeviceApprovalStore,
     private readonly signatures: DeviceSignatureVerifier,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly clock: Clock,
   ) {}
 

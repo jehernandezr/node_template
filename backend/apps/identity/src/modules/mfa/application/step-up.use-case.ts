@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -11,7 +12,6 @@ import { Clock } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { ClientInfo } from '../../../shared/types/client-info.type.js';
-import { userRefOf } from '../../../shared/utils/user-actor.js';
 import { SessionsFacade } from '../../sessions/index.js';
 import { PendingAuthenticationStore } from '../domain/pending-authentication-store.js';
 import { ChallengeVerifier } from './challenge-verifier.js';
@@ -33,7 +33,7 @@ export class StepUp {
 
   begin(actor: UserActor, client: ClientInfo): Promise<PendingMfa> {
     return this.start.execute({
-      user: userRefOf(actor),
+      user: ActingUser.refOf(actor),
       purpose: PendingPurpose.StepUp,
       client,
       sessionId: actor.sessionId,

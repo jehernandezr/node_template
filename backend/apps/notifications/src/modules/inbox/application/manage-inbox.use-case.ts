@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type {
   AppNotification,
@@ -7,7 +8,6 @@ import type { PageQuery, UserRef } from '@contracts/platform';
 import { CursorCodec } from '@platform/criteria';
 import { Clock } from '@platform/kernel';
 import { NotificationsDefaults } from '../../../shared/constants/notifications-defaults.constants.js';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { RealtimeFacade } from '../../realtime/index.js';
 import { InboxRepository } from '../domain/inbox.repository.js';
 import { NotificationNotFoundError } from '../domain/inbox.error.js';
@@ -28,7 +28,7 @@ export class ManageInbox extends InboxFacade {
   constructor(
     private readonly inbox: InboxRepository,
     private readonly realtime: RealtimeFacade,
-    private readonly shard: UserShard,
+    private readonly shard: ShardScopes,
     private readonly clock: Clock,
   ) {
     super();
@@ -38,7 +38,7 @@ export class ManageInbox extends InboxFacade {
     user: UserRef,
     notification: NotificationState,
   ): Promise<AppNotification> {
-    const stored = await this.shard.run(user, () =>
+    const stored = await this.shard.inUserShard(user, () =>
       this.inbox.add(user, notification),
     );
     return NotificationViews.of(stored);
@@ -50,7 +50,7 @@ export class ManageInbox extends InboxFacade {
       query.after === undefined
         ? undefined
         : this.cursors.decode(query.after).id;
-    return this.shard.run(user, async () => {
+    return this.shard.inUserShard(user, async () => {
       const page = await this.inbox.page(user.userId, beforeId, limit + 1);
       const items = page.slice(0, limit);
       const last = items.at(-1);
@@ -65,12 +65,14 @@ export class ManageInbox extends InboxFacade {
   }
 
   unreadCount(user: UserRef): Promise<number> {
-    return this.shard.run(user, () => this.inbox.unreadCount(user.userId));
+    return this.shard.inUserShard(user, () =>
+      this.inbox.unreadCount(user.userId),
+    );
   }
 
   /** @throws NotificationNotFoundError if it is not in the user's inbox. */
   async markRead(user: UserRef, notificationId: string): Promise<void> {
-    const unread = await this.shard.run(user, async () => {
+    const unread = await this.shard.inUserShard(user, async () => {
       if (
         !(await this.inbox.markRead(
           user.userId,
@@ -86,13 +88,13 @@ export class ManageInbox extends InboxFacade {
   }
 
   async markAllRead(user: UserRef): Promise<void> {
-    await this.shard.run(user, () =>
+    await this.shard.inUserShard(user, () =>
       this.inbox.markAllRead(user.userId, this.clock.now()),
     );
     await this.realtime.unreadCount(user, 0);
   }
 
   erase(user: UserRef): Promise<number> {
-    return this.shard.run(user, () => this.inbox.erase(user.userId));
+    return this.shard.inUserShard(user, () => this.inbox.erase(user.userId));
   }
 }

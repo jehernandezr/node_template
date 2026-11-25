@@ -1,3 +1,4 @@
+import { ActingMember } from '@platform/auth';
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import {
@@ -15,7 +16,6 @@ import {
   type ReportRunPage,
 } from '@contracts/reports';
 import { ReportsResource } from '../../../shared/enums/reports-resource.enum.js';
-import { ActingMembers } from '../../../shared/utils/acting-member.js';
 import { CreateRun } from '../application/create-run.use-case.js';
 import { RunQueries } from '../application/run-queries.js';
 
@@ -31,7 +31,7 @@ export class RunsController {
     @Input() input: CreateReportRunRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ReportRunCreated> {
-    return this.createRun.execute(ActingMembers.of(actor), input);
+    return this.createRun.execute(ActingMember.of(actor), input);
   }
 
   @Endpoint(ListRunsRoute)
@@ -39,7 +39,7 @@ export class RunsController {
     @Input() input: ListReportRunsRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ReportRunPage> {
-    return this.queries.list(ActingMembers.of(actor).tenantId, input);
+    return this.queries.list(ActingMember.of(actor).tenantId, input);
   }
 
   @Endpoint(GetRunRoute)
@@ -47,7 +47,7 @@ export class RunsController {
     @Input() input: GetReportRunRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ReportRunDetail> {
-    return this.queries.get(ActingMembers.of(actor).tenantId, input.runId);
+    return this.queries.get(ActingMember.of(actor).tenantId, input.runId);
   }
 
   @Endpoint(DownloadRunRoute)
@@ -55,6 +55,6 @@ export class RunsController {
     @Input() input: DownloadReportRunRequest,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<ReportDownload> {
-    return this.queries.download(ActingMembers.of(actor).tenantId, input.runId);
+    return this.queries.download(ActingMember.of(actor).tenantId, input.runId);
   }
 }

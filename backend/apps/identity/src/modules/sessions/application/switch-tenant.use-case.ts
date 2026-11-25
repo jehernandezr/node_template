@@ -1,9 +1,9 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityErrorCode, SessionTokens } from '@contracts/identity';
 import { UserActor } from '@platform/auth';
 import { TransactionManager, UseCase } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { AccessFacade } from '../../access/index.js';
 import { TenantsFacade } from '../../tenants/index.js';
 import { UsersFacade } from '../../users/index.js';
@@ -25,7 +25,7 @@ export class SwitchTenant implements UseCase<SwitchTenantInput, SessionTokens> {
     private readonly access: AccessFacade,
     private readonly tenants: TenantsFacade,
     private readonly users: UsersFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 

@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { RevocationReason } from '@contracts/identity';
 import { Clock, TransactionManager, UseCase } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SessionRepository } from '../domain/session.repository.js';
 import { SessionToken } from '../domain/session-token.js';
 import { GenerationMatch } from '../domain/session.js';
@@ -18,7 +18,7 @@ export class SignOut implements UseCase<string | undefined, void> {
     private readonly sessions: SessionRepository,
     private readonly issuer: SessionTokenIssuer,
     private readonly revoker: SessionRevoker,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}

@@ -1,7 +1,7 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { UserStatus } from '@contracts/identity';
 import { SystemRandomSource } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
 import { HmacSecretHasher } from '../../../../security/hmac-secret-hasher.js';
 import { SecretGenerator } from '../../../../security/secret-generator.js';
 import { IdentityEmailTemplate } from '../../../../shared/enums/identity-email-template.enum.js';
@@ -24,7 +24,7 @@ class SendHarness {
       this.resets,
       new SecretGenerator(new SystemRandomSource()),
       new HmacSecretHasher(['test', 'secret', 'key'].join('-')),
-      TestShardScopes.create(),
+      UnroutedShardScopes.create(),
       new SequentialIdGenerator(),
       new FixedClock(new Date('2026-11-25T10:00:00.000Z')),
     ),

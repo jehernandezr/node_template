@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   ApiKeyStatus,
@@ -10,7 +11,6 @@ import {
 import type { Actor } from '@platform/auth';
 import { AuthStateWriter } from '@platform/auth';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { ApiKeyRepository } from '../domain/api-key-store.js';
 import type { ServiceAccount } from '../domain/service-account.js';
 import { ApiKeyViews } from './api-key-views.js';
@@ -24,7 +24,7 @@ export class ManageServiceAccounts {
     private readonly repository: ApiKeyRepository,
     private readonly grantable: GrantablePermissions,
     private readonly state: AuthStateWriter,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

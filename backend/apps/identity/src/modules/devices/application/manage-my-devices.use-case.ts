@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   DeviceRemovedEvent,
@@ -6,7 +7,6 @@ import {
 } from '@contracts/identity';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { SessionsFacade } from '../../sessions/index.js';
 import { DeviceRepository } from '../domain/device.repository.js';
@@ -19,7 +19,7 @@ export class ManageMyDevices {
   constructor(
     private readonly devices: DeviceRepository,
     private readonly sessions: SessionsFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly clock: Clock,

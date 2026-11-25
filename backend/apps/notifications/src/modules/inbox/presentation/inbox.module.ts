@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { InboxFacade } from '../application/inbox.facade.js';
 import { ManageInbox } from '../application/manage-inbox.use-case.js';
 import { PurgeReadNotificationsJob } from '../application/purge-read-notifications.job.js';
@@ -23,7 +22,6 @@ import { InboxController } from './inbox.controller.js';
   ],
   controllers: [InboxController],
   providers: [
-    UserShard,
     { provide: InboxRepository, useClass: TypeOrmInboxRepository },
     { provide: InboxMaintenance, useClass: TypeOrmInboxMaintenance },
     ManageInbox,

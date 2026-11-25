@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { AuthMethodReference, MfaFactor } from '@contracts/identity';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { DevicesFacade } from '../../devices/index.js';
 import { PasskeysFacade } from '../../passkeys/index.js';
@@ -27,7 +27,7 @@ export class MfaMethodCatalog {
     private readonly devices: DevicesFacade,
     private readonly passkeys: PasskeysFacade,
     private readonly factors: MfaFactorRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   /**

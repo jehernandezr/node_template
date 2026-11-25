@@ -1,10 +1,8 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { SagaStatus } from '@platform/saga';
 import { SagaEngineKit } from '@platform/saga/test-utils';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
-import {
-  RecordingParticipants,
-  TestShardScopes,
-} from '../../../../__tests__/utils/index.js';
+import { RecordingParticipants } from '../../../../__tests__/utils/index.js';
 import { InMemoryAccessFacade } from '../../../access/__tests__/utils/index.js';
 import { IdentitySagas } from '../../../sagas/index.js';
 import { InMemorySagaDirectory } from '../../../sagas/__tests__/utils/index.js';
@@ -52,7 +50,7 @@ class AccountDeletionFixture {
       this.kit.sagas,
       this.kit.store,
       this.directory,
-      TestShardScopes.create(),
+      UnroutedShardScopes.create(),
     ),
     this.access,
     new SequentialIdGenerator(),

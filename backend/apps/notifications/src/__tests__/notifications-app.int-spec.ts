@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import {
   EmailTemplate,
   EraseNotificationsUserDataOperation,
@@ -29,7 +30,6 @@ import {
   EmailReservationKind,
   EmailStatus,
 } from '../modules/email/domain/email-ledger.js';
-import { UserShard } from '../shared/utils/user-shard.js';
 import { PurgeReadNotificationsJob } from '../modules/inbox/application/purge-read-notifications.job.js';
 import { NotificationsTestApp } from './utils/index.js';
 
@@ -450,7 +450,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       const ref = { userId: ANA.userId, homeTenantId: ANA.tenantId };
       const id = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f72';
       const save = (status: DeliveryStatus, attempts: number) =>
-        app.get(UserShard).run(ref, () =>
+        app.get(ShardScopes).inUserShard(ref, () =>
           app.get(DeliveryRepository).save({
             id,
             notificationId: '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f73',

@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { Clock } from '@platform/kernel';
 import { LoggerPort } from '@platform/observability';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PaymentsFacade, PaymentStatus } from '../../payments/index.js';
 import { InvoiceRepository } from '../domain/invoice.repository.js';
 import type { InvoiceState } from '../domain/invoice.js';
@@ -18,13 +18,13 @@ export class CollectInvoice {
     private readonly invoices: InvoiceRepository,
     private readonly payments: PaymentsFacade,
     private readonly settle: SettleInvoice,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly clock: Clock,
     private readonly logger: LoggerPort,
   ) {}
 
   async execute(tenantId: string, invoiceId: string): Promise<void> {
-    const invoice = await this.shard.run(tenantId, () =>
+    const invoice = await this.shard.inTenantShard(tenantId, () =>
       this.invoices.find(invoiceId),
     );
     if (

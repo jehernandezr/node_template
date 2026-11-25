@@ -1,11 +1,9 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { IdentityErrorCode, TenantRole } from '@contracts/identity';
 import { InMemoryAuthState } from '@platform/auth/test-utils';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { InMemoryTransactionManager } from '@platform/messaging/test-utils';
-import {
-  RecordingMessageBus,
-  TestShardScopes,
-} from '../../../../__tests__/utils/index.js';
+import { RecordingMessageBus } from '../../../../__tests__/utils/index.js';
 import {
   InMemoryTenantAccessRepository,
   InMemoryUserAccessRepository,
@@ -37,7 +35,7 @@ class TenantWithSoleOwner {
         transactions,
         this.clock,
       ),
-      TestShardScopes.create(),
+      UnroutedShardScopes.create(),
       transactions,
       bus,
       new SequentialIdGenerator(),

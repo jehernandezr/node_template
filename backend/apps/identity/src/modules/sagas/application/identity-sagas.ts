@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentitySagaStatus,
@@ -12,7 +13,6 @@ import {
   type SagaInstance,
 } from '@platform/saga';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SagaDirectory } from '../domain/saga-directory.js';
 
 /** A saga that identity starts: where it lives, who requests it and its id, which the client uses to query it. */
@@ -62,7 +62,7 @@ export class IdentitySagas {
     private readonly sagas: Sagas,
     private readonly store: SagaStore,
     private readonly directory: SagaDirectory,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   /**

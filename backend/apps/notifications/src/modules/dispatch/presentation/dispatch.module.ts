@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { UserShard } from '../../../shared/utils/user-shard.js';
 import { ChannelDeliverer } from '../application/channel-deliverer.js';
 import { DispatchFacade } from '../application/dispatch.facade.js';
 import { NotifyUser } from '../application/notify-user.use-case.js';
@@ -25,7 +24,6 @@ import { DispatchInternalOperations } from './dispatch.internal-operations.js';
     }),
   ],
   providers: [
-    UserShard,
     { provide: RecipientDirectory, useClass: IdentityRecipientDirectory },
     { provide: DeliveryRepository, useClass: TypeOrmDeliveryRepository },
     { provide: FailedDeliveries, useClass: TypeOrmFailedDeliveries },

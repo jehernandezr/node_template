@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { BillingErrorCode } from '@contracts/billing';
 import { Clock, TransactionManager } from '@platform/kernel';
 import { BillingError } from '../../../shared/errors/billing.error.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PlansFacade, type Plan } from '../../plans/index.js';
 import { UsageFacade } from '../../usage/index.js';
 import { BillingPeriod } from '../domain/billing-period.js';
@@ -19,7 +19,7 @@ export class ChangePlan {
     private readonly plans: PlansFacade,
     private readonly usage: UsageFacade,
     private readonly events: SubscriptionEvents,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
   ) {}
@@ -29,7 +29,7 @@ export class ChangePlan {
    *   `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` o `BILLING.PLAN.USAGE_EXCEEDS_LIMIT`.
    */
   execute(tenantId: string, planId: string): Promise<CurrentSubscription> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const subscription = await this.subscriptions.find();
         if (subscription === undefined) {

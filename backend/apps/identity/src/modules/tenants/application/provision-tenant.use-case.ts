@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
@@ -9,7 +10,6 @@ import {
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../access/index.js';
 import { UsersFacade } from '../../users/index.js';
@@ -40,7 +40,7 @@ export class ProvisionTenant {
     private readonly placement: TenantPlacement,
     private readonly access: AccessFacade,
     private readonly users: UsersFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly clock: Clock,

@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   JobScheduleKind,
@@ -5,7 +6,6 @@ import {
   type JobSchedule,
 } from '@platform/kernel';
 import { IdentityJob } from '../../../shared/enums/identity-job.enum.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { ApiKeyRepository } from '../domain/api-key-store.js';
 import { ApiKeyUsageBuffer } from '../domain/api-key-usage-buffer.js';
 
@@ -24,7 +24,7 @@ export class FlushApiKeyUsageJob extends ScheduledJob {
   constructor(
     private readonly buffer: ApiKeyUsageBuffer,
     private readonly repository: ApiKeyRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {
     super();
   }

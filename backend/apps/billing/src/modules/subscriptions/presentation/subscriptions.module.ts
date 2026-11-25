@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { AdvanceDunningJob } from '../application/advance-dunning.job.js';
 import { ChangePlan } from '../application/change-plan.use-case.js';
 import { CloseSubscriptionPeriod } from '../application/close-subscription-period.use-case.js';
@@ -28,7 +27,6 @@ import { SubscriptionsController } from './subscriptions.controller.js';
   ],
   controllers: [SubscriptionsController],
   providers: [
-    TenantShard,
     {
       provide: SubscriptionRepository,
       useClass: TypeOrmSubscriptionRepository,

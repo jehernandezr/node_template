@@ -1,11 +1,9 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { ClientPlatform, SecurityAlertType } from '@contracts/identity';
 import { SystemClock } from '@platform/kernel';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { DeviceKey } from '../../../__tests__/utils/index.js';
-import {
-  InMemoryEphemeralStore,
-  TestShardScopes,
-} from '../../../__tests__/utils/index.js';
+import { InMemoryEphemeralStore } from '../../../__tests__/utils/index.js';
 import { InMemorySecurityAlerts } from '../../alerts/__tests__/utils/index.js';
 import { TestLoginLockout } from '../../authentication/__tests__/utils/index.js';
 import { InMemoryMfaFacade } from '../../mfa/__tests__/utils/index.js';
@@ -55,7 +53,7 @@ describe('DeviceApprovalsUseCase deny', () => {
     const users = new InMemoryUsersFacade(ids);
     const devices = new InMemoryDeviceRepository();
     const approvals = new EphemeralDeviceApprovalStore(ephemeral);
-    const scopes = TestShardScopes.create();
+    const scopes = UnroutedShardScopes.create();
     const mfa = new InMemoryMfaFacade();
     const alerts = new InMemorySecurityAlerts();
     const { lockout, keys } = new TestLoginLockout(ephemeral, clock);

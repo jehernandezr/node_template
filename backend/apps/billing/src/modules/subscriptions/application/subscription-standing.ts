@@ -1,9 +1,9 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { SubscriptionStatus } from '@contracts/billing';
 import { AppConfig } from '@platform/config';
 import { Clock, TransactionManager } from '@platform/kernel';
 import type { BillingConfig } from '../../../config/billing.config.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { PlansFacade } from '../../plans/index.js';
 import { BillingPeriod } from '../domain/billing-period.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
@@ -19,7 +19,7 @@ export class SubscriptionStanding {
     private readonly subscriptions: SubscriptionRepository,
     private readonly plans: PlansFacade,
     private readonly events: SubscriptionEvents,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly clock: Clock,
     config: AppConfig,
@@ -74,7 +74,7 @@ export class SubscriptionStanding {
     tenantId: string,
     apply: (subscription: Subscription) => Promise<void>,
   ): Promise<void> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const subscription = await this.subscriptions.find();
         if (subscription !== undefined) {

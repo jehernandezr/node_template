@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { TransactionManager } from '@platform/kernel';
 import { PasswordCredentialRepository } from '../domain/password-credential.repository.js';
 import { PasswordAcceptance } from './password-acceptance.js';
@@ -13,7 +13,7 @@ export class LocalPasswordsFacade extends PasswordsFacade {
   constructor(
     private readonly verifier: PasswordVerifier,
     private readonly acceptance: PasswordAcceptance,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly credentials: PasswordCredentialRepository,
   ) {

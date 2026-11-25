@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { TransactionManager } from '@platform/kernel';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import {
   PasskeyDirectory,
   PasskeyRepository,
@@ -16,7 +16,7 @@ export class LocalPasskeysFacade extends PasskeysFacade {
     private readonly ceremony: PasskeyCeremony,
     private readonly passkeys: PasskeyRepository,
     private readonly directory: PasskeyDirectory,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {
     super();

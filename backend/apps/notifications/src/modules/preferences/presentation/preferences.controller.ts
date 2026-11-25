@@ -1,3 +1,4 @@
+import { ActingUser } from '@platform/auth';
 import {
   GetPreferencesRoute,
   SavePreferencesRoute,
@@ -6,7 +7,6 @@ import {
 import type { Actor } from '@platform/auth';
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import { NotificationsResource } from '../../../shared/enums/notifications-resource.enum.js';
-import { UserOfActor } from '../../../shared/utils/user-of-actor.js';
 import { ManagePreferences } from '../application/manage-preferences.use-case.js';
 
 @Resource(NotificationsResource.Preferences)
@@ -17,7 +17,7 @@ export class PreferencesController {
   async get(
     @CurrentActor() actor: Actor | undefined,
   ): Promise<NotificationPreferences> {
-    return (await this.preferences.get(UserOfActor.of(actor))).toView();
+    return (await this.preferences.get(ActingUser.refOf(actor))).toView();
   }
 
   @Endpoint(SavePreferencesRoute)
@@ -25,6 +25,6 @@ export class PreferencesController {
     @Input() input: NotificationPreferences,
     @CurrentActor() actor: Actor | undefined,
   ): Promise<void> {
-    return this.preferences.save(UserOfActor.of(actor), input);
+    return this.preferences.save(ActingUser.refOf(actor), input);
   }
 }

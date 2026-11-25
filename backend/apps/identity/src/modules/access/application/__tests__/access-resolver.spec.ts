@@ -1,6 +1,6 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { FeatureFlag, TenantKind, TenantLifecycle } from '@contracts/identity';
 import { FlagEvaluator, InMemoryFlagStore } from '@platform/flags';
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
 import {
   InMemoryTenantsFacade,
   PlanEntitlementsProvider,
@@ -29,7 +29,7 @@ describe('AccessResolver', () => {
       status: TenantLifecycle.Active,
     }),
     new PlanEntitlementsProvider(),
-    TestShardScopes.create(),
+    UnroutedShardScopes.create(),
     new FlagEvaluator(flags),
   );
 

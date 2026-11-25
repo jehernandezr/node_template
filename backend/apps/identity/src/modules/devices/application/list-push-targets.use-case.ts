@@ -1,7 +1,7 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { IdentityLimits, type PushTargets } from '@contracts/identity';
 import { Clock } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { DeviceRepository } from '../domain/device.repository.js';
 
@@ -13,7 +13,7 @@ import { DeviceRepository } from '../domain/device.repository.js';
 export class ListPushTargets {
   constructor(
     private readonly devices: DeviceRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly clock: Clock,
   ) {}
 

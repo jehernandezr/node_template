@@ -1,6 +1,6 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import { SystemRandomSource } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
-import { TestShardScopes } from '../../../../__tests__/utils/index.js';
 import { SecretGenerator } from '../../../../security/secret-generator.js';
 import { HmacSecretHasher } from '../../../../security/hmac-secret-hasher.js';
 import { InMemoryPasswordResetRepository } from '../../__tests__/utils/index.js';
@@ -20,7 +20,7 @@ class TokensHarness {
     this.repository,
     new SecretGenerator(new SystemRandomSource()),
     new HmacSecretHasher(['test', 'secret', 'key'].join('-')),
-    TestShardScopes.create(),
+    UnroutedShardScopes.create(),
     new SequentialIdGenerator(),
     this.clock,
   );

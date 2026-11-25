@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type {
   AuthMethodReference,
@@ -8,7 +9,6 @@ import type {
 import type { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { PendingAuthenticationStore } from '../domain/pending-authentication-store.js';
 import { StepUp } from './step-up.use-case.js';
 import { VerifyMfa } from './verify-mfa.use-case.js';
@@ -28,7 +28,7 @@ export class LocalMfaFacade extends MfaFacade {
     private readonly verify: VerifyMfa,
     private readonly stepUp: StepUp,
     private readonly factors: MfaFactorRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {
     super();
   }

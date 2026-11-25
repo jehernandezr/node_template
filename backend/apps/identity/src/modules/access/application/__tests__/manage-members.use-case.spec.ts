@@ -1,3 +1,4 @@
+import { UnroutedShardScopes } from '@platform/persistence/test-utils';
 import {
   IdentityErrorCode,
   IdentityEvent,
@@ -8,10 +9,7 @@ import { InMemoryAuthState } from '@platform/auth/test-utils';
 import { FlagEvaluator, InMemoryFlagStore } from '@platform/flags';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { InMemoryTransactionManager } from '@platform/messaging/test-utils';
-import {
-  RecordingMessageBus,
-  TestShardScopes,
-} from '../../../../__tests__/utils/index.js';
+import { RecordingMessageBus } from '../../../../__tests__/utils/index.js';
 import {
   InMemoryTenantsFacade,
   PlanEntitlementsProvider,
@@ -44,7 +42,7 @@ class TenantWithTwoOwners {
   private readonly setup: TenantAccessSetup;
 
   constructor() {
-    const scopes = TestShardScopes.create();
+    const scopes = UnroutedShardScopes.create();
     const transactions = new InMemoryTransactionManager();
     const userAccess = new InMemoryUserAccessRepository();
     const versions = new AccessVersionPublisher(

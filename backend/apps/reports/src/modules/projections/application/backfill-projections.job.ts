@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   JobScheduleKind,
@@ -8,7 +9,6 @@ import {
 import { LoggerPort } from '@platform/observability';
 import { ReportsDefaults } from '../../../shared/constants/reports-defaults.constants.js';
 import { ReportsJob } from '../../../shared/enums/reports-job.enum.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import {
   BackfillProgress,
   BackfillSource,
@@ -49,7 +49,7 @@ export class BackfillProjectionsJob extends ScheduledJob {
     private readonly tasks: TaskProjection,
     private readonly finance: FinanceProjection,
     private readonly progress: BackfillProgress,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly logger: LoggerPort,
   ) {
@@ -73,7 +73,7 @@ export class BackfillProjectionsJob extends ScheduledJob {
     copyPage: (cursor: string | undefined) => Promise<Backfill>,
   ): Promise<void> {
     try {
-      await this.shard.run(tenantId, async () => {
+      await this.shard.inTenantShard(tenantId, async () => {
         let backfill = await this.progress.find(source);
         for (
           let page = 0;

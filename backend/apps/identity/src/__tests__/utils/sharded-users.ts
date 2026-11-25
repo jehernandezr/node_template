@@ -1,10 +1,10 @@
+import { ShardScopes } from '@platform/persistence';
 import { createHash } from 'node:crypto';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { MessageBus } from '@platform/messaging';
 import { IdentitySettings } from '../../config/identity-settings.js';
 import type { UserRef } from '../../shared/types/user-ref.type.js';
-import { IdentityShardScopes } from '../../shared/utils/identity-shard-scopes.js';
 import { AccessFacade } from '../../modules/access/index.js';
 import { PasswordsFacade } from '../../modules/passwords/index.js';
 import { UserRegistrar } from '../../modules/users/application/user-registrar.js';
@@ -115,7 +115,7 @@ export class ShardedUsers {
       this.app.get(UserDirectory),
       this.app.get(EmailFingerprinter),
       this.app.get(PasswordsFacade),
-      this.app.get(IdentityShardScopes),
+      this.app.get(ShardScopes),
       this.app.get(TransactionManager),
       this.app.get(MessageBus),
       new PresetIdGenerator([userId], this.app.get(IdGenerator)),

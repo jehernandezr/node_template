@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import type { InvitationSummary, InviteUserRequest } from '@contracts/identity';
 import { ActorGuards, type Actor } from '@platform/auth';
@@ -6,7 +7,6 @@ import { SecretGenerator } from '../../../security/secret-generator.js';
 import { SecretHasher } from '../../../security/secret-hasher.js';
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
 import { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { normalizeEmail } from '../../../shared/utils/email-normalization.js';
 import { AccessFacade } from '../../access/index.js';
 import { IdentityMailer } from '../../alerts/index.js';
@@ -32,7 +32,7 @@ export class InviteUser {
     private readonly mailer: IdentityMailer,
     private readonly generator: SecretGenerator,
     private readonly hasher: SecretHasher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,

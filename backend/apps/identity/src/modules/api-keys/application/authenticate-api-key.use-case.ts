@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { isDeepStrictEqual } from 'node:util';
 import { Injectable } from '@nestjs/common';
 import {
@@ -15,7 +16,6 @@ import {
 import { Clock } from '@platform/kernel';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { isIpInAnyCidr } from '../../../shared/utils/cidr.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { LockoutKeys, LoginLockout } from '../../authentication/index.js';
 import { TenantsFacade } from '../../tenants/index.js';
 import {
@@ -51,7 +51,7 @@ export class AuthenticateApiKey {
     private readonly lockoutKeys: LockoutKeys,
     private readonly usage: ApiKeyUsageBuffer,
     private readonly state: AuthStateWriter,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly clock: Clock,
   ) {}
 

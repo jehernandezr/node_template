@@ -32,6 +32,7 @@ import { RepositoryKit } from '../../repository-kit.js';
 import { ShardDataSources } from '../../shard-data-sources.js';
 import { ShardResolver } from '../../shard-resolver.js';
 import { ShardScope } from '../../shard-scope.js';
+import { ShardScopes } from '../../shard-scopes.js';
 import { ShardedMigrationRunner } from '../../sharded-migration-runner.js';
 import { TypeOrmTransactionManager } from '../../typeorm-transaction-manager.js';
 import { FakeDataSourceFactory } from '../../__tests__/utils/fake-data-source-factory.js';
@@ -193,6 +194,9 @@ describe('PersistenceModule', () => {
       );
       expect(moduleRef.get(ShardScope, { strict: false })).toBeInstanceOf(
         ShardScope,
+      );
+      expect(moduleRef.get(ShardScopes, { strict: false })).toBeInstanceOf(
+        ShardScopes,
       );
       expect(
         moduleRef.get(EntityManagerProvider, { strict: false }),

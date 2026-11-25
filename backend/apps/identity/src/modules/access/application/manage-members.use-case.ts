@@ -1,3 +1,4 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import {
   MembershipChangeKind,
@@ -7,7 +8,6 @@ import {
 import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import type { Group } from '../domain/group.js';
@@ -31,7 +31,7 @@ export class ManageMembers {
     private readonly setup: TenantAccessSetup,
     private readonly ceiling: GrantCeiling,
     private readonly versions: AccessVersionPublisher,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly transactions: TransactionManager,
     private readonly bus: MessageBus,
     private readonly clock: Clock,

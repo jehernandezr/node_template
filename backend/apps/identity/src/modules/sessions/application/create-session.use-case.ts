@@ -1,6 +1,6 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { Clock, IdGenerator, UseCase } from '@platform/kernel';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import {
   deviceNameFrom,
   platformFromUserAgent,
@@ -30,7 +30,7 @@ export class CreateSession implements UseCase<
     private readonly users: UsersFacade,
     private readonly access: AccessFacade,
     private readonly tenants: TenantsFacade,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly settings: IdentitySettings,

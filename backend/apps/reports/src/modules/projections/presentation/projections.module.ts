@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { PersistenceModule } from '@platform/persistence/nest';
 import { ShardKey } from '@platform/sharding';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { BackfillProjectionsJob } from '../application/backfill-projections.job.js';
 import { LocalProjectionsFacade } from '../application/local-projections.facade.js';
 import { ProjectFinanceEvents } from '../application/project-finance-events.use-case.js';
@@ -40,7 +39,6 @@ import { ProjectionsConsumer } from './projections.consumer.js';
     }),
   ],
   providers: [
-    TenantShard,
     { provide: TaskProjection, useClass: TypeOrmTaskProjection },
     { provide: FinanceProjection, useClass: TypeOrmFinanceProjection },
     { provide: BackfillProgress, useClass: TypeOrmBackfillProgress },

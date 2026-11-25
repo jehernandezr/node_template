@@ -1,8 +1,8 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { BillingErrorCode } from '@contracts/billing';
 import { TransactionManager } from '@platform/kernel';
 import { BillingError } from '../../../shared/errors/billing.error.js';
-import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import {
   PaymentsFacade,
   PaymentStatus,
@@ -48,7 +48,7 @@ export class RecordPaymentNotice {
     private readonly payments: PaymentsFacade,
     private readonly settle: SettleInvoice,
     private readonly subscriptions: SubscriptionsFacade,
-    private readonly shard: TenantShard,
+    private readonly shard: ShardScopes,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -132,7 +132,7 @@ export class RecordPaymentNotice {
     invoiceId: string,
     apply: (invoice: Invoice) => Promise<InvoiceState>,
   ): Promise<InvoiceState> {
-    return this.shard.run(tenantId, () =>
+    return this.shard.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         await this.subscriptions.lock(tenantId);
         const invoice = await this.invoices.find(invoiceId);

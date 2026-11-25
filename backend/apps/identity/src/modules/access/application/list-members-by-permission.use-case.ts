@@ -1,10 +1,10 @@
+import { ShardScopes } from '@platform/persistence';
 import { Injectable } from '@nestjs/common';
 import { Pagination } from '@contracts/platform';
 import type {
   ListMembersByPermissionInput,
   UserRefPage,
 } from '@contracts/identity';
-import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { TenantAccessRepository } from '../domain/access-store.js';
 import { EffectiveAccessCalculator } from '../domain/effective-access-calculator.js';
 
@@ -18,7 +18,7 @@ export class ListMembersByPermission {
 
   constructor(
     private readonly tenantAccess: TenantAccessRepository,
-    private readonly scopes: IdentityShardScopes,
+    private readonly scopes: ShardScopes,
   ) {}
 
   async execute(input: ListMembersByPermissionInput): Promise<UserRefPage> {
