@@ -11,10 +11,12 @@ import { PaymentAttempts } from '../domain/payment-attempts.js';
 import type { PaymentNotice } from './payments.facade.js';
 
 /**
- * Anota lo que el proveedor informó después por su webhook en el intento al que se refiere, nunca en el que toque al
- * momento del aviso: así un aviso repetido, o el webhook de un rechazo que el job ya anotó, no cuenta como un rechazo
- * nuevo ni gasta un reintento. El intento es el de `attemptId`; sin él, el último si sigue abierto o si ya tiene ese
- * mismo resultado. Si no hay ninguno, el cobro no salió de billing y se anota uno nuevo ya resuelto.
+ * Records what the provider reported later through its webhook on the attempt the notice refers to, never on the one
+ * that is due when the notice arrives: a repeated notice, or the webhook of a decline the job already recorded, does
+ * not count as a new decline nor use up a retry. The attempt is the one named by `attemptId`; without it, the latest
+ * one if it is still open or already has that same result, and if there is none the charge did not come from billing
+ * and a new, already resolved attempt is recorded. A notice never resolves an attempt it does not name with a result
+ * other than the recorded one: such a notice is refused and every attempt stays as it was.
  */
 @Injectable()
 export class RecordPaymentResult {
@@ -26,10 +28,12 @@ export class RecordPaymentResult {
   ) {}
 
   /**
-   * Anota el aviso en su intento.
-   * @param notice Aviso del proveedor.
-   * @returns El número del intento al que corresponde el aviso.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` si `attemptId` no es un intento de la factura.
+   * Records the notice on its attempt.
+   * @param notice Notice from the provider.
+   * @returns The number of the attempt the notice belongs to.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` if `attemptId` is not an attempt of the invoice, or
+   *   `BILLING.INVOICE.INVALID_STATE` if the notice contradicts the result already recorded for its attempt or the
+   *   attempt it would take is open on behalf of another charge.
    */
   execute(notice: PaymentNotice): Promise<number> {
     return this.shard.run(notice.tenantId, async () => {
@@ -38,11 +42,13 @@ export class RecordPaymentResult {
         await this.attempts.resolve(target.id, notice.result);
         return target.attempt;
       }
+      if (target !== undefined && notice.attemptId !== undefined) {
+        return RecordPaymentResult.matching(target, notice);
+      }
       if (target !== undefined && target.status === notice.result.status) {
         return target.attempt;
       }
-      await this.recordUnmatched(notice);
-      return notice.nextAttempt;
+      return this.recordUnmatched(notice);
     });
   }
 
@@ -64,7 +70,7 @@ export class RecordPaymentResult {
     return attempt;
   }
 
-  private async recordUnmatched(notice: PaymentNotice): Promise<void> {
+  private async recordUnmatched(notice: PaymentNotice): Promise<number> {
     const recorded = await this.attempts.reserve({
       id: this.ids.next().toString(),
       invoiceId: notice.invoiceId,
@@ -73,14 +79,31 @@ export class RecordPaymentResult {
       ...notice.result,
     });
     if (recorded) {
-      return;
+      return notice.nextAttempt;
     }
     const existing = await this.attempts.find(
       notice.invoiceId,
       notice.nextAttempt,
     );
-    if (existing !== undefined) {
-      await this.attempts.resolve(existing.id, notice.result);
+    if (existing === undefined) {
+      throw new BillingError(BillingErrorCode.InvoiceInvalidState, {
+        attempt: notice.nextAttempt,
+      });
     }
+    return RecordPaymentResult.matching(existing, notice);
+  }
+
+  private static matching(
+    attempt: PaymentAttempt,
+    notice: PaymentNotice,
+  ): number {
+    if (attempt.status !== notice.result.status) {
+      throw new BillingError(BillingErrorCode.InvoiceInvalidState, {
+        attemptId: attempt.id,
+        recorded: attempt.status,
+        reported: notice.result.status,
+      });
+    }
+    return attempt.attempt;
   }
 }
