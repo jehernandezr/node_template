@@ -27,8 +27,8 @@ export class PostgresFailureClassifier {
 
   private static readonly FALLBACK = new FailureClassifier();
 
+  /** Pasajero si el SQLSTATE lo es; cualquier otro error, incluido un código de red como `EPIPE`, lo decide el clasificador general. */
   static classify(error: unknown): FailureKind {
-    // `EPIPE` también tiene cinco caracteres: el resto lo decide el clasificador general.
     return (
       PostgresFailureClassifier.transientKindOf(error) ??
       PostgresFailureClassifier.FALLBACK.classify(error)
@@ -45,6 +45,7 @@ export class PostgresFailureClassifier {
       : undefined;
   }
 
+  /** Si el error de `pg` trae justo ese SQLSTATE. */
   static hasSqlState(error: unknown, state: PostgresSqlState): boolean {
     return PostgresFailureClassifier.sqlStateOf(error) === state;
   }

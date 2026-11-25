@@ -1,4 +1,5 @@
 export * from './errors/invalid-service-definition.error.js';
+export * from './failures/platform-failure-classifier.js';
 export * from './errors/service-error-catalog.js';
 export * from './errors/service-error-code.enum.js';
 export * from './errors/service-shutdown-timeout.error.js';

@@ -150,6 +150,27 @@ describe('TenantMoveCleanupJob', () => {
     expect(log.find(RECENT_MOVE)?.status).toBe(TenantMoveStatus.Switched);
   });
 
+  it('leaves the cleanup of a tenant that has another move in progress for a later run', async () => {
+    const { handlers, job, log } = setup();
+    await switchedMove(log, OLD_MOVE, TENANT_A, 8);
+    await log.start({
+      moveId: RECENT_MOVE,
+      tenantId: TENANT_A,
+      targetGroup: 'sa-group-0',
+      targetRegion: 'sa-east-1',
+      sagaId: RECENT_MOVE,
+      status: TenantMoveStatus.Running,
+      startedAt: NOW,
+    });
+
+    await job.run(context());
+
+    for (const handler of handlers) {
+      expect(handler.callCount).toBe(0);
+    }
+    expect(log.find(OLD_MOVE)?.status).toBe(TenantMoveStatus.Switched);
+  });
+
   it('repeats a cleanup that answers that its round goes on until the service finishes it in the same run', async () => {
     const { handlers, job, log } = setup({
       0: (input, call) =>

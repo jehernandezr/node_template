@@ -25,6 +25,7 @@ import { TenantMoveTargets } from '../../targets/tenant-move-targets.js';
 import { BatchTenantDataTransfer } from '../../transfer/batch/batch-tenant-data-transfer.js';
 import type { TableChecksum } from '../../transfer/batch/table-checksum.js';
 import { TableCopier } from '../../transfer/batch/table-copier.js';
+import type { TenantDataTransfer } from '../../transfer/tenant-data-transfer.js';
 import { TableShapeReader } from '../../transfer/batch/table-shape-reader.js';
 import { TenantRowFilter } from '../../transfer/batch/tenant-row-filter.js';
 import { TenantSession } from '../../transfer/batch/tenant-session.js';
@@ -48,6 +49,14 @@ export interface TenantMoveRehearsalOptions {
   readonly extensions?: readonly string[];
   /** Filas por lote; uno chico hace que cada tabla se copie en varios lotes. */
   readonly batchSize?: number;
+}
+
+/** Las piezas de `TenantMoves` que el ensayo arma una vez y comparte entre sus variantes. */
+interface RehearsalParts {
+  readonly shards: TenantMoveShards;
+  readonly transfer: TenantDataTransfer;
+  readonly gate: DirectoryWriteGate;
+  readonly transition: PlacementTransition;
 }
 
 /** Conteo y suma de cada tabla del manifiesto. */
@@ -97,6 +106,7 @@ export class TenantMoveRehearsal {
   private readonly filter: TenantRowFilter;
   private readonly session = new TenantSession();
   private moves: TenantMoves | undefined;
+  private parts: RehearsalParts | undefined;
 
   constructor(private readonly options: TenantMoveRehearsalOptions) {
     this.db = new ShardedTestDatabase({
@@ -144,26 +154,23 @@ export class TenantMoveRehearsal {
         ]),
       ),
     );
-    this.moves = new TenantMoves(
-      new TenantMoveShards(
+    this.parts = {
+      shards: new TenantMoveShards(
         this.db.router,
         this.db.directory,
         this.db.sources,
         targets,
       ),
-      new BatchTenantDataTransfer(this.manifest, new SystemClock(), {
+      transfer: new BatchTenantDataTransfer(this.manifest, new SystemClock(), {
         batchSize: this.options.batchSize ?? 500,
         callBudgetMs: 4_000,
         deltaMarginMs: 60_000,
         caughtUpRows: 0,
       }),
-      new DirectoryWriteGate(this.db.router, transition),
-      this.fence,
+      gate: new DirectoryWriteGate(this.db.router, transition),
       transition,
-      this.db.lister,
-      this.db.sources,
-      new OpenSagaActivity(),
-    );
+    };
+    this.moves = this.assemble(this.parts.transfer);
   }
 
   async stop(): Promise<void> {
@@ -272,6 +279,16 @@ export class TenantMoveRehearsal {
     return this.started();
   }
 
+  /** Los mismos pasos sobre la copia que arma `decorate` alrededor de la real, para observarla o hacerla fallar. */
+  stepsWith(
+    decorate: (transfer: TenantDataTransfer) => TenantDataTransfer,
+  ): TenantMoves {
+    if (this.parts === undefined) {
+      throw new Error('TenantMoveRehearsal.start() was not called');
+    }
+    return this.assemble(decorate(this.parts.transfer));
+  }
+
   async cleanup(ref: TenantMoveRef): Promise<void> {
     await TenantMoveRehearsal.untilDone(() => this.started().cleanup(ref));
   }
@@ -323,6 +340,23 @@ export class TenantMoveRehearsal {
       logicalShard: shard,
       instance: ShardedTestDatabase.INSTANCE,
     });
+  }
+
+  private assemble(transfer: TenantDataTransfer): TenantMoves {
+    const parts = this.parts;
+    if (parts === undefined) {
+      throw new Error('TenantMoveRehearsal.start() was not called');
+    }
+    return new TenantMoves(
+      parts.shards,
+      transfer,
+      parts.gate,
+      this.fence,
+      parts.transition,
+      this.db.lister,
+      this.db.sources,
+      new OpenSagaActivity(),
+    );
   }
 
   private started(): TenantMoves {

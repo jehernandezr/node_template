@@ -1,3 +1,4 @@
+import { FailureClassifier } from '@platform/primitives';
 import type { FactoryProvider } from '@nestjs/common';
 import {
   CatalogIdempotencyStore,
@@ -52,7 +53,7 @@ import { ImportedModules } from './utils/index.js';
 describe('PlatformRuntimeModule', () => {
   describe('forService', () => {
     describe('when no adapter is enabled', () => {
-      it('is global, exports only the use case runner and the regions, and starts with the kernel', () => {
+      it('is global, exports only the failure classifier, the use case runner and the regions, and starts with the kernel', () => {
         const definition = ServiceDefinitionBuilder.aDefinition().build();
 
         const dynamic = PlatformRuntimeModule.forService(definition, {
@@ -61,7 +62,11 @@ describe('PlatformRuntimeModule', () => {
         });
 
         expect(dynamic.global).toBe(true);
-        expect(dynamic.exports).toEqual([UseCaseRunner, ServiceRegions]);
+        expect(dynamic.exports).toEqual([
+          FailureClassifier,
+          UseCaseRunner,
+          ServiceRegions,
+        ]);
         expect(ImportedModules.of(dynamic)[0]).toBe(PlatformKernelModule);
       });
 
@@ -271,7 +276,7 @@ describe('PlatformRuntimeModule', () => {
     });
 
     describe('when there is no publisher and AWS is disabled', () => {
-      it('exports only the use case runner and the regions', () => {
+      it('exports only the failure classifier, the use case runner and the regions', () => {
         const definition = ServiceDefinitionBuilder.aDefinition().build();
 
         const dynamic = PlatformRuntimeModule.forService(definition, {
@@ -279,7 +284,11 @@ describe('PlatformRuntimeModule', () => {
           adapters: { valkey: false, aws: false },
         });
 
-        expect(dynamic.exports).toEqual([UseCaseRunner, ServiceRegions]);
+        expect(dynamic.exports).toEqual([
+          FailureClassifier,
+          UseCaseRunner,
+          ServiceRegions,
+        ]);
       });
     });
 
