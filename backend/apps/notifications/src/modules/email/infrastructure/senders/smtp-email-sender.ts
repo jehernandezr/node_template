@@ -5,15 +5,15 @@ import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 import { MimeMessage } from './mime-message.js';
 import { SmtpSession } from './smtp-session.js';
 
-/** Servidor SMTP de destino. */
+/** Destination SMTP server. */
 export interface SmtpEndpoint {
   readonly host: string;
   readonly port: number;
 }
 
 /**
- * Correo por SMTP sin autenticación ni TLS, para Mailpit en desarrollo. La configuración solo lo permite con
- * `NODE_ENV=development`. Una conexión por correo: el volumen local no justifica reusarlas.
+ * Email through SMTP without authentication or TLS, for Mailpit in development. The configuration only allows it with
+ * `NODE_ENV=development`. One connection per email: local volume does not justify reusing them.
  */
 export class SmtpEmailSender extends EmailSender {
   private static readonly TIMEOUT_MS = 10_000;

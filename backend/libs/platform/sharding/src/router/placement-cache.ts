@@ -6,25 +6,25 @@ import { ExpiringLru } from './expiring-lru.js';
 import { PlacementCodec } from './placement-codec.js';
 import type { SharedRecord } from './shared-record.js';
 
-/** Parámetros de {@link PlacementCache}. */
+/** Parameters of {@link PlacementCache}. */
 export interface PlacementCacheSettings {
   readonly localTtlMs: number;
   readonly sharedTtlMs: number;
   readonly tombstoneTtlMs: number;
-  /** Capacidad del caché en proceso y de las versiones mínimas aprendidas. */
+  /** Capacity of the in-process cache and of the learned minimum versions. */
   readonly maxPlacements: number;
 }
 
 /**
- * Caché de placements en dos niveles: LRU en proceso y `RoutingCache` compartido
- * opcional, con lápidas versionadas y la versión mínima aceptable por tenant.
- * Un fallo del caché compartido se informa a `onError` y nunca se propaga.
+ * Two-level placement cache: in-process LRU and optional shared `RoutingCache`,
+ * with versioned tombstones and the minimum acceptable version per tenant.
+ * A shared cache failure is reported to `onError` and never propagates.
  */
 export class PlacementCache {
   static readonly KEY_PREFIX = 'sharding:placement:';
 
   private readonly placements: ExpiringLru<TenantPlacement>;
-  /** Versión mínima aceptable por tenant, aprendida de invalidaciones y cambios. */
+  /** Minimum acceptable version per tenant, learned from invalidations and changes. */
   private readonly minVersions: LruMap<string, number>;
 
   constructor(
@@ -37,14 +37,14 @@ export class PlacementCache {
     this.minVersions = new LruMap(settings.maxPlacements);
   }
 
-  /** Placement vigente en proceso, o `undefined`. */
+  /** Current in-process placement, or `undefined`. */
   local(tenantId: string): TenantPlacement | undefined {
     return this.placements.get(tenantId);
   }
 
   /**
-   * Guarda un placement en proceso hasta `min(ahora + localTtlMs, sharedExpiresAt)` y
-   * descarta la versión mínima aprendida si el placement ya la cumple.
+   * Stores a placement in process until `min(now + localTtlMs, sharedExpiresAt)` and
+   * discards the learned minimum version if the placement already meets it.
    */
   remember(
     tenantId: string,
@@ -61,19 +61,19 @@ export class PlacementCache {
     );
   }
 
-  /** Descarta el placement en proceso. */
+  /** Discards the in-process placement. */
   drop(tenantId: string): void {
     this.placements.delete(tenantId);
   }
 
-  /** Instante hasta el cual vale lo que se escribe ahora en el nivel compartido; infinito si no hay caché compartido. */
+  /** Instant until which what is written now to the shared level is valid; infinity if there is no shared cache. */
   sharedExpiry(): number {
     return this.sharedCache !== undefined
       ? this.now() + this.settings.sharedTtlMs
       : Number.POSITIVE_INFINITY;
   }
 
-  /** Lee y valida la clave del tenant en el caché compartido; `undefined` si no hay caché, falla o es inválida. */
+  /** Reads and validates the tenant key in the shared cache; `undefined` if there is no cache, it fails or it is invalid. */
   async readShared(tenantId: string): Promise<SharedRecord | undefined> {
     if (this.sharedCache === undefined) {
       return undefined;
@@ -89,9 +89,9 @@ export class PlacementCache {
   }
 
   /**
-   * Escribe un placement leído del directorio con `setIfNewer`. No escribe si no hay
-   * caché compartido ni si la carga empezó hace `tombstoneTtlMs` o más (`loadStartedAt`):
-   * una lápida escrita después de que empezó la carga ya podría haber expirado.
+   * Writes a placement read from the directory with `setIfNewer`. Does not write if there is no
+   * shared cache or if the load started `tombstoneTtlMs` or more ago (`loadStartedAt`):
+   * a tombstone written after the load started could already have expired.
    */
   async writeShared(
     placement: TenantPlacement,
@@ -116,7 +116,7 @@ export class PlacementCache {
     }
   }
 
-  /** Escribe una lápida con la versión de caché dada y TTL `tombstoneTtlMs`. */
+  /** Writes a tombstone with the given cache version and TTL `tombstoneTtlMs`. */
   async writeTombstone(tenantId: string, cacheVersion: number): Promise<void> {
     if (this.sharedCache === undefined) {
       return;
@@ -136,13 +136,13 @@ export class PlacementCache {
     }
   }
 
-  /** Sube la versión mínima aceptable del tenant (nunca la baja). */
+  /** Raises the tenant's minimum acceptable version (never lowers it). */
   raiseMinVersion(tenantId: string, version: number): void {
     const current = this.minVersions.peek(tenantId) ?? 0;
     this.minVersions.set(tenantId, Math.max(current, version));
   }
 
-  /** `true` si un cambio o invalidación anunció una versión mayor que `version`. */
+  /** `true` if a change or invalidation announced a version higher than `version`. */
   isOutdated(tenantId: string, version: number): boolean {
     return version < (this.minVersions.peek(tenantId) ?? 0);
   }

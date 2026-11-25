@@ -5,22 +5,22 @@ import type { SagaScopes } from '../store/saga-scopes.js';
 import type { SagaStore } from '../store/saga-store.js';
 
 /**
- * Adaptadores de `SagaModule`. Se pasan como tipo, no como instancia, y se fijan
- * al componer el módulo: van igual en `forRoot` y en `forRootAsync`.
+ * Adapters of `SagaModule`. They are passed as a type, not as an instance, and are fixed
+ * when composing the module: they are the same in `forRoot` and in `forRootAsync`.
  */
 export interface SagaModuleExtras {
   /**
-   * Obligatorio: almacén de las instancias, por ejemplo `TypeOrmSagaStore`. Va
-   * opcional en el tipo para que `SagaModule` lance un error claro si falta.
+   * Required: store of the instances, for example `TypeOrmSagaStore`. It is
+   * optional in the type so that `SagaModule` throws a clear error if it is missing.
    */
   readonly store?: Type<SagaStore> | Abstract<SagaStore>;
   /**
-   * Cómo se llama a las operaciones. Por defecto, `InternalClientInvoker` sobre
-   * el `InternalClient` de `@platform/internal-api`, que debe proveer `InternalApiModule`.
+   * How operations are called. By default, `InternalClientInvoker` on
+   * the `InternalClient` of `@platform/internal-api`, which `InternalApiModule` must provide.
    */
   readonly invoker?: Type<OperationInvoker> | Abstract<OperationInvoker>;
-  /** Por defecto, `AmbientSagaScopes`: una sola base. Con shards, `ShardedSagaScopes`. */
+  /** By default, `AmbientSagaScopes`: a single database. With shards, `ShardedSagaScopes`. */
   readonly scopes?: Type<SagaScopes> | Abstract<SagaScopes>;
-  /** Fuente de aleatoriedad para los tokens de lease y la espera de los reintentos. Por defecto, `SystemRandomSource`. */
+  /** Source of randomness for the lease tokens and the retry wait. By default, `SystemRandomSource`. */
   readonly random?: Type<RandomSource> | Abstract<RandomSource>;
 }

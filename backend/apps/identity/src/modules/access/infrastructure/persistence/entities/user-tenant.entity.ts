@@ -1,7 +1,7 @@
 import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-/** `user_tenants`: proyección en el shard del usuario de sus membresías. */
+/** `user_tenants`: projection of the user's memberships in their shard. */
 @Entity({ name: 'user_tenants' })
 export class UserTenantEntity {
   @PrimaryColumn({ type: 'uuid', name: 'user_id' })

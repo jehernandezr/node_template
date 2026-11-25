@@ -1,7 +1,7 @@
 import type { Clock } from '@platform/kernel';
 import { PresenceTracker } from './presence-tracker.js';
 
-/** Presencia dentro del proceso, para una sola instancia sin Valkey. */
+/** In-process presence, for a single instance without Valkey. */
 export class InMemoryPresenceTracker extends PresenceTracker {
   private readonly expiries = new Map<string, Map<string, number>>();
 

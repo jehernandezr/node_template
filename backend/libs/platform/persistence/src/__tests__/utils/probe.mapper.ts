@@ -2,7 +2,7 @@ import type { EntityMapper } from '../../model/entity-mapper.js';
 import { ProbeEntity } from './probe.entity.js';
 import { Probe } from './probe.js';
 
-/** Mapper de ejemplo: una `Probe` sin versión (0) se inserta; con versión, se actualiza. */
+/** Sample mapper: a `Probe` without a version (0) is inserted; with a version, it is updated. */
 export class ProbeMapper implements EntityMapper<Probe, ProbeEntity> {
   toDomain(entity: ProbeEntity): Probe {
     return new Probe(

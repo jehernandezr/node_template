@@ -3,17 +3,17 @@ import type { SignableRequest } from '../../auth/signable-request.js';
 import type { InternalRequestSigner } from '../../signing/internal-request-signer.js';
 import { InternalHeader } from '../../transport/internal-header.enum.js';
 
-/** Firmador a probar y el reloj que controla sus instantes. */
+/** Signer under test and the clock that controls its instants. */
 export interface SignerContractSubject {
   readonly signer: InternalRequestSigner;
   readonly clock: FixedClock;
 }
 
 /**
- * Fija lo que cualquier `InternalRequestSigner` debe cumplir, sea HMAC o SigV4:
- * cabeceras en minúscula, firma estable para una petición, dependencia del
- * cuerpo, de la identidad, de la operación y del instante, y ninguna mutación
- * de la petición.
+ * Pins what any `InternalRequestSigner` must satisfy, whether HMAC or SigV4:
+ * lowercase headers, a stable signature for a request, dependence on the
+ * body, the identity, the operation and the instant, and no mutation
+ * of the request.
  */
 export function runInternalRequestSignerContract(
   create: () => Promise<SignerContractSubject>,

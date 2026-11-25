@@ -15,7 +15,7 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SagaDirectory } from '../domain/saga-directory.js';
 
-/** Una saga que arranca identity: dónde vive, quién la pide y su id, que el cliente usa para consultarla. */
+/** A saga that identity starts: where it lives, who requests it and its id, which the client uses to query it. */
 export interface IdentitySagaStart<TState> {
   readonly definition: SagaDefinitionClass<TState>;
   readonly saga: IdentitySaga;
@@ -23,18 +23,18 @@ export interface IdentitySagaStart<TState> {
   readonly tenantId: string;
   readonly requestedBy: string;
   readonly state: TState;
-  /** Plazo desde el arranque: pasado antes del pivote, la saga compensa. */
+  /** Deadline from start: if passed before the pivot, the saga compensates. */
   readonly deadlineMs?: number;
 }
 
 /**
- * Arranca las sagas de identity en el shard del tenant que nombran y las anota en el directorio del catálogo,
- * así quien las pidió las consulta por su id. La saga corre hasta terminar o pausarse; si se pausa, la retoma
- * `SagaRecoveryJob`.
+ * Starts identity's sagas in the shard of the tenant they name and registers them in the catalog directory,
+ * so whoever requested them queries them by their id. The saga runs until it finishes or pauses; if it pauses,
+ * `SagaRecoveryJob` resumes it.
  */
 @Injectable()
 export class IdentitySagas {
-  /** El contrato de identity no puede importar la plataforma de sagas: repite sus estados. */
+  /** The identity contract cannot import the saga platform: it repeats its states. */
   private static readonly STATUS: Readonly<
     Record<SagaStatus, IdentitySagaStatus>
   > = {
@@ -52,7 +52,7 @@ export class IdentitySagas {
     SagaStatus.CompensationFailed,
   ]);
 
-  /** Terminaron bien o se deshicieron por completo: nada queda a medias. */
+  /** They finished successfully or were fully undone: nothing is left half done. */
   private static readonly SETTLED: ReadonlySet<SagaStatus> = new Set([
     SagaStatus.Completed,
     SagaStatus.Compensated,
@@ -66,8 +66,8 @@ export class IdentitySagas {
   ) {}
 
   /**
-   * Se anota antes de arrancarla: si el proceso cae entre las dos escrituras, quien la pidió nunca recibió su
-   * id, y la entrada sin instancia responde lo mismo que una saga que no existe.
+   * It is registered before starting it: if the process crashes between the two writes, the requester never received its
+   * id, and the entry without an instance responds the same as a saga that does not exist.
    */
   async start<TState>(start: IdentitySagaStart<TState>): Promise<void> {
     await this.directory.record({
@@ -89,8 +89,8 @@ export class IdentitySagas {
   }
 
   /**
-   * Si la saga todavía puede cambiar algo: corre, espera un reintento, compensa o pide intervención. Una saga que
-   * nunca llegó a arrancar no está en curso.
+   * Whether the saga can still change something: it runs, waits for a retry, compensates or asks for intervention. A saga that
+   * never got to start is not in progress.
    */
   async isUnsettled(sagaId: string): Promise<boolean> {
     const entry = await this.directory.find(sagaId);
@@ -103,7 +103,7 @@ export class IdentitySagas {
     return instance !== null && !IdentitySagas.SETTLED.has(instance.status);
   }
 
-  /** @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` si la saga no existe o la pidió otra persona. */
+  /** @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the saga does not exist or another person requested it. */
   async summary(sagaId: string, userId: string): Promise<SagaSummary> {
     const entry = await this.directory.find(sagaId);
     if (entry === undefined || entry.requestedBy !== userId) {

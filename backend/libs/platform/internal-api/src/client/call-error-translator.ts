@@ -8,17 +8,17 @@ import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
 import type { CallErrorContext } from './call-error-context.js';
 import { RetryableOutcomeError } from './retryable-outcome.error.js';
 
-/** Convierte lo que lanza `ResilienceRegistry.execute` en el `CallOutcome` de la llamada. */
+/** Converts what `ResilienceRegistry.execute` throws into the `CallOutcome` of the call. */
 export class CallErrorTranslator {
   constructor(private readonly outcomes: CallOutcomeFactory) {}
 
   /**
-   * En este orden:
-   * - `RetryableOutcomeError`: su `outcome`.
-   * - `context.signal` abortada: `uncertain` `cancelled` si `started`; si no, `transient-failure` `cancelled`.
-   * - `ResilienceTimeoutError` de alcance `Attempt`: `uncertain` `timeout`.
-   * - `ResilienceTimeoutError` de alcance `Total`: `uncertain` `timeout` si `started`; si no, `transient-failure` `deadline-exceeded`.
-   * - Cualquier otro: `outcomes.fromError(error)`.
+   * In this order:
+   * - `RetryableOutcomeError`: its `outcome`.
+   * - `context.signal` aborted: `uncertain` `cancelled` if `started`; otherwise, `transient-failure` `cancelled`.
+   * - `ResilienceTimeoutError` with `Attempt` scope: `uncertain` `timeout`.
+   * - `ResilienceTimeoutError` with `Total` scope: `uncertain` `timeout` if `started`; otherwise, `transient-failure` `deadline-exceeded`.
+   * - Anything else: `outcomes.fromError(error)`.
    */
   translate(error: unknown, context: CallErrorContext): Outcome<unknown> {
     if (error instanceof RetryableOutcomeError) {

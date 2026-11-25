@@ -1,10 +1,10 @@
 import type { FailureKind } from '@platform/kernel';
 
-/** Opciones de un {@link PersistenceError}. */
+/** Options of a {@link PersistenceError}. */
 export interface PersistenceErrorOptions {
-  /** Datos de diagnóstico. Nunca valores de filas ni parámetros de la sentencia. */
+  /** Diagnostic data. Never row values or statement parameters. */
   readonly details?: Readonly<Record<string, unknown>>;
   readonly cause?: unknown;
-  /** Clase de la falla. Solo `QueryFailed` la toma de aquí; el resto la fija por código. */
+  /** Failure class. Only `QueryFailed` takes it from here; the rest set it by code. */
   readonly failureKind?: FailureKind;
 }

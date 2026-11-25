@@ -7,7 +7,7 @@ import {
 } from '@platform/auth/test-utils';
 import { StaticJwksKeySource } from '@platform/auth';
 
-/** Dobles globales del estado de auth, con las claves de firma de la prueba. */
+/** Global auth state doubles, with the test signing keys. */
 @Global()
 @Module({})
 export class AuthDoublesModule {

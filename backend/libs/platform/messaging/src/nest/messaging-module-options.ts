@@ -11,52 +11,52 @@ import type { RelayScopes } from '../relay/relay-scopes.js';
 import type { Topology } from '../topology/topology.js';
 import type { MessagingRetention } from './messaging-retention.js';
 
-/** Ajustes del relay del outbox. */
+/** Outbox relay settings. */
 export interface MessagingRelayTuning {
-  /** Reintentos y espera entre ellos. Por defecto 10 intentos, de 1 s a 5 min, jitter completo. */
+  /** Retries and the wait between them. Defaults to 10 attempts, from 1 s to 5 min, full jitter. */
   readonly retryPolicy?: RetryPolicy;
-  /** Registros por pasada. Por defecto 100. */
+  /** Records per pass. Defaults to 100. */
   readonly batchSize?: number;
-  /** Duración del lease en milisegundos. Por defecto 30 000. */
+  /** Lease duration in milliseconds. Defaults to 30 000. */
   readonly leaseMs?: number;
 }
 
 /**
- * Opciones de `MessagingModule` que pueden salir de la configuración, así que
- * `forRootAsync` las arma con una fábrica.
+ * `MessagingModule` options that can come from configuration, so
+ * `forRootAsync` builds them with a factory.
  */
 export interface MessagingModuleOptions {
-  /** Atributo `source` de los sobres que emite el servicio. */
+  /** `source` attribute of the envelopes the service emits. */
   readonly source: string;
-  /** Nombre del consumidor, normalmente la cola. La llave de idempotencia es `(consumer, id)`. */
+  /** Consumer name, usually the queue. The idempotency key is `(consumer, id)`. */
   readonly consumer: string;
-  /** Topología del servicio, de `topologyFromContracts`. */
+  /** Topology of the service, from `topologyFromContracts`. */
   readonly topology: Topology;
-  /** Tenant que sirve este consumidor (cola de un solo tenant). */
+  /** Tenant this consumer serves (single-tenant queue). */
   readonly expectedTenantId?: string;
   readonly retention?: MessagingRetention;
   readonly relayTuning?: MessagingRelayTuning;
 }
 
 /**
- * Adaptadores de `MessagingModule`. Se pasan como tipo, no como instancia, y se
- * fijan al componer el módulo: van igual en `forRoot` y en `forRootAsync`.
+ * `MessagingModule` adapters. They are passed as a type, not as an instance, and are
+ * fixed when composing the module: they are the same in `forRoot` and in `forRootAsync`.
  */
 export interface MessagingModuleExtras {
-  /** `true`: registra `OutboxRelayJob` y los jobs de retención; exige `publisher`. Por defecto `false`. */
+  /** `true`: registers `OutboxRelayJob` and the retention jobs; requires `publisher`. Defaults to `false`. */
   readonly relay?: boolean;
-  /** Obligatorio: almacén del outbox, por ejemplo `TypeOrmOutboxStore`. */
+  /** Required: outbox store, for example `TypeOrmOutboxStore`. */
   readonly outboxStore?: Type<OutboxStore & OutboxWriter>;
-  /** Obligatorio: almacén de mensajes procesados, por ejemplo `TypeOrmProcessedMessageStore`. */
+  /** Required: processed messages store, for example `TypeOrmProcessedMessageStore`. */
   readonly processedStore?: Type<ProcessedMessageStore>;
-  /** Obligatorio con `relay: true`: publicador del relay, por ejemplo `SnsSqsEnvelopePublisher`. */
+  /** Required with `relay: true`: relay publisher, for example `SnsSqsEnvelopePublisher`. */
   readonly publisher?: Type<EnvelopePublisher> | Abstract<EnvelopePublisher>;
-  /** Por defecto, `OutboxMessageBus`. Un bus propio publica directo, sin outbox. */
+  /** Defaults to `OutboxMessageBus`. A custom bus publishes directly, without an outbox. */
   readonly bus?: Type<MessageBus> | Abstract<MessageBus>;
-  /** Por defecto `SingleRelayScope`: una sola base. Con shards, `ShardedRelayScopes`. */
+  /** Defaults to `SingleRelayScope`: a single database. With shards, `ShardedRelayScopes`. */
   readonly relayScopes?: Type<RelayScopes> | Abstract<RelayScopes>;
-  /** Por defecto ninguno: sin `expectedTenantId`, el dispatcher rechaza todo sobre con tenant. */
+  /** None by default: without `expectedTenantId`, the dispatcher rejects every envelope with a tenant. */
   readonly tenantVerifier?: Type<TenantVerifier> | Abstract<TenantVerifier>;
-  /** Por defecto ninguno: el claim y el manejador corren en el contexto de quien entrega el mensaje. */
+  /** None by default: the claim and the handler run in the context of whoever delivers the message. */
   readonly deliveryContext?: Type<DeliveryContext> | Abstract<DeliveryContext>;
 }

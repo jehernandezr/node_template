@@ -2,14 +2,14 @@ import type { Clock, IdGenerator } from '@platform/kernel';
 import type { CreateEnvelopeInput } from './create-envelope-input.js';
 import type { MessageEnvelope } from './message-envelope.js';
 
-/** Arma sobres CloudEvents 1.0 con el reloj y el generador de ids inyectados. */
+/** Builds CloudEvents 1.0 envelopes with the injected clock and id generator. */
 export class EnvelopeFactory {
   constructor(
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
   ) {}
 
-  /** Los atributos opcionales sin valor se omiten. */
+  /** Optional attributes without a value are omitted. */
   create<T>(input: CreateEnvelopeInput<T>): MessageEnvelope<T> {
     return {
       specversion: '1.0',

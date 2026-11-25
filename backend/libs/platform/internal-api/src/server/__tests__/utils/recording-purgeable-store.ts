@@ -1,6 +1,6 @@
 import { PurgeableStore } from '@platform/kernel';
 
-/** Almacén purgable que guarda los cortes recibidos y devuelve un conteo programable. */
+/** Purgeable store that records the cutoffs received and returns a programmable count. */
 export class RecordingPurgeableStore extends PurgeableStore {
   readonly purgedBefore: Date[] = [];
   purged = 0;

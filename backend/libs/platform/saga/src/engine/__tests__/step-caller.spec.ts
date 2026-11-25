@@ -14,10 +14,10 @@ import { ThreeStepSaga } from '../../__tests__/utils/sample-sagas.js';
 import { SagaStatus } from '../../model/saga-status.enum.js';
 import { StepStatus } from '../../model/step-status.enum.js';
 
-/** Más allá del lease por defecto de 30 s: el proceso caído ya no lo renueva. */
+/** Beyond the default 30 s lease: the crashed process no longer renews it. */
 const LEASE_EXPIRED_MS = 30_001;
 
-/** Almacén que pierde el lease en la llamada de renovación dada. */
+/** Store that loses the lease on the given renewal call. */
 class FlakyRenewalStore extends InMemorySagaStore {
   private calls = 0;
 
@@ -38,7 +38,7 @@ class FlakyRenewalStore extends InMemorySagaStore {
   }
 }
 
-/** Almacén que registra la fecha hasta la que se renueva cada lease. */
+/** Store that records the date until which each lease is renewed. */
 class RenewalRecordingStore extends InMemorySagaStore {
   readonly renewals: Date[] = [];
 
@@ -52,7 +52,7 @@ class RenewalRecordingStore extends InMemorySagaStore {
   }
 }
 
-/** Invocador que registra el plazo y el contexto de cada llamada. */
+/** Invoker that records the deadline and context of each call. */
 class RecordingInvoker extends FakeParticipant {
   readonly deadlines: (Deadline | undefined)[] = [];
 
@@ -67,7 +67,7 @@ class RecordingInvoker extends FakeParticipant {
   }
 }
 
-/** Invocador que no responde hasta que se aborta su señal y guarda esa señal. */
+/** Invoker that does not respond until its signal is aborted and stores that signal. */
 class HangingInvoker extends OperationInvoker {
   readonly signals: AbortSignal[] = [];
 
@@ -84,7 +84,7 @@ class HangingInvoker extends OperationInvoker {
   }
 }
 
-/** Invocador que devuelve algo que no es un resultado de llamada. */
+/** Invoker that returns something that is not a call result. */
 class BrokenInvoker extends OperationInvoker {
   invoke(): Promise<CallOutcome<unknown>> {
     return Promise.resolve({} as CallOutcome<unknown>);

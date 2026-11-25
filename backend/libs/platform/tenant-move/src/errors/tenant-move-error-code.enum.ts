@@ -1,23 +1,23 @@
-/** Códigos de error de `@platform/tenant-move`. */
+/** Error codes of `@platform/tenant-move`. */
 export enum TenantMoveErrorCode {
-  /** El grupo de destino o de alta no está configurado, o su shard no está en el directorio. */
+  /** The target or sign-up group is not configured, or its shard is not in the directory. */
   UnknownTarget = 'PLATFORM.TENANT_MOVE.UNKNOWN_TARGET',
-  /** El tenant reparte sus datos en más de un shard, o ya vive en el destino. */
+  /** The tenant spreads its data across more than one shard, or already lives on the target. */
   NotMovable = 'PLATFORM.TENANT_MOVE.NOT_MOVABLE',
-  /** La ronda no terminó en el plazo de la llamada; la saga la repite. */
+  /** The round did not finish within the call deadline; the saga repeats it. */
   RoundPending = 'PLATFORM.TENANT_MOVE.ROUND_PENDING',
-  /** Con el tenant congelado, el destino no quedó igual al origen. */
+  /** With the tenant frozen, the target did not end up equal to the source. */
   VerificationFailed = 'PLATFORM.TENANT_MOVE.VERIFICATION_FAILED',
-  /** Con la barrera levantada, el tenant todavía tiene trabajo abierto en el origen (una saga a medias). */
+  /** With the fence raised, the tenant still has open work on the source (a half-finished saga). */
   TenantBusy = 'PLATFORM.TENANT_MOVE.TENANT_BUSY',
-  /** El directorio del servicio todavía lleva al tenant al shard que la limpieza iba a borrar. */
+  /** The service directory still routes the tenant to the shard the cleanup was going to delete. */
   NotSwitched = 'PLATFORM.TENANT_MOVE.NOT_SWITCHED',
-  /** Otro traslado del tenant está entre `finalize` y `switch`: limpiar ahora podría borrar su copia. */
+  /** Another move of the tenant is between `finalize` and `switch`: cleaning up now could delete its copy. */
   MoveInProgress = 'PLATFORM.TENANT_MOVE.MOVE_IN_PROGRESS',
-  /** El tenant ya tiene datos en el servicio: retirarlo del directorio los dejaría huérfanos. */
+  /** The tenant already has data in the service: removing it from the directory would orphan the data. */
   TenantHasData = 'PLATFORM.TENANT_MOVE.TENANT_HAS_DATA',
-  /** El grupo del tenant choca en el directorio del servicio con un tenant dedicado, o es dedicado y el shard está ocupado. */
+  /** The tenant group collides in the service directory with a dedicated tenant, or it is dedicated and the shard is occupied. */
   ShardTaken = 'PLATFORM.TENANT_MOVE.SHARD_TAKEN',
-  /** El manifiesto nombra una tabla o columna inválida, o un padre que no lo precede. */
+  /** The manifest names an invalid table or column, or a parent that does not precede it. */
   InvalidManifest = 'PLATFORM.TENANT_MOVE.INVALID_MANIFEST',
 }

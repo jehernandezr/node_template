@@ -7,10 +7,10 @@ import { SessionToken } from '../domain/session-token.js';
 import { Session, type SessionState } from '../domain/session.js';
 
 /**
- * Arma los tokens de una sesión: el session token opaco de su generación y el access token. El secreto de
- * cada generación es el HMAC, con la llave del servicio, de la sesión, su sal y la generación: así se puede
- * verificar cualquier generación anterior y distinguir un token viejo verdadero de uno inventado, y una
- * copia de la base sin la llave no sirve para armar tokens.
+ * Builds a session's tokens: the opaque session token of its generation and the access token. The secret of
+ * each generation is the HMAC, with the service key, of the session, its salt and the generation: this way any
+ * previous generation can be verified and a real old token can be told apart from a forged one, and a
+ * copy of the database without the key cannot be used to build tokens.
  */
 @Injectable()
 export class SessionTokenIssuer {
@@ -28,7 +28,7 @@ export class SessionTokenIssuer {
       .toString('base64url');
   }
 
-  /** Session token de la generación vigente de la sesión. */
+  /** Session token of the session's current generation. */
   sessionToken(session: Session): string {
     const state = session.snapshot();
     return new SessionToken(
@@ -43,7 +43,7 @@ export class SessionTokenIssuer {
     ).format();
   }
 
-  /** Access token de la sesión con su tenant activo, sus métodos y su tope absoluto. */
+  /** The session's access token with its active tenant, its methods and its absolute cap. */
   async accessToken(
     session: Session,
   ): Promise<Pick<SessionTokens, 'accessToken'> & { accessExpiresAt: Date }> {
@@ -60,7 +60,7 @@ export class SessionTokenIssuer {
     });
   }
 
-  /** Comprueba en tiempo constante el secreto presentado para una generación de la sesión. */
+  /** Checks in constant time the presented secret for a generation of the session. */
   matches(session: Session, generation: number, secret: Buffer): boolean {
     return this.hasher.matches(
       this.material(session.snapshot(), generation),

@@ -6,15 +6,15 @@ export enum JobScheduleKind {
 export interface IntervalJobSchedule {
   readonly kind: JobScheduleKind.Interval;
   readonly everyMs: number;
-  /** Fracción de `everyMs` que se suma o resta al azar entre corridas. Por defecto 0. */
+  /** Fraction of `everyMs` randomly added or subtracted between runs. Defaults to 0. */
   readonly jitterRatio?: number;
 }
 
 export interface CronJobSchedule {
-  /** Expresión en UTC de 5 o 6 campos. */
+  /** UTC expression with 5 or 6 fields. */
   readonly kind: JobScheduleKind.Cron;
   readonly expression: string;
 }
 
-/** Cuándo corre un job: cada cierto tiempo o según una expresión cron. */
+/** When a job runs: at a fixed interval or according to a cron expression. */
 export type JobSchedule = IntervalJobSchedule | CronJobSchedule;

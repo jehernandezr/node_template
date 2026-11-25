@@ -3,7 +3,7 @@ import { BillingPeriod } from '../../domain/billing-period.js';
 import { Subscription } from '../../domain/subscription.js';
 import { SubscriptionEntity } from './entities/subscription.entity.js';
 
-/** Fila de `subscriptions` y agregado `Subscription`, en los dos sentidos. Utilidad pura. */
+/** `subscriptions` row and the `Subscription` aggregate, in both directions. Pure utility. */
 export class SubscriptionMapper {
   static toDomain(row: SubscriptionEntity): Subscription {
     return Subscription.rehydrate({

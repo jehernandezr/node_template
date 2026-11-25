@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-/** Cuenta cuántas veces el consumidor procesó cada mensaje. Con la deduplicación, nunca pasa de uno. */
+/** Counts how many times the consumer processed each message. With deduplication, it never exceeds one. */
 @Injectable()
 export class SmokeOrderLedger {
   private readonly counts = new Map<string, number>();

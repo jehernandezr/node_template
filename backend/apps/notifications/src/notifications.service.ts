@@ -18,7 +18,7 @@ import { notificationsCatalogMigrations } from './database/catalog-migrations.js
 import { notificationsShardMigrations } from './database/shard-migrations.js';
 import { NOTIFICATIONS_ERROR_CATALOGS } from './shared/constants/notifications-error-catalogs.constants.js';
 
-/** Definición de notifications que consumen `ServiceBootstrap`, `ServiceMigrator` y las pruebas. */
+/** notifications definition consumed by `ServiceBootstrap`, `ServiceMigrator` and the tests. */
 export const notificationsService: ServiceDefinition<NotificationsConfig> = {
   name: notificationsContract.service,
   configSchema: notificationsConfigSchema,

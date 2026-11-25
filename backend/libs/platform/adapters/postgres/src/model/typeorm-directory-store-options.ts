@@ -1,8 +1,8 @@
-/** Opciones de `TypeOrmDirectoryStore`. */
+/** Options of `TypeOrmDirectoryStore`. */
 export interface TypeOrmDirectoryStoreOptions {
   /**
-   * Lee del primario del catálogo en lugar de la réplica. Útil en la región principal y en las sagas de traslado,
-   * que no toleran el retraso de réplica. Por defecto `false`.
+   * Whether to read from the catalog primary instead of the replica. Useful in the main region and in the move sagas,
+   * which do not tolerate replica lag. Defaults to `false`.
    */
   readonly readPrimary?: boolean;
 }

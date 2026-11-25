@@ -2,18 +2,18 @@ import { PolicyName, type ResiliencePolicyConfig } from '@platform/resilience';
 import { OperationMetadata } from '../contract/operation-metadata.js';
 
 /**
- * Política de resiliencia de las llamadas salientes entre servicios. El
- * `InternalApiModule` la registra con `ResilienceModule.forFeature`. El breaker
- * es por servicio destino: el `InternalClient` usa como `dependencyKey` el
- * primer segmento del id de la operación.
+ * Resilience policy for outgoing service-to-service calls. The
+ * `InternalApiModule` registers it with `ResilienceModule.forFeature`. The breaker
+ * is per target service: the `InternalClient` uses the first segment of the
+ * operation id as `dependencyKey`.
  */
 export class ExternalApiPolicy {
   static readonly NAME = PolicyName.of('external-api');
 
   /**
-   * Tiempo del intento y reintentos de una operación que no declara los suyos.
-   * Salen de `OperationMetadata` para que el presupuesto por defecto de la
-   * llamada (`callBudgetMs`) y lo que de verdad hace la política no diverjan.
+   * Attempt time and retries of an operation that does not declare its own.
+   * They come from `OperationMetadata` so the default call budget
+   * (`callBudgetMs`) and what the policy actually does do not diverge.
    */
   static readonly CONFIG: ResiliencePolicyConfig = {
     timeoutMs: OperationMetadata.DEFAULT_TIMEOUT_MS,

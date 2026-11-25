@@ -16,7 +16,7 @@ import type { SagaSettings } from './saga-settings.js';
 import type { StepCaller } from './step-caller.js';
 import { type StepAttempt, StepCallResult } from './step-attempt.js';
 
-/** Colaboradores de `CompensationRunner`. */
+/** Collaborators of `CompensationRunner`. */
 export interface CompensationRunnerDeps {
   readonly caller: StepCaller;
   readonly events: SagaEventPublisher;
@@ -26,19 +26,19 @@ export interface CompensationRunnerDeps {
 }
 
 /**
- * Ejecuta un intento de compensación del paso actual con la entrada y la
- * salida guardadas en la bitácora (nunca con memoria del proceso). Reglas:
- * - `success`: pasa al siguiente paso por deshacer (`completeCompensation`); sin más, `Compensated`.
+ * Runs a compensation attempt of the current step with the input and the
+ * output stored in the log (never with process memory). Rules:
+ * - `success`: moves to the next step to undo (`completeCompensation`); with none left, `Compensated`.
  * - `business-error`: `CompensationFailed`.
- * - `transient-failure` y `uncertain`: suspende y reintenta con la misma llave.
- * - `protocol-violation`: `CompensationFailed` y emite `SagaEventKind.ProtocolViolation`.
+ * - `transient-failure` and `uncertain`: suspends and retries with the same key.
+ * - `protocol-violation`: `CompensationFailed` and emits `SagaEventKind.ProtocolViolation`.
  */
 export class CompensationRunner {
   constructor(private readonly deps: CompensationRunnerDeps) {}
 
   /**
-   * Un intento de compensar el paso `instance.currentStep`.
-   * @throws SagaError `InvalidState` si el paso no tiene operación de compensación o no tiene entrada hacia delante.
+   * Makes one attempt to compensate step `instance.currentStep`.
+   * @throws SagaError `InvalidState` if the step has no compensation operation or no forward input.
    */
   async run(
     run: SagaRun,
@@ -74,7 +74,7 @@ export class CompensationRunner {
     if (call.result === StepCallResult.Halted) {
       return call.instance;
     }
-    // Como en el paso hacia delante, el reloj se lee después de la llamada.
+    // As in the forward step, the clock is read after the call.
     const now = this.deps.clock.now();
     return this.settle(run, compiled, steps, call.attempt, now);
   }

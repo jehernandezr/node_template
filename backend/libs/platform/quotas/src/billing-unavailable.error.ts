@@ -2,8 +2,8 @@ import { PlatformErrorCode } from '@contracts/platform';
 import { FailureKind, PlatformError } from '@platform/kernel';
 
 /**
- * Billing no respondió la consulta de una cuota. Responde 503 con el código de dependencia no disponible:
- * la petición puede repetirse cuando billing vuelva.
+ * Billing did not answer a quota query. Responds 503 with the dependency unavailable code:
+ * the request can be repeated when billing is back.
  */
 export class BillingUnavailableError extends PlatformError {
   readonly code = PlatformErrorCode.ResilienceCircuitOpen;

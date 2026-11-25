@@ -6,31 +6,31 @@ import type {
 } from './outbox.js';
 
 /**
- * Puerto de persistencia del outbox.
+ * Outbox persistence port.
  *
- * Fencing: toda marca es condicional a que el registro conserve el lease dado
- * (`leaseOwner = owner AND leaseToken = token`). Un relay al que le quitaron el
- * lease no puede pisar el estado del nuevo dueño: la marca devuelve `false`.
+ * Fencing: every mark is conditional on the record keeping the given lease
+ * (`leaseOwner = owner AND leaseToken = token`). A relay that lost the
+ * lease cannot overwrite the state of the new owner: the mark returns `false`.
  */
 export abstract class OutboxStore {
   /**
-   * Toma de forma atómica hasta `limit` registros vencidos, del `createdAt` más
-   * viejo al más nuevo, y los marca con `lease` hasta `now + leaseMs`. Un
-   * registro vence cuando está Pending o Failed, `nextAttemptAt <= now` y no
-   * tiene un lease activo.
+   * Atomically takes up to `limit` due records, from the oldest `createdAt`
+   * to the newest, and marks them with `lease` until `now + leaseMs`. A
+   * record is due when it is Pending or Failed, `nextAttemptAt <= now` and it has
+   * no active lease.
    *
-   * FIFO por `groupId`: cuando un registro Pending o Failed de un grupo no
-   * vence (programado después, o con el lease de otro), no se devuelve ninguno
-   * posterior de ese grupo. Los Published y Dead no bloquean a su grupo.
+   * FIFO per `groupId`: when a Pending or Failed record of a group is not
+   * due (scheduled later, or leased by another), no later one of that
+   * group is returned. Published and Dead records do not block their group.
    */
   abstract claimPending(request: ClaimOutboxRequest): Promise<OutboxRecord[]>;
 
-  /** Marca un registro como publicado y limpia su lease. `false` si el lease ya no es suyo. */
+  /** Marks a record as published and clears its lease. `false` if the lease is no longer its own. */
   abstract markPublished(id: string, lease: OutboxLease): Promise<boolean>;
 
   /**
-   * Guarda la falla, suma un intento, programa el siguiente y limpia el lease.
-   * `false` si el lease ya no es suyo.
+   * Stores the failure, adds an attempt, schedules the next one and clears the lease.
+   * `false` if the lease is no longer its own.
    */
   abstract markFailed(
     id: string,
@@ -39,7 +39,7 @@ export abstract class OutboxStore {
     nextAttemptAt: Date,
   ): Promise<boolean>;
 
-  /** Guarda una falla terminal, suma un intento y limpia el lease. `false` si el lease ya no es suyo. */
+  /** Saves a terminal failure, adds an attempt and clears the lease. `false` if the lease is no longer its own. */
   abstract markDead(
     id: string,
     lease: OutboxLease,
@@ -47,16 +47,16 @@ export abstract class OutboxStore {
   ): Promise<boolean>;
 
   /**
-   * Limpia el lease sin contar un intento, así el registro vence de inmediato.
-   * Se usa con los registros de un grupo bloqueado en esta pasada. `false` si
-   * el lease ya no es suyo.
+   * Clears the lease without counting an attempt, so the record is due immediately.
+   * Used with the records of a group blocked in this pass. `false` if
+   * the lease is no longer its own.
    */
   abstract releaseLease(id: string, lease: OutboxLease): Promise<boolean>;
 
   /**
-   * Retención: borra los publicados (y, con `includeDead`, los muertos) cuyo
-   * último cambio es anterior a `before`. Nunca toca pendientes ni fallidos.
-   * Devuelve cuántos borró.
+   * Retention: deletes the published ones (and, with `includeDead`, the dead ones) whose
+   * last change is before `before`. Never touches pending or failed ones.
+   * Returns how many it deleted.
    */
   abstract purge(options: PurgeOutboxOptions): Promise<number>;
 }

@@ -1,7 +1,7 @@
 /**
- * Quién puede ver un código de error.
- * `public`: viaja al cliente en un Problem Details y tiene mensaje en el ARB del front.
- * `internal`: solo entre procesos del backend; hacia el cliente se responde `PLATFORM.INTERNAL.UNEXPECTED`.
+ * Who can see an error code.
+ * `public`: travels to the client in a Problem Details and has a message in the front ARB.
+ * `internal`: only between backend processes; the client receives `PLATFORM.INTERNAL.UNEXPECTED`.
  */
 export enum ErrorAudience {
   Public = 'public',

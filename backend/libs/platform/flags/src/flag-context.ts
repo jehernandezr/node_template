@@ -1,4 +1,4 @@
-/** A quién se le evalúa un flag: el usuario en su tenant activo, el plan del tenant y sus grupos. */
+/** Whom a flag is evaluated for: the user in their active tenant, the tenant's plan and its groups. */
 export interface FlagContext {
   readonly tenantId: string;
   readonly userId: string;

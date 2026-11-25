@@ -1,8 +1,8 @@
 import type { TenantMoveTable } from './tenant-move-table.js';
 
 /**
- * Lo que un servicio declara para trasladar un tenant: sus tablas de shard en orden de dependencia, los padres
- * antes que los hijos. La copia sigue ese orden y el borrado, el inverso.
+ * What a service declares to move a tenant: its shard tables in dependency order, parents
+ * before children. The copy follows that order and the deletion, the reverse.
  */
 export abstract class TenantMoveManifest {
   abstract tables(): readonly TenantMoveTable[];

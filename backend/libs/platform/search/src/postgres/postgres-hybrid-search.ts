@@ -9,14 +9,14 @@ import {
 } from './postgres-search-index.js';
 
 /**
- * Texto completo y vecinos semánticos (distancia coseno de pgvector) combinados por fusión de rangos
- * recíprocos: cada lista aporta `1 / (k + puesto)`. Así un documento que aparece en las dos sube, y uno
- * sin las palabras exactas pero de significado cercano también aparece.
+ * Full text and semantic neighbors (pgvector cosine distance) combined by reciprocal rank
+ * fusion: each list contributes `1 / (k + rank)`. That way a document that appears in both rises, and one
+ * without the exact words but close in meaning also appears.
  */
 export class PostgresHybridSearch extends PostgresSearchIndex {
-  /** Constante de la fusión: valores altos aplanan la diferencia entre los primeros puestos. */
+  /** Fusion constant: high values flatten the difference between the top ranks. */
   private static readonly FUSION_K = 60;
-  /** Candidatos que aporta cada lista antes de fusionar, por encima de la página pedida. */
+  /** Candidates that each list contributes before fusing, beyond the requested page. */
   private static readonly CANDIDATES_PER_LIST = 200;
 
   constructor(

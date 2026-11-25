@@ -27,7 +27,7 @@ const PendingSchema = z.object({
   expiresAt: z.coerce.date(),
 });
 
-/** `mfaToken` `mf1_<secreto>` y su autenticación pendiente en Valkey, bajo la huella del token. */
+/** `mfaToken` `mf1_<secret>` and its pending authentication in Valkey, under the token's hash. */
 @Injectable()
 export class EphemeralPendingAuthenticationStore extends PendingAuthenticationStore {
   private static readonly PREFIX = 'mf1_';

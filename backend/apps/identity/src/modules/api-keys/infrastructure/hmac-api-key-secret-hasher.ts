@@ -4,7 +4,7 @@ import { IdentitySettings } from '../../../config/identity-settings.js';
 import { constantTimeEquals } from '../../../shared/utils/constant-time.js';
 import { ApiKeySecretHasher } from '../domain/api-key-store.js';
 
-/** HMAC-SHA256 con `IDENTITY_API_KEY_PEPPER`: una copia de la base no permite probar secretos sin la llave. */
+/** HMAC-SHA256 with `IDENTITY_API_KEY_PEPPER`: a copy of the database does not allow testing secrets without the key. */
 @Injectable()
 export class HmacApiKeySecretHasher extends ApiKeySecretHasher {
   private readonly key: string;

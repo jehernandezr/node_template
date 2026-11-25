@@ -1,10 +1,10 @@
-/** Transiciones notables que publica el motor. */
+/** Notable transitions that the engine publishes. */
 export enum SagaEventKind {
   Completed = 'completed',
   Compensated = 'compensated',
   CompensationFailed = 'compensation_failed',
   RequiresIntervention = 'requires_intervention',
   Suspended = 'suspended',
-  /** Alerta: un participante rompió el protocolo; el paso se trata como incierto. */
+  /** Alert: a participant broke the protocol; the step is treated as uncertain. */
   ProtocolViolation = 'protocol_violation',
 }

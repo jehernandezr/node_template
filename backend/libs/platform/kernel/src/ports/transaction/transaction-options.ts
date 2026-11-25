@@ -1,9 +1,9 @@
 import type { IsolationLevel } from './isolation-level.js';
 
-/** Opciones de `TransactionManager.runInTransaction`. */
+/** Options of `TransactionManager.runInTransaction`. */
 export interface TransactionOptions {
   readonly isolation?: IsolationLevel;
   readonly readOnly?: boolean;
-  /** Tiempo máximo de cada sentencia de la transacción. Sin valor se usa el de la base. */
+  /** Maximum duration of each statement in the transaction. Without a value, the database default is used. */
   readonly statementTimeoutMs?: number;
 }

@@ -13,8 +13,8 @@ import {
 import { UsageFacade, type UsageLevel } from '../../usage/index.js';
 
 /**
- * Lo que el plan vigente de un tenant le permite y cuánto lleva usado en el periodo. Una métrica que el plan
- * no limita no tiene tope; una suscripción suspendida o cancelada no deja consumir nada.
+ * What a tenant's current plan allows and how much it has used in the period. A metric the plan does
+ * not limit has no cap; a suspended or canceled subscription allows no consumption.
  */
 @Injectable()
 export class EntitlementQueries {
@@ -28,7 +28,7 @@ export class EntitlementQueries {
     private readonly usage: UsageFacade,
   ) {}
 
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` si el tenant no tiene suscripción. */
+  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
   async snapshot(tenantId: string): Promise<Entitlements> {
     const entitlements = await this.subscriptions.entitlements(tenantId);
     return {
@@ -39,7 +39,7 @@ export class EntitlementQueries {
     };
   }
 
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` si el tenant no tiene suscripción. */
+  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
   async check(
     tenantId: string,
     metric: UsageMetric,
@@ -61,7 +61,7 @@ export class EntitlementQueries {
     };
   }
 
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` si el tenant no tiene suscripción. */
+  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
   async overview(tenantId: string): Promise<UsageOverview> {
     const current = await this.subscriptions.current(tenantId);
     const levels = await this.levelsOf(tenantId, current);

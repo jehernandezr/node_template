@@ -9,8 +9,8 @@ import { NotificationsIdentityMailer } from '../infrastructure/notifications-ide
 import { OutboxSecurityAlerts } from '../infrastructure/outbox-security-alerts.js';
 
 /**
- * Alertas de seguridad y correo transaccional. El correo se elige con `IDENTITY_MAILER`. Es global porque
- * todos los módulos de identity avisan y envían correo.
+ * Security alerts and transactional email. The mailer is selected with `IDENTITY_MAILER`. It is global because
+ * all identity modules raise alerts and send email.
  */
 @Global()
 @Module({

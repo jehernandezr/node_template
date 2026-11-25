@@ -8,8 +8,8 @@ import { HealthCheckName } from './health-check-name.enum.js';
 import { HealthProbeQuery } from './health-probe-query.enum.js';
 
 /**
- * Comprueba que cada shard lógico del directorio responde. Sin shards también es `Up`: no hay
- * nada que probar. Los errores se propagan para que `HealthRegistry` marque `Down`.
+ * Checks that each logical shard in the directory responds. With no shards it is also `Up`: there is
+ * nothing to test. Errors are propagated so `HealthRegistry` marks `Down`.
  */
 export class ShardsHealthCheck extends HealthCheckable {
   readonly name = HealthCheckName.Shards;

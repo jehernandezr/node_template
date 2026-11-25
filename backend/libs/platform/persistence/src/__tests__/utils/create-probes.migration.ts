@@ -5,7 +5,7 @@ import {
 } from '../../migrations/schema-helpers.js';
 import { ProbeEntity } from './probe.entity.js';
 
-/** Crea la tabla `probes` con su índice y el trigger de auditoría, como lo haría una migración generada. */
+/** Creates the `probes` table with its index and the audit trigger, as a generated migration would. */
 export class CreateProbes1794700000001 implements MigrationInterface {
   readonly name = 'CreateProbes1794700000001';
 

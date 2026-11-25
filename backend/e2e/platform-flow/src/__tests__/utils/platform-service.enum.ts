@@ -1,4 +1,4 @@
-/** Los cinco servicios que corren juntos en la prueba, por su nombre de servicio. */
+/** The five services that run together in the test, by their service name. */
 export enum PlatformService {
   Identity = 'identity',
   Tasks = 'tasks',

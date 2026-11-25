@@ -2,8 +2,8 @@ import { randomFillSync } from 'node:crypto';
 import { RandomSource } from './random-source.js';
 
 /**
- * Aleatoriedad del sistema. `next` usa `Math.random`, suficiente para jitter y
- * muestreo; `bytes` sale del generador criptográfico para identificadores.
+ * System randomness. `next` uses `Math.random`, enough for jitter and
+ * sampling; `bytes` comes from the cryptographic generator for identifiers.
  */
 export class SystemRandomSource extends RandomSource {
   next(): number {

@@ -1,18 +1,18 @@
 import type { EntityManager } from 'typeorm';
 
 /**
- * Mantenimiento de las particiones mensuales de `login_attempts` en un shard: crea las de los meses que
- * vienen y borra las que pasaron la retención. Usa las funciones de `@platform/persistence`
- * (`platform_ensure_partitions`) y el nombre `<tabla>_<AAAAMM>` que ellas le dan a cada partición.
+ * Maintenance of the monthly `login_attempts` partitions on a shard: creates those for the upcoming
+ * months and drops those past retention. Uses the `@platform/persistence` functions
+ * (`platform_ensure_partitions`) and the `<table>_<YYYYMM>` name they give each partition.
  */
 export class LoginAttemptPartitions {
   static readonly TABLE = 'login_attempts';
   static readonly RETENTION_MONTHS = 12;
-  /** Meses por delante que siempre existen: el job puede fallar unas semanas sin que falte una partición. */
+  /** Months ahead that always exist: the job can fail for a few weeks without a partition missing. */
   static readonly MONTHS_AHEAD = 3;
   private static readonly MONTHLY = /^login_attempts_(\d{4})(\d{2})$/;
 
-  /** Crea las particiones que faltan y borra las vencidas; devuelve los nombres de las borradas. */
+  /** Creates the missing partitions and drops the expired ones; returns the names of the dropped ones. */
   async maintain(manager: EntityManager, now: Date): Promise<string[]> {
     await manager.query(`SELECT platform_ensure_partitions($1, 'month', $2)`, [
       LoginAttemptPartitions.TABLE,
@@ -31,7 +31,7 @@ export class LoginAttemptPartitions {
     return expired;
   }
 
-  /** Una partición vence cuando todo su mes quedó antes del corte de retención. */
+  /** A partition expires when its whole month falls before the retention cutoff. */
   isExpired(name: string, now: Date): boolean {
     const match = LoginAttemptPartitions.MONTHLY.exec(name);
     if (match === null) {

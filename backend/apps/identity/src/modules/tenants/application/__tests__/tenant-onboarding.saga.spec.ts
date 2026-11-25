@@ -28,7 +28,7 @@ import {
 } from '../tenant-onboarding.saga.js';
 
 const LEASE_EXPIRED_MS = 30_001;
-/** Índice del paso que abre la cuenta: va después de crear el tenant y de ubicarlo en los cuatro directorios. */
+/** Index of the step that opens the account: it comes after creating the tenant and placing it in the four directories. */
 const OPEN_ACCOUNT_STEP = 5;
 const SAGA_ID = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f01';
 const STATE: TenantOnboardingState = {
@@ -48,14 +48,14 @@ const STATE: TenantOnboardingState = {
     dedicated: false,
   },
 };
-/** Los pasos que anotan el tenant en el directorio de cada servicio, en orden. */
+/** The steps that record the tenant in each service's directory, in order. */
 const PLACEMENTS = [
   TasksOperation.TenantDirectoryPlace,
   NotificationsOperation.TenantDirectoryPlace,
   ReportsOperation.TenantDirectoryPlace,
   BillingOperation.TenantDirectoryPlace,
 ];
-/** Sus reversas, en el orden en que la compensación las corre. */
+/** Their reversals, in the order in which compensation runs them. */
 const REMOVALS = [
   BillingOperation.TenantDirectoryRemove,
   ReportsOperation.TenantDirectoryRemove,

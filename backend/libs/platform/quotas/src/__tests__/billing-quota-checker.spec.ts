@@ -19,7 +19,7 @@ const BROKEN = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a03';
 const OTHER = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a04';
 const THIRD = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a05';
 
-/** Billing de mentira: un límite de 100 llamadas y el uso que la prueba fija. */
+/** Fake billing: a limit of 100 calls and the usage the test sets. */
 class QuotaLedger extends OperationHandler<typeof CheckQuotaOperation> {
   used = 0;
   answered = 0;

@@ -105,12 +105,12 @@ const invalidContracts: [string, ServiceContract, string][] = [
   [
     'a service name with uppercase letters',
     { ...base, service: 'Demo' },
-    'Servicio inválido: Demo',
+    'Invalid service: Demo',
   ],
   [
     'an enum name that is not a type name',
     { ...base, enums: { badEnum: { Locked: 'DEMO.ITEMS.LOCKED' } } },
-    'nombre de enum inválido badEnum',
+    'invalid enum name badEnum',
   ],
   [
     'a route id from another service',
@@ -127,12 +127,12 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'no pertenece al servicio',
+    'does not belong to the service',
   ],
   [
     'two routes with the same method and path',
     { ...base, routes: { get: getItem, fetch: fetchItem } },
-    'método y path repetido',
+    'duplicate method and path',
   ],
   [
     'two operation keys with the same operation id',
@@ -157,7 +157,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'id de operación repetido',
+    'duplicate operation id',
   ],
   [
     'a deprecated route whose replacement is missing',
@@ -179,7 +179,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'que no está en el contrato',
+    'which is not in the contract',
   ],
   [
     'an operation compensated by a missing operation',
@@ -196,7 +196,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'que no está en el contrato',
+    'which is not in the contract',
   ],
   [
     'a read-only operation as compensation',
@@ -221,7 +221,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'es de solo lectura',
+    'is read-only',
   ],
   [
     'a non idempotent operation as compensation',
@@ -247,17 +247,13 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'no es idempotente',
+    'is not idempotent',
   ],
-  [
-    'an event without topic',
-    { ...base, events: { created } },
-    'no tiene tópico',
-  ],
+  ['an event without topic', { ...base, events: { created } }, 'has no topic'],
   [
     'a command without queue',
     { ...base, commands: { generate } },
-    'no tiene cola',
+    'has no queue',
   ],
   [
     'an event placed in two topics',
@@ -273,12 +269,12 @@ const invalidContracts: [string, ServiceContract, string][] = [
         }),
       },
     },
-    'está en',
+    'is in',
   ],
   [
     'an error catalog without enum in enums',
     { ...base, errors: { DemoError: errorCatalog } },
-    'no tiene enum en enums',
+    'has no enum in enums',
   ],
   [
     'an error catalog that does not match its enum',
@@ -289,7 +285,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
       },
       errors: { DemoError: errorCatalog },
     },
-    'no coincide con su enum',
+    'does not match its enum',
   ],
   [
     'an error code without the service prefix',
@@ -298,7 +294,7 @@ const invalidContracts: [string, ServiceContract, string][] = [
       enums: { OtherError },
       errors: { OtherError: otherCatalog },
     },
-    'no pertenece al servicio',
+    'does not belong to the service',
   ],
 ];
 

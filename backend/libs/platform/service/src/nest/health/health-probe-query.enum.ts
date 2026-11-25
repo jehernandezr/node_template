@@ -1,4 +1,4 @@
-/** Consulta mínima que prueba que una base responde. */
+/** Minimal query that proves a database responds. */
 export enum HealthProbeQuery {
   SelectOne = 'SELECT 1',
 }

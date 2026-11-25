@@ -4,7 +4,7 @@ import { TenantWriteGate } from '../../ports/tenant-write-gate.js';
 import { TestTenants } from '../../__tests__/utils/index.js';
 import { TenantWriteWaiter } from '../tenant-write-waiter.js';
 
-/** Compuerta en memoria: el estado de cada tenant vive en un conjunto. */
+/** In-memory gate: the state of each tenant lives in a set. */
 class InMemoryWriteGate extends TenantWriteGate {
   private readonly closed = new Set<string>();
 

@@ -4,18 +4,18 @@ import { SagaDefinition, type SagaFlow } from '@platform/saga';
 import { TenantMoveErrorCode } from '@platform/tenant-move';
 import { TenantMoveParticipants } from './tenant-move-participants.js';
 
-/** Lo que la saga de traslado lleva de paso en paso: el mismo `TenantMoveRef` para cada servicio. */
+/** What the move saga carries from step to step: the same `TenantMoveRef` for each service. */
 export type MoveTenantState = TenantMoveRef;
 
 /**
- * Traslado de un tenant a otro grupo de shards, de su región o de otra. Antes del pivote cada servicio copia con
- * las escrituras abiertas hasta alcanzar al origen (`sync`) y después cierra su compuerta, levanta la barrera del
- * shard de origen, copia la última ronda y verifica (`finalize`); si algo falla, `abort` descarta la copia y vuelve
- * a abrir las escrituras en el origen. El pivote es el cambio de directorio: desde ahí cada servicio apunta al
- * destino (`switch`), empezando por identity, y ya no se deshace. El último paso anota el traslado como cambiado:
- * solo entonces corre la gracia antes de limpiar el origen, porque hasta que el último servicio apunta al destino su
- * origen sigue vivo. Una ronda pendiente de `sync` o `finalize` es avance y no gasta suspensiones; el plazo de la saga
- * (`TENANT_MOVE_DEADLINE_MS`) acota el tramo antes del pivote y, si vence, la saga compensa.
+ * Move of a tenant to another shard group, in its region or another one. Before the pivot each service copies with
+ * writes open until it catches up with the source (`sync`) and then closes its gate, raises the barrier of the
+ * source shard, copies the last round and verifies (`finalize`); if something fails, `abort` discards the copy and
+ * reopens writes on the source. The pivot is the directory switch: from there each service points to the
+ * target (`switch`), starting with identity, and it is no longer undone. The last step records the move as switched:
+ * only then does the grace period run before cleaning the source, because until the last service points to the target its
+ * source is still live. A pending round of `sync` or `finalize` is progress and does not spend suspensions; the saga's deadline
+ * (`TENANT_MOVE_DEADLINE_MS`) bounds the stretch before the pivot and, if it expires, the saga compensates.
  */
 export class MoveTenantSaga extends SagaDefinition<MoveTenantState> {
   readonly type = IdentitySaga.MoveTenant;

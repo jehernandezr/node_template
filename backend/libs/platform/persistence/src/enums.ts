@@ -1,32 +1,32 @@
 /**
- * Variables de sesión que la capa fija con `set_config(..., true)` al abrir cada
- * transacción. Los triggers de auditoría y las políticas de RLS las leen con
- * `current_setting(nombre, true)`. Valen solo dentro de la transacción.
+ * Session variables that the layer sets with `set_config(..., true)` when opening each
+ * transaction. Audit triggers and RLS policies read them with
+ * `current_setting(name, true)`. They are valid only inside the transaction.
  */
 export enum SessionSetting {
   ActorId = 'app.actor_id',
   ActorType = 'app.actor_type',
   TenantId = 'app.tenant_id',
   TraceId = 'app.trace_id',
-  /** `on` en la transacción de un mantenimiento que recorre todos los tenants de un shard. */
+  /** `on` in the transaction of a maintenance task that walks all tenants of a shard. */
   Maintenance = 'app.maintenance',
 }
 
-/** Operación registrada en `audit_log`. Coincide con `TG_OP` de Postgres. */
+/** Operation recorded in `audit_log`. Matches Postgres `TG_OP`. */
 export enum AuditOperation {
   Insert = 'INSERT',
   Update = 'UPDATE',
   Delete = 'DELETE',
 }
 
-/** Forma de particionar una tabla. */
+/** Way to partition a table. */
 export enum PartitionBy {
   Range = 'range',
   List = 'list',
   Hash = 'hash',
 }
 
-/** Intervalo de una partición por rango. */
+/** Interval of a range partition. */
 export enum PartitionInterval {
   Day = 'day',
   Month = 'month',

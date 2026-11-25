@@ -3,13 +3,13 @@ import 'package:dart_style/dart_style.dart';
 import 'model.dart';
 import 'naming.dart';
 
-/// Primera línea de todo archivo generado.
+/// First line of every generated file.
 const generatedHeader = '// GENERATED, do not edit.';
 
-/// Barril que exporta todos los servicios generados, relativo a `lib/src`.
+/// Barrel that exports all generated services, relative to `lib/src`.
 const generatedBarrel = 'generated_contracts.dart';
 
-/// Carpetas de cada servicio.
+/// Folders of each service.
 enum Folder { enums, constants, types, schemas, http, messages }
 
 String _fileName(String service, Folder folder) => switch (folder) {
@@ -21,11 +21,11 @@ String _fileName(String service, Folder folder) => switch (folder) {
   Folder.messages => '${snake(service)}_messages.dart',
 };
 
-/// Ruta de un archivo generado, relativa a `lib/src`.
+/// Path of a generated file, relative to `lib/src`.
 String generatedPath(String service, Folder folder) =>
     '${snake(service)}/${folder.name}/${_fileName(service, folder)}';
 
-/// Importaciones de un archivo generado (siempre a dos niveles de `lib/src`).
+/// Imports of a generated file (always two levels below `lib/src`).
 final class _Imports {
   final Set<String> _paths = {};
   bool meta = false;
@@ -45,15 +45,15 @@ final class _Imports {
   }
 }
 
-/// Genera los archivos Dart de todos los servicios.
-/// Devuelve un mapa de ruta relativa a `lib/src` a contenido formateado.
+/// Generates the Dart files of all services.
+/// Returns a map from path relative to `lib/src` to formatted content.
 Map<String, String> generate(ContractModel model) {
   final files = <String, String>{};
   void emit(String path, String library, String body) {
     final source =
         '$generatedHeader\n'
-        '// Fuente: backend/libs/contracts/*/export/contract.json.\n'
-        '// Regenerar: cd front && dart run contracts_gen\n'
+        '// Source: backend/libs/contracts/*/export/contract.json.\n'
+        '// Regenerate: cd front && dart run contracts_gen\n'
         '$library'
         '$body';
     files[path] = _format(source, path);
@@ -86,25 +86,25 @@ Map<String, String> generate(ContractModel model) {
     }
     emit(
       '${snake(service)}/${snake(service)}.dart',
-      '\n/// Contrato `$service` generado.\nlibrary;\n\n',
+      '\n/// Generated `$service` contract.\nlibrary;\n\n',
       '${exports.join('\n')}\n',
     );
   }
   emit(
     generatedBarrel,
-    '\n/// Todos los contratos generados.\nlibrary;\n\n',
+    '\n/// All generated contracts.\nlibrary;\n\n',
     '${[for (final s in model.services) "export '${snake(s)}/${snake(s)}.dart';"].join('\n')}\n',
   );
   return files;
 }
 
-/// Ruta de `error_messages.dart`, relativa a `packages/i18n/lib/src`.
+/// Path of `error_messages.dart`, relative to `packages/i18n/lib/src`.
 const errorMessagesPath = 'generated/error_messages.dart';
 
-/// Genera `errorMessageFor`: de cada código de error público a su mensaje ARB.
+/// Generates `errorMessageFor`: from each public error code to its ARB message.
 ///
-/// Solo entran los códigos con audiencia `public`; el getter de
-/// `AppLocalizations` es el `messageKey` del catálogo.
+/// Only codes with `public` audience are included; the
+/// `AppLocalizations` getter is the catalog `messageKey`.
 String generateErrorMessages(ContractModel model) {
   final cases = <String, String>{};
   for (final service in model.services) {
@@ -114,10 +114,10 @@ String generateErrorMessages(ContractModel model) {
         final code = entry['code'] as String;
         final key = entry['messageKey'] as String;
         if (!RegExp(r'^[a-z][A-Za-z0-9_]*$').hasMatch(key)) {
-          throw GeneratorException('$service: messageKey inválida "$key"');
+          throw GeneratorException('$service: invalid messageKey "$key"');
         }
         if (cases.containsKey(code)) {
-          throw GeneratorException('$service: código repetido $code');
+          throw GeneratorException('$service: duplicate code $code');
         }
         cases[code] = key;
       }
@@ -125,17 +125,17 @@ String generateErrorMessages(ContractModel model) {
   }
   final out = StringBuffer()
     ..writeln(generatedHeader)
-    ..writeln('// Fuente: backend/libs/contracts/*/export/contract.json.')
-    ..writeln('// Regenerar: cd front && dart run contracts_gen')
+    ..writeln('// Source: backend/libs/contracts/*/export/contract.json.')
+    ..writeln('// Regenerate: cd front && dart run contracts_gen')
     ..writeln()
-    ..writeln('/// Mensajes de los códigos de error públicos de los contratos.')
+    ..writeln('/// Messages for the public error codes of the contracts.')
     ..writeln('library;')
     ..writeln()
     ..writeln("import 'app_localizations.dart';")
     ..writeln()
-    ..writeln('/// Mensaje localizado de un código de error público [code].')
+    ..writeln('/// Localized message for a public error code [code].')
     ..writeln('///')
-    ..writeln('/// Un código desconocido devuelve `errorFallback`.')
+    ..writeln('/// An unknown code returns `errorFallback`.')
     ..writeln('String errorMessageFor(AppLocalizations l10n, String code) {')
     ..writeln('  return switch (code) {');
   for (final entry in cases.entries) {
@@ -157,7 +157,7 @@ String _format(String source, String path) {
   try {
     return _formatter.format(source, uri: path);
   } on FormatterException catch (error) {
-    throw GeneratorException('Dart inválido en $path: ${error.message()}');
+    throw GeneratorException('Invalid Dart in $path: ${error.message()}');
   }
 }
 
@@ -184,14 +184,14 @@ String _format(String source, String path) {
     _plainEnum(
       out,
       name,
-      description ?? 'Enum `$name` del contrato `$service`.',
+      description ?? 'Enum `$name` of the `$service` contract.',
       values,
     );
   }
   for (final entry in model.schemaEnums[service]!.entries) {
     final description =
         (schemas[entry.key] as Json)['description'] as String? ??
-        'Enum `${entry.key}` del contrato `$service`.';
+        'Enum `${entry.key}` of the `$service` contract.';
     _plainEnum(out, entry.key, description, [
       for (final value in entry.value) (lowerCamel(value), value),
     ]);
@@ -209,9 +209,9 @@ void _plainEnum(
     ..write(docComment(description))
     ..writeln('///')
     ..writeln(
-      '/// [tryParse] devuelve null para valores que este cliente no conoce,',
+      '/// [tryParse] returns null for values this client does not know,',
     )
-    ..writeln('/// así un valor nuevo del backend se ignora sin romper.')
+    ..writeln('/// so a new backend value is ignored instead of breaking.')
     ..writeln('enum $name {');
   for (final (member, value) in values) {
     out.writeln('  $member(${dartString(value)}),');
@@ -221,12 +221,10 @@ void _plainEnum(
     ..writeln()
     ..writeln('  const $name(this.wireCode);')
     ..writeln()
-    ..writeln('  /// Valor que usa el backend.')
+    ..writeln('  /// Value used by the backend.')
     ..writeln('  final String wireCode;')
     ..writeln()
-    ..writeln(
-      '  /// Valor con [code] como `wireCode`, o null si es desconocido.',
-    )
+    ..writeln('  /// Value whose `wireCode` is [code], or null if unknown.')
     ..writeln('  static $name? tryParse(String code) {')
     ..writeln('    for (final value in values) {')
     ..writeln('      if (value.wireCode == code) return value;')
@@ -246,13 +244,13 @@ void _errorEnum(
   final public = catalog.where((e) => e['audience'] == 'public').toList();
   if (public.isEmpty) return;
   out
-    ..writeln('/// Códigos de error públicos del contrato `$service`.')
+    ..writeln('/// Public error codes of the `$service` contract.')
     ..writeln('///')
     ..writeln(
-      '/// Solo incluye los códigos con audiencia `public`: los internos nunca',
+      '/// Only includes codes with `public` audience: internal ones never',
     )
     ..writeln(
-      '/// llegan al cliente. [messageKey] es la clave del mensaje en el ARB.',
+      '/// reach the client. [messageKey] is the message key in the ARB.',
     )
     ..writeln('enum $name {');
   for (final entry in public) {
@@ -276,23 +274,25 @@ void _errorEnum(
     ..writeln('  });')
     ..writeln()
     ..writeln(
-      '  /// Código exacto que envía el backend, por ejemplo `${public.first['code']}`.',
+      '  /// Exact code sent by the backend, for example `${public.first['code']}`.',
     )
     ..writeln('  final String code;')
     ..writeln()
-    ..writeln('  /// Estado HTTP con el que responde el backend.')
+    ..writeln('  /// HTTP status the backend responds with.')
     ..writeln('  final int httpStatus;')
     ..writeln()
-    ..writeln('  /// Si el cliente puede reintentar la misma petición.')
+    ..writeln('  /// Whether the client may retry the same request.')
     ..writeln('  final bool retryable;')
     ..writeln()
-    ..writeln('  /// Clave ARB del mensaje para personas.')
+    ..writeln('  /// ARB key of the human-readable message.')
     ..writeln('  final String messageKey;')
     ..writeln()
-    ..writeln('  /// Igual a [code].')
+    ..writeln('  /// Same as [code].')
     ..writeln('  String get wireCode => code;')
     ..writeln()
-    ..writeln('  /// Valor con [code], o null si este cliente no lo conoce.')
+    ..writeln(
+      '  /// Value with [code], or null if this client does not know it.',
+    )
     ..writeln('  static $name? fromCode(String code) {')
     ..writeln('    for (final value in values) {')
     ..writeln('      if (value.code == code) return value;')
@@ -300,7 +300,7 @@ void _errorEnum(
     ..writeln('    return null;')
     ..writeln('  }')
     ..writeln()
-    ..writeln('  /// Igual a [fromCode].')
+    ..writeln('  /// Same as [fromCode].')
     ..writeln('  static $name? tryParse(String code) => fromCode(code);')
     ..writeln('}')
     ..writeln();
@@ -313,7 +313,7 @@ void _errorEnum(
   final out = StringBuffer();
   for (final entry in model.constantsOf(service).entries) {
     out
-      ..writeln('/// Constantes `${entry.key}` del contrato `$service`.')
+      ..writeln('/// `${entry.key}` constants of the `$service` contract.')
       ..writeln('abstract final class ${entry.key} {');
     for (final constant in (entry.value as Json).entries) {
       out.writeln(
@@ -334,14 +334,14 @@ String _constantType(Object? value) => switch (value) {
   double() => 'double',
   bool() => 'bool',
   List() => 'List<${value.isEmpty ? 'Object' : _constantType(value.first)}>',
-  _ => throw GeneratorException('constante no soportada $value'),
+  _ => throw GeneratorException('unsupported constant $value'),
 };
 
 String _literal(Object? value) => switch (value) {
   String() => dartString(value),
   num() || bool() => '$value',
   List() => '[${value.map(_literal).join(', ')}]',
-  _ => throw GeneratorException('constante no soportada $value'),
+  _ => throw GeneratorException('unsupported constant $value'),
 };
 
 // ---------------------------------------------------------------------------
@@ -444,7 +444,7 @@ String _fieldEncode(FieldSpec field) {
     out
       ..write(
         docComment(
-          spec.description ?? 'Objeto `$name` del contrato `$service`.',
+          spec.description ?? 'Object `$name` of the `$service` contract.',
         ),
       )
       ..writeln('@immutable')
@@ -453,15 +453,15 @@ String _fieldEncode(FieldSpec field) {
       out
         ..writeln('  const $name();')
         ..writeln()
-        ..writeln('  /// Lee el objeto desde JSON. No tiene campos.')
+        ..writeln('  /// Reads the object from JSON. It has no fields.')
         ..writeln(
           '  factory $name.fromJson(Map<String, dynamic> json) => const $name();',
         )
         ..writeln()
-        ..writeln('  /// JSON del objeto: siempre vacío.')
+        ..writeln('  /// JSON of the object: always empty.')
         ..writeln('  Map<String, dynamic> toJson() => <String, dynamic>{};')
         ..writeln()
-        ..writeln('  /// Igual a [toJson], para usar como tear-off constante.')
+        ..writeln('  /// Same as [toJson], for use as a constant tear-off.')
         ..writeln(
           '  static Map<String, dynamic> encode($name value) => value.toJson();',
         )
@@ -484,7 +484,7 @@ String _fieldEncode(FieldSpec field) {
       ..writeln('  });')
       ..writeln()
       ..writeln(
-        '  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.',
+        '  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.',
       )
       ..writeln('  factory $name.fromJson(Map<String, dynamic> json) {')
       ..writeln('    try {')
@@ -508,7 +508,7 @@ String _fieldEncode(FieldSpec field) {
         ..writeln();
     }
     out
-      ..writeln('  /// JSON del objeto; omite los campos opcionales nulos.')
+      ..writeln('  /// JSON of the object; omits null optional fields.')
       ..writeln('  Map<String, dynamic> toJson() => <String, dynamic>{');
     for (final field in spec.fields) {
       out.writeln('    ${_fieldEncode(field)},');
@@ -516,7 +516,7 @@ String _fieldEncode(FieldSpec field) {
     out
       ..writeln('  };')
       ..writeln()
-      ..writeln('  /// Igual a [toJson], para usar como tear-off constante.')
+      ..writeln('  /// Same as [toJson], for use as a constant tear-off.')
       ..writeln(
         '  static Map<String, dynamic> encode($name value) => value.toJson();',
       )
@@ -544,14 +544,14 @@ String _fieldEncode(FieldSpec field) {
 // ---------------------------------------------------------------------------
 // Validadores
 
-/// Condición `length < min`, con `isEmpty` cuando el mínimo es 1.
+/// Condition `length < min`, with `isEmpty` when the minimum is 1.
 String _shorter(String value, int min) =>
     min == 1 ? '$value.isEmpty' : '$value.length < $min';
 
 final class _Validators {
   _Validators(this.model, this.service, this.imports);
 
-  /// Argumento que propaga `acceptUnknownEnums` a los objetos anidados.
+  /// Argument that propagates `acceptUnknownEnums` to nested objects.
   static const _lenient = 'acceptUnknownEnums: acceptUnknownEnums';
 
   final ContractModel model;
@@ -572,13 +572,13 @@ final class _Validators {
   String _pattern(String source) =>
       patterns.putIfAbsent(source, () => '_pattern${patterns.length}');
 
-  /// Escribe las comprobaciones de `node` sobre la variable `value`.
+  /// Writes the checks of `node` on the `value` variable.
   ///
-  /// [arrayItem] indica que `value` es un elemento de una lista. Ahí un valor
-  /// de enum desconocido se acepta cuando el validador corre con
-  /// `acceptUnknownEnums` (lo que llega del servidor), porque `fromJson`
-  /// descarta esos elementos con `tryParse`. Un enum suelto sigue estricto:
-  /// el enum de Dart no tiene cómo representar el valor nuevo.
+  /// [arrayItem] indicates that `value` is a list element. There an unknown
+  /// enum value is accepted when the validator runs with
+  /// `acceptUnknownEnums` (what comes from the server), because `fromJson`
+  /// discards those elements with `tryParse`. A standalone enum stays strict:
+  /// the Dart enum has no way to represent the new value.
   void node(
     String from,
     Json node,
@@ -611,7 +611,7 @@ final class _Validators {
         inner['enum'] ?? (inner.containsKey('const') ? [inner['const']] : null);
     if (values is List) {
       if (values.any((v) => v is! String)) {
-        throw GeneratorException('$service: enum con valores que no son texto');
+        throw GeneratorException('$service: enum with non-string values');
       }
       final set = values.map((v) => dartString(v as String)).join(', ');
       final known = '!const <String>{$set}.contains($value)';
@@ -627,7 +627,9 @@ final class _Validators {
       case 'object':
         final spec = model.inlineClass(inner);
         if (spec == null) {
-          throw GeneratorException('$service: objeto anónimo sin clase');
+          throw GeneratorException(
+            '$service: anonymous object without a class',
+          );
         }
         out.writeln(
           '${spec.name}Schema.check($value, $path, errors, $_lenient);',
@@ -658,7 +660,7 @@ final class _Validators {
             'uuid' => '!uuidPattern.hasMatch($value)',
             'date-time' => 'DateTime.tryParse($value) == null',
             _ => throw GeneratorException(
-              '$service: formato no soportado $format',
+              '$service: unsupported format $format',
             ),
           };
           imports.core();
@@ -721,9 +723,7 @@ final class _Validators {
         out.writeln('}');
         out.writeln('}');
       default:
-        throw GeneratorException(
-          '$service: tipo no soportado ${inner['type']}',
-        );
+        throw GeneratorException('$service: unsupported type ${inner['type']}');
     }
   }
 
@@ -732,16 +732,14 @@ final class _Validators {
     out
       ..write(
         docComment(
-          'Validador de [$name] generado desde el JSON Schema del contrato.',
+          'Validator for [$name] generated from the contract JSON Schema.',
         ),
       )
       ..writeln('///')
-      ..writeln(
-        '/// Devuelve los mismos códigos y rutas de campo que el servidor.',
-      )
+      ..writeln('/// Returns the same codes and field paths as the server.')
       ..writeln('abstract final class ${name}Schema {')
       ..writeln(
-        '  /// Errores de [json], o una lista vacía si cumple el contrato.',
+        '  /// Errors in [json], or an empty list if it matches the contract.',
       )
       ..writeln(
         "  static List<FieldError> validate(Object? json, {String path = ''}) {",
@@ -752,16 +750,14 @@ final class _Validators {
       ..writeln('  }')
       ..writeln()
       ..writeln(
-        '  /// Errores de [json] recibido del servidor (respuesta o mensaje).',
+        '  /// Errors in [json] received from the server (response or message).',
       )
       ..writeln('  ///')
       ..writeln(
-        '  /// Igual que [validate], pero acepta valores de enum que este cliente',
+        '  /// Like [validate], but accepts enum values this client does not',
       )
-      ..writeln(
-        '  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):',
-      )
-      ..writeln('  /// `fromJson` los descarta en lugar de fallar.')
+      ..writeln('  /// know inside a list (for example a new permission):')
+      ..writeln('  /// `fromJson` drops them instead of failing.')
       ..writeln(
         "  static List<FieldError> validateIncoming(Object? json, {String path = ''}) {",
       )
@@ -770,12 +766,10 @@ final class _Validators {
       ..writeln('    return errors;')
       ..writeln('  }')
       ..writeln()
-      ..writeln('  /// Agrega a [errors] los errores de [json] bajo [path].')
+      ..writeln('  /// Adds the errors in [json] under [path] to [errors].')
       ..writeln('  ///')
-      ..writeln(
-        '  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de',
-      )
-      ..writeln('  /// una lista no es un error.')
+      ..writeln('  /// With [acceptUnknownEnums], an unknown enum value inside')
+      ..writeln('  /// a list is not an error.')
       ..writeln(
         '  static void check(Object? json, String path, List<FieldError> errors, {bool acceptUnknownEnums = false}) {',
       )
@@ -817,10 +811,10 @@ final class _Validators {
     if (!spec.core) {
       imports.of(service, Folder.types);
       out
-        ..writeln('/// Validación de [$name] contra su contrato.')
+        ..writeln('/// Validation of [$name] against its contract.')
         ..writeln('extension ${name}Validation on $name {')
         ..writeln(
-          '  /// Errores de este objeto, o una lista vacía si cumple el contrato.',
+          '  /// Errors in this object, or an empty list if it matches the contract.',
         )
         ..writeln(
           '  List<FieldError> validate() => ${name}Schema.validate(toJson());',
@@ -853,7 +847,7 @@ final class _Validators {
 // ---------------------------------------------------------------------------
 // Rutas
 
-/// Clase generada a la que apunta [ref]; agrega sus importaciones.
+/// Generated class [ref] points to; adds its imports.
 SchemaId _generatedClassOf(
   ContractModel model,
   String service,
@@ -862,11 +856,11 @@ SchemaId _generatedClassOf(
   String where,
 ) {
   if (ref is! Map<String, dynamic> || ref[r'$ref'] is! String) {
-    throw GeneratorException('$service.$where: se espera un \$ref');
+    throw GeneratorException('$service.$where: expected a \$ref');
   }
   final id = model.resolve(service, ref[r'$ref'] as String);
   if (!ContractModel.isObject(model.schema(id)) || coreClasses.contains(id)) {
-    throw GeneratorException('$service.$where: $id no es un objeto generado');
+    throw GeneratorException('$service.$where: $id is not a generated object');
   }
   imports
     ..of(id.service, Folder.types)
@@ -874,7 +868,7 @@ SchemaId _generatedClassOf(
   return id;
 }
 
-/// Campos de `access` que entiende el generador.
+/// Fields of `access` the generator understands.
 const _accessKeys = {
   'kind',
   'permissions',
@@ -884,10 +878,10 @@ const _accessKeys = {
   'mfaMaxAgeMinutes',
 };
 
-/// Campos de `deprecated` que entiende el generador.
+/// Fields of `deprecated` the generator understands.
 const _deprecationKeys = {'since', 'sunset', 'replacement'};
 
-/// Valores de los enums de acceso declarados en algún contrato, por nombre.
+/// Values of the access enums declared in some contract, by name.
 Map<String, Set<String>> _accessValues(ContractModel model) {
   final result = <String, Set<String>>{};
   for (final service in model.services) {
@@ -911,7 +905,7 @@ Map<String, Set<String>> _accessValues(ContractModel model) {
 void _checkKeys(String where, Json json, Set<String> known) {
   final unknown = json.keys.where((k) => !known.contains(k)).toList();
   if (unknown.isNotEmpty) {
-    throw GeneratorException('$where: campos desconocidos $unknown');
+    throw GeneratorException('$where: unknown fields $unknown');
   }
 }
 
@@ -924,7 +918,7 @@ void _checkKeys(String where, Json json, Set<String> known) {
     ..of('platform', Folder.enums);
   final className = '${upperCamel(service)}Routes';
   final out = StringBuffer()
-    ..writeln('/// Rutas HTTP públicas del contrato `$service`.')
+    ..writeln('/// Public HTTP routes of the `$service` contract.')
     ..writeln('abstract final class $className {');
   final accessValues = _accessValues(model);
 
@@ -941,7 +935,7 @@ void _checkKeys(String where, Json json, Set<String> known) {
     _checkKeys('$service.$name.access', access, _accessKeys);
     if (access['kind'] != 'public' && access['kind'] != 'authenticated') {
       throw GeneratorException(
-        '$service.$name.access: kind desconocido ${access['kind']}',
+        '$service.$name.access: unknown kind ${access['kind']}',
       );
     }
     for (final (key, enumName) in const [
@@ -954,7 +948,7 @@ void _checkKeys(String where, Json json, Set<String> known) {
       for (final value in (access[key] as List?) ?? const []) {
         if (known == null || !known.contains(value)) {
           throw GeneratorException(
-            '$service.$name.access.$key: $value no está en el enum $enumName',
+            '$service.$name.access.$key: $value is not in the enum $enumName',
           );
         }
       }
@@ -1029,19 +1023,19 @@ void _checkKeys(String where, Json json, Set<String> known) {
 }
 
 // ---------------------------------------------------------------------------
-// Mensajes (eventos y comandos)
+// Messages (events and commands)
 
 (_Imports, String) _messages(ContractModel model, String service) {
   final imports = _Imports();
   final groups = [
     (
       'Events',
-      'Eventos que publica el contrato `$service`.',
+      'Events published by the `$service` contract.',
       model.eventsOf(service),
     ),
     (
       'Commands',
-      'Comandos que atiende el contrato `$service`.',
+      'Commands handled by the `$service` contract.',
       model.commandsOf(service),
     ),
   ];
@@ -1061,7 +1055,7 @@ void _checkKeys(String where, Json json, Set<String> known) {
       final name = safeIdentifier(message['name'] as String);
       final kind = message['kind'] as String?;
       if (kind != 'event' && kind != 'command') {
-        throw GeneratorException('$service.$name: kind desconocido $kind');
+        throw GeneratorException('$service.$name: unknown kind $kind');
       }
       final payload = _generatedClassOf(
         model,
@@ -1087,13 +1081,13 @@ void _checkKeys(String where, Json json, Set<String> known) {
         ..writeln();
     }
     out
-      ..writeln('  /// Todos los descriptores, en el orden del contrato.')
+      ..writeln('  /// All descriptors, in contract order.')
       ..writeln(
         '  static const all = <MessageDescriptor<Object?>>[${names.join(', ')}];',
       )
       ..writeln()
       ..writeln(
-        '  /// Descriptor con [type], o null si este cliente no lo conoce.',
+        '  /// Descriptor with [type], or null if this client does not know it.',
       )
       ..writeln('  static MessageDescriptor<Object?>? byType(String type) {')
       ..writeln('    for (final message in all) {')

@@ -1,6 +1,6 @@
 import type { MigrationInterface } from 'typeorm';
 
-/** Migración ficticia del catálogo del servicio; no ejecuta SQL. */
+/** Dummy migration of the service catalog; runs no SQL. */
 export class ServiceCatalogMigration1900000000011 implements MigrationInterface {
   readonly name = 'ServiceCatalogMigration1900000000011';
 

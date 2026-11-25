@@ -5,7 +5,7 @@ import type { TaskChanges } from './task-changes.js';
 import type { TaskState } from './task-state.js';
 import { TasksError } from './tasks.error.js';
 
-/** Alta de una tarea: siempre empieza abierta. */
+/** Creation of a task: it always starts open. */
 export interface NewTask {
   readonly id: string;
   readonly title: string;
@@ -14,7 +14,7 @@ export interface NewTask {
   readonly now: Date;
 }
 
-/** Una tarea de la organización. La dueña es el tenant, no quien la crea. */
+/** A task of the organization. The owner is the tenant, not whoever creates it. */
 export class Task {
   private constructor(private state: TaskState) {}
 
@@ -43,9 +43,9 @@ export class Task {
   }
 
   /**
-   * Aplica los cambios pedidos. Devuelve `undefined` si ningún campo cambia de valor: repetir un cambio no
-   * genera otra versión ni otro evento.
-   * @throws TasksError `TASKS.TASK.VERSION_CONFLICT` si `expectedVersion` no es la versión actual.
+   * Applies the requested changes. Returns `undefined` if no field changes value: repeating a change does not
+   * generate another version or another event.
+   * @throws TasksError `TASKS.TASK.VERSION_CONFLICT` if `expectedVersion` is not the current version.
    */
   change(
     changes: TaskChanges,

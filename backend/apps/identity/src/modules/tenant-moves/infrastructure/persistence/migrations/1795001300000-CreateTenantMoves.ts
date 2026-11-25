@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Bitácora de traslados de tenant en el catálogo, con a lo más un traslado en curso por tenant. */
+/** Tenant move log in the catalog, with at most one move in progress per tenant. */
 export class CreateTenantMoves1795001300000 implements MigrationInterface {
   readonly name = 'CreateTenantMoves1795001300000';
 

@@ -3,11 +3,11 @@ import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js'
 import type { CallMeta } from './call-meta.js';
 import { InternalHeader } from './internal-header.enum.js';
 
-/** Lee de las cabeceras HTTP de una llamada entrante el `CallMeta` que el servidor entrega al router. */
+/** Reads from the HTTP headers of an incoming call the `CallMeta` that the server hands to the router. */
 export class CallMetaReader {
   /**
-   * Cabeceras con el nombre en minúscula y un solo valor por cabecera: de un
-   * arreglo toma el primero y descarta lo que no sea texto.
+   * Returns the headers with lowercase names and a single value per header: from an
+   * array it takes the first and discards anything that is not text.
    */
   normalize(
     raw: Readonly<Record<string, string | string[] | undefined>>,
@@ -23,10 +23,10 @@ export class CallMetaReader {
   }
 
   /**
-   * `idempotencyKey` de `x-idempotency-key` (obligatoria), `deadline` de `x-call-deadline` y
-   * `timeoutMs` de `x-call-timeout-ms` (números finitos, obligatorios), y `traceparent`,
-   * `tenantId` y `actorId` si vienen. No pone `signal`.
-   * @throws InternalApiError `InvalidRequest` si falta una cabecera obligatoria o un número no es finito.
+   * Reads `idempotencyKey` from `x-idempotency-key` (required), `deadline` from `x-call-deadline` and
+   * `timeoutMs` from `x-call-timeout-ms` (finite numbers, required), and `traceparent`,
+   * `tenantId` and `actorId` if present. It does not set `signal`.
+   * @throws InternalApiError `InvalidRequest` if a required header is missing or a number is not finite.
    */
   read(headers: Readonly<Record<string, string | undefined>>): CallMeta {
     const traceparent = headers[InternalHeader.Traceparent];
@@ -67,7 +67,7 @@ export class CallMetaReader {
     return value;
   }
 
-  /** El mensaje no dice qué cabecera falta ni qué valor llegó. */
+  /** The message does not say which header is missing or which value arrived. */
   private static malformed(): InternalApiError {
     return new InternalApiError(
       InternalApiErrorCode.InvalidRequest,

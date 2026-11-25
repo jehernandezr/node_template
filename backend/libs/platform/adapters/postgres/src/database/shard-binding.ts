@@ -2,9 +2,9 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { ShardConnection } from '@platform/persistence';
 
 /**
- * Fija un shard lógico para el bloque que corre, sin tenant ni petición: lo usan el relay del outbox y las
- * tareas de mantenimiento, que recorren todos los shards. Mientras hay un shard fijo, `PlatformEntityManagers`
- * trabaja contra ese `DataSource` en lugar de resolver el shard por el tenant del contexto.
+ * Pins a logical shard for the running block, without a tenant or request: used by the outbox relay and the
+ * maintenance tasks, which go through all shards. While there is a fixed shard, `PlatformEntityManagers`
+ * works against that `DataSource` instead of resolving the shard by the context tenant.
  */
 export class ShardBinding {
   private readonly storage = new AsyncLocalStorage<ShardConnection>();
@@ -13,7 +13,7 @@ export class ShardBinding {
     return this.storage.run(connection, fn);
   }
 
-  /** El shard fijo del bloque que envuelve la llamada, o `undefined` si no hay ninguno. */
+  /** The fixed shard of the block that wraps the call, or `undefined` if there is none. */
   current(): ShardConnection | undefined {
     return this.storage.getStore();
   }

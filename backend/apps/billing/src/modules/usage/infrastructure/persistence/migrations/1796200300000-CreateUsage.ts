@@ -6,7 +6,7 @@ const BASE =
 
 const TABLES = ['usage_records', 'usage_totals', 'billing_members'] as const;
 
-/** Registros de uso por llave, totales por día y miembros facturables, con RLS por tenant. */
+/** Usage records by key, totals per day and billable members, with RLS per tenant. */
 export class CreateUsage1796200300000 implements MigrationInterface {
   readonly name = 'CreateUsage1796200300000';
 

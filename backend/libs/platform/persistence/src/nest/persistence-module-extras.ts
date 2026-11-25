@@ -3,13 +3,13 @@ import type { InstanceEndpointResolver } from '../ports/instance-endpoint-resolv
 import type { ShardLister } from '../ports/shard-lister.js';
 
 /**
- * Adaptadores de `PersistenceModule`. Se pasan como tipo, no como instancia, y se fijan al componer el
- * módulo: van igual en `forRoot` y en `forRootAsync`.
+ * Adapters of `PersistenceModule`. They are passed as a type, not as an instance, and are fixed when composing the
+ * module: they are the same in `forRoot` and in `forRootAsync`.
  */
 export interface PersistenceModuleExtras {
-  /** Obligatorio: lista los shards del servicio, por ejemplo el directorio de `@platform/adapters-postgres`. */
+  /** Required: lists the service shards, for example the directory from `@platform/adapters-postgres`. */
   readonly shardLister?: Type<ShardLister> | Abstract<ShardLister>;
-  /** Por defecto `ConfigInstanceEndpointResolver`, que lee `DB_INSTANCES`. */
+  /** `ConfigInstanceEndpointResolver` by default, which reads `DB_INSTANCES`. */
   readonly endpoints?:
     Type<InstanceEndpointResolver> | Abstract<InstanceEndpointResolver>;
 }

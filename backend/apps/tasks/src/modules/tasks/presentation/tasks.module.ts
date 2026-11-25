@@ -22,7 +22,7 @@ import { TypeOrmTaskMaintenance } from '../infrastructure/persistence/typeorm-ta
 import { TypeOrmTaskRepository } from '../infrastructure/persistence/typeorm-task.repository.js';
 import { TasksController } from './tasks.controller.js';
 
-/** Tareas del tenant: rutas, búsqueda, eventos y la purga de borradas. Global solo para su fachada. */
+/** Tenant tasks: routes, search, events and the purge of deleted ones. Global only for its facade. */
 @Global()
 @Module({
   imports: [

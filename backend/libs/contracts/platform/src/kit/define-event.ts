@@ -6,26 +6,26 @@ import {
   type MessageSpec,
 } from './message-definition.js';
 
-/** Evento publicado por un servicio (CloudEvents): un hecho que ya pasó. */
+/** Event published by a service (CloudEvents): a fact that already happened. */
 export type EventDefinition<P extends z.ZodType = z.ZodType> =
   MessageDefinition<MessageKind.Event, P>;
 
 export type EventSpec<P extends z.ZodType> = MessageSpec<P>;
 
 /**
- * Declara un evento. El tipo es `servicio.entidad.hecho.vN` y el sufijo `.vN`
- * es la versión del payload. El servicio lo publica en uno de sus tópicos.
+ * Declares an event. The type is `service.entity.fact.vN` and the `.vN` suffix
+ * is the payload version. The service publishes it on one of its topics.
  */
 export function defineEvent<P extends z.ZodType>(
   spec: EventSpec<P>,
 ): EventDefinition<P> {
   return defineMessage(
     MessageKind.Event,
-    'Evento',
-    'servicio.entidad.hecho.vN',
+    'Event',
+    'service.entity.fact.vN',
     spec,
   );
 }
 
-/** Tipo del payload de un evento. */
+/** Payload type of an event. */
 export type EventPayload<E extends EventDefinition> = z.output<E['payload']>;

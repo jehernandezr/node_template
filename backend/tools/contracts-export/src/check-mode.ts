@@ -2,13 +2,13 @@ import type { ExportReport } from './artifact.type.js';
 import { ExportMode } from './export-mode.js';
 import type { FileSystem } from './file-system.js';
 
-const UP_TO_DATE = 'Archivos generados al día.';
+const UP_TO_DATE = 'Generated files up to date.';
 const DRIFT_HEADER =
-  'Los archivos generados no coinciden con los contratos en TypeScript:';
+  'The generated files do not match the TypeScript contracts:';
 const DRIFT_HINT =
-  'Ejecuta: pnpm nx run contracts-export:export (y regenera el Dart con dart run contracts_gen en front/).';
+  'Run: pnpm nx run contracts-export:export (and regenerate the Dart with dart run contracts_gen in front/).';
 
-/** Compara cada archivo generado con el de disco y recuerda los que difieren o faltan. */
+/** Compares each generated file with the one on disk and remembers those that differ or are missing. */
 export class CheckMode extends ExportMode {
   private readonly drift: string[] = [];
 

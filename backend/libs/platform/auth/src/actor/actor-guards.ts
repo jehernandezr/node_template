@@ -6,7 +6,7 @@ import type {
   UserActor,
 } from './actor.js';
 
-/** Estrechamiento de tipo del `Actor` por su `kind`. */
+/** Type narrowing of the `Actor` by its `kind`. */
 export class ActorGuards {
   static isUser(actor: Actor): actor is UserActor {
     return actor.kind === ActorType.User;

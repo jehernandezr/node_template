@@ -1,9 +1,9 @@
 import { HttpLimits } from '../http-limits.js';
 import { CookieParser } from './cookie-parser.js';
 
-/** Cookie de sesión del canal web: `__Host-session`, sin `Domain`, con `Secure` y `SameSite=Strict`. */
+/** Web channel session cookie: `__Host-session`, no `Domain`, with `Secure` and `SameSite=Strict`. */
 export class SessionCookie {
-  /** Valor de la cookie de sesión, o `undefined` si no vino. Con varios headers gana el primero. */
+  /** Returns the session cookie value, or `undefined` if absent. With several headers the first one wins. */
   read(cookieHeader: string | string[] | undefined): string | undefined {
     const header = Array.isArray(cookieHeader) ? cookieHeader[0] : cookieHeader;
     return CookieParser.parse(header).get(HttpLimits.SESSION_COOKIE_NAME);

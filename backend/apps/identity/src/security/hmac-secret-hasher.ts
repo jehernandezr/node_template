@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 import { constantTimeEquals } from '../shared/utils/constant-time.js';
 import { SecretHasher } from './secret-hasher.js';
 
-/** `SecretHasher` con HMAC-SHA256 y una llave del servicio (`IDENTITY_TOKEN_PEPPER`). */
+/** `SecretHasher` with HMAC-SHA256 and a service key (`IDENTITY_TOKEN_PEPPER`). */
 export class HmacSecretHasher extends SecretHasher {
   constructor(private readonly key: string) {
     super();

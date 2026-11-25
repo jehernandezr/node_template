@@ -2,14 +2,14 @@ import { InstrumentationNodeModuleDefinition } from '@opentelemetry/instrumentat
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 
 /**
- * Instrumentación de `ioredis` aplicada al paquete `iovalkey`. `iovalkey` es
- * un fork con otro nombre de paquete: la instrumentación oficial solo engancha
- * el módulo `ioredis`, así que sin esta definición ningún comando de Valkey
- * generaría spans. El fork conserva `sendCommand` y `connect` en el
- * prototipo del cliente, que es lo que la instrumentación envuelve.
+ * `ioredis` instrumentation applied to the `iovalkey` package. `iovalkey` is
+ * a fork with a different package name: the official instrumentation only hooks
+ * the `ioredis` module, so without this definition no Valkey command would
+ * produce spans. The fork keeps `sendCommand` and `connect` on the
+ * client prototype, which is what the instrumentation wraps.
  */
 export class IovalkeyInstrumentation extends IORedisInstrumentation {
-  /** Versiones de `iovalkey` que comparten la estructura interna de `ioredis`. */
+  /** Versions of `iovalkey` that share the internal structure of `ioredis`. */
   static readonly SUPPORTED_VERSIONS = ['>=0.1.0 <1'];
 
   override init(): InstrumentationNodeModuleDefinition[] {

@@ -1,4 +1,4 @@
-/** Llaves de respaldo cuando una petición no trae su identificador. */
+/** Fallback keys when a request does not carry its identifier. */
 export enum RateLimitKey {
   Anonymous = 'anonymous',
 }

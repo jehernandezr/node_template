@@ -15,24 +15,24 @@ import { SagaDefinition, type SagaFlow } from '@platform/saga';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { TenantDirectoryFollowers } from './tenant-directory-followers.js';
 
-/** Lo que la saga de alta necesita para crear, facturar, activar y dar la bienvenida. */
+/** What the creation saga needs to create, bill, activate and welcome. */
 export interface TenantOnboardingState {
   readonly tenantId: string;
   readonly slug: string;
   readonly name: string;
   readonly region: string;
   readonly owner: UserRef;
-  /** Id de la notificación de bienvenida, fijado al arrancar para que un reintento no la duplique. */
+  /** Id of the welcome notification, fixed at start so a retry does not duplicate it. */
   readonly welcomeId: string;
-  /** La ubicación que identity eligió, que los demás servicios anotan en sus directorios. */
+  /** The placement identity chose, which the other services record in their directories. */
   readonly directory: TenantDirectoryEntry;
 }
 
 /**
- * Alta de un tenant: crea el tenant en aprovisionamiento, lo anota en el directorio de shards de cada servicio con la
- * ubicación que eligió identity y abre su cuenta de facturación, todo con su reversa; después del pivote lo activa y
- * le da la bienvenida a su dueño. Si billing rechaza la cuenta, los servicios retiran la fila del tenant, el tenant se
- * descarta y su slug queda libre.
+ * Tenant creation: creates the tenant in provisioning, records it in each service's shard directory with the
+ * placement identity chose and opens its billing account, all with their reversals; after the pivot it activates it and
+ * welcomes its owner. If billing rejects the account, the services remove the tenant's row, the tenant is
+ * discarded and its slug is released.
  */
 export class TenantOnboardingSaga extends SagaDefinition<TenantOnboardingState> {
   readonly type = IdentitySaga.TenantOnboarding;

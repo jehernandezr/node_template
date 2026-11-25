@@ -1,6 +1,6 @@
 import type { SecurityAlertType } from '../enums/user.enum.js';
 
-/** Payload de `identity.security-alert.raised.v1`. Nunca incluye códigos ni secretos. */
+/** Payload of `identity.security-alert.raised.v1`. It never includes codes or secrets. */
 export interface SecurityAlertRaisedPayload {
   alertId: string;
   userId: string;

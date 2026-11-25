@@ -1,15 +1,15 @@
 import type { TenantPlacement } from '../model/tenant-placement.js';
 
 /**
- * Fuente de verdad de los placements de tenants y de las instancias de los
- * shards lógicos (el catálogo). Lado de lectura: `ShardRouter` lo consulta en
- * cada falla de caché. La implementación sobre Postgres es de
- * `@platform/adapters-postgres`; `InMemoryDirectoryStore`, de `@platform/sharding/test-utils`, cubre pruebas.
+ * Source of truth for tenant placements and for the instances of the
+ * logical shards (the catalog). Read side: `ShardRouter` queries it on
+ * every cache miss. The Postgres implementation belongs to
+ * `@platform/adapters-postgres`; `InMemoryDirectoryStore`, from `@platform/sharding/test-utils`, covers tests.
  */
 export abstract class DirectoryStore {
-  /** Placement de un tenant en minúsculas, o `undefined` si el tenant no existe. */
+  /** Placement of a tenant in lowercase, or `undefined` if the tenant does not exist. */
   abstract getPlacement(tenantId: string): Promise<TenantPlacement | undefined>;
 
-  /** Instancia física de un shard lógico, o `undefined` si el shard no existe. */
+  /** Physical instance of a logical shard, or `undefined` if the shard does not exist. */
   abstract getInstance(logicalShard: string): Promise<string | undefined>;
 }

@@ -42,7 +42,7 @@ interface StubEndpoint {
   readonly routeId: string;
 }
 
-/** Cada método de un controller con `@Endpoint`, con el id de su ruta del contrato. */
+/** Each controller method with `@Endpoint`, with the id of its contract route. */
 function endpointsOf(controller: ControllerClass): StubEndpoint[] {
   const prototype: Record<string, unknown> = controller.prototype as Record<
     string,

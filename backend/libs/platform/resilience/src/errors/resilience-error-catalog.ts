@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { ResilienceErrorCode } from './resilience-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/resilience`. */
+/** Catalog of the `@platform/resilience` codes. */
 export const resilienceErrorCatalog = defineErrorCatalog(ResilienceErrorCode, {
   [ResilienceErrorCode.CircuitOpen]: ErrorSpecs.pub(
     503,

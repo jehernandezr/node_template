@@ -4,7 +4,7 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { BreachedPasswordList } from '../domain/breached-password-list.js';
 import { PasswordPolicy } from '../domain/password-policy.js';
 
-/** Revisa una contraseña nueva contra la política y la lista de filtradas. */
+/** Checks a new password against the policy and the breached list. */
 @Injectable()
 export class PasswordAcceptance {
   private readonly policy = new PasswordPolicy();
@@ -12,7 +12,7 @@ export class PasswordAcceptance {
   constructor(private readonly breached: BreachedPasswordList) {}
 
   /**
-   * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` con `details.violations`, o
+   * @throws IdentityError `IDENTITY.PASSWORD.POLICY_VIOLATION` with `details.violations`, or
    * `IDENTITY.PASSWORD.BREACHED`.
    */
   async assert(password: string, email: string): Promise<void> {

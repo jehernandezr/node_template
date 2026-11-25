@@ -1,7 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { ObservabilityErrorCode } from './observability-error-code.enum.js';
 
-/** Un id de traza o un `traceparent` no cumple el formato W3C. El mensaje no repite el valor recibido. */
+/** A trace id or a `traceparent` does not meet the W3C format. The message does not repeat the received value. */
 export class InvalidTraceContextError extends PlatformError {
   override readonly code = ObservabilityErrorCode.InvalidTraceContext;
 

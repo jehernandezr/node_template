@@ -3,15 +3,15 @@ import type { EndpointOptions } from '../endpoint-options.js';
 import type { HttpExchange } from '../http-exchange.js';
 
 /**
- * Lo que `@Input()` entrega a `ContractInputPipe`: las partes crudas de la petición y la ruta que
- * las valida. El pipe las convierte en la entrada validada del contrato.
+ * What `@Input()` delivers to `ContractInputPipe`: the raw parts of the request and the route that
+ * validates them. The pipe converts them into the contract's validated input.
  */
 export interface RawEndpointInput {
   readonly route: RouteDefinition;
   readonly options: EndpointOptions;
-  /** Parámetros de ruta, siempre texto. */
+  /** Route parameters, always text. */
   readonly params: Readonly<Record<string, string>>;
-  /** Query cruda tal como la entrega el servidor. */
+  /** Raw query as the server delivers it. */
   readonly query: Readonly<Record<string, unknown>>;
   readonly body: unknown;
   readonly exchange: HttpExchange;

@@ -1,16 +1,16 @@
 import { SetMetadata } from '@nestjs/common';
 import type { OperationDefinition } from '@contracts/platform';
 
-/** Metadatos de `@InternalHandler`: qué operación atiende un método. */
+/** Metadata of `@InternalHandler`: which operation a method handles. */
 export class InternalHandlerMetadata {
   static readonly KEY = Symbol.for('platform.internal-api.handler');
 
-  /** Marca un método como el handler de `operation`. */
+  /** Marks a method as the handler of `operation`. */
   static decorator(operation: OperationDefinition): MethodDecorator {
     return SetMetadata(InternalHandlerMetadata.KEY, operation);
   }
 
-  /** Operación que atiende `method`, o `undefined` si no lleva `@InternalHandler`. */
+  /** Returns the operation `method` handles, or `undefined` if it has no `@InternalHandler`. */
   static read(method: unknown): OperationDefinition | undefined {
     if (typeof method !== 'function') {
       return undefined;

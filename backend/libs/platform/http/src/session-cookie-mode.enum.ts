@@ -1,11 +1,11 @@
-/** Qué hace una ruta con la cookie de sesión del canal web. */
+/** What a route does with the web channel session cookie. */
 export enum SessionCookieMode {
-  /** No toca la cookie. */
+  /** Does not touch the cookie. */
   None = 'none',
-  /** Responde con la cookie nueva a partir del `sessionToken` que devolvió el caso de uso. */
+  /** Responds with the new cookie built from the `sessionToken` the use case returned. */
   Issue = 'issue',
-  /** Igual que `Issue`, pero si la respuesta no trae `sessionToken` deja la cookie como está. Además lee la cookie como entrada. */
+  /** Same as `Issue`, but if the response has no `sessionToken` it leaves the cookie as it is. It also reads the cookie as input. */
   Rotate = 'rotate',
-  /** Borra la cookie y lee la cookie como entrada. */
+  /** Clears the cookie and reads the cookie as input. */
   Clear = 'clear',
 }

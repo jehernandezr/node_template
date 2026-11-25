@@ -8,7 +8,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
 const BASE =
   '"id" uuid NOT NULL, "version" integer NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "tenant_id" uuid NOT NULL, "created_by" character varying(64), "updated_by" character varying(64)';
 
-/** `report_runs` auditada, con RLS por tenant y la política de mantenimiento del vencimiento y del borrado. */
+/** Audited `report_runs`, with RLS per tenant and the maintenance policy for expiration and deletion. */
 export class CreateReportRuns1796300100000 implements MigrationInterface {
   readonly name = 'CreateReportRuns1796300100000';
 

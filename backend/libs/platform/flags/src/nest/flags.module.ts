@@ -5,7 +5,7 @@ import { FlagStore } from '../flag-store.js';
 import { FlagStoreSelector } from '../flag-store-selector.js';
 import { FlagsConfig, type FlagsSettings } from '../flags.config.js';
 
-/** `FlagStore` según `FLAGS_STORE` y `FlagEvaluator`, globales para el servicio. */
+/** `FlagStore` according to `FLAGS_STORE` and `FlagEvaluator`, global for the service. */
 @Module({})
 export class FlagsModule {
   static forRoot(): DynamicModule {

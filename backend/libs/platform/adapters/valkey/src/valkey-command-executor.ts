@@ -6,9 +6,9 @@ import { ValkeyUnexpectedReplyError } from './valkey-unexpected-reply.error.js';
 import type { LuaScript } from './lua-script.js';
 
 /**
- * Envía comandos y scripts por un cliente y traduce cualquier falla a un
- * `ValkeyCommandError` que el `FailureClassifier` entiende. Lee también las
- * respuestas con forma conocida. Es lo único que los adaptadores usan del cliente.
+ * Sends commands and scripts through a client and translates any failure into a
+ * `ValkeyCommandError` that the `FailureClassifier` understands. It also reads
+ * replies with a known shape. It is the only thing the adapters use from the client.
  */
 export class ValkeyCommandExecutor {
   constructor(
@@ -16,7 +16,7 @@ export class ValkeyCommandExecutor {
     private readonly errors: ValkeyErrorTranslator,
   ) {}
 
-  /** Envía un comando. */
+  /** Sends a command. */
   async run(command: ValkeyCommand, args: ValkeyArgument[]): Promise<unknown> {
     try {
       return await this.client.call(command, args);
@@ -26,8 +26,8 @@ export class ValkeyCommandExecutor {
   }
 
   /**
-   * Corre un script con `EVALSHA` y, si el servidor no lo tiene en caché
-   * (`NOSCRIPT`, por ejemplo tras un reinicio o un failover), con `EVAL`.
+   * Runs a script with `EVALSHA` and, if the server does not have it cached
+   * (`NOSCRIPT`, for example after a restart or a failover), with `EVAL`.
    */
   async script(
     script: LuaScript,
@@ -51,7 +51,7 @@ export class ValkeyCommandExecutor {
     }
   }
 
-  /** Lee una respuesta entera. */
+  /** Reads an integer reply. */
   integer(command: ValkeyCommand, reply: unknown): number {
     if (typeof reply !== 'number' || !Number.isSafeInteger(reply)) {
       throw new ValkeyUnexpectedReplyError(command, 'an integer');
@@ -59,7 +59,7 @@ export class ValkeyCommandExecutor {
     return reply;
   }
 
-  /** Lee una respuesta de texto que puede ser nula. */
+  /** Reads a text reply that may be null. */
   optionalString(command: ValkeyCommand, reply: unknown): string | undefined {
     if (reply === null) {
       return undefined;

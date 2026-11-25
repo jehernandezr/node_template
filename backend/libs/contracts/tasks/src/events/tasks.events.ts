@@ -9,18 +9,18 @@ import {
 export const TaskCreatedEvent = defineEvent({
   type: TasksEvent.TaskCreated,
   payload: TaskCreatedPayloadSchema,
-  description: 'Se creó una tarea en un tenant.',
+  description: 'A task was created in a tenant.',
 });
 
 export const TaskUpdatedEvent = defineEvent({
   type: TasksEvent.TaskUpdated,
   payload: TaskUpdatedPayloadSchema,
   description:
-    'Se cambió una tarea: campos modificados, estado anterior y nuevo, quien la cambió y quien la creó.',
+    'A task was changed: modified fields, previous and new status, who changed it and who created it.',
 });
 
 export const TaskDeletedEvent = defineEvent({
   type: TasksEvent.TaskDeleted,
   payload: TaskDeletedPayloadSchema,
-  description: 'Se borró una tarea (borrado lógico).',
+  description: 'A task was deleted (soft delete).',
 });

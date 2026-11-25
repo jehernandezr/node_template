@@ -5,26 +5,26 @@ import type {
   ProblemDetailsDetails,
 } from '../types/problem-details.type.js';
 
-/** Error de un campo dentro de `ProblemDetails.errors`. */
+/** Error of a field within `ProblemDetails.errors`. */
 export const FieldErrorSchema = z
   .object({
     field: z.string().max(512).optional(),
     code: z.string().min(1).max(128),
     message: z.string().max(1024).optional(),
   })
-  .describe('Error de un campo.') satisfies z.ZodType<FieldError>;
+  .describe('Error of a field.') satisfies z.ZodType<FieldError>;
 
-/** Datos públicos de un error: solo los que su código declara en el catálogo. */
+/** Public data of an error: only what its code declares in the catalog. */
 export const ProblemDetailsDetailsSchema = z
   .object({
     apiBaseUrl: z.string().max(2048).optional(),
     region: z.string().max(64).optional(),
   })
   .describe(
-    'Datos públicos del error, por ejemplo la URL de la región del tenant.',
+    'Public error data, for example the URL of the tenant region.',
   ) satisfies z.ZodType<ProblemDetailsDetails>;
 
-/** Respuesta de error RFC 9457 con las extensiones `code`, `traceId` y `errors`. */
+/** RFC 9457 error response with the `code`, `traceId` and `errors` extensions. */
 export const ProblemDetailsSchema = z
   .object({
     type: z.string().min(1),
@@ -37,4 +37,4 @@ export const ProblemDetailsSchema = z
     errors: z.array(FieldErrorSchema).optional(),
     details: ProblemDetailsDetailsSchema.optional(),
   })
-  .describe('Respuesta de error RFC 9457.') satisfies z.ZodType<ProblemDetails>;
+  .describe('RFC 9457 error response.') satisfies z.ZodType<ProblemDetails>;

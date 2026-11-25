@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { RecordingMetricsPort } from '../../../__tests__/utils/recording-metrics-port.js';
 
-/** Provee y exporta el puerto de métricas de prueba. */
+/** Provides and exports the test metrics port. */
 @Global()
 @Module({
   providers: [RecordingMetricsPort],

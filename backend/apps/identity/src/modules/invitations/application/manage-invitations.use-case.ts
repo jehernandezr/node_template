@@ -6,7 +6,7 @@ import { InvitationRepository } from '../domain/invitation.repository.js';
 import { InvitationView } from './invitation-view.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 
-/** Invitaciones del tenant: listar y revocar. */
+/** The tenant's invitations: list and revoke. */
 @Injectable()
 export class ManageInvitations {
   constructor(

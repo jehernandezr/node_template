@@ -8,7 +8,7 @@ import {
   AuthenticateApiKeyInputSchema,
 } from '../schemas/api-key.schema.js';
 
-/** Valida una API key y devuelve su principal. Solo lee, así que no declara compensación. */
+/** Validates an API key and returns its principal. It only reads, so it declares no compensation. */
 export const AuthenticateApiKeyOperation = defineOperation({
   id: IdentityOperation.AuthenticateApiKey,
   input: AuthenticateApiKeyInputSchema,
@@ -23,5 +23,5 @@ export const AuthenticateApiKeyOperation = defineOperation({
     IdentityErrorCode.TenantSuspended,
   ],
   timeoutMs: 3000,
-  description: 'Valida una API key y devuelve su principal.',
+  description: 'Validates an API key and returns its principal.',
 });

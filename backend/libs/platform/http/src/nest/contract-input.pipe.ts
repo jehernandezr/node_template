@@ -13,8 +13,8 @@ import { SessionCookieMode } from '../session-cookie-mode.enum.js';
 import { ClientChannel } from '../client-channel.enum.js';
 
 /**
- * Arma la entrada de una ruta con sus partes crudas y la valida con el esquema del contrato. Es el
- * pipe de `@Input()`.
+ * Builds a route's input from its raw parts and validates it with the contract schema. It is the
+ * `@Input()` pipe.
  */
 @Injectable()
 export class ContractInputPipe implements PipeTransform<RawEndpointInput> {
@@ -49,7 +49,7 @@ export class ContractInputPipe implements PipeTransform<RawEndpointInput> {
     return result.value;
   }
 
-  /** Solo texto o listas de texto: lo demás no viene de una query. */
+  /** Only text or lists of text: anything else does not come from a query. */
   private static rawQuery(
     query: Readonly<Record<string, unknown>>,
   ): Record<string, RawQueryValue> {
@@ -80,8 +80,8 @@ export class ContractInputPipe implements PipeTransform<RawEndpointInput> {
   }
 
   /**
-   * El session token de un canal web viaja en la cookie. En el canal nativo lo manda la app en el
-   * cuerpo, así que nunca se completa desde la cookie.
+   * The session token of a web channel travels in the cookie. In the native channel the app sends it in the
+   * body, so it is never filled in from the cookie.
    */
   private static takesSessionFromCookie(
     route: RouteDefinition,

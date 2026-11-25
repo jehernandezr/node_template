@@ -6,7 +6,7 @@ import type {
   ResilientOperation,
 } from './resilience-call.options.js';
 
-/** Una llamada ya resuelta contra su política, lista para el ejecutor. */
+/** A call already resolved against its policy, ready for the executor. */
 export interface PolicyCall<T> {
   readonly name: PolicyName;
   readonly dependencyKey: string;

@@ -5,7 +5,7 @@ import type {
 import { SocketTestClient } from './socket-test-client.js';
 import { SseTestClient } from './sse-test-client.js';
 
-/** Cómo se abre un cliente de cada transporte en las pruebas de reconexión. */
+/** How a client of each transport is opened in the reconnection tests. */
 export class RealtimeClients {
   static sse(path: string): RealtimeClientOpener {
     return async (baseUrl, token, lastEventId) => {

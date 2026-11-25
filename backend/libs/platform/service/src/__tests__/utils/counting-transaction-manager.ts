@@ -5,7 +5,7 @@ import {
 } from '@platform/kernel';
 import { NoopUnitOfWork } from './noop-unit-of-work.js';
 
-/** Transacciones sin base: cuenta cuántas veces se abrieron y ejecuta `fn` de inmediato. */
+/** Transactions without a database: counts how many times they were opened and runs `fn` immediately. */
 export class CountingTransactionManager extends TransactionManager {
   private opened = 0;
 

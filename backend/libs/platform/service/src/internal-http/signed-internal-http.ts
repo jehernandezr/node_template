@@ -9,19 +9,19 @@ import type {
 import type { InternalHttpConfig } from './internal-http.config.js';
 
 /**
- * Transporte HTTP de la API interna de un servicio. El secreto HMAC autentica siempre las llamadas que
- * entran; las que salen se firman con el firmador de `INTERNAL_API_SIGNER`: HMAC en local y SigV4 con el
- * rol del servicio cuando el destino valida con IAM.
+ * HTTP transport of a service's internal API. The HMAC secret always authenticates incoming
+ * calls; outgoing ones are signed with the `INTERNAL_API_SIGNER` signer: HMAC locally and SigV4 with the
+ * service role when the destination validates with IAM.
  */
 export class SignedInternalHttp {
   private readonly selector = new InternalRequestSignerSelector();
 
-  /** @param callees servicios a los que este llama; cada uno necesita su URL en `INTERNAL_API_BASE_URLS`. */
+  /** @param callees services this one calls; each one needs its URL in `INTERNAL_API_BASE_URLS`. */
   constructor(private readonly callees: readonly string[] = []) {}
 
   /**
-   * @throws Error si falta la URL de un servicio de `callees`, para que el servicio no arranque sin poder
-   *   llamarlo, o con SigV4 sin el adaptador de AWS: no hay credenciales con qué firmar.
+   * @throws Error if the URL of a service in `callees` is missing, so the service does not start without being able to
+   *   call it, or with SigV4 without the AWS adapter: there are no credentials to sign with.
    */
   settings(
     config: AppConfig,

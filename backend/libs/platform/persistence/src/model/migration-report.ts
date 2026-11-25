@@ -1,7 +1,7 @@
-/** Qué hizo `ShardedMigrationRunner` en una base. */
+/** What `ShardedMigrationRunner` did on a database. */
 export interface MigrationReport {
-  /** Nombre de la base: el id del shard o el del catálogo. */
+  /** Name of the database: the shard id or the catalog name. */
   readonly database: string;
-  /** Nombres de las migraciones que se aplicaron en esta corrida (vacío si ya estaba al día). */
+  /** Names of the migrations applied in this run (empty if it was already up to date). */
   readonly applied: readonly string[];
 }

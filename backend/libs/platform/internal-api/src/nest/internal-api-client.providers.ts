@@ -29,7 +29,7 @@ import { InternalApiOptionalDependency } from './internal-api-optional-dependenc
 import { INTERNAL_API_OPTIONS } from './internal-api.module-definition.js';
 import { InternalTransportKind } from './internal-transport-kind.enum.js';
 
-/** Proveedores del lado cliente: el `InternalClient` y el transporte que eligió el servicio. */
+/** Client-side providers: the `InternalClient` and the transport the service chose. */
 export class InternalApiClientProviders {
   static build(transport: InternalTransportKind): Provider[] {
     return [
@@ -118,8 +118,8 @@ export class InternalApiClientProviders {
   }
 
   /**
-   * Las operaciones propias van por el router del proceso y las demás por HTTP. Sin las opciones `http` el
-   * transporte no puede firmar ni llegar a nadie: el arranque falla.
+   * Own operations go through the process router and the rest over HTTP. Without the `http` options the
+   * transport cannot sign or reach anyone: startup fails.
    */
   private static http(): Provider[] {
     return [
@@ -177,7 +177,7 @@ export class InternalApiClientProviders {
     ];
   }
 
-  /** @throws InternalApiError `InvalidConfiguration` si faltan las opciones `http`. */
+  /** @throws InternalApiError `InvalidConfiguration` if the `http` options are missing. */
   private static httpOptions(
     options: InternalApiModuleOptions,
   ): InternalApiHttpOptions {

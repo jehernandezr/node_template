@@ -1,6 +1,6 @@
 import type { SagaEventKind } from './saga-event-kind.enum.js';
 
-/** Evento que emite el motor. */
+/** Event that the engine emits. */
 export interface SagaEvent {
   readonly kind: SagaEventKind;
   readonly sagaId: string;
@@ -8,5 +8,5 @@ export interface SagaEvent {
   readonly lastErrorCode: string | null;
 }
 
-/** Oyente de eventos del motor. Los errores que lance o con los que se rechace se ignoran. */
+/** Listener of engine events. Errors it throws or rejects with are ignored. */
 export type SagaEventListener = (event: SagaEvent) => void | Promise<void>;

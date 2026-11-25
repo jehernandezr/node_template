@@ -2,7 +2,7 @@ import type { Logger } from '@opentelemetry/api';
 
 type EmittedRecord = Parameters<Logger['emit']>[0];
 
-/** Logger OTel que guarda los registros emitidos, para pruebas. */
+/** OTel logger that stores the emitted records, for tests. */
 export class FakeOtelLogger implements Logger {
   readonly emitted: EmittedRecord[] = [];
 

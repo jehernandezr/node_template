@@ -8,8 +8,8 @@ import { HealthCheckName } from './health-check-name.enum.js';
 import { HealthProbeQuery } from './health-probe-query.enum.js';
 
 /**
- * Comprueba que el catálogo responde. Los errores no se atrapan: `HealthRegistry` los convierte en
- * `Down` con el nombre del error, nunca con el mensaje, que puede traer datos de conexión.
+ * Checks that the catalog responds. Errors are not caught: `HealthRegistry` turns them into
+ * `Down` with the error name, never with the message, which may carry connection data.
  */
 export class CatalogHealthCheck extends HealthCheckable {
   readonly name = HealthCheckName.Catalog;

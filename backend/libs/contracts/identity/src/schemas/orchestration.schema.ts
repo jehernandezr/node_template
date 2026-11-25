@@ -28,29 +28,29 @@ import type {
 
 export const IdentitySagaSchema = z
   .enum(IdentitySaga)
-  .describe('Saga que orquesta identity.') satisfies z.ZodType<IdentitySaga>;
+  .describe('Saga orchestrated by identity.') satisfies z.ZodType<IdentitySaga>;
 
 export const IdentitySagaStatusSchema = z
   .enum(IdentitySagaStatus)
   .describe(
-    'Estado de una saga de identity.',
+    'Status of an identity saga.',
   ) satisfies z.ZodType<IdentitySagaStatus>;
 
 export const TenantCreationSchema = z
   .object({ tenantId: IdSchema, sagaId: IdSchema })
   .describe(
-    'Tenant en aprovisionamiento y la saga que lo activa.',
+    'Tenant being provisioned and the saga that activates it.',
   ) satisfies z.ZodType<TenantCreation>;
 
 export const AccountDeletionStartedSchema = z
   .object({ sagaId: IdSchema })
   .describe(
-    'Saga que borra la cuenta del usuario.',
+    'Saga that deletes the user account.',
   ) satisfies z.ZodType<AccountDeletionStarted>;
 
 export const GetSagaRequestSchema = z
   .strictObject({ sagaId: IdSchema })
-  .describe('Saga a consultar.') satisfies z.ZodType<GetSagaRequest>;
+  .describe('Saga to query.') satisfies z.ZodType<GetSagaRequest>;
 
 export const SagaSummarySchema = z
   .object({
@@ -60,24 +60,22 @@ export const SagaSummarySchema = z
     startedAt: TimestampSchema,
     finishedAt: TimestampSchema.nullable(),
   })
-  .describe('Estado de una saga de identity.') satisfies z.ZodType<SagaSummary>;
+  .describe('Status of an identity saga.') satisfies z.ZodType<SagaSummary>;
 
 export const EraseUserInputSchema = z
   .strictObject({ userId: IdSchema })
   .describe(
-    'Usuario cuyos datos personales se borran.',
+    'User whose personal data is erased.',
   ) satisfies z.ZodType<EraseUserInput>;
 
 export const EraseUserResultSchema = z
   .object({ userId: IdSchema, erasedAt: TimestampSchema })
-  .describe(
-    'Resultado de borrar a un usuario.',
-  ) satisfies z.ZodType<EraseUserResult>;
+  .describe('Result of erasing a user.') satisfies z.ZodType<EraseUserResult>;
 
 export const ListPushTargetsInputSchema = z
   .strictObject({ user: UserRefSchema })
   .describe(
-    'Usuario cuyos dispositivos con push se piden.',
+    'User whose push devices are requested.',
   ) satisfies z.ZodType<ListPushTargetsInput>;
 
 export const PushTargetSchema = z
@@ -86,17 +84,13 @@ export const PushTargetSchema = z
     platform: z.enum(ClientPlatform),
     pushToken: z.string().min(1).max(IdentityLimits.devicePushTokenMaxLength),
   })
-  .describe(
-    'Dispositivo al que se puede enviar un push.',
-  ) satisfies z.ZodType<PushTarget>;
+  .describe('Device that can receive a push.') satisfies z.ZodType<PushTarget>;
 
 export const PushTargetsSchema = z
   .object({
     targets: z.array(PushTargetSchema).max(IdentityLimits.maxPushTargets),
   })
-  .describe(
-    'Dispositivos con push de un usuario.',
-  ) satisfies z.ZodType<PushTargets>;
+  .describe('Push devices of a user.') satisfies z.ZodType<PushTargets>;
 
 export const ListMembersByPermissionInputSchema = z
   .strictObject({
@@ -106,12 +100,12 @@ export const ListMembersByPermissionInputSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Miembros de un tenant que tienen un permiso.',
+    'Members of a tenant that have a permission.',
   ) satisfies z.ZodType<ListMembersByPermissionInput>;
 
 export const UserRefPageSchema = pageOf(
   UserRefSchema,
-  'Página de usuarios.',
+  'Page of users.',
 ) satisfies z.ZodType<UserRefPage>;
 
 export const UserErasedPayloadSchema = z
@@ -120,4 +114,4 @@ export const UserErasedPayloadSchema = z
     homeTenantId: IdSchema,
     erasedAt: TimestampSchema,
   })
-  .describe('Se borró a un usuario.') satisfies z.ZodType<UserErasedPayload>;
+  .describe('A user was erased.') satisfies z.ZodType<UserErasedPayload>;

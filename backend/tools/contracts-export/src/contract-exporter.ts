@@ -8,7 +8,7 @@ import type { ExportPaths } from './export-paths.js';
 import type { SchemaExportBuilder } from './schema-export-builder.js';
 import type { TopologyBuilder } from './topology-builder.js';
 
-/** Orquesta la exportación: carga los contratos, arma los artefactos del alcance pedido y los entrega al escritor. */
+/** Orchestrates the export: loads the contracts, builds the artifacts for the requested scope and hands them to the writer. */
 export class ContractExporter {
   constructor(
     private readonly registry: ContractRegistry,

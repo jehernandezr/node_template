@@ -4,47 +4,47 @@ import type { AwsCredentials } from './aws-credentials.js';
 import type { AwsCredentialsProvider } from './aws-credentials-provider.js';
 
 /**
- * Identidad que firma el token. `ValkeyModule` la arma con sus propias
- * variables (`VALKEY_USER`, `VALKEY_CACHE_NAME`, `VALKEY_AUTH`) y la pasa en
- * cada llamada, así esos datos no se declaran dos veces.
+ * Identity that signs the token. `ValkeyModule` builds it from its own
+ * variables (`VALKEY_USER`, `VALKEY_CACHE_NAME`, `VALKEY_AUTH`) and passes it on
+ * each call, so that data is not declared twice.
  */
 export interface ElastiCacheIamAuthRequest {
-  /** Usuario de ElastiCache. Con autenticación IAM su id y su nombre coinciden. */
+  /** ElastiCache user. With IAM authentication its id and its name match. */
   readonly userId: string;
   /**
-   * Nombre de la caché serverless o del grupo de replicación. Es el host de la
-   * petición firmada, no el endpoint de conexión.
+   * Name of the serverless cache or the replication group. It is the host of the
+   * signed request, not the connection endpoint.
    */
   readonly cacheName: string;
-  /** La caché es serverless: el token lo declara con `ResourceType`. */
+  /** The cache is serverless: the token declares it with `ResourceType`. */
   readonly serverless: boolean;
 }
 
 /**
- * Proveedor del token IAM con el que un usuario de ElastiCache se autentica
- * (`AUTH <usuario> <token>`). El token es una petición `connect` prefirmada con
- * SigV4 y sirve 15 minutos: el cliente de Valkey pide uno nuevo en cada
- * conexión y reconexión, así nunca presenta uno vencido. Cumple por forma el
- * puerto `ValkeyAuthTokenProvider`, sin que `aws` dependa de `valkey`.
+ * Provider of the IAM token an ElastiCache user authenticates with
+ * (`AUTH <user> <token>`). The token is a `connect` request presigned with
+ * SigV4 and is valid for 15 minutes: the Valkey client requests a new one on each
+ * connection and reconnection, so it never presents an expired one. It satisfies the
+ * `ValkeyAuthTokenProvider` port by shape, without `aws` depending on `valkey`.
  */
 export class ElastiCacheIamAuthTokenProvider {
-  /** Vigencia del token IAM de ElastiCache: 15 minutos. */
+  /** Lifetime of the ElastiCache IAM token: 15 minutes. */
   static readonly TOKEN_TTL_SECONDS = 900;
 
   private static readonly ALGORITHM = 'AWS4-HMAC-SHA256';
   private static readonly SERVICE = 'elasticache';
-  /** SHA-256 del cuerpo vacío: la petición firmada es un GET sin cuerpo. */
+  /** SHA-256 of the empty body: the signed request is a GET without a body. */
   private static readonly EMPTY_PAYLOAD_SHA256 =
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
-  /** @param region Región de la caché, la de `AWS_REGION`. */
+  /** @param region Region of the cache, the one in `AWS_REGION`. */
   constructor(
     private readonly region: string,
     private readonly credentials: AwsCredentialsProvider,
     private readonly clock: Clock,
   ) {}
 
-  /** Token vigente para esa identidad, firmado con las credenciales de este instante. */
+  /** Current token for that identity, signed with the credentials of this instant. */
   async token(request: ElastiCacheIamAuthRequest): Promise<string> {
     return this.sign(
       request,
@@ -54,8 +54,8 @@ export class ElastiCacheIamAuthTokenProvider {
   }
 
   /**
-   * Firma el token para un instante dado. Es la prefirma SigV4 de
-   * `GET http://<cacheName>/?Action=connect&User=<userId>` sin el esquema.
+   * Signs the token for a given instant. It is the SigV4 presignature of
+   * `GET http://<cacheName>/?Action=connect&User=<userId>` without the scheme.
    */
   sign(
     request: ElastiCacheIamAuthRequest,
@@ -120,7 +120,7 @@ export class ElastiCacheIamAuthTokenProvider {
     return `${cacheName}/?${canonicalQuery}&X-Amz-Signature=${signature}`;
   }
 
-  /** Codificación de SigV4: todo menos `A-Z a-z 0-9 - _ . ~`, en mayúsculas. */
+  /** SigV4 encoding: everything except `A-Z a-z 0-9 - _ . ~`, in uppercase. */
   private encode(value: string): string {
     return encodeURIComponent(value).replace(
       /[!'()*]/g,

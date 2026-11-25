@@ -1,9 +1,9 @@
-/** Estado de una llave de idempotencia al pedir el claim. */
+/** State of an idempotency key when requesting the claim. */
 export enum ClaimState {
-  /** Este intento es dueño de la llave hasta `leaseUntil` y debe completarla o liberarla. */
+  /** This attempt owns the key until `leaseUntil` and must complete or release it. */
   Acquired = 'acquired',
-  /** Otro intento es dueño y su lease sigue vigente. */
+  /** Another attempt owns it and its lease is still valid. */
   InProgress = 'in-progress',
-  /** La operación ya terminó; se devuelve el resultado guardado. */
+  /** The operation already finished; the stored result is returned. */
   Completed = 'completed',
 }

@@ -1,7 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { RateLimitErrorCode } from './rate-limit-error-code.enum.js';
 
-/** Se superó el límite de una regla. Es transitorio: reintentar después de la espera. */
+/** The limit of a rule was exceeded. It is transient: retry after the wait. */
 export class RateLimitExceededError extends PlatformError {
   override readonly code = RateLimitErrorCode.Exceeded;
 

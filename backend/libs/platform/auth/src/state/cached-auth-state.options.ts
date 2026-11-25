@@ -1,7 +1,7 @@
-/** Opciones de `CachedAuthStateReader`. */
+/** Options of `CachedAuthStateReader`. */
 export interface CachedAuthStateOptions {
-  /** Cuánto vive en memoria una época o una versión de permisos. */
+  /** How long an epoch or a permission version lives in memory. */
   readonly ttlMs: number;
-  /** Entradas máximas por tipo de dato; al pasarse sale la menos usada. */
+  /** Maximum entries per data type; when exceeded, the least used is evicted. */
   readonly maxEntries: number;
 }

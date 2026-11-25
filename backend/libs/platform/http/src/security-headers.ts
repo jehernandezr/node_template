@@ -1,7 +1,7 @@
 import { HttpHeader } from './http-header.enum.js';
 import { HttpLimits } from './http-limits.js';
 
-/** Cabeceras de seguridad de cada respuesta. Las rutas de auth además no se guardan en caché. */
+/** Security headers of every response. Auth routes are also never cached. */
 export class SecurityHeaders {
   static forPath(path: string): Record<string, string> {
     const headers: Record<string, string> = {

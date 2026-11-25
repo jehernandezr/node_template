@@ -1,25 +1,25 @@
 import type { Topology } from '@platform/messaging';
 
-/** Publicación directa sobre SNS y SQS con `SnsSqsMessageBus`. */
+/** Direct publishing on SNS and SQS with `SnsSqsMessageBus`. */
 export interface AwsMessagingOptions {
-  /** Topología del servicio, la misma que recibe `MessagingModule`. */
+  /** Topology of the service, the same one `MessagingModule` receives. */
   readonly topology: Topology;
-  /** Atributo `source` de los sobres que publica `SnsSqsMessageBus`. */
+  /** `source` attribute of the envelopes `SnsSqsMessageBus` publishes. */
   readonly source: string;
 }
 
-/** Opciones de `AwsModule`. */
+/** Options of `AwsModule`. */
 export interface AwsModuleOptions {
   /**
-   * Con ella el módulo registra `SnsSqsMessageBus`, que `MessagingModule`
-   * recibe como `bus`. Sin ella solo registra los clientes, los nombres, el
-   * traductor de errores y `SnsSqsEnvelopePublisher`.
+   * With it the module registers `SnsSqsMessageBus`, which `MessagingModule`
+   * receives as `bus`. Without it, it only registers the clients, the names, the
+   * error translator and `SnsSqsEnvelopePublisher`.
    */
   readonly messaging?: AwsMessagingOptions;
   /**
-   * `true` registra `ElastiCacheIamAuthTokenProvider`, que `ValkeyModule` recibe
-   * como `authToken`. La región sale de `AWS_REGION`; el usuario, la caché y si
-   * es serverless los pone `ValkeyModule` desde su configuración. Por defecto `false`.
+   * `true` registers `ElastiCacheIamAuthTokenProvider`, which `ValkeyModule` receives
+   * as `authToken`. The region comes from `AWS_REGION`; the user, the cache and whether
+   * it is serverless are set by `ValkeyModule` from its configuration. Defaults to `false`.
    */
   readonly elastiCache?: boolean;
 }

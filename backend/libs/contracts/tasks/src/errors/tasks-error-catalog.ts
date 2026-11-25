@@ -3,17 +3,21 @@ import { TasksErrorCode as C } from '../enums/identifiers.enum.js';
 
 const pub = ErrorSpecs.pub;
 
-/** Catálogo de los códigos de tasks. */
+/** Catalog of the tasks codes. */
 export const tasksErrorCatalog = defineErrorCatalog(C, {
-  [C.TaskNotFound]: pub(404, false, 'La tarea no existe en el tenant activo.'),
+  [C.TaskNotFound]: pub(
+    404,
+    false,
+    'The task does not exist in the active tenant.',
+  ),
   [C.TaskVersionConflict]: pub(
     409,
     false,
-    'La tarea cambió desde que se leyó: la versión esperada ya no es la actual.',
+    'The task changed since it was read: the expected version is no longer the current one.',
   ),
   [C.SearchQueryTooShort]: pub(
     400,
     false,
-    'El texto de búsqueda es más corto que el mínimo permitido.',
+    'The search text is shorter than the allowed minimum.',
   ),
 });

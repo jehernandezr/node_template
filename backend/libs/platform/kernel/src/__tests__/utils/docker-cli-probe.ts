@@ -2,8 +2,8 @@ import { spawnSync } from 'node:child_process';
 import { ContainerProbe } from './container-probe.js';
 
 /**
- * Consulta el demonio con `docker info`. Es síncrono porque Jest decide en
- * tiempo de recolección qué suites registra, antes de correr ninguna prueba.
+ * Queries the daemon with `docker info`. It is synchronous because Jest decides at
+ * collection time which suites it registers, before running any test.
  */
 export class DockerCliProbe extends ContainerProbe {
   isRunning(): boolean {

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NonJsonValueError } from '../errors/non-json-value.error.js';
 
-/** Valor JSON. Los objetos canónicos no tienen prototipo. */
+/** JSON value. Canonical objects have no prototype. */
 export type CanonicalJsonValue =
   | null
   | boolean
@@ -10,33 +10,33 @@ export type CanonicalJsonValue =
   | readonly CanonicalJsonValue[]
   | { readonly [key: string]: CanonicalJsonValue };
 
-/** JSON canónico: mismas claves ordenadas y mismos números, sea cual sea el origen del valor. */
+/** Canonical JSON: same sorted keys and same numbers, regardless of the value's origin. */
 export class CanonicalJson {
-  /** Profundidad máxima de anidamiento aceptada. */
+  /** Maximum accepted nesting depth. */
   static readonly MAX_DEPTH = 128;
 
   /**
-   * Copia profunda de `value` con las llaves de cada objeto ordenadas y objetos
-   * sin prototipo. Acepta null, booleanos, números finitos, strings, arreglos y
-   * objetos planos. Rechaza con `NonJsonValueError` (con la ruta del valor)
-   * undefined (salvo como valor de una propiedad, que se omite), funciones,
-   * símbolos, bigint, NaN, Infinity, instancias de clases (Date, Map, Set,
-   * Buffer...), ciclos y anidamiento mayor a `MAX_DEPTH`.
+   * Returns a deep copy of `value` with the keys of each object sorted and objects
+   * without a prototype. Accepts null, booleans, finite numbers, strings, arrays and
+   * plain objects. Rejects with `NonJsonValueError` (with the path of the value)
+   * undefined (except as a property value, which is omitted), functions,
+   * symbols, bigint, NaN, Infinity, class instances (Date, Map, Set,
+   * Buffer...), cycles and nesting greater than `MAX_DEPTH`.
    */
   static canonicalize(value: unknown): CanonicalJsonValue {
     return CanonicalJson.canonicalizeAt(value, '$', new Set());
   }
 
   /**
-   * Texto JSON determinista: llaves ordenadas por unidad de código UTF-16 en
-   * todos los niveles y sin espacios. Dos valores iguales en estructura
-   * producen el mismo texto sin importar el orden de inserción.
+   * Returns deterministic JSON text: keys sorted by UTF-16 code unit at
+   * all levels and without whitespace. Two structurally equal values
+   * produce the same text regardless of insertion order.
    */
   static stringify(value: unknown): string {
     return CanonicalJson.serialize(CanonicalJson.canonicalize(value));
   }
 
-  /** Huella SHA-256 en hexadecimal (64 caracteres) del texto canónico de `value`. */
+  /** Returns the SHA-256 fingerprint in hexadecimal (64 characters) of the canonical text of `value`. */
   static digest(value: unknown): string {
     return createHash('sha256')
       .update(CanonicalJson.stringify(value))
@@ -81,7 +81,7 @@ export class CanonicalJson {
         if (!Number.isFinite(value)) {
           throw new NonJsonValueError(path, 'non-finite number');
         }
-        // JSON no distingue -0 de 0.
+        // JSON does not distinguish -0 from 0.
         return value === 0 ? 0 : value;
       case 'object':
         break;
@@ -106,7 +106,7 @@ export class CanonicalJson {
       if (Array.isArray(value)) {
         const items: CanonicalJsonValue[] = [];
         for (let index = 0; index < value.length; index += 1) {
-          // Los huecos de un arreglo disperso llegan como undefined y se rechazan.
+          // The holes of a sparse array arrive as undefined and are rejected.
           items.push(
             CanonicalJson.canonicalizeAt(
               (value as unknown[])[index],
@@ -121,11 +121,11 @@ export class CanonicalJson {
         throw new NonJsonValueError(path, CanonicalJson.describe(value));
       }
       const source = value as Record<string, unknown>;
-      // Sin prototipo: una llave `__proto__` o `constructor` queda como dato propio.
+      // No prototype: a `__proto__` or `constructor` key stays as own data.
       const sorted = Object.create(null) as Record<string, CanonicalJsonValue>;
       for (const key of Object.keys(source).sort()) {
         const child = source[key];
-        // Igual que JSON.stringify: una propiedad undefined equivale a no tenerla.
+        // Same as JSON.stringify: an undefined property is equivalent to not having it.
         if (child !== undefined) {
           sorted[key] = CanonicalJson.canonicalizeAt(
             child,
@@ -141,8 +141,8 @@ export class CanonicalJson {
   }
 
   /**
-   * JSON.stringify enumera primero las llaves con forma de índice ("2", "10") en
-   * orden numérico, así que el texto se arma a mano para respetar el orden UTF-16.
+   * JSON.stringify lists index-like keys ("2", "10") first in
+   * numeric order, so the text is built by hand to respect UTF-16 order.
    */
   private static serialize(value: CanonicalJsonValue): string {
     if (value === null || typeof value !== 'object') {

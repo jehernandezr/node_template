@@ -1,4 +1,4 @@
-/** Códigos de error estables de `@platform/messaging`. */
+/** Stable error codes of `@platform/messaging`. */
 export enum MessagingErrorCode {
   InvalidEnvelope = 'PLATFORM.MESSAGING.INVALID_ENVELOPE',
   InvalidPayload = 'PLATFORM.MESSAGING.INVALID_PAYLOAD',
@@ -9,14 +9,14 @@ export enum MessagingErrorCode {
   DuplicateHandler = 'PLATFORM.MESSAGING.DUPLICATE_HANDLER',
   PermanentError = 'PLATFORM.MESSAGING.PERMANENT_ERROR',
   PayloadTooLarge = 'PLATFORM.MESSAGING.PAYLOAD_TOO_LARGE',
-  /** El tenant del sobre no coincide con el que espera el consumidor. */
+  /** The envelope tenant does not match the one the consumer expects. */
   TenantMismatch = 'PLATFORM.MESSAGING.TENANT_MISMATCH',
-  /** Un id de mensaje se reutilizó con otro contenido. */
+  /** A message id was reused with different content. */
   IdempotencyConflict = 'PLATFORM.MESSAGING.IDEMPOTENCY_CONFLICT',
-  /** Opciones inválidas del relay, del dispatcher o de la publicación. */
+  /** Invalid options of the relay, the dispatcher or the publication. */
   InvalidOptions = 'PLATFORM.MESSAGING.INVALID_OPTIONS',
-  /** Se usó el bus del outbox fuera de una unidad de trabajo. */
+  /** The outbox bus was used outside a unit of work. */
   TransactionRequired = 'PLATFORM.MESSAGING.TRANSACTION_REQUIRED',
-  /** El transporte (SNS, SQS) falló o rechazó la llamada. */
+  /** The transport (SNS, SQS) failed or rejected the call. */
   TransportFailed = 'PLATFORM.MESSAGING.TRANSPORT_FAILED',
 }

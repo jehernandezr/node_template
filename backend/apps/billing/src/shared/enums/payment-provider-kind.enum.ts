@@ -1,4 +1,4 @@
-/** Proveedores de cobro que elige `BILLING_PAYMENT_PROVIDER`. El real llega después de F12. */
+/** Charge providers selected by `BILLING_PAYMENT_PROVIDER`. The real one arrives after F12. */
 export enum PaymentProviderKind {
   Fake = 'fake',
 }

@@ -15,15 +15,15 @@ import { ReportsQueue } from '../enums/identifiers.enum.js';
 import { ExecuteRunCommand } from './reports.commands.js';
 import { NotificationsEventsReference } from './reports.references.js';
 
-/** Ejecuciones de reporte pendientes. El cálculo puede tardar, por eso el plazo de visibilidad es largo. */
+/** Pending report runs. The computation can take a while, which is why the visibility timeout is long. */
 export const RunsQueue = defineQueue({
   name: ReportsQueue.Runs,
   visibilityTimeoutSeconds: 300,
   commands: [ExecuteRunCommand],
-  description: 'Ejecuciones de reporte que reports se envía a sí mismo.',
+  description: 'Report runs that reports sends to itself.',
 });
 
-/** Proyecciones de tareas que alimentan los reportes de tareas. */
+/** Task projections that feed the task reports. */
 export const ProjectionsQueue = defineQueue({
   name: ReportsQueue.Projections,
   subscriptions: [
@@ -32,11 +32,10 @@ export const ProjectionsQueue = defineQueue({
       events: [TaskCreatedEvent, TaskUpdatedEvent, TaskDeletedEvent],
     },
   ],
-  description:
-    'Proyección de tareas por tenant, alimentada por los eventos de tasks.',
+  description: 'Per-tenant task projection, fed by the tasks events.',
 });
 
-/** Proyecciones de facturas y entregas que alimentan los reportes financieros. */
+/** Invoice and delivery projections that feed the financial reports. */
 export const FinanceProjectionsQueue = defineQueue({
   name: ReportsQueue.FinanceProjections,
   subscriptions: [
@@ -50,5 +49,5 @@ export const FinanceProjectionsQueue = defineQueue({
     },
   ],
   description:
-    'Proyección de facturas y entregas, alimentada por billing y notifications.',
+    'Invoice and delivery projection, fed by billing and notifications.',
 });

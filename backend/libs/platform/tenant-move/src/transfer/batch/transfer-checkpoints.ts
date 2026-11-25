@@ -1,18 +1,18 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 import type { TableChecksum } from './table-checksum.js';
 
-/** Lo que una llamada anterior dejó hecho de la verificación de una tabla. */
+/** What a previous call left done of a table's verification. */
 export interface TableCheckpoint {
-  /** Llave de la última fila reconciliada; la siguiente llamada sigue después de ella. */
+  /** Key of the last reconciled row; the next call continues after it. */
   readonly reconciledKey?: readonly string[];
-  /** Conteo y suma con que la tabla quedó igual al origen congelado; con ella la tabla ya no se vuelve a mirar. */
+  /** Count and sum with which the table matched the frozen source; with it the table is not checked again. */
   readonly verified?: TableChecksum;
 }
 
 /**
- * El avance de la verificación de un traslado en `tenant_move_checkpoints` del shard de destino. Con el origen
- * congelado y el destino escrito solo por el traslado, lo verificado sigue verificado, así que una tabla que no cabe
- * en el plazo de una llamada termina en varias.
+ * The verification progress of a move in `tenant_move_checkpoints` on the target shard. With the source
+ * frozen and the target written only by the move, what is verified stays verified, so a table that does not fit
+ * in one call's budget finishes over several.
  */
 export class TransferCheckpoints {
   async read(
@@ -44,7 +44,7 @@ export class TransferCheckpoints {
     };
   }
 
-  /** Anota hasta qué llave quedó reconciliada la tabla; sin llave, la reconciliación vuelve a empezar. */
+  /** Records up to which key the table was reconciled; without a key, reconciliation starts over. */
   async reconciledUpTo(
     runner: QueryRunner,
     moveId: string,
@@ -73,8 +73,8 @@ export class TransferCheckpoints {
   }
 
   /**
-   * Borra el avance del traslado en esas tablas, cuando ya no hace falta o la copia se descarta. Solo las de un
-   * manifiesto: otra copia del mismo traslado puede tener avance propio en el mismo shard.
+   * Deletes the move's progress on those tables, when it is no longer needed or the copy is discarded. Only those of one
+   * manifest: another copy of the same move may have its own progress on the same shard.
    */
   async forget(
     dataSource: DataSource,

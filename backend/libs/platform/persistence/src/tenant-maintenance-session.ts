@@ -5,13 +5,13 @@ import type { AcrossShardsResult } from './model/across-shards-result.js';
 import { TenantWriteFence } from './tenant-write-fence.js';
 
 /**
- * Transacción de mantenimiento sobre un shard entero: marca la sesión para que la política de mantenimiento
- * de las tablas de tenant (`TenantIsolationSql.allowMaintenance`) deje ver y cambiar las filas de todos los
- * tenants. La marca vive solo dentro de esa transacción.
+ * Maintenance transaction over a whole shard: marks the session so that the maintenance policy
+ * of the tenant tables (`TenantIsolationSql.allowMaintenance`) lets it see and change the rows of all
+ * tenants. The mark lives only inside that transaction.
  *
- * Entra además por la barrera de traslado (`TenantWriteFence.enterMaintenance`): falla con `TENANT_MIGRATING` si un
- * traslado está a medio camino en el shard, y el traslado espera a que termine la que ya entró. Las consultas del
- * mantenimiento dejan fuera las filas de los tenants que ya se fueron con `TenantWriteFence.unfenced`.
+ * It also enters through the relocation barrier (`TenantWriteFence.enterMaintenance`): fails with `TENANT_MIGRATING` if a
+ * relocation is halfway through on the shard, and the relocation waits for the one that already entered to finish. The
+ * maintenance queries leave out the rows of tenants that already left with `TenantWriteFence.unfenced`.
  */
 export class TenantMaintenanceSession {
   private static readonly fence = new TenantWriteFence();
@@ -31,9 +31,9 @@ export class TenantMaintenanceSession {
   }
 
   /**
-   * Para los mantenimientos que nadie repite solo, como el borrado de los datos de un usuario: si un shard no corrió
-   * porque tenía un traslado a medio camino, falla para que quien llama lo repita.
-   * @throws ShardingError `TenantMigrating` si algún shard no corrió por un traslado.
+   * For maintenance tasks that nobody repeats on their own, such as deleting a user's data: if a shard did not run
+   * because it had a relocation halfway through, fails so the caller repeats it.
+   * @throws ShardingError `TenantMigrating` if some shard did not run because of a relocation.
    */
   static requireEveryShard<T>(outcome: AcrossShardsResult<T>): void {
     const migrating = outcome.failures.find(

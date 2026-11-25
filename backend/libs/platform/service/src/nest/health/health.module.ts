@@ -7,9 +7,9 @@ import { HealthRegistrar } from './health-registrar.js';
 import { ShardsHealthCheck } from './shards-health-check.js';
 
 /**
- * Salud del servicio. `HealthRegistry` viene de `ObservabilityModule`; `CatalogDataSource` y
- * `ShardDataSources`, de `PersistenceModule`; `DirectoryShardLister`, de `PostgresPlatformModule`.
- * Todos son globales, así que este módulo no los importa.
+ * Service health. `HealthRegistry` comes from `ObservabilityModule`; `CatalogDataSource` and
+ * `ShardDataSources`, from `PersistenceModule`; `DirectoryShardLister`, from `PostgresPlatformModule`.
+ * All of them are global, so this module does not import them.
  */
 @Module({
   controllers: [HealthEndpoints],

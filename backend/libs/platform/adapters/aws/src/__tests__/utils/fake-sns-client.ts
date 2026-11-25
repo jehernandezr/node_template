@@ -6,15 +6,15 @@ import {
 } from './sdk-responder-table.js';
 
 /**
- * `SNSClient` falso: responde con lo registrado por clase de comando (`{}` si
- * no hay) y cuenta los cierres.
+ * Fake `SNSClient`: responds with what was registered per command class (`{}` if
+ * there is none) and counts the closes.
  */
 export class FakeSnsClient extends SNSClient {
-  /** Veces que se llamó `destroy()`. */
+  /** Times `destroy()` was called. */
   closes = 0;
   private readonly table = new SdkResponderTable();
 
-  /** Credenciales fijas: así nada consulta la cadena por defecto del SDK. */
+  /** Fixed credentials: so nothing queries the SDK's default chain. */
   static readonly CREDENTIALS = {
     accessKeyId: 'AKIDFAKE',
     secretAccessKey: 'fake-secret',
@@ -36,7 +36,7 @@ export class FakeSnsClient extends SNSClient {
     return this;
   }
 
-  /** Respuesta de un solo uso; después vuelve a la de `on` o a la de por defecto. */
+  /** One-time response; afterwards it goes back to the `on` one or the default. */
   once<I extends object>(
     command: SdkCommandClass<I>,
     responder: (input: I) => unknown,
@@ -49,7 +49,7 @@ export class FakeSnsClient extends SNSClient {
     return this.table.sentOf(command);
   }
 
-  // Mismo motivo que `FakeSqsClient.send`: el único cast de la clase.
+  // Same reason as `FakeSqsClient.send`: the only cast in the class.
   override send = (async (command: SdkCommand) => {
     const answer = this.table.respond(command);
     return answer.found ? answer.value : {};

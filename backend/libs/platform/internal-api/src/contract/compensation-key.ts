@@ -1,20 +1,20 @@
 import { StepKeyDirection } from './step-key-direction.enum.js';
 
 /**
- * Convención de llaves que comparten un paso y su compensación: `<base>:forward` y `<base>:compensate`, con la misma
- * base. La usan las sagas al llamar y el servidor para poner la lápida del paso que se deshace.
+ * Convention for keys shared by a step and its compensation: `<base>:forward` and `<base>:compensate`, with the same
+ * base. Sagas use it when calling and the server uses it to place the tombstone of the step being undone.
  */
 export class CompensationKey {
-  /** Huella de la lápida: ninguna entrada real la produce, así que un claim con ella nunca se confunde con un paso. */
+  /** Tombstone hash: no real input produces it, so a claim with it is never mistaken for a step. */
   static readonly TOMBSTONE_FINGERPRINT = 'compensated-step-tombstone';
   private static readonly SEPARATOR = ':';
 
-  /** La llave de `base` en la dirección dada. */
+  /** Returns the key of `base` in the given direction. */
   static of(base: string, direction: StepKeyDirection): string {
     return `${base}${CompensationKey.SEPARATOR}${direction}`;
   }
 
-  /** La llave hacia delante que deshace una llave de compensación, o `undefined` si no sigue la convención. */
+  /** Returns the forward key that a compensation key undoes, or `undefined` if it does not follow the convention. */
   static forwardOf(key: string): string | undefined {
     const suffix = `${CompensationKey.SEPARATOR}${StepKeyDirection.Compensate}`;
     if (!key.endsWith(suffix) || key.length === suffix.length) {

@@ -1,6 +1,6 @@
 import type { RealtimeTransport } from '../realtime-transport.js';
 
-/** Los transportes encendidos del proceso; vacío cuando el servicio solo publica. */
+/** The process's enabled transports; empty when the service only publishes. */
 export class RealtimeTransports {
   constructor(readonly all: readonly RealtimeTransport[]) {}
 }

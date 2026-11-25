@@ -15,7 +15,7 @@ import { TypeOrmMemberRoster } from '../infrastructure/persistence/typeorm-membe
 import { TypeOrmUsageLedger } from '../infrastructure/persistence/typeorm-usage-ledger.js';
 import { UsageConsumer } from './usage.consumer.js';
 
-/** Uso medido de cada tenant y su conteo de miembros. Global solo para su fachada. */
+/** Metered usage of each tenant and its member count. Global only for its facade. */
 @Global()
 @Module({
   imports: [

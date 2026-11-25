@@ -3,9 +3,9 @@ import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js'
 import { InternalCallAuthenticator } from './internal-call-authenticator.js';
 
 /**
- * Autenticador que rechaza toda llamada. El módulo lo usa cuando no recibe
- * las opciones `http`: sin secreto, el controller no acepta nada en lugar de
- * aceptarlo todo.
+ * Authenticator that rejects every call. The module uses it when it does not receive
+ * the `http` options: without a secret, the controller accepts nothing instead of
+ * accepting everything.
  */
 export class DenyAllInternalCallAuthenticator extends InternalCallAuthenticator {
   authenticate(): Promise<void> {

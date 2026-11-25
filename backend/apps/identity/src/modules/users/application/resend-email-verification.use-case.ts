@@ -9,7 +9,7 @@ import {
 } from '../domain/email-proof-store.js';
 import { UserReader } from './user-reader.js';
 
-/** Envía otro correo de verificación. Responde igual exista o no la cuenta. */
+/** Sends another verification email. Responds the same whether or not the account exists. */
 @Injectable()
 export class ResendEmailVerification implements UseCase<string, void> {
   constructor(

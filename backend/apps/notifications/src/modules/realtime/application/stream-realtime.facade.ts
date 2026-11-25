@@ -7,7 +7,7 @@ import type { UserRef } from '@contracts/platform';
 import { RealtimeFrames, RealtimePublisher } from '@platform/realtime';
 import { RealtimeFacade } from './realtime.facade.js';
 
-/** `RealtimeFacade` sobre el stream de tiempo real de cada usuario, que leen los transportes donde corran. */
+/** `RealtimeFacade` over each user's real-time stream, read by the transports wherever they run. */
 @Injectable()
 export class StreamRealtimeFacade extends RealtimeFacade {
   constructor(private readonly publisher: RealtimePublisher) {

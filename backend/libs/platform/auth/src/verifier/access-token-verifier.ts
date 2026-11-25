@@ -20,27 +20,27 @@ import { PermissionVersionCodec } from '../state/permission-version-codec.js';
 import type { VerifyOptions } from './verify-options.js';
 
 /**
- * Verifica un access token y arma el `UserActor`, sin llamar a identity. Revisa
- * en este orden y se detiene en el primer fallo:
+ * Verifies an access token and builds the `UserActor`, without calling identity. Checks
+ * in this order and stops at the first failure:
  *
- * | Paso | Revisión | Error |
- * | 1 | Largo máximo, tres partes, `alg` ES256, `typ` at+jwt, sin `crit` | `unauthenticated` |
- * | 2 | `kid` conocido y firma ES256 | `unauthenticated` |
- * | 3 | Claims válidos (`AccessTokenClaimsSchema`), `iss` y `aud` | `unauthenticated` |
- * | 4 | `exp` vencido con 30 s de tolerancia; `iat` más de 30 s en el futuro | `tokenExpired`; `unauthenticated` |
- * | 5 | `sxp` vencido | `sessionExpired` |
- * | 6 | `sid` revocado | `sessionRevoked` |
- * | 7 | Época del usuario: suspendido, luego `iat` menor que `revokedBefore` | `userSuspended`; `tokenRevoked` |
- * | 8 | Época del tenant `tid`: suspendido, luego `iat` menor que `revokedBefore` | `tenantSuspended`; `tokenRevoked` |
- * | 9 | `pv` anterior al vigente (`AuthStateReader.permissionVersion`, o `AccessResolver` si falta) | `stalePermissions` |
+ * | Step | Check | Error |
+ * | 1 | Maximum length, three parts, `alg` ES256, `typ` at+jwt, no `crit` | `unauthenticated` |
+ * | 2 | Known `kid` and ES256 signature | `unauthenticated` |
+ * | 3 | Valid claims (`AccessTokenClaimsSchema`), `iss` and `aud` | `unauthenticated` |
+ * | 4 | `exp` expired with 30 s tolerance; `iat` more than 30 s in the future | `tokenExpired`; `unauthenticated` |
+ * | 5 | `sxp` expired | `sessionExpired` |
+ * | 6 | `sid` revoked | `sessionRevoked` |
+ * | 7 | User epoch: suspended, then `iat` less than `revokedBefore` | `userSuspended`; `tokenRevoked` |
+ * | 8 | Epoch of tenant `tid`: suspended, then `iat` less than `revokedBefore` | `tenantSuspended`; `tokenRevoked` |
+ * | 9 | `pv` older than the current one (`AuthStateReader.permissionVersion`, or `AccessResolver` if missing) | `stalePermissions` |
  *
- * En el paso 9 un `pv` más nuevo que el vigente se acepta: las versiones solo suben
- * y la caché local puede ir unos segundos atrás de identity; rechazarlo haría que un
- * token recién emitido tras un cambio de permisos fallara en bucle hasta que la caché
- * venza. Es anterior si su versión de tenant o la de usuario es menor que la vigente.
+ * In step 9 a `pv` newer than the current one is accepted: versions only go up
+ * and the local cache may lag identity by a few seconds; rejecting it would make a
+ * token just issued after a permission change fail in a loop until the cache
+ * expires. It is older if its tenant version or its user version is less than the current one.
  *
- * Todo fallo de `AuthStateReader`, `AccessResolver` o `JwksKeySource` que no sea
- * un `AuthenticationError` se traduce a `AuthenticationError.stateUnavailable`.
+ * Any failure of `AuthStateReader`, `AccessResolver` or `JwksKeySource` that is not
+ * an `AuthenticationError` is translated to `AuthenticationError.stateUnavailable`.
  */
 export class AccessTokenVerifier {
   constructor(
@@ -51,7 +51,7 @@ export class AccessTokenVerifier {
     private readonly issuer: string,
   ) {}
 
-  /** @throws AuthenticationError con el código del paso que falló. */
+  /** @throws AuthenticationError with the code of the step that failed. */
   async verify(token: string, options: VerifyOptions): Promise<UserActor> {
     const parsed = this.parseToken(token);
     await this.checkSignature(parsed);
@@ -63,7 +63,7 @@ export class AccessTokenVerifier {
     return this.toActor(claims);
   }
 
-  /** Paso 1: tamaño, formato compacto y header. */
+  /** Step 1: size, compact format and header. */
   private parseToken(token: string): ParsedJwt {
     if (token.length > AccessTokenFormat.MAX_LENGTH) {
       throw AuthenticationError.unauthenticated('token too long');
@@ -82,7 +82,7 @@ export class AccessTokenVerifier {
     return parsed;
   }
 
-  /** Paso 2: el `kid` tiene clave publicada y la firma ES256 corresponde. */
+  /** Step 2: the `kid` has a published key and the ES256 signature matches. */
   private async checkSignature(parsed: ParsedJwt): Promise<void> {
     const key = await this.keyFor(parsed.header.kid);
     if (!JwtCodec.verifySignature(parsed, key)) {
@@ -105,7 +105,7 @@ export class AccessTokenVerifier {
     return key;
   }
 
-  /** Paso 3: forma de los claims, emisor y audiencia. */
+  /** Step 3: claims shape, issuer and audience. */
   private readClaims(
     parsed: ParsedJwt,
     options: VerifyOptions,
@@ -124,7 +124,7 @@ export class AccessTokenVerifier {
     return claims;
   }
 
-  /** Pasos 4 y 5: vencimiento del token con tolerancia y tope absoluto de la sesión. */
+  /** Steps 4 and 5: token expiry with tolerance and absolute session cap. */
   private checkLifetime(claims: AccessTokenClaims): void {
     const nowMs = this.clock.now().getTime();
     if (claims.exp * 1000 + AccessTokenFormat.CLOCK_SKEW_MS <= nowMs) {
@@ -138,7 +138,7 @@ export class AccessTokenVerifier {
     }
   }
 
-  /** Paso 6: sesión revocada. */
+  /** Step 6: revoked session. */
   private async checkSession(claims: AccessTokenClaims): Promise<void> {
     const revoked = await this.guarded(() =>
       this.state.isSessionRevoked(claims.sid),
@@ -148,7 +148,7 @@ export class AccessTokenVerifier {
     }
   }
 
-  /** Pasos 7 y 8: época del usuario y luego la del tenant activo. */
+  /** Steps 7 and 8: user epoch and then that of the active tenant. */
   private async checkEpochs(claims: AccessTokenClaims): Promise<void> {
     const userEpoch = await this.guarded(() =>
       this.state.userEpoch(claims.sub),
@@ -173,7 +173,7 @@ export class AccessTokenVerifier {
     }
   }
 
-  /** Paso 9: el `pv` del token no es anterior a la versión vigente. */
+  /** Step 9: the token's `pv` is not older than the current version. */
   private async checkPermissionVersion(
     claims: AccessTokenClaims,
   ): Promise<void> {
@@ -190,7 +190,7 @@ export class AccessTokenVerifier {
     }
   }
 
-  /** Versión vigente: la de la caché de estado o, si falta, la que trae el grant. */
+  /** Current version: the one from the state cache or, if missing, the one the grant carries. */
   private async currentPermissionVersion(
     tenantId: string,
     userId: string,
@@ -233,7 +233,7 @@ export class AccessTokenVerifier {
     };
   }
 
-  /** Traduce cualquier falla de una dependencia en `stateUnavailable`, salvo las que ya son de autenticación. */
+  /** Translates any dependency failure into `stateUnavailable`, except those that are already authentication failures. */
   private async guarded<T>(operation: () => Promise<T>): Promise<T> {
     try {
       return await operation();

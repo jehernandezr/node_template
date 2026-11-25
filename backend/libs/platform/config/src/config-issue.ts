@@ -1,7 +1,7 @@
 export interface ConfigIssue {
-  /** Ruta con puntos a la llave inválida, por ejemplo `LOG_SAMPLE_RATE`. `(root)` si se rechaza todo el valor. */
+  /** Dotted path to the invalid key, for example `LOG_SAMPLE_RATE`. `(root)` if the whole value is rejected. */
   readonly path: string;
   readonly code: string;
-  /** Mensaje del validador. Nunca incluye el valor recibido. */
+  /** Validator message. Never includes the received value. */
   readonly message: string;
 }

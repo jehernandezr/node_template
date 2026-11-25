@@ -6,8 +6,8 @@ import {
 } from '../schemas/report.schema.js';
 
 /**
- * Borra al solicitante de las ejecuciones y proyecciones de reports. Corre después
- * del pivote de la saga: se repite hasta terminar y no se revierte.
+ * Deletes the requester from the reports runs and projections. Runs after
+ * the saga pivot: it is retried until it finishes and is not reverted.
  */
 export const EraseReportsUserDataOperation = defineOperation({
   id: ReportsOperation.EraseUserData,
@@ -16,8 +16,7 @@ export const EraseReportsUserDataOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Borrar al solicitante es irreversible y corre después del pivote de la saga: se repite hasta terminar y no se revierte.',
+    'Erasing the requester is irreversible and runs after the saga pivot: it is retried until finished and is not reverted.',
   timeoutMs: 6_000,
-  description:
-    'Borra los datos del usuario en las ejecuciones y las proyecciones.',
+  description: 'Deletes the user data in the runs and the projections.',
 });

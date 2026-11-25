@@ -1,7 +1,7 @@
 import { DeliveryContext } from '../../../dispatch/delivery-context.js';
 import type { MessageEnvelope } from '../../../envelope/message-envelope.js';
 
-/** Contexto de entrega de prueba: anota el tenant de cada sobre que envuelve. */
+/** Test delivery context: records the tenant of each envelope it wraps. */
 export class RecordingDeliveryContext extends DeliveryContext {
   readonly tenants: Array<string | undefined> = [];
 

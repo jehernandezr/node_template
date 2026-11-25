@@ -17,7 +17,7 @@ import {
   UsageOverviewSchema,
 } from '../schemas/billing.schema.js';
 
-/** `GET /v1/billing/subscription`: suscripción vigente del tenant. */
+/** `GET /v1/billing/subscription`: current subscription of the tenant. */
 export const GetSubscriptionRoute = defineRoute({
   id: BillingRoute.GetSubscription,
   method: HttpMethod.Get,
@@ -25,10 +25,10 @@ export const GetSubscriptionRoute = defineRoute({
   response: SubscriptionSchema,
   errors: [...SessionGuardErrors, BillingErrorCode.SubscriptionNotFound],
   access: Access.authenticated({ permissions: [Permission.BillingRead] }),
-  description: 'Consulta la suscripción del tenant con su plan.',
+  description: 'Gets the tenant subscription with its plan.',
 });
 
-/** `GET /v1/billing/usage`: uso del periodo vigente frente a los límites del plan. */
+/** `GET /v1/billing/usage`: usage of the current period against the plan limits. */
 export const GetUsageRoute = defineRoute({
   id: BillingRoute.GetUsage,
   method: HttpMethod.Get,
@@ -36,10 +36,10 @@ export const GetUsageRoute = defineRoute({
   response: UsageOverviewSchema,
   errors: [...SessionGuardErrors, BillingErrorCode.SubscriptionNotFound],
   access: Access.authenticated({ permissions: [Permission.BillingRead] }),
-  description: 'Consulta el uso del periodo vigente de cada métrica con cuota.',
+  description: 'Gets the current period usage of each metric with a quota.',
 });
 
-/** `GET /v1/billing/plans`: catálogo de planes disponibles. */
+/** `GET /v1/billing/plans`: catalog of available plans. */
 export const ListPlansRoute = defineRoute({
   id: BillingRoute.ListPlans,
   method: HttpMethod.Get,
@@ -47,10 +47,10 @@ export const ListPlansRoute = defineRoute({
   response: PlanCatalogSchema,
   errors: [...SessionGuardErrors],
   access: Access.authenticated({ permissions: [Permission.BillingRead] }),
-  description: 'Lista los planes del catálogo con su precio y sus límites.',
+  description: 'Lists the catalog plans with their price and limits.',
 });
 
-/** `PUT /v1/billing/subscription/plan`: cambia el plan de la suscripción. */
+/** `PUT /v1/billing/subscription/plan`: changes the subscription plan. */
 export const ChangePlanRoute = defineRoute({
   id: BillingRoute.ChangePlan,
   method: HttpMethod.Put,
@@ -66,10 +66,10 @@ export const ChangePlanRoute = defineRoute({
     BillingErrorCode.PlanUsageExceedsLimit,
   ],
   access: Access.authenticated({ permissions: [Permission.BillingWrite] }),
-  description: 'Cambia el plan de la suscripción del tenant.',
+  description: 'Changes the plan of the tenant subscription.',
 });
 
-/** `GET /v1/billing/invoices`: facturas del tenant, más nuevas primero. */
+/** `GET /v1/billing/invoices`: invoices of the tenant, newest first. */
 export const ListInvoicesRoute = defineRoute({
   id: BillingRoute.ListInvoices,
   method: HttpMethod.Get,
@@ -78,10 +78,10 @@ export const ListInvoicesRoute = defineRoute({
   response: InvoicePageSchema,
   errors: [...SessionGuardErrors, PlatformErrorCode.ValidationInvalidInput],
   access: Access.authenticated({ permissions: [Permission.BillingRead] }),
-  description: 'Lista las facturas del tenant, con filtro y paginación.',
+  description: 'Lists the tenant invoices, with filter and pagination.',
 });
 
-/** `GET /v1/billing/invoices/{invoiceId}`: detalle de una factura con sus líneas. */
+/** `GET /v1/billing/invoices/{invoiceId}`: detail of an invoice with its lines. */
 export const GetInvoiceRoute = defineRoute({
   id: BillingRoute.GetInvoice,
   method: HttpMethod.Get,
@@ -90,5 +90,5 @@ export const GetInvoiceRoute = defineRoute({
   response: InvoiceSchema,
   errors: [...SessionGuardErrors, BillingErrorCode.InvoiceNotFound],
   access: Access.authenticated({ permissions: [Permission.BillingRead] }),
-  description: 'Consulta una factura con sus líneas.',
+  description: 'Gets an invoice with its lines.',
 });

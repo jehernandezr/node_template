@@ -1,11 +1,11 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Estado de una suscripción.
+/// Status of a subscription.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum SubscriptionStatus {
   trialing('trialing'),
   active('active'),
@@ -15,10 +15,10 @@ enum SubscriptionStatus {
 
   const SubscriptionStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static SubscriptionStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -27,10 +27,10 @@ enum SubscriptionStatus {
   }
 }
 
-/// Estado de una factura.
+/// Status of an invoice.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum InvoiceStatus {
   draft('draft'),
   issued('issued'),
@@ -40,10 +40,10 @@ enum InvoiceStatus {
 
   const InvoiceStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static InvoiceStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -52,20 +52,20 @@ enum InvoiceStatus {
   }
 }
 
-/// Tipo de línea de una factura.
+/// Type of an invoice line.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum InvoiceLineKind {
   fixedFee('fixed_fee'),
   usage('usage');
 
   const InvoiceLineKind(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static InvoiceLineKind? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -74,20 +74,20 @@ enum InvoiceLineKind {
   }
 }
 
-/// Periodicidad de cobro de un plan.
+/// Billing interval of a plan.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum PlanPeriodicity {
   monthly('monthly'),
   annual('annual');
 
   const PlanPeriodicity(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static PlanPeriodicity? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -96,20 +96,20 @@ enum PlanPeriodicity {
   }
 }
 
-/// Moneda en que se factura.
+/// Currency of the invoice.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum Currency {
   cop('COP'),
   usd('USD');
 
   const Currency(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static Currency? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -118,10 +118,10 @@ enum Currency {
   }
 }
 
-/// Métrica de uso que tiene cuota.
+/// Usage metric that has a quota.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum UsageMetric {
   users('users'),
   apiCalls('api_calls'),
@@ -129,10 +129,10 @@ enum UsageMetric {
 
   const UsageMetric(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static UsageMetric? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -141,20 +141,20 @@ enum UsageMetric {
   }
 }
 
-/// Enum `UsageAggregationKind` del contrato `billing`.
+/// Enum `UsageAggregationKind` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum UsageAggregationKind {
   max('max'),
   sum('sum');
 
   const UsageAggregationKind(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static UsageAggregationKind? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -163,12 +163,12 @@ enum UsageAggregationKind {
   }
 }
 
-/// Códigos de error públicos del contrato `billing`.
+/// Public error codes of the `billing` contract.
 ///
-/// Solo incluye los códigos con audiencia `public`: los internos nunca
-/// llegan al cliente. [messageKey] es la clave del mensaje en el ARB.
+/// Only includes codes with `public` audience: internal ones never
+/// reach the client. [messageKey] is the message key in the ARB.
 enum BillingErrorCode {
-  /// El tenant no tiene una suscripción.
+  /// The tenant has no subscription.
   subscriptionNotFound(
     'BILLING.SUBSCRIPTION.NOT_FOUND',
     httpStatus: 404,
@@ -176,7 +176,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_subscription_not_found',
   ),
 
-  /// La suscripción está suspendida o cancelada y no admite cambio de plan.
+  /// The subscription is suspended or cancelled and does not allow a plan change.
   subscriptionNotChangeable(
     'BILLING.SUBSCRIPTION.NOT_CHANGEABLE',
     httpStatus: 409,
@@ -184,7 +184,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_subscription_not_changeable',
   ),
 
-  /// El plan no existe o no está disponible para este tenant.
+  /// The plan does not exist or is not available for this tenant.
   planNotAvailable(
     'BILLING.PLAN.NOT_AVAILABLE',
     httpStatus: 404,
@@ -192,7 +192,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_plan_not_available',
   ),
 
-  /// El uso actual supera un límite del plan nuevo: no se puede bajar a ese plan.
+  /// Current usage exceeds a limit of the new plan: cannot downgrade to that plan.
   planUsageExceedsLimit(
     'BILLING.PLAN.USAGE_EXCEEDS_LIMIT',
     httpStatus: 409,
@@ -200,7 +200,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_plan_usage_exceeds_limit',
   ),
 
-  /// La factura no existe en el tenant.
+  /// The invoice does not exist in the tenant.
   invoiceNotFound(
     'BILLING.INVOICE.NOT_FOUND',
     httpStatus: 404,
@@ -208,7 +208,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_invoice_not_found',
   ),
 
-  /// La factura no está en un estado que admita la operación pedida.
+  /// The invoice is not in a state that allows the requested operation.
   invoiceInvalidState(
     'BILLING.INVOICE.INVALID_STATE',
     httpStatus: 409,
@@ -216,7 +216,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_invoice_invalid_state',
   ),
 
-  /// Lo pagado no coincide con el total de la factura en su moneda. Los detalles traen expected y received.
+  /// The amount paid does not match the invoice total in its currency. The details carry expected and received.
   invoiceAmountMismatch(
     'BILLING.INVOICE.AMOUNT_MISMATCH',
     httpStatus: 422,
@@ -224,7 +224,7 @@ enum BillingErrorCode {
     messageKey: 'error_billing_invoice_amount_mismatch',
   ),
 
-  /// Se alcanzó la cuota del plan. Los detalles traen metric, limit y used.
+  /// The plan quota was reached. The details carry metric, limit and used.
   quotaExceeded(
     'BILLING.QUOTA.EXCEEDED',
     httpStatus: 403,
@@ -239,22 +239,22 @@ enum BillingErrorCode {
     required this.messageKey,
   });
 
-  /// Código exacto que envía el backend, por ejemplo `BILLING.SUBSCRIPTION.NOT_FOUND`.
+  /// Exact code sent by the backend, for example `BILLING.SUBSCRIPTION.NOT_FOUND`.
   final String code;
 
-  /// Estado HTTP con el que responde el backend.
+  /// HTTP status the backend responds with.
   final int httpStatus;
 
-  /// Si el cliente puede reintentar la misma petición.
+  /// Whether the client may retry the same request.
   final bool retryable;
 
-  /// Clave ARB del mensaje para personas.
+  /// ARB key of the human-readable message.
   final String messageKey;
 
-  /// Igual a [code].
+  /// Same as [code].
   String get wireCode => code;
 
-  /// Valor con [code], o null si este cliente no lo conoce.
+  /// Value with [code], or null if this client does not know it.
   static BillingErrorCode? fromCode(String code) {
     for (final value in values) {
       if (value.code == code) return value;
@@ -262,14 +262,14 @@ enum BillingErrorCode {
     return null;
   }
 
-  /// Igual a [fromCode].
+  /// Same as [fromCode].
   static BillingErrorCode? tryParse(String code) => fromCode(code);
 }
 
-/// Enum `BillingRoute` del contrato `billing`.
+/// Enum `BillingRoute` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum BillingRoute {
   getSubscription('billing.subscription.get'),
   getUsage('billing.usage.get'),
@@ -280,10 +280,10 @@ enum BillingRoute {
 
   const BillingRoute(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static BillingRoute? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -292,10 +292,10 @@ enum BillingRoute {
   }
 }
 
-/// Enum `BillingOperation` del contrato `billing`.
+/// Enum `BillingOperation` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum BillingOperation {
   openAccount('billing.accounts.open.v1'),
   closeAccount('billing.accounts.close.v1'),
@@ -314,10 +314,10 @@ enum BillingOperation {
 
   const BillingOperation(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static BillingOperation? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -326,10 +326,10 @@ enum BillingOperation {
   }
 }
 
-/// Enum `BillingEvent` del contrato `billing`.
+/// Enum `BillingEvent` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum BillingEvent {
   subscriptionChanged('billing.subscription.changed.v1'),
   subscriptionSuspended('billing.subscription.suspended.v1'),
@@ -341,10 +341,10 @@ enum BillingEvent {
 
   const BillingEvent(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static BillingEvent? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -353,19 +353,19 @@ enum BillingEvent {
   }
 }
 
-/// Enum `BillingCommand` del contrato `billing`.
+/// Enum `BillingCommand` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum BillingCommand {
   recordUsage('billing.usage.record.v1');
 
   const BillingCommand(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static BillingCommand? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -374,19 +374,19 @@ enum BillingCommand {
   }
 }
 
-/// Enum `BillingTopic` del contrato `billing`.
+/// Enum `BillingTopic` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum BillingTopic {
   events('billing-events');
 
   const BillingTopic(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static BillingTopic? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -395,20 +395,20 @@ enum BillingTopic {
   }
 }
 
-/// Enum `BillingQueue` del contrato `billing`.
+/// Enum `BillingQueue` of the `billing` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum BillingQueue {
   usage('billing-usage'),
   identity('billing-identity');
 
   const BillingQueue(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static BillingQueue? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;

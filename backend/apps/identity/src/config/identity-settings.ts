@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppConfig } from '@platform/config';
 import type { IdentityConfig } from './identity.config.js';
 
-/** La configuración validada de identity, tipada, para inyectarla en los adaptadores y casos de uso. */
+/** Identity's validated, typed configuration, to inject into adapters and use cases. */
 @Injectable()
 export class IdentitySettings {
   readonly values: IdentityConfig;

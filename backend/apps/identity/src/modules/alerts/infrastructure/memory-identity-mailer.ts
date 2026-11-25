@@ -4,8 +4,8 @@ import { IdentityMailer } from '../domain/identity-mailer.js';
 import type { OutgoingEmail } from '../domain/outgoing-email.js';
 
 /**
- * Correo en memoria (`IDENTITY_MAILER=memory`): guarda los últimos envíos para que las pruebas de extremo a
- * extremo lean los códigos y enlaces. Es el modo por defecto y no envía nada: un ambiente real usa
+ * In-memory mailer (`IDENTITY_MAILER=memory`): keeps the latest sends so the end-to-end tests
+ * can read the codes and links. It is the default mode and sends nothing: a real environment uses
  * `notifications`.
  */
 @Injectable()
@@ -20,7 +20,7 @@ export class MemoryIdentityMailer extends IdentityMailer {
     }
   }
 
-  /** El último correo de esa plantilla hacia esa dirección. */
+  /** The last email of that template to that address. */
   lastTo(
     to: string,
     template: IdentityEmailTemplate,

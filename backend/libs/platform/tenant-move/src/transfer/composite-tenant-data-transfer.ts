@@ -9,9 +9,9 @@ import type { TenantTransfer } from './tenant-transfer.js';
 import { TransferBudget } from './transfer-budget.js';
 
 /**
- * Varias copias de un mismo traslado sobre tablas distintas, una detrás de otra: la replicación lógica para las tablas
- * del servicio y la copia por lotes para las de la plataforma, que la replicación no puede filtrar por tenant. Todas
- * las partes de una llamada gastan el mismo plazo, así la llamada nunca dura más que `callBudgetMs`.
+ * Several copies of the same move over different tables, one after another: logical replication for the service
+ * tables and batch copy for the platform tables, which replication cannot filter by tenant. All
+ * parts of a call spend the same budget, so the call never lasts longer than `callBudgetMs`.
  */
 export class CompositeTenantDataTransfer extends TenantDataTransfer {
   constructor(

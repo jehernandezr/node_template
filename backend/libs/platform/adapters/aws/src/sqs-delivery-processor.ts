@@ -20,20 +20,20 @@ import type { SqsDeadLetterRedriver } from './sqs-dead-letter-redriver.js';
 import type { SqsDelivery } from './sqs-delivery.js';
 
 /**
- * Despacha un lote de entregas de una cola SQS con el `MessageDispatcher` y
- * aplica lo que este decide (confirmar, ajustar la visibilidad, copiar a la
- * DLQ). Lo comparten `SqsPoller` y `SqsLambdaHandler`. No borra los
- * confirmados: eso lo hace quien lo invoca.
+ * Dispatches a batch of deliveries from an SQS queue with the `MessageDispatcher` and
+ * applies what it decides (acknowledge, adjust the visibility, copy to the
+ * DLQ). Shared by `SqsPoller` and `SqsLambdaHandler`. It does not delete the
+ * acknowledged ones: the caller does that.
  *
- * - `Processed`, `Duplicate` e `Ignored`: se confirma.
- * - `RetryLater` e `InProgress`: se ajusta la visibilidad al backoff del
- *   despachador y la entrega queda para otra vuelta. La política de redrive de
- *   la cola la manda a la DLQ cuando supera `maxReceiveCount`.
- * - `DeadLetter`: se copia a la DLQ con el motivo y se confirma. Si la copia
- *   falla, se deja para otra vuelta.
+ * - `Processed`, `Duplicate` and `Ignored`: acknowledged.
+ * - `RetryLater` and `InProgress`: the visibility is adjusted to the dispatcher's
+ *   backoff and the delivery is left for another round. The queue's redrive policy
+ *   sends it to the DLQ when it exceeds `maxReceiveCount`.
+ * - `DeadLetter`: copied to the DLQ with the reason and acknowledged. If the copy
+ *   fails, it is left for another round.
  *
- * En colas FIFO, después de la primera entrega que no se confirma, el resto del
- * lote vuelve a la cola sin despacharse: así no se rompe el orden del grupo.
+ * In FIFO queues, after the first delivery that is not acknowledged, the rest of the
+ * batch goes back to the queue without being dispatched: so the group order is not broken.
  */
 export class SqsDeliveryProcessor {
   constructor(
@@ -46,7 +46,7 @@ export class SqsDeliveryProcessor {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
-  /** Un `DeliveryReport` por entrega, en el mismo orden. */
+  /** One `DeliveryReport` per delivery, in the same order. */
   async process(deliveries: readonly SqsDelivery[]): Promise<DeliveryReport[]> {
     const reports: DeliveryReport[] = [];
     let halted = false;
@@ -56,7 +56,7 @@ export class SqsDeliveryProcessor {
           messageId: delivery.messageId,
           action: DeliveryAction.Redeliver,
         });
-        // Visibilidad cero: la entrega vuelve de inmediato para el siguiente intento.
+        // Zero visibility: the delivery comes back immediately for the next attempt.
         await this.changeVisibility(delivery, 0);
         continue;
       }
@@ -78,7 +78,7 @@ export class SqsDeliveryProcessor {
         visibilityTimeoutMs: this.queue.visibilityTimeoutSeconds * 1000,
       });
     } catch (err) {
-      // El despachador informa los fallos como resultados: si lanza, es un bug o una caída.
+      // The dispatcher reports failures as results: if it throws, it is a bug or an outage.
       this.logger.error('dispatcher threw', {
         message_id: delivery.messageId,
         error_code: ErrorDescriptor.codeOf(err),
@@ -140,7 +140,7 @@ export class SqsDeliveryProcessor {
         }),
       );
     } catch (err) {
-      // Sin el cambio, el mensaje vuelve cuando vence su visibilidad actual.
+      // Without the change, the message comes back when its current visibility expires.
       const error = this.errors.translate(
         AwsOperation.ChangeMessageVisibility,
         err,

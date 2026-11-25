@@ -4,7 +4,7 @@ import { FakeApiKeyResolver } from '../../../__tests__/utils/fake-api-key-resolv
 import { InMemoryAuthState } from '../../../__tests__/utils/in-memory-auth-state.js';
 import { StaticJwksKeySource } from '../../../jwks/static-jwks-key-source.js';
 
-/** Llaves de verificación vacías: basta para que el módulo compile. */
+/** Empty verification keys: enough for the module to compile. */
 export class StaticKeys extends StaticJwksKeySource {
   constructor() {
     super(new Map());
@@ -12,8 +12,8 @@ export class StaticKeys extends StaticJwksKeySource {
 }
 
 /**
- * Módulo global de dobles que hace el papel de `ValkeyModule` en un servicio real:
- * expone el estado, el aviso de revocaciones y la fuente de grants.
+ * Global module of doubles that plays the role of `ValkeyModule` in a real service:
+ * exposes the state, the revocation notices and the grant source.
  */
 @Global()
 @Module({

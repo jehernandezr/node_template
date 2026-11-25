@@ -19,9 +19,9 @@ import type { TenantDirectoryFeatureOptions } from './tenant-directory-feature-o
 import { TenantDirectoryOperationsFactory } from './tenant-directory-operations.factory.js';
 
 /**
- * Registra las operaciones con las que identity ubica un tenant en el directorio de shards de un servicio. Requiere
- * en el contexto el sharding de la plataforma (`ShardRouter`, `DirectoryStore` y `DirectoryWriter`) y `ShardDataSources`,
- * que el runtime de `@platform/service` monta como globales.
+ * Registers the operations identity uses to place a tenant in a service's shard directory. Requires
+ * the platform sharding (`ShardRouter`, `DirectoryStore` and `DirectoryWriter`) and `ShardDataSources` in the context,
+ * which the `@platform/service` runtime mounts as globals.
  */
 @Module({})
 export class TenantDirectoryModule {

@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Crea la tabla de pedidos en cada shard. Sus columnas son las de `AuditedEntity` más las propias. */
+/** Creates the orders table on each shard. Its columns are those of `AuditedEntity` plus its own. */
 export class CreateSmokeOrdersMigration implements MigrationInterface {
   readonly name = 'CreateSmokeOrdersMigration1795100000001';
 

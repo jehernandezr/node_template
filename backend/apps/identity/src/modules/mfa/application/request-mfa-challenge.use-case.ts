@@ -20,9 +20,9 @@ import { ChallengeStore } from '../domain/challenge-store.js';
 import { PendingAuthenticationStore } from '../domain/pending-authentication-store.js';
 
 /**
- * Crea un desafío para una autenticación pendiente con uno de los métodos que se ofrecieron. El código del
- * dispositivo aparece en la app de cada verificador; el del email llega por correo. TOTP y códigos de
- * recuperación no envían nada: el usuario ya tiene el código.
+ * Creates a challenge for a pending authentication with one of the offered methods. The device code
+ * appears in the app of each verifier; the email code arrives by email. TOTP and recovery codes
+ * send nothing: the user already has the code.
  */
 @Injectable()
 export class RequestMfaChallenge {

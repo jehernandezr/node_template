@@ -1,4 +1,4 @@
-/** Colecciones de tasks en `search_documents`. */
+/** Tasks collections in `search_documents`. */
 export enum TasksSearchCollection {
   Tasks = 'tasks',
 }

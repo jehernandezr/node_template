@@ -8,7 +8,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
 const BASE =
   '"id" uuid NOT NULL, "version" integer NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "tenant_id" uuid NOT NULL, "created_by" character varying(64), "updated_by" character varying(64)';
 
-/** `tasks` con su auditoría, RLS por tenant y la política de mantenimiento de las purgas y borrados de usuario. */
+/** `tasks` with its audit, RLS per tenant and the maintenance policy for purges and user deletions. */
 export class CreateTasks1796000100000 implements MigrationInterface {
   readonly name = 'CreateTasks1796000100000';
 

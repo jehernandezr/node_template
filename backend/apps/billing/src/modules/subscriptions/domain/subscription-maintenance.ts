@@ -1,7 +1,7 @@
-/** Consultas sobre las suscripciones de todos los tenants, en todos los shards, para los jobs. */
+/** Queries over the subscriptions of all tenants, across all shards, for the jobs. */
 export abstract class SubscriptionMaintenance {
-  /** Tenants cuya suscripción terminó su periodo antes de `today` y no está suspendida ni cancelada. */
+  /** Tenants whose subscription ended its period before `today` and is neither suspended nor canceled. */
   abstract dueForClosing(today: string): Promise<readonly string[]>;
-  /** Tenants morosos desde antes de `cutoff`. */
+  /** Tenants past due since before `cutoff`. */
   abstract pastDueBefore(cutoff: Date): Promise<readonly string[]>;
 }

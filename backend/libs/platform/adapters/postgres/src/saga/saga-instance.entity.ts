@@ -4,9 +4,9 @@ import { Check, Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import { SagaSqlValues } from './saga-sql-values.js';
 
 /**
- * Fila de `saga.instances`: la instancia de una saga en el shard de su tenant.
- * La versión y el lease los maneja `TypeOrmSagaStore` con `UPDATE` protegidos,
- * no el `@VersionColumn` de TypeORM, y las fechas las pone el motor con su reloj.
+ * Row of `saga.instances`: the instance of a saga in its tenant shard.
+ * The version and the lease are handled by `TypeOrmSagaStore` with guarded `UPDATE` statements,
+ * not TypeORM's `@VersionColumn`, and the dates are set by the engine with its clock.
  */
 @Entity({ schema: 'saga', name: 'instances' })
 @Check('saga_instances_status_check', `"status" IN (${SagaSqlValues.STATUSES})`)

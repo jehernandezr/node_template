@@ -8,7 +8,7 @@ import {
 } from '../../domain/backfill-progress.js';
 import { ProjectionBackfillEntity } from './entities/projection-backfill.entity.js';
 
-/** `BackfillProgress` sobre `proj_backfills` del shard del tenant, una fila por fuente. */
+/** `BackfillProgress` over `proj_backfills` in the tenant's shard, one row per source. */
 @Injectable()
 export class TypeOrmBackfillProgress
   extends TenantIsolatedRepository

@@ -10,12 +10,12 @@ import type {
 
 export const TaskStatusSchema = z
   .enum(TaskStatus)
-  .describe('Estado de una tarea.') satisfies z.ZodType<TaskStatus>;
+  .describe('Status of a task.') satisfies z.ZodType<TaskStatus>;
 
 export const TaskFieldSchema = z
   .enum(TaskField)
   .describe(
-    'Campo de una tarea que un cambio puede modificar.',
+    'Task field that a change can modify.',
   ) satisfies z.ZodType<TaskField>;
 
 const VersionSchema = z.int().min(1);
@@ -29,7 +29,7 @@ export const TaskCreatedPayloadSchema = z
     createdBy: UserRefSchema,
     createdAt: TimestampSchema,
   })
-  .describe('Se creó una tarea.') satisfies z.ZodType<TaskCreatedPayload>;
+  .describe('A task was created.') satisfies z.ZodType<TaskCreatedPayload>;
 
 export const TaskUpdatedPayloadSchema = z
   .object({
@@ -43,7 +43,7 @@ export const TaskUpdatedPayloadSchema = z
     createdBy: UserRefSchema,
     updatedAt: TimestampSchema,
   })
-  .describe('Se cambió una tarea.') satisfies z.ZodType<TaskUpdatedPayload>;
+  .describe('A task was changed.') satisfies z.ZodType<TaskUpdatedPayload>;
 
 export const TaskDeletedPayloadSchema = z
   .object({
@@ -54,4 +54,4 @@ export const TaskDeletedPayloadSchema = z
     actor: UserRefSchema,
     deletedAt: TimestampSchema,
   })
-  .describe('Se borró una tarea.') satisfies z.ZodType<TaskDeletedPayload>;
+  .describe('A task was deleted.') satisfies z.ZodType<TaskDeletedPayload>;

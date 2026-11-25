@@ -6,10 +6,10 @@ import {
   TaskUpdatedEvent,
 } from './tasks.events.js';
 
-/** Tópico de los eventos de tasks. Lo consumen notifications y reports, cada uno en su cola. */
+/** Topic of the tasks events. Consumed by notifications and reports, each in its own queue. */
 export const TasksEventsTopic = defineTopic({
   name: TasksTopic.Events,
   events: [TaskCreatedEvent, TaskUpdatedEvent, TaskDeletedEvent],
   description:
-    'Eventos de tasks: creación, cambio y borrado de tareas. Cada servicio suscribe su propia cola.',
+    'Tasks events: creation, change and deletion of tasks. Each service subscribes its own queue.',
 });

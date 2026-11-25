@@ -14,8 +14,8 @@ import {
 import { SessionGuardErrors } from './session-guard.errors.js';
 
 /**
- * `POST /v1/me/password`: cambia la contraseña. Exige un MFA reciente porque
- * una sesión robada no debe poder cambiarla.
+ * `POST /v1/me/password`: changes the password. Requires a recent MFA because
+ * a stolen session must not be able to change it.
  */
 export const ChangePasswordRoute = defineRoute({
   id: IdentityRoute.ChangePassword,
@@ -32,10 +32,11 @@ export const ChangePasswordRoute = defineRoute({
   access: Access.authenticated({
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Cambia la contraseña y cierra las demás sesiones del usuario.',
+  description:
+    'Changes the password and closes the other sessions of the user.',
 });
 
-/** `POST /v1/auth/password-resets`: envía el correo de restablecimiento. */
+/** `POST /v1/auth/password-resets`: sends the reset email. */
 export const RequestPasswordResetRoute = defineRoute({
   id: IdentityRoute.RequestPasswordReset,
   method: HttpMethod.Post,
@@ -45,10 +46,10 @@ export const RequestPasswordResetRoute = defineRoute({
   errors: [PlatformErrorCode.RateLimitExceeded],
   access: Access.public(),
   description:
-    'Envía el correo para restablecer la contraseña. Responde aceptado aunque el email no exista.',
+    'Sends the password reset email. Responds accepted even if the email does not exist.',
 });
 
-/** `POST /v1/auth/password-resets/confirm`: fija la contraseña nueva con el token del correo. */
+/** `POST /v1/auth/password-resets/confirm`: sets the new password with the token from the email. */
 export const ConfirmPasswordResetRoute = defineRoute({
   id: IdentityRoute.ConfirmPasswordReset,
   method: HttpMethod.Post,
@@ -62,5 +63,5 @@ export const ConfirmPasswordResetRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Restablece la contraseña con el token del correo y cierra las sesiones del usuario.',
+    'Resets the password with the emailed token and closes the user sessions.',
 });

@@ -1,9 +1,9 @@
 /**
- * Verifica la respuesta de un CAPTCHA antes de aceptar un intento desde un origen sospechoso. Mientras no
- * haya proveedor, el adaptador aprueba todo: el bloqueo por IP vive en Valkey y la regla del WAF llega
- * con la infraestructura.
+ * Verifies a CAPTCHA response before accepting an attempt from a suspicious origin. While there is no
+ * provider, the adapter approves everything: the IP lockout lives in Valkey and the WAF rule arrives
+ * with the infrastructure.
  */
 export abstract class CaptchaVerifier {
-  /** `true` si la respuesta es válida para esa IP. Sin respuesta, solo un adaptador permisivo aprueba. */
+  /** `true` if the response is valid for that IP. Without a response, only a permissive adapter approves. */
   abstract verify(response: string | undefined, ip: string): Promise<boolean>;
 }

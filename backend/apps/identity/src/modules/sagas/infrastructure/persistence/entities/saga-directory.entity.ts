@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, PrimaryColumn } from 'typeorm';
 
-/** `identity_sagas`, en el catálogo: el tenant en cuyo shard vive cada saga y quién la pidió. */
+/** `identity_sagas`, in the catalog: the tenant in whose shard each saga lives and who requested it. */
 @Entity({ name: 'identity_sagas' })
 export class SagaDirectoryEntity {
   @PrimaryColumn({ type: 'uuid', name: 'saga_id' })

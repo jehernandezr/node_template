@@ -3,9 +3,9 @@ import type { ApiGatewayHttpEvent } from './api-gateway-http-event.js';
 import { ApiGatewayMethod } from './api-gateway-method.enum.js';
 
 /**
- * Traduce un evento de API Gateway a una petición `fetch`. Las cabeceras de
- * `host` y `content-length` se quitan porque las pone el cliente HTTP de
- * salida con el destino real.
+ * Translates an API Gateway event into a `fetch` request. The
+ * `host` and `content-length` headers are removed because the outgoing HTTP
+ * client sets them with the real destination.
  */
 export class ApiGatewayRequestMapper {
   private static readonly BODYLESS_METHODS: readonly string[] = [
@@ -14,8 +14,8 @@ export class ApiGatewayRequestMapper {
   ];
 
   /**
-   * URL del destino, cabeceras e init de `fetch`. La redirección es manual para
-   * que la respuesta llegue tal cual al cliente que llamó la función.
+   * Destination URL, headers and `fetch` init. Redirects are manual so
+   * that the response reaches the client that called the function as is.
    */
   toRequest(
     event: ApiGatewayHttpEvent,

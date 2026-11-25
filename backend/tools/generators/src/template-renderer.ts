@@ -1,8 +1,8 @@
 import type { NameForms } from './name-forms.js';
 
-/** Sustituye en una plantilla las formas de un nombre y, en las de módulo, el nombre del servicio. */
+/** Replaces in a template the forms of a name and, in module templates, the service name. */
 export class TemplateRenderer {
-  /** Sufijo de los archivos de plantilla: así ni el compilador ni el lint los toman como código. */
+  /** Suffix of template files: so neither the compiler nor lint treat them as code. */
   static readonly SUFFIX = '.tpl';
 
   render(text: string, name: NameForms, service?: NameForms): string {
@@ -20,7 +20,7 @@ export class TemplateRenderer {
     );
   }
 
-  /** La ruta del archivo que sale de una plantilla, sin el sufijo. */
+  /** The path of the file produced from a template, without the suffix. */
   path(templatePath: string, name: NameForms, service?: NameForms): string {
     return this.render(
       templatePath.slice(0, -TemplateRenderer.SUFFIX.length),

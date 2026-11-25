@@ -2,8 +2,8 @@ import { Column } from 'typeorm';
 import { VersionedEntity } from './versioned-entity.js';
 
 /**
- * Entidad de un tenant: suma el tenant dueño de la fila y quién la creó y la cambió por última vez.
- * `ShardedRepository` llena los tres campos desde el contexto de la petición.
+ * Tenant entity: adds the tenant that owns the row and who created it and last changed it.
+ * `ShardedRepository` fills the three fields from the request context.
  */
 export abstract class AuditedEntity extends VersionedEntity {
   @Column({ type: 'uuid', name: 'tenant_id', nullable: false })

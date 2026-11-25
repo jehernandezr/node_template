@@ -1,6 +1,6 @@
 import type { UseCase } from '@platform/kernel';
 
-/** Caso de uso que devuelve su entrada tal cual. */
+/** Use case that returns its input as is. */
 export class EchoUseCase implements UseCase<string, string> {
   async execute(input: string): Promise<string> {
     return input;

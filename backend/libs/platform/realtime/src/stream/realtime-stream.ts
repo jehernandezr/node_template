@@ -1,19 +1,19 @@
 import type { RealtimeFrame, StoredFrame } from './realtime-frame.js';
 
-/** Se cancela una suscripción a un canal. */
+/** Cancels a subscription to a channel. */
 export type StreamUnsubscribe = () => Promise<void>;
 
 /**
- * Stream ordenado de tramas por canal (un canal por usuario). Guarda las últimas tramas para que una
- * conexión que se corta pueda pedir las que llegaron después de la última que recibió.
+ * Ordered stream of frames per channel (one channel per user). Stores the last frames so that a
+ * connection that drops can request those that arrived after the last one it received.
  */
 export abstract class RealtimeStream {
-  /** Agrega la trama al final del canal y devuelve su id. */
+  /** Appends the frame to the end of the channel and returns its id. */
   abstract append(channel: string, frame: RealtimeFrame): Promise<string>;
 
   /**
-   * Las tramas posteriores a `afterId` (todas las retenidas si no hay), en orden y hasta `limit`. Un `afterId`
-   * que no es un id de este stream no devuelve nada: quien lee parte de `resumePoint` o de una trama ya leída.
+   * Returns the frames after `afterId` (all retained ones if there is none), in order and up to `limit`. An `afterId`
+   * that is not an id of this stream returns nothing: the reader starts from `resumePoint` or from a frame already read.
    */
   abstract readAfter(
     channel: string,
@@ -22,9 +22,9 @@ export abstract class RealtimeStream {
   ): Promise<readonly StoredFrame[]>;
 
   /**
-   * Desde dónde lee una conexión que abre: `lastEventId` si es un id de este stream que no pasa de la última
-   * trama; si falta, no lo es o es posterior, el id de la última trama del canal (`undefined` si no tiene
-   * ninguna). Un id inventado o corrupto no reproduce lo retenido: lo anterior ya lo trae la API.
+   * Returns where an opening connection reads from: `lastEventId` if it is an id of this stream not past the last
+   * frame; if it is missing, is not one or is later, the id of the channel's last frame (`undefined` if it has
+   * none). A made-up or corrupt id does not replay what is retained: the API already provides what came before.
    */
   abstract resumePoint(
     channel: string,
@@ -32,8 +32,8 @@ export abstract class RealtimeStream {
   ): Promise<string | undefined>;
 
   /**
-   * Avisa cada vez que el canal recibe tramas. El aviso no trae la trama: quien escucha la lee con
-   * `readAfter`, así un aviso perdido solo atrasa la entrega hasta el siguiente.
+   * Notifies each time the channel receives frames. The notice does not carry the frame: the listener reads it with
+   * `readAfter`, so a lost notice only delays delivery until the next one.
    */
   abstract subscribe(
     channel: string,

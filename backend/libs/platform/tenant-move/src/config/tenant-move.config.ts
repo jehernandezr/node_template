@@ -7,7 +7,7 @@ const targetSchema = z.object({
   shard: z.string().trim().min(1),
 });
 
-/** `{"<grupo>": {"region": "...", "shard": "<shard lógico del servicio>"}}` como JSON en una variable. */
+/** `{"<group>": {"region": "...", "shard": "<service logical shard>"}}` as JSON in a variable. */
 const targetsSchema = z
   .string()
   .default('{}')
@@ -24,51 +24,51 @@ const targetsSchema = z
   });
 
 export const tenantMoveConfigSchema = z.object({
-  /** Grupos de destino: la región y el shard lógico del servicio en ese grupo. El shard debe estar en el directorio. */
+  /** Target groups: the region and the service logical shard in that group. The shard must be in the directory. */
   TENANT_MOVE_TARGETS: targetsSchema,
   /**
-   * Días que el origen conserva los datos de un tenant trasladado antes de que `cleanup` los borre y baje su barrera.
-   * Al menos uno: con cero la barrera bajaría mientras un proceso con el placement viejo en caché todavía escribe ahí.
+   * Days the source keeps a moved tenant's data before `cleanup` deletes it and lowers its fence.
+   * At least one: with zero the fence would come down while a process with the old placement cached still writes there.
    */
   TENANT_MOVE_GRACE_DAYS: envNumber({ min: 1, max: 365 }).default(7),
   /**
-   * Plazo de la saga de traslado desde que arranca. Pasado antes del pivote, la saga compensa y el tenant vuelve a
-   * escribir en el origen en lugar de quedar congelado.
+   * Deadline of the move saga from when it starts. If it passes before the pivot, the saga compensates and the tenant writes
+   * to the source again instead of staying frozen.
    */
   TENANT_MOVE_DEADLINE_MS: envNumber({ min: 60_000 }).default(21_600_000),
   TENANT_MOVE_STRATEGY: z
     .enum(TenantMoveStrategy)
     .default(TenantMoveStrategy.Batch),
-  /** Filas por lote de lectura y escritura. */
+  /** Rows per read and write batch. */
   TENANT_MOVE_BATCH_SIZE: envNumber({ min: 1, max: 10_000 }).default(500),
-  /** Tiempo de trabajo de una llamada; queda bajo el plazo de 6 s de cada operación de traslado. */
+  /** Working time of a call; stays under the 6 s deadline of each move operation. */
   TENANT_MOVE_CALL_BUDGET_MS: envNumber({ min: 100, max: 5_000 }).default(
     4_000,
   ),
-  /** Pausa de la limpieza entre una llamada que responde que su ronda sigue y la siguiente. */
+  /** Cleanup pause between a call that answers that its round continues and the next one. */
   TENANT_MOVE_CLEANUP_PAUSE_MS: envNumber({ min: 0, max: 60_000 }).default(
     1_000,
   ),
-  /** Llamadas de limpieza seguidas a un servicio en una corrida; las que faltan quedan para la corrida siguiente. */
+  /** Consecutive cleanup calls to a service in one run; the remaining ones are left for the next run. */
   TENANT_MOVE_CLEANUP_MAX_ATTEMPTS: envNumber({ min: 1, max: 1_000 }).default(
     30,
   ),
-  /** Margen hacia atrás de cada ronda delta, para las transacciones que confirmaron tarde. */
+  /** Look-back margin of each delta round, for transactions that committed late. */
   TENANT_MOVE_DELTA_MARGIN_MS: envNumber({ min: 0 }).default(60_000),
-  /** Filas cambiadas en una ronda por debajo de las cuales la copia se da por alcanzada. */
+  /** Rows changed in a round below which the copy is considered caught up. */
   TENANT_MOVE_CAUGHT_UP_ROWS: envNumber({ min: 0 }).default(50),
   /**
-   * Con replicación lógica: espera máxima por el candado exclusivo que toma `REPLICA IDENTITY` al publicar o retirar
-   * una tabla. Si se agota, la ronda se repite en la llamada siguiente en vez de dejar en cola a las escrituras.
+   * With logical replication: maximum wait for the exclusive lock `REPLICA IDENTITY` takes when publishing or removing
+   * a table. If it runs out, the round is repeated on the next call instead of queuing writes.
    */
   TENANT_MOVE_LOCK_TIMEOUT_MS: envNumber({ min: 50, max: 5_000 }).default(
     2_000,
   ),
-  /** Con replicación lógica: bytes de WAL pendientes por debajo de los cuales la suscripción se da por alcanzada. */
+  /** With logical replication: pending WAL bytes below which the subscription is considered caught up. */
   TENANT_MOVE_CAUGHT_UP_BYTES: envNumber({ min: 0 }).default(1_048_576),
   /**
-   * Con replicación lógica: cómo llega el servidor de destino al de origen, si no es por la misma dirección que usa
-   * este servicio (por ejemplo, otra red entre regiones).
+   * With logical replication: how the target server reaches the source server, if not through the same address
+   * this service uses (for example, another network between regions).
    */
   TENANT_MOVE_REPLICATION_HOST: z.string().trim().min(1).optional(),
   TENANT_MOVE_REPLICATION_PORT: envNumber({ min: 1, max: 65_535 }).optional(),

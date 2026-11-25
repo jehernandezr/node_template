@@ -8,10 +8,10 @@ import { AccessFacade } from '../modules/access/index.js';
 import { UsersFacade } from '../modules/users/index.js';
 
 /**
- * Mantiene `user_tenants` desde `MembershipChanged` (cola `identity-access-projection`). Los casos de uso ya
- * proyectan después del commit para que el usuario vea el cambio enseguida; este consumidor repara la
- * proyección si el proceso cayó entre el commit y esa escritura. Proyectar es idempotente y lee la
- * membresía vigente del shard del tenant, así que el orden de los eventos no importa.
+ * Maintains `user_tenants` from `MembershipChanged` (queue `identity-access-projection`). The use cases already
+ * project after the commit so that the user sees the change right away; this consumer repairs the
+ * projection if the process crashed between the commit and that write. Projecting is idempotent and reads the
+ * current membership from the tenant shard, so the order of the events does not matter.
  */
 @Injectable()
 export class AccessProjectionConsumer {

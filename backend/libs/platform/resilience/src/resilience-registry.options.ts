@@ -4,16 +4,16 @@ import type { PolicyExecutor } from './execution/policy-executor.js';
 import type { ResilienceEventBus } from './events/resilience-event-bus.js';
 import type { PolicyRegistry } from './policy/policy-registry.js';
 
-/** Colaboradores de {@link ResilienceRegistry}. Todos son opcionales. */
+/** Collaborators of {@link ResilienceRegistry}. All are optional. */
 export interface ResilienceRegistryOptions {
   /**
-   * Fuente de tiempo para plazos, esperas de `Retry-After`, marcas de los
-   * eventos y la espera del half-open del breaker. Por defecto, `SystemClock`.
+   * Time source for deadlines, `Retry-After` waits, event
+   * timestamps and the breaker's half-open wait. Defaults to `SystemClock`.
    */
   readonly clock?: Clock;
-  /** Fuente aleatoria para el jitter del backoff. Por defecto, `SystemRandomSource`. */
+  /** Random source for the backoff jitter. Defaults to `SystemRandomSource`. */
   readonly random?: RandomSource;
-  /** Clasificador de fallas. Por defecto, `FailureClassifier` sin reglas propias. */
+  /** Failure classifier. Defaults to `FailureClassifier` without custom rules. */
   readonly classifier?: FailureClassifier;
   readonly events?: ResilienceEventBus;
   readonly policies?: PolicyRegistry;

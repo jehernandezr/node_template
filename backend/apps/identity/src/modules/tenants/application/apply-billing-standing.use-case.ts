@@ -8,8 +8,8 @@ import { TenantRepository } from '../domain/tenant.repository.js';
 import { ChangeTenantStatus } from './change-tenant-status.use-case.js';
 
 /**
- * Lo que billing decide sobre un tenant y cambia su acceso: la suspensión por morosidad, la reactivación por
- * un pago y las funcionalidades del plan vigente.
+ * What billing decides about a tenant that changes its access: suspension for delinquency, reactivation after
+ * a payment and the features of the current plan.
  */
 @Injectable()
 export class ApplyBillingStanding {
@@ -30,9 +30,9 @@ export class ApplyBillingStanding {
   }
 
   /**
-   * Guarda las funcionalidades del plan y sube la versión de permisos del tenant, salvo que el cambio llegue
-   * después de otro posterior. La versión se sube después de confirmar: si el proceso cae antes, el reintento
-   * de la misma decisión la vuelve a aplicar y la sube.
+   * Saves the plan's features and bumps the tenant's permissions version, unless the change arrives
+   * after a later one. The version is bumped after committing: if the process crashes before, the retry
+   * of the same decision applies it again and bumps it.
    */
   async planChanged(
     tenantId: string,

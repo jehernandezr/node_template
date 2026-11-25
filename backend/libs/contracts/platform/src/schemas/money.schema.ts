@@ -2,13 +2,13 @@ import { z } from 'zod';
 import { MoneyLimits } from '../constants/money.constants.js';
 import type { MoneyAmount } from '../types/money.type.js';
 
-/** Código de moneda ISO 4217. */
+/** ISO 4217 currency code. */
 export const CurrencyCodeSchema = z
   .string()
   .regex(new RegExp(MoneyLimits.currencyPattern))
-  .describe('Código de moneda ISO 4217.') satisfies z.ZodType<string>;
+  .describe('ISO 4217 currency code.') satisfies z.ZodType<string>;
 
-/** Monto en unidades menores, entero y acotado al rango seguro. */
+/** Amount in minor units, integer and bounded to the safe range. */
 export const MoneyAmountSchema = z
   .object({
     amountMinor: z
@@ -18,5 +18,5 @@ export const MoneyAmountSchema = z
     currency: CurrencyCodeSchema,
   })
   .describe(
-    'Monto en unidades menores de la moneda.',
+    'Amount in minor units of the currency.',
   ) satisfies z.ZodType<MoneyAmount>;

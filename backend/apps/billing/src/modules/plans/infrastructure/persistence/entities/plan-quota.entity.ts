@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-/** `billing_plan_quotas`, en el catálogo: el límite de cada métrica de un plan y su precio por unidad. */
+/** `billing_plan_quotas`, in the catalog: the limit of each metric of a plan and its unit price. */
 @Entity({ name: 'billing_plan_quotas' })
 export class PlanQuotaEntity {
   @PrimaryColumn({ type: 'uuid', name: 'plan_id' })

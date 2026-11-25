@@ -2,12 +2,12 @@ import { PersistenceError, PersistenceErrorCode } from '@platform/persistence';
 import { TenantStatus, type TenantPlacement } from '@platform/sharding';
 import type { ShardDirectoryEntity } from '../entities/shard-directory.entity.js';
 
-/** Convierte una fila de `shard_directory` en el `TenantPlacement` del puerto, validando su forma. */
+/** Converts a `shard_directory` row into the port's `TenantPlacement`, validating its shape. */
 export class PlacementMapper {
   private static readonly STATUSES: readonly string[] =
     Object.values(TenantStatus);
 
-  /** @throws PersistenceError `PersistenceCorruptRow` si la fila no tiene la forma de un placement. */
+  /** @throws PersistenceError `PersistenceCorruptRow` if the row does not have the shape of a placement. */
   static toPlacement(entity: ShardDirectoryEntity): TenantPlacement {
     if (!PlacementMapper.isWellFormed(entity)) {
       throw new PersistenceError(

@@ -1,10 +1,10 @@
 import type { MessageDefinition } from '../contracts/message-contract.js';
 
-/** Metadatos que `@Subscribe` deja en un método y que `MessagingExplorer` lee. */
+/** Metadata that `@Subscribe` leaves on a method and that `MessagingExplorer` reads. */
 export class SubscribeMetadata {
   static readonly KEY = Symbol('platform.messaging.subscribe');
 
-  /** Contrato al que se suscribe `method`, o `undefined` si no está decorado. */
+  /** Contract `method` subscribes to, or `undefined` if it is not decorated. */
   static contractOf(method: unknown): MessageDefinition | undefined {
     if (typeof method !== 'function') {
       return undefined;

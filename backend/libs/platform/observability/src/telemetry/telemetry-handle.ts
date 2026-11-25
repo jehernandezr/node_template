@@ -1,16 +1,16 @@
 import type { MetricsPort } from '../metrics/metrics.port.js';
 
-/** Lo que el resto de la plataforma ve de la telemetría arrancada. */
+/** What the rest of the platform sees of the started telemetry. */
 export abstract class TelemetryHandle {
-  /** `false` con `OTEL_SDK_DISABLED` o `disabled: true`. */
+  /** `false` with `OTEL_SDK_DISABLED` or `disabled: true`. */
   abstract readonly enabled: boolean;
 
-  /** Puerto de métricas: OTel si está encendida, `NoopMetrics` si no. */
+  /** Metrics port: OTel if enabled, `NoopMetrics` otherwise. */
   abstract readonly metrics: MetricsPort;
 
-  /** Exporta spans, logs y métricas pendientes sin apagar el SDK (Lambda lo llama al final de cada invocación). */
+  /** Exports pending spans, logs and metrics without shutting down the SDK (Lambda calls it at the end of each invocation). */
   abstract forceFlush(): Promise<void>;
 
-  /** Exporta lo pendiente y apaga el SDK. */
+  /** Exports what is pending and shuts down the SDK. */
   abstract shutdown(): Promise<void>;
 }

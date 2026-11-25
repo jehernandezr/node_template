@@ -22,29 +22,29 @@ import type {
 
 export const TenantRoleSchema = z
   .enum(TenantRole)
-  .describe('Rol de sistema de un tenant.') satisfies z.ZodType<TenantRole>;
+  .describe('System role of a tenant.') satisfies z.ZodType<TenantRole>;
 
 export const TenantKindSchema = z
   .enum(TenantKind)
-  .describe('Tipo de tenant.') satisfies z.ZodType<TenantKind>;
+  .describe('Tenant type.') satisfies z.ZodType<TenantKind>;
 
 export const TenantLifecycleSchema = z
   .enum(TenantLifecycle)
-  .describe('Ciclo de vida de un tenant.') satisfies z.ZodType<TenantLifecycle>;
+  .describe('Lifecycle of a tenant.') satisfies z.ZodType<TenantLifecycle>;
 
 export const MembershipChangeKindSchema = z
   .enum(MembershipChangeKind)
   .describe(
-    'Qué cambió en la membresía de un usuario.',
+    'What changed in the membership of a user.',
   ) satisfies z.ZodType<MembershipChangeKind>;
 
-/** Identificador legible del tenant: minúsculas, dígitos y guiones internos. */
+/** Human-readable tenant identifier: lowercase letters, digits and inner hyphens. */
 export const TenantSlugSchema = z
   .string()
   .min(IdentityLimits.tenantSlugMinLength)
   .max(IdentityLimits.tenantSlugMaxLength)
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
-  .describe('Identificador legible del tenant.') satisfies z.ZodType<string>;
+  .describe('Readable identifier of the tenant.') satisfies z.ZodType<string>;
 
 const TenantNameFieldSchema = z
   .string()
@@ -68,7 +68,7 @@ export const TenantSummarySchema = z
     status: TenantLifecycleSchema,
   })
   .describe(
-    'Tenant visible para sus miembros.',
+    'Tenant visible to its members.',
   ) satisfies z.ZodType<TenantSummary>;
 
 export const CreateTenantRequestSchema = z
@@ -78,13 +78,13 @@ export const CreateTenantRequestSchema = z
     region: TenantRegionFieldSchema.optional(),
   })
   .describe(
-    'Alta de un tenant del usuario.',
+    'Creation of a tenant by the user.',
   ) satisfies z.ZodType<CreateTenantRequest>;
 
 export const UpdateTenantRequestSchema = z
   .strictObject({ name: TenantNameFieldSchema.optional() })
   .describe(
-    'Cambios parciales del tenant actual.',
+    'Partial changes of the current tenant.',
   ) satisfies z.ZodType<UpdateTenantRequest>;
 
 export const MyTenantSummarySchema = z
@@ -97,24 +97,24 @@ export const MyTenantSummarySchema = z
     joinedAt: TimestampSchema,
   })
   .describe(
-    'Tenant del usuario con la fecha en que se unió.',
+    'Tenant of the user with the date they joined.',
   ) satisfies z.ZodType<MyTenantSummary>;
 
 export const MyTenantPageSchema = pageOf(
   MyTenantSummarySchema,
-  'Página de tenants del usuario.',
+  'Page of the user tenants.',
 ) satisfies z.ZodType<MyTenantPage>;
 
 export const SwitchTenantRequestSchema = z
   .strictObject({ tenantId: IdSchema })
   .describe(
-    'Tenant al que cambia la sesión abierta.',
+    'Tenant the open session switches to.',
   ) satisfies z.ZodType<SwitchTenantRequest>;
 
 export const TenantOperationResultSchema = z
   .object({ tenantId: IdSchema, status: TenantLifecycleSchema })
   .describe(
-    'Resultado de una operación sobre el ciclo de vida de un tenant.',
+    'Result of an operation on the lifecycle of a tenant.',
   ) satisfies z.ZodType<TenantOperationResult>;
 
 export const CreateTenantInputSchema = z
@@ -127,14 +127,12 @@ export const CreateTenantInputSchema = z
     ownerUserId: IdSchema,
   })
   .describe(
-    'Crea un tenant en aprovisionamiento con su dueño.',
+    'Creates a tenant being provisioned with its owner.',
   ) satisfies z.ZodType<CreateTenantInput>;
 
 export const TenantRefInputSchema = z
   .strictObject({ tenantId: IdSchema })
-  .describe(
-    'Tenant a consultar o cambiar.',
-  ) satisfies z.ZodType<TenantRefInput>;
+  .describe('Tenant to query or change.') satisfies z.ZodType<TenantRefInput>;
 
 export const SuspendTenantInputSchema = z
   .strictObject({
@@ -142,5 +140,5 @@ export const SuspendTenantInputSchema = z
     reason: ReasonFieldSchema.optional(),
   })
   .describe(
-    'Suspende un tenant y revoca sus tokens.',
+    'Suspends a tenant and revokes its tokens.',
   ) satisfies z.ZodType<SuspendTenantInput>;

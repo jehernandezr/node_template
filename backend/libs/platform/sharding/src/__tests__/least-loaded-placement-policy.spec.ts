@@ -80,7 +80,7 @@ describe('LeastLoadedPlacementPolicy', () => {
     });
 
     it('skips a shard used by a dedicated tenant even if it is the least loaded', () => {
-      // eu-1 tiene un solo tenant, dedicado; sin la exclusión ganaría frente a eu-2 con dos.
+      // eu-1 has a single dedicated tenant; without the exclusion it would win over eu-2 with two.
       const current = [
         placed(TestTenants.One, EU_1).dedicated().build(),
         placed(TestTenants.Two, EU_2).build(),

@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../billing/schemas/billing_schemas.dart';
 import '../../billing/types/billing_types.dart';
 import '../../core/core.dart';
 import '../../platform/enums/platform_enums.dart';
 
-/// Eventos que publica el contrato `billing`.
+/// Events published by the `billing` contract.
 abstract final class BillingEvents {
-  /// Cambió el plan de la suscripción de un tenant.
+  /// The plan of a tenant subscription changed.
   ///
   /// `billing.subscription.changed.v1`
   static const subscriptionChanged =
@@ -21,7 +21,7 @@ abstract final class BillingEvents {
         decodePayload: SubscriptionChangedPayload.fromJson,
       );
 
-  /// Se suspendió la suscripción de un tenant. Identity suspende el acceso.
+  /// A tenant subscription was suspended. Identity suspends access.
   ///
   /// `billing.subscription.suspended.v1`
   static const subscriptionSuspended =
@@ -33,7 +33,7 @@ abstract final class BillingEvents {
         decodePayload: SubscriptionSuspendedPayload.fromJson,
       );
 
-  /// Se reactivó la suscripción de un tenant.
+  /// A tenant subscription was reactivated.
   ///
   /// `billing.subscription.reactivated.v1`
   static const subscriptionReactivated =
@@ -45,7 +45,7 @@ abstract final class BillingEvents {
         decodePayload: SubscriptionReactivatedPayload.fromJson,
       );
 
-  /// Cambiaron las funcionalidades y cuotas vigentes de un tenant. Identity las refleja en los permisos.
+  /// The active features and quotas of a tenant changed. Identity reflects them in the permissions.
   ///
   /// `billing.entitlements.changed.v1`
   static const entitlementsChanged =
@@ -57,7 +57,7 @@ abstract final class BillingEvents {
         decodePayload: EntitlementsChangedPayload.fromJson,
       );
 
-  /// Se emitió una factura.
+  /// An invoice was issued.
   ///
   /// `billing.invoice.issued.v1`
   static const invoiceIssued = MessageDescriptor<InvoiceIssuedPayload>(
@@ -68,7 +68,7 @@ abstract final class BillingEvents {
     decodePayload: InvoiceIssuedPayload.fromJson,
   );
 
-  /// Se pagó una factura.
+  /// An invoice was paid.
   ///
   /// `billing.invoice.paid.v1`
   static const invoicePaid = MessageDescriptor<InvoicePaidPayload>(
@@ -79,7 +79,7 @@ abstract final class BillingEvents {
     decodePayload: InvoicePaidPayload.fromJson,
   );
 
-  /// Falló el cobro de una factura.
+  /// Charging an invoice failed.
   ///
   /// `billing.invoice.failed.v1`
   static const invoiceFailed = MessageDescriptor<InvoiceFailedPayload>(
@@ -90,7 +90,7 @@ abstract final class BillingEvents {
     decodePayload: InvoiceFailedPayload.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[
     subscriptionChanged,
     subscriptionSuspended,
@@ -101,7 +101,7 @@ abstract final class BillingEvents {
     invoiceFailed,
   ];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;
@@ -110,9 +110,9 @@ abstract final class BillingEvents {
   }
 }
 
-/// Comandos que atiende el contrato `billing`.
+/// Commands handled by the `billing` contract.
 abstract final class BillingCommands {
-  /// Registra el uso de un tenant medido por otro servicio. Cada registro lleva su llave de idempotencia.
+  /// Records the usage of a tenant metered by another service. Each record carries its idempotency key.
   ///
   /// `billing.usage.record.v1`
   static const recordUsage = MessageDescriptor<RecordUsagePayload>(
@@ -123,10 +123,10 @@ abstract final class BillingCommands {
     decodePayload: RecordUsagePayload.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[recordUsage];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;

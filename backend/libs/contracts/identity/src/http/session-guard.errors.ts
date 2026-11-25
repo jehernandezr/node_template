@@ -1,11 +1,11 @@
 import { IdentityErrorCode } from '../enums/identifiers.enum.js';
 
 /**
- * Códigos con los que el guard rechaza un access token en cualquier ruta
- * autenticada, en el orden en que los revisa: sesión revocada, épocas del
- * usuario y del tenant, suspensiones y versión de permisos. La sesión vencida
- * por el tope absoluto también se rechaza aquí. Todos menos
- * `IDENTITY.TOKEN.STALE_PERMISSIONS` cierran la sesión en el cliente.
+ * Codes with which the guard rejects an access token on any authenticated
+ * route, in the order it checks them: revoked session, user and tenant
+ * epochs, suspensions and permission version. A session expired
+ * by the absolute cap is also rejected here. All except
+ * `IDENTITY.TOKEN.STALE_PERMISSIONS` end the session on the client.
  */
 export const SessionGuardErrors = Object.freeze([
   IdentityErrorCode.SessionRevoked,

@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Una entrega por notificación y canal, en el shard del usuario. */
+/** One delivery per notification and channel, in the user's shard. */
 export class CreateNotificationDeliveries1796100300000 implements MigrationInterface {
   readonly name = 'CreateNotificationDeliveries1796100300000';
 

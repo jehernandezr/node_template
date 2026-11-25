@@ -11,9 +11,9 @@ import { ValkeySubscriberSource } from '../valkey-subscriber-source.js';
 import { VALKEY_CLIENT } from './valkey.tokens.js';
 
 /**
- * Registra la salud de Valkey al iniciar y cierra las conexiones al apagar:
- * primero la del suscriptor y luego la de comandos, ambas con `quit` para que
- * el servidor termine lo que ya recibió. Si `quit` falla, corta la conexión.
+ * Registers Valkey health at startup and closes the connections at shutdown:
+ * first the subscriber one and then the command one, both with `quit` so
+ * the server finishes what it already received. If `quit` fails, it cuts the connection.
  */
 @Injectable()
 export class ValkeyLifecycle implements OnModuleInit, OnModuleDestroy {
@@ -31,7 +31,7 @@ export class ValkeyLifecycle implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     await this.subscribers.close();
     if (this.client.status === 'wait') {
-      // Nunca se usó: cerrarlo con `quit` abriría una conexión solo para cerrarla.
+      // It was never used: closing it with `quit` would open a connection just to close it.
       this.client.disconnect();
       return;
     }

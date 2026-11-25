@@ -6,8 +6,8 @@ import {
 } from '@platform/search';
 
 /**
- * Índice en memoria que rankea por orden de indexado y cuenta las lecturas, para probar cómo recorre el
- * ranking quien lo usa. Encuentra los documentos cuyo texto contiene el buscado.
+ * In-memory index that ranks by indexing order and counts reads, to test how the caller walks the
+ * ranking. It finds the documents whose text contains the searched text.
  */
 export class InMemorySearchIndex extends SearchIndex {
   private readonly documents = new Map<string, SearchDocument>();

@@ -6,7 +6,7 @@ import { RateLimitMetricName } from './rate-limit-metric-name.enum.js';
 import type { RateLimitOperation } from './rate-limit-operation.enum.js';
 import type { RateLimitRule } from './rate-limit-rule.js';
 
-/** Registra las fallas del limitador como métrica y como aviso en el log. */
+/** Records limiter failures as a metric and as a warning in the log. */
 export class ObservabilityRateLimitDegradationReporter extends RateLimitDegradationReporter {
   constructor(
     private readonly metrics?: MetricsPort,

@@ -11,7 +11,7 @@ import {
 } from '@platform/sharding/test-utils';
 import { PlacedTenantVerifier } from '../placed-tenant-verifier.js';
 
-/** Directorio que falla como lo haría una base caída. */
+/** Directory that fails as a down database would. */
 class UnavailableDirectoryStore extends InMemoryDirectoryStore {
   override getPlacement(): Promise<never> {
     return Promise.reject(

@@ -9,8 +9,8 @@ import { DeliveryRetrySchedule } from '../domain/delivery-retry-schedule.js';
 import type { Recipient } from '../domain/recipient.js';
 
 /**
- * Entrega una notificación por correo o push y devuelve la entrega con su resultado. Un fallo queda en la
- * entrega para que el job la reintente con espera creciente; después de `maxDeliveryAttempts` se abandona.
+ * Delivers a notification by email or push and returns the delivery with its result. A failure stays in the
+ * delivery so the job retries it with increasing backoff; after `maxDeliveryAttempts` it is abandoned.
  */
 @Injectable()
 export class ChannelDeliverer {
@@ -47,7 +47,7 @@ export class ChannelDeliverer {
     }
   }
 
-  /** El id del proveedor de correo; un push sale a varios dispositivos y no tiene uno solo. */
+  /** The email provider's id; a push goes out to several devices and does not have a single one. */
   private async send(
     delivery: Delivery,
     recipient: Recipient,

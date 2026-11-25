@@ -1,4 +1,4 @@
-/** Cuenta los commits que avisa el bus del outbox. */
+/** Counts the commits the outbox bus reports. */
 export class CommitCounter {
   count = 0;
 

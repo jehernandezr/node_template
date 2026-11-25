@@ -5,18 +5,18 @@ import { PrimitivesGuard } from './errors/primitives-guard.js';
 import { TimerScheduler } from './waiting/timer-scheduler.js';
 
 /**
- * Instante límite de una operación, en milisegundos epoch absolutos. Al ser
- * absoluto viaja entre procesos sin acumular error, y un hijo nunca excede al
- * padre. El tiempo se lee del `Clock` del kernel.
+ * Deadline instant of an operation, in absolute epoch milliseconds. Being
+ * absolute, it travels between processes without accumulating error, and a child never exceeds the
+ * parent. Time is read from the kernel `Clock`.
  */
 export class Deadline {
-  /** Instante límite en milisegundos epoch. */
+  /** Deadline instant in epoch milliseconds. */
   readonly atMs: number;
 
   /**
-   * @param budgetMs Milisegundos desde ahora hasta el límite. Finito y no negativo.
-   * @param clock Fuente de tiempo.
-   * @param atMs Instante absoluto que sustituye al presupuesto; lo usan `at`, `child` y `min`.
+   * @param budgetMs Milliseconds from now until the deadline. Finite and non-negative.
+   * @param clock Time source.
+   * @param atMs Absolute instant that replaces the budget; used by `at`, `child` and `min`.
    */
   constructor(
     budgetMs: number,
@@ -27,7 +27,7 @@ export class Deadline {
     this.atMs = atMs ?? clock.now().getTime() + budgetMs;
   }
 
-  /** Límite en un instante absoluto (milisegundos epoch). */
+  /** Returns a deadline at an absolute instant (epoch milliseconds). */
   static at(atMs: number, clock: Clock): Deadline {
     if (!Number.isFinite(atMs)) {
       throw new InvalidArgumentError('atMs', 'a finite epoch in milliseconds');
@@ -35,22 +35,22 @@ export class Deadline {
     return new Deadline(0, clock, atMs);
   }
 
-  /** Límite a `budgetMs` milisegundos desde ahora. */
+  /** Returns a deadline `budgetMs` milliseconds from now. */
   static after(budgetMs: number, clock: Clock): Deadline {
     return new Deadline(budgetMs, clock);
   }
 
-  /** Milisegundos que quedan; 0 si ya venció. */
+  /** Returns the remaining milliseconds; 0 if already expired. */
   remainingMs(): number {
     return Math.max(0, this.atMs - this.clock.now().getTime());
   }
 
-  /** Indica si el límite ya pasó. */
+  /** Whether the deadline has already passed. */
   isExpired(): boolean {
     return this.remainingMs() === 0;
   }
 
-  /** Lanza `DeadlineExceededError` si el límite ya pasó. */
+  /** Throws `DeadlineExceededError` if the deadline has already passed. */
   throwIfExpired(): void {
     if (this.isExpired()) {
       throw new DeadlineExceededError(this.atMs);
@@ -58,9 +58,9 @@ export class Deadline {
   }
 
   /**
-   * Límite para una sub-operación: `budgetMs` desde ahora, recortado al límite
-   * propio. Sirve para reservar tiempo (por ejemplo, para compensar) dentro del
-   * presupuesto del padre.
+   * Returns a deadline for a sub-operation: `budgetMs` from now, capped at its own
+   * deadline. Used to reserve time (for example, to compensate) within the
+   * parent's budget.
    */
   child(budgetMs: number): Deadline {
     PrimitivesGuard.instance.nonNegativeFinite('budgetMs', budgetMs);
@@ -68,16 +68,16 @@ export class Deadline {
     return new Deadline(0, this.clock, Math.min(this.atMs, proposed));
   }
 
-  /** El más cercano de los dos límites. */
+  /** Returns the nearer of the two deadlines. */
   min(other: Deadline): Deadline {
     return other.atMs < this.atMs ? other : this;
   }
 
   /**
-   * Corre `work` con una señal que aborta al vencer el plazo o con `signal`.
-   * Rechaza con `DeadlineExceededError` al vencer, o con el motivo de `signal`
-   * si aborta quien llama. El trabajo pudo o no aplicar sus efectos, así que
-   * quien llama trata esos rechazos como resultado incierto.
+   * Runs `work` with a signal that aborts when the deadline expires or with `signal`.
+   * Rejects with `DeadlineExceededError` on expiry, or with the reason of `signal`
+   * if the caller aborts. The work may or may not have applied its effects, so
+   * the caller treats those rejections as an uncertain result.
    */
   async race<T>(
     work: (signal: AbortSignal) => Promise<T>,
@@ -99,14 +99,14 @@ export class Deadline {
   }
 
   /**
-   * Espera una promesa ya creada con el plazo. Si el plazo vence o `signal`
-   * aborta primero, rechaza y la promesa queda abandonada.
+   * Awaits an already created promise with the deadline. If the deadline expires or `signal`
+   * aborts first, rejects and the promise is abandoned.
    */
   wait<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
     try {
       this.assertCanStart(signal);
     } catch (error) {
-      // Una promesa abandonada puede rechazar después: su error no tiene dueño.
+      // An abandoned promise may reject later: its error has no owner.
       promise.catch(() => undefined);
       return Promise.reject(error as Error);
     }
@@ -137,7 +137,7 @@ export class Deadline {
     });
   }
 
-  /** Espera `ms` milisegundos; rechaza si antes vence el plazo o aborta `signal`. */
+  /** Waits `ms` milliseconds; rejects if the deadline expires or `signal` aborts first. */
   sleep(ms: number, signal?: AbortSignal): Promise<void> {
     PrimitivesGuard.instance.nonNegativeFinite('ms', ms);
     return this.race(
@@ -158,9 +158,9 @@ export class Deadline {
   }
 
   /**
-   * Señal que aborta con `DeadlineExceededError` cuando se agota el tiempo que
-   * queda. Si ya venció, la señal nace abortada. El temporizador no mantiene
-   * vivo el proceso.
+   * Returns a signal that aborts with `DeadlineExceededError` when the remaining time
+   * runs out. If it already expired, the signal is born aborted. The timer does not keep
+   * the process alive.
    */
   toAbortSignal(): AbortSignal {
     const remaining = this.remainingMs();

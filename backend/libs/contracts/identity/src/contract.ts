@@ -178,7 +178,7 @@ export const IdentityTenantMoveOperations =
 export const identityContract = defineServiceContract({
   service: 'identity',
   description:
-    'Identidad: registro, contraseñas, perfil, sesiones, dispositivos, MFA, passkeys, tenants, membresías, invitaciones y API keys.',
+    'Identity: registration, passwords, profile, sessions, devices, MFA, passkeys, tenants, memberships, invitations and API keys.',
   enums: {
     Permission,
     PlatformRole,

@@ -1,16 +1,16 @@
 import type { Clock } from '@platform/kernel';
 
-/** Ajustes y ganchos de un {@link ConsecutiveCircuitBreaker}. */
+/** Settings and hooks of a {@link ConsecutiveCircuitBreaker}. */
 export interface CircuitBreakerOptions {
-  /** Fallas contadas consecutivas que abren el circuito. */
+  /** Consecutive counted failures that open the circuit. */
   readonly consecutiveFailures: number;
-  /** Tiempo que el circuito queda abierto antes de permitir una llamada de prueba. */
+  /** Time the circuit stays open before allowing a trial call. */
   readonly halfOpenAfterMs: number;
-  /** Fuente de tiempo, para que las pruebas decidan cuándo se medio abre. */
+  /** Time source, so the tests decide when it goes half-open. */
   readonly clock: Clock;
-  /** Qué errores cuentan como falla. Los demás pasan sin abrir el circuito. */
+  /** Which errors count as a failure. The others pass without opening the circuit. */
   readonly counts: (error: unknown) => boolean;
-  /** Error que se lanza para una llamada rechazada con el circuito abierto. */
+  /** Error thrown for a call rejected with the circuit open. */
   readonly rejectWith: () => Error;
   readonly onBreak?: (error: unknown) => void;
   readonly onHalfOpen?: () => void;

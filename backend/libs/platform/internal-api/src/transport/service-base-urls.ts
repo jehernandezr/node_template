@@ -3,15 +3,15 @@ import { InternalApiError } from '../errors/internal-api-error.js';
 import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js';
 
 /**
- * URL base de cada servicio al que este proceso llama por HTTP. El servicio
- * dueño de una operación es el primer segmento de su id.
+ * Base URL of each service this process calls over HTTP. The service
+ * that owns an operation is the first segment of its id.
  */
 export class ServiceBaseUrls {
   private readonly urls = new Map<string, string>();
 
   /**
-   * @param urls URL base por nombre de servicio, por ejemplo `{ identity: 'http://identity:3000' }`.
-   * @throws InternalApiError `InvalidConfiguration` si una URL no es `http` o `https` válida.
+   * @param urls Base URL per service name, for example `{ identity: 'http://identity:3000' }`.
+   * @throws InternalApiError `InvalidConfiguration` if a URL is not a valid `http` or `https` one.
    */
   constructor(urls: Readonly<Record<string, string>>) {
     for (const [service, raw] of Object.entries(urls)) {
@@ -20,8 +20,8 @@ export class ServiceBaseUrls {
   }
 
   /**
-   * URL base, sin barra final, del servicio dueño de `operationId`.
-   * @throws InternalApiError `UnknownService` si no hay URL para ese servicio.
+   * Returns the base URL, without a trailing slash, of the service that owns `operationId`.
+   * @throws InternalApiError `UnknownService` if there is no URL for that service.
    */
   urlFor(operationId: string): string {
     const service = OperationMetadata.serviceOf(operationId);

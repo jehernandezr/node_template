@@ -1,8 +1,8 @@
-/** Valores que el autenticador de prueba escribe en CBOR: lo justo para WebAuthn. */
+/** Values the test authenticator writes in CBOR: just enough for WebAuthn. */
 export type CborValue =
   number | string | Buffer | ReadonlyMap<CborValue, CborValue>;
 
-/** Codificador CBOR mínimo (RFC 8949) para armar `attestationObject` y claves COSE en las pruebas. */
+/** Minimal CBOR encoder (RFC 8949) to build `attestationObject` and COSE keys in the tests. */
 export class CborWriter {
   static write(value: CborValue): Buffer {
     if (typeof value === 'number') {

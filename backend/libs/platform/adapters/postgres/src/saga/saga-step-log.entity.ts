@@ -3,10 +3,10 @@ import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
 import { SagaSqlValues } from './saga-sql-values.js';
 
 /**
- * Fila de `saga.step_log`: un intento de un paso en una dirección. La llave es
- * `(saga_id, step_index, direction)`, así reemplazar el intento es un upsert.
- * Sin llave foránea: la purga borra la bitácora junto con la instancia en la
- * misma transacción.
+ * Row of `saga.step_log`: one attempt of a step in one direction. The key is
+ * `(saga_id, step_index, direction)`, so replacing the attempt is an upsert.
+ * No foreign key: the purge deletes the log together with the instance in the
+ * same transaction.
  */
 @Entity({ schema: 'saga', name: 'step_log' })
 @Check(

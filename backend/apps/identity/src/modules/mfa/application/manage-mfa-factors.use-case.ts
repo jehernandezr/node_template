@@ -19,7 +19,7 @@ import { MfaFactorRepository } from '../domain/mfa-factor-repository.js';
 import { SecretBox } from '../domain/secret-box.js';
 import { TotpAlgorithm } from '../domain/totp-algorithm.js';
 
-/** TOTP y códigos de recuperación del usuario. Activar, quitar y regenerar piden step-up en la ruta. */
+/** The user's TOTP and recovery codes. Enabling, removing and regenerating require step-up on the route. */
 @Injectable()
 export class ManageMfaFactors {
   private static readonly TOTP_SECRET_BYTES = 20;
@@ -40,7 +40,7 @@ export class ManageMfaFactors {
     private readonly clock: Clock,
   ) {}
 
-  /** Un secreto nuevo sin confirmar; reemplaza a uno anterior sin confirmar. */
+  /** A new unconfirmed secret; replaces a previous unconfirmed one. */
   async startTotp(ref: UserRef): Promise<TotpEnrollment> {
     const secret = this.generator.bytes(ManageMfaFactors.TOTP_SECRET_BYTES);
     await this.inUserTransaction(ref, async () => {
@@ -67,7 +67,7 @@ export class ManageMfaFactors {
     };
   }
 
-  /** Confirma el TOTP con un código de la app y entrega códigos de recuperación nuevos. */
+  /** Confirms the TOTP with a code from the app and delivers new recovery codes. */
   async confirmTotp(ref: UserRef, code: string): Promise<RecoveryCodes> {
     const codes = this.newRecoveryCodes();
     await this.inUserTransaction(ref, async () => {

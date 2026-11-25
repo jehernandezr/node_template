@@ -3,8 +3,8 @@ import type { DataSource } from 'typeorm';
 import { TenantMoveActivity } from '../application/tenant-move-activity.js';
 
 /**
- * Las sagas del tenant que siguen corriendo, esperan un reintento o compensan en el shard. Su bitácora viaja con el
- * tenant, pero una saga a medias seguiría escribiendo en el origen después de la última ronda.
+ * The tenant sagas that are still running, waiting for a retry or compensating on the shard. Their log travels with the
+ * tenant, but a half-finished saga would keep writing to the source after the last round.
  */
 export class OpenSagaActivity extends TenantMoveActivity {
   private static readonly OPEN: readonly SagaStatus[] = [

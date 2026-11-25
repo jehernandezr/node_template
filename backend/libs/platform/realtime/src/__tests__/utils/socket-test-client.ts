@@ -7,7 +7,7 @@ interface EmittedFrame {
   readonly data: unknown;
 }
 
-/** Cliente Socket.IO de prueba que guarda cada trama y reconecta con el id de la última recibida. */
+/** Test Socket.IO client that stores each frame and reconnects with the id of the last one received. */
 export class SocketTestClient {
   readonly frames: ReceivedFrame[] = [];
   disconnected = false;

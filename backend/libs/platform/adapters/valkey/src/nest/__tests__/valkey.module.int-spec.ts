@@ -15,8 +15,8 @@ import { VALKEY_CLIENT } from '../valkey.tokens.js';
 import { ValkeyTestPlatformModule } from './utils/valkey-test-platform.module.js';
 
 /**
- * El módulo completo contra un Valkey real. Sin Docker se salta; con
- * `INTEGRATION_TESTS=require` la falta de Docker es un error.
+ * The whole module against a real Valkey. Without Docker it is skipped; with
+ * `INTEGRATION_TESTS=require` missing Docker is an error.
  */
 jest.setTimeout(60_000);
 
@@ -40,7 +40,7 @@ runtime.describeIfAvailable('ValkeyModule against a real server', () => {
     }
   });
 
-  /** Una instancia del servicio, como la tendría otro proceso. */
+  /** An instance of the service, as another process would have it. */
   async function instance(): Promise<TestingModule> {
     const app = await Test.createTestingModule({
       imports: [

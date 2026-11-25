@@ -1,7 +1,7 @@
 /**
- * Contraseñas de 12 caracteres o más que aparecen tal cual en las listas públicas de filtraciones más
- * comunes. `KnownBreachedPasswordsSource` les suma las variantes habituales. Es la lista de arranque; la de
- * Have I Been Pwned entra después detrás del mismo puerto.
+ * Passwords of 12 characters or more that appear as-is in the most common public breach lists.
+ * `KnownBreachedPasswordsSource` adds the usual variants to them. It is the bootstrap list; the
+ * Have I Been Pwned one comes later behind the same port.
  */
 export const KNOWN_BREACHED_PASSWORDS: readonly string[] = [
   '123456789012',
@@ -56,7 +56,7 @@ export const KNOWN_BREACHED_PASSWORDS: readonly string[] = [
   'contrasena123',
 ];
 
-/** Palabras que más se repiten en las contraseñas filtradas, antes de sumarles un número o un año. */
+/** Words most repeated in breached passwords, before a number or a year is appended. */
 export const COMMON_PASSWORD_WORDS: readonly string[] = [
   'password',
   'passw0rd',
@@ -90,7 +90,7 @@ export const COMMON_PASSWORD_WORDS: readonly string[] = [
   'zxcvbnm',
 ];
 
-/** Lo que se suele agregar a una palabra común para cumplir un largo mínimo. */
+/** What is usually appended to a common word to meet a minimum length. */
 export const COMMON_PASSWORD_SUFFIXES: readonly string[] = [
   '123',
   '1234',

@@ -4,12 +4,12 @@ import { PostgresQueryRunner } from 'typeorm/driver/postgres/PostgresQueryRunner
 import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver.js';
 
 /**
- * `QueryRunner` sin base de datos: registra cada operación en `calls` y no abre conexiones. Sirve para
- * probar las clases que abren transacciones sin PostgreSQL.
+ * `QueryRunner` without a database: records each operation in `calls` and opens no connections. Used to
+ * test the classes that open transactions without PostgreSQL.
  */
 export class StubQueryRunner extends PostgresQueryRunner {
   readonly calls: string[] = [];
-  /** Respuestas de `query` en orden: cada llamada toma la primera; sin ninguna devuelve un resultado vacío. */
+  /** Responses of `query` in order: each call takes the first one; with none left it returns an empty result. */
   readonly responses: unknown[] = [];
   failOnCommit = false;
 

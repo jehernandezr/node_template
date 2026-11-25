@@ -6,7 +6,7 @@ import type { StepLogEntry } from '../../model/step-log-entry.js';
 import { StepStatus } from '../../model/step-status.enum.js';
 import { StepKey } from '../../model/step-key.js';
 
-/** Arma instancias y entradas de bitácora de prueba, con valores por defecto válidos. */
+/** Builds test instances and log entries, with valid defaults. */
 export class SagaInstanceBuilder {
   static readonly NOW = new Date('2026-01-01T00:00:00.000Z');
   static readonly DEFAULT_ID = '0193f1c2-0000-7000-8000-0000000000a1';
@@ -39,7 +39,7 @@ export class SagaInstanceBuilder {
     });
   }
 
-  /** Entrada de bitácora de un paso, por defecto hacia delante y en `Dispatched`. */
+  /** Log entry of a step, forward and in `Dispatched` by default. */
   static aStep(
     sagaId: string,
     stepIndex: number,

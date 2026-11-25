@@ -12,7 +12,7 @@ import type { ServiceAccount } from '../../domain/service-account.js';
 import { ApiKeyEntity } from './entities/api-key.entity.js';
 import { ServiceAccountEntity } from './entities/service-account.entity.js';
 
-/** `ApiKeyRepository` sobre `service_accounts` y `api_keys` del shard del tenant. */
+/** `ApiKeyRepository` over `service_accounts` and `api_keys` of the tenant shard. */
 @Injectable()
 export class TypeOrmApiKeyRepository
   extends TenantIsolatedRepository

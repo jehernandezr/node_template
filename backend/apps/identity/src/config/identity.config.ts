@@ -17,14 +17,14 @@ import { IdentityDefaults } from '../shared/constants/identity-defaults.constant
 import { IdentityMailerKind } from './identity-mailer-kind.enum.js';
 
 /**
- * Configuración de identity. `WEB_ORIGINS` y `TRUST_PROXY_HOPS` no están aquí: los lee `@platform/http`.
+ * Identity configuration. `WEB_ORIGINS` and `TRUST_PROXY_HOPS` are not here: `@platform/http` reads them.
  */
 export const identityConfigSchema = serviceConfigSchema
   .extend({
     IDENTITY_REGION: z.string().trim().min(1).max(32),
     /**
-     * La región del proceso para el enrutamiento (`@platform/service`): es `IDENTITY_REGION` y es obligatoria cuando
-     * `REGIONS` declara regiones, porque sin ella el router no rechaza los tenants de otra región.
+     * The process region for routing (`@platform/service`): it is `IDENTITY_REGION` and it is required when
+     * `REGIONS` declares regions, because without it the router does not reject tenants from another region.
      */
     SERVICE_REGION: z.string().trim().min(1).max(32).optional(),
     REGIONS: regionsConfigSchema.shape.REGIONS,

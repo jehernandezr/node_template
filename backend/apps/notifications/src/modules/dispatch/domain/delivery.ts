@@ -1,16 +1,16 @@
 import type { NotificationChannel } from '@contracts/notifications';
 
-/** Cómo terminó la entrega de una notificación por un canal. */
+/** How the delivery of a notification through a channel ended. */
 export enum DeliveryStatus {
-  /** Guardada con la notificación y todavía sin intentar. */
+  /** Saved with the notification and not yet attempted. */
   Pending = 'pending',
   Sent = 'sent',
   Failed = 'failed',
-  /** Falló `NotificationsDefaults.maxDeliveryAttempts` veces y no se reintenta más. */
+  /** Failed `NotificationsDefaults.maxDeliveryAttempts` times and is no longer retried. */
   Abandoned = 'abandoned',
 }
 
-/** Lo que se entrega guarda su texto: el reintento no depende de la bandeja, que el usuario puede vaciar. */
+/** What is delivered keeps its text: the retry does not depend on the inbox, which the user can empty. */
 export interface Delivery {
   readonly id: string;
   readonly notificationId: string;
@@ -19,7 +19,7 @@ export interface Delivery {
   readonly channel: NotificationChannel;
   readonly status: DeliveryStatus;
   readonly attempts: number;
-  /** Desde cuándo el job puede reintentarla si sigue pendiente o fallida. */
+  /** Since when the job can retry it if it is still pending or failed. */
   readonly nextAttemptAt: Date;
   readonly title: string;
   readonly body: string;

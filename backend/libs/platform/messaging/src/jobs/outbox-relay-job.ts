@@ -10,13 +10,13 @@ import { RelayScopes } from '../relay/relay-scopes.js';
 import { MessagingJob } from './messaging-job.enum.js';
 
 /**
- * Publica el outbox: una pasada del relay por cada partición que entrega
- * `RelayScopes`. Corre cada segundo con jitter y, además, `OutboxMessageBus`
- * pide una corrida con `JobRunner.trigger` al confirmarse una transacción.
- * No es exclusivo: el outbox toma los registros con lease y `SKIP LOCKED`.
- * Cada pasada publica su `RelayReport` como contadores de `OutboxMetric`, para
- * alarmar sobre lo que falla o muere, y un registro dado por muerto se anota
- * como error.
+ * Publishes the outbox: one relay pass for each partition that
+ * `RelayScopes` yields. Runs every second with jitter and, in addition, `OutboxMessageBus`
+ * requests a run with `JobRunner.trigger` when a transaction commits.
+ * It is not exclusive: the outbox takes records with a lease and `SKIP LOCKED`.
+ * Each pass publishes its `RelayReport` as `OutboxMetric` counters, to
+ * alert on what fails or dies, and a record declared dead is logged
+ * as an error.
  */
 export class OutboxRelayJob extends ScheduledJob {
   readonly name = MessagingJob.OutboxRelay;
@@ -35,7 +35,7 @@ export class OutboxRelayJob extends ScheduledJob {
     super();
   }
 
-  /** Una pasada del relay por partición, con su informe en métricas. */
+  /** One relay pass per partition, with its report in metrics. */
   async run(): Promise<void> {
     await this.scopes.forEach(async () => {
       this.report(await this.relay.relayOnce());

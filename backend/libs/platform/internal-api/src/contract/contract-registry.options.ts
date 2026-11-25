@@ -3,13 +3,13 @@ import type { OperationResolver } from './operation-resolver.js';
 
 export interface ContractRegistryOptions {
   /**
-   * Tope del presupuesto por defecto de una llamada (`OperationMetadata.callBudgetMs`:
-   * todos los intentos más las esperas más largas). Por defecto 25 000 ms, el
-   * presupuesto por defecto de un paso de saga.
+   * Cap of the default budget of a call (`OperationMetadata.callBudgetMs`:
+   * all attempts plus the longest waits). Defaults to 25 000 ms, the
+   * default budget of a saga step.
    */
   readonly maxCallBudgetMs?: number;
-  /** Resolvedor de descriptores. Por defecto, uno propio del registro. */
+  /** Descriptor resolver. By default, one owned by the registry. */
   readonly resolver?: OperationResolver;
-  /** Verificador de esquemas seguros para JSON. Por defecto, el estándar. */
+  /** JSON-safe schema checker. By default, the standard one. */
   readonly jsonSafety?: JsonSafetyChecker;
 }

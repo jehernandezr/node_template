@@ -1,6 +1,6 @@
 import { CacheErrorReporter } from './cache-error-reporter.js';
 
-/** Descarta las fallas absorbidas. */
+/** Discards the absorbed failures. */
 export class NoopCacheErrorReporter extends CacheErrorReporter {
   report(): void {
     return undefined;

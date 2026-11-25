@@ -1,6 +1,6 @@
 import type { UsageMetric } from '@contracts/billing';
 
-/** Cuenta el uso medido de un tenant para enviarlo a billing. */
+/** Counts a tenant's metered usage to send it to billing. */
 export abstract class UsageRecorder {
   abstract record(
     tenantId: string,

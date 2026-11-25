@@ -7,7 +7,7 @@ import { ReportCatalog } from '../application/report-catalog.js';
 import { ReportDefinitionRegistry } from '../application/report-definition-registry.js';
 import { CatalogController } from './catalog.controller.js';
 
-/** Los tipos de reporte y su catálogo público. Global solo para el registro. */
+/** The report types and their public catalog. Global only for the registry. */
 @Global()
 @Module({
   controllers: [CatalogController],

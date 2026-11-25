@@ -1,12 +1,12 @@
 import type { PermissionVersion } from './permission-version.js';
 
-/** Convierte entre `PermissionVersion` y el texto `"<tenant>.<usuario>"` del claim `pv`. Utilidad pura. */
+/** Converts between `PermissionVersion` and the `"<tenant>.<user>"` text of the `pv` claim. Pure utility. */
 export class PermissionVersionCodec {
   static format(version: PermissionVersion): string {
     return `${version.tenant}.${version.user}`;
   }
 
-  /** `undefined` si el texto no son dos enteros no negativos separados por un punto. */
+  /** `undefined` if the text is not two non-negative integers separated by a dot. */
   static parse(text: string): PermissionVersion | undefined {
     const match = /^(\d{1,15})\.(\d{1,15})$/.exec(text);
     if (match === null) {

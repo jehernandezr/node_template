@@ -4,8 +4,8 @@ import { AccessGrantSource, type AccessGrant } from '@platform/auth';
 import { AccessFacade } from '../modules/access/index.js';
 
 /**
- * Fuente de verdad del acceso dentro del proceso: `access` calcula los permisos. La fachada se busca en
- * cada llamada porque el módulo puede cargarse después que la autenticación.
+ * In-process source of truth for access: `access` computes the permissions. The facade is looked up on
+ * each call because the module may load after authentication.
  */
 @Injectable()
 export class AccessFacadeGrantSource extends AccessGrantSource {

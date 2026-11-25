@@ -1,9 +1,9 @@
 import type { ShardKey } from '@platform/sharding';
 
-/** Cómo enruta el servicio sus datos por defecto. */
+/** How the service routes its data by default. */
 export interface ServiceSharding {
-  /** Llave de las transacciones que no declaran la suya. */
+  /** Key of the transactions that do not declare their own. */
   readonly defaultKey: ShardKey;
-  /** Con `true`, sin un `ShardScope` activo toda resolución falla con `PLATFORM.SHARDING.KEY_MISSING`. */
+  /** With `true`, without an active `ShardScope` every resolution fails with `PLATFORM.SHARDING.KEY_MISSING`. */
   readonly requireScope: boolean;
 }

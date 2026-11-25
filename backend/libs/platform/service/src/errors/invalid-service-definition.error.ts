@@ -1,7 +1,7 @@
 import { PlatformError } from '@platform/kernel';
 import { ServiceErrorCode } from './service-error-code.enum.js';
 
-/** La `ServiceDefinition` tiene un campo vacío o contradice a su contrato. */
+/** The `ServiceDefinition` has an empty field or contradicts its contract. */
 export class InvalidServiceDefinitionError extends PlatformError {
   override readonly code = ServiceErrorCode.InvalidDefinition;
 

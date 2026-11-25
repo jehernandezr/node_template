@@ -16,38 +16,38 @@ import type { ShardRouterParts } from './router/shard-router-parts.js';
 import { PlacementWriteRule } from './router/placement-write-rule.js';
 
 /**
- * Enruta una petición a su instancia física: tenant, región, grupo de shards,
- * shard lógico e instancia.
+ * Routes a request to its physical instance: tenant, region, shard group,
+ * logical shard and instance.
  *
- * Los ids de tenant y las claves de enrutamiento se pasan a minúsculas antes de
- * usarse; el directorio debe guardar ids en minúsculas. Una clave más larga que
- * `maxKeyLength` se rechaza.
+ * Tenant ids and routing keys are lowercased before
+ * use; the directory must store lowercase ids. A key longer than
+ * `maxKeyLength` is rejected.
  *
- * Un placement se busca en el mapa en proceso, luego en el caché compartido y
- * al final en el directorio. Las fallas simultáneas del mismo tenant comparten
- * una sola carga. Una invalidación posterior al inicio de una carga hace que su
- * resultado llegue a quien lo pidió sin cachearse. Entre procesos, `invalidate`
- * deja una lápida versionada en el caché compartido y publica el cambio.
+ * A placement is looked up in the in-process map, then in the shared cache and
+ * finally in the directory. Simultaneous misses for the same tenant share
+ * a single load. An invalidation after a load starts makes its
+ * result reach the requester without being cached. Across processes, `invalidate`
+ * leaves a versioned tombstone in the shared cache and publishes the change.
  *
- * Agregar un shard a un grupo solo es válido con una saga de traslado y el
- * tenant en `Migrating`: la versión nueva del placement estrena anillo y las
- * escrituras siguen bloqueadas hasta que el traslado termina.
+ * Adding a shard to a group is only valid with a move saga and the
+ * tenant in `Migrating`: the new placement version gets a new ring and
+ * writes stay blocked until the move finishes.
  */
 export class ShardRouter {
   private readonly parts: ShardRouterParts;
 
-  /** @throws ShardingError `InvalidConfiguration` cuando un TTL, un límite o el patrón es inválido. */
+  /** @throws ShardingError `InvalidConfiguration` when a TTL, a limit or the pattern is invalid. */
   constructor(options: ShardRouterOptions) {
     this.parts = ShardRouterAssembler.assemble(options);
   }
 
   /**
-   * Resuelve la instancia física de una petición.
+   * Resolves the physical instance of a request.
    * @throws ShardingError `KeyMissing`, `InvalidTenantId`, `InvalidKey`, `UnknownTenant`,
-   *   `UnknownShard`, `TenantMigrating` o `TenantNotWritable`.
-   * @throws WrongRegionError cuando el tenant vive en otra región.
-   * @throws DeadlineExceededError (`@platform/primitives`) si `request.deadline` vence primero.
-   * @throws El `reason` de `request.signal` si aborta primero.
+   *   `UnknownShard`, `TenantMigrating` or `TenantNotWritable`.
+   * @throws WrongRegionError when the tenant lives in another region.
+   * @throws DeadlineExceededError (`@platform/primitives`) if `request.deadline` expires first.
+   * @throws The `reason` of `request.signal` if it aborts first.
    */
   async resolve(request: ResolveRequest): Promise<ResolvedShard> {
     const { clock, normalizer, cache, loader, instances } = this.parts;
@@ -87,8 +87,8 @@ export class ShardRouter {
   }
 
   /**
-   * Placement del tenant, del caché en proceso o cargado, sin comprobar región ni estado.
-   * @throws ShardingError `KeyMissing`, `InvalidTenantId` o `UnknownTenant`.
+   * Tenant placement, from the in-process cache or loaded, without checking region or status.
+   * @throws ShardingError `KeyMissing`, `InvalidTenantId` or `UnknownTenant`.
    */
   async placement(tenantId: string): Promise<TenantPlacement> {
     const { normalizer, cache, loader } = this.parts;
@@ -96,33 +96,33 @@ export class ShardRouter {
     return cache.local(normalized) ?? loader.loadOrJoin(normalized);
   }
 
-  /** Lanza los mismos errores que un `resolve` de escritura, para un resultado que ya se tiene. */
+  /** Throws the same errors as a write `resolve`, for a result already in hand. */
   assertWritable(resolved: ResolvedShard): void {
     PlacementWriteRule.assertWritable(resolved.tenantId, resolved.status);
   }
 
   /**
-   * Descarta el placement de un tenant y las instancias de su grupo de shards, deja una lápida
-   * versionada en el caché compartido y publica el cambio a los demás procesos. Se llama
-   * después de que la escritura al directorio se confirma.
-   * @throws ShardingError `KeyMissing` o `InvalidTenantId` por un id malo, `InvalidConfiguration`
-   *   cuando `options.version` no es un entero no negativo.
+   * Discards a tenant placement and the instances of its shard group, leaves a versioned
+   * tombstone in the shared cache and publishes the change to the other processes. Called
+   * after the directory write is committed.
+   * @throws ShardingError `KeyMissing` or `InvalidTenantId` for a bad id, `InvalidConfiguration`
+   *   when `options.version` is not a non-negative integer.
    */
   invalidate(tenantId: string, options: InvalidateOptions = {}): Promise<void> {
     return this.parts.invalidator.invalidate(tenantId, options);
   }
 
   /**
-   * Aplica un cambio publicado por otro proceso. Solo cambia estado en proceso. Nunca lanza
-   * por un evento malo: lo informa a `onCacheError` y lo ignora.
+   * Applies a change published by another process. Only changes in-process state. Never throws
+   * on a bad event: reports it to `onCacheError` and ignores it.
    */
   applyDirectoryChange(event: ShardDirectoryChanged): void {
     this.parts.applier.apply(event);
   }
 
   /**
-   * Suscribe este router a los cambios del directorio de todos los procesos.
-   * @returns una función que deja de escuchar.
+   * Subscribes this router to directory changes from every process.
+   * @returns a function that stops listening.
    */
   listen(
     subscriber: ShardDirectoryChangeSubscriber,
@@ -130,7 +130,7 @@ export class ShardRouter {
     return subscriber.subscribe((event) => this.applyDirectoryChange(event));
   }
 
-  /** Borra la instancia cacheada de un shard lógico, sin importar qué placements lo referencian. */
+  /** Deletes the cached instance of a logical shard, regardless of which placements reference it. */
   invalidateShard(logicalShard: string): void {
     this.parts.instances.invalidate(logicalShard);
   }

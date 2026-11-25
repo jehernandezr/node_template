@@ -9,7 +9,7 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { DispatchFacade } from '../application/dispatch.facade.js';
 
-/** Aviso pedido por otro servicio, por ejemplo el paso de bienvenida de una saga. */
+/** Notification requested by another service, for example the welcome step of a saga. */
 @Injectable()
 export class DispatchInternalOperations {
   constructor(private readonly dispatch: DispatchFacade) {}

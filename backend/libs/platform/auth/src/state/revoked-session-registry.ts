@@ -4,16 +4,16 @@ import type {
 } from '@platform/bloom';
 
 /**
- * Bloom en memoria de las sesiones revocadas de este proceso. Un "no" es
- * definitivo; un "quizás" se confirma contra Valkey. Mientras no se haya
- * reconstruido una vez (`isWarm` es `false`) no sirve para descartar nada.
+ * In-memory Bloom of this process's revoked sessions. A "no" is
+ * definitive; a "maybe" is confirmed against Valkey. Until it has been
+ * rebuilt once (`isWarm` is `false`) it cannot rule anything out.
  */
 export class RevokedSessionRegistry {
   private warm = false;
   /**
-   * Revocaciones avisadas durante la reconstrucción en curso. El intercambio de
-   * filtros descarta lo agregado al viejo y el índice pudo leerse antes de que
-   * llegaran, así que se recuerdan aparte hasta reaplicarlas al filtro nuevo.
+   * Revocations announced during the rebuild in progress. Swapping
+   * filters discards what was added to the old one and the index may have been read before
+   * they arrived, so they are remembered separately until reapplied to the new filter.
    */
   private pending: Set<string> | undefined;
   private rebuilding: Promise<void> | undefined;
@@ -37,9 +37,9 @@ export class RevokedSessionRegistry {
   }
 
   /**
-   * Reconstruye el filtro desde `source` y lo marca como lleno. Dos llamadas
-   * simultáneas comparten la misma reconstrucción.
-   * @throws el error de `source`; el filtro anterior se conserva.
+   * Rebuilds the filter from `source` and marks it as filled. Two concurrent
+   * calls share the same rebuild.
+   * @throws the error from `source`; the previous filter is kept.
    */
   rebuild(source: BloomRebuildSource): Promise<void> {
     if (this.rebuilding === undefined) {

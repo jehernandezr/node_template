@@ -1,8 +1,8 @@
 import { createServer, type AddressInfo, type Server } from 'node:net';
 
 /**
- * Puertos libres pedidos al sistema antes de arrancar los servicios. Cada servicio necesita la URL de los demás
- * en su configuración, así que el puerto se conoce antes de escuchar en él.
+ * Free ports requested from the system before starting the services. Each service needs the URL of the others
+ * in its configuration, so the port is known before listening on it.
  */
 export class FreePorts {
   static async reserve(count: number): Promise<readonly number[]> {

@@ -1,19 +1,19 @@
-/** Listas de palabras (en minúscula) con las que `Redactor` decide qué llaves son sensibles. */
+/** Word lists (lowercase) that `Redactor` uses to decide which keys are sensitive. */
 export interface RedactionWordLists {
-  /** Palabras que, como última palabra de la llave, nombran el secreto mismo (`accessToken`). */
+  /** Words that, as the last word of the key, name the secret itself (`accessToken`). */
   readonly sensitiveLastWords: ReadonlySet<string>;
-  /** Palabras que, al inicio de la llave, anuncian un valor secreto (`passwordConfirmation`). */
+  /** Words that, at the start of the key, announce a secret value (`passwordConfirmation`). */
   readonly sensitiveFirstWords: ReadonlySet<string>;
-  /** Últimas palabras que nunca llevan un secreto: ids, instantes y conteos (`sessionId`). */
+  /** Last words that never carry a secret: ids, instants and counts (`sessionId`). */
   readonly publicLastWords: ReadonlySet<string>;
-  /** Palabras de hash o digest (`tokenHash`, `codeHmac`). */
+  /** Hash or digest words (`tokenHash`, `codeHmac`). */
   readonly digestWords: ReadonlySet<string>;
-  /** Secretos cuyo hash o digest también es sensible. */
+  /** Secrets whose hash or digest is also sensitive. */
   readonly digestedSecrets: ReadonlySet<string>;
-  /** Nombres compuestos que solo tienen sentido juntos (`privatekey`, `signingkey`). */
+  /** Compound names that only make sense together (`privatekey`, `signingkey`). */
   readonly sensitiveCompounds: ReadonlySet<string>;
-  /** Palabras `code` y `codes`, sensibles solo si las califica una de `secretCodeQualifiers`. */
+  /** The words `code` and `codes`, sensitive only if qualified by one of `secretCodeQualifiers`. */
   readonly codeWords: ReadonlySet<string>;
-  /** Calificadores que vuelven secreto un `code` (`mfa`, `verification`, `otp`, `reset`). */
+  /** Qualifiers that make a `code` secret (`mfa`, `verification`, `otp`, `reset`). */
   readonly secretCodeQualifiers: ReadonlySet<string>;
 }

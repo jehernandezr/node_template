@@ -3,11 +3,11 @@ import { PersistenceError } from './persistence-error.js';
 import { PersistenceErrorCode } from './persistence-error-code.enum.js';
 import { PostgresFailureClassifier } from './postgres-failure-classifier.js';
 
-/** Traduce los errores del driver a `PersistenceError`. */
+/** Translates driver errors into `PersistenceError`. */
 export class PersistenceErrorTranslator {
   /**
-   * Envuelve un error del driver en `QueryFailed`. Los `PlatformError` pasan tal
-   * cual. El mensaje no copia el texto del driver, que puede incluir valores.
+   * Wraps a driver error in `QueryFailed`. `PlatformError`s pass through
+   * unchanged. The message does not copy the driver text, which may include values.
    */
   static toPersistenceError(error: unknown): PlatformError {
     if (error instanceof PlatformError) {

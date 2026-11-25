@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../platform/enums/platform_enums.dart';
@@ -12,32 +12,32 @@ final _pattern2 = RegExp(
   '^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})\$',
 );
 
-/// Validador de [PageQuery] generado desde el JSON Schema del contrato.
+/// Validator for [PageQuery] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class PageQuerySchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -119,38 +119,38 @@ abstract final class PageQuerySchema {
   }
 }
 
-/// Validación de [PageQuery] contra su contrato.
+/// Validation of [PageQuery] against its contract.
 extension PageQueryValidation on PageQuery {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => PageQuerySchema.validate(toJson());
 }
 
-/// Validador de [MoneyAmount] generado desde el JSON Schema del contrato.
+/// Validator for [MoneyAmount] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class MoneyAmountSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -221,38 +221,38 @@ abstract final class MoneyAmountSchema {
   }
 }
 
-/// Validación de [MoneyAmount] contra su contrato.
+/// Validation of [MoneyAmount] against its contract.
 extension MoneyAmountValidation on MoneyAmount {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => MoneyAmountSchema.validate(toJson());
 }
 
-/// Validador de [FieldError] generado desde el JSON Schema del contrato.
+/// Validator for [FieldError] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class FieldErrorSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -333,32 +333,32 @@ abstract final class FieldErrorSchema {
   }
 }
 
-/// Validador de [ProblemDetails] generado desde el JSON Schema del contrato.
+/// Validator for [ProblemDetails] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class ProblemDetailsSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -535,32 +535,32 @@ abstract final class ProblemDetailsSchema {
   }
 }
 
-/// Validador de [Empty] generado desde el JSON Schema del contrato.
+/// Validator for [Empty] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class EmptySchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -583,38 +583,38 @@ abstract final class EmptySchema {
   }
 }
 
-/// Validación de [Empty] contra su contrato.
+/// Validation of [Empty] against its contract.
 extension EmptyValidation on Empty {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => EmptySchema.validate(toJson());
 }
 
-/// Validador de [UserRef] generado desde el JSON Schema del contrato.
+/// Validator for [UserRef] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class UserRefSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -676,38 +676,38 @@ abstract final class UserRefSchema {
   }
 }
 
-/// Validación de [UserRef] contra su contrato.
+/// Validation of [UserRef] against its contract.
 extension UserRefValidation on UserRef {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => UserRefSchema.validate(toJson());
 }
 
-/// Validador de [TenantMoveRef] generado desde el JSON Schema del contrato.
+/// Validator for [TenantMoveRef] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantMoveRefSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -845,38 +845,38 @@ abstract final class TenantMoveRefSchema {
   }
 }
 
-/// Validación de [TenantMoveRef] contra su contrato.
+/// Validation of [TenantMoveRef] against its contract.
 extension TenantMoveRefValidation on TenantMoveRef {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantMoveRefSchema.validate(toJson());
 }
 
-/// Validador de [TenantMoveTableProgress] generado desde el JSON Schema del contrato.
+/// Validator for [TenantMoveTableProgress] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantMoveTableProgressSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -987,39 +987,39 @@ abstract final class TenantMoveTableProgressSchema {
   }
 }
 
-/// Validación de [TenantMoveTableProgress] contra su contrato.
+/// Validation of [TenantMoveTableProgress] against its contract.
 extension TenantMoveTableProgressValidation on TenantMoveTableProgress {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() =>
       TenantMoveTableProgressSchema.validate(toJson());
 }
 
-/// Validador de [TenantMoveProgress] generado desde el JSON Schema del contrato.
+/// Validator for [TenantMoveProgress] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantMoveProgressSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1082,38 +1082,38 @@ abstract final class TenantMoveProgressSchema {
   }
 }
 
-/// Validación de [TenantMoveProgress] contra su contrato.
+/// Validation of [TenantMoveProgress] against its contract.
 extension TenantMoveProgressValidation on TenantMoveProgress {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantMoveProgressSchema.validate(toJson());
 }
 
-/// Validador de [TenantMoveTableCheck] generado desde el JSON Schema del contrato.
+/// Validator for [TenantMoveTableCheck] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantMoveTableCheckSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1286,38 +1286,38 @@ abstract final class TenantMoveTableCheckSchema {
   }
 }
 
-/// Validación de [TenantMoveTableCheck] contra su contrato.
+/// Validation of [TenantMoveTableCheck] against its contract.
 extension TenantMoveTableCheckValidation on TenantMoveTableCheck {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantMoveTableCheckSchema.validate(toJson());
 }
 
-/// Validador de [TenantMoveVerification] generado desde el JSON Schema del contrato.
+/// Validator for [TenantMoveVerification] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantMoveVerificationSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1380,39 +1380,39 @@ abstract final class TenantMoveVerificationSchema {
   }
 }
 
-/// Validación de [TenantMoveVerification] contra su contrato.
+/// Validation of [TenantMoveVerification] against its contract.
 extension TenantMoveVerificationValidation on TenantMoveVerification {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() =>
       TenantMoveVerificationSchema.validate(toJson());
 }
 
-/// Validador de [TenantMoveAck] generado desde el JSON Schema del contrato.
+/// Validator for [TenantMoveAck] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantMoveAckSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1450,38 +1450,38 @@ abstract final class TenantMoveAckSchema {
   }
 }
 
-/// Validación de [TenantMoveAck] contra su contrato.
+/// Validation of [TenantMoveAck] against its contract.
 extension TenantMoveAckValidation on TenantMoveAck {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantMoveAckSchema.validate(toJson());
 }
 
-/// Validador de [TenantDirectoryEntry] generado desde el JSON Schema del contrato.
+/// Validator for [TenantDirectoryEntry] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantDirectoryEntrySchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1636,38 +1636,38 @@ abstract final class TenantDirectoryEntrySchema {
   }
 }
 
-/// Validación de [TenantDirectoryEntry] contra su contrato.
+/// Validation of [TenantDirectoryEntry] against its contract.
 extension TenantDirectoryEntryValidation on TenantDirectoryEntry {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantDirectoryEntrySchema.validate(toJson());
 }
 
-/// Validador de [TenantDirectoryRef] generado desde el JSON Schema del contrato.
+/// Validator for [TenantDirectoryRef] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantDirectoryRefSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1714,38 +1714,38 @@ abstract final class TenantDirectoryRefSchema {
   }
 }
 
-/// Validación de [TenantDirectoryRef] contra su contrato.
+/// Validation of [TenantDirectoryRef] against its contract.
 extension TenantDirectoryRefValidation on TenantDirectoryRef {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantDirectoryRefSchema.validate(toJson());
 }
 
-/// Validador de [TenantDirectoryAck] generado desde el JSON Schema del contrato.
+/// Validator for [TenantDirectoryAck] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class TenantDirectoryAckSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1783,38 +1783,38 @@ abstract final class TenantDirectoryAckSchema {
   }
 }
 
-/// Validación de [TenantDirectoryAck] contra su contrato.
+/// Validation of [TenantDirectoryAck] against its contract.
 extension TenantDirectoryAckValidation on TenantDirectoryAck {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => TenantDirectoryAckSchema.validate(toJson());
 }
 
-/// Validador de [ProblemDetailsDetails] generado desde el JSON Schema del contrato.
+/// Validator for [ProblemDetailsDetails] generated from the contract JSON Schema.
 ///
-/// Devuelve los mismos códigos y rutas de campo que el servidor.
+/// Returns the same codes and field paths as the server.
 abstract final class ProblemDetailsDetailsSchema {
-  /// Errores de [json], o una lista vacía si cumple el contrato.
+  /// Errors in [json], or an empty list if it matches the contract.
   static List<FieldError> validate(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors);
     return errors;
   }
 
-  /// Errores de [json] recibido del servidor (respuesta o mensaje).
+  /// Errors in [json] received from the server (response or message).
   ///
-  /// Igual que [validate], pero acepta valores de enum que este cliente
-  /// no conoce dentro de una lista (por ejemplo un permiso nuevo):
-  /// `fromJson` los descarta en lugar de fallar.
+  /// Like [validate], but accepts enum values this client does not
+  /// know inside a list (for example a new permission):
+  /// `fromJson` drops them instead of failing.
   static List<FieldError> validateIncoming(Object? json, {String path = ''}) {
     final errors = <FieldError>[];
     check(json, path, errors, acceptUnknownEnums: true);
     return errors;
   }
 
-  /// Agrega a [errors] los errores de [json] bajo [path].
+  /// Adds the errors in [json] under [path] to [errors].
   ///
-  /// Con [acceptUnknownEnums], un valor de enum desconocido dentro de
-  /// una lista no es un error.
+  /// With [acceptUnknownEnums], an unknown enum value inside
+  /// a list is not an error.
   static void check(
     Object? json,
     String path,
@@ -1864,8 +1864,8 @@ abstract final class ProblemDetailsDetailsSchema {
   }
 }
 
-/// Validación de [ProblemDetailsDetails] contra su contrato.
+/// Validation of [ProblemDetailsDetails] against its contract.
 extension ProblemDetailsDetailsValidation on ProblemDetailsDetails {
-  /// Errores de este objeto, o una lista vacía si cumple el contrato.
+  /// Errors in this object, or an empty list if it matches the contract.
   List<FieldError> validate() => ProblemDetailsDetailsSchema.validate(toJson());
 }

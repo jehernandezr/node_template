@@ -1,24 +1,24 @@
 import type { RetryPolicy } from '@platform/primitives';
 
-/** Datos de una entrega que aporta el transporte. */
+/** Delivery data provided by the transport. */
 export interface DispatchOptions {
-  /** Entregas hasta ahora, contando esta (1 en la primera). */
+  /** Deliveries so far, counting this one (1 on the first). */
   readonly receiveCount: number;
   /**
-   * Política de reintento de la cola. Por defecto, la de la cola del
-   * consumidor en la topología del dispatcher. Sin ninguna de las dos, la
-   * primera falla va a la cola de errores.
+   * Retry policy of the queue. Defaults to the one of the consumer
+   * queue in the dispatcher topology. Without either, the
+   * first failure goes to the dead-letter queue.
    */
   readonly retryPolicy?: RetryPolicy;
   /**
-   * Visibility timeout vigente de esta entrega, en milisegundos. El lease del
-   * claim nunca es más corto.
+   * Current visibility timeout of this delivery, in milliseconds. The claim
+   * lease is never shorter.
    */
   readonly visibilityTimeoutMs?: number;
   /**
-   * Tenant de la suscripción por la que llegó la entrega. Si está, el
-   * `tenantid` del sobre debe ser exactamente este. Manda sobre el
-   * `expectedTenantId` del dispatcher.
+   * Tenant of the subscription the delivery arrived through. If present, the
+   * envelope `tenantid` must be exactly this one. Takes precedence over the
+   * dispatcher `expectedTenantId`.
    */
   readonly expectedTenantId?: string;
 }

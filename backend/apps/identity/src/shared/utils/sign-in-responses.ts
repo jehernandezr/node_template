@@ -5,14 +5,14 @@ import {
 } from '@contracts/identity';
 import type { RegionLocation } from './deployment-region.js';
 
-/** Los tokens de una sesión recién abierta. */
+/** The tokens of a newly opened session. */
 export interface OpenedSession {
   readonly accessToken: string;
   readonly accessExpiresAt: Date;
   readonly sessionToken: string;
 }
 
-/** Las dos respuestas de un inicio de sesión: sesión abierta o segundo factor pendiente. */
+/** The two responses of a sign-in: open session or pending second factor. */
 export class SignInResponses {
   static authenticated(
     session: OpenedSession,

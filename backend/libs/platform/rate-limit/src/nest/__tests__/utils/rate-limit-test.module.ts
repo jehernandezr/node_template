@@ -3,7 +3,7 @@ import { FakeRateLimiter } from '../../../__tests__/utils/fake-rate-limiter.js';
 import { RecordingLogger } from '../../../__tests__/utils/recording-logger.js';
 import { RecordingMetricsPort } from '../../../__tests__/utils/recording-metrics-port.js';
 
-/** Provee y exporta los dobles de prueba que el módulo recibe como extras. */
+/** Provides and exports the test doubles the module receives as extras. */
 @Global()
 @Module({
   providers: [

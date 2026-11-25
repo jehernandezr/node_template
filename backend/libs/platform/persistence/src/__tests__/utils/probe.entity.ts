@@ -2,7 +2,7 @@ import { Column, Entity, Index } from 'typeorm';
 import { AuditedEntity } from '../../entities/audited-entity.js';
 import { Audited } from '../../metadata/entity-metadata.js';
 
-/** Entidad de ejemplo de un tenant para las pruebas de repositorio, transacciones y migraciones. */
+/** Sample tenant entity for the repository, transaction and migration tests. */
 @Audited()
 @Entity({ name: 'probes' })
 @Index('probes_tenant_name_idx', ['tenantId', 'name'])

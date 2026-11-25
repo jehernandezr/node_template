@@ -8,11 +8,11 @@ import {
 } from '@platform/criteria';
 
 /**
- * AST armado a mano, sin `Criteria<Entity>`: sirve para nombrar campos que el tipo del criterio no
- * permitiría, como un nombre con SQL dentro, y comprobar que la lista blanca los rechaza.
+ * Hand-built AST, without `Criteria<Entity>`: used to name fields that the criteria type would not
+ * allow, such as a name with SQL inside, and check that the allowlist rejects them.
  */
 export class HandRolledCriteriaAst {
-  /** Un grupo AND con una sola condición sobre `field`. */
+  /** An AND group with a single condition on `field`. */
   static conditionOn(
     field: string,
     operator: Operator,
@@ -32,7 +32,7 @@ export class HandRolledCriteriaAst {
     };
   }
 
-  /** Sin filtro y con un solo término de orden sobre `field`. */
+  /** No filter and a single sort term on `field`. */
   static orderedBy(field: string, direction: SortDirection): CriteriaAst {
     return {
       filter: {

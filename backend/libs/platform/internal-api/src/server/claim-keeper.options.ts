@@ -1,7 +1,7 @@
-/** Ajustes de la renovación del lease mientras corre un handler. */
+/** Settings for the lease renewal while a handler runs. */
 export interface ClaimKeeperOptions {
-  /** Cada cuánto se renueva el lease. Por defecto 2 s. */
+  /** How often the lease is renewed. Defaults to 2 s. */
   readonly renewEveryMs?: number;
-  /** Cuánto dura el lease desde cada renovación. Por defecto 10 s: varias renovaciones perdidas antes de vencer. */
+  /** How long the lease lasts from each renewal. Defaults to 10 s: several missed renewals before it expires. */
   readonly renewedLeaseMs?: number;
 }

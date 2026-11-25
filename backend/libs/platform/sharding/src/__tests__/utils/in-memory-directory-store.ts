@@ -6,9 +6,9 @@ import { DirectoryStore } from '../../ports/directory-store.js';
 import { DirectoryWriter } from '../../ports/directory-writer.js';
 
 /**
- * Directorio en memoria que implementa {@link DirectoryStore} y {@link DirectoryWriter}, pensado para
- * pruebas y entornos locales. Las escrituras condicionales siguen el contrato de {@link DirectoryWriter};
- * los setters simples no validan nada.
+ * In-memory directory that implements {@link DirectoryStore} and {@link DirectoryWriter}, meant for
+ * tests and local environments. Conditional writes follow the {@link DirectoryWriter} contract;
+ * the plain setters validate nothing.
  */
 export class InMemoryDirectoryStore implements DirectoryStore, DirectoryWriter {
   private readonly placements = new Map<string, TenantPlacement>();
@@ -49,8 +49,8 @@ export class InMemoryDirectoryStore implements DirectoryStore, DirectoryWriter {
   }
 
   /**
-   * La comprobación y la escritura se hacen sin esperar entre ellas, así son atómicas dentro del proceso.
-   * @throws ShardingError `InvalidConfiguration` cuando la nueva versión no es `expectedVersion + 1` (o 1).
+   * The check and the write happen without awaiting between them, so they are atomic within the process.
+   * @throws ShardingError `InvalidConfiguration` when the new version is not `expectedVersion + 1` (or 1).
    */
   async putPlacement(
     placement: TenantPlacement,

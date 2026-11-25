@@ -1,6 +1,6 @@
 import { HealthCheckable, type HealthReport } from '@platform/kernel';
 
-/** Dependencia que responde siempre el mismo reporte. */
+/** Dependency that always responds with the same report. */
 export class StaticHealthCheck extends HealthCheckable {
   constructor(
     readonly name: string,

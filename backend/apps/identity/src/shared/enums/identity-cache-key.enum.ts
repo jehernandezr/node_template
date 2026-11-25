@@ -1,6 +1,6 @@
 /**
- * Espacios de las llaves de Valkey que usa identity. Van después del prefijo del servicio
- * (`VALKEY_KEY_PREFIX`) que agrega `ValkeyKeyspace`; el estado compartido `auth:*` no está aquí.
+ * Namespaces of the Valkey keys identity uses. They go after the service prefix
+ * (`VALKEY_KEY_PREFIX`) that `ValkeyKeyspace` adds; the shared state `auth:*` is not here.
  */
 export enum IdentityCacheKey {
   EmailVerification = 'email-verification',

@@ -6,7 +6,7 @@ import {
 import { HttpTestClient } from '@platform/http/test-utils';
 import type { PlatformNode } from './platform-node.js';
 
-/** Identity visto desde fuera, como en sus propias pruebas: detrás de un proxy y con el correo en memoria. */
+/** Identity seen from outside, as in its own tests: behind a proxy and with in-memory email. */
 export class IdentityHttpEntry implements IdentityEntry {
   constructor(private readonly identity: PlatformNode) {}
 

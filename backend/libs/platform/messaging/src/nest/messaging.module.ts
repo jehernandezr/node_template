@@ -20,14 +20,14 @@ import {
 } from './messaging.module-definition.js';
 
 /**
- * Cableado de messaging. Provee `MessageBus` (el del outbox, salvo que el
- * servicio pase otro), `MessageDispatcher`, `OutboxWriter` y
- * `MessagingExplorer`; con `relay: true` suma `OutboxRelay` y los jobs de
- * relay y de retención, que `SchedulingModule` descubre sin que este módulo lo
- * importe. Es global porque los módulos de negocio inyectan `MessageBus` sin importarlo.
+ * Messaging wiring. Provides `MessageBus` (the outbox one, unless the
+ * service passes another), `MessageDispatcher`, `OutboxWriter` and
+ * `MessagingExplorer`; with `relay: true` it adds `OutboxRelay` and the
+ * relay and retention jobs, which `SchedulingModule` discovers without this module
+ * importing it. It is global because business modules inject `MessageBus` without importing it.
  *
- * Importa `ResilienceModule.forFeature` para la política `Queue` cuando hay
- * publicador, así `ResilienceModule.forRoot()` debe estar en la aplicación.
+ * Imports `ResilienceModule.forFeature` for the `Queue` policy when there is a
+ * publisher, so `ResilienceModule.forRoot()` must be in the application.
  */
 @Module({})
 export class MessagingModule extends MessagingModuleClass {
@@ -43,7 +43,7 @@ export class MessagingModule extends MessagingModuleClass {
     return MessagingModule.complete(super.forRootAsync(options), options);
   }
 
-  /** @throws MessagingError `InvalidOptions` cuando falta un adaptador obligatorio. */
+  /** @throws MessagingError `InvalidOptions` when a required adapter is missing. */
   private static complete(
     base: DynamicModule,
     extras: MessagingModuleExtras,

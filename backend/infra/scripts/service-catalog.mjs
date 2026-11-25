@@ -8,8 +8,8 @@ const RUNTIME = Object.freeze({
   none: 'none',
 });
 
-// Descubre los servicios de un ambiente recorriendo environments/<ambiente>/services/*.
-// Un servicio es una carpeta con terraform.tfvars y backend.tfvars; no hay lista de nombres.
+// Discovers the services of an environment by walking environments/<environment>/services/*.
+// A service is a folder with terraform.tfvars and backend.tfvars; there is no list of names.
 export class ServiceCatalog {
   #terraformRoot;
 

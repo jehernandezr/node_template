@@ -21,7 +21,7 @@ const stepUp = Access.authenticated({
   mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
 });
 
-/** `POST /v1/me/mfa/totp`: crea el secreto TOTP. Exige MFA reciente. */
+/** `POST /v1/me/mfa/totp`: creates the TOTP secret. Requires recent MFA. */
 export const StartTotpEnrollmentRoute = defineRoute({
   id: IdentityRoute.StartTotpEnrollment,
   method: HttpMethod.Post,
@@ -35,10 +35,10 @@ export const StartTotpEnrollmentRoute = defineRoute({
   ],
   access: stepUp,
   description:
-    'Crea el secreto TOTP y su URI. El factor queda activo al confirmarlo.',
+    'Creates the TOTP secret and its URI. The factor becomes active once confirmed.',
 });
 
-/** `POST /v1/me/mfa/totp/confirm`: activa el TOTP y devuelve los códigos de recuperación. */
+/** `POST /v1/me/mfa/totp/confirm`: enables TOTP and returns the recovery codes. */
 export const ConfirmTotpEnrollmentRoute = defineRoute({
   id: IdentityRoute.ConfirmTotpEnrollment,
   method: HttpMethod.Post,
@@ -53,10 +53,10 @@ export const ConfirmTotpEnrollmentRoute = defineRoute({
   ],
   access: Access.authenticated(),
   description:
-    'Confirma el TOTP con el primer código y devuelve los códigos de recuperación.',
+    'Confirms the TOTP with the first code and returns the recovery codes.',
 });
 
-/** `DELETE /v1/me/mfa/totp`: quita el TOTP. Exige MFA reciente. */
+/** `DELETE /v1/me/mfa/totp`: removes the TOTP. Requires recent MFA. */
 export const RemoveTotpRoute = defineRoute({
   id: IdentityRoute.RemoveTotp,
   method: HttpMethod.Delete,
@@ -67,10 +67,10 @@ export const RemoveTotpRoute = defineRoute({
     IdentityErrorCode.MfaFactorNotEnrolled,
   ],
   access: stepUp,
-  description: 'Quita el TOTP de la cuenta y avisa por alerta de seguridad.',
+  description: 'Removes the TOTP from the account and sends a security alert.',
 });
 
-/** `POST /v1/me/mfa/recovery-codes`: genera códigos de recuperación nuevos. Exige MFA reciente. */
+/** `POST /v1/me/mfa/recovery-codes`: generates new recovery codes. Requires recent MFA. */
 export const RegenerateRecoveryCodesRoute = defineRoute({
   id: IdentityRoute.RegenerateRecoveryCodes,
   method: HttpMethod.Post,
@@ -84,10 +84,10 @@ export const RegenerateRecoveryCodesRoute = defineRoute({
   ],
   access: stepUp,
   description:
-    'Reemplaza los códigos de recuperación y devuelve los nuevos una sola vez.',
+    'Replaces the recovery codes and returns the new ones only once.',
 });
 
-/** `POST /v1/auth/mfa/recoveries`: inicia la recuperación de una cuenta sin factores. */
+/** `POST /v1/auth/mfa/recoveries`: starts the recovery of an account without factors. */
 export const StartMfaRecoveryRoute = defineRoute({
   id: IdentityRoute.StartMfaRecovery,
   method: HttpMethod.Post,
@@ -102,10 +102,10 @@ export const StartMfaRecoveryRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Inicia la recuperación de MFA y envía el token por email. Se confirma después de la espera indicada.',
+    'Starts MFA recovery and sends the token by email. It is confirmed after the indicated wait.',
 });
 
-/** `POST /v1/auth/mfa/recoveries/confirm`: completa la recuperación y crea la sesión. */
+/** `POST /v1/auth/mfa/recoveries/confirm`: completes the recovery and creates the session. */
 export const ConfirmMfaRecoveryRoute = defineRoute({
   id: IdentityRoute.ConfirmMfaRecovery,
   method: HttpMethod.Post,
@@ -120,5 +120,5 @@ export const ConfirmMfaRecoveryRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Confirma la recuperación de MFA, desactiva los factores anteriores y crea la sesión.',
+    'Confirms MFA recovery, disables the previous factors and creates the session.',
 });

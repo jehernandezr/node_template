@@ -4,30 +4,30 @@ import type {
   CurrentSubscription,
 } from './current-subscription.js';
 
-/** Lo que `subscriptions` ofrece a los otros módulos. */
+/** What `subscriptions` offers to the other modules. */
 export abstract class SubscriptionsFacade {
-  /** Abre la suscripción en prueba; si ya existe, la devuelve sin cambios. */
+  /** Opens the subscription on trial; if it already exists, returns it unchanged. */
   abstract open(tenantId: string): Promise<CurrentSubscription>;
-  /** Borra la suscripción. Devuelve `false` si no había. */
+  /** Deletes the subscription. Returns `false` if there was none. */
   abstract remove(tenantId: string): Promise<boolean>;
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` si el tenant no tiene suscripción. */
+  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
   abstract current(tenantId: string): Promise<CurrentSubscription>;
-  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` si el tenant no tiene suscripción. */
+  /** @throws BillingError `BILLING.SUBSCRIPTION.NOT_FOUND` if the tenant has no subscription. */
   abstract entitlements(tenantId: string): Promise<Entitlements>;
-  /** Cierra el periodo vencido. `undefined` si no tocaba o si era la prueba, que no se factura. */
+  /** Closes the expired period. `undefined` if it was not due or if it was the trial, which is not invoiced. */
   abstract closePeriod(
     tenantId: string,
     today: string,
   ): Promise<ClosedSubscriptionPeriod | undefined>;
   abstract dueForClosing(today: string): Promise<readonly string[]>;
-  /** Un cobro falló: la suscripción activa pasa a morosa. */
+  /** A charge failed: the active subscription becomes past due. */
   abstract markPastDue(tenantId: string): Promise<void>;
   /**
-   * Toma la suscripción con `FOR UPDATE` dentro de la transacción de quien llama, para serializar los cobros del
-   * tenant. Va antes de leer sus facturas.
-   * @param tenantId Tenant de la suscripción.
+   * Takes the subscription with `FOR UPDATE` inside the caller's transaction, to serialize the tenant's
+   * charges. It goes before reading its invoices.
+   * @param tenantId Tenant of the subscription.
    */
   abstract lock(tenantId: string): Promise<void>;
-  /** Un pago llegó: la suscripción morosa o suspendida vuelve a activa. */
+  /** A payment arrived: the past-due or suspended subscription becomes active again. */
   abstract settle(tenantId: string): Promise<void>;
 }

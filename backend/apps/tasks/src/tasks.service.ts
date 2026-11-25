@@ -12,7 +12,7 @@ import { tasksConfigSchema, type TasksConfig } from './config/tasks.config.js';
 import { tasksShardMigrations } from './database/shard-migrations.js';
 import { TASKS_ERROR_CATALOGS } from './shared/constants/tasks-error-catalogs.constants.js';
 
-/** Definición de tasks que consumen `ServiceBootstrap`, `ServiceMigrator` y las pruebas. */
+/** tasks definition consumed by `ServiceBootstrap`, `ServiceMigrator` and the tests. */
 export const tasksService: ServiceDefinition<TasksConfig> = {
   name: tasksContract.service,
   configSchema: tasksConfigSchema,

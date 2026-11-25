@@ -1,8 +1,8 @@
 import type { UserRef } from '@contracts/platform';
 import type { PushMessage } from '../domain/push-message.js';
 
-/** Push para los otros módulos. */
+/** Push for the other modules. */
 export abstract class PushFacade {
-  /** Envía a cada dispositivo del usuario y devuelve cuántos lo aceptaron. */
+  /** Sends to each of the user's devices and returns how many accepted it. */
   abstract deliver(user: UserRef, message: PushMessage): Promise<number>;
 }

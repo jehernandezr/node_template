@@ -1,11 +1,11 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Tipo de notificación.
+/// Notification type.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationType {
   securityAlert('security_alert'),
   taskUpdated('task_updated'),
@@ -14,10 +14,10 @@ enum NotificationType {
 
   const NotificationType(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationType? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -26,10 +26,10 @@ enum NotificationType {
   }
 }
 
-/// Canal de una notificación.
+/// Channel of a notification.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationChannel {
   inApp('in_app'),
   push('push'),
@@ -37,10 +37,10 @@ enum NotificationChannel {
 
   const NotificationChannel(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationChannel? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -49,10 +49,10 @@ enum NotificationChannel {
   }
 }
 
-/// Enum `NotificationFrameType` del contrato `notifications`.
+/// Enum `NotificationFrameType` of the `notifications` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationFrameType {
   notification('notification'),
   unreadCount('unread-count'),
@@ -60,10 +60,10 @@ enum NotificationFrameType {
 
   const NotificationFrameType(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationFrameType? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -72,10 +72,10 @@ enum NotificationFrameType {
   }
 }
 
-/// Plantilla de correo transaccional.
+/// Transactional email template.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum EmailTemplate {
   verifyEmail('verify_email'),
   passwordReset('password_reset'),
@@ -87,10 +87,10 @@ enum EmailTemplate {
 
   const EmailTemplate(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static EmailTemplate? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -99,10 +99,10 @@ enum EmailTemplate {
   }
 }
 
-/// Nombre de un dato que llena una plantilla.
+/// Name of a value that fills a template.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TemplateParameter {
   code('code'),
   link('link'),
@@ -113,10 +113,10 @@ enum TemplateParameter {
 
   const TemplateParameter(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TemplateParameter? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -125,12 +125,12 @@ enum TemplateParameter {
   }
 }
 
-/// Códigos de error públicos del contrato `notifications`.
+/// Public error codes of the `notifications` contract.
 ///
-/// Solo incluye los códigos con audiencia `public`: los internos nunca
-/// llegan al cliente. [messageKey] es la clave del mensaje en el ARB.
+/// Only includes codes with `public` audience: internal ones never
+/// reach the client. [messageKey] is the message key in the ARB.
 enum NotificationsErrorCode {
-  /// La notificación no existe en la bandeja del usuario.
+  /// The notification does not exist in the user inbox.
   inboxNotFound(
     'NOTIFICATIONS.INBOX.NOT_FOUND',
     httpStatus: 404,
@@ -138,7 +138,7 @@ enum NotificationsErrorCode {
     messageKey: 'error_notifications_inbox_not_found',
   ),
 
-  /// El horario de silencio es inválido: falta la zona horaria o las horas no tienen el formato HH:mm.
+  /// The quiet hours are invalid: the time zone is missing or the hours do not have the HH:mm format.
   preferencesInvalidQuietHours(
     'NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS',
     httpStatus: 400,
@@ -146,7 +146,7 @@ enum NotificationsErrorCode {
     messageKey: 'error_notifications_preferences_invalid_quiet_hours',
   ),
 
-  /// La conexión en tiempo real no trae una credencial válida.
+  /// The realtime connection does not carry a valid credential.
   realtimeUnauthenticated(
     'NOTIFICATIONS.REALTIME.UNAUTHENTICATED',
     httpStatus: 401,
@@ -161,22 +161,22 @@ enum NotificationsErrorCode {
     required this.messageKey,
   });
 
-  /// Código exacto que envía el backend, por ejemplo `NOTIFICATIONS.INBOX.NOT_FOUND`.
+  /// Exact code sent by the backend, for example `NOTIFICATIONS.INBOX.NOT_FOUND`.
   final String code;
 
-  /// Estado HTTP con el que responde el backend.
+  /// HTTP status the backend responds with.
   final int httpStatus;
 
-  /// Si el cliente puede reintentar la misma petición.
+  /// Whether the client may retry the same request.
   final bool retryable;
 
-  /// Clave ARB del mensaje para personas.
+  /// ARB key of the human-readable message.
   final String messageKey;
 
-  /// Igual a [code].
+  /// Same as [code].
   String get wireCode => code;
 
-  /// Valor con [code], o null si este cliente no lo conoce.
+  /// Value with [code], or null if this client does not know it.
   static NotificationsErrorCode? fromCode(String code) {
     for (final value in values) {
       if (value.code == code) return value;
@@ -184,14 +184,14 @@ enum NotificationsErrorCode {
     return null;
   }
 
-  /// Igual a [fromCode].
+  /// Same as [fromCode].
   static NotificationsErrorCode? tryParse(String code) => fromCode(code);
 }
 
-/// Enum `NotificationsRoute` del contrato `notifications`.
+/// Enum `NotificationsRoute` of the `notifications` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationsRoute {
   listInbox('notifications.inbox.list'),
   getUnreadCount('notifications.inbox.unread-count'),
@@ -202,10 +202,10 @@ enum NotificationsRoute {
 
   const NotificationsRoute(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationsRoute? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -214,10 +214,10 @@ enum NotificationsRoute {
   }
 }
 
-/// Enum `NotificationsOperation` del contrato `notifications`.
+/// Enum `NotificationsOperation` of the `notifications` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationsOperation {
   sendMessage('notifications.messages.send.v1'),
   notifyUser('notifications.users.notify.v1'),
@@ -232,10 +232,10 @@ enum NotificationsOperation {
 
   const NotificationsOperation(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationsOperation? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -244,19 +244,19 @@ enum NotificationsOperation {
   }
 }
 
-/// Enum `NotificationsEvent` del contrato `notifications`.
+/// Enum `NotificationsEvent` of the `notifications` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationsEvent {
   notificationCreated('notifications.notification.created.v1');
 
   const NotificationsEvent(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationsEvent? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -265,19 +265,19 @@ enum NotificationsEvent {
   }
 }
 
-/// Enum `NotificationsTopic` del contrato `notifications`.
+/// Enum `NotificationsTopic` of the `notifications` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationsTopic {
   events('notifications-events');
 
   const NotificationsTopic(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationsTopic? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -286,20 +286,20 @@ enum NotificationsTopic {
   }
 }
 
-/// Enum `NotificationsQueue` del contrato `notifications`.
+/// Enum `NotificationsQueue` of the `notifications` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum NotificationsQueue {
   triggers('notifications-triggers'),
   realtimeControl('notifications-realtime-control');
 
   const NotificationsQueue(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static NotificationsQueue? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;

@@ -2,12 +2,12 @@ import { OutboxStatus, type OutboxRecord } from '@platform/messaging';
 import { PersistenceError, PersistenceErrorCode } from '@platform/persistence';
 import type { OutboxEntity } from '../entities/outbox.entity.js';
 
-/** Convierte una fila de `outbox` en el `OutboxRecord` del puerto: los campos nulos quedan ausentes. */
+/** Converts an `outbox` row into the port's `OutboxRecord`: null fields are left absent. */
 export class OutboxRecordMapper {
   private static readonly STATUSES: readonly string[] =
     Object.values(OutboxStatus);
 
-  /** @throws PersistenceError `PersistenceCorruptRow` si el estado de la fila no es un `OutboxStatus`. */
+  /** @throws PersistenceError `PersistenceCorruptRow` if the row status is not an `OutboxStatus`. */
   static toRecord(entity: OutboxEntity): OutboxRecord {
     if (!OutboxRecordMapper.STATUSES.includes(entity.status)) {
       throw new PersistenceError(

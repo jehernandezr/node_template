@@ -2,8 +2,8 @@ import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { SagaErrorCode } from './saga-error-code.enum.js';
 
 /**
- * Catálogo de los códigos de `@platform/saga`. Los códigos son internos: el
- * catálogo central no los declara.
+ * Catalog of the `@platform/saga` codes. The codes are internal: the
+ * central catalog does not declare them.
  */
 export const sagaErrorCatalog = defineErrorCatalog(SagaErrorCode, {
   [SagaErrorCode.NotFound]: ErrorSpecs.internal(

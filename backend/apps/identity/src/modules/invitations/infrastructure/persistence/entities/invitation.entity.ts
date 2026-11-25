@@ -1,7 +1,7 @@
 import { AuditedEntity, TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `invitations`, en el shard del tenant. */
+/** `invitations`, in the tenant's shard. */
 @Entity({ name: 'invitations' })
 export class InvitationEntity extends AuditedEntity {
   @Column({ type: 'varchar', length: 254, name: 'email', nullable: false })

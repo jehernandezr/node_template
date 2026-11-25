@@ -1,18 +1,18 @@
 import type { UserRef } from '@contracts/platform';
 import type { NotificationState } from './notification.js';
 
-/** Bandeja del usuario del `ShardScope` abierto. */
+/** Inbox of the user of the open `ShardScope`. */
 export abstract class InboxRepository {
   /**
-   * Agrega la notificación si su id no estaba; devuelve la que queda guardada con ese id. La fila guarda el tenant
-   * de origen de `owner` para trasladarse con él.
+   * Adds the notification if its id was not present; returns the one stored with that id. The row stores the home
+   * tenant of `owner` so it moves with it.
    */
   abstract add(
     owner: UserRef,
     notification: NotificationState,
   ): Promise<NotificationState>;
 
-  /** De la más nueva a la más antigua, después de `beforeId`. */
+  /** From newest to oldest, after `beforeId`. */
   abstract page(
     userId: string,
     beforeId: string | undefined,
@@ -21,7 +21,7 @@ export abstract class InboxRepository {
 
   abstract unreadCount(userId: string): Promise<number>;
 
-  /** `false` si la notificación no existe o es de otro usuario; marcarla de nuevo no cambia la fecha. */
+  /** `false` if the notification does not exist or belongs to another user; marking it again does not change the date. */
   abstract markRead(
     userId: string,
     notificationId: string,

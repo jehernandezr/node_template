@@ -1,19 +1,19 @@
 import type { OperationDefinition } from '@contracts/platform';
 import type { ForwardEntry } from './forward-entry.js';
 
-/** Paso validado, listo para que el motor lo ejecute. */
+/** Validated step, ready for the engine to run. */
 export interface CompiledStep<TState> {
   readonly index: number;
   readonly operationId: string;
   /**
-   * Operación de compensación; `null` para los pasos después del pivote y
-   * para los de solo lectura, que no tienen nada que deshacer y se saltan al compensar.
+   * Compensation operation; `null` for the steps after the pivot and
+   * for read-only ones, which have nothing to undo and are skipped when compensating.
    */
   readonly compensationOperationId: string | null;
   readonly afterPivot: boolean;
-  /** Contrato de la operación. Al arrancar se verifican contra él la idempotencia y los presupuestos de tiempo. */
+  /** Contract of the operation. At startup, idempotency and time budgets are verified against it. */
   readonly definition: OperationDefinition;
-  /** Motivos de `transient-failure` que son avance del participante y no gastan suspensiones. */
+  /** `transient-failure` reasons that are participant progress and do not spend suspensions. */
   readonly progressReasons: ReadonlySet<string>;
   input(state: TState): unknown;
   onSuccess(state: TState, output: unknown): void;

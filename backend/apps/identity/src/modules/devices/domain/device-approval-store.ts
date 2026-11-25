@@ -1,22 +1,22 @@
 import type { DeviceApproval } from '@contracts/identity';
 
-/** Aprobaciones pendientes de cada dispositivo verificador y nonces ya usados en sus firmas. */
+/** Pending approvals of each verifier device and nonces already used in its signatures. */
 export abstract class DeviceApprovalStore {
   abstract enqueue(
     deviceId: string,
     approval: DeviceApproval,
     ttlMs: number,
   ): Promise<void>;
-  /** Las vigentes, sin consumirlas: el dispositivo puede volver a pedirlas. */
+  /** The current ones, without consuming them: the device can request them again. */
   abstract pending(
     deviceId: string,
     now: Date,
   ): Promise<readonly DeviceApproval[]>;
-  /** Quita la aprobación de ese dispositivo y la devuelve; `undefined` si no era suya o ya no estaba. */
+  /** Removes that device's approval and returns it; `undefined` if it was not its own or was already gone. */
   abstract remove(
     deviceId: string,
     challengeId: string,
   ): Promise<DeviceApproval | undefined>;
-  /** Devuelve `false` si el nonce ya se usó: una firma no se repite. */
+  /** Returns `false` if the nonce was already used: a signature is not repeated. */
   abstract useNonce(deviceId: string, nonce: string): Promise<boolean>;
 }

@@ -5,7 +5,7 @@ import {
 } from '../../domain/payment-provider.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
 
-/** Proveedor que aprueba todo y, como uno real, cobra una sola vez por llave de idempotencia. */
+/** Provider that approves everything and, like a real one, charges only once per idempotency key. */
 export class ApprovingPaymentProvider extends PaymentProvider {
   private readonly charged = new Map<string, PaymentResult>();
 
@@ -22,7 +22,7 @@ export class ApprovingPaymentProvider extends PaymentProvider {
     return this.charged.get(attemptId);
   }
 
-  /** Cobros distintos que hizo: lo que vería el titular de la tarjeta. */
+  /** Distinct charges it made: what the cardholder would see. */
   chargeCount(): number {
     return this.charged.size;
   }

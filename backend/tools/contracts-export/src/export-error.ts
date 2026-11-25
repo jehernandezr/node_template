@@ -1,21 +1,21 @@
-/** Fallo al construir o escribir los artefactos generados desde los contratos. */
+/** Failure building or writing the artifacts generated from the contracts. */
 export class ExportError extends Error {
   constructor(origin: string, reason: string) {
     super(`${origin}: ${reason}`);
     this.name = 'ExportError';
   }
 
-  /** Fallo atribuible al contrato de un servicio. */
+  /** Failure attributable to a service's contract. */
   static forService(service: string, reason: string): ExportError {
     return new ExportError(`contracts-export (${service})`, reason);
   }
 
-  /** Fallo al construir la topología de mensajería. */
+  /** Failure building the messaging topology. */
   static forTopology(reason: string): ExportError {
     return new ExportError('topology-export', reason);
   }
 
-  /** Fallo al documentar la mensajería en AsyncAPI. */
+  /** Failure documenting messaging in AsyncAPI. */
   static forAsyncApi(service: string, reason: string): ExportError {
     return new ExportError(`asyncapi (${service})`, reason);
   }

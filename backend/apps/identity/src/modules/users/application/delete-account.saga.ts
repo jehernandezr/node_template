@@ -10,15 +10,15 @@ import { SagaDefinition, type SagaFlow } from '@platform/saga';
 import { UserSuspensionReason } from '../../../shared/enums/user-suspension-reason.enum.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
-/** El usuario que pidió borrar su cuenta. */
+/** The user that requested deleting their account. */
 export interface DeleteAccountState {
   readonly user: UserRef;
 }
 
 /**
- * Borrado de cuenta (habeas data). Suspender es el único paso reversible y va primero; desde el pivote cada
- * servicio borra lo suyo, y repetir un paso no cambia nada. Identity borra al usuario al final, cuando nadie
- * más necesita encontrarlo. Las facturas son del tenant y billing no borra nada.
+ * Account deletion (habeas data). Suspending is the only reversible step and goes first; from the pivot each
+ * service deletes its own data, and repeating a step changes nothing. Identity deletes the user at the end, when no one
+ * else needs to find them. Invoices belong to the tenant and billing deletes nothing.
  */
 export class DeleteAccountSaga extends SagaDefinition<DeleteAccountState> {
   readonly type = IdentitySaga.DeleteAccount;

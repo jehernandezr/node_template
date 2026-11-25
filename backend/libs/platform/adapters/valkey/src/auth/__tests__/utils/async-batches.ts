@@ -1,4 +1,4 @@
-/** Junta los elementos de un iterable asíncrono en un arreglo. */
+/** Collects the elements of an async iterable into an array. */
 export class AsyncBatches {
   static async collect<T>(iterable: AsyncIterable<T>): Promise<T[]> {
     const items: T[] = [];

@@ -10,11 +10,11 @@ import type { DatabaseSetDefinition } from '@platform/persistence';
 import type { ServiceMigrations } from './service-migrations.js';
 
 /**
- * Suma a las entidades y migraciones del servicio las de las tablas de la plataforma, también la bitácora de
- * sagas: el runtime monta `SagaModule` en todo servicio y su recuperación la lee en cada shard al arrancar.
+ * Adds the platform table entities and migrations to the service ones, including the saga
+ * journal: the runtime mounts `SagaModule` in every service and its recovery reads it in each shard at startup.
  */
 export class ServiceDatabaseSets {
-  /** Las plataforma van primero: sus migraciones tienen los timestamps más bajos. */
+  /** The platform ones go first: their migrations have the lowest timestamps. */
   merge(service: ServiceMigrations): {
     readonly shard: DatabaseSetDefinition;
     readonly catalog: DatabaseSetDefinition;

@@ -1,4 +1,4 @@
-/** Cabeceras que la traducción de API Gateway lee o escribe, en minúscula. */
+/** Headers that the API Gateway translation reads or writes, in lowercase. */
 export enum ApiGatewayHeader {
   Host = 'host',
   ContentLength = 'content-length',

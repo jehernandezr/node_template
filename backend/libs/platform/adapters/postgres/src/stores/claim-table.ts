@@ -24,7 +24,7 @@ import type { ClaimRecordEntity } from '../entities/claim-record.entity.js';
 import type { ClaimRecordManagers } from '../model/claim-record-managers.js';
 import type { ClaimTableOptions } from '../model/claim-table-options.js';
 
-/** Fila que devuelve el `INSERT ... ON CONFLICT` de `claim`. El SQL crudo entrega los nombres de columna tal cual. */
+/** Row returned by the `INSERT ... ON CONFLICT` of `claim`. Raw SQL returns the column names as they are. */
 interface ClaimedRow {
   readonly claim_token: string | null;
   readonly fingerprint: string;
@@ -32,9 +32,9 @@ interface ClaimedRow {
 }
 
 /**
- * Lógica de una tabla de claims de tres fases con el mismo fencing que `InMemoryIdempotencyStore`. Se parametriza
- * con la entidad (`IdempotencyKeyEntity` o `ProcessedMessageEntity`) y el tipo del resultado `R`; los stores la
- * usan por composición.
+ * Logic of a three-phase claim table with the same fencing as `InMemoryIdempotencyStore`. It is parameterized
+ * with the entity (`IdempotencyKeyEntity` or `ProcessedMessageEntity`) and the result type `R`; the stores
+ * use it by composition.
  */
 export class ClaimTable<R> {
   private readonly serialize: (result: R) => unknown;
@@ -70,7 +70,7 @@ export class ClaimTable<R> {
           .update(this.entity)
           .set({
             state: ClaimState.Completed,
-            // TypeORM tipa la columna `jsonb` como parcial de `unknown` y no admite `null` ahí; el `null` es el valor SQL.
+            // TypeORM types the `jsonb` column as a partial of `unknown` and does not accept `null` there; the `null` is the SQL value.
             result: (this.serialize(result) ?? null) as QueryDeepPartialEntity<
               ClaimRecordEntity['result']
             >,
@@ -107,8 +107,8 @@ export class ClaimTable<R> {
   }
 
   /**
-   * Extiende hasta `leaseUntil` el lease de un claim en curso que sigue siendo de `claimToken`, sin acortarlo nunca.
-   * Devuelve `false` si el claim ya terminó o lo tomó otro intento.
+   * Extends to `leaseUntil` the lease of an in-progress claim that still belongs to `claimToken`, never shortening it.
+   * Returns `false` if the claim already finished or another attempt took it.
    */
   async renew(
     key: string,
@@ -141,7 +141,7 @@ export class ClaimTable<R> {
     return owned;
   }
 
-  /** Borra resultados completados antes de `before`; recorre todos los shards si no hay uno fijo. Devuelve cuántos borró. */
+  /** Deletes results completed before `before`; visits all shards if none is pinned. Returns how many it deleted. */
   purgeCompleted(before: Date): Promise<number> {
     return this.managers.sweep(async (manager) => {
       const outcome = await manager
@@ -158,8 +158,8 @@ export class ClaimTable<R> {
   }
 
   /**
-   * Corre entero dentro del manager que recibe: el `SELECT` de la fila viva y el `INSERT` deben ver el mismo estado
-   * y, con el `Write`, quedar en la misma transacción.
+   * Runs entirely inside the manager it receives: the `SELECT` of the live row and the `INSERT` must see the same state
+   * and, with the `Write`, end up in the same transaction.
    */
   private async claimIn(
     manager: EntityManager,
@@ -168,7 +168,7 @@ export class ClaimTable<R> {
   ): Promise<ClaimResult<R>> {
     const now = this.clock.now();
     if (request.deadline.atMs <= now.getTime()) {
-      // Sin tiempo para correr la operación solo sirve un resultado ya guardado.
+      // With no time to run the operation, only an already stored result is useful.
       const live = await this.readLive(manager, key, now.getTime());
       if (live !== undefined) {
         return live;
@@ -178,8 +178,8 @@ export class ClaimTable<R> {
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now.getTime());
     const table = this.tableName(manager);
-    // `orUpdate` de TypeORM no admite el WHERE del conflicto, y Postgres no devuelve fila si ese WHERE no se cumple.
-    // El token propio dice si se tomó la llave.
+    // TypeORM's `orUpdate` does not accept the conflict WHERE, and Postgres returns no row if that WHERE does not hold.
+    // Our own token tells whether the key was taken.
     const tenant = this.tenantColumn
       ? { column: ', tenant_id', value: ', $7' }
       : { column: '', value: '' };
@@ -214,14 +214,14 @@ export class ClaimTable<R> {
     if (live !== undefined) {
       return live;
     }
-    // La fila se liberó o venció entre las dos sentencias: quien llama reintenta.
+    // The row was released or expired between the two statements: the caller retries.
     throw new PersistenceError(
       PersistenceErrorCode.Contention,
       'Idempotency key changed while claiming it',
     );
   }
 
-  /** Estado completado o en curso con lease vigente; undefined si la llave está libre o vencida. */
+  /** Returns the completed state, or the in-progress state with a valid lease; undefined if the key is free or expired. */
   private async readLive(
     manager: EntityManager,
     key: string,
@@ -260,7 +260,7 @@ export class ClaimTable<R> {
       : undefined;
   }
 
-  /** Nombre de la tabla entre comillas, para interpolarlo en el SQL crudo del `claim`. */
+  /** Returns the quoted table name, to interpolate it into the raw SQL of `claim`. */
   private tableName(manager: EntityManager): string {
     return `"${manager.connection.getMetadata(this.entity).tableName}"`;
   }

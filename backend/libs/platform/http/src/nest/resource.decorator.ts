@@ -3,10 +3,10 @@ import type { ResourceOptions } from '../endpoint-options.js';
 import { HttpMetadataKey } from './http-metadata-key.enum.js';
 import type { ResourceMetadata } from './resource-metadata.js';
 
-/** Escribe los metadatos de `@Resource`. */
+/** Writes the `@Resource` metadata. */
 export class ResourceDecorator {
   /**
-   * `@Controller()` sin prefijo más los metadatos del recurso. `name` es un valor de un enum del servicio.
+   * `@Controller()` without a prefix plus the resource metadata. `name` is a value of a service enum.
    */
   static apply(name: string, options: ResourceOptions = {}): ClassDecorator {
     const metadata: ResourceMetadata = { name, options };
@@ -17,5 +17,5 @@ export class ResourceDecorator {
   }
 }
 
-/** Decorador `@Resource(name, opts?)` de los controllers. */
+/** `@Resource(name, opts?)` decorator for controllers. */
 export const Resource = ResourceDecorator.apply;

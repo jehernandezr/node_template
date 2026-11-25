@@ -1,7 +1,7 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 
-/** Otro servicio no respondió una consulta que reports necesita. Es reintentable. */
+/** Another service did not answer a query reports needs. It is retryable. */
 export class PeerUnavailableError extends PlatformError {
   readonly code = PlatformErrorCode.InternalUnexpected;
 

@@ -1,4 +1,4 @@
-/** Orden de las filas por llave en las lecturas de la copia. */
+/** Order of rows by key in the copy reads. */
 export enum SortDirection {
   Ascending = 'ASC',
   Descending = 'DESC',

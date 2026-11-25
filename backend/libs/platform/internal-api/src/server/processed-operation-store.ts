@@ -2,19 +2,19 @@ import { IdempotencyStore } from '@platform/kernel';
 import type { FinalOutcome } from '@platform/primitives';
 
 /**
- * Almacén de idempotencia del router: el puerto de tres estados con fencing,
- * que guarda resultados finales (éxito o error de negocio declarado). Un
- * almacén de producción escribe `complete` en la misma unidad de trabajo que
- * los efectos del handler, así un resultado queda guardado si y solo si sus
- * efectos se confirmaron. Es el token de inyección del módulo.
+ * Router idempotency store: the three-state port with fencing,
+ * which stores final results (success or declared business error). A
+ * production store writes `complete` in the same unit of work as
+ * the handler effects, so a result is stored if and only if its
+ * effects were committed. It is the module injection token.
  */
 export abstract class ProcessedOperationStore extends IdempotencyStore<
   FinalOutcome<unknown>
 > {
   /**
-   * Extiende hasta `leaseUntilMs` el lease de un claim en curso que sigue siendo de `claimToken`, sin acortarlo. Lo
-   * llama el servidor mientras el handler corre, así otro intento solo toma la llave si el proceso dueño dejó de
-   * renovarla. Devuelve `false` si el claim ya terminó o lo tomó otro intento.
+   * Extends to `leaseUntilMs` the lease of an in-progress claim that still belongs to `claimToken`, without shortening it. The
+   * server calls it while the handler runs, so another attempt only takes the key if the owning process stopped
+   * renewing it. Returns `false` if the claim already finished or another attempt took it.
    */
   abstract renew(
     key: string,

@@ -5,27 +5,27 @@ import {
 } from '@contracts/platform';
 import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 
-/** Campos con los que se arma un `OperationMetadata`, tomados del descriptor de `defineOperation`. */
+/** Fields an `OperationMetadata` is built from, taken from the `defineOperation` descriptor. */
 export interface OperationMetadataInit {
   readonly id: string;
   readonly idempotent: boolean;
   readonly mutating: boolean;
   readonly errors: readonly string[];
-  /** Id de la operación que revierte esta, o `Compensation.None`. */
+  /** Id of the operation that reverts this one, or `Compensation.None`. */
   readonly compensatedBy?: string | Compensation;
-  /** Obligatorio y no vacío cuando `compensatedBy` es `Compensation.None`. */
+  /** Required and non-empty when `compensatedBy` is `Compensation.None`. */
   readonly compensationReason?: string;
   readonly retry?: OperationRetryPolicy;
   readonly timeoutMs?: number;
 }
 
 /**
- * Metadatos inmutables de una operación. Reúne los valores efectivos de
- * reintento, tiempo y compensación para que ni el cliente, ni el registro ni
- * las sagas los recalculen cada uno por su lado.
+ * Immutable metadata of an operation. It gathers the effective retry,
+ * timeout and compensation values so that neither the client, the registry nor
+ * the sagas recompute them each on their own.
  */
 export class OperationMetadata {
-  /** Reintentos de una operación idempotente que no declara los suyos. */
+  /** Retries of an idempotent operation that does not declare its own. */
   static readonly DEFAULT_RETRY_POLICY = new RetryPolicy(
     3,
     100,
@@ -33,12 +33,12 @@ export class OperationMetadata {
     BackoffStrategy.EqualJitter,
   );
 
-  /** Tiempo de cada intento cuando la operación no declara `timeoutMs`. */
+  /** Time of each attempt when the operation does not declare `timeoutMs`. */
   static readonly DEFAULT_TIMEOUT_MS = 5000;
 
   /**
-   * Código de negocio permitido en toda operación sin declararlo. El cliente y
-   * el router responden con él a una entrada que rompe el contrato.
+   * Business code allowed in every operation without declaring it. The client and
+   * the router respond with it to an input that breaks the contract.
    */
   static readonly INVALID_INPUT_CODE = PlatformErrorCode.ValidationInvalidInput;
 
@@ -71,17 +71,17 @@ export class OperationMetadata {
     Object.freeze(this);
   }
 
-  /** Servicio dueño de una operación: el primer segmento de su id (`servicio.entidad.operación.vN`). */
+  /** Returns the service that owns an operation: the first segment of its id (`service.entity.operation.vN`). */
   static serviceOf(operationId: string): string {
     return operationId.split('.')[0];
   }
 
-  /** Servicio dueño de esta operación. */
+  /** Service that owns this operation. */
   service(): string {
     return OperationMetadata.serviceOf(this.id);
   }
 
-  /** Reintentos efectivos: lo declarado por la operación sobre los valores por defecto. */
+  /** Effective retries: what the operation declares on top of the defaults. */
   retryPolicy(): RetryPolicy {
     const base = OperationMetadata.DEFAULT_RETRY_POLICY;
     return new RetryPolicy(
@@ -92,19 +92,19 @@ export class OperationMetadata {
     );
   }
 
-  /** Tiempo de cada intento. */
+  /** Time of each attempt. */
   attemptTimeoutMs(): number {
     return this.timeoutMs ?? OperationMetadata.DEFAULT_TIMEOUT_MS;
   }
 
-  /** Intentos que el cliente puede hacer. Una operación no idempotente tiene exactamente uno. */
+  /** Attempts the client can make. A non-idempotent operation has exactly one. */
   attempts(): number {
     return this.idempotent ? Math.max(1, this.retryPolicy().maxAttempts) : 1;
   }
 
   /**
-   * Presupuesto por defecto de una llamada completa: todos los intentos más la
-   * espera más larga entre ellos. Se usa cuando quien llama no pasa un `Deadline`.
+   * Default budget of a full call: all attempts plus the
+   * longest wait between them. Used when the caller does not pass a `Deadline`.
    */
   callBudgetMs(): number {
     const attempts = this.attempts();
@@ -115,8 +115,8 @@ export class OperationMetadata {
   }
 
   /**
-   * Id de la operación que revierte esta, o `null` si no tiene: una operación
-   * de solo lectura o una declarada con `Compensation.None`.
+   * Id of the operation that reverts this one, or `null` if it has none: a
+   * read-only operation or one declared with `Compensation.None`.
    */
   compensation(): string | null {
     if (!this.mutating || this.compensatedBy === undefined) {
@@ -125,7 +125,7 @@ export class OperationMetadata {
     return this.compensatedBy === Compensation.None ? null : this.compensatedBy;
   }
 
-  /** Códigos de negocio que un handler o un transporte puede devolver para esta operación. */
+  /** Business codes a handler or a transport can return for this operation. */
   allowedErrorCodes(): ReadonlySet<string> {
     return new Set([...this.errors, OperationMetadata.INVALID_INPUT_CODE]);
   }

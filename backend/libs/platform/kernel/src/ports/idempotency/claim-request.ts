@@ -1,27 +1,27 @@
-/** Límite de una operación. `Deadline` de `@platform/primitives` lo cumple. */
+/** Limit of an operation. `Deadline` from `@platform/primitives` satisfies it. */
 export interface ClaimDeadline {
-  /** Instante límite en milisegundos epoch. */
+  /** Limit instant in epoch milliseconds. */
   readonly atMs: number;
 }
 
 export interface ClaimRequest {
   /**
-   * Huella de la entrada, por ejemplo `CanonicalJson.digest(input)`. Se guarda
-   * con el primer claim; si un intento posterior trae otra, quien llama la rechaza.
+   * Hash of the input, for example `CanonicalJson.digest(input)`. It is stored
+   * with the first claim; if a later attempt brings a different one, the caller rejects it.
    */
   readonly fingerprint: string;
-  /** Límite de la operación. El lease dura hasta el límite más `leaseMarginMs`. */
+  /** Limit of the operation. The lease lasts until the limit plus `leaseMarginMs`. */
   readonly deadline: ClaimDeadline;
-  /** Margen sobre el límite. Por defecto 5 000 ms. */
+  /** Margin over the limit. Defaults to 5 000 ms. */
   readonly leaseMarginMs?: number;
   /**
-   * Duración mínima del lease desde ahora. Messaging lo usa para que el lease
-   * nunca sea menor que el visibility timeout de la cola.
+   * Minimum lease duration from now. Messaging uses it so the lease
+   * is never shorter than the queue visibility timeout.
    */
   readonly minLeaseMs?: number;
   /**
-   * Tenant cuyos datos protege la llave. El almacén lo guarda junto a la llave para que el traslado del tenant a
-   * otro shard se lleve sus llaves y un reintento después del cambio no repita los efectos en el destino.
+   * Tenant whose data the key protects. The store saves it next to the key so that moving the tenant to
+   * another shard takes its keys along and a retry after the move does not repeat the effects on the target.
    */
   readonly tenantId?: string;
 }

@@ -3,7 +3,7 @@ import type { UserRef } from '@contracts/platform';
 import { Task } from '../../domain/task.js';
 import { TaskEntity } from './entities/task.entity.js';
 
-/** Fila de `tasks` y agregado `Task`, en los dos sentidos. Utilidad pura. */
+/** `tasks` row and `Task` aggregate, in both directions. Pure utility. */
 export class TaskMapper {
   static toDomain(row: TaskEntity): Task {
     return Task.rehydrate({

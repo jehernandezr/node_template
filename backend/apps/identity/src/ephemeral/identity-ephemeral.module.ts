@@ -6,7 +6,7 @@ import {
 import { EphemeralStore } from './ephemeral-store.js';
 import { ValkeyEphemeralStore } from './valkey-ephemeral-store.js';
 
-/** Datos de vida corta de identity en Valkey. */
+/** Short-lived identity data in Valkey. */
 @Global()
 @Module({
   providers: [

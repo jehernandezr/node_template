@@ -8,7 +8,7 @@ import { ShardRouter } from '@platform/sharding';
 import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
 import { IdentityShardScopes } from '../../shared/utils/identity-shard-scopes.js';
 
-/** `IdentityShardScopes` de las pruebas unitarias: un router sin shards y su propio contexto de petición. */
+/** `IdentityShardScopes` for unit tests: a router without shards and its own request context. */
 export class TestShardScopes {
   readonly scope = new ShardScope(
     new ShardRouter({ directory: new InMemoryDirectoryStore() }),

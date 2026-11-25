@@ -9,9 +9,9 @@ import { NestRealtimeHost } from './nest-realtime-host.js';
 import { RealtimeTransports } from './realtime-transports.js';
 
 /**
- * Monta los transportes al iniciar los módulos: el servidor HTTP ya existe y Nest todavía no registró su
- * respuesta 404, que taparía la ruta SSE si se agregara después. Cierra las conexiones antes de que Nest
- * cierre el servidor. En un worker no hay servidor y no se monta nada.
+ * Mounts the transports when the modules initialize: the HTTP server already exists and Nest has not yet registered its
+ * 404 response, which would hide the SSE route if it were added later. Closes the connections before Nest
+ * closes the server. In a worker there is no server and nothing is mounted.
  */
 @Injectable()
 export class RealtimeLifecycle

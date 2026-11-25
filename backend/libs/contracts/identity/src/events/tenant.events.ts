@@ -9,17 +9,17 @@ import {
 export const TenantCreatedEvent = defineEvent({
   type: IdentityEvent.TenantCreated,
   payload: TenantCreatedPayloadSchema,
-  description: 'Se creó un tenant.',
+  description: 'A tenant was created.',
 });
 
 export const TenantSuspendedEvent = defineEvent({
   type: IdentityEvent.TenantSuspended,
   payload: TenantSuspendedPayloadSchema,
-  description: 'Se suspendió un tenant y se revocaron sus tokens.',
+  description: 'A tenant was suspended and its tokens were revoked.',
 });
 
 export const TenantReactivatedEvent = defineEvent({
   type: IdentityEvent.TenantReactivated,
   payload: TenantReactivatedPayloadSchema,
-  description: 'Se reactivó un tenant suspendido.',
+  description: 'A suspended tenant was reactivated.',
 });

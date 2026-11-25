@@ -8,15 +8,15 @@ import { Deadline } from '@platform/primitives';
 import type { CacheResilience } from '../../cache-aside.options.js';
 
 /**
- * Resiliencia de prueba: ejecuta la operación sin reintentos ni circuito y
- * anota el nombre de la política y la llave de dependencia de cada llamada.
+ * Test resilience: runs the operation without retries or circuit and
+ * records the policy name and the dependency key of each call.
  */
 export class FakeResilience implements CacheResilience {
   readonly names: string[] = [];
   readonly dependencyKeys: (string | undefined)[] = [];
   private failure: Error | undefined;
 
-  /** Hace que `execute` rechace sin llegar a ejecutar la operación. */
+  /** Makes `execute` reject without running the operation. */
   failWith(error: Error): void {
     this.failure = error;
   }

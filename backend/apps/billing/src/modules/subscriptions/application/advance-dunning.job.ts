@@ -10,8 +10,8 @@ import { SubscriptionMaintenance } from '../domain/subscription-maintenance.js';
 import { SubscriptionStanding } from './subscription-standing.js';
 
 /**
- * Cada hora suspende las suscripciones morosas que agotaron `BILLING_GRACE_DAYS`. Un tenant que falla no
- * detiene a los demás: la siguiente corrida lo retoma.
+ * Every hour suspends past-due subscriptions that exhausted `BILLING_GRACE_DAYS`. A failing tenant does not
+ * stop the others: the next run picks it up.
  */
 @Injectable()
 export class AdvanceDunningJob extends ScheduledJob {

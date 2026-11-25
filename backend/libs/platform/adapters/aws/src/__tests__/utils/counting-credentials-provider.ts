@@ -1,7 +1,7 @@
 import type { AwsCredentials } from '../../aws-credentials.js';
 import { AwsCredentialsProvider } from '../../aws-credentials-provider.js';
 
-/** Entrega las credenciales dadas y cuenta cuántas veces se le pidieron. */
+/** Returns the given credentials and counts how many times they were requested. */
 export class CountingCredentialsProvider extends AwsCredentialsProvider {
   resolutions = 0;
 

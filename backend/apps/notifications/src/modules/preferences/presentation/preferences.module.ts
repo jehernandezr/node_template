@@ -9,7 +9,7 @@ import { NotificationPreferencesEntity } from '../infrastructure/persistence/ent
 import { TypeOrmPreferencesRepository } from '../infrastructure/persistence/typeorm-preferences.repository.js';
 import { PreferencesController } from './preferences.controller.js';
 
-/** Preferencias de notificaciones por usuario. Global solo para su fachada. */
+/** Per-user notification preferences. Global only for its facade. */
 @Global()
 @Module({
   imports: [

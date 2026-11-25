@@ -6,18 +6,18 @@ import type { ValkeyKeyspace } from './valkey-keyspace.js';
 import { ValkeyRoutingField } from './valkey-routing-field.enum.js';
 
 /**
- * `RoutingCache` de `ShardRouter` sobre Valkey. Cada entrada es un hash con el
- * valor y su versión. `setIfNewer` es un script de Lua: la revisión de versión
- * y la escritura no se intercalan con otro proceso, así la lápida de una
- * invalidación nunca la pisa un placement más viejo que venía en vuelo.
- * Las entradas viven en `<prefijo>:routing:`, dentro de la ACL del usuario del servicio.
+ * `RoutingCache` of `ShardRouter` on Valkey. Each entry is a hash with the
+ * value and its version. `setIfNewer` is a Lua script: the version check
+ * and the write do not interleave with another process, so the tombstone of an
+ * invalidation is never overwritten by an older placement that was in flight.
+ * The entries live in `<prefix>:routing:`, inside the ACL of the service user.
  */
 export class ValkeyRoutingCache extends RoutingCache {
   /**
-   * Compare-and-set por versión en un solo paso. Escribe si la llave no existe
-   * (una vencida no existe) o guarda una versión menor; una versión igual o
-   * mayor se rechaza. Devuelve 1 si escribió.
-   * KEYS[1] entrada; ARGV[1] valor, ARGV[2] versión, ARGV[3] TTL en ms (0 borra la entrada de una vez).
+   * Compare-and-set by version in a single step. Writes if the key does not exist
+   * (an expired one does not exist) or holds a lower version; an equal or
+   * greater version is rejected. Returns 1 if it wrote.
+   * KEYS[1] entry; ARGV[1] value, ARGV[2] version, ARGV[3] TTL in ms (0 deletes the entry at once).
    */
   private static readonly SET_IF_NEWER = new LuaScript(`
 local stored = redis.call('HGET', KEYS[1], '${ValkeyRoutingField.Version}')
@@ -47,8 +47,8 @@ return 1
   }
 
   /**
-   * @throws ShardingError `InvalidConfiguration` con una versión que no es un
-   *   entero seguro no negativo o un TTL negativo o no finito.
+   * @throws ShardingError `InvalidConfiguration` with a version that is not a
+   *   non-negative safe integer or a negative or non-finite TTL.
    */
   async setIfNewer(
     key: string,

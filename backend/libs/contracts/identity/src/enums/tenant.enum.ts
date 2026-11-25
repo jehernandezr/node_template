@@ -1,4 +1,4 @@
-/** Rol de sistema de un tenant. Sus permisos son fijos. */
+/** System role of a tenant. Its permissions are fixed. */
 export enum TenantRole {
   Owner = 'owner',
   Admin = 'admin',
@@ -6,7 +6,7 @@ export enum TenantRole {
   Billing = 'billing',
 }
 
-/** Tipo de tenant. */
+/** Tenant type. */
 export enum TenantKind {
   Organization = 'organization',
   SharedCustomers = 'shared_customers',
@@ -14,8 +14,8 @@ export enum TenantKind {
 }
 
 /**
- * Ciclo de vida de un tenant. No se llama `TenantStatus` para no chocar con el
- * de `@platform/sharding`.
+ * Lifecycle of a tenant. It is not called `TenantStatus` to avoid clashing with the
+ * one in `@platform/sharding`.
  */
 export enum TenantLifecycle {
   Provisioning = 'provisioning',
@@ -24,7 +24,7 @@ export enum TenantLifecycle {
   Deleting = 'deleting',
 }
 
-/** Estado de una invitación a un tenant. */
+/** Status of an invitation to a tenant. */
 export enum InvitationStatus {
   Pending = 'pending',
   Accepted = 'accepted',
@@ -32,7 +32,7 @@ export enum InvitationStatus {
   Expired = 'expired',
 }
 
-/** Qué cambió en la membresía de un usuario en un tenant. */
+/** What changed in a user's membership in a tenant. */
 export enum MembershipChangeKind {
   Added = 'added',
   Removed = 'removed',

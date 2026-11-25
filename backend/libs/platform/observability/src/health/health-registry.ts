@@ -9,12 +9,12 @@ import { DuplicateHealthCheckError } from '../errors/duplicate-health-check.erro
 import type { HealthSummary } from './health-summary.js';
 
 /**
- * Reúne las dependencias que informan su salud. Cada adaptador de red se
- * registra en su `onModuleInit`; los endpoints `/health/live` y `/health/ready`
- * (de `@platform/http`) consultan `checkAll`.
+ * Collects the dependencies that report their health. Each network adapter
+ * registers itself in its `onModuleInit`; the `/health/live` and `/health/ready` endpoints
+ * (from `@platform/http`) query `checkAll`.
  */
 export class HealthRegistry {
-  /** Tiempo máximo por defecto de cada consulta, en milisegundos. */
+  /** Default timeout of each check, in milliseconds. */
   static readonly DEFAULT_TIMEOUT_MS = 2_000;
 
   private static readonly SEVERITY: Readonly<Record<HealthState, number>> = {
@@ -31,7 +31,7 @@ export class HealthRegistry {
     Guard.default.positiveInteger('timeoutMs', timeoutMs);
   }
 
-  /** Agrega una dependencia. Lanza `DuplicateHealthCheckError` si ya hay una con ese `name`. */
+  /** Adds a dependency. Throws `DuplicateHealthCheckError` if one with that `name` already exists. */
   register(check: HealthCheckable): void {
     if (this.checks.has(check.name)) {
       throw new DuplicateHealthCheckError(check.name);
@@ -40,9 +40,9 @@ export class HealthRegistry {
   }
 
   /**
-   * Consulta todas en paralelo, cada una con su tiempo máximo y con `signal`.
-   * Una que lanza o se agota cuenta como `Down` y su `detail` es el nombre del
-   * error, nunca el mensaje.
+   * Checks all of them in parallel, each with its timeout and with `signal`.
+   * One that throws or times out counts as `Down` and its `detail` is the name of the
+   * error, never the message.
    */
   async checkAll(signal?: AbortSignal): Promise<HealthSummary> {
     const entries = await Promise.all(
@@ -73,7 +73,7 @@ export class HealthRegistry {
     }
   }
 
-  /** Espera la consulta, pero rechaza en cuanto la señal se aborta. */
+  /** Awaits the check, but rejects as soon as the signal is aborted. */
   private async race(
     work: Promise<HealthReport>,
     signal: AbortSignal,
@@ -95,9 +95,9 @@ export class HealthRegistry {
   }
 
   /**
-   * Solo el nombre, nunca el mensaje. Se lee la propiedad porque `instanceof
-   * Error` falla con errores de otro contexto de ejecución, como el
-   * `DOMException` que usa `AbortSignal` dentro de Jest.
+   * Only the name, never the message. The property is read because `instanceof
+   * Error` fails with errors from another execution context, such as the
+   * `DOMException` that `AbortSignal` uses inside Jest.
    */
   private static nameOf(error: unknown): string {
     const name =

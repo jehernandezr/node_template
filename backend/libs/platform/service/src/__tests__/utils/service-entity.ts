@@ -1,2 +1,2 @@
-/** Entidad ficticia de un servicio; solo existe para comprobar cómo se combinan las listas. */
+/** Dummy service entity; it only exists to check how the lists are combined. */
 export class ServiceEntity {}

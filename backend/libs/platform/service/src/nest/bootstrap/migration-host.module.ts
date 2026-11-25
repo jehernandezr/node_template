@@ -15,9 +15,9 @@ import { ServiceDatabaseSets } from '../../service-database-sets.js';
 import { PlatformKernelModule } from '../runtime/platform-kernel.module.js';
 
 /**
- * Módulo raíz del migrador. Solo arma las bases: no hay Valkey, AWS, mensajería ni jobs, porque
- * migrar no debe depender de nada que no sea PostgreSQL. `PlatformKernelModule` es obligatorio
- * porque `PostgresPlatformModule` inyecta `Clock` e `IdGenerator`.
+ * Root module of the migrator. It only sets up the databases: there is no Valkey, AWS, messaging or jobs, because
+ * migrating must not depend on anything other than PostgreSQL. `PlatformKernelModule` is required
+ * because `PostgresPlatformModule` injects `Clock` and `IdGenerator`.
  */
 @Module({})
 export class MigrationHostModule {

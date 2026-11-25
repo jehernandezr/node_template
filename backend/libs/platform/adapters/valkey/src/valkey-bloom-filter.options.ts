@@ -1,21 +1,21 @@
 import type { IdGenerator } from '@platform/kernel';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
-/** Opciones de `ValkeyBloomFilter`. */
+/** Options of `ValkeyBloomFilter`. */
 export interface ValkeyBloomFilterOptions {
-  /** Nombre del filtro, normalmente un valor del enum de filtros del llamador. */
+  /** Filter name, usually a value of the caller's filter enum. */
   readonly name: string;
   readonly expectedItems: number;
-  /** Por defecto `BloomSizing.DEFAULT_FALSE_POSITIVE_RATE` (1 %). */
+  /** Defaults to `BloomSizing.DEFAULT_FALSE_POSITIVE_RATE` (1 %). */
   readonly falsePositiveRate?: number;
   /**
-   * Con `false` (por defecto) el módulo agrega subfiltros cuando el filtro
-   * crece más allá de `expectedItems` y conserva la tasa. Con `true` el filtro
-   * se niega a crecer más allá de su capacidad.
+   * With `false` (the default) the module adds subfilters when the filter
+   * grows beyond `expectedItems` and keeps the rate. With `true` the filter
+   * refuses to grow beyond its capacity.
    */
   readonly nonScaling?: boolean;
-  /** El filtro vive en `<prefijo>:bloom:{nombre}`, dentro de la ACL del usuario del servicio. */
+  /** The filter lives at `<prefix>:bloom:{name}`, inside the ACL of the service user. */
   readonly keyspace: ValkeyKeyspace;
-  /** Nombra las llaves temporales de una reconstrucción. */
+  /** Names the temporary keys of a rebuild. */
   readonly ids: IdGenerator;
 }

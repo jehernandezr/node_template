@@ -7,12 +7,12 @@ import type { PlatformServers } from './platform-servers.js';
 import { PlatformService } from './platform-service.enum.js';
 
 /**
- * La configuración de cada servicio: sus bases, el Valkey común, el mismo secreto de la API interna para todos, las
- * URLs de los demás, la verificación de tokens contra el JWKS de identity y los dos grupos de shards, con los que
- * identity anota en los demás servicios dónde ubicó un tenant y a los que se lo puede trasladar.
+ * The configuration of each service: its databases, the shared Valkey, the same internal API secret for all, the
+ * URLs of the others, token verification against the identity JWKS and the two shard groups, with which
+ * identity records in the other services where it placed a tenant and to which it can move it.
  */
 export class PlatformEnvironment {
-  /** Un grupo por shard: `group-0` lleva al primer shard de cada servicio y `group-1` al segundo. */
+  /** One group per shard: `group-0` leads to the first shard of each service and `group-1` to the second. */
   static readonly MOVE_GROUPS = ProvisionedService.GROUPS;
   private static readonly TRIAL_DAYS = 14;
   private static readonly GRACE_DAYS = 7;
@@ -38,7 +38,7 @@ export class PlatformEnvironment {
           ...this.identityBase,
           ...shared,
           SERVICE_NAME: PlatformService.Identity,
-          // Cada usuario de prueba declara su IP en `X-Forwarded-For`, así el límite por IP no se reparte entre todos.
+          // Each test user declares its IP in `X-Forwarded-For`, so the per-IP limit is not shared among all of them.
           TRUST_PROXY_HOPS: '1',
           FEATURE_FLAGS: JSON.stringify([
             {

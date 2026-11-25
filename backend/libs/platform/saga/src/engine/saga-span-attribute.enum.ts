@@ -1,4 +1,4 @@
-/** Atributos del span de cada paso de saga. */
+/** Attributes of the span of each saga step. */
 export enum SagaSpanAttribute {
   SagaType = 'platform.saga.type',
   SagaId = 'platform.saga.id',

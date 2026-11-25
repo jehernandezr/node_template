@@ -3,7 +3,7 @@ import { SecurityHeaders } from '../security-headers.js';
 import type { HttpResponseView } from '../http-response-view.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
-/** Escribe las cabeceras de seguridad de cada respuesta, también las de error. */
+/** Writes the security headers of each response, including error responses. */
 @Injectable()
 export class SecurityHeadersMiddleware implements NestMiddleware {
   use(

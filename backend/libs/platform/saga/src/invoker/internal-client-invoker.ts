@@ -8,12 +8,12 @@ import type { InvokeOptions } from './invoke-options.js';
 import { OperationInvoker } from './operation-invoker.js';
 
 /**
- * `OperationInvoker` respaldado por el `InternalClient` de `@platform/internal-api`.
- * Cada llamada de paso lleva el contexto guardado (tenant, actor, traceparent),
- * el `Deadline` del paso y su señal de aborto, así el cliente valida la entrada
- * contra el contrato, reintenta dentro del presupuesto y el servidor deriva su
- * lease de idempotencia del mismo plazo. Expone el catálogo del cliente, con el
- * que el registro de sagas las valida al arrancar.
+ * `OperationInvoker` backed by the `InternalClient` of `@platform/internal-api`.
+ * Each step call carries the saved context (tenant, actor, traceparent),
+ * the step `Deadline` and its abort signal, so the client validates the input
+ * against the contract, retries within the budget and the server derives its
+ * idempotency lease from the same deadline. Exposes the client catalog, which
+ * the saga registry uses to validate sagas at startup.
  */
 export class InternalClientInvoker extends OperationInvoker {
   constructor(

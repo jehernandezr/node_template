@@ -1,6 +1,6 @@
 import { AppConfig } from '@platform/config';
 
-/** `AppConfig` de prueba con las raíces que se le dan; no admite secciones. */
+/** Test `AppConfig` with the given roots; it does not support sections. */
 export class StaticAppConfig extends AppConfig {
   constructor(private readonly settings: unknown) {
     super();

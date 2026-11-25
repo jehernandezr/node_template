@@ -1,13 +1,13 @@
 import { inspect } from 'node:util';
 import { z } from 'zod';
 
-/** Texto que se muestra en lugar del secreto en `toString`, `toJSON` e `inspect`. */
+/** Text shown in place of the secret in `toString`, `toJSON` and `inspect`. */
 export const SECRET_PLACEHOLDER = '[REDACTED]';
 
 /**
- * Guarda un valor sensible. El texto crudo vive en un campo privado de la
- * clase, así que spread, `JSON.stringify`, `String(...)` y `util.inspect` solo
- * muestran `[REDACTED]`. Se lee con `reveal()` en el punto de uso.
+ * Holds a sensitive value. The raw text lives in a private field of the
+ * class, so spread, `JSON.stringify`, `String(...)` and `util.inspect` only
+ * show `[REDACTED]`. It is read with `reveal()` at the point of use.
  */
 export class Secret {
   readonly #value: string;
@@ -16,7 +16,7 @@ export class Secret {
     this.#value = value;
   }
 
-  /** Devuelve el valor crudo. Nunca lo registres ni lo serialices. */
+  /** Returns the raw value. Never log or serialize it. */
   reveal(): string {
     return this.#value;
   }
@@ -33,23 +33,23 @@ export class Secret {
     return `Secret(${SECRET_PLACEHOLDER})`;
   }
 
-  /** Indica si `value` es un `Secret`. */
+  /** Whether `value` is a `Secret`. */
   static is(value: unknown): value is Secret {
     return value instanceof Secret;
   }
 }
 
 export interface SecretOptions {
-  /** Longitud mínima del valor crudo. */
+  /** Minimum length of the raw value. */
   minLength?: number;
-  /** Longitud máxima del valor crudo. */
+  /** Maximum length of the raw value. */
   maxLength?: number;
 }
 
 /**
- * Esquema para una variable de entorno sensible (contraseña, clave de API,
- * token). Se convierte en un `Secret`; los mensajes de validación nunca
- * incluyen el valor crudo ni una parte de él.
+ * Schema for a sensitive environment variable (password, API key,
+ * token). It becomes a `Secret`; validation messages never
+ * include the raw value or any part of it.
  */
 export function secret(options: SecretOptions = {}) {
   const { minLength = 1, maxLength } = options;

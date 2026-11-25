@@ -1,9 +1,9 @@
 /**
- * Estado de los bloqueos de inicio de sesión: nivel y fin del bloqueo de cada origen, bloqueo de IP y modo
- * protegido de cada cuenta. Los fallos los cuenta `AttemptCounters`.
+ * State of the sign-in lockouts: level and end of each origin's lockout, IP lockout and protected
+ * mode of each account. Failures are counted by `AttemptCounters`.
  */
 export abstract class LockoutStore {
-  /** Milisegundos que faltan del bloqueo del origen o de la IP, el mayor; `undefined` sin bloqueo. */
+  /** Milliseconds left of the origin or IP lockout, whichever is greater; `undefined` without a lockout. */
   abstract remainingLockMs(
     origin: string,
     ip: string,
@@ -11,25 +11,25 @@ export abstract class LockoutStore {
 
   abstract isProtected(account: string): Promise<boolean>;
 
-  /** Sube el nivel de bloqueo del origen y devuelve el nuevo, desde 1. El nivel olvida tras `ttlMs`. */
+  /** Raises the origin's lockout level and returns the new one, starting at 1. The level is forgotten after `ttlMs`. */
   abstract raiseLevel(origin: string, ttlMs: number): Promise<number>;
 
   abstract lockOrigin(origin: string, lockMs: number): Promise<void>;
 
   abstract lockIp(ip: string, lockMs: number): Promise<void>;
 
-  /** Activa el modo protegido de la cuenta. `true` si no estaba activo. */
+  /** Turns on the account's protected mode. `true` if it was not active. */
   abstract protect(account: string, ttlMs: number): Promise<boolean>;
 
   /**
-   * Época de desbloqueo de la cuenta. Forma parte de la llave de cada origen, así que subirla deja atrás
-   * los bloqueos y los contadores de todos sus orígenes sin tener que buscarlos.
+   * The account's unlock epoch. It is part of each origin's key, so bumping it leaves behind
+   * the lockouts and counters of all its origins without having to find them.
    */
   abstract unlockEpoch(account: string): Promise<number>;
 
-  /** Sube la época de desbloqueo, que vive `ttlMs` desde ahora, y quita el modo protegido. */
+  /** Bumps the unlock epoch, which lives `ttlMs` from now, and removes protected mode. */
   abstract unlock(account: string, ttlMs: number): Promise<void>;
 
-  /** Alarga la época vigente para que viva `ttlMs` más: los bloqueos recién escritos con ella siguen viéndose. */
+  /** Extends the current epoch so it lives `ttlMs` longer: lockouts just written with it remain visible. */
   abstract retainEpoch(account: string, ttlMs: number): Promise<void>;
 }

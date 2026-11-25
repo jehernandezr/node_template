@@ -1,4 +1,4 @@
-/** Clave pública del conjunto JWKS con la que se verifican los access tokens. */
+/** Public key of the JWKS set used to verify access tokens. */
 export interface Jwk {
   kty: string;
   crv: string;
@@ -9,7 +9,7 @@ export interface Jwk {
   y: string;
 }
 
-/** Conjunto de claves públicas vigentes. Con rotación hay más de una. */
+/** Set of current public keys. With rotation there is more than one. */
 export interface Jwks {
   keys: Jwk[];
 }

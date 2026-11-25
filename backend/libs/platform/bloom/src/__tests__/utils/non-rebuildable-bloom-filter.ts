@@ -1,7 +1,7 @@
 import { AsyncBloomFilter } from '../../async-bloom-filter.js';
 import { BloomFilter } from '../../bloom-filter.js';
 
-/** Filtro asíncrono sin `rebuild`: no se puede reconstruir. */
+/** Async filter without `rebuild`: it cannot be rebuilt. */
 export class NonRebuildableBloomFilter extends AsyncBloomFilter {
   private readonly filter = BloomFilter.create({ expectedItems: 1_000 });
 

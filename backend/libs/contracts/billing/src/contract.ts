@@ -58,19 +58,19 @@ import {
 } from './internal/billing.operations.js';
 import * as schemas from './schemas/index.js';
 
-/** Las operaciones de traslado de tenant de billing, con su tipo exacto para registrarlas y llamarlas. */
+/** The billing tenant move operations, with their exact type to register and call them. */
 export const BillingTenantMoveOperations =
   defineTenantMoveOperations('billing');
 
-/** Las operaciones del directorio de tenants de billing, con su tipo exacto para registrarlas y llamarlas. */
+/** The billing tenant directory operations, with their exact type to register and call them. */
 export const BillingTenantDirectoryOperations =
   defineTenantDirectoryOperations('billing');
 
-/** Contrato del servicio billing: planes, suscripciones, uso, facturas, cuotas y eventos. */
+/** Contract of the billing service: plans, subscriptions, usage, invoices, quotas and events. */
 export const billingContract = defineServiceContract({
   service: 'billing',
   description:
-    'Facturación: planes, suscripción del tenant, medición de uso, entitlements, cuotas, facturas y morosidad.',
+    'Billing: plans, tenant subscription, usage metering, entitlements, quotas, invoices and delinquency.',
   enums: {
     SubscriptionStatus,
     InvoiceStatus,

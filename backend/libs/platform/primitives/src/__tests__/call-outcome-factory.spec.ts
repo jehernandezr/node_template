@@ -17,7 +17,7 @@ class UpstreamBusyError extends PlatformError {
   }
 }
 
-/** Regla de un proveedor ficticio: su código `THROTTLED` es pasajero. */
+/** Rule of a fake provider: its `THROTTLED` code is transient. */
 class ThrottledRule extends FailureRule {
   classify(error: object): FailureKind | undefined {
     return (error as { code?: unknown }).code === 'THROTTLED'

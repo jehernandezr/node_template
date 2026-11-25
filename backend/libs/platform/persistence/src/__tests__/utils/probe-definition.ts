@@ -3,8 +3,8 @@ import { PlatformPersistenceMigrations } from '../../migrations/platform-persist
 import { ProbeEntity } from './probe.entity.js';
 
 /**
- * Definición de ejemplo del target `migration-generate`. No lleva la migración de la tabla `probes`,
- * así que el generador la crea como cambio pendiente.
+ * Sample definition of the `migration-generate` target. It does not include the `probes` table migration,
+ * so the generator creates it as a pending change.
  */
 const definition: DatabaseSetDefinition = {
   entities: [ProbeEntity],

@@ -7,23 +7,23 @@ import type { RateLimitRule } from '../../rate-limit-rule.js';
 import { RateLimitCallValidator } from '../../rate-limit-call-validator.js';
 import { RateLimiter } from '../../rate-limiter.js';
 
-/** Una llamada que recibió un {@link FakeRateLimiter}. */
+/** A call received by a {@link FakeRateLimiter}. */
 export interface RateLimiterCall {
   readonly operation: RateLimitOperation;
   readonly key: string;
   readonly rule: RateLimitRule;
-  /** Costo de `consume`; 1 en `peek` y `reset`. */
+  /** Cost of `consume`; 1 in `peek` and `reset`. */
   readonly cost: number;
 }
 
 /**
- * {@link RateLimiter} para pruebas. Cuenta como `InMemoryRateLimiter` sobre un
- * reloj de prueba, guarda cada llamada y permite forzar rechazos o fallas.
+ * {@link RateLimiter} for tests. Counts like `InMemoryRateLimiter` over a
+ * test clock, stores each call and allows forcing rejections or failures.
  */
 export class FakeRateLimiter extends RateLimiter {
-  /** Llamadas recibidas, en orden. Las inválidas no se guardan. */
+  /** Calls received, in order. Invalid ones are not stored. */
   readonly calls: RateLimiterCall[] = [];
-  /** Reloj de los contadores, para avanzar el tiempo desde la prueba. */
+  /** Clock of the counters, to advance time from the test. */
   readonly clock: Clock;
   private readonly inner: InMemoryRateLimiter;
   private readonly blocked = new Set<string>();
@@ -35,7 +35,7 @@ export class FakeRateLimiter extends RateLimiter {
     this.inner = new InMemoryRateLimiter({ clock });
   }
 
-  /** Rechaza todo `consume` y `peek` de la llave, en cualquier regla. */
+  /** Rejects every `consume` and `peek` of the key, in any rule. */
   block(key: string): void {
     this.blocked.add(key);
   }
@@ -45,14 +45,14 @@ export class FakeRateLimiter extends RateLimiter {
   }
 
   /**
-   * Hace que toda llamada válida lance `error`, como un Valkey caído. Sin
-   * argumento vuelve a responder normalmente.
+   * Makes every valid call throw `error`, like a Valkey that is down. Without
+   * an argument it responds normally again.
    */
   failWith(error?: unknown): void {
     this.failure = error === undefined ? undefined : { error };
   }
 
-  /** Llamadas de una operación. */
+  /** Calls of one operation. */
   callsOf(operation: RateLimitOperation): RateLimiterCall[] {
     return this.calls.filter((call) => call.operation === operation);
   }
@@ -94,7 +94,7 @@ export class FakeRateLimiter extends RateLimiter {
   }
 }
 
-/** Respuesta de una llave bloqueada: sin cupo durante una ventana entera. */
+/** Response for a blocked key: no room for an entire window. */
 function blockedResult(rule: RateLimitRule): RateLimitResult {
   return {
     allowed: false,

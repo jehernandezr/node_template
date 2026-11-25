@@ -1,7 +1,7 @@
 import { IdentityMailer } from '../../domain/identity-mailer.js';
 import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 
-/** Correo de identity en memoria: guarda cada envío y expone el último. */
+/** In-memory identity mailer: stores each send and exposes the last one. */
 export class InMemoryIdentityMailer extends IdentityMailer {
   readonly sent: OutgoingEmail[] = [];
 

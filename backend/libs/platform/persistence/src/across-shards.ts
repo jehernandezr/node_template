@@ -14,7 +14,7 @@ import type { ShardLocation } from './model/shard-location.js';
 import type { ShardLister } from './ports/shard-lister.js';
 import type { ShardDataSources } from './shard-data-sources.js';
 
-/** Recorre varios shards para reportes y tareas de mantenimiento, con plazo y concurrencia acotada. */
+/** Walks several shards for reports and maintenance tasks, with a deadline and bounded concurrency. */
 export class AcrossShards {
   static readonly DEFAULT_CONCURRENCY = 4;
   static readonly DEFAULT_SHARD_TIMEOUT_MS = 5_000;
@@ -27,9 +27,9 @@ export class AcrossShards {
   ) {}
 
   /**
-   * Corre `fn` en cada shard. Nunca lanza por un shard caído: lo reporta en `failures` y marca `partial`.
-   * @throws PersistenceError `PersistenceInvalidConfig` por una opción inválida.
-   * @throws ShardingError `CrossShardTransaction` si se llama dentro de una transacción.
+   * Runs `fn` on each shard. Never throws because of a down shard: reports it in `failures` and marks `partial`.
+   * @throws PersistenceError `PersistenceInvalidConfig` for an invalid option.
+   * @throws ShardingError `CrossShardTransaction` if called inside a transaction.
    */
   async run<T>(
     fn: (connection: ShardConnection) => Promise<T>,

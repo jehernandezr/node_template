@@ -29,31 +29,31 @@ import type { OperationInvoker } from '../../invoker/operation-invoker.js';
 import type { SagaStore } from '../../store/saga-store.js';
 import { InMemorySagaStore } from './in-memory-saga-store.js';
 
-/** Con qué se arma un `SagaEngineKit`. */
+/** What a `SagaEngineKit` is built with. */
 export interface SagaEngineKitOptions {
   readonly invoker: OperationInvoker;
   readonly definitions: readonly SagaDefinition<unknown>[];
-  /** Por defecto, un `InMemorySagaStore` nuevo. */
+  /** Defaults to a new `InMemorySagaStore`. */
   readonly store?: SagaStore;
-  /** Por defecto, el catálogo del invocador. */
+  /** Defaults to the invoker's catalog. */
   readonly contracts?: ContractRegistry;
-  /** Por defecto, un `FixedClock` en 2026-01-01. Las pruebas lo avanzan para vencer leases y plazos. */
+  /** Defaults to a `FixedClock` at 2026-01-01. The tests advance it to expire leases and deadlines. */
   readonly clock?: FixedClock;
-  /** Identidad de la corrida. Por defecto `node-a`. */
+  /** Identity of the run. Defaults to `node-a`. */
   readonly owner?: string;
-  /** Sobrescribe los valores por defecto de `SagaSettings`. */
+  /** Overrides the `SagaSettings` defaults. */
   readonly settings?: Partial<SagaSettingsInput>;
   readonly logger?: LoggerPort;
-  /** La petición en curso, de la que el motor toma tenant y actor al arrancar. */
+  /** The current request, from which the engine takes tenant and actor on start. */
   readonly requestContext?: RequestContextStore;
-  /** Las transacciones del caso de uso que arranca sagas. */
+  /** The transactions of the use case that starts sagas. */
   readonly transactions?: TransactionManager;
 }
 
 /**
- * Arma un `SagaEngine` completo sin NestJS, con los mismos colaboradores que
- * `SagaModule`. `engineFor(owner)` da otro motor sobre el mismo almacén, reloj
- * y registro: es otro proceso del mismo servicio.
+ * Builds a complete `SagaEngine` without NestJS, with the same collaborators as
+ * `SagaModule`. `engineFor(owner)` gives another engine over the same store, clock
+ * and registry: it is another process of the same service.
  */
 export class SagaEngineKit {
   readonly store: SagaStore;
@@ -81,7 +81,7 @@ export class SagaEngineKit {
     this.sagas = new Sagas(this.engine, this.registry);
   }
 
-  /** Otro motor (otro proceso) sobre el mismo almacén, reloj y registro. */
+  /** Another engine (another process) over the same store, clock and registry. */
   engineFor(owner: string): SagaEngine {
     return this.build(this.settingsFor(owner));
   }

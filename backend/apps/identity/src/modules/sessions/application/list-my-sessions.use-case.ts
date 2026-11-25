@@ -6,7 +6,7 @@ import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes
 import { Clock } from '@platform/kernel';
 import { SessionRepository } from '../domain/session.repository.js';
 
-/** Sesiones activas del usuario, la actual primero. Una página alcanza: un usuario tiene pocas. */
+/** The user's active sessions, the current one first. One page is enough: a user has few. */
 @Injectable()
 export class ListMySessions implements UseCase<UserActor, SessionPage> {
   constructor(

@@ -6,15 +6,15 @@ import { JwksKeySource } from './jwks-key-source.js';
 import { JwkCodec } from './jwk-codec.js';
 
 /**
- * Claves del JWKS de identity con caché local. Un `kid` desconocido fuerza una
- * recarga, pero no más de una cada `MIN_RELOAD_MS`, así un token con un `kid`
- * inventado no convierte cada petición en una descarga.
+ * Keys of the identity JWKS with a local cache. An unknown `kid` forces a
+ * reload, but no more than one every `MIN_RELOAD_MS`, so a token with a made-up
+ * `kid` does not turn every request into a download.
  */
 export class RemoteJwksKeySource extends JwksKeySource {
-  /** Vida de lo descargado. */
+  /** Lifetime of what was downloaded. */
   static readonly TTL_MS = 5 * 60_000;
 
-  /** Separación mínima entre recargas provocadas por un `kid` desconocido. */
+  /** Minimum spacing between reloads triggered by an unknown `kid`. */
   static readonly MIN_RELOAD_MS = 30_000;
 
   private keys = new Map<string, KeyObject>();
@@ -53,13 +53,13 @@ export class RemoteJwksKeySource extends JwksKeySource {
       try {
         await this.reload(nowMs);
       } catch {
-        // Si identity no responde se sigue sirviendo lo último descargado: la caché cubre el corte.
+        // If identity does not respond, the last download keeps being served: the cache covers the outage.
       }
     }
     return this.keys.get(kid);
   }
 
-  /** Comparte una descarga en curso entre las llamadas concurrentes. */
+  /** Shares an in-flight download among concurrent calls. */
   private reload(nowMs: number): Promise<void> {
     if (this.inFlight !== undefined) {
       return this.inFlight;
@@ -89,7 +89,7 @@ export class RemoteJwksKeySource extends JwksKeySource {
         try {
           next.set(kid, JwkCodec.publicKeyFromJwk(entry));
         } catch {
-          // Una clave inválida no debe impedir que sirvan las demás del mismo JWKS.
+          // An invalid key must not keep the other keys of the same JWKS from being served.
         }
       }
       this.keys = next;

@@ -1,9 +1,9 @@
-/** Momento de una clave de firma dentro de su rotación. */
+/** Stage of a signing key within its rotation. */
 export enum SigningKeyState {
-  /** Firma los tokens nuevos. Hay una sola. */
+  /** Signs new tokens. There is only one. */
   Active = 'active',
-  /** Ya no firma (o todavía no), pero sus tokens siguen siendo válidos: se publica en el JWKS. */
+  /** No longer signs (or not yet), but its tokens are still valid: it is published in the JWKS. */
   Verifying = 'verifying',
-  /** Comprometida o vencida: no firma ni se publica. */
+  /** Compromised or expired: it neither signs nor is published. */
   Retired = 'retired',
 }

@@ -6,7 +6,7 @@ interface RecordedCall {
   readonly init: RequestInit | undefined;
 }
 
-/** `fetch` falso que recuerda la última llamada y responde lo que se le indica. */
+/** Fake `fetch` that remembers the last call and answers what it is told. */
 class RecordingFetch {
   lastCall: RecordedCall | undefined;
 

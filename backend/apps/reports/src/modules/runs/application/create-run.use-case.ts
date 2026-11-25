@@ -18,9 +18,9 @@ import { ReportRunRepository } from '../domain/report-run.repository.js';
 import { ReportRun } from '../domain/report-run.js';
 
 /**
- * Deja la ejecución en cola y se envía `reports.run.execute.v1` por el outbox de la misma transacción: el
- * cálculo sale de la petición y lo toma un worker. El CSV exige la funcionalidad `advanced_reports`, que
- * depende del cuerpo y por eso se comprueba aquí y no en la ruta.
+ * Queues the run and sends `reports.run.execute.v1` through the outbox in the same transaction: the
+ * computation leaves the request and a worker picks it up. CSV requires the `advanced_reports` feature, which
+ * depends on the body and is therefore checked here and not on the route.
  */
 @Injectable()
 export class CreateRun {

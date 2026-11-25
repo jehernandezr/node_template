@@ -1,12 +1,12 @@
-/** Resultado de una escritura condicional en el directorio. */
+/** Result of a conditional write to the directory. */
 export enum DirectoryWriteResult {
   Written = 'written',
-  /** La versión guardada no es la que leyó quien escribe (o el tenant ya existe): releer y reintentar. */
+  /** The stored version is not the one the writer read (or the tenant already exists): reread and retry. */
   VersionConflict = 'version-conflict',
   /**
-   * El placement rompe la exclusividad de un shard: un tenant dedicado
-   * compartiría shard, o un tenant caería en un shard de un dedicado. Hay que
-   * correr de nuevo la política de placement con datos frescos.
+   * The placement breaks a shard's exclusivity: a dedicated tenant would
+   * share a shard, or a tenant would land on a dedicated tenant's shard. The
+   * placement policy must run again with fresh data.
    */
   ShardTaken = 'shard-taken',
 }

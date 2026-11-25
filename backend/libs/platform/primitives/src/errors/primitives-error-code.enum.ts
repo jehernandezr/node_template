@@ -1,4 +1,4 @@
-/** Códigos de error de `@platform/primitives`. */
+/** Error codes of `@platform/primitives`. */
 export enum PrimitivesErrorCode {
   InvalidArgument = 'PLATFORM.PRIMITIVES.INVALID_ARGUMENT',
   NonJsonValue = 'PLATFORM.PRIMITIVES.NON_JSON_VALUE',

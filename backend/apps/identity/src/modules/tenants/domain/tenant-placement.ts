@@ -1,11 +1,11 @@
 import type { PlacedTenant } from './placed-tenant.js';
 
-/** Ubica un tenant en los shards de su región antes de escribir sus datos. */
+/** Places a tenant in its region's shards before writing its data. */
 export abstract class TenantPlacement {
   /**
-   * Un tenant normal va al shard menos cargado. El tenant compartido de clientes reparte a sus usuarios en
-   * todos los shards de la región, así que su grupo los incluye a todos. Un tenant que ya estaba ubicado
-   * recibe su ubicación de siempre.
+   * A normal tenant goes to the least loaded shard. The shared customer tenant spreads its users across
+   * every shard in the region, so its group includes all of them. A tenant that was already placed
+   * receives its usual placement.
    */
   abstract place(
     tenantId: string,

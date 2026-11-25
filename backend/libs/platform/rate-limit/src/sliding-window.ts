@@ -4,27 +4,27 @@ import type { WindowCounts } from './window-counts.js';
 import type { WindowPosition } from './window-position.js';
 
 /*
- * Ventana deslizante aproximada con dos ventanas fijas: lo contado en la
- * ventana anterior pesa en proporción a la parte de ella que todavía cae
- * dentro de la ventana deslizante.
+ * Approximate sliding window with two fixed windows: what was counted in the
+ * previous window weighs in proportion to the part of it that still falls
+ * inside the sliding window.
  *
- *   estimado = anterior * (W - transcurrido) / W + actual
+ *   estimate = previous * (W - elapsed) / W + current
  *
- * Las cuentas se hacen multiplicadas por W para trabajar solo con enteros.
- * Con los topes de la regla (límite de 10^6 y ventana de 30 días) todos los
- * productos quedan por debajo de 2^53, así que la decisión es exacta aquí y
- * en el script Lua de Valkey, que la repite.
+ * The counts are multiplied by W to work only with integers.
+ * With the rule caps (limit of 10^6 and window of 30 days) all the
+ * products stay below 2^53, so the decision is exact here and
+ * in the Valkey Lua script, which repeats it.
  */
 
-/** Aritmética de la ventana deslizante. Todo es estático y sin estado. */
+/** Sliding window arithmetic. Everything is static and stateless. */
 export class SlidingWindow {
-  /** Ventana fija en la que cae `nowMs`, con milisegundos epoch enteros. */
+  /** Fixed window that `nowMs` falls in, with integer epoch milliseconds. */
   static position(nowMs: number, windowMs: number): WindowPosition {
     const index = Math.floor(nowMs / windowMs);
     return { index, elapsedMs: nowMs - index * windowMs };
   }
 
-  /** Si `cost` unidades más caben en el límite de la regla. */
+  /** Whether `cost` more units fit in the rule's limit. */
   static admits(
     counts: WindowCounts,
     position: WindowPosition,
@@ -39,9 +39,9 @@ export class SlidingWindow {
   }
 
   /**
-   * Respuesta para las cuentas de un instante.
-   * @param counts Cuentas después de contar, si la operación se aceptó.
-   * @param cost Costo con el que se calcula la espera si se rechazó.
+   * Response for the counts at an instant.
+   * @param counts Counts after counting, if the operation was accepted.
+   * @param cost Cost used to compute the wait if it was rejected.
    */
   static result(
     counts: WindowCounts,
@@ -64,7 +64,7 @@ export class SlidingWindow {
     };
   }
 
-  /** Parte entera de `a / b` para enteros no negativos, sin error de redondeo. */
+  /** Integer part of `a / b` for non-negative integers, without rounding error. */
   private static floorDiv(a: number, b: number): number {
     let quotient = Math.floor(a / b);
     if (quotient * b > a) {
@@ -80,7 +80,7 @@ export class SlidingWindow {
     return quotient * b === a ? quotient : quotient + 1;
   }
 
-  /** Estimado de la ventana deslizante multiplicado por W. */
+  /** Sliding window estimate multiplied by W. */
   private static scaledEstimate(
     counts: WindowCounts,
     position: WindowPosition,
@@ -93,8 +93,8 @@ export class SlidingWindow {
   }
 
   /**
-   * Espera mínima para que `cost` unidades quepan si no llega más tráfico.
-   * Solo tiene sentido cuando hoy no caben.
+   * Minimum wait for `cost` units to fit if no more traffic arrives.
+   * Only meaningful when they do not fit now.
    */
   private static waitMs(
     counts: WindowCounts,
@@ -105,14 +105,14 @@ export class SlidingWindow {
     const windowMs = rule.windowMs;
     const room = rule.limit - cost - counts.current;
     if (room >= 0) {
-      // Cabe en esta misma ventana cuando la anterior pese lo suficiente menos.
+      // It fits in this same window once the previous one weighs enough less.
       return (
         windowMs -
         SlidingWindow.floorDiv(room * windowMs, counts.previous) -
         position.elapsedMs
       );
     }
-    // Hay que esperar a la ventana siguiente, donde la actual pasa a ser la anterior.
+    // It must wait for the next window, where the current one becomes the previous one.
     return (
       windowMs -
       position.elapsedMs +

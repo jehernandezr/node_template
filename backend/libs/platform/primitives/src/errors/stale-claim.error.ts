@@ -2,8 +2,8 @@ import { PlatformError } from '@platform/kernel';
 import { PrimitivesErrorCode } from './primitives-error-code.enum.js';
 
 /**
- * El token de un claim de idempotencia ya no es el vigente: otro intento tomó
- * el lease, la operación ya terminó o el claim se liberó.
+ * The token of an idempotency claim is no longer the current one: another attempt took
+ * the lease, the operation already finished or the claim was released.
  */
 export class StaleClaimError extends PlatformError {
   override readonly code = PrimitivesErrorCode.StaleClaim;

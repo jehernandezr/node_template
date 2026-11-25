@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TypeOrmDirectoryStore } from '@platform/adapters-postgres';
 import { TenantVerifier } from '@platform/messaging';
 
-/** Acepta solo los tenants que el directorio conoce: un sobre de otro tenant se rechaza. */
+/** Accepts only the tenants the directory knows: an envelope from another tenant is rejected. */
 @Injectable()
 export class SmokeTenantVerifier extends TenantVerifier {
   constructor(private readonly directory: TypeOrmDirectoryStore) {

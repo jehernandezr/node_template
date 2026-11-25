@@ -12,7 +12,7 @@ import type { FencedWrite } from '../../store/fenced-write.js';
 import type { SagaPurge } from '../../store/saga-purge.js';
 import { SagaStore } from '../../store/saga-store.js';
 
-/** `SagaStore` en memoria. Toda lectura y escritura pasa por una copia JSON, como en una base real. */
+/** In-memory `SagaStore`. Every read and write goes through a JSON copy, as in a real database. */
 export class InMemorySagaStore extends SagaStore {
   private readonly instances = new Map<string, SagaInstanceProps>();
   private readonly log = new Map<string, StepLogEntry[]>();
@@ -165,7 +165,7 @@ export class InMemorySagaStore extends SagaStore {
     return doomed.length;
   }
 
-  /** Síncrono, así la comprobación del lease, la de la versión y las dos escrituras son atómicas. */
+  /** Synchronous, so the lease check, the version check and the two writes are atomic. */
   private fencedWrite(write: FencedWrite): SagaInstance {
     const id = write.instance.id;
     const current = this.instances.get(id);

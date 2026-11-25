@@ -4,7 +4,7 @@ import {
   type TenantMoveTable,
 } from '@platform/tenant-move';
 
-/** Las tablas de notifications que viajan con un tenant: las de los usuarios cuyo tenant de origen es él. */
+/** The notifications tables that travel with a tenant: those of the users whose home tenant it is. */
 export class NotificationsTenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [
     {

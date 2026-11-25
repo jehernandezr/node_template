@@ -2,7 +2,7 @@ import type { UserStatus } from '@contracts/identity';
 import { User } from '../../domain/user.js';
 import { UserEntity } from './entities/user.entity.js';
 
-/** Convierte entre `User` y su fila. */
+/** Converts between `User` and its row. */
 export class UserMapper {
   toDomain(row: UserEntity): User {
     return User.rehydrate({

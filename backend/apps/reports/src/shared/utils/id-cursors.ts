@@ -1,6 +1,6 @@
 import { CursorCodec } from '@platform/criteria';
 
-/** Cursores opacos de páginas ordenadas por id UUIDv7: el cursor guarda el id del último elemento. */
+/** Opaque cursors for pages ordered by UUIDv7 id: the cursor stores the id of the last item. */
 export class IdCursors {
   private readonly codec = new CursorCodec();
 

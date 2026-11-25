@@ -2,8 +2,8 @@ import type { z } from 'zod';
 import type { ConfigEnv } from '../config-env.js';
 
 export interface ConfigModuleOptions {
-  /** Esquema propio del servicio. Se valida al arrancar y se lee con `AppConfig.root()`. */
+  /** The service's own schema. Validated at startup and read with `AppConfig.root()`. */
   readonly schema?: z.ZodType;
-  /** Entorno a validar. Por defecto `process.env`. */
+  /** Environment to validate. Defaults to `process.env`. */
   readonly env?: ConfigEnv;
 }

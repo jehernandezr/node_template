@@ -15,8 +15,8 @@ import { AWS_TEST_SETTINGS } from '../../../__tests__/utils/aws-test-settings.js
 import { TestTopology } from '../../../__tests__/utils/test-topology.js';
 
 /**
- * Lo que una aplicación real aporta alrededor del adaptador: configuración,
- * observabilidad y el despachador de mensajes. Es global, como en el servicio.
+ * What a real application provides around the adapter: configuration,
+ * observability and the message dispatcher. It is global, as in the service.
  */
 @Global()
 @Module({

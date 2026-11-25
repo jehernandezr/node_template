@@ -8,24 +8,24 @@ import type {
 } from './placement-policy.js';
 import type { DirectoryWriter } from './ports/directory-writer.js';
 
-/** Resultado de {@link TenantPlacer.place}. */
+/** Result of {@link TenantPlacer.place}. */
 export type TenantPlacementResult =
   | { readonly placed: true; readonly placement: TenantPlacement }
   | { readonly placed: false; readonly conflict: DirectoryWriteResult };
 
 /**
- * Ubica tenants nuevos: lee la región, pregunta a la política y escribe la
- * respuesta con `DirectoryWriter.putPlacement`. Cuando gana un escritor
- * concurrente (`VersionConflict` o `ShardTaken`) vuelve a leer y a preguntar a
- * la política, hasta `maxAttempts`. Un tenant que ya tiene placement lo recibe
- * de vuelta, así la saga de alta puede reintentar este paso sin riesgo.
+ * Places new tenants: reads the region, asks the policy and writes the
+ * answer with `DirectoryWriter.putPlacement`. When a concurrent writer wins
+ * (`VersionConflict` or `ShardTaken`), it reads again and asks
+ * the policy again, up to `maxAttempts`. A tenant that already has a placement gets it
+ * back, so the sign-up saga can retry this step safely.
  */
 export class TenantPlacer {
   static readonly DEFAULT_MAX_ATTEMPTS = 3;
 
   /**
-   * @param maxAttempts Intentos antes de rendirse cuando los escritores concurrentes siguen ganando.
-   * @throws ShardingError `InvalidConfiguration` cuando `maxAttempts` no es un entero positivo.
+   * @param maxAttempts Attempts before giving up when concurrent writers keep winning.
+   * @throws ShardingError `InvalidConfiguration` when `maxAttempts` is not a positive integer.
    */
   constructor(
     private readonly policy: ShardPlacementPolicy,
@@ -36,7 +36,7 @@ export class TenantPlacer {
   }
 
   /**
-   * @throws ShardingError de la política, por ejemplo `UnknownShard` cuando la región no tiene un shard adecuado.
+   * @throws ShardingError from the policy, for example `UnknownShard` when the region has no suitable shard.
    */
   async place(
     request: PlacementRequest,

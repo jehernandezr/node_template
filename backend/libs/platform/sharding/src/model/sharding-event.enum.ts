@@ -1,5 +1,5 @@
-/** Eventos del directorio de sharding. El valor es el tipo CloudEvents. */
+/** Sharding directory events. The value is the CloudEvents type. */
 export enum ShardingEvent {
-  /** Cambió un placement o el mapeo de un shard a su instancia. */
+  /** A placement or the mapping of a shard to its instance changed. */
   ShardDirectoryChanged = 'platform.sharding.directory-changed.v1',
 }

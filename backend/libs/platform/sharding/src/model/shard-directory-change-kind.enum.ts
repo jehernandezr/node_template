@@ -1,7 +1,7 @@
-/** Qué cambió en el directorio. */
+/** What changed in the directory. */
 export enum ShardDirectoryChangeKind {
-  /** El placement de un tenant (región, grupo de shards o estado). */
+  /** The placement of a tenant (region, shard group or status). */
   TenantPlacement = 'tenant-placement',
-  /** La instancia física de un shard lógico (una saga `MoveShard`). */
+  /** The physical instance of a logical shard (a `MoveShard` saga). */
   ShardInstance = 'shard-instance',
 }

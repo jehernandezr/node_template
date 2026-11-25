@@ -13,24 +13,24 @@ import type { DispatchOptions } from './dispatch-options.js';
 import { ProcessedMessageKey } from './processed-message-key.js';
 import type { ProcessedMessageStore } from './processed-message-store.js';
 
-/** Ajustes del lease que {@link ClaimGuard} pide al almacén. */
+/** Lease settings that {@link ClaimGuard} requests from the store. */
 export interface ClaimGuardConfig {
   /**
-   * Lease mínimo en milisegundos: el visibility timeout de la cola del
-   * consumidor, o `ClaimGuard.DEFAULT_LEASE_MS`. Un `visibilityTimeoutMs`
-   * mayor en la entrega lo sube.
+   * Minimum lease in milliseconds: the visibility timeout of the consumer
+   * queue, or `ClaimGuard.DEFAULT_LEASE_MS`. A larger `visibilityTimeoutMs`
+   * in the delivery raises it.
    */
   readonly baseLeaseMs: number;
-  /** Margen extra sobre el lease. Por defecto, el de `ClaimRules`. */
+  /** Extra margin over the lease. Defaults to the one in `ClaimRules`. */
   readonly leaseMarginMs?: number;
 }
 
 /**
- * Reclamo de idempotencia de una entrega con `ProcessedMessageStore`: toma el
- * claim de `(consumidor, id)`, lo completa o lo libera.
+ * Idempotency claim of a delivery with `ProcessedMessageStore`: takes the
+ * claim of `(consumer, id)`, completes it or releases it.
  */
 export class ClaimGuard {
-  /** Lease cuando ni las opciones ni la topología dan un visibility timeout (el de SQS). */
+  /** Lease when neither the options nor the topology give a visibility timeout (the SQS one). */
   static readonly DEFAULT_LEASE_MS = 30_000;
 
   constructor(
@@ -46,8 +46,8 @@ export class ClaimGuard {
   }
 
   /**
-   * Huella del mensaje: su tipo, su tenant y sus datos en JSON canónico.
-   * @throws MessagingError `InvalidEnvelope` si `data` no es JSON canónico.
+   * Fingerprint of the message: its type, its tenant and its data in canonical JSON.
+   * @throws MessagingError `InvalidEnvelope` if `data` is not canonical JSON.
    */
   fingerprint(envelope: MessageEnvelope): string {
     try {
@@ -65,11 +65,11 @@ export class ClaimGuard {
   }
 
   /**
-   * Toma el claim de `(consumer, envelope.id)` a nombre del tenant del mensaje, para que el traslado del tenant se
-   * lleve lo procesado. Resuelve `Settled` con
-   * `Duplicate`, `InProgress` o `DeadLetter` (la huella guardada es otra:
-   * conflicto de idempotencia; si el claim se había adquirido, se devuelve).
-   * Si el almacén falla, el error sale tal cual.
+   * Takes the claim of `(consumer, envelope.id)` on behalf of the message tenant, so that moving the tenant
+   * carries what was processed. Resolves `Settled` with
+   * `Duplicate`, `InProgress` or `DeadLetter` (the stored fingerprint differs:
+   * idempotency conflict; if the claim had been acquired, it is returned).
+   * If the store fails, the error propagates as is.
    */
   async claim(
     envelope: MessageEnvelope,
@@ -135,7 +135,7 @@ export class ClaimGuard {
     }
   }
 
-  /** Guarda el resultado con el token del claim. */
+  /** Saves the result with the claim token. */
   async complete(claim: AcquiredMessageClaim): Promise<void> {
     await this.store.complete(claim.key, claim.token, {
       processedAt: this.clock.now().getTime(),
@@ -143,15 +143,15 @@ export class ClaimGuard {
   }
 
   /**
-   * Devuelve el claim con su token. Mejor esfuerzo: nunca lanza. Si la
-   * liberación falla (almacén caído o token vencido), el claim queda en
-   * progreso hasta que venza su lease, que acota cuánto bloquea reentregas.
+   * Gives the claim back with its token. Best effort: never throws. If the
+   * release fails (store down or expired token), the claim stays in
+   * progress until its lease expires, which bounds how long it blocks redeliveries.
    */
   async release(claim: AcquiredMessageClaim): Promise<void> {
     try {
       await this.store.release(claim.key, claim.token);
     } catch {
-      // El lease acota cuánto tiempo puede bloquear el claim.
+      // The lease bounds how long the claim can block.
     }
   }
 }

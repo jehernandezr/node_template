@@ -3,14 +3,14 @@ import { FailureClassifier } from '@platform/primitives';
 import type { PostgresSqlState } from './postgres-sql-state.enum.js';
 
 /**
- * Clasifica los errores del driver de Postgres. Los SQLSTATE los traduce esta
- * capa; un error de red de Node (sin SQLSTATE) lo decide el clasificador general.
+ * Classifies Postgres driver errors. SQLSTATEs are translated by this
+ * layer; a Node network error (without SQLSTATE) is decided by the general classifier.
  */
 export class PostgresFailureClassifier {
   /**
-   * SQLSTATE pasajeros de Postgres: serialización, deadlock, apagado o reinicio
-   * del servidor, demasiadas conexiones y falta de memoria. Repetir la
-   * transacción completa puede funcionar.
+   * Transient Postgres SQLSTATEs: serialization, deadlock, server shutdown or
+   * restart, too many connections and out of memory. Retrying the
+   * whole transaction may work.
    */
   private static readonly TRANSIENT_SQLSTATES: ReadonlySet<string> = new Set([
     '40001',
@@ -22,12 +22,12 @@ export class PostgresFailureClassifier {
     '53200',
   ]);
 
-  /** Clase 08 de Postgres (excepción de conexión), cualquier subcódigo. */
+  /** Postgres class 08 (connection exception), any subcode. */
   private static readonly CONNECTION_SQLSTATE = /^08[0-9A-Z]{3}$/;
 
   private static readonly FALLBACK = new FailureClassifier();
 
-  /** Pasajero si el SQLSTATE lo es; cualquier otro error, incluido un código de red como `EPIPE`, lo decide el clasificador general. */
+  /** Transient if the SQLSTATE is; any other error, including a network code like `EPIPE`, is decided by the general classifier. */
   static classify(error: unknown): FailureKind {
     return (
       PostgresFailureClassifier.transientKindOf(error) ??
@@ -35,7 +35,7 @@ export class PostgresFailureClassifier {
     );
   }
 
-  /** `Transient` si el error trae un SQLSTATE pasajero; `undefined` si no dice nada de eso. */
+  /** `Transient` if the error carries a transient SQLSTATE; `undefined` if it says nothing about that. */
   static transientKindOf(error: unknown): FailureKind | undefined {
     const sqlState = PostgresFailureClassifier.sqlStateOf(error);
     return sqlState !== undefined &&
@@ -45,12 +45,12 @@ export class PostgresFailureClassifier {
       : undefined;
   }
 
-  /** Si el error de `pg` trae justo ese SQLSTATE. */
+  /** Whether the `pg` error carries exactly that SQLSTATE. */
   static hasSqlState(error: unknown, state: PostgresSqlState): boolean {
     return PostgresFailureClassifier.sqlStateOf(error) === state;
   }
 
-  /** SQLSTATE de un error de `pg`, si lo trae. Los códigos de red de Node no tienen cinco caracteres. */
+  /** SQLSTATE of a `pg` error, if it has one. Node network codes are not five characters long. */
   static sqlStateOf(error: unknown): string | undefined {
     const code = (error as { code?: unknown } | null)?.code;
     return typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)

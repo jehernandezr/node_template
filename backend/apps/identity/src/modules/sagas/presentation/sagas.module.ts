@@ -6,7 +6,7 @@ import { SagaDirectoryEntity } from '../infrastructure/persistence/entities/saga
 import { TypeOrmSagaDirectory } from '../infrastructure/persistence/typeorm-saga-directory.js';
 import { SagasController } from './sagas.controller.js';
 
-/** Arranque y consulta de las sagas de identity. Global para los módulos que las arrancan. */
+/** Starting and querying identity's sagas. Global for the modules that start them. */
 @Global()
 @Module({
   imports: [

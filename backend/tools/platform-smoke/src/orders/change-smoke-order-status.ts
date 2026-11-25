@@ -5,8 +5,8 @@ import { SmokeOrderRepository } from './smoke-order.repository.js';
 import type { SmokeOrderStatus } from './smoke-order-status.enum.js';
 
 /**
- * Cambia el estado de un pedido. La entrada del caché se invalida solo después del commit: un lector que
- * llega antes ve el valor anterior, nunca uno que la transacción podría deshacer.
+ * Changes the status of an order. The cache entry is invalidated only after the commit: a reader that
+ * arrives earlier sees the previous value, never one the transaction could roll back.
  */
 @Injectable()
 export class ChangeSmokeOrderStatus {

@@ -5,7 +5,7 @@ import type {
   StreamRequestHandler,
 } from '../../realtime-host.js';
 
-/** Servidor HTTP mínimo en un puerto libre que atiende las rutas `GET` que registran los transportes. */
+/** Minimal HTTP server on a free port that serves the `GET` routes the transports register. */
 export class TestRealtimeHost implements RealtimeHost {
   private readonly routes = new Map<string, StreamRequestHandler>();
   readonly server: Server = createServer((request, response) => {
@@ -14,7 +14,7 @@ export class TestRealtimeHost implements RealtimeHost {
       handler(request, response);
       return;
     }
-    // Socket.IO atiende sus propias rutas sobre este mismo servidor.
+    // Socket.IO serves its own routes on this same server.
     if (!(request.url ?? '').startsWith('/socket.io/')) {
       response.writeHead(404).end();
     }

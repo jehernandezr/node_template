@@ -17,7 +17,7 @@ import { GreeterHandlers } from './utils/greeter-handlers.js';
 
 const transactions = new RecordingTransactionManager();
 
-/** El servicio provee su `TransactionManager`, como `PersistenceModule`. */
+/** The service provides its `TransactionManager`, like `PersistenceModule`. */
 @Global()
 @Module({
   providers: [{ provide: TransactionManager, useValue: transactions }],

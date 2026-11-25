@@ -7,7 +7,7 @@ import type {
 import type { TaskChangeSet } from '../domain/task-change-set.js';
 import type { Task } from '../domain/task.js';
 
-/** Los eventos de integración de una tarea, armados con su estado ya guardado. Utilidad pura. */
+/** A task's integration events, built from its already saved state. Pure utility. */
 export class TaskEvents {
   static created(tenantId: string, task: Task): TaskCreatedPayload {
     const state = task.snapshot();

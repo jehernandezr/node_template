@@ -1,12 +1,12 @@
 import { TenantStatus, type TenantPlacement } from '@platform/sharding';
 import { PersistenceError } from '@platform/persistence';
 
-/** Valida un `TenantPlacement` que llega de quien escribe el directorio, antes de tocar la base. */
+/** Validates a `TenantPlacement` that comes from the directory writer, before touching the database. */
 export class PlacementValidator {
   private static readonly STATUSES: readonly string[] =
     Object.values(TenantStatus);
 
-  /** @throws PersistenceError `PersistenceInvalidConfig` por el primer campo inválido. */
+  /** @throws PersistenceError `PersistenceInvalidConfig` for the first invalid field. */
   static assert(placement: TenantPlacement): void {
     const { tenantId, region, shardGroup, status, version, dedicated } =
       placement;

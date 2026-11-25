@@ -14,14 +14,14 @@ import type { AwsMessagingNames } from './aws-messaging-names.js';
 import { AwsOperation } from './aws-operation.enum.js';
 
 /**
- * Publica un envelope ya validado en SNS (eventos) o SQS (comandos). El cuerpo
- * es el JSON del envelope CloudEvents: con `raw_message_delivery` la cola lo
- * recibe tal cual y el filtro de Terraform (`filter_policy_scope =
- * "MessageBody"`) lee su campo `type`.
+ * Publishes an already validated envelope on SNS (events) or SQS (commands). The body
+ * is the JSON of the CloudEvents envelope: with `raw_message_delivery` the queue
+ * receives it as is and the Terraform filter (`filter_policy_scope =
+ * "MessageBody"`) reads its `type` field.
  *
- * En destinos FIFO manda el grupo como `MessageGroupId` y el id del envelope
- * como `MessageDeduplicationId`, así un reintento del relay no duplica. Es el
- * `EnvelopePublisher` del relay del outbox y la base de `SnsSqsMessageBus`.
+ * For FIFO destinations it sends the group as `MessageGroupId` and the envelope id
+ * as `MessageDeduplicationId`, so a relay retry does not duplicate. It is the
+ * `EnvelopePublisher` of the outbox relay and the base of `SnsSqsMessageBus`.
  */
 export class SnsSqsEnvelopePublisher extends EnvelopePublisher {
   /** SQS no admite retrasos mayores a 15 minutos. */
@@ -90,7 +90,7 @@ export class SnsSqsEnvelopePublisher extends EnvelopePublisher {
     }
   }
 
-  /** Retraso por mensaje de SQS, en segundos (0 a 900). */
+  /** Per-message SQS delay, in seconds (0 to 900). */
   private delaySeconds(delayMs: number | undefined): number | undefined {
     if (!delayMs || delayMs <= 0) return undefined;
     return Math.min(

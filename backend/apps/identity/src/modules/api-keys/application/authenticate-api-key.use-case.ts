@@ -26,17 +26,17 @@ import {
 import { ApiKeyUsageBuffer } from '../domain/api-key-usage-buffer.js';
 import type { ApiKey } from '../domain/api-key.js';
 
-/** Una key válida y lo que hace falta para dejar su copia en `auth:apikey:*`. */
+/** A valid key and what is needed to leave its copy in `auth:apikey:*`. */
 interface Verified {
   readonly principal: ApiKeyPrincipal;
   readonly key: ApiKey;
 }
 
 /**
- * Valida una API key y devuelve su principal. La busca por prefijo en el catálogo, compara el HMAC del
- * secreto en el shard de su tenant y revisa vencimiento, rotación, IP y estado de la cuenta y del tenant.
- * Los fallos cuentan por prefijo e IP con las reglas de bloqueo del inicio de sesión, así el secreto de un
- * prefijo conocido no se puede adivinar probando.
+ * Validates an API key and returns its principal. It looks it up by prefix in the catalog, compares the HMAC of the
+ * secret in its tenant's shard and checks expiration, rotation, IP and the state of the account and the tenant.
+ * Failures are counted per prefix and IP with the sign-in lockout rules, so the secret of a
+ * known prefix cannot be guessed by trial.
  */
 @Injectable()
 export class AuthenticateApiKey {
@@ -55,7 +55,7 @@ export class AuthenticateApiKey {
     private readonly clock: Clock,
   ) {}
 
-  /** Con la key completa, como la recibe la operación interna. */
+  /** With the full key, as the internal operation receives it. */
   async execute(rawKey: string, clientIp?: string): Promise<ApiKeyPrincipal> {
     const parsed = ApiKeyFormat.parse(rawKey);
     if (parsed === undefined) {
@@ -69,9 +69,9 @@ export class AuthenticateApiKey {
   }
 
   /**
-   * Con el prefijo y el SHA-256 del secreto, como lo resuelve `@platform/auth`.
-   * @throws IdentityError `IDENTITY.API_KEY.INVALID` con `Retry-After` mientras el prefijo está bloqueado
-   *   desde esa IP, aunque el secreto sea el correcto.
+   * With the prefix and the SHA-256 of the secret, as `@platform/auth` resolves it.
+   * @throws IdentityError `IDENTITY.API_KEY.INVALID` with `Retry-After` while the prefix is locked
+   *   from that IP, even if the secret is correct.
    */
   async resolve(
     prefix: string,
@@ -79,7 +79,7 @@ export class AuthenticateApiKey {
     clientIp?: string,
   ): Promise<ApiKeyPrincipal> {
     const account = this.lockoutKeys.apiKey(prefix);
-    // Sin IP los fallos cuentan solo para el prefijo: no comparten contador con otros clientes sin IP.
+    // Without an IP, failures count only for the prefix: they do not share a counter with other clients without an IP.
     const ip = clientIp ?? account;
     const locked = await this.lockout.remainingLockMs(account, ip);
     if (locked !== undefined) {
@@ -133,7 +133,7 @@ export class AuthenticateApiKey {
       if (!key.isUsable(now)) {
         throw new IdentityError(IdentityErrorCode.ApiKeyInvalid);
       }
-      // Sin IP no se puede probar que la llamada viene de un rango permitido: la key no vale.
+      // Without an IP there is no way to prove the call comes from an allowed range: the key is not valid.
       if (
         state.allowedCidrs.length > 0 &&
         (clientIp === undefined || !isIpInAnyCidr(clientIp, state.allowedCidrs))
@@ -165,9 +165,9 @@ export class AuthenticateApiKey {
   }
 
   /**
-   * Deja la copia que leen los demás servicios. Una revocación (o un cambio de la cuenta) que confirma entre
-   * la verificación y esta escritura ya borró la copia, y la escritura la volvería a dejar con lo de antes.
-   * Por eso, después de escribir, se vuelve a verificar la key: si ya no vale o su copia cambió, se borra.
+   * Leaves the copy the other services read. A revocation (or an account change) that commits between
+   * verification and this write already deleted the copy, and the write would put it back with the old data.
+   * That is why, after writing, the key is verified again: if it is no longer valid or its copy changed, it is deleted.
    */
   private async share(
     prefix: string,
@@ -195,9 +195,9 @@ export class AuthenticateApiKey {
   }
 
   /**
-   * La copia de una key. Una key limitada por CIDR no se copia: quien lee la copia no revisa la IP, y
-   * aceptarla desde ahí abriría la key a cualquier origen. Una key rotada vence en la copia cuando termina
-   * su gracia.
+   * The copy of a key. A CIDR-restricted key is not copied: whoever reads the copy does not check the IP, and
+   * accepting it from there would open the key to any origin. A rotated key expires in the copy when its
+   * grace period ends.
    */
   private copyOf({
     key,

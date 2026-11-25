@@ -1,7 +1,7 @@
 import type { Page } from '@contracts/platform';
 import type { TaskChange } from '@contracts/tasks';
 
-/** La historia de tareas de un tenant según su dueño, el servicio tasks, por páginas. */
+/** A tenant's task history according to its owner, the tasks service, by pages. */
 export abstract class TaskHistory {
   abstract page(
     tenantId: string,

@@ -7,16 +7,16 @@ import type {
 } from './resilience-event.js';
 
 /**
- * Reparte los eventos de las políticas a sus suscriptores. Un suscriptor que
- * falla no rompe la llamada protegida: sus errores síncronos y asíncronos se
- * descartan, porque la métrica no debe cambiar el resultado de negocio.
+ * Dispatches the policies' events to their subscribers. A subscriber that
+ * fails does not break the protected call: its synchronous and asynchronous errors are
+ * discarded, because the metric must not change the business result.
  */
 export class ResilienceEventBus {
   private readonly listeners = new Set<ResilienceEventListener>();
 
   constructor(private readonly clock: Clock) {}
 
-  /** @returns función que quita al suscriptor. */
+  /** @returns function that removes the subscriber. */
   subscribe(listener: ResilienceEventListener): () => void {
     this.listeners.add(listener);
     return () => {
@@ -41,7 +41,7 @@ export class ResilienceEventBus {
       try {
         void Promise.resolve(listener(event)).catch(() => undefined);
       } catch {
-        // Un suscriptor que falla no debe romper la llamada protegida.
+        // A failing subscriber must not break the protected call.
       }
     }
   }

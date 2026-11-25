@@ -20,7 +20,7 @@ import { WebAuthnVerifier } from '../domain/webauthn-verifier.js';
 import { PasskeyCeremony } from './passkey-ceremony.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 
-/** Registro, lista y baja de las passkeys del usuario. */
+/** Registration, listing and removal of the user's passkeys. */
 @Injectable()
 export class ManagePasskeys {
   constructor(

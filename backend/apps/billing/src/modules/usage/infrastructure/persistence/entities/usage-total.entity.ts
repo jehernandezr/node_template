@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `usage_totals`: lo usado por tenant, día y métrica; un periodo suma o toma el máximo de sus días. */
+/** `usage_totals`: usage per tenant, day and metric; a period sums or takes the maximum of its days. */
 @Entity({ name: 'usage_totals' })
 @Index('usage_totals_tenant_day_metric_key', ['tenantId', 'day', 'metric'], {
   unique: true,

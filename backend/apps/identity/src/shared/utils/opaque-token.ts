@@ -2,16 +2,16 @@ import { decodeBase64Url, encodeBase64Url } from './base64url.js';
 
 const SEPARATOR = '_';
 
-/** Partes de un token opaco ya leído: la ruta hacia su fila y el secreto crudo. */
+/** Parts of an already parsed opaque token: the route to its row and the raw secret. */
 export interface OpaqueToken {
   readonly route: string[];
   readonly secret: Buffer;
 }
 
 /**
- * Arma `<prefijo>_<ruta>_<secreto>`. La ruta dice dónde está la fila (por ejemplo el id del tenant),
- * así que cada parte no puede estar vacía ni contener `_`, que es el separador.
- * @throws Error si una parte de la ruta está vacía o contiene `_`.
+ * Builds `<prefix>_<route>_<secret>`. The route says where the row is (for example the tenant id),
+ * so no part can be empty or contain `_`, which is the separator.
+ * @throws Error if a part of the route is empty or contains `_`.
  */
 export function encodeOpaqueToken(
   prefix: string,
@@ -27,9 +27,9 @@ export function encodeOpaqueToken(
 }
 
 /**
- * Lee un token armado con `encodeOpaqueToken`. El base64url del secreto puede contener `_`, así que
- * el secreto es todo lo que queda después de la ruta.
- * @returns `undefined` si el prefijo no coincide, faltan partes o el secreto no es base64url válido.
+ * Reads a token built with `encodeOpaqueToken`. The secret's base64url may contain `_`, so
+ * the secret is everything left after the route.
+ * @returns `undefined` if the prefix does not match, parts are missing or the secret is not valid base64url.
  */
 export function parseOpaqueToken(
   token: string,

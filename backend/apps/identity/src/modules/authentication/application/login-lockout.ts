@@ -7,9 +7,9 @@ import { LockoutStore } from '../domain/lockout-store.js';
 import { LockoutKeys } from './lockout-keys.js';
 
 /**
- * Bloqueo por intentos fallidos de una cuenta (o de una API key, que cuenta como una) desde una IP: cuenta
- * los fallos con `AttemptCounters`, decide con `LockoutPolicy` y guarda el bloqueo en `LockoutStore`. El
- * origen lleva la época de desbloqueo de la cuenta, así que desbloquearla deja atrás todos sus orígenes.
+ * Lockout for failed attempts of an account (or of an API key, which counts as one) from an IP: counts
+ * failures with `AttemptCounters`, decides with `LockoutPolicy` and stores the lockout in `LockoutStore`. The
+ * origin carries the account's unlock epoch, so unlocking it leaves all its origins behind.
  */
 @Injectable()
 export class LoginLockout {
@@ -21,7 +21,7 @@ export class LoginLockout {
     private readonly keys: LockoutKeys,
   ) {}
 
-  /** Milisegundos que faltan del bloqueo de la cuenta desde esa IP o de la IP; `undefined` sin bloqueo. */
+  /** Milliseconds left of the account lockout from that IP or of the IP lockout; `undefined` without a lockout. */
   async remainingLockMs(
     account: string,
     ip: string,
@@ -33,11 +33,11 @@ export class LoginLockout {
     return this.store.isProtected(account);
   }
 
-  /** Cuenta el fallo y activa los bloqueos que correspondan. */
+  /** Counts the failure and activates the corresponding lockouts. */
   async recordFailure(account: string, ip: string): Promise<FailureOutcome> {
     const origin = await this.originOf(account, ip);
     const counts = await this.counters.recordFailure(origin, account, ip);
-    // Solo quien activa el modo protegido lo informa: los fallos siguientes ya lo encuentran activo.
+    // Only whoever activates protected mode reports it: subsequent failures already find it active.
     const protectedModeEnabled =
       this.policy.enablesProtectedMode(counts.account) &&
       (await this.store.protect(account, LockoutRules.origin.maxLockMs));
@@ -58,12 +58,12 @@ export class LoginLockout {
     return { lockedForMs, protectedModeEnabled };
   }
 
-  /** Un inicio de sesión correcto olvida los fallos de su origen. */
+  /** A successful sign-in forgets the failures of its origin. */
   async clear(account: string, ip: string): Promise<void> {
     await this.counters.clearOrigin(await this.originOf(account, ip));
   }
 
-  /** Quita los bloqueos de todos los orígenes de la cuenta, su modo protegido y sus fallos. */
+  /** Removes the lockouts of all the account's origins, its protected mode and its failures. */
   async unlock(account: string): Promise<void> {
     await this.store.unlock(account, LockoutRules.unlockEpochTtlMs);
     await this.counters.clearAccount(account);

@@ -64,7 +64,7 @@ describe('ObservabilityModule', () => {
   it('compiles for a service without database variables and exposes only its sections', async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        // Un valor inválido de base de datos no rompe el arranque: nadie lo valida.
+        // An invalid database value does not break startup: nobody validates it.
         ConfigModule.forRoot({
           env: { ...SERVICE_ENV, DB_SLOW_QUERY_MS: 'not-a-number' },
         }),

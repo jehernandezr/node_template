@@ -4,8 +4,8 @@ import type { TemplateRenderer } from './template-renderer.js';
 import type { TemplateFile, TemplateSource } from './template-source.js';
 
 /**
- * Crea un servicio con la estructura de los demás: la app, su contrato con las operaciones de traslado y los tfvars
- * de `dev`. Devuelve las líneas que hay que agregar a mano en los archivos compartidos.
+ * Creates a service with the same structure as the others: the app, its contract with the move operations and the `dev`
+ * tfvars. Returns the lines that must be added by hand to the shared files.
  */
 export class ServiceGenerator {
   static readonly KIND = 'service';
@@ -17,8 +17,8 @@ export class ServiceGenerator {
   ) {}
 
   /**
-   * @throws GeneratorError `InvalidName` si el nombre no está en kebab-case.
-   * @throws GeneratorError `AlreadyExists` si algún archivo del servicio ya existe.
+   * @throws GeneratorError `InvalidName` if the name is not in kebab-case.
+   * @throws GeneratorError `AlreadyExists` if any service file already exists.
    */
   async generate(name: string): Promise<string[]> {
     const forms = NameForms.of(name);
@@ -27,7 +27,7 @@ export class ServiceGenerator {
     return ServiceGenerator.sharedLines(forms);
   }
 
-  /** Los archivos que salen de las plantillas con el nombre dado, sin escribirlos. */
+  /** The files produced from the templates with the given name, without writing them. */
   render(
     templates: readonly TemplateFile[],
     forms: NameForms,

@@ -1,8 +1,8 @@
 import { GeneratorError, GeneratorErrorReason } from './generator-error.js';
 
 /**
- * Un archivo con marcadores `// generated:<nombre>`: las líneas nuevas se insertan justo antes del marcador, con su
- * misma sangría, así el marcador queda listo para la siguiente.
+ * A file with `// generated:<name>` markers: new lines are inserted right before the marker, with its
+ * same indentation, so the marker stays ready for the next one.
  */
 export class MarkedFile {
   private static readonly PREFIX = '// generated:';
@@ -12,7 +12,7 @@ export class MarkedFile {
     private text: string,
   ) {}
 
-  /** @throws GeneratorError `MissingMarker` si el archivo no tiene el marcador. */
+  /** @throws GeneratorError `MissingMarker` if the file does not have the marker. */
   insertBefore(marker: string, line: string): this {
     const lines = this.text.split('\n');
     const tag = `${MarkedFile.PREFIX}${marker}`;

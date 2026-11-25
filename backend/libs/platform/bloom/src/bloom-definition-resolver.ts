@@ -5,13 +5,13 @@ import type {
 import { BloomSizing } from './bloom-sizing.js';
 import { InvalidParametersError } from './errors/invalid-parameters.error.js';
 
-/** Aplica los valores por defecto a una definición y la valida. */
+/** Applies the default values to a definition and validates it. */
 export class BloomDefinitionResolver {
   private static readonly CRON_FIELD = /^[0-9A-Za-z*/,?#-]+$/;
 
   /**
-   * @throws InvalidParametersError por un nombre vacío, un tamaño o una tasa inválidos, o una
-   *   expresión cron que no tiene cinco ni seis campos.
+   * @throws InvalidParametersError for an empty name, an invalid size or rate, or a
+   *   cron expression that has neither five nor six fields.
    */
   static resolve<TName extends string>(
     definition: BloomFilterDefinition<TName>,
@@ -21,7 +21,7 @@ export class BloomDefinitionResolver {
     }
     const falsePositiveRate =
       definition.falsePositiveRate ?? BloomSizing.DEFAULT_FALSE_POSITIVE_RATE;
-    // Valida expectedItems y la tasa con las mismas reglas que el dimensionado.
+    // Validates expectedItems and the rate with the same rules as the sizing.
     BloomSizing.requiredBits(definition.expectedItems, falsePositiveRate);
     const fields =
       typeof definition.rebuildCron === 'string'

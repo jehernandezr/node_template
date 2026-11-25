@@ -34,19 +34,19 @@ import * as http from './http/index.js';
 import * as internal from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-/** Las operaciones de traslado de tenant de notifications, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant move operations of notifications, with their exact type to register and call them. */
 export const NotificationsTenantMoveOperations =
   defineTenantMoveOperations('notifications');
 
-/** Las operaciones del directorio de tenants de notifications, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant directory operations of notifications, with their exact type to register and call them. */
 export const NotificationsTenantDirectoryOperations =
   defineTenantDirectoryOperations('notifications');
 
-/** Contrato del servicio notifications: bandeja, preferencias, despacho por canal, correo transaccional y tiempo real. */
+/** Contract of the notifications service: inbox, preferences, per-channel dispatch, transactional email and real time. */
 export const notificationsContract = defineServiceContract({
   service: 'notifications',
   description:
-    'Notificaciones: bandeja del usuario, preferencias, despacho por canal, correo transaccional y tiempo real.',
+    'Notifications: user inbox, preferences, per-channel dispatch, transactional email and realtime.',
   enums: {
     NotificationType,
     NotificationChannel,

@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { CommandRunner, type CommandRun } from './command-runner.js';
 
-/** Corre el comando con la salida en la consola de quien lo lanzó. */
+/** Runs the command with the output on the console of whoever launched it. */
 export class NodeCommandRunner extends CommandRunner {
   run(run: CommandRun): Promise<number> {
     const env: NodeJS.ProcessEnv = { ...process.env, ...run.env };

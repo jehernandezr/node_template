@@ -11,21 +11,21 @@ import {
 import { type OutboxStore } from '../../outbox/outbox-store.js';
 import { type OutboxWriter } from '../../outbox/outbox-writer.js';
 
-/** Opciones de {@link InMemoryOutboxStore.add}. */
+/** Options of {@link InMemoryOutboxStore.add}. */
 export interface AddOutboxOptions {
-  /** Instante de creación y primer vencimiento. Por defecto, el reloj del almacén. */
+  /** Creation instant and first due time. Defaults to the store clock. */
   readonly now?: Date;
   readonly groupId?: string;
   readonly delayMs?: number;
 }
 
-/** Opciones de {@link InMemoryOutboxStore}. */
+/** Options of {@link InMemoryOutboxStore}. */
 export interface InMemoryOutboxStoreOptions {
-  /** Hora por defecto de {@link InMemoryOutboxStore.add}. Por defecto, el reloj del sistema. */
+  /** Default time of {@link InMemoryOutboxStore.add}. Defaults to the system clock. */
   readonly clock?: Clock;
   /**
-   * Transacciones cuyo rollback borra los registros agregados dentro de ellas,
-   * porque un almacén real nunca los habría escrito.
+   * Transactions whose rollback deletes the records added within them,
+   * because a real store would never have written them.
    */
   readonly transactions?: TransactionManager;
 }
@@ -41,10 +41,10 @@ function isOpen(record: OutboxRecord): boolean {
   );
 }
 
-/** Adaptador del outbox en memoria, para pruebas. */
+/** In-memory outbox adapter, for tests. */
 export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
   private readonly records = new Map<string, OutboxRecord>();
-  /** Instante del último cambio de cada registro, para la retención. */
+  /** Instant of the last change of each record, for retention. */
   private readonly changedAt = new Map<string, number>();
   private readonly clock: Clock;
   private readonly transactions?: TransactionManager;
@@ -54,7 +54,7 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
     this.transactions = options.transactions;
   }
 
-  /** Agrega un sobre al outbox. */
+  /** Adds an envelope to the outbox. */
   add(envelope: MessageEnvelope, options: AddOutboxOptions = {}): OutboxRecord {
     const now = options.now ?? this.clock.now();
     const record: OutboxRecord = {
@@ -72,8 +72,8 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
   }
 
   /**
-   * Agrega un registro en la transacción abierta de `transactions`, si la hay.
-   * Un rollback lo borra.
+   * Adds a record in the open transaction of `transactions`, if there is one.
+   * A rollback deletes it.
    */
   append(record: OutboxAppend): Promise<void> {
     const added = this.add(record.envelope, {
@@ -108,14 +108,14 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
     return Promise.resolve(deleted);
   }
 
-  /** Estado actual de un registro, si existe. */
+  /** Current state of a record, if it exists. */
   get(id: string): OutboxRecord | undefined {
     return this.records.get(id);
   }
 
   claimPending(request: ClaimOutboxRequest): Promise<OutboxRecord[]> {
     const t = request.now.getTime();
-    // `Array.prototype.sort` es estable: con igual `createdAt` se conserva el orden de inserción.
+    // `Array.prototype.sort` is stable: with equal `createdAt` the insertion order is kept.
     const ordered = [...this.records.values()]
       .filter(isOpen)
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
@@ -133,7 +133,7 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
       if (eligible) {
         due.push(record);
       } else if (group !== undefined) {
-        // Un registro anterior del grupo no venció: los posteriores esperan.
+        // An earlier record of the group is not due: the later ones wait.
         blockedGroups.add(group);
       }
     }
@@ -188,7 +188,7 @@ export class InMemoryOutboxStore implements OutboxStore, OutboxWriter {
     return Promise.resolve(this.update(id, lease, {}, false));
   }
 
-  /** Aplica `patch` solo mientras `lease` sea el lease vigente del registro. */
+  /** Applies `patch` only while `lease` is the current lease of the record. */
   private update(
     id: string,
     lease: OutboxLease,

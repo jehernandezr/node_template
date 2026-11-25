@@ -1,4 +1,4 @@
-/** Identidad del servicio de prueba: atributo `source` de sus sobres y prefijo de sus llaves en Valkey. */
+/** Identity of the test service: `source` attribute of its envelopes and prefix of its Valkey keys. */
 export enum SmokeService {
   Name = 'platform-smoke',
 }

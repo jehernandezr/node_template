@@ -2,8 +2,8 @@ import type { RealtimeFrame, StoredFrame } from './realtime-frame.js';
 import { RealtimeStream, type StreamUnsubscribe } from './realtime-stream.js';
 
 /**
- * Stream dentro del proceso, para un servicio con una sola instancia y sin Valkey. Retiene las últimas
- * `retained` tramas de cada canal.
+ * In-process stream, for a service with a single instance and without Valkey. Retains the last
+ * `retained` frames of each channel.
  */
 export class InMemoryRealtimeStream extends RealtimeStream {
   private static readonly ID = /^\d+$/;

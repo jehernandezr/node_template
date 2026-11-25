@@ -1,6 +1,6 @@
 import type { DatabaseEndpoint } from './database-endpoint.js';
 
-/** Nodos de una instancia física: el primario y sus réplicas de lectura (puede no haber ninguna). */
+/** Nodes of a physical instance: the primary and its read replicas (there may be none). */
 export interface InstanceEndpoints {
   readonly primary: DatabaseEndpoint;
   readonly replicas: readonly DatabaseEndpoint[];

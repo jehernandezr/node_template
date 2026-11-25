@@ -1,13 +1,13 @@
 import type { Plan } from '../../plans/index.js';
 import type { SubscriptionState } from '../domain/subscription.js';
 
-/** La suscripción de un tenant con su plan vigente. */
+/** A tenant's subscription with its current plan. */
 export interface CurrentSubscription {
   readonly subscription: SubscriptionState;
   readonly plan: Plan;
 }
 
-/** El periodo cerrado con el plan con que se cobra. */
+/** The closed period with the plan it is charged with. */
 export interface ClosedSubscriptionPeriod {
   readonly start: string;
   readonly end: string;

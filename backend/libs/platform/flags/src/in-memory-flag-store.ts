@@ -1,7 +1,7 @@
 import type { FlagRule } from './flag-rule.js';
 import { FlagStore } from './flag-store.js';
 
-/** Reglas que se cambian en caliente dentro del proceso, sin reiniciar. Una regla nueva reemplaza la de su flag. */
+/** Rules changed live within the process, without restarting. A new rule replaces the one for its flag. */
 export class InMemoryFlagStore extends FlagStore {
   private readonly byFlag = new Map<string, FlagRule>();
 

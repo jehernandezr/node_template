@@ -4,13 +4,13 @@
   "info": {
     "title": "tasks",
     "version": "2",
-    "description": "Tareas de la organización: alta, lectura, búsqueda, cambio y borrado, y los eventos que otros servicios consumen."
+    "description": "Organization tasks: creation, reading, search, change and deletion, and the events other services consume."
   },
   "paths": {
     "/v1/tasks": {
       "get": {
         "operationId": "tasks.task.list",
-        "description": "Lista las tareas del tenant activo o las busca por texto.",
+        "description": "Lists the tasks of the active tenant or searches them by text.",
         "parameters": [
           {
             "name": "status",
@@ -39,7 +39,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TaskPage" }
@@ -47,7 +47,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT, TASKS.SEARCH.QUERY_TOO_SHORT.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT, TASKS.SEARCH.QUERY_TOO_SHORT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -73,11 +73,11 @@
       },
       "post": {
         "operationId": "tasks.task.create",
-        "description": "Crea una tarea en el tenant activo.",
+        "description": "Creates a task in the active tenant.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Task" }
@@ -85,7 +85,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -120,7 +120,7 @@
     "/v1/tasks/{taskId}": {
       "get": {
         "operationId": "tasks.task.get",
-        "description": "Devuelve una tarea del tenant activo.",
+        "description": "Returns a task of the active tenant.",
         "parameters": [
           {
             "name": "taskId",
@@ -131,7 +131,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Task" }
@@ -139,7 +139,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, TASKS.TASK.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, TASKS.TASK.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -164,7 +164,7 @@
       },
       "patch": {
         "operationId": "tasks.task.update",
-        "description": "Cambia campos de una tarea. Con expectedVersion, rechaza el cambio si la tarea se modificó antes.",
+        "description": "Changes fields of a task. With expectedVersion, rejects the change if the task was modified before.",
         "parameters": [
           {
             "name": "taskId",
@@ -175,7 +175,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Task" }
@@ -183,7 +183,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT, TASKS.TASK.NOT_FOUND, TASKS.TASK.VERSION_CONFLICT.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, PLATFORM.VALIDATION.INVALID_INPUT, TASKS.TASK.NOT_FOUND, TASKS.TASK.VERSION_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -218,7 +218,7 @@
       },
       "delete": {
         "operationId": "tasks.task.delete",
-        "description": "Borra una tarea de forma lógica.",
+        "description": "Soft deletes a task.",
         "parameters": [
           {
             "name": "taskId",
@@ -228,9 +228,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, TASKS.TASK.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.QUOTA.EXCEEDED, TASKS.TASK.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -260,12 +260,12 @@
       "TaskStatus": {
         "type": "string",
         "enum": ["open", "in_progress", "done"],
-        "description": "Estado de una tarea."
+        "description": "Status of a task."
       },
       "TaskField": {
         "type": "string",
         "enum": ["title", "description", "status"],
-        "description": "Campo de una tarea que un cambio puede modificar."
+        "description": "Task field that a change can modify."
       },
       "TaskCreatedPayload": {
         "type": "object",
@@ -297,7 +297,7 @@
           "createdBy",
           "createdAt"
         ],
-        "description": "Se creó una tarea."
+        "description": "A task was created."
       },
       "TaskUpdatedPayload": {
         "type": "object",
@@ -341,7 +341,7 @@
           "createdBy",
           "updatedAt"
         ],
-        "description": "Se cambió una tarea."
+        "description": "A task was changed."
       },
       "TaskDeletedPayload": {
         "type": "object",
@@ -373,7 +373,7 @@
           "actor",
           "deletedAt"
         ],
-        "description": "Se borró una tarea."
+        "description": "A task was deleted."
       },
       "Task": {
         "type": "object",
@@ -409,7 +409,7 @@
           "updatedAt",
           "createdBy"
         ],
-        "description": "Una tarea de la organización."
+        "description": "A task of the organization."
       },
       "TaskPage": {
         "type": "object",
@@ -429,7 +429,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de tareas del tenant."
+        "description": "Page of tenant tasks."
       },
       "ListTasksRequest": {
         "type": "object",
@@ -444,7 +444,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Listado o búsqueda de tareas, con filtro de estado opcional."
+        "description": "Listing or search of tasks, with an optional status filter."
       },
       "GetTaskRequest": {
         "type": "object",
@@ -455,7 +455,7 @@
         },
         "required": ["taskId"],
         "additionalProperties": false,
-        "description": "Tarea a consultar."
+        "description": "Task to query."
       },
       "CreateTaskRequest": {
         "type": "object",
@@ -465,7 +465,7 @@
         },
         "required": ["title"],
         "additionalProperties": false,
-        "description": "Alta de una tarea."
+        "description": "Task creation."
       },
       "UpdateTaskRequest": {
         "type": "object",
@@ -484,7 +484,7 @@
         },
         "required": ["taskId"],
         "additionalProperties": false,
-        "description": "Cambios parciales de una tarea, con versión esperada opcional."
+        "description": "Partial changes of a task, with an optional expected version."
       },
       "DeleteTaskRequest": {
         "type": "object",
@@ -495,7 +495,7 @@
         },
         "required": ["taskId"],
         "additionalProperties": false,
-        "description": "Tarea a borrar."
+        "description": "Task to delete."
       },
       "TaskChange": {
         "type": "object",
@@ -540,7 +540,7 @@
           "createdBy",
           "deletedAt"
         ],
-        "description": "Tarea con la fecha de borrado lógico, si la hubo."
+        "description": "Task with the soft delete date, if any."
       },
       "TaskChangePage": {
         "type": "object",
@@ -560,7 +560,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de cambios de tareas."
+        "description": "Page of task changes."
       },
       "ListTaskChangesInput": {
         "type": "object",
@@ -580,7 +580,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Entrada para paginar los cambios de tareas de un tenant."
+        "description": "Input to page the task changes of a tenant."
       },
       "EraseTasksUserInput": {
         "type": "object",
@@ -591,7 +591,7 @@
         },
         "required": ["user"],
         "additionalProperties": false,
-        "description": "Usuario cuyos datos se anonimizan en las tareas."
+        "description": "User whose data is anonymized in the tasks."
       },
       "EraseTasksUserResult": {
         "type": "object",
@@ -606,7 +606,7 @@
           }
         },
         "required": ["userId", "affectedRows"],
-        "description": "Filas de tareas anonimizadas para un usuario."
+        "description": "Task rows anonymized for a user."
       }
     },
     "securitySchemes": {

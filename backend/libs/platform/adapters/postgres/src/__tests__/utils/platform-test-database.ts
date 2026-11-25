@@ -13,8 +13,8 @@ import {
 import { PinnedPlatformEntityManagers } from './pinned-platform-entity-managers.js';
 
 /**
- * Un PostgreSQL real con dos shards y un catálogo, con las migraciones de las tablas de la plataforma ya aplicadas
- * (`ShardedTestDatabase`), y los `EntityManager` que usan los stores. El tenant A vive en el shard 0 y el B en el 1.
+ * A real PostgreSQL with two shards and a catalog, with the migrations of the platform tables already applied
+ * (`ShardedTestDatabase`), and the `EntityManager`s the stores use. Tenant A lives in shard 0 and B in shard 1.
  */
 export class PlatformTestDatabase {
   static readonly TENANT_A = ShardedTestDatabase.TENANT_A;
@@ -46,11 +46,11 @@ export class PlatformTestDatabase {
   });
   readonly binding = new ShardBinding();
   readonly feature = new PersistenceFeature({ key: ShardKey.Tenant });
-  /** Resuelve el shard por el tenant del contexto, como en producción. */
+  /** Resolves the shard by the context tenant, as in production. */
   managers!: PlatformEntityManagers;
   catalogManagers!: CatalogEntityManagers;
 
-  /** Arranca el contenedor, migra los dos shards y el catálogo y arma los managers. */
+  /** Starts the container, migrates both shards and the catalog and builds the managers. */
   async start(): Promise<void> {
     await this.db.start();
     await this.db.migrate();
@@ -68,7 +68,7 @@ export class PlatformTestDatabase {
     await this.db.stop();
   }
 
-  /** Managers fijados a un shard: para correr un contrato contra ese shard sin tenant. */
+  /** Managers pinned to a shard: to run a contract against that shard without a tenant. */
   async pinned(shard: string): Promise<PlatformEntityManagers> {
     const dataSource = await this.db.sources.get({
       logicalShard: shard,
@@ -90,7 +90,7 @@ export class PlatformTestDatabase {
     );
   }
 
-  /** Vacía las tablas de la plataforma de los dos shards y del catálogo, para que cada prueba parta de cero. */
+  /** Empties the platform tables of both shards and the catalog, so each test starts from scratch. */
   async truncateAll(): Promise<void> {
     for (const shard of [
       PlatformTestDatabase.SHARD_A,

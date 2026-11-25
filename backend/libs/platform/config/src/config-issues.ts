@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import type { ConfigIssue } from './config-issue.js';
 
-/** Convierte los problemas de zod en `ConfigIssue`. */
+/** Converts zod issues into `ConfigIssue`. */
 export class ConfigIssues {
   private static readonly ROOT = '(root)';
 

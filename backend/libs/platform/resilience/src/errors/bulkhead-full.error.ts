@@ -2,7 +2,7 @@ import type { ResilienceErrorOptions } from './resilience-error.js';
 import { ResilienceError } from './resilience-error.js';
 import { ResilienceErrorCode } from './resilience-error-code.enum.js';
 
-/** El bulkhead de la dependencia no tiene cupo ni lugar en la cola; la llamada no se ejecutó. */
+/** The dependency's bulkhead has no free slot or room in the queue; the call did not run. */
 export class BulkheadFullError extends ResilienceError {
   constructor(
     policy: string,

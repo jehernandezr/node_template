@@ -6,54 +6,54 @@ import { ContractDefinitionError } from './contract-definition-error.js';
 import { ERROR_CODE_PATTERN } from './error-catalog.js';
 import { queryParamsOf, type QueryParam } from './query-params.js';
 
-/** Esquema de petición de una ruta: siempre un objeto. */
+/** Request schema of a route: always an object. */
 export type RouteRequestSchema = z.ZodObject;
 
 /**
- * Deprecación de una ruta. El servidor responde los headers `Deprecation`,
- * `Sunset` y `Link`, y después de `sunset` responde 410 con
+ * Deprecation of a route. The server responds with the `Deprecation`,
+ * `Sunset` and `Link` headers, and after `sunset` responds 410 with
  * `PLATFORM.API.VERSION_SUNSET`.
  */
 export interface RouteDeprecation {
-  /** Fecha `AAAA-MM-DD` desde la que la ruta está deprecada. */
+  /** `YYYY-MM-DD` date from which the route is deprecated. */
   readonly since: string;
-  /** Fecha `AAAA-MM-DD` en que la ruta deja de responder. */
+  /** `YYYY-MM-DD` date on which the route stops responding. */
   readonly sunset: string;
-  /** Id de la ruta que la reemplaza, en el mismo contrato. */
+  /** Id of the route that replaces it, in the same contract. */
   readonly replacement?: string;
 }
 
-/** Ruta HTTP pública: lo que el front llama y el servidor expone. */
+/** Public HTTP route: what the front calls and the server exposes. */
 export interface RouteDefinition<
   Req extends RouteRequestSchema = RouteRequestSchema,
   Res extends z.ZodType | null = z.ZodType | null,
 > {
-  /** Identificador estable, por ejemplo `identity.auth.sign-in`. */
+  /** Stable identifier, for example `identity.auth.sign-in`. */
   readonly id: string;
   readonly method: HttpMethod;
-  /** Ruta con la versión mayor y parámetros entre llaves, por ejemplo `/v1/me/sessions/{sessionId}`. */
+  /** Path with the major version and parameters in braces, for example `/v1/me/sessions/{sessionId}`. */
   readonly path: string;
-  /** Versión mayor de la API, tomada del primer segmento de `path`. */
+  /** Major API version, taken from the first segment of `path`. */
   readonly version: number;
-  /** Campos de la petición que van en la ruta. */
+  /** Request fields that go in the path. */
   readonly pathParams: readonly string[];
   /**
-   * Campos que viajan en la query (GET y DELETE) con el tipo al que se
-   * convierten antes de validar. Vacío en los demás métodos.
+   * Fields that travel in the query (GET and DELETE) with the type they are
+   * converted to before validation. Empty for the other methods.
    */
   readonly queryParams: readonly QueryParam[];
   /**
-   * Petición completa. Los campos de `pathParams` van en la ruta; el resto va
-   * en la query en GET y DELETE, y en el cuerpo JSON en los demás métodos.
+   * Full request. The `pathParams` fields go in the path; the rest go
+   * in the query for GET and DELETE, and in the JSON body for the other methods.
    */
   readonly request: Req;
-  /** Respuesta, o null cuando la ruta responde sin cuerpo. */
+  /** Response, or null when the route responds without a body. */
   readonly response: Res;
   readonly successStatus: number;
-  /** Códigos de error que la ruta puede responder, además de los de validación. */
+  /** Error codes the route can respond with, in addition to the validation ones. */
   readonly errors: readonly string[];
   readonly access: AccessRequirement;
-  /** Presente cuando la ruta está deprecada. */
+  /** Present when the route is deprecated. */
   readonly deprecated?: RouteDeprecation;
   readonly description: string;
 }
@@ -75,13 +75,13 @@ export interface RouteSpec<
 }
 
 const ROUTE_ID = /^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$/;
-/** La ruta empieza con la versión mayor: `/v1/...`. */
+/** The path starts with the major version: `/v1/...`. */
 const PATH = /^\/v([1-9][0-9]*)\/[A-Za-z0-9\-._~/{}]*$/;
 const PATH_PARAM = /\{([A-Za-z][A-Za-z0-9]*)\}/g;
 const QUERY_METHODS = new Set([HttpMethod.Get, HttpMethod.Delete]);
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Indica si los campos que no van en la ruta viajan en la query (GET y DELETE). */
+/** Whether the fields that do not go in the path travel in the query (GET and DELETE). */
 export function usesQuery(method: HttpMethod): boolean {
   return QUERY_METHODS.has(method);
 }
@@ -97,16 +97,16 @@ function checkDeprecation(
   fail: (reason: string) => never,
 ): RouteDeprecation {
   if (!isDate(deprecated.since) || !isDate(deprecated.sunset)) {
-    fail('deprecated.since y deprecated.sunset son fechas AAAA-MM-DD');
+    fail('deprecated.since and deprecated.sunset are YYYY-MM-DD dates');
   }
   if (deprecated.sunset <= deprecated.since) {
-    fail('deprecated.sunset debe ser posterior a deprecated.since');
+    fail('deprecated.sunset must be after deprecated.since');
   }
   if (
     deprecated.replacement !== undefined &&
     !ROUTE_ID.test(deprecated.replacement)
   ) {
-    fail(`deprecated.replacement inválido ${deprecated.replacement}`);
+    fail(`invalid deprecated.replacement ${deprecated.replacement}`);
   }
   const copy: { -readonly [K in keyof RouteDeprecation]: RouteDeprecation[K] } =
     { since: deprecated.since, sunset: deprecated.sunset };
@@ -117,31 +117,31 @@ function checkDeprecation(
 }
 
 /**
- * Declara una ruta HTTP. Valida al cargar el módulo que la ruta lleve la
- * versión mayor, que los parámetros y los códigos de error tengan el formato
- * esperado y que los campos de la query sean escalares o listas de escalares.
+ * Declares an HTTP route. Validates when the module loads that the path carries the
+ * major version, that the parameters and error codes have the expected
+ * format and that the query fields are scalars or lists of scalars.
  */
 export function defineRoute<
   Req extends RouteRequestSchema = typeof EmptySchema,
   Res extends z.ZodType | null = null,
 >(spec: RouteSpec<Req, Res>): RouteDefinition<Req, Res> {
   const fail = (reason: string): never => {
-    throw new ContractDefinitionError(`Ruta ${spec.id}: ${reason}`);
+    throw new ContractDefinitionError(`Route ${spec.id}: ${reason}`);
   };
-  if (!ROUTE_ID.test(spec.id)) fail('id inválido');
+  if (!ROUTE_ID.test(spec.id)) fail('invalid id');
   const pathMatch = PATH.exec(spec.path);
-  if (!pathMatch) fail(`path inválido ${spec.path}: empieza con /vN/`);
-  if (!spec.description.trim()) fail('falta la descripción');
+  if (!pathMatch) fail(`invalid path ${spec.path}: it starts with /vN/`);
+  if (!spec.description.trim()) fail('missing description');
 
   const request = (spec.request ?? EmptySchema) as Req;
   const response = (spec.response ?? null) as Res;
   const shape = request.shape as Record<string, z.ZodType>;
   const pathParams = [...spec.path.matchAll(PATH_PARAM)].map((m) => m[1]);
   for (const param of pathParams) {
-    if (!(param in shape)) fail(`el parámetro {${param}} no está en request`);
+    if (!(param in shape)) fail(`parameter {${param}} is not in request`);
   }
   if (new Set(pathParams).size !== pathParams.length) {
-    fail('parámetros de ruta repetidos');
+    fail('duplicate route parameters');
   }
   const queryParams = usesQuery(spec.method)
     ? queryParamsOf(
@@ -153,13 +153,13 @@ export function defineRoute<
 
   const errors = [...(spec.errors ?? [])];
   for (const code of errors) {
-    if (!ERROR_CODE_PATTERN.test(code)) fail(`código inválido ${code}`);
+    if (!ERROR_CODE_PATTERN.test(code)) fail(`invalid code ${code}`);
   }
-  if (new Set(errors).size !== errors.length) fail('códigos repetidos');
+  if (new Set(errors).size !== errors.length) fail('duplicate codes');
 
   const successStatus = spec.successStatus ?? (response ? 200 : 204);
   if (successStatus < 200 || successStatus > 299) {
-    fail(`estado de éxito inválido ${successStatus}`);
+    fail(`invalid success status ${successStatus}`);
   }
 
   const definition: {
@@ -187,9 +187,9 @@ export function defineRoute<
   return Object.freeze(definition);
 }
 
-/** Tipo de la petición de una ruta. */
+/** Request type of a route. */
 export type RouteRequest<R extends RouteDefinition> = z.input<R['request']>;
 
-/** Tipo de la respuesta de una ruta (`void` si no tiene cuerpo). */
+/** Response type of a route (`void` if it has no body). */
 export type RouteResponse<R extends RouteDefinition> =
   R['response'] extends z.ZodType ? z.output<R['response']> : void;

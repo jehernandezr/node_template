@@ -24,7 +24,7 @@ const CredentialSchema = z.looseObject({
   clientExtensionResults: z.looseObject({}).default({}),
 });
 
-/** La respuesta trae la forma de una credencial de WebAuthn; la biblioteca valida el resto. */
+/** The response has the shape of a WebAuthn credential; the library validates the rest. */
 function isCredential(
   value: unknown,
 ): value is RegistrationResponseJSON & AuthenticationResponseJSON {
@@ -32,8 +32,8 @@ function isCredential(
 }
 
 /**
- * WebAuthn con `@simplewebauthn/server`: CBOR, claves COSE y formatos de atestación no se implementan en
- * casa. Atestación `none`; `rpID`, nombre y orígenes salen de la configuración.
+ * WebAuthn with `@simplewebauthn/server`: CBOR, COSE keys and attestation formats are not implemented
+ * in-house. Attestation `none`; `rpID`, name and origins come from the configuration.
  */
 @Injectable()
 export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
@@ -52,7 +52,7 @@ export class SimpleWebAuthnVerifier extends WebAuthnVerifier {
       rpID: this.settings.values.WEBAUTHN_RP_ID,
       userName: input.userName,
       userID: Buffer.from(input.userId),
-      // En bytes: con un texto la biblioteca codificaría sus bytes UTF-8 y el desafío ya no coincidiría.
+      // In bytes: with a string the library would encode its UTF-8 bytes and the challenge would no longer match.
       challenge: Buffer.from(input.challenge, 'base64url'),
       attestationType: 'none',
       excludeCredentials: input.exclude.map((passkey) => ({

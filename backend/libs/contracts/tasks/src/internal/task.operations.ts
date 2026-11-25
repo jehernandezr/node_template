@@ -7,7 +7,7 @@ import {
   TaskChangePageSchema,
 } from '../schemas/task.schema.js';
 
-/** Pagina los cambios de tareas de un tenant por fecha de actualización. */
+/** Paginates the task changes of a tenant by update date. */
 export const ListTaskChangesOperation = defineOperation({
   id: TasksOperation.ListChanges,
   input: ListTaskChangesInputSchema,
@@ -15,13 +15,12 @@ export const ListTaskChangesOperation = defineOperation({
   idempotent: true,
   mutating: false,
   timeoutMs: 5000,
-  description:
-    'Pagina los cambios de tareas de un tenant por fecha de actualización.',
+  description: 'Pages the task changes of a tenant by update date.',
 });
 
 /**
- * Anonimiza el autor de las tareas de un usuario. Corre después del pivote de
- * la saga: se repite hasta terminar y no se revierte.
+ * Anonymizes the author of a user's tasks. Runs after the saga
+ * pivot: it is retried until it finishes and is not reverted.
  */
 export const EraseTasksUserDataOperation = defineOperation({
   id: TasksOperation.EraseUserData,
@@ -30,9 +29,9 @@ export const EraseTasksUserDataOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Anonimizar es irreversible y corre después del pivote de la saga: se repite hasta terminar y no se revierte.',
+    'Anonymizing is irreversible and runs after the saga pivot: it is retried until finished and is not reverted.',
   errors: [],
   timeoutMs: 6_000,
   description:
-    'Anonimiza al usuario como autor de las tareas. Las tareas se conservan.',
+    'Anonymizes the user as author of the tasks. The tasks are kept.',
 });

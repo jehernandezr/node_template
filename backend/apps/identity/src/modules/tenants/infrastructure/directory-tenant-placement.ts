@@ -13,8 +13,8 @@ import type { PlacedTenant } from '../domain/placed-tenant.js';
 import { TenantPlacement } from '../domain/tenant-placement.js';
 
 /**
- * Ubica tenants con `TenantPlacer` y `LeastLoadedPlacementPolicy` sobre el directorio de shards del catálogo.
- * Este despliegue tiene una región, así que todos los shards del directorio son de la región pedida.
+ * Places tenants with `TenantPlacer` and `LeastLoadedPlacementPolicy` over the catalog's shard directory.
+ * This deployment has one region, so every shard in the directory belongs to the requested region.
  */
 @Injectable()
 export class DirectoryTenantPlacement extends TenantPlacement {

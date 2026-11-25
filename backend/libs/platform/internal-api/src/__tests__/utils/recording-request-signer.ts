@@ -1,7 +1,7 @@
 import type { SignableRequest } from '../../auth/signable-request.js';
 import { InternalRequestSigner } from '../../signing/internal-request-signer.js';
 
-/** Firmador de prueba: guarda cada petición que recibe y devuelve una cabecera fija. */
+/** Test signer: records every request it receives and returns a fixed header. */
 export class RecordingRequestSigner extends InternalRequestSigner {
   readonly requests: SignableRequest[] = [];
 

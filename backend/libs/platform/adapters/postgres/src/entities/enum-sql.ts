@@ -1,11 +1,11 @@
-/** Arma el texto SQL de los valores de un enum, para los `CHECK` y los índices parciales de las entidades. */
+/** Builds the SQL text of an enum's values, for the `CHECK`s and partial indexes of the entities. */
 export class EnumSql {
-  /** `'a', 'b'` para una lista `IN (...)`. */
+  /** `'a', 'b'` for an `IN (...)` list. */
   static list(values: readonly string[]): string {
     return values.map((value) => `'${value}'`).join(', ');
   }
 
-  /** Lo mismo con todos los valores de un enum de TypeScript de cadenas. */
+  /** The same with all the values of a TypeScript string enum. */
   static of(enumObject: Readonly<Record<string, string>>): string {
     return EnumSql.list(Object.values(enumObject));
   }

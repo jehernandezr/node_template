@@ -7,9 +7,9 @@ import { InternalHandlerMetadata } from './internal-handler.metadata.js';
 import { PublishedContracts } from './published-contracts.js';
 
 /**
- * Registra en el router los métodos decorados con `@InternalHandler` de todos
- * los providers y comprueba que cada operación publicada tenga el suyo, así un
- * servicio con una operación sin handler no arranca.
+ * Registers in the router the methods decorated with `@InternalHandler` from all
+ * providers and checks that each published operation has its own, so a
+ * service with an operation without a handler does not start.
  */
 @Injectable()
 export class InternalHandlerExplorer implements OnApplicationBootstrap {
@@ -21,14 +21,14 @@ export class InternalHandlerExplorer implements OnApplicationBootstrap {
   ) {}
 
   /**
-   * Recorre `discovery.getProviders()`; de cada instancia con prototipo recorre los métodos
-   * (`scanner.getAllMethodNames`) y, por cada uno con `InternalHandlerMetadata.read(...)`,
-   * hace `router.register(operación, new BoundMethodHandler(instancia, nombre))`. Al final
+   * Walks `discovery.getProviders()`; for each instance with a prototype it walks the methods
+   * (`scanner.getAllMethodNames`) and, for each one with `InternalHandlerMetadata.read(...)`,
+   * calls `router.register(operation, new BoundMethodHandler(instance, name))`. At the end
    * `router.assertComplete(published)`.
-   * @throws InternalApiError `MissingHandler` o `DuplicateOperation`; hace fallar el arranque.
+   * @throws InternalApiError `MissingHandler` or `DuplicateOperation`; it makes startup fail.
    */
   onApplicationBootstrap(): void {
-    // Un mismo provider puede aparecer con varios tokens (por ejemplo, con `useExisting`).
+    // The same provider can appear under several tokens (for example, with `useExisting`).
     const seen = new Set<object>();
     for (const wrapper of this.discovery.getProviders()) {
       const instance: unknown = wrapper.instance;

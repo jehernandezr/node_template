@@ -3,9 +3,9 @@ import { Valkey } from 'iovalkey';
 import type { ValkeyTestServer } from '../../../__tests__/utils/valkey-test-server.js';
 
 /**
- * Los dos usuarios de Valkey de auth con las reglas de Terraform: el escritor de
- * identity y el lector de los servicios. Cada uno tiene su propia contraseña, que
- * se genera aquí y no se escribe en ningún lado.
+ * The two auth Valkey users with the Terraform rules: the identity
+ * writer and the services reader. Each one has its own password, which
+ * is generated here and not written anywhere.
  */
 export class AuthValkeyUsers {
   static readonly WRITER = 'auth-writer';
@@ -17,7 +17,7 @@ export class AuthValkeyUsers {
 
   constructor(private readonly server: ValkeyTestServer) {}
 
-  /** Crea o reemplaza los dos usuarios en el servidor. */
+  /** Creates or replaces the two users on the server. */
   async create(): Promise<void> {
     await this.server.superuser.call(
       'ACL',
@@ -51,7 +51,7 @@ export class AuthValkeyUsers {
     return this.connect(AuthValkeyUsers.READER, this.readerPassword);
   }
 
-  /** Cierra las conexiones abiertas; las que el servidor ya cortó no cuentan. */
+  /** Closes the open connections; the ones the server already cut do not count. */
   async close(): Promise<void> {
     await Promise.all(
       this.clients.map((client) => client.quit().catch(() => 0)),

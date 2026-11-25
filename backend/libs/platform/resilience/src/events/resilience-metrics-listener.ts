@@ -4,7 +4,7 @@ import type { ResilienceEvent } from './resilience-event.js';
 import { ResilienceMetricAttribute } from './resilience-metric-attribute.enum.js';
 import { ResilienceMetricName } from './resilience-metric-name.enum.js';
 
-/** Traduce los eventos de resiliencia a métricas del puerto de la plataforma. */
+/** Translates the resilience events into metrics of the platform port. */
 export class ResilienceMetricsListener {
   constructor(private readonly metrics: MetricsPort) {}
 
@@ -28,7 +28,7 @@ export class ResilienceMetricsListener {
     }
   }
 
-  /** Suscribe el listener al registro. @returns función que lo quita. */
+  /** Subscribes the listener to the registry. @returns function that removes it. */
   attach(source: Pick<ResilienceRegistry, 'subscribe'>): () => void {
     return source.subscribe((event) => {
       this.handle(event);

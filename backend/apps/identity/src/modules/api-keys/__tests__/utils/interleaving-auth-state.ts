@@ -2,8 +2,8 @@ import type { ApiKeyPrincipal } from '@platform/auth';
 import { InMemoryAuthState } from '@platform/auth/test-utils';
 
 /**
- * Estado compartido que corre un paso de otra petición justo antes de la siguiente escritura de una API
- * key: así una prueba reproduce la carrera entre autenticar y revocar sin depender del tiempo.
+ * Shared state that runs a step of another request right before the next API key write: this way a
+ * test reproduces the race between authenticating and revoking without depending on timing.
  */
 export class InterleavingAuthState extends InMemoryAuthState {
   private beforeNextPut: (() => Promise<void>) | undefined;

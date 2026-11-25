@@ -1,10 +1,10 @@
-/** Opciones de un tópico. */
+/** Options of a topic. */
 export interface TopicOptions {
-  /** Entrega ordenada. Por defecto, `false`. */
+  /** Ordered delivery. Defaults to `false`. */
   readonly fifo?: boolean;
 }
 
-/** Tópico de una {@link Topology}: el punto donde un evento se reparte a las colas. */
+/** Topic of a {@link Topology}: the point where an event is fanned out to the queues. */
 export class TopicDef {
   readonly name: string;
   readonly fifo: boolean;

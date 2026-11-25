@@ -1,11 +1,11 @@
 import type { IdGenerator } from '@platform/kernel';
 
-/** Opciones de `VersionedKeyspace`. */
+/** Options of `VersionedKeyspace`. */
 export interface VersionedKeyspaceOptions {
-  /** Primer segmento de cada llave. Por defecto `cache`. No puede contener ':'. */
+  /** First segment of each key. Defaults to `cache`. Cannot contain ':'. */
   readonly prefix?: string;
-  /** Largo máximo de una llave aceptada. Por defecto `VersionedKeyspace.DEFAULT_MAX_KEY_LENGTH`. */
+  /** Maximum length of an accepted key. Defaults to `VersionedKeyspace.DEFAULT_MAX_KEY_LENGTH`. */
   readonly maxKeyLength?: number;
-  /** Genera los tokens de versión. Por defecto UUIDv7 con el reloj del sistema. */
+  /** Generates the version tokens. Defaults to UUIDv7 with the system clock. */
   readonly ids?: IdGenerator;
 }

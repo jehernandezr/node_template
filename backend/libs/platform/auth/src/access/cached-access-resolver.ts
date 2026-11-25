@@ -8,9 +8,9 @@ import { AccessResolver } from './access-resolver.js';
 import type { CachedAccessOptions } from './cached-access.options.js';
 
 /**
- * Lee el grant de la copia compartida `auth:access:{tid}:{uid}` y, si falta o
- * Valkey no responde, de `AccessGrantSource`. Guarda lo leído `options.ttlMs`
- * en memoria.
+ * Reads the grant from the shared copy `auth:access:{tid}:{uid}` and, if it is missing or
+ * Valkey does not respond, from `AccessGrantSource`. Keeps what it read in memory for
+ * `options.ttlMs`.
  */
 export class CachedAccessResolver extends AccessResolver {
   private readonly grants: TtlLruCache<AccessGrant>;
@@ -35,7 +35,7 @@ export class CachedAccessResolver extends AccessResolver {
     ) {
       return entry.value;
     }
-    // La copia de Valkey es opcional: si no responde o no tiene el grant, se sigue a la fuente.
+    // The Valkey copy is optional: if it does not respond or does not have the grant, it falls through to the source.
     let grant: AccessGrant | undefined;
     try {
       grant = await this.state.accessGrant(tenantId, userId);

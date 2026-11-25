@@ -1,6 +1,6 @@
 import type { ClientChannel } from '@platform/http';
 
-/** Quién llama: lo que identity guarda de la petición de un inicio de sesión. */
+/** Who is calling: what identity stores from a sign-in request. */
 export interface ClientInfo {
   readonly ip: string;
   readonly userAgent?: string;

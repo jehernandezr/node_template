@@ -22,10 +22,10 @@ import { DispatchOutcome } from '../../dispatch/dispatch-outcome.enum.js';
 import { InMemoryProcessedMessageStore } from '../../__tests__/utils/in-memory-processed-message-store.js';
 
 /**
- * Copia de `SessionRevokedEvent` de `@contracts/identity`, declarada con el
- * mismo kit. `@platform/messaging` no puede importar los contratos de un
- * servicio (reglas de dependencia del ADR 0015), pero el bus recibe el
- * descriptor de `defineEvent` tal cual, igual que recibiría el de identity.
+ * Copy of `SessionRevokedEvent` from `@contracts/identity`, declared with the
+ * same kit. `@platform/messaging` cannot import a service's contracts
+ * (dependency rules of ADR 0015), but the bus receives the
+ * `defineEvent` descriptor as is, just as it would receive the identity one.
  */
 const SessionRevoked = defineEvent({
   type: 'identity.session.revoked.v1',
@@ -133,7 +133,7 @@ describe('InMemoryBus with contracts of the kit', () => {
     const { bus, dispatcher } = setup();
     const received: unknown[] = [];
     dispatcher.register(SessionRevoked, (data) => {
-      // `data` tiene el tipo de salida del contrato: se aplica el valor por defecto.
+      // `data` has the contract output type: the default value is applied.
       received.push(data.reason);
     });
 
@@ -163,7 +163,7 @@ describe('InMemoryBus with contracts of the kit', () => {
       retried: 1,
     });
     advance(1_000);
-    // El contrato fija `maxAttempts` en 2: la segunda falla va a la cola de errores.
+    // The contract sets `maxAttempts` to 2: the second failure goes to the dead-letter queue.
     expect(await bus.drain('gateway-inbox', dispatcher)).toMatchObject({
       deadLettered: 1,
     });

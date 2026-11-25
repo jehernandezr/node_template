@@ -7,7 +7,7 @@ import { InboxRepository } from '../../domain/inbox.repository.js';
 import type { NotificationState } from '../../domain/notification.js';
 import { NotificationEntity } from './entities/notification.entity.js';
 
-/** `InboxRepository` sobre `notifications` del shard del usuario. */
+/** `InboxRepository` over `notifications` in the user's shard. */
 @Injectable()
 export class TypeOrmInboxRepository extends InboxRepository {
   constructor(private readonly kit: RepositoryKit) {
@@ -106,7 +106,7 @@ export class TypeOrmInboxRepository extends InboxRepository {
     return result.affected ?? 0;
   }
 
-  /** Entre el commit de una escritura y la réplica hay atraso; la bandeja se lee del primario. */
+  /** There is lag between a write's commit and the replica; the inbox is read from the primary. */
   private read<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
     return this.kit.provider.run(
       { feature: this.kit.feature, intent: ManagerIntent.ReadPrimary },

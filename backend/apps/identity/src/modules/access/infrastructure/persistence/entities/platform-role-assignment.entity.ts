@@ -1,6 +1,6 @@
 import { Entity, PrimaryColumn } from 'typeorm';
 
-/** `platform_role_assignments`: roles de plataforma del usuario, en su shard. */
+/** `platform_role_assignments`: the user's platform roles, in their shard. */
 @Entity({ name: 'platform_role_assignments' })
 export class PlatformRoleAssignmentEntity {
   @PrimaryColumn({ type: 'uuid', name: 'user_id' })

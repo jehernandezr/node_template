@@ -3,7 +3,7 @@ import type { HandlerResult } from '../../../server/handler-result.js';
 import { InternalHandler } from '../../internal-handler.decorator.js';
 import { E2eOperations } from './e2e-operations.js';
 
-/** Handler que falla como una consulta durante el failover de la base: el error trae el SQLSTATE en `code`. */
+/** Handler that fails like a query during a database failover: the error carries the SQLSTATE in `code`. */
 @Injectable()
 export class FailoverHandlers {
   static readonly ADMIN_SHUTDOWN = '57P01';

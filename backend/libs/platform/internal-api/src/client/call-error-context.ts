@@ -1,7 +1,7 @@
-/** Lo que el traductor de errores necesita saber de la llamada que falló. */
+/** What the error translator needs to know about the call that failed. */
 export interface CallErrorContext {
-  /** Si algún intento llegó a enviarse. */
+  /** Whether any attempt was sent. */
   readonly started: boolean;
-  /** Señal de cancelación de quien llama. */
+  /** Caller's cancellation signal. */
   readonly signal?: AbortSignal;
 }

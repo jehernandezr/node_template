@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** El tenant de cada llave de idempotencia del catálogo, con la misma forma que la tabla de los shards. */
+/** The tenant of each idempotency key in the catalog, with the same shape as the shard table. */
 export class AddCatalogIdempotencyKeyTenant1794800001103 implements MigrationInterface {
   readonly name = 'AddCatalogIdempotencyKeyTenant1794800001103';
 

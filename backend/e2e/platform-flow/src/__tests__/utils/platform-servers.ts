@@ -7,11 +7,11 @@ import {
 import { PlatformService } from './platform-service.enum.js';
 
 /**
- * Un PostgreSQL y un Valkey para los cinco servicios, como en un ambiente: cada servicio con su catálogo, sus dos
- * shards y su rol, y todos sobre el mismo Valkey, donde identity escribe el acceso que los demás leen.
+ * One PostgreSQL and one Valkey for the five services, as in an environment: each service with its catalog, its two
+ * shards and its role, and all over the same Valkey, where identity writes the access the others read.
  */
 export class PlatformServers {
-  /** Tasks guarda vectores de búsqueda; la imagen con pgvector sirve a todos. */
+  /** Tasks stores search vectors; the pgvector image serves everyone. */
   private static readonly SHARD_EXTENSIONS: Readonly<
     Partial<Record<PlatformService, readonly string[]>>
   > = { [PlatformService.Tasks]: ['vector'] };
@@ -34,7 +34,7 @@ export class PlatformServers {
     );
   }
 
-  /** Valkey con el prefijo del servicio, que lo toma de `SERVICE_NAME`. */
+  /** Valkey with the service prefix, which it takes from `SERVICE_NAME`. */
   valkeyEnvironment(service: PlatformService): ConfigEnv {
     return { ...this.valkey.environment(), SERVICE_NAME: service };
   }

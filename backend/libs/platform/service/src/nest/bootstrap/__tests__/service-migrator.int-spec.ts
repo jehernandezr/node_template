@@ -52,7 +52,7 @@ runtime.describeIfAvailable('ServiceMigrator over PostgreSQL', () => {
     })
     .build();
 
-  /** Bases nuevas con el catálogo migrado y los dos shards anotados en su directorio. */
+  /** New databases with the catalog migrated and the two shards recorded in its directory. */
   const withRegisteredShards = async (): Promise<ServiceDatabases> => {
     const databases = await server.provision();
     await migrator.run(baseDefinition, MigrationTarget.Catalog, {

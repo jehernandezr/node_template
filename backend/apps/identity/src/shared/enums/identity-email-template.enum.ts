@@ -1,4 +1,4 @@
-/** Plantillas de correo transaccional de identity. */
+/** Identity transactional email templates. */
 export enum IdentityEmailTemplate {
   EmailVerification = 'email-verification',
   EmailAlreadyRegistered = 'email-already-registered',

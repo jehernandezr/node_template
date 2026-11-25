@@ -1,7 +1,7 @@
 import type { Recipient } from './recipient.js';
 
-/** Los datos de contacto de un usuario, según identity. */
+/** A user's contact data, according to identity. */
 export abstract class RecipientDirectory {
-  /** `undefined` si el usuario no existe o ya se borró: no hay a quién avisar. */
+  /** `undefined` if the user does not exist or was already deleted: there is no one to notify. */
   abstract find(userId: string): Promise<Recipient | undefined>;
 }

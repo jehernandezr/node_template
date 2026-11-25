@@ -1,7 +1,7 @@
-/** Lo que guarda un token de verificación o de cambio de email mientras espera la confirmación. */
+/** What a verification or email change token stores while it waits for confirmation. */
 export interface PendingEmailProof {
   readonly userId: string;
   readonly homeTenantId: string;
-  /** El email que el token prueba, ya normalizado. */
+  /** The email the token proves, already normalized. */
   readonly email: string;
 }

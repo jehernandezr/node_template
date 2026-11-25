@@ -12,9 +12,9 @@ import type { TopologyDocument } from '@platform/messaging';
 import type { AwsMessagingNames } from '../../aws-messaging-names.js';
 
 /**
- * Crea en LocalStack lo mismo que el módulo `messaging` de Terraform a partir
- * del documento de la topología: tópicos, colas con su DLQ y redrive, y
- * suscripciones con entrega cruda y filtro por `type` en el cuerpo.
+ * Creates in LocalStack the same as the Terraform `messaging` module from
+ * the topology document: topics, queues with their DLQ and redrive, and
+ * subscriptions with raw delivery and a filter on `type` in the body.
  */
 export class LocalStackProvisioner {
   constructor(

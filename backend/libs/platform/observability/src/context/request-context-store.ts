@@ -5,22 +5,22 @@ import type { RequestContextData } from './request-context-data.js';
 import type { RequestContextInit } from './request-context-init.js';
 
 /**
- * Contexto de negocio de cada petición, mensaje o job: tenant, actor, región,
- * `externalTraceId` y la muestra de debug. Se propaga por las llamadas
- * asíncronas con un `AsyncLocalStorage` privado.
+ * Business context of each request, message or job: tenant, actor, region,
+ * `externalTraceId` and the debug sample. It propagates across async
+ * calls with a private `AsyncLocalStorage`.
  *
- * Los ids de traza no se duplican: si hay un span de OpenTelemetry activo,
- * `current()` devuelve su `traceId` y su `spanId`. Los valores guardados solo
- * se usan cuando el SDK está apagado o no hay span (por ejemplo, en pruebas).
- * Sin contexto abierto devuelve `undefined` aunque haya un span: así el
- * `RequestContextInterceptor` sabe que debe abrir uno.
+ * Trace ids are not duplicated: if there is an active OpenTelemetry span,
+ * `current()` returns its `traceId` and `spanId`. The stored values are only
+ * used when the SDK is off or there is no span (for example, in tests).
+ * Without an open context it returns `undefined` even if there is a span: that way the
+ * `RequestContextInterceptor` knows it must open one.
  */
 export class RequestContextStore {
   private readonly storage = new AsyncLocalStorage<RequestContextData>();
 
   constructor(private readonly tracing: Tracing) {}
 
-  /** Abre un contexto. Valida y normaliza los ids una sola vez; nunca lanza por ids malformados. */
+  /** Opens a context. Validates and normalizes the ids only once; never throws for malformed ids. */
   run<T>(init: RequestContextInit, fn: () => T): T {
     return this.storage.run(this.normalize(init), fn);
   }
@@ -34,7 +34,7 @@ export class RequestContextStore {
     if (span === undefined) {
       return stored;
     }
-    // El span activo trae una traza válida: el aviso sobre el valor recibido ya no aplica.
+    // The active span carries a valid trace: the warning about the received value no longer applies.
     const withoutInvalidFlag = Object.fromEntries(
       Object.entries(stored).filter(([key]) => key !== 'traceIdInvalid'),
     ) as RequestContextData;

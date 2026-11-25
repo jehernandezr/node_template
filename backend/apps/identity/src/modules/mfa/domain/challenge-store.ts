@@ -1,16 +1,16 @@
 import type { MfaChallengeRecord } from './mfa-challenge.js';
 
 /**
- * Desafíos MFA con intentos atómicos y un solo uso: dos réplicas no pueden contar dos veces el mismo intento
- * ni aceptar dos veces el mismo código.
+ * MFA challenges with atomic attempts and single use: two replicas cannot count the same attempt twice
+ * or accept the same code twice.
  */
 export abstract class ChallengeStore {
   abstract save(challenge: MfaChallengeRecord): Promise<void>;
   abstract find(challengeId: string): Promise<MfaChallengeRecord | undefined>;
-  /** Suma un intento y devuelve cuántos lleva. */
+  /** Adds an attempt and returns how many there are. */
   abstract attempt(challengeId: string): Promise<number>;
-  /** Consume el desafío; devuelve `false` si ya se usó o no existe. */
+  /** Consumes the challenge; returns `false` if it was already used or does not exist. */
   abstract consume(challengeId: string): Promise<boolean>;
-  /** Suma un desafío pedido por la autenticación pendiente en su ventana y devuelve cuántos lleva. */
+  /** Adds a challenge requested by the pending authentication in its window and returns how many there are. */
   abstract countRequest(pendingId: string, windowMs: number): Promise<number>;
 }

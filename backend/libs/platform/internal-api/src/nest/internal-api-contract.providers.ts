@@ -10,9 +10,9 @@ import { INTERNAL_API_OPTIONS } from './internal-api.module-definition.js';
 import { PublishedContracts } from './published-contracts.js';
 
 /**
- * Proveedores de los catálogos de operaciones y de las piezas que comparten cliente y servidor. El `CallOutcomeFactory`
- * usa el `FailureClassifier` del servicio si lo hay, con las reglas de sus adaptadores: sin ellas un error pasajero de
- * la base sería permanente y el servidor respondería `protocol-violation`.
+ * Providers of the operation catalogs and of the pieces shared by client and server. The `CallOutcomeFactory`
+ * uses the service's `FailureClassifier` if there is one, with the rules of its adapters: without them a transient
+ * database error would be permanent and the server would respond `protocol-violation`.
  */
 export class InternalApiContractProviders {
   static build(): Provider[] {
@@ -86,7 +86,7 @@ export class InternalApiContractProviders {
     };
   }
 
-  /** Un registro inválido hace fallar el arranque del servicio. */
+  /** An invalid registry makes the service startup fail. */
   private static registryOf<R extends ContractRegistry>(
     registry: R,
     operations: InternalApiModuleOptions['operations'],

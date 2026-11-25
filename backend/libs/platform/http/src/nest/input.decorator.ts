@@ -13,7 +13,7 @@ import type { HttpResponseView } from '../http-response-view.js';
 import type { PipelineRequest } from './pipeline-request.js';
 import type { RawEndpointInput } from './raw-endpoint-input.js';
 
-/** Arma el `RawEndpointInput` de la petición en curso. */
+/** Builds the `RawEndpointInput` of the current request. */
 export class RawEndpointInputFactory {
   private static readonly reflector = new Reflector();
 
@@ -42,12 +42,12 @@ const RawInputParam = createParamDecorator(RawEndpointInputFactory.create);
 
 /** Escribe `@Input()`. */
 export class InputDecorator {
-  /** Entrada validada: parámetros de ruta, query (con `decodeQuery`) o cuerpo, según el método. */
+  /** Validated input: route parameters, query (with `decodeQuery`) or body, depending on the method. */
   static apply(): ParameterDecorator {
     const pipe: Type<PipeTransform> = ContractInputPipe;
     return RawInputParam(pipe);
   }
 }
 
-/** Decorador `@Input()` del parámetro con la entrada validada de la ruta. */
+/** `@Input()` decorator for the parameter with the route's validated input. */
 export const Input = InputDecorator.apply;

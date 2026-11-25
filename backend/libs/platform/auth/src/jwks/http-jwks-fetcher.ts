@@ -1,9 +1,9 @@
 import { JwksFetcher } from './jwks-fetcher.js';
 import { JwksUnavailableError } from '../errors/jwks-unavailable.error.js';
 
-/** `JwksFetcher` sobre `fetch` con un tiempo máximo por petición. */
+/** `JwksFetcher` on `fetch` with a maximum time per request. */
 export class HttpJwksFetcher extends JwksFetcher {
-  /** Tiempo máximo de una descarga. */
+  /** Maximum time of a download. */
   static readonly TIMEOUT_MS = 3_000;
 
   constructor(
@@ -20,7 +20,7 @@ export class HttpJwksFetcher extends JwksFetcher {
       response = await this.fetchFn(this.url, {
         signal: AbortSignal.timeout(this.timeoutMs),
         headers: { accept: 'application/json' },
-        // Una redirección podría llevar la descarga a otro host sin que el emisor lo haya publicado.
+        // A redirect could take the download to another host the issuer has not published.
         redirect: 'error',
       });
     } catch (error) {

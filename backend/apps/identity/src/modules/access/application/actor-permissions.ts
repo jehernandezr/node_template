@@ -3,7 +3,7 @@ import type { Permission } from '@contracts/identity';
 import { ActorGuards, type Actor } from '@platform/auth';
 import { AccessResolver } from './access-resolver.js';
 
-/** Los permisos que tiene quien edita, para no dejarle otorgar más de los suyos. */
+/** The permissions the editor has, so they cannot grant more than their own. */
 @Injectable()
 export class ActorPermissions {
   constructor(private readonly resolver: AccessResolver) {}

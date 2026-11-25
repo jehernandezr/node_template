@@ -1,11 +1,11 @@
 import { RecordingProcessedOperationStore } from './recording-processed-operation-store.js';
 
-/** Almacén en memoria que avisa cada vez que alguien renueva un lease, para esperar la renovación sin dormir. */
+/** In-memory store that signals every time someone renews a lease, to wait for the renewal without sleeping. */
 export class RenewalSignalingStore extends RecordingProcessedOperationStore {
   renewals = 0;
   private waiting: Array<() => void> = [];
 
-  /** Renueva en memoria y despierta a quien espera la próxima renovación. */
+  /** Renews in memory and wakes whoever waits for the next renewal. */
   override async renew(
     key: string,
     claimToken: string,
@@ -21,7 +21,7 @@ export class RenewalSignalingStore extends RecordingProcessedOperationStore {
     return renewed;
   }
 
-  /** Se resuelve con la próxima renovación. */
+  /** Resolves with the next renewal. */
   nextRenewal(): Promise<void> {
     return new Promise((resolve) => {
       this.waiting.push(resolve);

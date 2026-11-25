@@ -4,8 +4,8 @@ import { basename, join } from 'node:path';
 import { WorkspaceCopier } from './workspace-copier.js';
 
 /**
- * Copia a una carpeta temporal lo que Nx necesita para correr los proyectos del backend: los archivos de la raíz,
- * `backend/` sin lo compilado ni los reportes, y el plugin de Nx del front. `node_modules` no se copia: se enlaza.
+ * Copies to a temporary folder what Nx needs to run the backend projects: the root files,
+ * `backend/` without build output or reports, and the front Nx plugin. `node_modules` is not copied: it is linked.
  */
 export class NodeWorkspaceCopier extends WorkspaceCopier {
   private static readonly ROOT_FILES = [

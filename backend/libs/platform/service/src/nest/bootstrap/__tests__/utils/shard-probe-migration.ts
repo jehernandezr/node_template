@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Migración de prueba de los shards: crea una tabla que solo sirve para verificar que corrió. */
+/** Test shard migration: creates a table that only serves to verify that it ran. */
 export class ShardProbeMigration1900000000002 implements MigrationInterface {
   readonly name = 'ShardProbeMigration1900000000002';
 

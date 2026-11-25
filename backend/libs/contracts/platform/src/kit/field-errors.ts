@@ -46,9 +46,9 @@ function codeOf(issue: Issue, input: unknown): PlatformErrorCode {
 }
 
 /**
- * Traduce los issues de zod a `FieldError` con los códigos de la plataforma.
- * El validador Dart generado produce los mismos códigos y rutas, así el cliente
- * muestra el mismo error que devolvería el servidor.
+ * Translates zod issues into `FieldError` with the platform codes.
+ * The generated Dart validator produces the same codes and paths, so the client
+ * shows the same error the server would return.
  */
 export function fieldErrorsFromZod(
   issues: readonly Issue[],
@@ -72,12 +72,12 @@ export function fieldErrorsFromZod(
   return errors;
 }
 
-/** Resultado de validar una entrada contra un esquema del contrato. */
+/** Result of validating an input against a contract schema. */
 export type ContractValidation<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly errors: FieldError[] };
 
-/** Valida `input` con `schema` y devuelve el valor o los `FieldError`. */
+/** Validates `input` with `schema` and returns the value or the `FieldError`s. */
 export function validateContract<S extends z.ZodType>(
   schema: S,
   input: unknown,

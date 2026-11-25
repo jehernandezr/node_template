@@ -17,13 +17,13 @@ import {
   UpdateTaskRequestSchema,
 } from '../schemas/task.schema.js';
 
-/** Las rutas de tareas son las de integración: una service account consume su cuota de llamadas. */
+/** The task routes are the integration ones: a service account consumes its call quota. */
 const integrationErrors = [
   ...SessionGuardErrors,
   BillingErrorCode.QuotaExceeded,
 ];
 
-/** `GET /v1/tasks`: listado paginado o búsqueda por texto, con filtro de estado. */
+/** `GET /v1/tasks`: paginated listing or text search, with a status filter. */
 export const ListTasksRoute = defineRoute({
   id: TasksRoute.ListTasks,
   method: HttpMethod.Get,
@@ -36,10 +36,10 @@ export const ListTasksRoute = defineRoute({
     TasksErrorCode.SearchQueryTooShort,
   ],
   access: Access.authenticated({ permissions: [Permission.TasksRead] }),
-  description: 'Lista las tareas del tenant activo o las busca por texto.',
+  description: 'Lists the tasks of the active tenant or searches them by text.',
 });
 
-/** `GET /v1/tasks/{taskId}`: detalle de una tarea. */
+/** `GET /v1/tasks/{taskId}`: detail of a task. */
 export const GetTaskRoute = defineRoute({
   id: TasksRoute.GetTask,
   method: HttpMethod.Get,
@@ -48,10 +48,10 @@ export const GetTaskRoute = defineRoute({
   response: TaskSchema,
   errors: [...integrationErrors, TasksErrorCode.TaskNotFound],
   access: Access.authenticated({ permissions: [Permission.TasksRead] }),
-  description: 'Devuelve una tarea del tenant activo.',
+  description: 'Returns a task of the active tenant.',
 });
 
-/** `POST /v1/tasks`: crea una tarea en el tenant activo. */
+/** `POST /v1/tasks`: creates a task in the active tenant. */
 export const CreateTaskRoute = defineRoute({
   id: TasksRoute.CreateTask,
   method: HttpMethod.Post,
@@ -61,10 +61,10 @@ export const CreateTaskRoute = defineRoute({
   successStatus: 201,
   errors: [...integrationErrors, PlatformErrorCode.ValidationInvalidInput],
   access: Access.authenticated({ permissions: [Permission.TasksWrite] }),
-  description: 'Crea una tarea en el tenant activo.',
+  description: 'Creates a task in the active tenant.',
 });
 
-/** `PATCH /v1/tasks/{taskId}`: cambia título, descripción o estado. */
+/** `PATCH /v1/tasks/{taskId}`: changes title, description or status. */
 export const UpdateTaskRoute = defineRoute({
   id: TasksRoute.UpdateTask,
   method: HttpMethod.Patch,
@@ -79,10 +79,10 @@ export const UpdateTaskRoute = defineRoute({
   ],
   access: Access.authenticated({ permissions: [Permission.TasksWrite] }),
   description:
-    'Cambia campos de una tarea. Con expectedVersion, rechaza el cambio si la tarea se modificó antes.',
+    'Changes fields of a task. With expectedVersion, rejects the change if the task was modified before.',
 });
 
-/** `DELETE /v1/tasks/{taskId}`: borrado lógico de una tarea. */
+/** `DELETE /v1/tasks/{taskId}`: soft delete of a task. */
 export const DeleteTaskRoute = defineRoute({
   id: TasksRoute.DeleteTask,
   method: HttpMethod.Delete,
@@ -90,5 +90,5 @@ export const DeleteTaskRoute = defineRoute({
   request: DeleteTaskRequestSchema,
   errors: [...integrationErrors, TasksErrorCode.TaskNotFound],
   access: Access.authenticated({ permissions: [Permission.TasksWrite] }),
-  description: 'Borra una tarea de forma lógica.',
+  description: 'Soft deletes a task.',
 });

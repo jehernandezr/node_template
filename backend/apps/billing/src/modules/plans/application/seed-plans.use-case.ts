@@ -4,7 +4,7 @@ import { PlanCatalog } from '../domain/plan-catalog.js';
 import type { Plan } from '../domain/plan.js';
 import { SEED_PLANS } from './seed-plans.constants.js';
 
-/** Repone los planes de la semilla por su código. Repetirla no duplica nada. */
+/** Restores the seed plans by their code. Repeating it duplicates nothing. */
 @Injectable()
 export class SeedPlans {
   constructor(

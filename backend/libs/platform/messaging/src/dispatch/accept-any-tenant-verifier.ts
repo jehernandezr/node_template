@@ -1,9 +1,9 @@
 import { TenantVerifier } from './tenant-verifier.js';
 
 /**
- * Acepta cualquier tenant. Es una decisión explícita del servicio: sin
- * verificador ni `expectedTenantId`, el dispatcher rechaza todo sobre que
- * nombre un tenant.
+ * Accepts any tenant. It is an explicit decision of the service: without a
+ * verifier or `expectedTenantId`, the dispatcher rejects every envelope that
+ * names a tenant.
  */
 export class AcceptAnyTenantVerifier extends TenantVerifier {
   verify(): Promise<boolean> {

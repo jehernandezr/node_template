@@ -9,16 +9,16 @@ import type { SagaDefinitionIssue } from './saga-definition-issue.js';
 import { SagaDefinitionIssueCode } from './saga-definition-issue-code.enum.js';
 
 /**
- * Revisa las sagas compiladas contra los contratos:
- * - toda operación y toda compensación está registrada;
- * - la compensación de cada paso es el `compensatedBy` de su contrato;
- * - los pasos posteriores al pivote y las compensaciones son idempotentes;
- * - el presupuesto por defecto de cada operación cabe en `maxStepDurationMs`.
+ * Checks the compiled sagas against the contracts:
+ * - every operation and every compensation is registered;
+ * - each step's compensation is its contract's `compensatedBy`;
+ * - the steps after the pivot and the compensations are idempotent;
+ * - the default budget of each operation fits in `maxStepDurationMs`.
  */
 export class SagaValidator {
   /**
-   * @param contracts Operaciones que el motor puede llamar. Sin él solo se
-   *   revisa lo que dicen los contratos de los pasos: las compensaciones no se pueden buscar.
+   * @param contracts Operations the engine can call. Without it only
+   *   what the steps' contracts say is checked: the compensations cannot be looked up.
    */
   constructor(
     private readonly resolver: OperationResolver,
@@ -26,7 +26,7 @@ export class SagaValidator {
     private readonly contracts?: ContractRegistry,
   ) {}
 
-  /** Devuelve los problemas encontrados; un arreglo vacío si todo es válido. */
+  /** Returns the issues found; an empty array if everything is valid. */
   validate(sagas: readonly CompiledSaga<unknown>[]): SagaDefinitionIssue[] {
     return sagas.flatMap((saga) =>
       saga.steps.flatMap((step) => this.validateStep(saga.type, step)),

@@ -9,8 +9,8 @@ import { TenantAccessRepository } from '../domain/access-store.js';
 import { EffectiveAccessCalculator } from '../domain/effective-access-calculator.js';
 
 /**
- * Miembros de un tenant que tienen un permiso, ordenados por id de usuario. El cursor es el último id de
- * la página: los ids son UUIDv7 y caben en el alfabeto del cursor, así que no hace falta codificarlos.
+ * Members of a tenant that have a permission, ordered by user id. The cursor is the last id of
+ * the page: ids are UUIDv7 and fit in the cursor alphabet, so they do not need encoding.
  */
 @Injectable()
 export class ListMembersByPermission {

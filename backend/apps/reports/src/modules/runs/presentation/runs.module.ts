@@ -23,7 +23,7 @@ import { RunsConsumer } from './runs.consumer.js';
 import { RunsController } from './runs.controller.js';
 import { RunsInternalOperations } from './runs.internal-operations.js';
 
-/** Ejecuciones de reporte: alta, cálculo en el worker, consulta, descarga, vencimiento y borrado de usuario. */
+/** Report runs: creation, computation in the worker, query, download, expiration and user deletion. */
 @Module({
   imports: [
     PersistenceModule.forFeature({

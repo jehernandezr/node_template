@@ -10,7 +10,7 @@ import {
   type SdkCommandClass,
 } from './sdk-responder-table.js';
 
-/** `SESv2Client` falso: guarda cada correo enviado y responde lo registrado, o un `MessageId` propio. */
+/** Fake `SESv2Client`: stores each sent email and responds with what was registered, or its own `MessageId`. */
 export class FakeSesClient extends SESv2Client {
   closes = 0;
   private readonly table = new SdkResponderTable();
@@ -20,7 +20,7 @@ export class FakeSesClient extends SESv2Client {
     super({ region: 'us-east-1', credentials: FakeSnsClient.CREDENTIALS });
   }
 
-  /** Los correos que se pidieron a SES, en orden. */
+  /** The emails requested from SES, in order. */
   sentEmails(): SendEmailCommandInput[] {
     return this.table
       .sentOf(SendEmailCommand)
@@ -35,7 +35,7 @@ export class FakeSesClient extends SESv2Client {
     return this;
   }
 
-  // Mismo motivo que `FakeSqsClient.send`: el único cast de la clase.
+  // Same reason as `FakeSqsClient.send`: the only cast in the class.
   override send = (async (command: SdkCommand) => {
     const answer = this.table.respond(command);
     this.requests += 1;

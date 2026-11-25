@@ -1,7 +1,7 @@
 import type { RouteDefinition } from '@contracts/platform';
 import { HttpHeader } from './http-header.enum.js';
 
-/** Headers `Deprecation`, `Sunset` y `Link` de las rutas deprecadas del contrato. */
+/** `Deprecation`, `Sunset` and `Link` headers of the contract's deprecated routes. */
 export class DeprecationHeaders {
   static forRoute(
     route: RouteDefinition,
@@ -24,7 +24,7 @@ export class DeprecationHeaders {
     return headers;
   }
 
-  /** `true` desde las 00:00 UTC de la fecha de `sunset`. */
+  /** `true` from 00:00 UTC of the `sunset` date. */
   static isSunset(route: RouteDefinition, now: Date): boolean {
     if (route.deprecated === undefined) {
       return false;

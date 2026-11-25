@@ -1,12 +1,12 @@
-/** Parámetros de una petición paginada por cursor. */
+/** Parameters of a cursor-paginated request. */
 export interface PageQuery {
-  /** Tamaño de página, entre 1 y `Pagination.maxLimit`. */
+  /** Page size, between 1 and `Pagination.maxLimit`. */
   limit?: number;
-  /** Cursor opaco devuelto por la página anterior. */
+  /** Opaque cursor returned by the previous page. */
   after?: string;
 }
 
-/** Página de resultados. `nextCursor` es null en la última página. */
+/** Page of results. `nextCursor` is null on the last page. */
 export interface Page<T> {
   items: T[];
   nextCursor: string | null;

@@ -18,8 +18,8 @@ const LOCK_CALLS = [
 ];
 
 /**
- * Base de prueba que aplica las migraciones pendientes una sola vez: la segunda corrida no aplica
- * nada. Si `failure` está definido, `runMigrations` rechaza con ese error.
+ * Test database that applies pending migrations only once: the second run applies
+ * nothing. If `failure` is defined, `runMigrations` rejects with that error.
  */
 class MigratingDataSource extends StubDataSource {
   private readonly pending: string[];
@@ -42,7 +42,7 @@ class MigratingDataSource extends StubDataSource {
   }
 }
 
-/** Base de prueba configurada con réplicas: TypeORM deja `options.database` sin valor y el nombre va en `replication.master`. */
+/** Test database configured with replicas: TypeORM leaves `options.database` unset and the name goes in `replication.master`. */
 class ReplicatedDataSource extends MigratingDataSource {
   constructor(label: string) {
     super(label);
@@ -55,7 +55,7 @@ class ReplicatedDataSource extends MigratingDataSource {
   }
 }
 
-/** `CatalogDataSource` que entrega una base de prueba. */
+/** `CatalogDataSource` that provides a test database. */
 class StubCatalogDataSource extends CatalogDataSource {
   constructor(private readonly dataSource: StubDataSource) {
     super(new FakeDataSourceFactory(), new FakeInstanceEndpointResolver(), {
@@ -69,7 +69,7 @@ class StubCatalogDataSource extends CatalogDataSource {
   }
 }
 
-/** `ShardDataSources` que entrega una base de prueba por shard lógico. */
+/** `ShardDataSources` that provides a test database per logical shard. */
 class StubShardDataSources extends ShardDataSources {
   constructor(
     private readonly byShard: Readonly<Record<string, StubDataSource>>,

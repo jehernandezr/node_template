@@ -1,18 +1,18 @@
 import { SagaStatus, StepDirection, StepStatus } from '@platform/saga';
 import { EnumSql } from '../entities/enum-sql.js';
 
-/** Listas SQL de los estados de saga, para el `CHECK` de sus columnas y los índices parciales. */
+/** SQL lists of the saga statuses, for the `CHECK` of their columns and the partial indexes. */
 export class SagaSqlValues {
   static readonly STATUSES = EnumSql.of(SagaStatus);
   static readonly DIRECTIONS = EnumSql.of(StepDirection);
   static readonly STEP_STATUSES = EnumSql.of(StepStatus);
-  /** Estados que una corrida todavía tiene que atender. */
+  /** Statuses that a run still has to handle. */
   static readonly OPEN_STATUSES = EnumSql.list([
     SagaStatus.Running,
     SagaStatus.Compensating,
     SagaStatus.Suspended,
   ]);
-  /** Estados terminados con éxito: los que borra la retención. */
+  /** Statuses finished successfully: the ones retention deletes. */
   static readonly PURGEABLE_STATUSES = EnumSql.list([
     SagaStatus.Completed,
     SagaStatus.Compensated,

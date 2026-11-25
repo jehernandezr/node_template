@@ -15,7 +15,7 @@ import { billingCatalogMigrations } from './database/catalog-migrations.js';
 import { billingShardMigrations } from './database/shard-migrations.js';
 import { BILLING_ERROR_CATALOGS } from './shared/constants/billing-error-catalogs.constants.js';
 
-/** Definición de billing que consumen `ServiceBootstrap`, `ServiceMigrator` y las pruebas. */
+/** Billing definition consumed by `ServiceBootstrap`, `ServiceMigrator` and the tests. */
 export const billingService: ServiceDefinition<BillingConfig> = {
   name: billingContract.service,
   configSchema: billingConfigSchema,

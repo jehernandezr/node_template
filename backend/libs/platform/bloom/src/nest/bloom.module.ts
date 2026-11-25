@@ -14,8 +14,8 @@ import type {
 } from './bloom-module-options.js';
 
 /**
- * Filtros de Bloom de la aplicación. `forRoot` registra la fábrica y el armado (global por defecto);
- * `forFeature` declara un filtro con nombre, su fuente de verdad y su job de reconstrucción.
+ * Application Bloom filters. `forRoot` registers the factory and the assembler (global by default);
+ * `forFeature` declares a named filter, its source of truth and its rebuild job.
  */
 @Module({})
 export class BloomModule extends BloomConfigurableModule {
@@ -26,9 +26,9 @@ export class BloomModule extends BloomConfigurableModule {
   }
 
   /**
-   * Filtro con nombre y su job. El job queda como provider para que el `JobRunner` lo descubra;
-   * bloom no importa scheduling.
-   * @throws InvalidParametersError cuando la definición es inválida.
+   * Returns a named filter and its job. The job stays as a provider so the `JobRunner` discovers it;
+   * bloom does not import scheduling.
+   * @throws InvalidParametersError when the definition is invalid.
    */
   static forFeature(feature: BloomFeatureOptions): DynamicModule {
     const resolved = BloomDefinitionResolver.resolve(feature.definition);

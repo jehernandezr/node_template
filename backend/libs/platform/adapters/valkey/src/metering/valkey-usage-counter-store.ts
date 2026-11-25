@@ -6,23 +6,23 @@ import type { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 
 /**
- * Un hash por ventana (`<prefijo>:{usage}:<inicio en ms>`, campo `<tenant>|<métrica>`) y un índice ordenado
- * de las ventanas con datos. La etiqueta `{usage}` deja todas las llaves en el mismo slot, así los scripts
- * corren también en un clúster. Cada ventana vence a los `ttlMs` aunque nadie la vacíe.
+ * One hash per window (`<prefix>:{usage}:<start in ms>`, field `<tenant>|<metric>`) and a sorted index
+ * of the windows with data. The `{usage}` tag keeps all the keys in the same slot, so the scripts
+ * also run in a cluster. Each window expires after `ttlMs` even if nobody drains it.
  */
 export class ValkeyUsageCounterStore extends UsageCounterStore {
-  /** Un día: de sobra para que el job vacíe una ventana aunque billing o la base estén caídos un rato. */
+  /** One day: more than enough for the job to drain a window even if billing or the database are down for a while. */
   static readonly DEFAULT_TTL_MS = 24 * 60 * 60_000;
   private static readonly TAG = '{usage}';
   private static readonly SEPARATOR = '|';
-  /** KEYS[1] ventana, KEYS[2] índice; ARGV: campo, cantidad, inicio en ms, vida en ms. */
+  /** KEYS[1] window, KEYS[2] index; ARGV: field, amount, start in ms, lifetime in ms. */
   private static readonly ADD = new LuaScript(`
 redis.call('HINCRBY', KEYS[1], ARGV[1], ARGV[2])
 redis.call('PEXPIRE', KEYS[1], ARGV[4])
 redis.call('ZADD', KEYS[2], ARGV[3], ARGV[3])
 return 1
 `);
-  /** KEYS[1] ventana, KEYS[2] índice; ARGV: inicio en ms. */
+  /** KEYS[1] window, KEYS[2] index; ARGV: start in ms. */
   private static readonly CLEAR = new LuaScript(`
 redis.call('DEL', KEYS[1])
 redis.call('ZREM', KEYS[2], ARGV[1])

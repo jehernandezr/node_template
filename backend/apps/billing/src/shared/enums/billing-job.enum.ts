@@ -1,7 +1,7 @@
-/** Jobs periódicos de billing. */
+/** Billing periodic jobs. */
 export enum BillingJob {
-  /** Cierra los periodos vencidos: termina las pruebas, emite las facturas y pide su cobro. */
+  /** Closes expired periods: ends trials, issues invoices and requests their charge. */
   CloseInvoicePeriods = 'billing.close-invoice-periods',
-  /** Suspende las suscripciones morosas que agotaron `BILLING_GRACE_DAYS`. */
+  /** Suspends past-due subscriptions that exhausted `BILLING_GRACE_DAYS`. */
   AdvanceDunning = 'billing.advance-dunning',
 }

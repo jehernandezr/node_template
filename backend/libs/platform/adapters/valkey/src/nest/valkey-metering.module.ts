@@ -4,8 +4,8 @@ import { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 
 /**
- * Contadores de uso sobre el cliente de `ValkeyModule`, para `MeteringModule.forRoot({ counters })`. Es
- * global porque `MeteringModule` los toma por su clase.
+ * Usage counters on the `ValkeyModule` client, for `MeteringModule.forRoot({ counters })`. It is
+ * global because `MeteringModule` takes them by their class.
  */
 @Global()
 @Module({

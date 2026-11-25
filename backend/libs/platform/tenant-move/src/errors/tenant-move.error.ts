@@ -1,7 +1,7 @@
 import { DomainError } from '@platform/kernel';
 import { TenantMoveErrorCode } from './tenant-move-error-code.enum.js';
 
-/** Un paso del traslado que no puede seguir. Solo `RoundPending` se reintenta: la ronda sigue en la próxima llamada. */
+/** A move step that cannot continue. Only `RoundPending` is retried: the round continues on the next call. */
 export class TenantMoveError extends DomainError {
   constructor(
     readonly code: TenantMoveErrorCode,

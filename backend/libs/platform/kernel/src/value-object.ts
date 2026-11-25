@@ -1,6 +1,6 @@
 /**
- * Base de los objetos de valor. Dos instancias son iguales si son de la
- * misma clase y sus propiedades son estructuralmente iguales.
+ * Base of value objects. Two instances are equal if they are of the
+ * same class and their properties are structurally equal.
  */
 export abstract class ValueObject<TProps extends object> {
   protected readonly props: Readonly<TProps>;

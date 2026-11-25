@@ -1,17 +1,17 @@
-/** Metadatos que viajan con cada intento. */
+/** Metadata that travels with each attempt. */
 export interface CallMeta {
   readonly idempotencyKey: string;
   readonly traceparent?: string;
   readonly tenantId?: string;
   readonly actorId?: string;
-  /** Milisegundos que quedaban para este intento cuando se envió. */
+  /** Milliseconds left for this attempt when it was sent. */
   readonly timeoutMs: number;
   /**
-   * Milisegundos epoch después de los cuales el servidor no debe empezar el
-   * trabajo. Es el límite del intento, nunca posterior al `Deadline` de quien
-   * llama. El servidor deriva de él el lease de idempotencia.
+   * Epoch milliseconds after which the server must not start the
+   * work. It is the attempt limit, never later than the caller's
+   * `Deadline`. The server derives the idempotency lease from it.
    */
   readonly deadline: number;
-  /** Se aborta cuando el intento vence o quien llama cancela. */
+  /** Aborted when the attempt expires or the caller cancels. */
   readonly signal?: AbortSignal;
 }

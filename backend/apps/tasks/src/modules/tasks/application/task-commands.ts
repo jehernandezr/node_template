@@ -1,7 +1,7 @@
 import type { UserRef } from '@contracts/platform';
 import type { TaskChanges } from '../domain/task-changes.js';
 
-/** Alta de una tarea en un tenant por un usuario. */
+/** Creation of a task in a tenant by a user. */
 export interface CreateTaskCommand {
   readonly tenantId: string;
   readonly actor: UserRef;
@@ -9,7 +9,7 @@ export interface CreateTaskCommand {
   readonly description?: string;
 }
 
-/** Cambio de una tarea, con la versión que el cliente leyó si quiere evitar pisar otro cambio. */
+/** Change to a task, with the version the client read if it wants to avoid overwriting another change. */
 export interface UpdateTaskCommand {
   readonly tenantId: string;
   readonly actor: UserRef;
@@ -18,7 +18,7 @@ export interface UpdateTaskCommand {
   readonly expectedVersion?: number;
 }
 
-/** Borrado lógico de una tarea. */
+/** Soft delete of a task. */
 export interface DeleteTaskCommand {
   readonly tenantId: string;
   readonly actor: UserRef;

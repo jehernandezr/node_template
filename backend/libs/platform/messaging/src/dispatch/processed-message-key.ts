@@ -1,8 +1,8 @@
 import { CanonicalJson } from '@platform/primitives';
 
-/** Llave de idempotencia de `(consumidor, id del mensaje)`. */
+/** Idempotency key of `(consumer, message id)`. */
 export class ProcessedMessageKey {
-  /** Arreglo JSON canónico: ningún separador puede colisionar. */
+  /** Canonical JSON array: no separator can collide. */
   static of(consumer: string, id: string): string {
     return CanonicalJson.stringify([consumer, id]);
   }

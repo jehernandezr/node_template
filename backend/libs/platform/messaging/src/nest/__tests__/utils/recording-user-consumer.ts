@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Subscribe } from '../../subscribe.decorator.js';
 import { UserRegisteredV1 } from './user-registered.contract.js';
 
-/** Consumidor de prueba que guarda los ids recibidos en un campo de instancia. */
+/** Test consumer that stores the received ids in an instance field. */
 @Injectable()
 export class RecordingUserConsumer {
   readonly received: string[] = [];

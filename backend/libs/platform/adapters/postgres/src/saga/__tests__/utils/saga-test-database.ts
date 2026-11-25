@@ -13,9 +13,9 @@ import { SagaStepLogMapper } from '../../saga-step-log.mapper.js';
 import { TypeOrmSagaStore } from '../../typeorm-saga-store.js';
 
 /**
- * Base de pruebas de la bitácora de sagas: dos shards en Postgres real con las
- * migraciones de la plataforma y las de sagas. Así las pruebas ejercen el
- * esquema que la aplicación despliega.
+ * Test database for the saga log: two shards on real Postgres with the
+ * platform migrations and the saga migrations. This way the tests exercise the
+ * schema the application deploys.
  */
 export class SagaTestDatabase {
   readonly db: ShardedTestDatabase;
@@ -38,7 +38,7 @@ export class SagaTestDatabase {
     });
   }
 
-  /** Un `TypeOrmSagaStore` cableado como lo hace `SagaPostgresModule`. */
+  /** A `TypeOrmSagaStore` wired as `SagaPostgresModule` does it. */
   createStore(): TypeOrmSagaStore {
     const kit = this.db.kitFor(this.feature);
     return new TypeOrmSagaStore({

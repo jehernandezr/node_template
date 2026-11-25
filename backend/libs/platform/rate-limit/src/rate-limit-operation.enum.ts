@@ -1,4 +1,4 @@
-/** Operaciones de un {@link RateLimiter}. */
+/** Operations of a {@link RateLimiter}. */
 export enum RateLimitOperation {
   Consume = 'consume',
   Peek = 'peek',

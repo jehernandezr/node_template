@@ -7,7 +7,7 @@ import { CallOutcomeKind } from '@platform/primitives';
 import { PeerUnavailableError } from '../../../shared/errors/peer-unavailable.error.js';
 import { TaskHistory } from '../domain/task-history.js';
 
-/** La historia de tareas por la operación `tasks.tasks.list-changes.v1`. */
+/** Task history through the `tasks.tasks.list-changes.v1` operation. */
 @Injectable()
 export class TasksServiceHistory extends TaskHistory {
   constructor(
@@ -17,7 +17,7 @@ export class TasksServiceHistory extends TaskHistory {
     super();
   }
 
-  /** @throws PeerUnavailableError si tasks no responde: el relleno sigue en la próxima corrida. */
+  /** @throws PeerUnavailableError if tasks does not respond: the backfill continues on the next run. */
   async page(
     tenantId: string,
     after: string | undefined,

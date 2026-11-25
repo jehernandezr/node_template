@@ -8,9 +8,9 @@ import {
   type SerializedBloomFilter,
 } from '../../serialized-bloom-filter.js';
 
-/** Datos de prueba de bloom: filtros llenos, listas de ítems y formas serializadas. */
+/** Bloom test data: filled filters, item lists and serialized forms. */
 export class BloomFixtures {
-  /** Filtro con `count` ítems `item-0`, `item-1`... insertados al 1 %. */
+  /** Filter with `count` items `item-0`, `item-1`... inserted at 1 %. */
   static filledFilter(count: number): BloomFilter {
     const filter = BloomFilter.create({ expectedItems: count });
     for (const item of BloomFixtures.items('item', count)) {
@@ -19,7 +19,7 @@ export class BloomFixtures {
     return filter;
   }
 
-  /** `count` ítems con el prefijo dado: `prefix-0`, `prefix-1`... */
+  /** `count` items with the given prefix: `prefix-0`, `prefix-1`... */
   static items(prefix: string, count: number): string[] {
     const items: string[] = [];
     for (let i = 0; i < count; i += 1) {
@@ -28,7 +28,7 @@ export class BloomFixtures {
     return items;
   }
 
-  /** Cuántos de los ítems dados el filtro dice que puede contener. */
+  /** Returns how many of the given items the filter says it might contain. */
   static async countPositive(
     filter: AsyncBloomFilter,
     items: readonly string[],
@@ -42,7 +42,7 @@ export class BloomFixtures {
     return positives;
   }
 
-  /** Cuántos de los ítems dados el filtro síncrono dice que puede contener. */
+  /** Returns how many of the given items the synchronous filter says it might contain. */
   static countPositiveSync(
     filter: BloomFilter,
     items: readonly string[],
@@ -50,7 +50,7 @@ export class BloomFixtures {
     return items.filter((item) => filter.mightContain(item)).length;
   }
 
-  /** Forma serializada válida, con los campos sobrescritos que se pidan. */
+  /** Returns a valid serialized form, with the requested fields overridden. */
   static validSerialized(
     overrides: Partial<Record<keyof SerializedBloomFilter, unknown>>,
   ): SerializedBloomFilter {
@@ -65,7 +65,7 @@ export class BloomFixtures {
     return base as SerializedBloomFilter;
   }
 
-  /** Filtros en memoria, uno por partición, para pruebas de partición. */
+  /** In-memory filters, one per partition, for partition tests. */
   static inMemoryPartitions(
     count: number,
     expectedItems: number,
@@ -79,14 +79,14 @@ export class BloomFixtures {
     return parts;
   }
 
-  /** Inserta todos los ítems en el filtro. */
+  /** Inserts all items into the filter. */
   static addAll(filter: BloomFilter, items: readonly string[]): void {
     for (const item of items) {
       filter.add(item);
     }
   }
 
-  /** Cuántos ítems caen en cada una de las particiones. */
+  /** Returns how many items fall into each partition. */
   static partitionCounts(
     items: readonly string[],
     partitions: number,

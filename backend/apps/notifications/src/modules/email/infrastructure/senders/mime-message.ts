@@ -1,8 +1,8 @@
 import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 
 /**
- * Mensaje MIME `multipart/alternative` con texto y HTML en base64: así ninguna línea empieza con un punto ni
- * pasa de 76 caracteres, y el protocolo no necesita escapar nada. Utilidad pura.
+ * `multipart/alternative` MIME message with text and HTML in base64: this way no line starts with a dot or
+ * exceeds 76 characters, and the protocol needs no escaping. Pure utility.
  */
 export class MimeMessage {
   private static readonly LINE = 76;

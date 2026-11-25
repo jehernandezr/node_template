@@ -4,8 +4,8 @@ import { UsageRecorder } from './usage-recorder.js';
 import type { UsageWindowClock } from './usage-window-clock.js';
 
 /**
- * Suma el uso al contador de la ventana actual. `UsageFlushJob` envía las ventanas cerradas a billing, así
- * una petición nunca espera a billing ni escribe en la base.
+ * Adds usage to the counter of the current window. `UsageFlushJob` sends the closed windows to billing, so
+ * a request never waits for billing or writes to the database.
  */
 export class BufferedUsageRecorder extends UsageRecorder {
   constructor(

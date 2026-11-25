@@ -1,286 +1,286 @@
 import { defineErrorCatalog, ErrorAudience } from '@contracts/platform';
 import { IdentityErrorCode as C } from '../enums/identifiers.enum.js';
 
-/** Catálogo de los códigos de identity. */
+/** Catalog of the identity codes. */
 export const identityErrorCatalog = defineErrorCatalog(C, {
   [C.AuthInvalidCredentials]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El email o la contraseña no son válidos, o el origen está bloqueado por intentos fallidos.',
+      'The email or password is not valid, or the origin is blocked after failed attempts.',
   },
   [C.MfaTokenInvalid]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'El desafío MFA no existe o venció. Inicia sesión de nuevo.',
+    description: 'The MFA challenge does not exist or expired. Sign in again.',
   },
   [C.MfaCodeInvalid]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'El código de verificación no es correcto.',
+    description: 'The verification code is not correct.',
   },
   [C.MfaCodeExpired]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'El código de verificación expiró. Solicita uno nuevo.',
+    description: 'The verification code expired. Request a new one.',
   },
   [C.MfaTooManyAttempts]: {
     httpStatus: 429,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Se agotaron los intentos del desafío. Solicita uno nuevo.',
+    description: 'The challenge attempts ran out. Request a new one.',
   },
   [C.MfaStepUpRequired]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La operación exige verificar de nuevo el segundo factor.',
+    description: 'The operation requires verifying the second factor again.',
   },
   [C.MfaMethodUnavailable]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El método pedido no está entre los que ofreció el desafío MFA. Elige otro.',
+      'The requested method is not among those offered by the MFA challenge. Choose another.',
   },
   [C.SessionRevoked]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La sesión fue cerrada. Inicia sesión de nuevo.',
+    description: 'The session was closed. Sign in again.',
   },
   [C.SessionExpired]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'La sesión venció por inactividad o por el tope absoluto. Inicia sesión de nuevo.',
+      'The session expired due to inactivity or the absolute limit. Sign in again.',
   },
   [C.SessionReused]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'Se presentó un session token ya rotado. La sesión completa quedó revocada. Inicia sesión de nuevo.',
+      'An already rotated session token was presented. The whole session was revoked. Sign in again.',
   },
   [C.TokenStalePermissions]: {
     httpStatus: 401,
     retryable: true,
     audience: ErrorAudience.Public,
     description:
-      'Los permisos cambiaron desde que se emitió el token. El cliente refresca y reintenta.',
+      'Permissions changed since the token was issued. The client refreshes and retries.',
   },
   [C.TokenRevoked]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El access token fue revocado por la época del usuario o del tenant. Inicia sesión de nuevo.',
+      'The access token was revoked by the user or tenant epoch. Sign in again.',
   },
   [C.UserNotFound]: {
     httpStatus: 404,
     retryable: false,
     audience: ErrorAudience.Internal,
-    description: 'El usuario no existe.',
+    description: 'The user does not exist.',
   },
   [C.UserSuspended]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El usuario está suspendido. Sus sesiones quedan cerradas hasta que se reactive.',
+      'The user is suspended. Their sessions stay closed until reactivated.',
   },
   [C.TenantSuspended]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El tenant está suspendido. Las sesiones en él quedan cerradas hasta que se reactive.',
+      'The tenant is suspended. Sessions in it stay closed until reactivated.',
   },
   [C.AuthEmailNotVerified]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El email todavía no está verificado. Confirma el enlace que enviamos a tu correo.',
+      'The email is not verified yet. Confirm the link sent to your email.',
   },
   [C.UserEmailVerificationInvalid]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El enlace de verificación del email no es válido o venció. Solicita uno nuevo.',
+      'The email verification link is not valid or expired. Request a new one.',
   },
   [C.PasswordPolicyViolation]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'La contraseña no cumple la política: de 12 a 128 caracteres y distinta del email.',
+      'The password does not meet the policy: 12 to 128 characters and different from the email.',
   },
   [C.PasswordBreached]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La contraseña aparece en filtraciones conocidas. Elige otra.',
+    description: 'The password appears in known breaches. Choose another.',
   },
   [C.PasswordCurrentInvalid]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La contraseña actual no es correcta.',
+    description: 'The current password is not correct.',
   },
   [C.PasswordResetInvalid]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El enlace para restablecer la contraseña no es válido o venció. Solicita uno nuevo.',
+      'The password reset link is not valid or expired. Request a new one.',
   },
   [C.DeviceSignatureInvalid]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La firma del dispositivo no es válida.',
+    description: 'The device signature is not valid.',
   },
   [C.DeviceKeyInvalid]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La clave pública del dispositivo no es válida.',
+    description: 'The device public key is not valid.',
   },
   [C.MfaRecoveryNotReady]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'La recuperación del segundo factor todavía no está disponible. Intenta de nuevo cuando termine la espera.',
+      'Second factor recovery is not available yet. Try again when the waiting period ends.',
   },
   [C.MfaFactorAlreadyEnrolled]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Ese segundo factor ya está activo.',
+    description: 'That second factor is already active.',
   },
   [C.MfaFactorNotEnrolled]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Ese segundo factor no está activo.',
+    description: 'That second factor is not active.',
   },
   [C.PasskeyVerificationFailed]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'No se pudo verificar la passkey.',
+    description: 'The passkey could not be verified.',
   },
   [C.PasskeyChallengeExpired]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'El desafío de la passkey venció. Inténtalo de nuevo.',
+    description: 'The passkey challenge expired. Try again.',
   },
   [C.TenantNotFound]: {
     httpStatus: 404,
     retryable: false,
     audience: ErrorAudience.Internal,
-    description: 'El tenant no existe.',
+    description: 'The tenant does not exist.',
   },
   [C.TenantSlugTaken]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'El identificador del tenant ya está en uso. Elige otro.',
+    description: 'The tenant identifier is already in use. Choose another.',
   },
   [C.TenantNotMember]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'No eres miembro de ese tenant.',
+    description: 'You are not a member of that tenant.',
   },
   [C.TenantMoveNotMovable]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Internal,
     description:
-      'El tenant compartido de clientes y el de plataforma reparten sus datos en todos los shards y no se trasladan.',
+      'The shared customer tenant and the platform tenant spread their data across all shards and are not moved.',
   },
   [C.TenantMoveUnknownTarget]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Internal,
     description:
-      'El destino del traslado no es un grupo de shards configurado o ya es la ubicación del tenant.',
+      'The move target is not a configured shard group or is already the tenant location.',
   },
   [C.TenantMoveInProgress]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Internal,
-    description: 'El tenant ya tiene un traslado en curso.',
+    description: 'The tenant already has a move in progress.',
   },
   [C.AccessLastOwner]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'El tenant debe conservar al menos un propietario.',
+    description: 'The tenant must keep at least one owner.',
   },
   [C.AccessSystemRoleImmutable]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Los roles de sistema no se pueden modificar ni borrar.',
+    description: 'System roles cannot be modified or deleted.',
   },
   [C.AccessNameTaken]: {
     httpStatus: 409,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'Ya existe un grupo o rol con ese nombre.',
+    description: 'A group or role with that name already exists.',
   },
   [C.InvitationInvalid]: {
     httpStatus: 400,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La invitación no es válida, venció o ya se usó.',
+    description: 'The invitation is not valid, expired or was already used.',
   },
   [C.InvitationEmailMismatch]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
     description:
-      'El email verificado de tu cuenta no coincide con el de la invitación.',
+      'The verified email of your account does not match the invitation email.',
   },
   [C.ApiKeyInvalid]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La API key no es válida.',
+    description: 'The API key is not valid.',
   },
   [C.ApiKeyExpired]: {
     httpStatus: 401,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La API key venció.',
+    description: 'The API key expired.',
   },
   [C.ApiKeyIpNotAllowed]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La API key no puede usarse desde esta dirección IP.',
+    description: 'The API key cannot be used from this IP address.',
   },
   [C.ApiKeyPermissionNotGrantable]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'No puedes otorgar permisos que tu cuenta no tiene.',
+    description: 'You cannot grant permissions your account does not have.',
   },
   [C.ServiceAccountDisabled]: {
     httpStatus: 403,
     retryable: false,
     audience: ErrorAudience.Public,
-    description: 'La cuenta de servicio está deshabilitada.',
+    description: 'The service account is disabled.',
   },
 });

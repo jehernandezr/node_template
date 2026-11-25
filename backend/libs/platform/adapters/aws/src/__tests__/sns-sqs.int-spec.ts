@@ -39,9 +39,9 @@ import {
 import { TestTopology } from './utils/test-topology.js';
 
 /**
- * Pruebas contra LocalStack (SNS y SQS reales) con Testcontainers. Sin Docker
- * se saltan; con `INTEGRATION_TESTS=require` la falta de Docker es un error.
- * `LOCALSTACK_IMAGE` cambia la imagen (por defecto la de docker-compose).
+ * Tests against LocalStack (real SNS and SQS) with Testcontainers. Without Docker
+ * they are skipped; with `INTEGRATION_TESTS=require` missing Docker is an error.
+ * `LOCALSTACK_IMAGE` changes the image (defaults to the docker-compose one).
  */
 jest.setTimeout(180_000);
 
@@ -73,7 +73,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
     const options = {
       region: REGION,
       endpoint: `http://${container.getHost()}:${container.getMappedPort(4566)}`,
-      // Credenciales ficticias que LocalStack acepta; no son secretos.
+      // Dummy credentials LocalStack accepts; they are not secrets.
       credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
     };
     sns = new SNSClient(options);
@@ -159,7 +159,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
 
     await PollUntil.run(poller, () => seen.length > 0);
     expect(seen).toEqual([{ taskId: 't-1', traceId: TRACEPARENT }]);
-    // El evento reabierto nunca llegó a la cola y el cerrado se borró al procesarse.
+    // The reopened event never reached the queue and the closed one was deleted when processed.
     expect(await receiveRaw('reports-work', false)).toEqual([]);
   });
 
@@ -189,7 +189,7 @@ runtime.describeIfAvailable('SNS and SQS over LocalStack', () => {
     await bus.send(GenerateReport, { reportId: 'r-2' });
     await PollUntil.run(poller, () => handled > 0);
 
-    // La espera larga del long polling da tiempo a que la copia llegue a la DLQ.
+    // The long wait of long polling gives the copy time to reach the DLQ.
     const dead = await sqs.send(
       new ReceiveMessageCommand({
         QueueUrl: await names.queueUrl(

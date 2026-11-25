@@ -17,8 +17,8 @@ import { RecordPaymentNotice } from '../application/record-payment-notice.use-ca
 import type { InvoiceState } from '../domain/invoice.js';
 
 /**
- * El resultado de un cobro que el proveedor informa después, como lo haría su webhook, y la historia de
- * facturas con que otro servicio rellena su copia.
+ * The result of a charge that the provider reports later, as its webhook would, and the invoice history
+ * another service uses to backfill its copy.
  */
 @Injectable()
 export class InvoicesInternalOperations {
@@ -28,9 +28,9 @@ export class InvoicesInternalOperations {
   ) {}
 
   /**
-   * Una página de la historia de facturas del tenant, de la más nueva a la más vieja.
-   * @param input Tenant, tamaño de página y cursor.
-   * @returns La página y el cursor de la siguiente.
+   * Returns a page of the tenant's invoice history, newest to oldest.
+   * @param input Tenant, page size and cursor.
+   * @returns The page and the cursor of the next one.
    */
   @InternalHandler(ListInvoiceChangesOperation)
   async listChanges(
@@ -42,10 +42,10 @@ export class InvoicesInternalOperations {
   }
 
   /**
-   * Aplica el pago que informa el proveedor en el intento al que se refiere.
-   * @param input Aviso de pago con su referencia, su monto y el intento, si salió de billing.
-   * @returns El estado de la factura.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND`, `BILLING.INVOICE.INVALID_STATE` o
+   * Applies the payment reported by the provider to the attempt it refers to.
+   * @param input Payment notice with its reference, its amount and the attempt, if it came from billing.
+   * @returns The invoice state.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND`, `BILLING.INVOICE.INVALID_STATE` or
    *   `BILLING.INVOICE.AMOUNT_MISMATCH`.
    */
   @InternalHandler(MarkInvoicePaidOperation)
@@ -67,10 +67,10 @@ export class InvoicesInternalOperations {
   }
 
   /**
-   * Aplica el rechazo que informa el proveedor en el intento al que se refiere; repetirlo no gasta un reintento.
-   * @param input Aviso de rechazo con su motivo y el intento, si salió de billing.
-   * @returns El estado de la factura.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` o `BILLING.INVOICE.INVALID_STATE`.
+   * Applies the rejection reported by the provider to the attempt it refers to; repeating it does not use up a retry.
+   * @param input Rejection notice with its reason and the attempt, if it came from billing.
+   * @returns The invoice state.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` or `BILLING.INVOICE.INVALID_STATE`.
    */
   @InternalHandler(MarkInvoiceFailedOperation)
   async markFailed(

@@ -25,21 +25,21 @@ import { UnitOfWorkRunner } from '../../server/unit-of-work-runner.js';
 import { InProcessTransport } from '../../transport/in-process-transport.js';
 import { InMemoryProcessedOperationStore } from './in-memory-processed-operation-store.js';
 
-/** Lo que necesita `InProcessInternalApi`: el reloj y los ids gobiernan los plazos y los claims. */
+/** What `InProcessInternalApi` needs: the clock and the ids drive the deadlines and the claims. */
 export interface InProcessInternalApiOptions {
   readonly clock: Clock;
   readonly ids: IdGenerator;
-  /** Operaciones del catálogo del cliente; cada una necesita un handler en `router`. */
+  /** Operations of the client catalog; each one needs a handler in `router`. */
   readonly operations: readonly OperationDefinition[];
-  /** Sin él, el router guarda los resultados fuera de una unidad de trabajo. */
+  /** Without it, the router stores the results outside a unit of work. */
   readonly transactions?: TransactionManager;
 }
 
 /**
- * API interna completa en un solo proceso, sin NestJS: cliente, transporte en
- * proceso y router con sus colaboradores reales sobre
- * `InMemoryProcessedOperationStore`. Sirve a las librerías que consumen el
- * `InternalClient` y quieren probarlo de punta a punta.
+ * Full internal API in a single process, without NestJS: client, in-process
+ * transport and router with their real collaborators on top of
+ * `InMemoryProcessedOperationStore`. It serves the libraries that consume the
+ * `InternalClient` and want to test it end to end.
  */
 export class InProcessInternalApi {
   readonly store: InMemoryProcessedOperationStore;

@@ -2,11 +2,11 @@ import type { OperationDescriptor } from './operation-descriptor.js';
 import type { OperationMetadata } from './operation-metadata.js';
 import type { OperationSchemas } from './operation-schemas.js';
 
-/** Operación registrada con sus metadatos y esquemas. */
+/** Registered operation with its metadata and schemas. */
 export interface RegisteredContract {
   readonly id: string;
   readonly metadata: OperationMetadata;
-  /** Esquemas de entrada y salida. */
+  /** Input and output schemas. */
   readonly contract: OperationSchemas;
   readonly descriptor: OperationDescriptor;
 }

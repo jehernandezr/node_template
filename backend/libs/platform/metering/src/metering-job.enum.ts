@@ -1,5 +1,5 @@
-/** Jobs de `@platform/metering`. */
+/** Jobs of `@platform/metering`. */
 export enum MeteringJob {
-  /** Envía a billing las ventanas de uso cerradas. */
+  /** Sends the closed usage windows to billing. */
   FlushUsage = 'metering.flush-usage',
 }

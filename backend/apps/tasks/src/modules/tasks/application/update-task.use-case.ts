@@ -11,8 +11,8 @@ import { TaskEvents } from './task-events.js';
 import { TaskViews } from './task-view.js';
 
 /**
- * Cambia una tarea. Un pedido que no cambia ningún valor devuelve la tarea tal cual, sin versión nueva ni
- * evento, así un reintento del cliente es inocuo.
+ * Changes a task. A request that changes no value returns the task as is, with no new version or
+ * event, so a client retry is harmless.
  */
 @Injectable()
 export class UpdateTask {

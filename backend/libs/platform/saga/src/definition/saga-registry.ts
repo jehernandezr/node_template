@@ -9,19 +9,19 @@ import type { SagaDefinition } from './saga-definition.js';
 import { SagaDefinitionIssueCode } from './saga-definition-issue-code.enum.js';
 import { SagaValidator } from './saga-validator.js';
 
-/** Con qué compila y valida el registro. */
+/** What the registry compiles and validates with. */
 export interface SagaRegistryOptions {
   readonly resolver: OperationResolver;
-  /** Presupuesto de cada llamada de paso, contra el que se valida cada operación. */
+  /** Budget of each step call, against which each operation is validated. */
   readonly maxStepDurationMs: number;
-  /** Operaciones que los pasos llaman. Sin él no se pueden buscar las compensaciones. */
+  /** Operations that the steps call. Without it the compensations cannot be looked up. */
   readonly contracts?: ContractRegistry;
 }
 
 /**
- * Las sagas que corre el motor, por tipo. Los módulos registran sus
- * definiciones con `add`; `seal` las compila y valida todas de una vez, así una
- * definición inválida falla al arrancar y no con la primera saga de su tipo.
+ * The sagas the engine runs, by type. Modules register their
+ * definitions with `add`; `seal` compiles and validates them all at once, so an
+ * invalid definition fails at startup and not with the first saga of its type.
  */
 export class SagaRegistry {
   private readonly pending: SagaDefinition<unknown>[] = [];
@@ -30,7 +30,7 @@ export class SagaRegistry {
 
   constructor(private readonly options: SagaRegistryOptions) {}
 
-  /** @throws SagaError `InvalidConfiguration` si el registro ya está sellado. */
+  /** @throws SagaError `InvalidConfiguration` if the registry is already sealed. */
   add(...definitions: readonly SagaDefinition<unknown>[]): void {
     if (this.compiled !== undefined) {
       throw new SagaError(
@@ -42,9 +42,9 @@ export class SagaRegistry {
   }
 
   /**
-   * Compila y valida las definiciones. Es idempotente.
-   * @throws SagaError `InvalidDefinition` por un tipo repetido o por cualquier
-   *   problema de `SagaValidator`; `MissingCompensation` desde la compilación.
+   * Compiles and validates the definitions. It is idempotent.
+   * @throws SagaError `InvalidDefinition` for a repeated type or for any
+   *   `SagaValidator` issue; `MissingCompensation` from compilation.
    */
   seal(): void {
     if (this.compiled !== undefined) {
@@ -78,7 +78,7 @@ export class SagaRegistry {
     this.compiled = compiled;
   }
 
-  /** La saga compilada de un tipo. Sella el registro si aún no lo está. @throws SagaError `UnknownDefinition` */
+  /** Returns the compiled saga of a type. Seals the registry if it is not sealed yet. @throws SagaError `UnknownDefinition` */
   get(type: string): CompiledSaga<unknown> {
     this.seal();
     const saga = this.compiled?.get(type);
@@ -91,7 +91,7 @@ export class SagaRegistry {
     return saga;
   }
 
-  /** El `type` con el que se registró una clase de definición. @throws SagaError `UnknownDefinition` */
+  /** Returns the `type` a definition class was registered with. @throws SagaError `UnknownDefinition` */
   typeOf(definition: abstract new (...args: never[]) => object): string {
     this.seal();
     const type = this.typeByClass.get(definition);

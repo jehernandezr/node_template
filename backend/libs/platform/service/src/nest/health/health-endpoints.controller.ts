@@ -4,20 +4,20 @@ import { HealthRegistry, type HealthSummary } from '@platform/observability';
 import { HealthRoute } from './health-route.enum.js';
 
 /**
- * Endpoints de salud sobre `HealthRegistry`. Quedan fuera del contrato HTTP del servicio: los
- * consumen el balanceador y la plataforma, no los clientes de la API.
+ * Health endpoints on top of `HealthRegistry`. They stay out of the service HTTP contract: they are
+ * consumed by the load balancer and the platform, not by the API clients.
  */
 @Controller(HealthRoute.Base)
 export class HealthEndpoints {
   constructor(private readonly registry: HealthRegistry) {}
 
-  /** Responde mientras el proceso vive; no consulta dependencias. */
+  /** Responds while the process is alive; does not query dependencies. */
   @Get(HealthRoute.Live)
   live(): HealthReport {
     return { state: HealthState.Up };
   }
 
-  /** `Down` responde 503 con el resumen como cuerpo, para que el balanceador deje de enviar tráfico. */
+  /** `Down` responds 503 with the summary as the body, so the load balancer stops sending traffic. */
   @Get(HealthRoute.Ready)
   async ready(): Promise<HealthSummary> {
     const summary = await this.registry.checkAll();

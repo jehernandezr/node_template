@@ -1,7 +1,7 @@
-/** SQLSTATE de Postgres que el código distingue por su significado, no solo por si se reintenta. */
+/** Postgres SQLSTATEs that the code distinguishes by meaning, not only by whether they are retried. */
 export enum PostgresSqlState {
-  /** Otra fila ya tiene esa llave única. */
+  /** Another row already has that unique key. */
   UniqueViolation = '23505',
-  /** La fila apunta a un padre que no existe, o se borra un padre con hijos. */
+  /** The row points to a parent that does not exist, or a parent with children is deleted. */
   ForeignKeyViolation = '23503',
 }

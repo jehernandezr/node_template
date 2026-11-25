@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { STEP_A } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Su regla de estado deja una fecha en el estado: no sobrevive a JSON. */
+/** Its state rule leaves a date in the state: it does not survive JSON. */
 export class DateStateSaga extends SagaDefinition<SampleState> {
   readonly type = 'date-state';
 

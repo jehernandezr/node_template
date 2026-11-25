@@ -70,7 +70,7 @@ describe('ContractsDiscovery', () => {
       });
       const registry = new ContractsDiscovery(paths, fileSystem, loader);
 
-      await expect(registry.load()).rejects.toThrow('falta src/index.ts');
+      await expect(registry.load()).rejects.toThrow('src/index.ts is missing');
     });
 
     it.each<[string, Record<string, Readonly<Record<string, unknown>>>]>([
@@ -107,7 +107,7 @@ describe('ContractsDiscovery', () => {
       );
 
       await expect(registry.load()).rejects.toThrow(
-        'debe exportar exactamente un contrato',
+        'must export exactly one contract',
       );
     });
   });

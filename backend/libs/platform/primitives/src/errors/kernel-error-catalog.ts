@@ -2,8 +2,8 @@ import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { KernelErrorCode } from '@platform/kernel';
 
 /**
- * Catálogo de los códigos del kernel. Vive aquí porque el kernel no depende de
- * los contratos.
+ * Catalog of the kernel codes. It lives here because the kernel does not depend on
+ * the contracts.
  */
 export const kernelErrorCatalog = defineErrorCatalog(KernelErrorCode, {
   [KernelErrorCode.InvalidId]: ErrorSpecs.pub(

@@ -1,4 +1,4 @@
-/** Lo que muestra un push en el dispositivo. */
+/** What a push shows on the device. */
 export interface PushMessage {
   readonly notificationId: string;
   readonly title: string;

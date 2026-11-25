@@ -1,9 +1,9 @@
 import { Entity, PrimaryColumn } from 'typeorm';
 
 /**
- * Candados por shard lógico. `TypeOrmDirectoryStore.putPlacement` los toma con `SELECT ... FOR UPDATE`, en orden,
- * antes de contar los tenants de un shard: así dos altas concurrentes sobre un shard vacío se serializan. La tabla
- * no guarda datos, solo existe para tener una fila que bloquear por shard.
+ * Locks per logical shard. `TypeOrmDirectoryStore.putPlacement` takes them with `SELECT ... FOR UPDATE`, in order,
+ * before counting the tenants of a shard: so two concurrent creations on an empty shard are serialized. The table
+ * stores no data, it only exists to have one row to lock per shard.
  */
 @Entity({ name: 'shard_locks' })
 export class ShardLockEntity {

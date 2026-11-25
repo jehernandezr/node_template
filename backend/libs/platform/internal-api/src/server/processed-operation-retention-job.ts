@@ -7,9 +7,9 @@ import {
 } from '@platform/kernel';
 import { InternalApiJob } from './internal-api-job.enum.js';
 
-/** Borra del almacén de idempotencia los resultados terminados hace más de `retentionMs`. */
+/** Deletes from the idempotency store the results finished more than `retentionMs` ago. */
 export class ProcessedOperationRetentionJob extends ScheduledJob {
-  /** Cuánto se conserva un resultado guardado: 7 días, más que cualquier reintento razonable. */
+  /** How long a stored result is kept: 7 days, longer than any reasonable retry. */
   static readonly DEFAULT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
   override readonly name: string = InternalApiJob.ProcessedOperationRetention;
@@ -28,7 +28,7 @@ export class ProcessedOperationRetentionJob extends ScheduledJob {
     super();
   }
 
-  /** Borra con `store.purgeCompleted(ahora - retentionMs)`. */
+  /** Deletes with `store.purgeCompleted(now - retentionMs)`. */
   override async run(): Promise<void> {
     await this.store.purgeCompleted(
       new Date(this.clock.now().getTime() - this.retentionMs),

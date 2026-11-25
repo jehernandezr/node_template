@@ -5,18 +5,18 @@ import 'generator.dart';
 import 'model.dart';
 
 const _usage = '''
-Uso: dart run contracts_gen [--check] [--front <dir>] [--contracts <dir>]
+Usage: dart run contracts_gen [--check] [--front <dir>] [--contracts <dir>]
 
-Genera packages/contracts/lib/src/<servicio>/ y
-packages/i18n/lib/src/generated/error_messages.dart desde
-backend/libs/contracts/<servicio>/export/contract.json.
+Generates packages/contracts/lib/src/<service>/ and
+packages/i18n/lib/src/generated/error_messages.dart from
+backend/libs/contracts/<service>/export/contract.json.
 
-  --check        No escribe nada; termina con código 1 si el Dart difiere.
-  --front        Carpeta front/ (por defecto, la que contiene el directorio actual).
-  --contracts    Carpeta con los contratos (por defecto, <front>/../backend/libs/contracts).
+  --check        Writes nothing; exits with code 1 if the Dart differs.
+  --front        The front/ folder (default: the one containing the current directory).
+  --contracts    Folder with the contracts (default: <front>/../backend/libs/contracts).
 ''';
 
-/// Busca hacia arriba la carpeta del pub workspace del front.
+/// Searches upwards for the front pub workspace folder.
 Directory? findFrontRoot(Directory start) {
   Directory? current = start.absolute;
   while (current != null) {
@@ -33,7 +33,7 @@ Directory? findFrontRoot(Directory start) {
   return null;
 }
 
-/// Lee `<contracts>/<servicio>/export/contract.json` de cada servicio.
+/// Reads `<contracts>/<service>/export/contract.json` of each service.
 Map<String, Json> readContracts(Directory contracts) {
   final docs = <String, Json>{};
   final dirs = contracts.listSync().whereType<Directory>().toList()
@@ -45,12 +45,12 @@ Map<String, Json> readContracts(Directory contracts) {
     docs[service] = jsonDecode(file.readAsStringSync()) as Json;
   }
   if (docs.isEmpty) {
-    throw GeneratorException('no hay contract.json en ${contracts.path}');
+    throw GeneratorException('no contract.json in ${contracts.path}');
   }
   return docs;
 }
 
-/// Archivos `.dart` generados que hay hoy en `lib/src` (los que empiezan con la cabecera).
+/// Generated `.dart` files currently in `lib/src` (those that start with the header).
 Set<String> existingGenerated(Directory src) {
   if (!src.existsSync()) return {};
   final result = <String>{};
@@ -65,7 +65,7 @@ Set<String> existingGenerated(Directory src) {
   return result;
 }
 
-/// Ejecuta el generador. Devuelve el código de salida.
+/// Runs the generator. Returns the exit code.
 Future<int> run(
   List<String> args, {
   IOSink? stdoutSink,
@@ -88,7 +88,7 @@ Future<int> run(
         out.write(_usage);
         return 0;
       default:
-        err.write('Argumento desconocido: ${args[i]}\n\n$_usage');
+        err.write('Unknown argument: ${args[i]}\n\n$_usage');
         return 64;
     }
   }
@@ -98,7 +98,7 @@ Future<int> run(
       : findFrontRoot(Directory.current);
   if (front == null || !front.existsSync()) {
     err.writeln(
-      'No encuentro la carpeta front/ (pubspec con name: front_workspace).',
+      'Cannot find the front/ folder (pubspec with name: front_workspace).',
     );
     return 66;
   }
@@ -131,20 +131,20 @@ Future<int> run(
 
   if (check) {
     if (changed.isEmpty && stale.isEmpty && !messagesChanged) {
-      out.writeln('Contratos Dart al día (${files.length + 1} archivos).');
+      out.writeln('Dart contracts up to date (${files.length + 1} files).');
       return 0;
     }
-    err.writeln('El Dart generado no coincide con los contratos:');
+    err.writeln('The generated Dart does not match the contracts:');
     for (final path in changed) {
-      err.writeln('  cambia  packages/contracts/lib/src/$path');
+      err.writeln('  changed packages/contracts/lib/src/$path');
     }
     for (final path in stale) {
-      err.writeln('  sobra   packages/contracts/lib/src/$path');
+      err.writeln('  stale   packages/contracts/lib/src/$path');
     }
     if (messagesChanged) {
-      err.writeln('  cambia  packages/i18n/lib/src/$errorMessagesPath');
+      err.writeln('  changed packages/i18n/lib/src/$errorMessagesPath');
     }
-    err.writeln('Ejecuta: cd front && dart run contracts_gen');
+    err.writeln('Run: cd front && dart run contracts_gen');
     return 1;
   }
 
@@ -161,9 +161,9 @@ Future<int> run(
     messagesFile.writeAsStringSync(errorMessages);
   }
   out.writeln(
-    'Generados ${files.length + 1} archivos: '
-    '${changed.length + (messagesChanged ? 1 : 0)} cambiados, '
-    '${stale.length} borrados.',
+    'Generated ${files.length + 1} files: '
+    '${changed.length + (messagesChanged ? 1 : 0)} changed, '
+    '${stale.length} deleted.',
   );
   return 0;
 }

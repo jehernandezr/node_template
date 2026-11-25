@@ -7,8 +7,8 @@ import {
 } from '@platform/kernel';
 
 /**
- * Reloj y generador de ids para los adaptadores de la plataforma. `ObservabilityModule` no los exporta,
- * así que el servicio los provee una vez, en un módulo global.
+ * Clock and id generator for the platform adapters. `ObservabilityModule` does not export them,
+ * so the service provides them once, in a global module.
  */
 @Global()
 @Module({

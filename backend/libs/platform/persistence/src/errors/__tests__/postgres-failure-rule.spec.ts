@@ -3,7 +3,7 @@ import { FailureClassifier } from '@platform/primitives';
 import { QueryFailedError } from 'typeorm';
 import { PostgresFailureRule } from '../postgres-failure-rule.js';
 
-/** Un error de `pg` como lo entrega TypeORM: el SQLSTATE viaja en `code`. */
+/** A `pg` error as TypeORM delivers it: the SQLSTATE travels in `code`. */
 const queryFailed = (sqlState: string): QueryFailedError =>
   new QueryFailedError(
     'SELECT 1',

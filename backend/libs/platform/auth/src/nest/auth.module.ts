@@ -9,12 +9,12 @@ import {
 } from './auth.module-definition.js';
 
 /**
- * Verificación de tokens y autorización para un servicio: `AccessTokenVerifier`,
- * `AccessResolver`, `ApiKeyAuthenticator`, `AccessEvaluator` y el `AuthStateReader`
- * con las cachés locales. Es global y necesita un `ConfigModule.forRoot()`. El Bloom de
- * sesiones revocadas vive en la memoria de cada proceso, no en `BloomModule`, porque
- * cada réplica reconstruye el suyo; esa reconstrucción periódica la corre el `JobRunner`
- * de `@platform/scheduling` si el servicio lo importa.
+ * Token verification and authorization for a service: `AccessTokenVerifier`,
+ * `AccessResolver`, `ApiKeyAuthenticator`, `AccessEvaluator` and the `AuthStateReader`
+ * with the local caches. It is global and needs a `ConfigModule.forRoot()`. The revoked
+ * sessions Bloom filter lives in the memory of each process, not in `BloomModule`, because
+ * each replica rebuilds its own; that periodic rebuild is run by the `JobRunner`
+ * of `@platform/scheduling` if the service imports it.
  */
 @Module({})
 export class AuthModule extends AuthModuleClass {

@@ -6,7 +6,7 @@ import {
 } from '@platform/persistence';
 import type { FakeMigrationRunner } from './fake-migration-runner.js';
 
-/** Contexto de migración de prueba: resuelve el runner y el listador de shards y cuenta los cierres. */
+/** Test migration context: resolves the runner and the shard lister and counts the closes. */
 export class FakeMigrationApp {
   closeCount = 0;
 
@@ -30,7 +30,7 @@ export class FakeMigrationApp {
     return Promise.resolve();
   }
 
-  /** La forma que espera `ServiceMigrator`; el doble solo resuelve los dos tokens que usa. */
+  /** The shape `ServiceMigrator` expects; the double only resolves the two tokens it uses. */
   asApplicationContext(): INestApplicationContext {
     return this as unknown as INestApplicationContext;
   }

@@ -1,4 +1,4 @@
-/** Usuario de una conexión de tiempo real y el tenant de su token. `sessionExpiresAt` es epoch en segundos. */
+/** User of a realtime connection and the tenant of their token. `sessionExpiresAt` is epoch in seconds. */
 export interface StreamPrincipal {
   readonly userId: string;
   readonly tenantId: string;

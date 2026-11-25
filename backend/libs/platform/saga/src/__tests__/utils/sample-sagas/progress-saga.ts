@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { STEP_A, STEP_B } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Dos pasos; el segundo copia por rondas y responde `ProgressSaga.ROUND_PENDING` mientras le falta. */
+/** Two steps; the second copies in rounds and returns `ProgressSaga.ROUND_PENDING` while it has more to do. */
 export class ProgressSaga extends SagaDefinition<SampleState> {
   static readonly ROUND_PENDING = 'SAMPLE.COPY.ROUND_PENDING';
   readonly type = 'progress';

@@ -1,10 +1,10 @@
-/** Ajustes y ganchos de un {@link Bulkhead}. */
+/** Settings and hooks of a {@link Bulkhead}. */
 export interface BulkheadOptions {
-  /** Llamadas simultáneas máximas. */
+  /** Maximum concurrent calls. */
   readonly limit: number;
-  /** Llamadas que pueden esperar un cupo antes de ser rechazadas. */
+  /** Calls that can wait for a slot before being rejected. */
   readonly queue: number;
-  /** Error que se lanza cuando no hay cupo ni lugar en la cola. */
+  /** Error thrown when there is no free slot or room in the queue. */
   readonly rejectWith: () => Error;
   readonly onReject?: () => void;
 }

@@ -1,6 +1,6 @@
 import { PlatformError } from '@platform/kernel';
 
-/** Error de dominio de prueba con código válido. */
+/** Test domain error with a valid code. */
 export class PaymentDeclinedError extends PlatformError {
   readonly code = 'BILLING.PAYMENT.DECLINED';
 }

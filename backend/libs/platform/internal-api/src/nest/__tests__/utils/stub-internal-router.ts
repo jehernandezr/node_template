@@ -3,20 +3,20 @@ import { OperationResolver } from '../../../contract/operation-resolver.js';
 import { InternalRouter } from '../../../server/internal-router.js';
 import type { CallMeta } from '../../../transport/call-meta.js';
 
-/** Llamada que recibió el router de prueba. */
+/** Call received by the test router. */
 export interface RouterCall {
   readonly operationId: string;
   readonly input: unknown;
   readonly meta: CallMeta;
 }
 
-/** Router de prueba que registra las llamadas y responde lo programado. */
+/** Test router that records the calls and responds with what was programmed. */
 export class StubInternalRouter extends InternalRouter {
   readonly calls: RouterCall[] = [];
   private result: Outcome<unknown> = CallOutcome.success(null);
 
   constructor() {
-    // El constructor del router solo guarda sus dependencias, que este doble no usa.
+    // The router constructor only stores its dependencies, which this double does not use.
     super(
       new OperationResolver(),
       undefined as never,
@@ -25,7 +25,7 @@ export class StubInternalRouter extends InternalRouter {
     );
   }
 
-  /** Resultado que devuelve la siguiente llamada. */
+  /** Sets the result the next call returns. */
   respondWith(outcome: Outcome<unknown>): void {
     this.result = outcome;
   }

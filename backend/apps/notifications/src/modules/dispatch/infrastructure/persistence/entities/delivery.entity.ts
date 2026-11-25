@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 
 /**
- * `notification_deliveries`, una fila por notificación y canal, en el shard del usuario. Sin `created_by` ni
- * `updated_by`: la escribe siempre el propio servicio, nunca la acción de un usuario.
+ * `notification_deliveries`, one row per notification and channel, in the user's shard. Without `created_by` or
+ * `updated_by`: it is always written by the service itself, never by a user's action.
  */
 @Entity({ name: 'notification_deliveries' })
 @Index('notification_deliveries_notification_idx', ['notificationId'])

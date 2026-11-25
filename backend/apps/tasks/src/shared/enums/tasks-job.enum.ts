@@ -1,5 +1,5 @@
-/** Jobs periódicos de tasks. */
+/** tasks periodic jobs. */
 export enum TasksJob {
-  /** Elimina las tareas borradas hace más de `TASKS_DELETED_RETENTION_DAYS`. */
+  /** Permanently removes the tasks deleted more than `TASKS_DELETED_RETENTION_DAYS` ago. */
   PurgeDeleted = 'tasks.purge-deleted',
 }

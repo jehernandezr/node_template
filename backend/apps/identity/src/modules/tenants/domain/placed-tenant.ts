@@ -1,7 +1,7 @@
-/** Dónde quedó un tenant en el directorio de shards de identity. */
+/** Where a tenant ended up in identity's shard directory. */
 export interface PlacedTenant {
   readonly region: string;
-  /** Los shards lógicos de identity del tenant. */
+  /** The tenant's identity logical shards. */
   readonly shards: readonly string[];
   readonly dedicated: boolean;
 }

@@ -4,7 +4,7 @@ import { ClaimRequest, ClaimResult } from '@platform/kernel';
 import { ProcessedOperationStore } from '../../processed-operation-store.js';
 import { RecordingProcessedOperationStore } from './recording-processed-operation-store.js';
 
-/** Almacén que falla en el método que se programe y delega el resto en memoria. */
+/** Store that fails in the programmed method and delegates the rest to memory. */
 export class FailingProcessedOperationStore extends ProcessedOperationStore {
   private readonly inner: RecordingProcessedOperationStore;
   private claimFailure?: { readonly error: unknown };

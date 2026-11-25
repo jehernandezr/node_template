@@ -1,7 +1,7 @@
 import { PasswordReset } from '../../domain/password-reset.js';
 import { PasswordResetRepository } from '../../domain/password-reset.repository.js';
 
-/** Recuperaciones en memoria, indexadas por id. */
+/** In-memory recoveries, indexed by id. */
 export class InMemoryPasswordResetRepository extends PasswordResetRepository {
   readonly rows = new Map<string, PasswordReset>();
 

@@ -1,17 +1,17 @@
-/** Valores de configuración del motor. Los que no se pasan toman su valor por defecto de `SagaSettings`. */
+/** Engine configuration values. Those not passed take their default value from `SagaSettings`. */
 export interface SagaSettingsInput {
-  /** Identidad de este proceso. Los tokens de lease se derivan de ella. */
+  /** Identity of this process. The lease tokens are derived from it. */
   readonly owner: string;
-  /** Duración del lease en milisegundos. Debe superar `maxStepDurationMs`. */
+  /** Lease duration in milliseconds. Must exceed `maxStepDurationMs`. */
   readonly leaseMs?: number;
-  /** Llamada más larga esperada a una operación, en milisegundos. */
+  /** Longest expected call to an operation, in milliseconds. */
   readonly maxStepDurationMs?: number;
-  /** Intentos fallidos en suspensión antes de exigir intervención. */
+  /** Failed attempts in suspension before requiring intervention. */
   readonly maxSuspendAttempts?: number;
-  /** Tiempo en suspensión antes de exigir intervención, en milisegundos. */
+  /** Time in suspension before requiring intervention, in milliseconds. */
   readonly maxSuspendAgeMs?: number;
-  /** Cuánto se conserva una saga terminada antes de que `SagaRetentionJob` la borre, en milisegundos. */
+  /** How long a finished saga is kept before `SagaRetentionJob` deletes it, in milliseconds. */
   readonly retentionMs?: number;
-  /** Sagas que `SagaRecoveryJob` retoma por pasada. */
+  /** Sagas that `SagaRecoveryJob` resumes per pass. */
   readonly recoveryBatchSize?: number;
 }

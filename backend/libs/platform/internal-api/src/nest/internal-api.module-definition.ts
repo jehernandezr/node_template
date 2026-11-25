@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { InternalApiModuleOptions } from './internal-api-module-options.js';
 
-/** Opciones de `InternalApiModule.forRootAsync`, sin los adaptadores. */
+/** Options of `InternalApiModule.forRootAsync`, without the adapters. */
 export type InternalApiModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<InternalApiModuleOptions>;
 

@@ -3,13 +3,13 @@ import type { FileSystem } from './file-system.js';
 import type { Formatter } from './formatter.js';
 import { GeneratorError, GeneratorErrorReason } from './generator-error.js';
 
-/** Un archivo listo para escribir: su ruta relativa a `backend/` y su texto. */
+/** A file ready to write: its path relative to `backend/` and its text. */
 export interface GeneratedFile {
   readonly path: string;
   readonly content: string;
 }
 
-/** Escribe lo generado con formato, sin pisar nada: si un archivo ya existe no escribe ninguno. */
+/** Writes the generated output formatted, without overwriting anything: if a file already exists it writes none. */
 export class GeneratedFileWriter {
   constructor(
     private readonly files: FileSystem,
@@ -17,7 +17,7 @@ export class GeneratedFileWriter {
     private readonly backendRoot: string,
   ) {}
 
-  /** @throws GeneratorError `AlreadyExists` si alguno de los archivos ya existe. */
+  /** @throws GeneratorError `AlreadyExists` if any of the files already exists. */
   async writeNew(generated: readonly GeneratedFile[]): Promise<void> {
     for (const file of generated) {
       if (await this.files.exists(this.absolute(file.path))) {

@@ -1,4 +1,4 @@
-/** Huella de una dirección de correo: identifica al destinatario en los registros sin guardar el correo. */
+/** Hash of an email address: identifies the recipient in the logs without storing the address. */
 export abstract class RecipientFingerprint {
   abstract of(address: string): string;
 }

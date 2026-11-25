@@ -1,37 +1,37 @@
 /**
- * Datos de vida corta de identity (desafíos, autenticaciones pendientes, contadores, nonces). Cada
- * operación es atómica en el servidor, así que dos réplicas no pueden usar dos veces el mismo valor.
+ * Short-lived identity data (challenges, pending authentications, counters, nonces). Each
+ * operation is atomic on the server, so two replicas cannot use the same value twice.
  */
 export abstract class EphemeralStore {
   abstract get(key: string): Promise<string | undefined>;
 
   abstract set(key: string, value: string, ttlMs: number): Promise<void>;
 
-  /** Guarda solo si la llave no existe. Devuelve `true` si la guardó. */
+  /** Stores only if the key does not exist. Returns `true` if it stored it. */
   abstract setIfAbsent(
     key: string,
     value: string,
     ttlMs: number,
   ): Promise<boolean>;
 
-  /** Lee y borra en un solo paso: el valor se usa una vez. */
+  /** Reads and deletes in a single step: the value is used once. */
   abstract take(key: string): Promise<string | undefined>;
 
   abstract delete(key: string): Promise<void>;
 
-  /** Suma uno y devuelve el valor nuevo. La vida corre desde el primer incremento. */
+  /** Adds one and returns the new value. The lifetime runs from the first increment. */
   abstract increment(key: string, ttlMs: number): Promise<number>;
 
   /**
-   * Alarga la vida de una llave existente hasta `ttlMs` desde ahora, sin acortarla nunca. Una llave que no
-   * existe sigue sin existir.
+   * Extends the lifetime of an existing key to `ttlMs` from now, never shortening it. A key that does not
+   * exist still does not exist.
    */
   abstract extend(key: string, ttlMs: number): Promise<void>;
 
-  /** Milisegundos que le quedan a la llave, o `undefined` si no existe. */
+  /** Milliseconds the key has left, or `undefined` if it does not exist. */
   abstract remainingMs(key: string): Promise<number | undefined>;
 
-  /** Guarda un campo de un mapa; cada escritura renueva la vida del mapa completo. */
+  /** Stores a field of a map; each write renews the lifetime of the whole map. */
   abstract putField(
     key: string,
     field: string,
@@ -39,6 +39,6 @@ export abstract class EphemeralStore {
     ttlMs: number,
   ): Promise<void>;
 
-  /** Lee y borra el mapa en un solo paso: lo escrito después queda para la siguiente lectura. */
+  /** Reads and deletes the map in a single step: what is written afterwards is kept for the next read. */
   abstract takeFields(key: string): Promise<ReadonlyMap<string, string>>;
 }

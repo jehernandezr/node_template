@@ -1,8 +1,8 @@
 import type { CacheAside } from '@platform/cache';
 
 /**
- * `CacheAside` de prueba: guarda las llaves invalidadas y responde las lecturas con una carga directa,
- * sin versiones ni TTL. Basta para comprobar qué invalida el caso de uso y qué lee el adaptador.
+ * Test `CacheAside`: stores the invalidated keys and answers reads with a direct load,
+ * without versions or TTL. Enough to check what the use case invalidates and what the adapter reads.
  */
 export class RecordingCacheAside {
   readonly invalidated: (readonly string[])[] = [];
@@ -16,7 +16,7 @@ export class RecordingCacheAside {
     return Promise.resolve();
   }
 
-  /** La forma que `SmokeOrderCache` recibe: el mismo objeto, sin más métodos de `CacheAside`. */
+  /** The shape `SmokeOrderCache` receives: the same object, without the other `CacheAside` methods. */
   asCacheAside(): CacheAside {
     return this as unknown as CacheAside;
   }

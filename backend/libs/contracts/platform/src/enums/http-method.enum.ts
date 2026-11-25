@@ -1,4 +1,4 @@
-/** Métodos HTTP que puede declarar una ruta pública. */
+/** HTTP methods a public route can declare. */
 export enum HttpMethod {
   Get = 'GET',
   Post = 'POST',

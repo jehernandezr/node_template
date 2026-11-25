@@ -2,7 +2,7 @@ import { AccessTokenVerifier, AuthenticationError } from '@platform/auth';
 import { AccessTokenStreamAuthenticator } from './access-token-stream-authenticator.js';
 import type { StreamCredentials } from './stream-credentials.js';
 
-/** Access token en `Authorization: Bearer`: lo usan la app nativa y el cliente SSE del front. */
+/** Access token in `Authorization: Bearer`: used by the native app and the front's SSE client. */
 export class BearerStreamAuthenticator extends AccessTokenStreamAuthenticator {
   private static readonly SCHEME = /^Bearer\s+(\S+)$/i;
 

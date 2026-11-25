@@ -3,12 +3,12 @@ import type { KeyObject } from 'node:crypto';
 import { InvalidKeyError } from '../errors/invalid-key.error.js';
 import type { PublicJwk } from './public-jwk.js';
 
-/** Convierte claves EC P-256 de `node:crypto` a JWK y de vuelta. Utilidad pura, sin estado. */
+/** Converts EC P-256 keys from `node:crypto` to JWK and back. Pure stateless utility. */
 export class JwkCodec {
-  /** Una coordenada de P-256 en base64url mide 32 bytes, es decir 43 caracteres. */
+  /** A P-256 coordinate in base64url is 32 bytes, that is 43 characters. */
   private static readonly COORDINATE = /^[A-Za-z0-9_-]{43}$/;
 
-  /** JWK público de `key` (pública o privada) con el `kid` dado. Nunca incluye `d`. */
+  /** Returns the public JWK of `key` (public or private) with the given `kid`. It never includes `d`. */
   static toPublicJwk(key: KeyObject, kid: string): PublicJwk {
     const publicKey = key.type === 'private' ? createPublicKey(key) : key;
     const jwk = publicKey.export({ format: 'jwk' });
@@ -35,8 +35,8 @@ export class JwkCodec {
   }
 
   /**
-   * Clave pública de un JWK, con `createPublicKey({ key, format: 'jwk' })`.
-   * @throws InvalidKeyError si no es un objeto con `kty: 'EC'` y `crv: 'P-256'`, o si `x` o `y` no son una coordenada válida.
+   * Returns the public key of a JWK, with `createPublicKey({ key, format: 'jwk' })`.
+   * @throws InvalidKeyError if it is not an object with `kty: 'EC'` and `crv: 'P-256'`, or if `x` or `y` are not a valid coordinate.
    */
   static publicKeyFromJwk(jwk: unknown): KeyObject {
     if (!JwkCodec.isRecord(jwk)) {

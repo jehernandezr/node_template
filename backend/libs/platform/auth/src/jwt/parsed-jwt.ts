@@ -1,9 +1,9 @@
-/** Un JWT compacto separado en partes, con la firma sin verificar. */
+/** A compact JWT split into parts, with the signature unverified. */
 export interface ParsedJwt {
   readonly header: Readonly<Record<string, unknown>>;
   readonly claims: Readonly<Record<string, unknown>>;
-  /** `<header>.<payload>` en base64url: lo que se firma. */
+  /** `<header>.<payload>` in base64url: what is signed. */
   readonly signingInput: string;
-  /** Firma ES256 en formato IEEE P1363 (r y s de 32 bytes cada uno). */
+  /** ES256 signature in IEEE P1363 format (r and s of 32 bytes each). */
   readonly signature: Buffer;
 }

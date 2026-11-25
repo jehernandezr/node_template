@@ -1,2 +1,2 @@
-/** `TelemetryBootstrap` que arrancó el proceso, o el que el módulo arrancó con la configuración. */
+/** `TelemetryBootstrap` that started the process, or the one the module started with the configuration. */
 export const TELEMETRY = Symbol('TELEMETRY');

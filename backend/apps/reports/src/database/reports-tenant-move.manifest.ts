@@ -4,7 +4,7 @@ import {
   type TenantMoveTable,
 } from '@platform/tenant-move';
 
-/** Las tablas de shard de reports que viajan con un tenant: sus ejecuciones y sus proyecciones. */
+/** The reports shard tables that travel with a tenant: its runs and its projections. */
 export class ReportsTenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [
     {

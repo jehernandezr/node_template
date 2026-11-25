@@ -2,7 +2,7 @@ import { CheckMode } from '../check-mode.js';
 import { WriteMode } from '../write-mode.js';
 import { InMemoryFileSystem } from './utils/in-memory-file-system.js';
 
-const UP_TO_DATE = 'Archivos generados al día.';
+const UP_TO_DATE = 'Generated files up to date.';
 
 describe('export modes', () => {
   describe('WriteMode', () => {
@@ -15,7 +15,7 @@ describe('export modes', () => {
       expect(fileSystem.contentOf('/x/a.json')).toBe('{"a":1}\n');
       expect(mode.report()).toEqual({
         ok: true,
-        lines: ['Escrito /x/a.json'],
+        lines: ['Wrote /x/a.json'],
       });
     });
   });
@@ -43,7 +43,7 @@ describe('export modes', () => {
       expect(report.ok).toBe(false);
       expect(report.lines[0]).toContain('\n  /x/a.json\n');
       expect(report.lines[0]).toContain(
-        'Ejecuta: pnpm nx run contracts-export:export',
+        'Run: pnpm nx run contracts-export:export',
       );
     });
   });

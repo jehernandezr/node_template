@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Directorio de sagas de identity en el catálogo. */
+/** Identity saga directory in the catalog. */
 export class CreateIdentitySagas1795001200000 implements MigrationInterface {
   readonly name = 'CreateIdentitySagas1795001200000';
 

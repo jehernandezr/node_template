@@ -3,8 +3,8 @@ import { KernelErrorCode } from './kernel-error-code.enum.js';
 import { PlatformError } from './platform-error.js';
 
 /**
- * Un argumento no cumple el rango o el tipo esperado. Es la falla por defecto
- * de `Guard`: una librería que necesita su propio tipo lo pasa al construir la guarda.
+ * An argument does not meet the expected range or type. It is the default failure
+ * of `Guard`: a library that needs its own type passes it when building the guard.
  */
 export class GuardViolationError extends PlatformError {
   override readonly code = KernelErrorCode.GuardViolation;

@@ -17,7 +17,7 @@ import {
 import { reportsShardMigrations } from './database/shard-migrations.js';
 import { REPORTS_ERROR_CATALOGS } from './shared/constants/reports-error-catalogs.constants.js';
 
-/** Definición de reports que consumen `ServiceBootstrap`, `ServiceMigrator` y las pruebas. */
+/** reports definition consumed by `ServiceBootstrap`, `ServiceMigrator` and the tests. */
 export const reportsService: ServiceDefinition<ReportsConfig> = {
   name: reportsContract.service,
   configSchema: reportsConfigSchema,

@@ -1,6 +1,6 @@
 import { FileSystem } from '../../file-system.js';
 
-/** Disco en memoria para probar la exportación sin tocar archivos. */
+/** In-memory disk to test the export without touching files. */
 export class InMemoryFileSystem extends FileSystem {
   private readonly files = new Map<string, string>();
 
@@ -33,13 +33,13 @@ export class InMemoryFileSystem extends FileSystem {
     for (const file of this.files.keys()) {
       const rest = file.startsWith(prefix) ? file.slice(prefix.length) : '';
       const slash = rest.indexOf('/');
-      // Un archivo directo de la carpeta no es un subdirectorio.
+      // A file directly in the folder is not a subdirectory.
       if (slash > 0) names.add(rest.slice(0, slash));
     }
     return Promise.resolve([...names].sort());
   }
 
-  /** Contenido actual, o undefined si el archivo no existe. */
+  /** Current content, or undefined if the file does not exist. */
   contentOf(path: string): string | undefined {
     return this.files.get(path);
   }

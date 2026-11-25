@@ -1,11 +1,11 @@
-/** Escalón de límite de tasa de una ruta. `RateLimitTierRules` traduce cada uno a una regla. */
+/** Rate limit tier of a route. `RateLimitTierRules` translates each one into a rule. */
 export enum RateLimitTier {
-  /** Rutas de credenciales y de recuperación, contadas por IP. */
+  /** Credential and recovery routes, counted by IP. */
   Auth = 'auth',
-  /** Operaciones sensibles de un usuario autenticado. */
+  /** Sensitive operations of an authenticated user. */
   Sensitive = 'sensitive',
-  /** Tráfico normal de la API. */
+  /** Normal API traffic. */
   Standard = 'standard',
-  /** Tráfico entre servicios. */
+  /** Service-to-service traffic. */
   Internal = 'internal',
 }

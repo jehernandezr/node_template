@@ -11,15 +11,15 @@ import { RealtimeHost } from '../../../shared/enums/realtime-host.enum.js';
 import { RealtimeFacade } from '../application/realtime.facade.js';
 import { StreamRealtimeFacade } from '../application/stream-realtime.facade.js';
 
-/** Rutas de la transmisión: SSE fuera del contrato, como `/health`, y el namespace de Socket.IO. */
+/** Streaming routes: SSE outside the contract, like `/health`, and the Socket.IO namespace. */
 export const NotificationsStreamEndpoints = {
   ssePath: '/v1/notifications/stream',
   socketNamespace: '/notifications',
 } as const;
 
 /**
- * Tiempo real de las notificaciones. Con `REALTIME_HOST=service` el proceso de la API también atiende las
- * conexiones; con `app` solo publica en el stream y `apps/realtime` las atiende.
+ * Real time for notifications. With `REALTIME_HOST=service` the API process also serves the
+ * connections; with `app` it only publishes to the stream and `apps/realtime` serves them.
  */
 @Global()
 @Module({

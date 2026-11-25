@@ -14,7 +14,7 @@ import {
   SchedulingMetricAttribute,
 } from './scheduling-metric.enum.js';
 
-/** Una corrida de un job: toma el lock si es exclusivo, aplica el tiempo máximo y mide. */
+/** One run of a job: takes the lock if it is exclusive, applies the maximum time and measures. */
 export class JobExecution {
   constructor(
     private readonly clock: Clock,
@@ -25,10 +25,10 @@ export class JobExecution {
   ) {}
 
   /**
-   * Corre el job una vez. Un job exclusivo cuyo lock tiene otro proceso no corre y se
-   * cuenta como omitido.
-   * @param shutdown Aborta la corrida cuando el runner se apaga y se agotó la gracia.
-   * @throws El error del job, o `DeadlineExceededError` si superó su `timeoutMs`.
+   * Runs the job once. An exclusive job whose lock is held by another process does not run and is
+   * counted as skipped.
+   * @param shutdown Aborts the run when the runner shuts down and the grace period ran out.
+   * @throws The job error, or `DeadlineExceededError` if it exceeded its `timeoutMs`.
    */
   async execute(
     job: ScheduledJob,

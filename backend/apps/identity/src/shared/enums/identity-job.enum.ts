@@ -1,15 +1,15 @@
-/** Jobs periódicos de identity. */
+/** Identity's periodic jobs. */
 export enum IdentityJob {
-  /** Borra las reservas de `identity_lookup` de más de una hora sin usuario. */
+  /** Deletes `identity_lookup` reservations older than one hour without a user. */
   SweepReservedLookups = 'identity.sweep-reserved-lookups',
-  /** Vuelca a Postgres el último uso de las API keys que acumuló Valkey. */
+  /** Flushes to Postgres the API keys' last use accumulated in Valkey. */
   FlushApiKeyUsage = 'identity.flush-api-key-usage',
-  /** Crea las particiones mensuales de `login_attempts` y borra las de más de 12 meses. */
+  /** Creates the monthly partitions of `login_attempts` and deletes those older than 12 months. */
   RotateLoginAttemptPartitions = 'identity.rotate-login-attempt-partitions',
-  /** Pasa a `Expired` las invitaciones vencidas. */
+  /** Moves expired invitations to `Expired`. */
   ExpireInvitations = 'identity.expire-invitations',
-  /** Borra las recuperaciones de contraseña vencidas o usadas hace más de su retención. */
+  /** Deletes password recoveries expired or used longer ago than their retention. */
   PurgePasswordResets = 'identity.purge-password-resets',
-  /** Borra del origen los datos de los tenants trasladados cuando pasa `TENANT_MOVE_GRACE_DAYS`. */
+  /** Deletes from the source the data of moved tenants once `TENANT_MOVE_GRACE_DAYS` passes. */
   CleanUpTenantMoves = 'identity.clean-up-tenant-moves',
 }

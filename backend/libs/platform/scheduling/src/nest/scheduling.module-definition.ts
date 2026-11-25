@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { SchedulingModuleOptions } from './scheduling-module-options.js';
 
-/** Opciones de `SchedulingModule.forRootAsync`, sin los adaptadores. */
+/** Options of `SchedulingModule.forRootAsync`, without the adapters. */
 export type SchedulingModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<SchedulingModuleOptions>;
 

@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Registro de correos y lista de supresión, en el catálogo. */
+/** Email log and suppression list, in the catalog. */
 export class CreateEmailRecords1796100400000 implements MigrationInterface {
   readonly name = 'CreateEmailRecords1796100400000';
 

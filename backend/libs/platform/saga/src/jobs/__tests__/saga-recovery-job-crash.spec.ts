@@ -12,10 +12,10 @@ import {
 } from '../../__tests__/utils/index.js';
 import { SagaRecoveryJob } from '../saga-recovery-job.js';
 
-/** Más allá del lease por defecto de 30 s: el proceso caído ya no lo renueva. */
+/** Beyond the default 30 s lease: the crashed process no longer renews it. */
 const LEASE_EXPIRED_MS = 30_001;
 
-/** Motor de la primera corrida: el almacén de crash decide en qué paso muere el proceso. */
+/** Engine of the first run: the crash store decides at which step the process dies. */
 function crashingKit(participant: FakeParticipant, store: CrashingSagaStore) {
   return new SagaEngineKit({
     invoker: participant,

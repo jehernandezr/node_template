@@ -1,4 +1,4 @@
-/** Estado de las sagas de ejemplo: el id que devuelve cada paso y la fecha del tercero. */
+/** State of the sample sagas: the id each step returns and the date of the third one. */
 export interface SampleState {
   a?: string;
   b?: string;

@@ -34,7 +34,7 @@ import { ExpireRunsJob } from '../modules/runs/application/expire-runs.job.js';
 import { ReportsTestApp } from './utils/index.js';
 
 const ANA = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b01';
-/** Otra persona: el servicio guarda el acceso de cada usuario por versión de permisos. */
+/** Another person: the service caches each user's access by permission version. */
 const BEA = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b02';
 const TENANT_A = ReportsTestApp.TENANT_A;
 const TENANT_B = ReportsTestApp.TENANT_B;

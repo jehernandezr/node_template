@@ -38,7 +38,7 @@ class UnreachableStream extends InMemoryRealtimeStream {
   }
 }
 
-/** Retiene la puesta al día hasta que la prueba la suelta. */
+/** Holds back the catch-up until the test releases it. */
 class HeldStream extends InMemoryRealtimeStream {
   release: () => void = () => undefined;
   private readonly held = new Promise<void>((resolve) => {

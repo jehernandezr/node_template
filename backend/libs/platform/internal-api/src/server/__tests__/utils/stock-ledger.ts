@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { HandlerResult } from '../../handler-result.js';
 import { OperationHandler } from '../../operation-handler.js';
 
-/** Un paso de saga que reserva stock y su compensación. */
+/** A saga step that reserves stock and its compensation. */
 export class StockOperations {
   static readonly Reserve = defineOperation({
     id: 'stock.reserve.v1',
@@ -26,12 +26,12 @@ export class StockOperations {
   });
 }
 
-/** Las reservas de stock de un participante de saga, con las que vive cada una. */
+/** The stock reservations of a saga participant, with what each one holds. */
 export class StockLedger {
   readonly reserved = new Set<string>();
 }
 
-/** Reserva stock; con `gate`, espera antes de aplicar el efecto, como un handler lento. */
+/** Reserves stock; with `gate`, waits before applying the effect, like a slow handler. */
 export class ReserveHandler extends OperationHandler<
   typeof StockOperations.Reserve
 > {
@@ -44,7 +44,7 @@ export class ReserveHandler extends OperationHandler<
     super();
   }
 
-  /** Espera la compuerta y anota la reserva. */
+  /** Waits for the gate and records the claim. */
   async handle(input: {
     sku: string;
   }): Promise<HandlerResult<{ reservationId: string }>> {
@@ -55,7 +55,7 @@ export class ReserveHandler extends OperationHandler<
   }
 }
 
-/** Libera la reserva que dejó el paso hacia delante, si la hay. */
+/** Releases the reservation left by the forward step, if any. */
 export class ReleaseHandler extends OperationHandler<
   typeof StockOperations.Release
 > {
@@ -63,7 +63,7 @@ export class ReleaseHandler extends OperationHandler<
     super();
   }
 
-  /** Quita la reserva. */
+  /** Removes the claim. */
   async handle(input: {
     reservationId: string;
   }): Promise<HandlerResult<{ released: boolean }>> {

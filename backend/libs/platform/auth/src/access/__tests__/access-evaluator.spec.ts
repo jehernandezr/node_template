@@ -19,13 +19,13 @@ import { AccessEvaluator } from '../access-evaluator.js';
 import { AccessOutcome } from '../access-outcome.enum.js';
 import type { AccessRequirement } from '@contracts/platform';
 
-/** `jti` del access token de prueba. */
+/** `jti` of the test access token. */
 const JTI = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f05';
 
 const NOW = new Date('2026-01-15T12:00:00.000Z');
 const NOW_SECONDS = NOW.getTime() / 1000;
 
-/** Constructores de actores y grants para los casos del evaluador. */
+/** Builders of actors and grants for the evaluator cases. */
 class Fixtures {
   static user(overrides: Partial<UserActor> = {}): UserActor {
     return {

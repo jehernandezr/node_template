@@ -1,10 +1,10 @@
 import 'package:contracts/contracts.dart';
 
-/// No hay sesión abierta, o un cierre de sesión anuló la operación en curso.
+/// There is no open session, or a sign-out cancelled the operation in progress.
 ///
-/// Es el único error propio del paquete. Los errores del servidor llegan como
-/// [ApiErrorException] con su código del contrato, y una petición que no
-/// cumple el contrato como [ContractViolationException].
+/// It is the package's only own error. Server errors arrive as
+/// [ApiErrorException] with their contract code, and a request that does not
+/// meet the contract as [ContractViolationException].
 final class SignedOutException implements Exception {
   const SignedOutException();
 
@@ -12,17 +12,17 @@ final class SignedOutException implements Exception {
   String toString() => 'SignedOutException';
 }
 
-/// Códigos de identity que cierran la sesión, sea que los devuelva un
-/// refresh o el guard de cualquier ruta autenticada.
+/// Identity codes that close the session, whether returned by a
+/// refresh or by the guard of any authenticated route.
 ///
-/// Son los que invalidan tokens según el ADR 0005: sesión revocada, vencida o
-/// reutilizada (reusar un session token ya rotado revoca la sesión completa),
-/// access token revocado por la época del usuario o del tenant, y usuario o
-/// tenant suspendido. `IDENTITY.TOKEN.STALE_PERMISSIONS` no está: con él el
-/// cliente refresca y reintenta. `PLATFORM.AUTH.TOKEN_EXPIRED` tampoco: el
-/// access token vencido también refresca y reintenta, una sola vez.
-/// `PLATFORM.AUTH.UNAUTHENTICATED` cierra la sesión cuando lo responde un
-/// refresh: lo decide `SessionManager`, porque no es un código de identity.
+/// They are the ones that invalidate tokens per ADR 0005: revoked, expired or
+/// reused session (reusing an already rotated session token revokes the whole session),
+/// access token revoked by the user or tenant epoch, and suspended user or
+/// tenant. `IDENTITY.TOKEN.STALE_PERMISSIONS` is not included: with it the
+/// client refreshes and retries. Neither is `PLATFORM.AUTH.TOKEN_EXPIRED`: the
+/// expired access token also refreshes and retries, only once.
+/// `PLATFORM.AUTH.UNAUTHENTICATED` closes the session when a refresh
+/// returns it: `SessionManager` decides that, because it is not an identity code.
 const Set<IdentityErrorCode> defaultInvalidationCodes = {
   IdentityErrorCode.sessionRevoked,
   IdentityErrorCode.sessionExpired,

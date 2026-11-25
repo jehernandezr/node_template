@@ -16,14 +16,14 @@ const PrivateJwkSchema = z.looseObject({
 });
 
 /**
- * Lee `IDENTITY_SIGNING_KEYS`: un arreglo JSON de JWK privados P-256 con `kid` y un `status` opcional. Sin
- * `status`, la primera clave es la activa y las demás quedan para verificar, así una clave nueva entra
- * detrás de la vigente y pasa a activa en el siguiente despliegue.
+ * Reads `IDENTITY_SIGNING_KEYS`: a JSON array of P-256 private JWKs with `kid` and an optional `status`. Without
+ * `status`, the first key is the active one and the rest are kept for verification, so a new key enters
+ * behind the current one and becomes active on the next deployment.
  */
 export class ConfigSigningKeyProvider extends SigningKeyProvider {
   private readonly keys: SigningKeyRing;
 
-  /** @throws Error si el texto no es un arreglo de JWK privados P-256 o no deja una sola clave activa. */
+  /** @throws Error if the text is not an array of P-256 private JWKs or does not leave exactly one active key. */
   constructor(raw: string) {
     super();
     const parsed = z.array(PrivateJwkSchema).min(1).parse(JSON.parse(raw));

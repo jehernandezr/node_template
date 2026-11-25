@@ -1,6 +1,6 @@
 import type { ValueTransformer } from 'typeorm';
 
-/** Columna `timestamptz` que siempre vuelve como `Date`, aunque el driver la entregue como texto. */
+/** `timestamptz` column that always comes back as a `Date`, even if the driver returns it as text. */
 export class TimestampTransformer implements ValueTransformer {
   to(value: Date | null | undefined): Date | null | undefined {
     return value;

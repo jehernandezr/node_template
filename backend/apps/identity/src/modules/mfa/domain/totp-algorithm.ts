@@ -1,20 +1,20 @@
 import { createHmac } from 'node:crypto';
 
 /**
- * TOTP de RFC 6238 sobre HOTP de RFC 4226: HMAC-SHA1, pasos de 30 s y 6 dígitos, como las apps de
- * autenticación. Es cálculo puro, sin estado.
+ * RFC 6238 TOTP over RFC 4226 HOTP: HMAC-SHA1, 30 s steps and 6 digits, like authenticator
+ * apps. It is pure, stateless computation.
  */
 export class TotpAlgorithm {
   static readonly STEP_SECONDS = 30;
   static readonly DIGITS = 6;
-  /** Pasos de tolerancia hacia cada lado, por relojes desfasados. */
+  /** Tolerance steps on each side, for skewed clocks. */
   static readonly WINDOW = 1;
 
   step(atMs: number): number {
     return Math.floor(atMs / 1000 / TotpAlgorithm.STEP_SECONDS);
   }
 
-  /** Código HOTP del contador. */
+  /** HOTP code of the counter. */
   code(secret: Buffer, counter: number, digits = TotpAlgorithm.DIGITS): string {
     const message = Buffer.alloc(8);
     message.writeBigUInt64BE(BigInt(counter));
@@ -28,7 +28,7 @@ export class TotpAlgorithm {
     return String(binary % 10 ** digits).padStart(digits, '0');
   }
 
-  /** El paso que coincide con el código dentro de la ventana, o `undefined`. */
+  /** The step that matches the code within the window, or `undefined`. */
   match(secret: Buffer, code: string, atMs: number): number | undefined {
     const current = this.step(atMs);
     for (

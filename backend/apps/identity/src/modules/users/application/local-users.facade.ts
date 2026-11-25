@@ -10,7 +10,7 @@ import { UsersFacade } from './users.facade.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityErrorCode } from '@contracts/identity';
 
-/** `UsersFacade` dentro del proceso. */
+/** In-process `UsersFacade`. */
 @Injectable()
 export class LocalUsersFacade extends UsersFacade {
   constructor(
@@ -35,8 +35,8 @@ export class LocalUsersFacade extends UsersFacade {
   }
 
   /**
-   * @throws IdentityError `IDENTITY.INVITATION.INVALID` si el email ya tiene cuenta: quien registra fuera de la
-   * ruta pública (una invitación o la carga inicial) no puede crear otra cuenta con ese email.
+   * @throws IdentityError `IDENTITY.INVITATION.INVALID` if the email already has an account: whoever registers outside the
+   * public route (an invitation or the initial load) cannot create another account with that email.
    */
   async register(input: RegisterUserInput): Promise<UserRef> {
     const ref = await this.registrar.register(input);

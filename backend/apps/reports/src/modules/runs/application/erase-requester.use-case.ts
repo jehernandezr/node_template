@@ -4,8 +4,8 @@ import { ReportsDefaults } from '../../../shared/constants/reports-defaults.cons
 import { ReportRunMaintenance } from '../domain/report-run-maintenance.js';
 
 /**
- * Borra a un usuario de las ejecuciones que pidió, en todos los shards: las ejecuciones son del tenant y se
- * conservan con un solicitante anónimo. Repetirlo no cambia nada.
+ * Erases a user from the runs they requested, in all shards: runs belong to the tenant and are
+ * kept with an anonymous requester. Repeating it changes nothing.
  */
 @Injectable()
 export class EraseRequester {

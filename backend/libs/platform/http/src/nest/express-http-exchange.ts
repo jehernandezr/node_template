@@ -7,8 +7,8 @@ import { HttpRequestKey } from './http-metadata-key.enum.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
 /**
- * `HttpExchange` sobre la petición y la respuesta de Express. `client` sale de lo que dejó
- * `OriginPolicyMiddleware` en la petición (`HttpRequestKey.ClientInfo`).
+ * `HttpExchange` over the Express request and response. `client` comes from what
+ * `OriginPolicyMiddleware` left on the request (`HttpRequestKey.ClientInfo`).
  */
 export class ExpressHttpExchange extends HttpExchange {
   constructor(

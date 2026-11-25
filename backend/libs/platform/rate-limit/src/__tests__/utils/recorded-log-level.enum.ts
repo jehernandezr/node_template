@@ -1,4 +1,4 @@
-/** Nivel de un registro guardado por {@link RecordingLogger}. */
+/** Level of a log entry stored by {@link RecordingLogger}. */
 export enum RecordedLogLevel {
   Debug = 'debug',
   Info = 'info',

@@ -40,19 +40,19 @@ import {
 } from './http/report.routes.js';
 import * as schemas from './schemas/index.js';
 
-/** Las operaciones de traslado de tenant de reports, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant move operations of reports, with their exact type to register and call them. */
 export const ReportsTenantMoveOperations =
   defineTenantMoveOperations('reports');
 
-/** Las operaciones del directorio de tenants de reports, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant directory operations of reports, with their exact type to register and call them. */
 export const ReportsTenantDirectoryOperations =
   defineTenantDirectoryOperations('reports');
 
-/** Contrato del servicio reports: catálogo de reportes, ejecuciones y proyecciones por eventos. */
+/** Contract of the reports service: report catalog, runs and event-driven projections. */
 export const reportsContract = defineServiceContract({
   service: 'reports',
   description:
-    'Reportes sobre los datos del tenant: catálogo, ejecuciones calculadas en segundo plano y resultado guardado.',
+    'Reports on tenant data: catalog, runs computed in the background and stored result.',
   enums: {
     ReportType,
     ReportRunStatus,

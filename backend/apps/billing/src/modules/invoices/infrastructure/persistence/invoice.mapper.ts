@@ -7,7 +7,7 @@ import { Invoice } from '../../domain/invoice.js';
 import { InvoiceLineEntity } from './entities/invoice-line.entity.js';
 import { InvoiceEntity } from './entities/invoice.entity.js';
 
-/** Filas de `invoices` e `invoice_lines` y agregado `Invoice`, en los dos sentidos. Utilidad pura. */
+/** Rows of `invoices` and `invoice_lines` and the `Invoice` aggregate, in both directions. Pure utility. */
 export class InvoiceMapper {
   static toDomain(
     row: InvoiceEntity,

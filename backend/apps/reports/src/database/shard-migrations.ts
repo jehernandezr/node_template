@@ -3,7 +3,7 @@ import { projectionShardMigrations } from '../modules/projections/infrastructure
 import { runShardMigrations } from '../modules/runs/infrastructure/persistence/migrations/index.js';
 // generated:modules:imports
 
-/** Migraciones de los shards de reports, en el orden de los módulos. */
+/** Migrations of the reports shards, in module order. */
 export const reportsShardMigrations: readonly MigrationClass[] = [
   ...runShardMigrations,
   ...projectionShardMigrations,

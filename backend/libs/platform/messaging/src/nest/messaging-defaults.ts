@@ -2,9 +2,9 @@ import { BackoffStrategy, RetryPolicy } from '@platform/primitives';
 
 const DAY_MS = 86_400_000;
 
-/** Valores por defecto de `MessagingModule`. */
+/** Default values of `MessagingModule`. */
 export class MessagingDefaults {
-  /** Diez intentos, de 1 s a 5 min, con jitter completo. */
+  /** Ten attempts, from 1 s to 5 min, with full jitter. */
   static readonly RELAY_RETRY_POLICY = new RetryPolicy(
     10,
     1_000,

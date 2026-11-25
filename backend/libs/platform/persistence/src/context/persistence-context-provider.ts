@@ -1,7 +1,7 @@
 import type { PersistenceContext } from './persistence-context.js';
 
-/** Fuente del contexto de la petición. Se llama en cada sentencia, así que debe ser barata. */
+/** Source of the request context. It is called on every statement, so it must be cheap. */
 export abstract class PersistenceContextProvider {
-  /** Contexto vacío (`{}`) cuando no hay petición, mensaje ni job activo. */
+  /** Returns an empty context (`{}`) when there is no active request, message or job. */
   abstract current(): PersistenceContext;
 }

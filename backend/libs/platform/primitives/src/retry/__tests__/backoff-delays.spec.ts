@@ -13,7 +13,7 @@ interface BackoffOptions {
   readonly random?: () => number;
 }
 
-/** Fuente aleatoria que llama a la función dada; sin valor usa `Math.random`. */
+/** Random source that calls the given function; without a value it uses `Math.random`. */
 class FunctionRandomSource extends RandomSource {
   constructor(private readonly source: () => number = Math.random) {
     super();
@@ -28,7 +28,7 @@ class FunctionRandomSource extends RandomSource {
   }
 }
 
-/** Valida las opciones al construir la política, como hace la clase. */
+/** Validates the options when building the policy, as the class does. */
 function legacyBackoff(options: BackoffOptions): Backoff {
   return new Backoff(
     new RetryPolicy(

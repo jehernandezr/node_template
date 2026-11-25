@@ -9,8 +9,8 @@ import {
 } from '@platform/kernel';
 
 /**
- * Reloj, aleatoriedad y generador de ids del proceso. Es global porque las tablas de la plataforma
- * (`PostgresPlatformModule`) y `UseCaseRunner` los inyectan y ningún módulo de librería los exporta.
+ * Clock, randomness and id generator of the process. It is global because the platform tables
+ * (`PostgresPlatformModule`) and `UseCaseRunner` inject them and no library module exports them.
  */
 @Global()
 @Module({

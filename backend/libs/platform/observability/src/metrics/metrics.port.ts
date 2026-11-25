@@ -1,18 +1,18 @@
 import type { MetricAttributes } from './metric-attributes.js';
 
 /**
- * Puerto de métricas. Las librerías de la plataforma publican por aquí sin
- * depender de OpenTelemetry.
+ * Metrics port. Platform libraries publish through it without
+ * depending on OpenTelemetry.
  */
 export abstract class MetricsPort {
-  /** Suma `value` (por defecto 1) a un contador. */
+  /** Adds `value` (1 by default) to a counter. */
   abstract increment(
     name: string,
     attributes?: MetricAttributes,
     value?: number,
   ): void;
 
-  /** Registra una medición en un histograma (latencias, tamaños). */
+  /** Records a measurement in a histogram (latencies, sizes). */
   abstract record(
     name: string,
     value: number,

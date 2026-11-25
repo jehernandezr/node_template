@@ -4,7 +4,7 @@ import {
   type TenantMoveTable,
 } from '@platform/tenant-move';
 
-/** Las tablas de shard de billing que viajan con un tenant. Los planes viven en el catálogo y no se mueven. */
+/** The billing shard tables that travel with a tenant. Plans live in the catalog and do not move. */
 export class BillingTenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [
     {

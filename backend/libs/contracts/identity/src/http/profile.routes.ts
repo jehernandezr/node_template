@@ -9,7 +9,7 @@ import {
 } from '../schemas/user.schema.js';
 import { SessionGuardErrors } from './session-guard.errors.js';
 
-/** `GET /v1/me`: perfil del usuario autenticado. */
+/** `GET /v1/me`: profile of the authenticated user. */
 export const GetProfileRoute = defineRoute({
   id: IdentityRoute.GetProfile,
   method: HttpMethod.Get,
@@ -17,10 +17,10 @@ export const GetProfileRoute = defineRoute({
   response: UserProfileSchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Devuelve el perfil del usuario autenticado.',
+  description: 'Returns the profile of the authenticated user.',
 });
 
-/** `PATCH /v1/me`: cambia el nombre o el idioma del perfil. */
+/** `PATCH /v1/me`: changes the profile name or language. */
 export const UpdateProfileRoute = defineRoute({
   id: IdentityRoute.UpdateProfile,
   method: HttpMethod.Patch,
@@ -30,12 +30,12 @@ export const UpdateProfileRoute = defineRoute({
   errors: SessionGuardErrors,
   access: Access.authenticated(),
   description:
-    'Cambia el nombre o el idioma del perfil y devuelve el perfil nuevo.',
+    'Changes the profile name or language and returns the new profile.',
 });
 
 /**
- * `POST /v1/me/email-changes`: envía el token a la dirección nueva. Exige MFA
- * reciente porque el email es el canal de recuperación de la cuenta.
+ * `POST /v1/me/email-changes`: sends the token to the new address. Requires recent
+ * MFA because email is the account recovery channel.
  */
 export const RequestEmailChangeRoute = defineRoute({
   id: IdentityRoute.RequestEmailChange,
@@ -47,11 +47,10 @@ export const RequestEmailChangeRoute = defineRoute({
   access: Access.authenticated({
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description:
-    'Envía un token a la dirección nueva para confirmar el cambio de email.',
+  description: 'Sends a token to the new address to confirm the email change.',
 });
 
-/** `POST /v1/me/email-changes/confirm`: aplica el cambio de email con el token recibido. */
+/** `POST /v1/me/email-changes/confirm`: applies the email change with the received token. */
 export const ConfirmEmailChangeRoute = defineRoute({
   id: IdentityRoute.ConfirmEmailChange,
   method: HttpMethod.Post,
@@ -63,5 +62,5 @@ export const ConfirmEmailChangeRoute = defineRoute({
   ],
   access: Access.authenticated(),
   description:
-    'Aplica el cambio de email con el token enviado a la dirección nueva.',
+    'Applies the email change with the token sent to the new address.',
 });

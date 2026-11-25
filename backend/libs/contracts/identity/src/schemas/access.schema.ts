@@ -46,24 +46,24 @@ export const MemberSummarySchema = z
     joinedAt: TimestampSchema,
   })
   .describe(
-    'Miembro del tenant con sus grupos.',
+    'Tenant member with their groups.',
   ) satisfies z.ZodType<MemberSummary>;
 
 export const MemberPageSchema = pageOf(
   MemberSummarySchema,
-  'Página de miembros.',
+  'Page of members.',
 ) satisfies z.ZodType<MemberPage>;
 
 export const RemoveMemberRequestSchema = z
   .strictObject({ userId: IdSchema })
   .describe(
-    'Miembro a quitar del tenant.',
+    'Member to remove from the tenant.',
   ) satisfies z.ZodType<RemoveMemberRequest>;
 
 export const SetMemberGroupsRequestSchema = z
   .strictObject({ userId: IdSchema, groupIds: GroupIdsSchema })
   .describe(
-    'Reemplazo de los grupos de un miembro.',
+    'Replacement of the groups of a member.',
   ) satisfies z.ZodType<SetMemberGroupsRequest>;
 
 export const GroupSummarySchema = z
@@ -74,26 +74,24 @@ export const GroupSummarySchema = z
     roleIds: z.array(IdSchema).max(IdentityLimits.maxRolesPerUser),
     memberCount: z.int().min(0),
   })
-  .describe('Grupo del tenant.') satisfies z.ZodType<GroupSummary>;
+  .describe('Tenant group.') satisfies z.ZodType<GroupSummary>;
 
 export const GroupPageSchema = pageOf(
   GroupSummarySchema,
-  'Página de grupos.',
+  'Page of groups.',
 ) satisfies z.ZodType<GroupPage>;
 
 export const CreateGroupRequestSchema = z
   .strictObject({ name: GroupNameFieldSchema })
-  .describe('Alta de un grupo.') satisfies z.ZodType<CreateGroupRequest>;
+  .describe('Group creation.') satisfies z.ZodType<CreateGroupRequest>;
 
 export const UpdateGroupRequestSchema = z
   .strictObject({ groupId: IdSchema, name: GroupNameFieldSchema })
-  .describe(
-    'Cambio de nombre de un grupo.',
-  ) satisfies z.ZodType<UpdateGroupRequest>;
+  .describe('Group rename.') satisfies z.ZodType<UpdateGroupRequest>;
 
 export const DeleteGroupRequestSchema = z
   .strictObject({ groupId: IdSchema })
-  .describe('Borrado de un grupo.') satisfies z.ZodType<DeleteGroupRequest>;
+  .describe('Group deletion.') satisfies z.ZodType<DeleteGroupRequest>;
 
 export const SetGroupRolesRequestSchema = z
   .strictObject({
@@ -101,7 +99,7 @@ export const SetGroupRolesRequestSchema = z
     roleIds: z.array(IdSchema).max(IdentityLimits.maxRolesPerUser),
   })
   .describe(
-    'Reemplazo de los roles de un grupo.',
+    'Replacement of the roles of a group.',
   ) satisfies z.ZodType<SetGroupRolesRequest>;
 
 export const RoleSummarySchema = z
@@ -112,12 +110,12 @@ export const RoleSummarySchema = z
     permissions: PermissionsSchema,
   })
   .describe(
-    'Rol del tenant con sus permisos.',
+    'Tenant role with its permissions.',
   ) satisfies z.ZodType<RoleSummary>;
 
 export const RolePageSchema = pageOf(
   RoleSummarySchema,
-  'Página de roles.',
+  'Page of roles.',
 ) satisfies z.ZodType<RolePage>;
 
 export const CreateRoleRequestSchema = z
@@ -125,9 +123,7 @@ export const CreateRoleRequestSchema = z
     name: RoleNameFieldSchema,
     permissions: PermissionsSchema,
   })
-  .describe(
-    'Alta de un rol personalizado.',
-  ) satisfies z.ZodType<CreateRoleRequest>;
+  .describe('Custom role creation.') satisfies z.ZodType<CreateRoleRequest>;
 
 export const UpdateRoleRequestSchema = z
   .strictObject({
@@ -136,9 +132,9 @@ export const UpdateRoleRequestSchema = z
     permissions: PermissionsSchema.optional(),
   })
   .describe(
-    'Cambios parciales de un rol.',
+    'Partial changes of a role.',
   ) satisfies z.ZodType<UpdateRoleRequest>;
 
 export const DeleteRoleRequestSchema = z
   .strictObject({ roleId: IdSchema })
-  .describe('Borrado de un rol.') satisfies z.ZodType<DeleteRoleRequest>;
+  .describe('Role deletion.') satisfies z.ZodType<DeleteRoleRequest>;

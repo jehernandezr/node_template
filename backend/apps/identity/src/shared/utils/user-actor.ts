@@ -7,9 +7,9 @@ import {
 import type { UserRef } from '../types/user-ref.type.js';
 
 /**
- * El usuario de una ruta autenticada. Las rutas de `/v1/me` solo tienen sentido con un usuario: una
- * API key o el sistema no tienen sesión.
- * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` si el actor no es un usuario.
+ * The user of an authenticated route. The `/v1/me` routes only make sense with a user: an
+ * API key or the system has no session.
+ * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is not a user.
  */
 export function requireUserActor(actor: Actor | undefined): UserActor {
   if (actor === undefined || !ActorGuards.isUser(actor)) {
@@ -18,14 +18,14 @@ export function requireUserActor(actor: Actor | undefined): UserActor {
   return actor;
 }
 
-/** El usuario del actor y su tenant de origen, con los que se llega a su shard. */
+/** The actor's user and their home tenant, through which their shard is reached. */
 export function userRefOf(actor: UserActor): UserRef {
   return { userId: actor.userId, homeTenantId: actor.homeTenantId };
 }
 
 /**
- * El tenant activo de un usuario o de una service account: las rutas `/v1/tenant/*` trabajan sobre él.
- * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` si el actor no tiene tenant.
+ * The active tenant of a user or a service account: the `/v1/tenant/*` routes work on it.
+ * @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor has no tenant.
  */
 export function tenantOfActor(actor: Actor | undefined): string {
   if (

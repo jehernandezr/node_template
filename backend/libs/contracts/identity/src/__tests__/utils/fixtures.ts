@@ -1,4 +1,4 @@
-/** Identificadores UUIDv7 fijos para que las pruebas sean reproducibles. */
+/** Fixed UUIDv7 identifiers so the tests are reproducible. */
 export const Ids = {
   user: '0190f2a4-7b3c-7d4e-8f00-000000000001',
   tenant: '0190f2a4-7b3c-7d4e-8f00-000000000002',
@@ -18,10 +18,10 @@ export const Ids = {
 /** Instante ISO 8601 fijo. */
 export const Now = '2026-11-13T12:00:00.000Z';
 
-/** UUID v4: no cumple el contrato, que exige v7. */
+/** UUID v4: does not meet the contract, which requires v7. */
 export const UuidV4 = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 
-/** Firma y nonce con alfabeto base64url y largo dentro del contrato. */
+/** Signature and nonce with base64url alphabet and length within the contract. */
 export const DeviceProof = {
   deviceId: 'device-key-0001',
   timestamp: Now,

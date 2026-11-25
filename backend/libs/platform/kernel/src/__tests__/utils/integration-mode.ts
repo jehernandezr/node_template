@@ -1,7 +1,7 @@
-/** Qué hacen las pruebas de integración cuando no hay un runtime de contenedores. */
+/** What integration tests do when there is no container runtime. */
 export enum IntegrationMode {
-  /** Se omiten sin avisar de falla. */
+  /** They are skipped without reporting a failure. */
   Skip = 'skip',
-  /** Fallan: un entorno sin contenedores no puede dar por buena la corrida. */
+  /** They fail: an environment without containers cannot accept the run as good. */
   Require = 'require',
 }

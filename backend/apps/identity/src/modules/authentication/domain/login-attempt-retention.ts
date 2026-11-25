@@ -1,12 +1,12 @@
-/** Lo que dejó una pasada de mantenimiento de `login_attempts`. */
+/** What a `login_attempts` maintenance pass left behind. */
 export interface LoginAttemptRetentionReport {
-  /** Particiones borradas por shard. */
+  /** Dropped partitions per shard. */
   readonly dropped: readonly string[];
-  /** Shards que fallaron: la próxima pasada los vuelve a intentar. */
+  /** Shards that failed: the next pass retries them. */
   readonly failedShards: readonly string[];
 }
 
-/** Retención de 12 meses de la bitácora de intentos de inicio de sesión, en todos los shards. */
+/** 12-month retention of the sign-in attempt log, on all shards. */
 export abstract class LoginAttemptRetention {
   abstract maintain(now: Date): Promise<LoginAttemptRetentionReport>;
 }

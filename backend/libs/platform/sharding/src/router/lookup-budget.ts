@@ -2,9 +2,9 @@ import type { Clock } from '@platform/kernel';
 import { Deadline } from '@platform/primitives';
 
 /**
- * Presupuesto de tiempo de una búsqueda: un `Deadline`, un `AbortSignal`, los
- * dos o ninguno. Solo deja de esperar a quien llama; el trabajo compartido con
- * otros llamadores (una carga de vuelo único) sigue corriendo.
+ * Time budget of a lookup: a `Deadline`, an `AbortSignal`, both
+ * or neither. It only stops the caller from waiting; work shared with
+ * other callers (a single-flight load) keeps running.
  */
 export class LookupBudget {
   constructor(
@@ -14,8 +14,8 @@ export class LookupBudget {
   ) {}
 
   /**
-   * Lanza si el presupuesto ya se agotó.
-   * @throws El `reason` de la señal si abortó; `DeadlineExceededError` si pasó el plazo.
+   * Throws if the budget is already exhausted.
+   * @throws The signal `reason` if it aborted; `DeadlineExceededError` if the deadline passed.
    */
   check(): void {
     this.signal?.throwIfAborted();
@@ -23,15 +23,15 @@ export class LookupBudget {
   }
 
   /**
-   * Espera `promise` hasta que termine o se agote el presupuesto, lo que ocurra primero.
-   * @throws El `reason` de la señal si aborta; `DeadlineExceededError` si vence el plazo.
+   * Waits for `promise` until it settles or the budget runs out, whichever comes first.
+   * @throws The signal `reason` if it aborts; `DeadlineExceededError` if the deadline expires.
    */
   wait<T>(promise: Promise<T>): Promise<T> {
     if (this.deadline !== undefined) {
       return this.deadline.wait(promise, this.signal);
     }
     if (this.signal !== undefined) {
-      // Sin plazo, `Deadline` ya espera la señal; un plazo que nunca vence la deja sola.
+      // Without a deadline, `Deadline` already waits on the signal; a deadline that never expires leaves it alone.
       return Deadline.at(Number.MAX_SAFE_INTEGER, this.clock).wait(
         promise,
         this.signal,

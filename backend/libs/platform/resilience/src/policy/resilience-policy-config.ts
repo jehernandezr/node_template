@@ -1,49 +1,49 @@
 import type { RetryPolicy } from '@platform/primitives';
 import type { TimeoutStrategy } from './timeout-strategy.enum.js';
 
-/** Reintentos de una política. La política cuenta todos los intentos, el primero incluido. */
+/** Retries of a policy. The policy counts all attempts, including the first. */
 export interface ResilienceRetryConfig {
-  /** Cuántos intentos y cómo crece la espera entre ellos. */
+  /** How many attempts and how the wait between them grows. */
   readonly policy: RetryPolicy;
   /**
-   * Tope, en milisegundos, de la pista `Retry-After` del servidor. El plazo
-   * de la llamada lo acota más. Por defecto, 60 s.
+   * Cap, in milliseconds, of the server's `Retry-After` hint. The call's
+   * deadline bounds it further. Defaults to 60 s.
    */
   readonly maxRetryAfterMs?: number;
 }
 
-/** Ajustes del circuit breaker. */
+/** Circuit breaker settings. */
 export interface ResilienceCircuitBreakerConfig {
-  /** Fallas transitorias consecutivas que abren el circuito. */
+  /** Consecutive transient failures that open the circuit. */
   readonly consecutiveFailures: number;
-  /** Tiempo que el circuito queda abierto antes de permitir una llamada de prueba. */
+  /** Time the circuit stays open before allowing a trial call. */
   readonly halfOpenAfterMs: number;
 }
 
-/** Ajustes del bulkhead. */
+/** Bulkhead settings. */
 export interface ResilienceBulkheadConfig {
-  /** Llamadas simultáneas máximas. */
+  /** Maximum concurrent calls. */
   readonly limit: number;
-  /** Llamadas que pueden esperar un cupo antes de ser rechazadas. */
+  /** Calls that can wait for a slot before being rejected. */
   readonly queue: number;
 }
 
-/** Política de resiliencia declarada para una dependencia saliente. */
+/** Resilience policy declared for an outgoing dependency. */
 export interface ResiliencePolicyConfig {
-  /** Tiempo máximo de cada intento. */
+  /** Maximum time of each attempt. */
   readonly timeoutMs: number;
-  /** Por defecto, `TimeoutStrategy.Aggressive`. */
+  /** Defaults to `TimeoutStrategy.Aggressive`. */
   readonly timeoutStrategy?: TimeoutStrategy;
-  /** Si la señal se aborta al volver la llamada. Por defecto sí; las transmisiones lo desactivan. */
+  /** Whether the signal is aborted when the call returns. Yes by default; streams disable it. */
   readonly abortOnReturn?: boolean;
-  /** Presupuesto de toda la llamada, reintentos incluidos. */
+  /** Budget of the whole call, retries included. */
   readonly totalTimeoutMs?: number;
   readonly retry?: ResilienceRetryConfig;
   readonly circuitBreaker?: ResilienceCircuitBreakerConfig;
   readonly bulkhead?: ResilienceBulkheadConfig;
   /**
-   * Decide qué errores se reintentan y cuentan para el breaker. Por defecto,
-   * el clasificador de fallas de `@platform/primitives`.
+   * Decides which errors are retried and count for the breaker. Defaults to
+   * the failure classifier of `@platform/primitives`.
    */
   readonly isTransient?: (error: unknown) => boolean;
 }

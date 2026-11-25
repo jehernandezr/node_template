@@ -1,12 +1,12 @@
-/** Verifica la firma ES256 de un dispositivo con su clave pública. */
+/** Verifies a device's ES256 signature with its public key. */
 export abstract class DeviceSignatureVerifier {
   /**
-   * Revisa que la clave sea P-256 en SPKI DER (base64url).
-   * @throws IdentityError `IDENTITY.DEVICE.KEY_INVALID` si no lo es.
+   * Checks that the key is P-256 in SPKI DER (base64url).
+   * @throws IdentityError `IDENTITY.DEVICE.KEY_INVALID` if it is not.
    */
   abstract assertValidKey(publicKey: string): void;
 
-  /** `false` si la firma no corresponde, incluida una clave o firma mal formada. */
+  /** `false` if the signature does not match, including a malformed key or signature. */
   abstract verify(
     publicKey: string,
     message: string,

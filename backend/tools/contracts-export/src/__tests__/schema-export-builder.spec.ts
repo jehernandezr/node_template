@@ -168,7 +168,7 @@ describe('SchemaExportBuilder', () => {
       });
 
       expect(() => builder.build([platformContract, sample])).toThrow(
-        /esquema sin nombre/,
+        /unnamed schema/,
       );
     });
 
@@ -192,7 +192,7 @@ describe('SchemaExportBuilder', () => {
       });
 
       expect(() => builder.build([platformContract, sample])).toThrow(
-        /no está en ningún catálogo/,
+        /is in no catalog/,
       );
     });
 
@@ -204,7 +204,7 @@ describe('SchemaExportBuilder', () => {
       });
 
       expect(() => builder.build([platformContract, sample])).toThrow(
-        /ya está registrado/,
+        /is already registered/,
       );
     });
   });
@@ -270,7 +270,7 @@ describe('SchemaExportBuilder', () => {
       const other = { ...sample, service: 'other' };
 
       expect(() => builder.build([sample, other])).toThrow(
-        /ya está declarado en sample/,
+        /is already declared in sample/,
       );
     });
   });

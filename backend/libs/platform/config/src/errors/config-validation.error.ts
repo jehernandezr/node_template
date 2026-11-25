@@ -3,9 +3,9 @@ import type { ConfigIssue } from '../config-issue.js';
 import { ConfigErrorCode } from './config-error-code.enum.js';
 
 /**
- * El entorno no cumple el esquema. El mensaje lista cada problema como
- * `RUTA: mensaje` y nunca incluye valores crudos, así un secreto no se filtra
- * por logs ni por la salida de un arranque fallido.
+ * The environment does not satisfy the schema. The message lists each issue as
+ * `PATH: message` and never includes raw values, so a secret does not leak
+ * through logs or the output of a failed startup.
  */
 export class ConfigValidationError extends PlatformError {
   override readonly code = ConfigErrorCode.Invalid;

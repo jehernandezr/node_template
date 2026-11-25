@@ -16,7 +16,7 @@ interface SessionView {
   readonly readOnly: string;
 }
 
-/** Expone lo que ve cada consulta del repositorio: el tenant de la sesión y si la transacción es de solo lectura. */
+/** Exposes what each repository query sees: the session tenant and whether the transaction is read-only. */
 class SessionProbeRepository extends TenantIsolatedRepository {
   constructor(kit: RepositoryKit) {
     super(kit);

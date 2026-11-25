@@ -4,7 +4,7 @@ import type {
   ShardConnection,
 } from '@platform/persistence';
 
-/** Ocupa el lugar de `AcrossShards`: no recorre ningún shard y guarda las opciones de cada pasada. */
+/** Stands in for `AcrossShards`: it does not visit any shard and records the options of each pass. */
 export class RecordingAcrossShards {
   readonly calls: (AcrossShardsOptions | undefined)[] = [];
 

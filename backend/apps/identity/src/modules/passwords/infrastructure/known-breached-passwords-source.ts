@@ -11,15 +11,15 @@ import {
 } from './known-breached-passwords.js';
 
 /**
- * Fuente de verdad del Bloom de contraseñas filtradas: la lista de arranque y cada palabra común con sus
- * sufijos habituales, en minúsculas y solo las que la política dejaría pasar por largo (las demás ya se
- * rechazan antes).
+ * Source of truth of the breached passwords Bloom: the bootstrap list and each common word with its
+ * usual suffixes, in lowercase and only those the policy would let through by length (the rest are already
+ * rejected earlier).
  */
 @Injectable()
 export class KnownBreachedPasswordsSource extends BloomRebuildSourceProvider {
   private static readonly BATCH = 250;
 
-  /** Todas las contraseñas, normalizadas y sin repetir. */
+  /** All passwords, normalized and without duplicates. */
   passwords(): readonly string[] {
     const combined = [
       ...KNOWN_BREACHED_PASSWORDS,
@@ -53,7 +53,7 @@ export class KnownBreachedPasswordsSource extends BloomRebuildSourceProvider {
     return batches;
   }
 
-  /** Las listas públicas se comparan sin distinguir mayúsculas. */
+  /** Public lists are compared case-insensitively. */
   static normalize(password: string): string {
     return password.toLowerCase();
   }

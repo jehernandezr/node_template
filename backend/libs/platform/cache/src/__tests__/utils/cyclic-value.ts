@@ -1,6 +1,6 @@
-/** Valor con un ciclo, que no es JSON canónico. */
+/** Value with a cycle, which is not canonical JSON. */
 export class CyclicValue {
-  /** Objeto que se contiene a sí mismo. */
+  /** Object that contains itself. */
   static params(): Record<string, unknown> {
     const params: Record<string, unknown> = {};
     params.self = params;

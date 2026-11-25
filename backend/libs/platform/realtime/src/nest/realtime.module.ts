@@ -19,9 +19,9 @@ import { RealtimeLifecycle } from './realtime-lifecycle.js';
 import { RealtimeTransports } from './realtime-transports.js';
 
 /**
- * Tiempo real de un servicio: `RealtimePublisher` para quien decide qué enviar y, con `serveConnections`,
- * los transportes de `REALTIME_TRANSPORTS` montados en el servidor HTTP del proceso. Necesita `AuthModule`
- * para verificar los tokens de las conexiones.
+ * Realtime for a service: `RealtimePublisher` for whoever decides what to send and, with `serveConnections`,
+ * the `REALTIME_TRANSPORTS` transports mounted on the process's HTTP server. Needs `AuthModule`
+ * to verify the connections' tokens.
  */
 @Module({})
 export class RealtimeModule {
@@ -118,7 +118,7 @@ export class RealtimeModule {
     };
   }
 
-  /** El adaptador que pide el servicio, ya provisto por su módulo (`ValkeyModule`), o el de memoria de un solo proceso. */
+  /** The adapter the service asks for, already provided by its module (`ValkeyModule`), or the single-process in-memory one. */
   private static storeProvider<T>(
     token: abstract new (...args: never[]) => T,
     adapter: (new (...args: never[]) => T) | undefined,

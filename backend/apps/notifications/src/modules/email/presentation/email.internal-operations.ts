@@ -10,7 +10,7 @@ import { CallOutcome } from '@platform/primitives';
 import { NotificationsDefaults } from '../../../shared/constants/notifications-defaults.constants.js';
 import { EmailFacade } from '../application/email.facade.js';
 
-/** Correo transaccional pedido por otro servicio: el código viaja por aquí y nunca por el bus. */
+/** Transactional email requested by another service: the code travels through here and never through the bus. */
 @Injectable()
 export class EmailInternalOperations {
   constructor(private readonly email: EmailFacade) {}

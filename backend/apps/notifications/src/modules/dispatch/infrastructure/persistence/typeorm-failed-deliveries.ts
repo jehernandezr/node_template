@@ -10,8 +10,8 @@ import { DeliveryRowMapper } from './delivery-row.mapper.js';
 import { DeliveryEntity } from './entities/delivery.entity.js';
 
 /**
- * Entregas pendientes o fallidas de cada shard cuyo próximo intento ya llegó, sin las de los tenants que ya se
- * trasladaron a otro shard: esas las reintenta su shard nuevo.
+ * Pending or failed deliveries of each shard whose next attempt is due, excluding those of tenants already
+ * moved to another shard: their new shard retries those.
  */
 @Injectable()
 export class TypeOrmFailedDeliveries extends FailedDeliveries {

@@ -1,6 +1,6 @@
 import type { DynamicModule } from '@nestjs/common';
 
-/** Identifica los módulos que importa un `DynamicModule`, por su clase, sin importar si el import es dinámico. */
+/** Identifies the modules a `DynamicModule` imports, by their class, whether or not the import is dynamic. */
 export class ImportedModules {
   static of(dynamic: DynamicModule): unknown[] {
     return (dynamic.imports ?? []).map((entry) =>
@@ -8,7 +8,7 @@ export class ImportedModules {
     );
   }
 
-  /** El `DynamicModule` importado cuya clase es `moduleClass`, o `undefined` si no está. */
+  /** The imported `DynamicModule` whose class is `moduleClass`, or `undefined` if it is not there. */
   static find(
     dynamic: DynamicModule,
     moduleClass: unknown,

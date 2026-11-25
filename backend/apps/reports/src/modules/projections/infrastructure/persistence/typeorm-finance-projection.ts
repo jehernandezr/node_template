@@ -18,8 +18,8 @@ import type {
 import type { BucketedRange } from '../../domain/report-range.js';
 
 /**
- * `FinanceProjection` sobre `proj_invoices` y `proj_deliveries`. La factura guarda el avance de su estado
- * (`status_progress`): un cambio solo reemplaza el estado si avanza más.
+ * `FinanceProjection` over `proj_invoices` and `proj_deliveries`. The invoice stores the progress of its status
+ * (`status_progress`): a change only replaces the status if it progresses further.
  */
 @Injectable()
 export class TypeOrmFinanceProjection

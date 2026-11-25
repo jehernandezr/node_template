@@ -1,7 +1,7 @@
 import { OPENAPI_VERSION } from './export-constants.js';
 import type { Json, JsonObject } from './json.type.js';
 
-/** Una ruta tal como queda en `contract.json`. */
+/** A route as it appears in `contract.json`. */
 interface ExportedRoute {
   readonly id: string;
   readonly method: string;
@@ -21,15 +21,15 @@ interface ExportedRoute {
   readonly description: string;
 }
 
-/** Cómo se llama el contenido de una petición o respuesta por su ubicación. */
+/** How the content of a request or response is named by its location. */
 enum MediaType {
   Json = 'application/json',
   Problem = 'application/problem+json',
 }
 
 /**
- * Arma el OpenAPI 3.1 de un servicio desde su `contract.json`: sus rutas con parámetros, cuerpo, respuesta de éxito y
- * errores, y sus esquemas como componentes. Los `$ref` a otro contrato apuntan al `openapi.json` de ese contrato.
+ * Builds a service's OpenAPI 3.1 from its `contract.json`: its routes with parameters, body, success response and
+ * errors, and its schemas as components. `$ref` entries to another contract point to that contract's `openapi.json`.
  */
 export class OpenApiBuilder {
   private static readonly LOCAL_SCHEMA = '#/schemas/';
@@ -93,7 +93,7 @@ export class OpenApiBuilder {
       responses: {
         [String(route.successStatus)]: this.success(route),
         default: {
-          description: `Problem Details con uno de estos códigos: ${route.errors.join(', ')}.`,
+          description: `Problem Details with one of these codes: ${route.errors.join(', ')}.`,
           content: {
             [MediaType.Problem]: { schema: OpenApiBuilder.PROBLEM_REF },
           },
@@ -116,15 +116,15 @@ export class OpenApiBuilder {
 
   private success(route: ExportedRoute): JsonObject {
     if (route.response === null) {
-      return { description: 'Sin contenido.' };
+      return { description: 'No content.' };
     }
     return {
-      description: 'Respuesta exitosa.',
+      description: 'Successful response.',
       content: { [MediaType.Json]: { schema: this.rewrite(route.response) } },
     };
   }
 
-  /** Cambia los `$ref` de `contract.json` por los de componentes de OpenAPI, aquí y en los otros contratos. */
+  /** Replaces the `contract.json` `$ref` entries with OpenAPI component ones, here and in the other contracts. */
   private rewrite(value: Json): Json {
     if (Array.isArray(value)) {
       return value.map((item) => this.rewrite(item));

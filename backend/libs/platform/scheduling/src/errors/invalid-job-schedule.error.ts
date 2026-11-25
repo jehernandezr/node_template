@@ -1,7 +1,7 @@
 import { PlatformError } from '@platform/kernel';
 import { SchedulingErrorCode } from './scheduling-error-code.enum.js';
 
-/** El calendario de un job no es válido: intervalo no positivo o jitter fuera de rango. */
+/** The schedule of a job is not valid: non-positive interval or jitter out of range. */
 export class InvalidJobScheduleError extends PlatformError {
   override readonly code = SchedulingErrorCode.InvalidSchedule;
 

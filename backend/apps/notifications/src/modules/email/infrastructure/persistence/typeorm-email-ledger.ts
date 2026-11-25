@@ -15,7 +15,7 @@ import {
 import { EmailMessageEntity } from './entities/email-message.entity.js';
 import { EmailSuppressionEntity } from './entities/email-suppression.entity.js';
 
-/** `EmailLedger` sobre `email_messages` y `email_suppressions` del catálogo, siempre en el primario. */
+/** `EmailLedger` over the catalog's `email_messages` and `email_suppressions`, always on the primary. */
 @Injectable()
 export class TypeOrmEmailLedger extends EmailLedger {
   constructor(private readonly catalog: CatalogDataSource) {
@@ -30,13 +30,13 @@ export class TypeOrmEmailLedger extends EmailLedger {
   }
 
   /**
-   * Reserva con un `INSERT ... ON CONFLICT DO UPDATE ... WHERE`: Postgres toma la fila con su candado, así de dos
-   * reservas simultáneas solo una devuelve la fila. El plazo de abandono se mide con el reloj de la base, el mismo que
-   * escribe `updated_at`.
-   * @param entry Correo a reservar.
-   * @param abandonedAfterMs Milisegundos tras los que una reserva en `Sending` se da por abandonada.
-   * @returns `Reserved` si este envío es el dueño, o `Taken` con el registro vigente.
-   * @throws PersistenceError `PLATFORM.PERSISTENCE.CONTENTION` si la fila desaparece entre la reserva y su lectura.
+   * Reserves with an `INSERT ... ON CONFLICT DO UPDATE ... WHERE`: Postgres takes the row with its lock, so of two
+   * concurrent reservations only one returns the row. The abandonment window is measured with the database clock, the
+   * same one that writes `updated_at`.
+   * @param entry Email to reserve.
+   * @param abandonedAfterMs Milliseconds after which a reservation in `Sending` is considered abandoned.
+   * @returns `Reserved` if this send is the owner, or `Taken` with the current record.
+   * @throws PersistenceError `PLATFORM.PERSISTENCE.CONTENTION` if the row disappears between the reservation and its read.
    */
   async reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
@@ -72,8 +72,8 @@ export class TypeOrmEmailLedger extends EmailLedger {
   }
 
   /**
-   * Un solo `INSERT ... ON CONFLICT` para que dos escrituras del mismo mensaje no choquen por llave; el
-   * conflicto sube `version` y `updated_at` a mano porque el upsert de TypeORM no lo hace.
+   * A single `INSERT ... ON CONFLICT` so two writes of the same message do not collide on the key; the
+   * conflict bumps `version` and `updated_at` by hand because the TypeORM upsert does not.
    */
   async record(entry: EmailRecord): Promise<void> {
     await this.run((manager) =>

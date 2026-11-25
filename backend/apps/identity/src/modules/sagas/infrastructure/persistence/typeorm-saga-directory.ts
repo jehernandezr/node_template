@@ -4,7 +4,7 @@ import { CatalogDataSource } from '@platform/persistence';
 import { SagaDirectory, type SagaEntry } from '../../domain/saga-directory.js';
 import { SagaDirectoryEntity } from './entities/saga-directory.entity.js';
 
-/** `SagaDirectory` sobre `identity_sagas` del catálogo. Anotar dos veces la misma saga no cambia nada. */
+/** `SagaDirectory` over `identity_sagas` in the catalog. Registering the same saga twice changes nothing. */
 @Injectable()
 export class TypeOrmSagaDirectory extends SagaDirectory {
   constructor(private readonly catalog: CatalogDataSource) {

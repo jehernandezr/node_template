@@ -1,7 +1,7 @@
 import { CacheErrorReporter } from './cache-error-reporter.js';
 import type { CacheMetrics } from './cache-metrics.js';
 
-/** Reporta cada falla absorbida como métrica, con el nombre del caché como atributo. */
+/** Reports each absorbed failure as a metric, with the cache name as an attribute. */
 export class MetricsCacheErrorReporter extends CacheErrorReporter {
   constructor(
     private readonly metrics: CacheMetrics,

@@ -16,26 +16,26 @@ import type { ValkeyKeyspace } from './valkey-keyspace.js';
 import { ValkeyUnexpectedReplyError } from './valkey-unexpected-reply.error.js';
 
 /**
- * `RateLimiter` compartido por todas las instancias de un servicio, sobre
- * Valkey. Cada llave y regla tiene un contador por ventana fija (`INCRBY` y
- * `PEXPIRE` en un script de Lua que se envía con `EVALSHA`), y la ventana
- * deslizante pesa la anterior como `InMemoryRateLimiter`: el script repite la
- * aritmética entera de `SlidingWindow`, así que ambos deciden igual.
+ * `RateLimiter` shared by all instances of a service, on
+ * Valkey. Each key and rule has one counter per fixed window (`INCRBY` and
+ * `PEXPIRE` in a Lua script sent with `EVALSHA`), and the sliding
+ * window weighs the previous one like `InMemoryRateLimiter`: the script repeats the
+ * integer arithmetic of `SlidingWindow`, so both decide the same.
  *
- * Las llaves guardan un SHA-256 de la llave limitada, nunca la llave: suele ser
- * un correo o una IP, que no deben quedar en Valkey, y el hash acota el largo.
- * Las dos ventanas de una llave comparten una hash tag, así un script toca un
- * solo slot en un clúster. Los contadores viven en `<prefijo>:ratelimit:`.
+ * The keys store a SHA-256 of the limited key, never the key: it is usually
+ * an email or an IP, which must not stay in Valkey, and the hash bounds the length.
+ * The two windows of a key share a hash tag, so a script touches a
+ * single slot in a cluster. The counters live in `<prefix>:ratelimit:`.
  */
 export class ValkeyRateLimiter extends RateLimiter {
   /**
-   * Revisa y cuenta en un solo paso, con la misma aritmética entera de
-   * `SlidingWindow` (todo producto queda bajo 2^53, así que los dobles de Lua
-   * son exactos). Una llamada rechazada no cuenta. La ventana actual vive dos
-   * ventanas, lo bastante para servir de anterior.
-   * KEYS[1] ventana actual, KEYS[2] ventana anterior.
-   * ARGV[1] ms de la ventana, ARGV[2] ms transcurridos en ella, ARGV[3] límite, ARGV[4] costo.
-   * Devuelve {permitido (1 o 0), anterior, actual tras contar}.
+   * Checks and counts in a single step, with the same integer arithmetic as
+   * `SlidingWindow` (every product stays below 2^53, so Lua doubles
+   * are exact). A rejected call does not count. The current window lives two
+   * windows, long enough to serve as the previous one.
+   * KEYS[1] current window, KEYS[2] previous window.
+   * ARGV[1] window ms, ARGV[2] ms elapsed in it, ARGV[3] limit, ARGV[4] cost.
+   * Returns {allowed (1 or 0), previous, current after counting}.
    */
   private static readonly CONSUME = new LuaScript(`
 local window = tonumber(ARGV[1])
@@ -52,8 +52,8 @@ return {1, previous, current}
 `);
 
   /**
-   * Lee las dos ventanas en un viaje; es un script para que ambas lecturas vean el mismo instante.
-   * KEYS[1] ventana actual, KEYS[2] ventana anterior. Devuelve {anterior, actual}.
+   * Reads the two windows in one round trip; it is a script so both reads see the same instant.
+   * KEYS[1] current window, KEYS[2] previous window. Returns {previous, current}.
    */
   private static readonly PEEK = new LuaScript(`
 return {
@@ -63,8 +63,8 @@ return {
 `);
 
   /**
-   * @param clock Fuente de tiempo que ubica cada llamada en su ventana fija.
-   *   Instancias con relojes que difieren unos milisegundos solo corren un borde esa diferencia.
+   * @param clock Time source that places each call in its fixed window.
+   *   Instances with clocks that differ by a few milliseconds only shift an edge by that difference.
    */
   constructor(
     private readonly executor: ValkeyCommandExecutor,
@@ -74,7 +74,7 @@ return {
     super();
   }
 
-  /** @throws InvalidArgumentError antes de cualquier comando, con una llave, regla o costo inválidos. */
+  /** @throws InvalidArgumentError before any command, with an invalid key, rule or cost. */
   async consume(
     key: string,
     rule: RateLimitRule,
@@ -94,7 +94,7 @@ return {
     return SlidingWindow.result(counts, position, rule, allowed === 1, cost);
   }
 
-  /** @throws InvalidArgumentError antes de cualquier comando, con una llave o regla inválidas. */
+  /** @throws InvalidArgumentError before any command, with an invalid key or rule. */
   async peek(key: string, rule: RateLimitRule): Promise<RateLimitResult> {
     RateLimitCallValidator.validate(key, rule);
     const position = this.position(rule);
@@ -116,7 +116,7 @@ return {
     );
   }
 
-  /** @throws InvalidArgumentError antes de cualquier comando, con una llave o regla inválidas. */
+  /** @throws InvalidArgumentError before any command, with an invalid key or rule. */
   async reset(key: string, rule: RateLimitRule): Promise<void> {
     RateLimitCallValidator.validate(key, rule);
     await this.executor.run(
@@ -129,7 +129,7 @@ return {
     return SlidingWindow.position(this.clock.now().getTime(), rule.windowMs);
   }
 
-  /** Llaves `[actual, anterior]`: `<prefijo>:ratelimit:{<regla>:<sha256>}:<windowMs>:<índice>`. */
+  /** Returns the keys `[current, previous]`: `<prefix>:ratelimit:{<rule>:<sha256>}:<windowMs>:<index>`. */
   private keys(
     key: string,
     rule: RateLimitRule,

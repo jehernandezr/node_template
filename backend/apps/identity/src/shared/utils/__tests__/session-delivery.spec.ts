@@ -5,7 +5,7 @@ import { IdentitySettings } from '../../../config/identity-settings.js';
 import { SessionDelivery } from '../session-delivery.js';
 import { SignInResponses } from '../sign-in-responses.js';
 
-/** Intercambio HTTP que anota las cookies que pondría en la respuesta. */
+/** HTTP exchange that records the cookies it would set on the response. */
 class RecordingExchange extends HttpExchange {
   readonly cookies: Array<{ token: string; maxAgeMs: number }> = [];
 

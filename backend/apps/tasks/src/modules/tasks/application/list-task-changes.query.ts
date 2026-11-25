@@ -6,7 +6,7 @@ import { TaskRepository } from '../domain/task.repository.js';
 import { TaskCursors } from './task-cursors.js';
 import { TaskViews } from './task-view.js';
 
-/** Las tareas de un tenant cambiadas desde un instante, borradas incluidas, para quien arma proyecciones. */
+/** A tenant's tasks changed since an instant, deleted ones included, for whoever builds projections. */
 @Injectable()
 export class ListTaskChanges {
   private readonly cursors = new TaskCursors();

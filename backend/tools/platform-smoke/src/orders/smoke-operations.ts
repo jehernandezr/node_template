@@ -1,10 +1,10 @@
 import { Compensation, defineOperation } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Error de negocio que declara la verificación del pago. */
+/** Business error declared by the payment verification. */
 export const PAYMENT_DECLINED = 'SMOKE.PAYMENT.DECLINED';
 
-/** Operaciones internas que la saga de bienvenida llama. Cada una tiene su handler en `SmokeStockHandlers`. */
+/** Internal operations the welcome saga calls. Each one has its handler in `SmokeStockHandlers`. */
 export class SmokeOperations {
   static readonly Reserve = defineOperation({
     id: 'smoke.stock.reserve.v1',
@@ -43,7 +43,7 @@ export class SmokeOperations {
     retry: { maxAttempts: 1, baseMs: 10, maxMs: 10 },
   });
 
-  /** Todas las operaciones que este servicio publica. */
+  /** All the operations this service publishes. */
   static readonly all = [
     SmokeOperations.Reserve,
     SmokeOperations.Release,

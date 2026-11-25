@@ -2,8 +2,8 @@ import { DataSource, type QueryRunner, type ReplicationMode } from 'typeorm';
 import { StubQueryRunner } from './stub-query-runner.js';
 
 /**
- * `DataSource` sin base de datos: `initialize` y `destroy` solo cambian el estado y
- * `createQueryRunner` entrega un `StubQueryRunner` que se guarda en `runners`.
+ * `DataSource` without a database: `initialize` and `destroy` only change the state and
+ * `createQueryRunner` provides a `StubQueryRunner` that is stored in `runners`.
  */
 export class StubDataSource extends DataSource {
   readonly runners: StubQueryRunner[] = [];
@@ -17,7 +17,7 @@ export class StubDataSource extends DataSource {
     super({ type: 'postgres', database: label, entities: [...entities] });
   }
 
-  /** Marca el `DataSource` como inicializado y construye la metadata de sus entidades. */
+  /** Marks the `DataSource` as initialized and builds the metadata of its entities. */
   override async initialize(): Promise<this> {
     this.initializeCalls += 1;
     await this.buildMetadatas();

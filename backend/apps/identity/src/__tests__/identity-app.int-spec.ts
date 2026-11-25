@@ -93,7 +93,7 @@ runtime.describeIfAvailable('identity app', () => {
       meta('profile-without-tenant'),
     );
 
-    // El handler corrió: responde que el usuario no existe y no que falta el shard.
+    // The handler ran: it responds that the user does not exist, not that the shard is missing.
     expect(withTenant).toMatchObject({
       kind: CallOutcomeKind.BusinessError,
       code: IdentityErrorCode.UserNotFound,
@@ -133,7 +133,7 @@ function meta(key: string): {
   };
 }
 
-/** Transporte HTTP de la API interna hacia identity, firmado con `secret`. */
+/** HTTP transport of the internal API towards identity, signed with `secret`. */
 function transportFor(baseUrl: string, secret: string): HttpTransport {
   const clock = new SystemClock();
   return new HttpTransport(

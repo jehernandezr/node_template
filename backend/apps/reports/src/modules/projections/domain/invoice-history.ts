@@ -1,7 +1,7 @@
 import type { InvoiceChange } from '@contracts/billing';
 import type { Page } from '@contracts/platform';
 
-/** Las facturas de un tenant según su dueño, el servicio billing, por páginas. */
+/** A tenant's invoices according to their owner, the billing service, by pages. */
 export abstract class InvoiceHistory {
   abstract page(
     tenantId: string,

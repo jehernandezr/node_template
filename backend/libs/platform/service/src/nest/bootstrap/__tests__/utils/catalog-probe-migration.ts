@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Migración de prueba del catálogo: crea una tabla que solo sirve para verificar que corrió. */
+/** Test catalog migration: creates a table that only serves to verify that it ran. */
 export class CatalogProbeMigration1900000000001 implements MigrationInterface {
   readonly name = 'CatalogProbeMigration1900000000001';
 

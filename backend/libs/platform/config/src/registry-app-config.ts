@@ -5,9 +5,9 @@ import type { ConfigSection } from './config-section.js';
 import { ConfigValidationError } from './errors/config-validation.error.js';
 
 /**
- * `AppConfig` sobre el registro. Una sección que nadie cargó todavía se valida
- * y se guarda en el primer `get`, así el orden de instanciación de los módulos
- * no importa.
+ * `AppConfig` over the registry. A section nobody has loaded yet is validated
+ * and stored on the first `get`, so the instantiation order of the modules
+ * does not matter.
  */
 export class RegistryAppConfig extends AppConfig {
   constructor(

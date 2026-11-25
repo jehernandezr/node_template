@@ -16,8 +16,8 @@ import { Session } from '../domain/session.js';
 import { SessionTokenIssuer } from './session-token-issuer.js';
 
 /**
- * Abre una sesión en el tenant pedido, en el último que usó el usuario si sigue siendo miembro o en su
- * tenant predeterminado. La fila se escribe en el shard del usuario; el access token se firma después.
+ * Opens a session in the requested tenant, in the last one the user used if they are still a member, or in their
+ * default tenant. The row is written in the user's shard; the access token is signed afterwards.
  */
 @Injectable()
 export class CreateSession implements UseCase<

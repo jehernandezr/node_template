@@ -1,90 +1,90 @@
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 import type { TargetKind } from '../topology/target-kind.enum.js';
 
-/** Estado de entrega de un registro del outbox. */
+/** Delivery status of an outbox record. */
 export enum OutboxStatus {
-  /** Nunca se intentó. */
+  /** Never attempted. */
   Pending = 'pending',
-  /** Publicado con éxito. */
+  /** Published successfully. */
   Published = 'published',
-  /** El último intento falló; vuelve a ser elegible en `nextAttemptAt`. */
+  /** The last attempt failed; it becomes eligible again at `nextAttemptAt`. */
   Failed = 'failed',
-  /** Abandonado: se llegó al máximo de intentos, no hay ruta o el payload es demasiado grande. Se conserva para inspección. */
+  /** Abandoned: the maximum attempts were reached, there is no route or the payload is too large. Kept for inspection. */
   Dead = 'dead',
 }
 
-/** Sobre pendiente de publicar. Se escribe en la misma transacción que el cambio de negocio. */
+/** Envelope pending publication. Written in the same transaction as the business change. */
 export interface OutboxRecord {
   readonly id: string;
   readonly envelope: MessageEnvelope;
   readonly status: OutboxStatus;
-  /** Pasadas del relay que intentaron este registro. */
+  /** Relay passes that attempted this record. */
   readonly attempts: number;
   readonly nextAttemptAt: Date;
   readonly createdAt: Date;
   /**
-   * Grupo de orden (normalmente el id del agregado). Los registros de un grupo se
-   * publican en orden de `createdAt`, y los destinos FIFO lo reciben como id de grupo.
+   * Ordering group (usually the aggregate id). The records of a group are
+   * published in `createdAt` order, and FIFO destinations receive it as the group id.
    */
   readonly groupId?: string;
   /**
-   * Espera de entrega de un comando, contada desde `createdAt`. El relay pasa al
-   * transporte lo que le queda.
+   * Delivery delay of a command, counted from `createdAt`. The relay passes to the
+   * transport what remains of it.
    */
   readonly delayMs?: number;
   readonly lastError?: string;
   readonly leaseOwner?: string;
-  /** Token de fencing del lease vigente; cambia en cada reclamo. */
+  /** Fencing token of the current lease; changes on each claim. */
   readonly leaseToken?: string;
   readonly leaseExpiresAt?: Date;
 }
 
 /**
- * Lease que tiene una pasada del relay. `owner` identifica la instancia del relay
- * y `token` el reclamo; las marcas se aplican solo mientras ambos sigan vigentes.
+ * Lease held by a relay pass. `owner` identifies the relay instance
+ * and `token` the claim; marks apply only while both are still valid.
  */
 export interface OutboxLease {
   readonly owner: string;
   readonly token: string;
 }
 
-/** Argumentos de {@link OutboxStore.claimPending}. */
+/** Arguments of {@link OutboxStore.claimPending}. */
 export interface ClaimOutboxRequest {
   readonly now: Date;
   readonly limit: number;
   readonly lease: OutboxLease;
-  /** Duración del lease en milisegundos. */
+  /** Lease duration in milliseconds. */
   readonly leaseMs: number;
 }
 
-/** Destino de un sobre publicado, resuelto desde la topología. */
+/** Destination of a published envelope, resolved from the topology. */
 export interface OutboundTarget {
   readonly kind: TargetKind;
   readonly name: string;
-  /** Tópico o cola FIFO: el transporte envía `groupId` como `MessageGroupId`. */
+  /** FIFO topic or queue: the transport sends `groupId` as `MessageGroupId`. */
   readonly fifo?: boolean;
 }
 
-/** Indicaciones extra de publicación. */
+/** Extra publication hints. */
 export interface PublishOutboxOptions {
   readonly groupId?: string;
-  /** Espera antes de que un comando sea visible en su cola. */
+  /** Wait before a command is visible in its queue. */
   readonly delayMs?: number;
 }
 
-/** Registro que se agrega al outbox junto con el cambio de negocio. */
+/** Record added to the outbox together with the business change. */
 export interface OutboxAppend {
   readonly envelope: MessageEnvelope;
   readonly groupId?: string;
   readonly delayMs?: number;
-  /** Hora de creación y primera hora de vencimiento. */
+  /** Creation time and first due time. */
   readonly createdAt: Date;
 }
 
-/** Opciones de {@link OutboxStore.purge}. */
+/** Options of {@link OutboxStore.purge}. */
 export interface PurgeOutboxOptions {
-  /** Borra lo terminado antes de este instante. */
+  /** Deletes what finished before this instant. */
   readonly before: Date;
-  /** También borra los muertos. Por defecto se conservan para inspección. */
+  /** Also deletes the dead ones. By default they are kept for inspection. */
   readonly includeDead?: boolean;
 }

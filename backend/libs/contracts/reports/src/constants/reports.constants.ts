@@ -1,6 +1,6 @@
-/** Límites de los campos de reports. Todo texto y toda lista del contrato se acotan con uno de estos valores. */
+/** Field limits of reports. Every text and every list in the contract is bounded by one of these values. */
 export const ReportsLimits = {
-  /** Días que abarca como máximo el rango de un reporte. */
+  /** Maximum number of days a report range spans. */
   maxRangeDays: 366,
   maxColumns: 20,
   maxRows: 10_000,
@@ -9,12 +9,12 @@ export const ReportsLimits = {
   cellMaxLength: 1000,
   fileNameMaxLength: 200,
   contentTypeMaxLength: 100,
-  /** Texto de una descarga: debe caber en `REPORTS_MAX_RESULT_BYTES`. */
+  /** Text of a download: must fit in `REPORTS_MAX_RESULT_BYTES`. */
   downloadContentMaxLength: 8_000_000,
-  /** Tipos de reporte que puede listar el catálogo. */
+  /** Report types the catalog can list. */
   maxCatalogEntries: 20,
-  /** Formatos que admite un mismo tipo de reporte. */
+  /** Formats a single report type supports. */
   maxFormats: 2,
-  /** Granularidades que admite un mismo tipo de reporte. */
+  /** Granularities a single report type supports. */
   maxGranularities: 3,
 } as const;

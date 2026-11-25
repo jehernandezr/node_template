@@ -13,7 +13,7 @@ import type { Task } from '../../domain/task.js';
 import { TaskEntity } from './entities/task.entity.js';
 import { TaskMapper } from './task.mapper.js';
 
-/** `TaskRepository` sobre `tasks` del shard del tenant. */
+/** `TaskRepository` over `tasks` in the tenant's shard. */
 @Injectable()
 export class TypeOrmTaskRepository
   extends TenantIsolatedRepository

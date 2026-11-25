@@ -4,7 +4,7 @@ import { HmacSignatureCalculator } from '../auth/hmac-signature-calculator.js';
 import type { SignableRequest } from '../auth/signable-request.js';
 import { InternalRequestSigner } from './internal-request-signer.js';
 
-/** Firma las llamadas salientes con HMAC-SHA256 y un secreto compartido entre servicios. */
+/** Signs outgoing calls with HMAC-SHA256 and a secret shared between services. */
 export class HmacSigner extends InternalRequestSigner {
   private readonly calculator: HmacSignatureCalculator;
 

@@ -8,7 +8,7 @@ import { Injectable } from '@nestjs/common';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 import { SecretBox } from '../domain/secret-box.js';
 
-/** AES-256-GCM con `IDENTITY_DATA_KEY`: `<iv>.<etiqueta>.<cifrado>` en base64url. */
+/** AES-256-GCM with `IDENTITY_DATA_KEY`: `<iv>.<tag>.<ciphertext>` in base64url. */
 @Injectable()
 export class AesGcmSecretBox extends SecretBox {
   private static readonly IV_BYTES = 12;
@@ -16,7 +16,7 @@ export class AesGcmSecretBox extends SecretBox {
 
   constructor(settings: IdentitySettings) {
     super();
-    // La llave de la configuración es texto; su SHA-256 da los 32 bytes que pide AES-256.
+    // The configuration key is text; its SHA-256 gives the 32 bytes AES-256 requires.
     this.key = createHash('sha256')
       .update(settings.values.IDENTITY_DATA_KEY.reveal())
       .digest();

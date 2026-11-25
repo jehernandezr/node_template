@@ -2,20 +2,20 @@ import { ExternalApiPolicy } from './external-api-policy.js';
 import { PolicyName, type ResilienceRegistry } from '@platform/resilience';
 import type { OperationMetadata } from '../contract/operation-metadata.js';
 
-/** Elige la política de resiliencia con la que se llama una operación. */
+/** Chooses the resilience policy an operation is called with. */
 export class OperationPolicyResolver {
   private readonly derived = new Map<string, PolicyName>();
 
   constructor(private readonly resilience: ResilienceRegistry) {}
 
   /**
-   * Una operación sin `retry` ni `timeoutMs` propios usa `ExternalApiPolicy.NAME`.
-   * Una con los suyos usa una política derivada de nombre
-   * `external-api.t<timeoutMs>.a<maxAttempts>.b<baseMs>.m<maxMs>` (valores efectivos),
-   * registrada la primera vez con `resilience.register` sobre `ExternalApiPolicy.CONFIG`
-   * con ese `timeoutMs` y esa `RetryPolicy`. La configuración registrada se
-   * guarda por nombre en la instancia: el registro compara por referencia y
-   * no admite registrar dos veces el mismo nombre con objetos distintos.
+   * An operation without its own `retry` or `timeoutMs` uses `ExternalApiPolicy.NAME`.
+   * One with its own uses a derived policy named
+   * `external-api.t<timeoutMs>.a<maxAttempts>.b<baseMs>.m<maxMs>` (effective values),
+   * registered the first time with `resilience.register` on top of `ExternalApiPolicy.CONFIG`
+   * with that `timeoutMs` and that `RetryPolicy`. The registered configuration is
+   * stored by name in the instance: the registry compares by reference and
+   * does not allow registering the same name twice with different objects.
    */
   resolve(metadata: OperationMetadata): PolicyName {
     if (metadata.retry === undefined && metadata.timeoutMs === undefined) {

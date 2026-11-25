@@ -1,8 +1,8 @@
 import { ContractRegistry } from '../contract/contract-registry.js';
 
 /**
- * Catálogo de las operaciones que este servicio publica, es decir, las que
- * debe atender con un handler. Es un token distinto de `ContractRegistry`, que
- * además incluye las operaciones remotas que el servicio llama.
+ * Catalog of the operations this service publishes, that is, the ones it
+ * must handle with a handler. It is a different token from `ContractRegistry`, which
+ * also includes the remote operations the service calls.
  */
 export class PublishedContracts extends ContractRegistry {}

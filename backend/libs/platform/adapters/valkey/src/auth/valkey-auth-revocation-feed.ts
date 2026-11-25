@@ -12,14 +12,14 @@ import type { ValkeySubscriberSource } from '../valkey-subscriber-source.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 
 /**
- * `AuthRevocationFeed` sobre el canal `auth:revocations`, con el mismo patrón de
- * `ValkeyShardDirectoryChannel`: una sola suscripción compartida por todos los
- * handlers, los mensajes que no son un `sid` y las fallas de los handlers van a
- * `onError` y nunca detienen el canal. La publicación no está aquí: la hace
+ * `AuthRevocationFeed` on the `auth:revocations` channel, with the same pattern as
+ * `ValkeyShardDirectoryChannel`: a single subscription shared by all the
+ * handlers; messages that are not a `sid` and handler failures go to
+ * `onError` and never stop the channel. Publishing is not here: it is done by
  * `ValkeyAuthStateWriter.revokeSession`.
  */
 export class ValkeyAuthRevocationFeed extends AuthRevocationFeed {
-  /** Largo máximo de un `sid` en el mensaje del canal. */
+  /** Maximum length of a `sid` in the channel message. */
   private static readonly MAX_SESSION_ID_LENGTH = 128;
 
   private readonly handlers = new Set<RevocationHandler>();
@@ -35,7 +35,7 @@ export class ValkeyAuthRevocationFeed extends AuthRevocationFeed {
   }
 
   async subscribe(handler: RevocationHandler): Promise<() => Promise<void>> {
-    // Se envuelve para poder suscribir el mismo handler dos veces y darlo de baja una sola.
+    // It is wrapped so the same handler can be subscribed twice and unsubscribed only once.
     const entry: RevocationHandler = (sessionId) => handler(sessionId);
     const first = this.handlers.size === 0;
     this.handlers.add(entry);

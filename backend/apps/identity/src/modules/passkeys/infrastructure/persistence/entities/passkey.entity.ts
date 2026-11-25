@@ -1,7 +1,7 @@
 import { TimestampTransformer, VersionedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `passkeys`, en el shard del usuario. */
+/** `passkeys`, in the user's shard. */
 @Entity({ name: 'passkeys' })
 @Index('passkeys_credential_key', ['userId', 'credentialId'], { unique: true })
 export class PasskeyEntity extends VersionedEntity {

@@ -1,4 +1,4 @@
-/** Cómo terminó la ejecución de un caso de uso. */
+/** How the execution of a use case ended. */
 export enum UseCaseOutcome {
   Success = 'success',
   Error = 'error',

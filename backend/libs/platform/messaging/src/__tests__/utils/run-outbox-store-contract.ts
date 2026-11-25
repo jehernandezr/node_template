@@ -7,10 +7,10 @@ import {
 } from '../../outbox/outbox.js';
 import type { OutboxStore } from '../../outbox/outbox-store.js';
 
-/** Entorno de una corrida del contrato del outbox. */
+/** Environment of one run of the outbox contract. */
 export interface OutboxStoreContractEnv {
   readonly store: OutboxStore;
-  /** Agrega un registro pendiente creado en `now`. */
+  /** Adds a pending record created at `now`. */
   add(
     envelope: MessageEnvelope,
     options: { now: Date; groupId?: string; delayMs?: number },
@@ -35,8 +35,8 @@ const lease = (owner: string, token = `${owner}-token`): OutboxLease => ({
 });
 
 /**
- * Contrato de `OutboxStore`: los casos que cumplen el adaptador en memoria y
- * el de Postgres. Cada adaptador lo llama desde su propio `describe`.
+ * `OutboxStore` contract: the cases that the in-memory adapter and the
+ * Postgres one satisfy. Each adapter calls it from its own `describe`.
  */
 export function runOutboxStoreContract(
   setup: () => Promise<OutboxStoreContractEnv>,

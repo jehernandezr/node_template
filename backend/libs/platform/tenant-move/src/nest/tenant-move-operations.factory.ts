@@ -10,7 +10,7 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import type { TenantMoves } from '../application/tenant-moves.js';
 
-/** Handlers de las cinco operaciones de traslado de un servicio. */
+/** Handlers of the five move operations of a service. */
 export interface TenantMoveInternalOperations {
   sync(input: TenantMoveRef): Promise<HandlerResult<TenantMoveProgress>>;
   finalize(
@@ -22,8 +22,8 @@ export interface TenantMoveInternalOperations {
 }
 
 /**
- * Arma la clase de handlers de las operaciones de un servicio. Cada servicio tiene sus propios ids de operación,
- * así que la clase se crea por servicio y sus métodos se marcan con `@InternalHandler` de esas operaciones.
+ * Builds the handler class for a service's operations. Each service has its own operation ids,
+ * so the class is created per service and its methods are marked with `@InternalHandler` for those operations.
  */
 export class TenantMoveOperationsFactory {
   static create(

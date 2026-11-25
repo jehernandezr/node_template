@@ -1,7 +1,7 @@
-/** Valores de `INTERNAL_API_SIGNER`: cómo firma un servicio sus llamadas internas. */
+/** Values of `INTERNAL_API_SIGNER`: how a service signs its internal calls. */
 export enum InternalApiSignerKind {
-  /** HMAC-SHA256 con un secreto compartido entre servicios. */
+  /** HMAC-SHA256 with a secret shared between services. */
   Hmac = 'hmac',
-  /** AWS Signature V4 con el rol del servicio; el destino la verifica con IAM. */
+  /** AWS Signature V4 with the service role; the target verifies it with IAM. */
   SigV4 = 'sigv4',
 }

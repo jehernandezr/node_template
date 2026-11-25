@@ -4,9 +4,9 @@ import { ApiGatewayRequestMapper } from './api-gateway-request-mapper.js';
 import { ApiGatewayResponseMapper } from './api-gateway-response-mapper.js';
 
 /**
- * Reenvía cada evento al servicio HTTP que corre en el mismo contenedor. Así la
- * aplicación Nest no cambia entre un proceso y una función Lambda. Los errores
- * de red se propagan para que Lambda los reporte como fallo de invocación.
+ * Forwards each event to the HTTP service running in the same container. That way the
+ * Nest application does not change between a process and a Lambda function. Network
+ * errors are propagated so Lambda reports them as an invocation failure.
  */
 export class LoopbackForwarder {
   constructor(

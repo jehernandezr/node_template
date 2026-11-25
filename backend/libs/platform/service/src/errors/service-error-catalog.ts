@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { ServiceErrorCode } from './service-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/service`; ninguno llega al cliente. */
+/** Catalog of the `@platform/service` codes; none of them reaches the client. */
 export const serviceErrorCatalog = defineErrorCatalog(ServiceErrorCode, {
   [ServiceErrorCode.InvalidDefinition]: ErrorSpecs.internal(
     500,

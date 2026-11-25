@@ -1,18 +1,18 @@
 import { RedactionRules } from './redaction-rules.js';
 
 /**
- * Oculta valores sensibles en objetos, errores y texto antes de registrarlos.
- * Las listas de palabras entran por constructor.
+ * Hides sensitive values in objects, errors and text before logging them.
+ * The word lists come in through the constructor.
  */
 export class Redactor {
-  /** Texto que reemplaza un valor sensible. */
+  /** Text that replaces a sensitive value. */
   static readonly REDACTED = '[REDACTED]';
-  /** Profundidad máxima que se recorre de un objeto antes de cortarlo. */
+  /** Maximum depth traversed in an object before cutting it off. */
   static readonly MAX_DEPTH = 10;
-  /** Niveles de `cause` que se serializan; coincide con los que recorre la clasificación de fallos. */
+  /** Levels of `cause` that are serialized; matches the levels walked by failure classification. */
   static readonly MAX_ERROR_CAUSE_DEPTH = 3;
 
-  /** Errores agregados (`AggregateError.errors`) que se serializan como máximo. */
+  /** Maximum number of aggregated errors (`AggregateError.errors`) that are serialized. */
   private static readonly MAX_AGGREGATED_ERRORS = 10;
   private static readonly TRUNCATED = '[Truncated]';
   private static readonly CIRCULAR = '[Circular]';
@@ -37,12 +37,12 @@ export class Redactor {
     private readonly rules: RedactionRules = RedactionRules.defaults(),
   ) {}
 
-  /** Copia de `value` con los valores sensibles reemplazados por `Redactor.REDACTED`. Nunca muta la entrada. */
+  /** Returns a copy of `value` with sensitive values replaced by `Redactor.REDACTED`. Never mutates the input. */
   redact(value: unknown): unknown {
     return this.sanitize(value, new Set<object>(), 0, 0);
   }
 
-  /** Oculta credenciales incrustadas en texto libre (URLs con usuario, query, bearer, JWT, llaves privadas). */
+  /** Hides credentials embedded in free text (URLs with user info, query, bearer, JWT, private keys). */
   redactString(text: string): string {
     return text
       .replace(Redactor.PRIVATE_KEY_BLOCK, Redactor.REDACTED)
@@ -60,10 +60,10 @@ export class Redactor {
   }
 
   /**
-   * Parte la llave en palabras en minúscula (camelCase, snake_case, kebab-case)
-   * y decide por la posición de cada palabra. Así `accessToken`, `passwordHash`
-   * o `mfaCode` son sensibles, mientras `tokenCount`, `inputTokens`,
-   * `sessionId` o `errorCode` se mantienen.
+   * Splits the key into lowercase words (camelCase, snake_case, kebab-case)
+   * and decides by the position of each word. So `accessToken`, `passwordHash`
+   * or `mfaCode` are sensitive, while `tokenCount`, `inputTokens`,
+   * `sessionId` or `errorCode` are kept.
    */
   isSensitiveKey(key: string): boolean {
     const lists = this.rules.lists;
@@ -110,7 +110,7 @@ export class Redactor {
     try {
       decoded = decodeURIComponent(name);
     } catch {
-      // Una codificación inválida se compara con el nombre crudo.
+      // An invalid encoding is compared against the raw name.
     }
     return decoded.toLowerCase() === 'code' || this.isSensitiveKey(decoded);
   }

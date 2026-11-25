@@ -1,4 +1,4 @@
-/** Último uso de una API key, pendiente de guardar en su shard. */
+/** Last use of an API key, pending to be stored in its shard. */
 export interface ApiKeyUsage {
   readonly tenantId: string;
   readonly apiKeyId: string;
@@ -6,11 +6,11 @@ export interface ApiKeyUsage {
 }
 
 /**
- * Acumula el último uso de cada API key fuera de la base: una key se usa en cada petición y escribir su fila
- * cada vez cargaría el shard de su tenant. Un job vuelca lo acumulado.
+ * Accumulates the last use of each API key outside the database: a key is used on every request and writing its row
+ * each time would load its tenant's shard. A job flushes what was accumulated.
  */
 export abstract class ApiKeyUsageBuffer {
   abstract record(usage: ApiKeyUsage): Promise<void>;
-  /** Devuelve lo acumulado y lo vacía; lo que llegue después queda para la siguiente vez. */
+  /** Returns what was accumulated and empties it; what arrives afterwards is kept for next time. */
   abstract drain(): Promise<readonly ApiKeyUsage[]>;
 }

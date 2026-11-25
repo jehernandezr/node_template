@@ -3,7 +3,7 @@ import type { EntityManager } from 'typeorm';
 import { CatalogClaimManagers } from '../database/catalog-claim-managers.js';
 import { CatalogEntityManagers } from '../database/catalog-entity-managers.js';
 
-/** Catálogo que anota por dónde pasó cada llamada en lugar de abrir conexiones. */
+/** Catalog that records where each call went instead of opening connections. */
 class RecordingCatalogEntityManagers extends CatalogEntityManagers {
   readonly calls: string[] = [];
   private readonly manager = {} as EntityManager;

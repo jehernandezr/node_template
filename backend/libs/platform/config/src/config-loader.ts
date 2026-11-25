@@ -5,9 +5,9 @@ import { ConfigIssues } from './config-issues.js';
 import { ConfigValidationError } from './errors/config-validation.error.js';
 
 /**
- * Valida un entorno contra un esquema. Una variable vacía (`LOG_LEVEL=`) cuenta
- * como ausente, así aplican los valores por defecto. Falla listando todos los
- * problemas a la vez.
+ * Validates an environment against a schema. An empty variable (`LOG_LEVEL=`) counts
+ * as absent, so the defaults apply. Fails listing all the
+ * issues at once.
  */
 export class ConfigLoader {
   private readonly env: ConfigEnv;

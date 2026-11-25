@@ -1,7 +1,7 @@
-/** Jobs periódicos de reports. */
+/** reports periodic jobs. */
 export enum ReportsJob {
-  /** Borra el resultado de las ejecuciones vencidas. */
+  /** Deletes the result of expired runs. */
   ExpireRuns = 'reports.expire-runs',
-  /** Rellena las proyecciones de tareas de los tenants que existían antes del servicio. */
+  /** Backfills the task projections of the tenants that existed before the service. */
   BackfillProjections = 'reports.backfill-projections',
 }

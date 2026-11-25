@@ -13,43 +13,42 @@ import {
 export const SubscriptionChangedEvent = defineEvent({
   type: BillingEvent.SubscriptionChanged,
   payload: SubscriptionChangedPayloadSchema,
-  description: 'Cambió el plan de la suscripción de un tenant.',
+  description: 'The plan of a tenant subscription changed.',
 });
 
 export const SubscriptionSuspendedEvent = defineEvent({
   type: BillingEvent.SubscriptionSuspended,
   payload: SubscriptionSuspendedPayloadSchema,
-  description:
-    'Se suspendió la suscripción de un tenant. Identity suspende el acceso.',
+  description: 'A tenant subscription was suspended. Identity suspends access.',
 });
 
 export const SubscriptionReactivatedEvent = defineEvent({
   type: BillingEvent.SubscriptionReactivated,
   payload: SubscriptionReactivatedPayloadSchema,
-  description: 'Se reactivó la suscripción de un tenant.',
+  description: 'A tenant subscription was reactivated.',
 });
 
 export const EntitlementsChangedEvent = defineEvent({
   type: BillingEvent.EntitlementsChanged,
   payload: EntitlementsChangedPayloadSchema,
   description:
-    'Cambiaron las funcionalidades y cuotas vigentes de un tenant. Identity las refleja en los permisos.',
+    'The active features and quotas of a tenant changed. Identity reflects them in the permissions.',
 });
 
 export const InvoiceIssuedEvent = defineEvent({
   type: BillingEvent.InvoiceIssued,
   payload: InvoiceIssuedPayloadSchema,
-  description: 'Se emitió una factura.',
+  description: 'An invoice was issued.',
 });
 
 export const InvoicePaidEvent = defineEvent({
   type: BillingEvent.InvoicePaid,
   payload: InvoicePaidPayloadSchema,
-  description: 'Se pagó una factura.',
+  description: 'An invoice was paid.',
 });
 
 export const InvoiceFailedEvent = defineEvent({
   type: BillingEvent.InvoiceFailed,
   payload: InvoiceFailedPayloadSchema,
-  description: 'Falló el cobro de una factura.',
+  description: 'Charging an invoice failed.',
 });

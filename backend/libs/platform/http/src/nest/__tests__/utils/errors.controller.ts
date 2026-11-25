@@ -10,7 +10,7 @@ import {
 } from './demo-contract.js';
 import { DemoResource } from './demo-resource.enum.js';
 
-/** Rutas que fallan a propósito, para probar el filtro de errores y el tope de tiempo. */
+/** Routes that fail on purpose, to test the error filter and the time cap. */
 @Resource(DemoResource.Errors)
 export class ErrorsController {
   @Endpoint(BoomRoute, { rateLimit: RateLimitTier.Standard })

@@ -1,22 +1,22 @@
 import type { StepDirection } from './step-direction.enum.js';
 import type { StepStatus } from './step-status.enum.js';
 
-/** Entrada de la bitácora: un intento de un paso en una dirección. */
+/** Journal entry: one attempt of a step in one direction. */
 export interface StepLogEntry {
   readonly sagaId: string;
   readonly stepIndex: number;
   readonly operationId: string;
   readonly direction: StepDirection;
   readonly status: StepStatus;
-  /** `StepKey.of(sagaId, stepIndex, direction)`, la misma en cada intento. */
+  /** `StepKey.of(sagaId, stepIndex, direction)`, the same on every attempt. */
   readonly idempotencyKey: string;
   readonly input: unknown;
   readonly output: unknown;
   readonly errorCode: string | null;
   /**
-   * `traceparent` W3C del paso, escrito con su despacho. Un reintento del
-   * paso, también desde otro nodo tras una caída, corre en esa traza. Es
-   * `null` cuando no había traza.
+   * W3C `traceparent` of the step, written with its dispatch. A retry of the
+   * step, also from another node after a crash, runs in that trace. It is
+   * `null` when there was no trace.
    */
   readonly traceparent: string | null;
   readonly startedAt: Date;

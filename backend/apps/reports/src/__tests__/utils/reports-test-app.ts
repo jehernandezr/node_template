@@ -24,8 +24,8 @@ import { reportsService } from '../../reports.service.js';
 import { PeerHistoryStub } from './peer-history-stub.js';
 
 /**
- * Reports completo sobre PostgreSQL y Valkey reales, con identity, tasks y billing de mentira y un tenant en cada
- * shard. No hay relay del outbox: `deliverOutbox` entrega a mano los comandos que reports se envía a sí mismo.
+ * Full reports over real PostgreSQL and Valkey, with fake identity, tasks and billing and a tenant in each
+ * shard. There is no outbox relay: `deliverOutbox` delivers by hand the commands reports sends to itself.
  */
 export class ReportsTestApp {
   static readonly TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
@@ -88,7 +88,7 @@ export class ReportsTestApp {
     return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
   }
 
-  /** Cliente de un miembro que lee y genera reportes con el flag encendido, salvo que se pida otra cosa. */
+  /** Client of a member who reads and generates reports with the flag on, unless something else is requested. */
   async clientOf(
     member: Partial<StubMember> & { userId: string; tenantId: string },
   ): Promise<HttpTestClient> {
@@ -114,14 +114,14 @@ export class ReportsTestApp {
     );
   }
 
-  /** Entrega un mensaje como lo haría la cola. */
+  /** Delivers a message as the queue would. */
   deliver(envelope: unknown): Promise<DispatchOutcome> {
     return this.get(MessageDispatcher)
       .dispatch(envelope, { receiveCount: 1 })
       .then((result) => result.outcome);
   }
 
-  /** Entrega los mensajes de un tipo que el outbox del shard del tenant tiene pendientes y los saca de él. */
+  /** Delivers the pending messages of a type in the outbox of the tenant's shard and removes them from it. */
   async deliverOutbox(tenantId: string, type: string): Promise<void> {
     const shard = this.shardOf(tenantId);
     const rows = await shard.rows<{ id: string; envelope: unknown }>(

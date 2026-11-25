@@ -10,7 +10,7 @@ import { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { Subscription } from '../domain/subscription.js';
 import { SubscriptionEvents } from './subscription-events.js';
 
-/** Ciclo de morosidad: un cobro fallido, la suspensión al terminar la gracia y la reactivación por un pago. */
+/** Delinquency cycle: a failed charge, suspension when the grace period ends, and reactivation by a payment. */
 @Injectable()
 export class SubscriptionStanding {
   private readonly graceDays: number;
@@ -65,7 +65,7 @@ export class SubscriptionStanding {
     });
   }
 
-  /** El periodo de gracia de una morosa: antes de este instante, ya se suspende. */
+  /** The grace period of a past-due subscription: past due before this instant means it is suspended. */
   overdueCutoff(): Date {
     return new Date(this.clock.now().getTime() - this.graceDays * 86_400_000);
   }

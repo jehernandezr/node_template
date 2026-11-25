@@ -1,21 +1,21 @@
-/// Conversión de nombres del contrato a identificadores Dart.
+/// Conversion of contract names to Dart identifiers.
 library;
 
 const _reserved = {
-  // Palabras reservadas de Dart.
+  // Dart reserved words.
   'assert', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue',
   'default', 'do', 'else', 'enum', 'extends', 'false', 'final', 'finally',
   'for', 'if', 'in', 'is', 'new', 'null', 'rethrow', 'return', 'super',
   'switch', 'this', 'throw', 'true', 'try', 'var', 'void', 'while', 'with',
   'yield',
-  // Miembros de Object que un campo no puede ocupar.
+  // Object members a field cannot take.
   'hashCode', 'runtimeType', 'toString', 'noSuchMethod',
 };
 
-/// Miembros de Enum que un valor no puede ocupar.
+/// Enum members a value cannot take.
 const _enumMembers = {'values', 'index', 'name'};
 
-/// Separa un texto en palabras: `tasks:read` → [tasks, read], `SignIn` → [Sign, In].
+/// Splits a text into words: `tasks:read` → [tasks, read], `SignIn` → [Sign, In].
 List<String> words(String input) {
   final spaced = input
       .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}')
@@ -31,7 +31,7 @@ String _capitalize(String word) => word.isEmpty
 /// `SignInRequest` o `sign-in` → `signInRequest`, evitando palabras reservadas.
 String lowerCamel(String input) {
   final parts = words(input);
-  if (parts.isEmpty) throw ArgumentError('Nombre vacío: "$input"');
+  if (parts.isEmpty) throw ArgumentError('Empty name: "$input"');
   final result =
       parts.first.toLowerCase() + parts.skip(1).map(_capitalize).join();
   return safeIdentifier(result);
@@ -40,11 +40,11 @@ String lowerCamel(String input) {
 /// `sign_in` o `nested` → `SignIn`, `Nested`.
 String upperCamel(String input) {
   final parts = words(input);
-  if (parts.isEmpty) throw ArgumentError('Nombre vacío: "$input"');
+  if (parts.isEmpty) throw ArgumentError('Empty name: "$input"');
   return parts.map((w) => w[0].toUpperCase() + w.substring(1)).join();
 }
 
-/// Nombre de miembro de un enum desde la clave TypeScript: `TasksRead` → `tasksRead`.
+/// Enum member name from the TypeScript key: `TasksRead` → `tasksRead`.
 String memberFromKey(String key) {
   if (RegExp(r'^[A-Z][A-Za-z0-9]*$').hasMatch(key)) {
     return safeIdentifier(
@@ -55,7 +55,7 @@ String memberFromKey(String key) {
   return safeIdentifier(lowerCamel(key), enumMember: true);
 }
 
-/// Agrega `Value` si el nombre choca con una palabra reservada o un miembro de Enum.
+/// Appends `Value` if the name clashes with a reserved word or an Enum member.
 String safeIdentifier(String name, {bool enumMember = false}) {
   var result = name;
   if (RegExp(r'^[0-9]').hasMatch(result)) result = 'v$result';
@@ -65,11 +65,11 @@ String safeIdentifier(String name, {bool enumMember = false}) {
   return clash ? '${result}Value' : result;
 }
 
-/// Nombre de archivo Dart: `identity` → `identity`, `file-storage` → `file_storage`.
+/// Dart file name: `identity` → `identity`, `file-storage` → `file_storage`.
 String snake(String input) =>
     words(input).map((w) => w.toLowerCase()).join('_');
 
-/// Literal de texto Dart con comillas simples y los escapes necesarios.
+/// Dart string literal with single quotes and the necessary escapes.
 String dartString(String value) {
   final escaped = value
       .replaceAll(r'\', r'\\')
@@ -80,7 +80,7 @@ String dartString(String value) {
   return "'$escaped'";
 }
 
-/// Comentario de documentación Dart a partir de un texto libre.
+/// Dart documentation comment from free text.
 String docComment(String? text, {String indent = ''}) {
   if (text == null || text.trim().isEmpty) return '';
   final lines = text

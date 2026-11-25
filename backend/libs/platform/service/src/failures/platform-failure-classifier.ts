@@ -4,10 +4,10 @@ import { PostgresFailureRule } from '@platform/persistence';
 import { FailureClassifier } from '@platform/primitives';
 
 /**
- * El clasificador de fallas de un servicio, con las reglas de los adaptadores que trae el runtime: un SQLSTATE pasajero
- * de Postgres, un error reintentable del SDK de AWS o una respuesta pasajera de Valkey se reintentan. Lo comparten el
- * servidor de la API interna, los consumidores y las sagas, así un failover de la base no termina en la cola de
- * errores ni compensa una saga.
+ * The failure classifier of a service, with the rules of the adapters the runtime brings: a transient Postgres SQLSTATE,
+ * a retryable AWS SDK error or a transient Valkey response are retried. It is shared by the
+ * internal API server, the consumers and the sagas, so a database failover does not end up in the
+ * dead-letter queue or compensate a saga.
  */
 export class PlatformFailureClassifier extends FailureClassifier {
   constructor() {

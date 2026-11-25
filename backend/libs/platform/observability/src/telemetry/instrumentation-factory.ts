@@ -7,7 +7,7 @@ import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { IovalkeyInstrumentation } from './iovalkey-instrumentation.js';
 import { TelemetryInstrumentation } from './telemetry-instrumentation.enum.js';
 
-/** Crea la instrumentación automática de cada `TelemetryInstrumentation`. */
+/** Creates the automatic instrumentation of each `TelemetryInstrumentation`. */
 export class InstrumentationFactory {
   create(kind: TelemetryInstrumentation): Instrumentation {
     switch (kind) {
@@ -16,10 +16,10 @@ export class InstrumentationFactory {
       case TelemetryInstrumentation.Fetch:
         return new UndiciInstrumentation();
       case TelemetryInstrumentation.Pg:
-        // Sin valores de los parámetros en los spans.
+        // No parameter values in spans.
         return new PgInstrumentation({ enhancedDatabaseReporting: false });
       case TelemetryInstrumentation.Valkey:
-        // Solo el nombre del comando: las llaves y valores pueden llevar datos.
+        // Only the command name: keys and values may carry data.
         return new IovalkeyInstrumentation({
           dbStatementSerializer: (command) => command,
         });

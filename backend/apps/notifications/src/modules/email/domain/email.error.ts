@@ -1,7 +1,7 @@
 import { DomainError } from '@platform/kernel';
 import { NotificationsErrorCode } from '@contracts/notifications';
 
-/** El destinatario está en la lista de supresión: un rebote o una queja anterior pidió no escribirle. */
+/** The recipient is in the suppression list: a previous bounce or complaint asked not to write to them. */
 export class RecipientSuppressedError extends DomainError {
   readonly code = NotificationsErrorCode.EmailRecipientSuppressed;
 
@@ -10,7 +10,7 @@ export class RecipientSuppressedError extends DomainError {
   }
 }
 
-/** Nadie registró una plantilla con esa llave. */
+/** No one registered a template with that key. */
 export class TemplateUnknownError extends DomainError {
   readonly code = NotificationsErrorCode.EmailTemplateUnknown;
 
@@ -19,7 +19,7 @@ export class TemplateUnknownError extends DomainError {
   }
 }
 
-/** La plantilla nombra un dato obligatorio que no llegó: el correo no se envía incompleto. */
+/** The template names a required value that did not arrive: the email is not sent incomplete. */
 export class TemplateParameterMissingError extends DomainError {
   readonly code = NotificationsErrorCode.EmailTemplateParameterMissing;
 
@@ -28,7 +28,7 @@ export class TemplateParameterMissingError extends DomainError {
   }
 }
 
-/** Otro envío del mismo `messageId` está en curso: se reintenta más tarde y nunca se envía en paralelo. */
+/** Another send of the same `messageId` is in progress: it is retried later and never sent in parallel. */
 export class EmailInProgressError extends DomainError {
   readonly code = NotificationsErrorCode.EmailInProgress;
 

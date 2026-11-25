@@ -7,7 +7,7 @@ import { RealtimeTransport } from '../realtime-transport.js';
 import { RealtimeConnections } from '../session/realtime-connections.js';
 import { SocketSink } from './socket-sink.js';
 
-/** Dónde se monta Socket.IO y quién puede abrirlo desde el navegador. */
+/** Where Socket.IO is mounted and who can open it from the browser. */
 export interface SocketIoTransportOptions {
   readonly namespace: string;
   readonly allowedOrigins: readonly string[];
@@ -19,13 +19,13 @@ interface HandshakeAuth {
 }
 
 /**
- * Socket.IO solo con WebSocket, así el balanceador no necesita sesiones pegajosas. El cliente manda
- * `auth.token` y, al reconectar, `auth.lastEventId`: recibe lo que se perdió desde el stream del usuario, que
- * comparten todas las instancias, sin depender de en cuál se conecte.
+ * Socket.IO with WebSocket only, so the load balancer does not need sticky sessions. The client sends
+ * `auth.token` and, when reconnecting, `auth.lastEventId`: it receives what was missed from the user's stream, which
+ * all instances share, regardless of which one it connects to.
  *
- * El upgrade a WebSocket no tiene preflight y la opción `cors` solo pone cabeceras, así que el origen se
- * revisa en el handshake: sin eso, otra página podría abrir el socket con la cookie del usuario. Un cliente
- * que no es navegador no manda `Origin` y pasa.
+ * The WebSocket upgrade has no preflight and the `cors` option only sets headers, so the origin is
+ * checked in the handshake: without that, another page could open the socket with the user's cookie. A client
+ * that is not a browser does not send `Origin` and passes.
  */
 export class SocketIoTransport extends RealtimeTransport {
   private server: Server | undefined;
@@ -91,7 +91,7 @@ export class SocketIoTransport extends RealtimeTransport {
       new SocketSink(socket),
       typeof auth.lastEventId === 'string' ? auth.lastEventId : undefined,
     );
-    // Un cliente que cortó durante la puesta al día ya no emitirá `disconnect`.
+    // A client that disconnected during the catch-up will no longer emit `disconnect`.
     if (socket.disconnected) {
       await connection.close();
       return;

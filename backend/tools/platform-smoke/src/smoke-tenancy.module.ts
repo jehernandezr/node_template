@@ -2,8 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { SmokeTenantVerifier } from './orders/smoke-tenant-verifier.js';
 
 /**
- * Verificador de tenants del consumidor. `MessagingModule` lo recibe por `useExisting`, así que vive en un
- * módulo global, igual que los adaptadores de la plataforma.
+ * Consumer tenant verifier. `MessagingModule` receives it through `useExisting`, so it lives in a
+ * global module, like the platform adapters.
  */
 @Global()
 @Module({

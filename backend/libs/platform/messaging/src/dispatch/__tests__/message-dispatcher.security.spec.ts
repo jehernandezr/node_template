@@ -58,7 +58,7 @@ describe('MessageDispatcher tenant verification', () => {
       error: 'envelope tenant does not match the subscription tenant',
       code: MessagingErrorCode.TenantMismatch,
     });
-    // Un sobre sin tenant tampoco coincide.
+    // An envelope without a tenant does not match either.
     expect(
       await dispatcher.dispatch(envelopeFor(undefined), {
         receiveCount: 1,
@@ -147,7 +147,7 @@ describe('MessageDispatcher tenant verification', () => {
       outcome: DispatchOutcome.DeadLetter,
       code: MessagingErrorCode.TenantMismatch,
     });
-    // Sin tenant en el sobre no hay nada que verificar.
+    // Without a tenant in the envelope there is nothing to verify.
     expect(
       (await dispatcher.dispatch(envelopeFor(undefined), { receiveCount: 1 }))
         .outcome,

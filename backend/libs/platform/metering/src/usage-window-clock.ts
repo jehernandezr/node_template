@@ -1,6 +1,6 @@
 import type { Clock } from '@platform/kernel';
 
-/** Ventanas de un minuto: el inicio de la ventana actual y el límite de las que ya se pueden enviar. */
+/** One-minute windows: the start of the current window and the limit of those that can already be sent. */
 export class UsageWindowClock {
   static readonly WINDOW_MS = 60_000;
 
@@ -12,8 +12,8 @@ export class UsageWindowClock {
   }
 
   /**
-   * Las ventanas anteriores a la previa a la actual: la previa todavía puede recibir lo que cuenta una
-   * instancia con el reloj algo atrasado.
+   * The windows before the one preceding the current one: the preceding one can still receive what an
+   * instance with a slightly late clock counts.
    */
   closedBefore(): Date {
     return new Date(this.current().getTime() - UsageWindowClock.WINDOW_MS);

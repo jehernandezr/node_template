@@ -1,7 +1,7 @@
 import type { TaskStatus } from '@contracts/tasks';
 import type { UserRef } from '@contracts/platform';
 
-/** Estado de una tarea tal como se guarda. `version` falta hasta que la tarea se guarda por primera vez. */
+/** State of a task as stored. `version` is missing until the task is saved for the first time. */
 export interface TaskState {
   readonly id: string;
   readonly title: string;

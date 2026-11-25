@@ -11,9 +11,9 @@ import { AccessFacadeGrantSource } from './access-facade-grant-source.js';
 import { ClientIpContext } from './client-ip-context.js';
 
 /**
- * Piezas de identity que `AuthModule` necesita y que no vienen de la plataforma: el acceso calculado en el
- * proceso, el escritor de `auth:*`, las claves de firma con las que identity verifica sus propios tokens y
- * la IP del cliente con la que se revisan las API keys limitadas por CIDR.
+ * Identity pieces that `AuthModule` needs and that do not come from the platform: the access computed in
+ * process, the `auth:*` writer, the signing keys identity uses to verify its own tokens and
+ * the client IP used to check CIDR-restricted API keys.
  */
 @Global()
 @Module({

@@ -4,8 +4,8 @@ import type { ShardRouter } from '../shard-router.js';
 import type { PlacementTransition } from './placement-transition.js';
 
 /**
- * Compuerta en el directorio de shards: cerrar es dejar el placement en `Migrating`. Los procesos se enteran
- * por el canal de cambios del router, y el placement en caché basta para decidir si esperar.
+ * Gate in the shard directory: closing it means leaving the placement in `Migrating`. Processes learn about it
+ * through the router change channel, and the cached placement is enough to decide whether to wait.
  */
 export class DirectoryWriteGate extends TenantWriteGate {
   constructor(

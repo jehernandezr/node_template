@@ -1,12 +1,12 @@
-/** Lo que la copia necesita saber de una tabla, leído del catálogo de PostgreSQL. */
+/** What the copy needs to know about a table, read from the PostgreSQL catalog. */
 export interface TableShape {
   readonly table: string;
-  /** Columnas que se escriben; las generadas no. */
+  /** Columns that are written; generated ones are not. */
   readonly columns: readonly string[];
-  /** Columnas de la llave primaria, en orden. */
+  /** Columns of the primary key, in order. */
   readonly keyColumns: readonly string[];
-  /** Tipo SQL de cada columna de la llave, para comparar el cursor. */
+  /** SQL type of each key column, to compare the cursor. */
   readonly keyTypes: readonly string[];
-  /** Si tiene `updated_at`, la marca de las rondas delta. */
+  /** Whether it has `updated_at`, the marker for delta rounds. */
   readonly hasUpdatedAt: boolean;
 }

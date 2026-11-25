@@ -1,11 +1,11 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Esquema `saga` de la bitácora en cada shard: las tablas `instances` y
- * `step_log`, sus `CHECK` de estado, dirección y estado de paso, la llave
- * primaria de la bitácora y los tres índices parciales. Generado desde las
- * entidades con `createSchemaBuilder().log()` y revisado a mano: las
- * sentencias de `up` coinciden con el esquema que `saga-schema.int-spec.ts` verifica.
+ * `saga` schema of the log on each shard: the `instances` and
+ * `step_log` tables, their `CHECK` constraints for status, direction and step status, the
+ * log primary key and the three partial indexes. Generated from the
+ * entities with `createSchemaBuilder().log()` and reviewed by hand: the
+ * `up` statements match the schema that `saga-schema.int-spec.ts` verifies.
  */
 export class CreateSagaSchema1795000000001 implements MigrationInterface {
   readonly name = 'CreateSagaSchema1795000000001';
@@ -19,7 +19,7 @@ export class CreateSagaSchema1795000000001 implements MigrationInterface {
     'CREATE TABLE "saga"."step_log" ("saga_id" uuid NOT NULL, "step_index" integer NOT NULL, "direction" character varying(16) NOT NULL, "operation_id" character varying(200) NOT NULL, "status" character varying(16) NOT NULL, "idempotency_key" character varying(200) NOT NULL, "input" jsonb, "output" jsonb, "error_code" character varying(120), "traceparent" character varying(64), "started_at" TIMESTAMP WITH TIME ZONE NOT NULL, "finished_at" TIMESTAMP WITH TIME ZONE, CONSTRAINT "saga_step_log_status_check" CHECK ("status" IN (\'dispatched\', \'succeeded\', \'failed\', \'uncertain\')), CONSTRAINT "saga_step_log_direction_check" CHECK ("direction" IN (\'forward\', \'compensate\')), CONSTRAINT "PK_e7e41da7bc589ecd77421e51a16" PRIMARY KEY ("saga_id", "step_index", "direction"))',
   ];
 
-  /** Inversas de `UP`: la bitácora antes que la instancia, y el esquema al final. */
+  /** Inverses of `UP`: the log before the instance, and the schema last. */
   private static readonly DOWN: readonly string[] = [
     'DROP TABLE IF EXISTS "saga"."step_log"',
     'DROP TABLE IF EXISTS "saga"."instances"',

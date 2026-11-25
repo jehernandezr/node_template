@@ -17,7 +17,7 @@ import { SessionTokensSchema } from '../schemas/auth.schema.js';
 import { SwitchTenantRequestSchema } from '../schemas/tenant.schema.js';
 import { SessionGuardErrors } from './session-guard.errors.js';
 
-/** `GET /v1/me/access`: acceso de la sesión actual, para llenar la sesión del front. */
+/** `GET /v1/me/access`: access of the current session, to fill the front-end session. */
 export const GetSessionAccessRoute = defineRoute({
   id: IdentityRoute.GetSessionAccess,
   method: HttpMethod.Get,
@@ -26,10 +26,10 @@ export const GetSessionAccessRoute = defineRoute({
   errors: SessionGuardErrors,
   access: Access.authenticated(),
   description:
-    'Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.',
+    'Returns user, tenant, permissions, roles, plan, flags and last MFA of the current session.',
 });
 
-/** `GET /v1/me/sessions`: sesiones activas del usuario. */
+/** `GET /v1/me/sessions`: the user's active sessions. */
 export const ListSessionsRoute = defineRoute({
   id: IdentityRoute.ListSessions,
   method: HttpMethod.Get,
@@ -38,10 +38,10 @@ export const ListSessionsRoute = defineRoute({
   response: SessionPageSchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Lista las sesiones activas del usuario, la actual primero.',
+  description: 'Lists the active sessions of the user, current one first.',
 });
 
-/** `DELETE /v1/me/sessions/{sessionId}`: cierra una sesión remota. */
+/** `DELETE /v1/me/sessions/{sessionId}`: closes a remote session. */
 export const RevokeSessionRoute = defineRoute({
   id: IdentityRoute.RevokeSession,
   method: HttpMethod.Delete,
@@ -49,10 +49,10 @@ export const RevokeSessionRoute = defineRoute({
   request: RevokeSessionRequestSchema,
   errors: [...SessionGuardErrors, PlatformErrorCode.ResourceNotFound],
   access: Access.authenticated(),
-  description: 'Cierra una sesión del usuario y revoca sus tokens.',
+  description: 'Closes a session of the user and revokes its tokens.',
 });
 
-/** `POST /v1/me/sessions/revoke-others`: cierra todas las sesiones menos la actual. */
+/** `POST /v1/me/sessions/revoke-others`: closes all sessions except the current one. */
 export const RevokeOtherSessionsRoute = defineRoute({
   id: IdentityRoute.RevokeOtherSessions,
   method: HttpMethod.Post,
@@ -60,10 +60,10 @@ export const RevokeOtherSessionsRoute = defineRoute({
   response: RevokedSessionsSchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Cierra todas las sesiones del usuario menos la actual.',
+  description: 'Closes all sessions of the user except the current one.',
 });
 
-/** `GET /v1/me/devices`: dispositivos con confianza vigente. */
+/** `GET /v1/me/devices`: devices with current trust. */
 export const ListDevicesRoute = defineRoute({
   id: IdentityRoute.ListDevices,
   method: HttpMethod.Get,
@@ -72,12 +72,12 @@ export const ListDevicesRoute = defineRoute({
   response: DevicePageSchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Lista los dispositivos del usuario con confianza vigente.',
+  description: 'Lists the user devices with active trust.',
 });
 
 /**
- * `POST /v1/me/tenant-switch`: cambia el tenant de la sesión abierta. Responde
- * tokens nuevos del tenant elegido.
+ * `POST /v1/me/tenant-switch`: changes the tenant of the open session. Responds with
+ * new tokens for the chosen tenant.
  */
 export const SwitchTenantRoute = defineRoute({
   id: IdentityRoute.SwitchTenant,
@@ -88,5 +88,5 @@ export const SwitchTenantRoute = defineRoute({
   errors: [...SessionGuardErrors, IdentityErrorCode.TenantNotMember],
   access: Access.authenticated(),
   description:
-    'Cambia el tenant de la sesión abierta y devuelve tokens del tenant elegido.',
+    'Switches the tenant of the open session and returns tokens for the chosen tenant.',
 });

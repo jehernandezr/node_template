@@ -4,29 +4,29 @@ import { ValkeyAuthMode } from './valkey-auth-mode.enum.js';
 import { ValkeyKeyspace } from './valkey-keyspace.js';
 
 /**
- * Variables del adaptador de Valkey, con los nombres que inyecta el stack
- * `service` de Terraform. Las combinaciones que un esquema plano no puede
- * validar (URL o host, modo IAM completo) las revisa `ValkeyConnectionResolver`.
+ * Variables of the Valkey adapter, with the names injected by the Terraform
+ * `service` stack. The combinations a flat schema cannot
+ * validate (URL or host, complete IAM mode) are checked by `ValkeyConnectionResolver`.
  */
 export const valkeyConfigSchema = z.object({
-  /** Local: URL `redis://` o `rediss://`. Excluyente con `VALKEY_HOST`. */
+  /** Local: `redis://` or `rediss://` URL. Mutually exclusive with `VALKEY_HOST`. */
   VALKEY_URL: z
     .string()
     .trim()
     .regex(/^rediss?:\/\/\S+$/, 'se espera una URL redis:// o rediss://')
     .optional(),
-  /** AWS: endpoint de la caché. */
+  /** AWS: cache endpoint. */
   VALKEY_HOST: z.string().trim().min(1).optional(),
   VALKEY_PORT: envNumber({ min: 1, max: 65_535 }).default(6379),
   VALKEY_TLS: envBoolean().default(false),
-  /** Usuario de la ACL; con IAM es también el id de usuario que nombra el token. */
+  /** ACL user; with IAM it is also the user id the token names. */
   VALKEY_USER: z.string().trim().min(1).optional(),
   VALKEY_AUTH: z.enum(ValkeyAuthMode).default(ValkeyAuthMode.None),
-  /** Con IAM: nombre de la caché (no su endpoint), el host que firma el token. */
+  /** With IAM: cache name (not its endpoint), the host that signs the token. */
   VALKEY_CACHE_NAME: z.string().trim().min(1).optional(),
   /**
-   * Primer segmento de cada llave y canal; la ACL solo permite `<prefijo>:*`.
-   * Sin valor se usa `SERVICE_NAME`.
+   * First segment of every key and channel; the ACL only allows `<prefix>:*`.
+   * Without a value, `SERVICE_NAME` is used.
    */
   VALKEY_KEY_PREFIX: z
     .string()
@@ -38,10 +38,10 @@ export const valkeyConfigSchema = z.object({
     .optional(),
 });
 
-/** Configuración validada del adaptador de Valkey. */
+/** Validated configuration of the Valkey adapter. */
 export type ValkeySettings = z.infer<typeof valkeyConfigSchema>;
 
-/** Sección de configuración que `ValkeyModule` valida al arrancar. */
+/** Configuration section that `ValkeyModule` validates at startup. */
 export const ValkeyConfig = new ConfigSection<ValkeySettings>(
   'valkey',
   valkeyConfigSchema,

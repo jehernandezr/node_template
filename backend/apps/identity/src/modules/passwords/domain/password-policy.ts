@@ -1,6 +1,6 @@
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
 
-/** Por qué una contraseña no se acepta. */
+/** Why a password is not accepted. */
 export enum PasswordPolicyViolation {
   TooShort = 'too_short',
   TooLong = 'too_long',
@@ -8,8 +8,8 @@ export enum PasswordPolicyViolation {
 }
 
 /**
- * Política de contraseñas (NIST SP 800-63B): de 12 a 128 caracteres y distinta del email. Sin reglas de
- * composición; las contraseñas filtradas las revisa `BreachedPasswordList`.
+ * Password policy (NIST SP 800-63B): 12 to 128 characters and different from the email. No composition
+ * rules; breached passwords are checked by `BreachedPasswordList`.
  */
 export class PasswordPolicy {
   violations(password: string, email: string): PasswordPolicyViolation[] {

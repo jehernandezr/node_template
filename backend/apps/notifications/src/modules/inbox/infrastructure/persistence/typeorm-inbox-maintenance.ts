@@ -8,8 +8,8 @@ import { InboxMaintenance } from '../../domain/inbox-maintenance.js';
 import { NotificationEntity } from './entities/notification.entity.js';
 
 /**
- * Recorre los shards y borra en cada uno las notificaciones leídas antes del corte, salvo las de los usuarios cuyo
- * tenant de origen ya se trasladó a otro shard.
+ * Walks the shards and deletes in each one the notifications read before the cutoff, except those of users whose
+ * home tenant has already moved to another shard.
  */
 @Injectable()
 export class TypeOrmInboxMaintenance extends InboxMaintenance {

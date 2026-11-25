@@ -8,8 +8,8 @@ import {
 } from './postgres-search-index.js';
 
 /**
- * Búsqueda de texto completo con `websearch_to_tsquery`: acepta frases entre comillas, `or` y `-palabra`.
- * Solo devuelve documentos que contienen los términos, ordenados por `ts_rank_cd`.
+ * Full-text search with `websearch_to_tsquery`: accepts quoted phrases, `or` and `-word`.
+ * Only returns documents that contain the terms, ordered by `ts_rank_cd`.
  */
 export class PostgresTextSearch extends PostgresSearchIndex {
   constructor(kit: RepositoryKit, language: SearchLanguage) {

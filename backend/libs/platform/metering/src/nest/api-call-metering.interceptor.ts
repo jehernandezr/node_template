@@ -12,8 +12,8 @@ import { from, switchMap, type Observable } from 'rxjs';
 import { UsageRecorder } from '../usage-recorder.js';
 
 /**
- * Cuenta una llamada de API por cada petición de una service account. Un contador que no responde no tumba
- * la petición: se pierde esa llamada en la medición y queda en el log.
+ * Counts one API call for each request of a service account. A counter that does not respond does not bring down
+ * the request: that call is lost from metering and is logged.
  */
 @Injectable()
 export class ApiCallMeteringInterceptor implements NestInterceptor {

@@ -1,4 +1,4 @@
-/** Operación del SDK que falló, para el mensaje del error. */
+/** SDK operation that failed, for the error message. */
 export enum AwsOperation {
   Publish = 'sns:Publish',
   SendMessage = 'sqs:SendMessage',

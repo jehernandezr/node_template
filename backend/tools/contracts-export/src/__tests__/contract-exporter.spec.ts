@@ -50,14 +50,14 @@ describe('ContractExporter', () => {
       expect(report).toEqual({
         ok: true,
         lines: [
-          `Escrito ${paths.contractExportOf('platform')}`,
-          `Escrito ${paths.contractExportOf('identity')}`,
-          `Escrito ${paths.contractExportOf('billing')}`,
-          `Escrito ${paths.openApiOf('platform')}`,
-          `Escrito ${paths.openApiOf('identity')}`,
-          `Escrito ${paths.openApiOf('billing')}`,
-          `Escrito ${paths.topology}`,
-          `Escrito ${paths.asyncApi}`,
+          `Wrote ${paths.contractExportOf('platform')}`,
+          `Wrote ${paths.contractExportOf('identity')}`,
+          `Wrote ${paths.contractExportOf('billing')}`,
+          `Wrote ${paths.openApiOf('platform')}`,
+          `Wrote ${paths.openApiOf('identity')}`,
+          `Wrote ${paths.openApiOf('billing')}`,
+          `Wrote ${paths.topology}`,
+          `Wrote ${paths.asyncApi}`,
         ],
       });
     });
@@ -87,7 +87,7 @@ describe('ContractExporter', () => {
       expect(fileSystem.contentOf(paths.asyncApi)).toBeUndefined();
       expect(report).toEqual({
         ok: true,
-        lines: [`Escrito ${paths.topology}`],
+        lines: [`Wrote ${paths.topology}`],
       });
     });
 
@@ -113,9 +113,9 @@ describe('ContractExporter', () => {
       );
 
       expect(report.lines).toEqual([
-        `Escrito ${paths.openApiOf('platform')}`,
-        `Escrito ${paths.openApiOf('identity')}`,
-        `Escrito ${paths.openApiOf('billing')}`,
+        `Wrote ${paths.openApiOf('platform')}`,
+        `Wrote ${paths.openApiOf('identity')}`,
+        `Wrote ${paths.openApiOf('billing')}`,
       ]);
       expect(
         fileSystem.contentOf(paths.contractExportOf('identity')),

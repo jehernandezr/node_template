@@ -3,7 +3,7 @@ import type { CallMeta } from '../call-meta.js';
 import { LocalFirstTransport } from '../local-first-transport.js';
 import { Transport } from '../transport.js';
 
-/** Transporte que responde con su nombre, para ver por dónde salió cada llamada. */
+/** Transport that responds with its name, to see which way each call went out. */
 class NamedTransport extends Transport {
   constructor(private readonly name: string) {
     super();

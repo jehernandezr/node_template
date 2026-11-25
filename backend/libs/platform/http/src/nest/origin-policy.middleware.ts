@@ -9,7 +9,7 @@ import { HttpRequestKey } from './http-metadata-key.enum.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
 /**
- * Rechaza los orígenes que no están en la lista y deja en la petición el `ClientInfo` del cliente.
+ * Rejects origins not on the list and leaves the client's `ClientInfo` on the request.
  */
 @Injectable()
 export class OriginPolicyMiddleware implements NestMiddleware {

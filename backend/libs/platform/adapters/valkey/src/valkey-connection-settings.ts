@@ -1,9 +1,9 @@
 import type { ValkeyConnectionOptions } from './valkey-connection-options.js';
 import type { ValkeyTokenAuth } from './valkey-token-auth.js';
 
-/** Datos de conexión resueltos desde la configuración. */
+/** Connection data resolved from the configuration. */
 export interface ValkeyConnectionSettings {
   readonly connection: ValkeyConnectionOptions;
-  /** Presente con un modo IAM: cada conexión se autentica con un token nuevo. */
+  /** Present with an IAM mode: each connection authenticates with a new token. */
   readonly auth?: ValkeyTokenAuth;
 }

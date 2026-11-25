@@ -7,7 +7,7 @@ import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
 import { TenantRepository } from '../domain/tenant.repository.js';
 import { TenantSummaryView } from './tenant-summary-view.js';
 
-/** Lee tenants de su shard. */
+/** Reads tenants from their shard. */
 @Injectable()
 export class TenantReader {
   constructor(
@@ -15,7 +15,7 @@ export class TenantReader {
     private readonly scopes: IdentityShardScopes,
   ) {}
 
-  /** @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` si no existe. */
+  /** @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist. */
   async get(tenantId: string): Promise<TenantSnapshot> {
     const tenant = await this.find(tenantId);
     if (tenant === undefined) {
@@ -24,7 +24,7 @@ export class TenantReader {
     return tenant;
   }
 
-  /** Un tenant sin ubicación en el directorio todavía no existe. */
+  /** A tenant without a placement in the directory does not exist yet. */
   async find(tenantId: string): Promise<TenantSnapshot | undefined> {
     try {
       const tenant = await this.scopes.inTenantShard(tenantId, () =>

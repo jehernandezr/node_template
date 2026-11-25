@@ -8,8 +8,8 @@ import { ReportRun } from '../../domain/report-run.js';
 import { ReportRunEntity } from './entities/report-run.entity.js';
 
 /**
- * Fila de `report_runs` y agregado `ReportRun`, en los dos sentidos, sin la columna `result`, que es de
- * `RowReportResultStore`. Utilidad pura.
+ * `report_runs` row and `ReportRun` aggregate, in both directions, without the `result` column, which belongs to
+ * `RowReportResultStore`. Pure utility.
  */
 export class ReportRunMapper {
   static toDomain(row: ReportRunEntity): ReportRun {

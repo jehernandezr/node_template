@@ -18,8 +18,8 @@ import { InvitationView } from './invitation-view.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 
 /**
- * Invita un email al tenant con unos grupos y le envía el enlace con el token. Los grupos no pueden otorgar
- * un permiso que quien invita no tiene: aceptar la invitación los da tal cual.
+ * Invites an email to the tenant with some groups and sends it the link with the token. The groups cannot grant
+ * a permission the inviter does not have: accepting the invitation grants them as they are.
  */
 @Injectable()
 export class InviteUser {
@@ -74,7 +74,7 @@ export class InviteUser {
     return InvitationView.of(invitation, now);
   }
 
-  /** @throws IdentityError `PLATFORM.AUTH.FORBIDDEN` si no invita un usuario ni una cuenta de servicio. */
+  /** @throws IdentityError `PLATFORM.AUTH.FORBIDDEN` if the inviter is neither a user nor a service account. */
   private inviterOf(actor: Actor | undefined): string {
     if (actor !== undefined && ActorGuards.isUser(actor)) {
       return actor.userId;

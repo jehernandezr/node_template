@@ -1,7 +1,7 @@
 /**
- * Clase de un mensaje asíncrono: un hecho que ya pasó (evento) o un pedido de
- * trabajo a un servicio concreto (comando). Los valores coinciden con
- * `MessageKind` de `@platform/messaging`.
+ * Kind of an asynchronous message: a fact that already happened (event) or a
+ * work request to a specific service (command). The values match
+ * `MessageKind` from `@platform/messaging`.
  */
 export enum MessageKind {
   Event = 'event',

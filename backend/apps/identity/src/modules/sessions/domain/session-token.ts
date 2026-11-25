@@ -4,8 +4,8 @@ import {
 } from '../../../shared/utils/opaque-token.js';
 
 /**
- * Session token opaco `st1_<usuario>_<tenant de origen>_<sesión>_<generación>_<secreto>`. La ruta lleva a la
- * fila sin consultar el catálogo; el secreto de cada generación se deriva de la sal de la sesión.
+ * Opaque session token `st1_<user>_<home tenant>_<session>_<generation>_<secret>`. The route leads to the
+ * row without querying the catalog; the secret of each generation is derived from the session's salt.
  */
 export class SessionToken {
   static readonly PREFIX = 'st1';
@@ -20,7 +20,7 @@ export class SessionToken {
     readonly secret: Buffer,
   ) {}
 
-  /** `undefined` si el texto no es un session token bien formado. */
+  /** `undefined` if the text is not a well-formed session token. */
   static parse(text: string): SessionToken | undefined {
     const parsed = parseOpaqueToken(
       text,

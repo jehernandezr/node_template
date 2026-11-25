@@ -12,7 +12,7 @@ import {
   type TaskProjectionChange,
 } from '../domain/task-projection.js';
 
-/** Lleva los eventos de tasks a la proyección del shard de su tenant. */
+/** Brings tasks events into the projection of their tenant's shard. */
 @Injectable()
 export class ProjectTaskEvents {
   constructor(

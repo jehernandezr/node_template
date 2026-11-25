@@ -1,21 +1,21 @@
 import type { FailureKind } from './failure-kind.js';
 import { PlatformError } from './platform-error.js';
 
-/** Opciones adicionales de un `DomainError`. */
+/** Additional options of a `DomainError`. */
 export interface DomainErrorOptions {
-  /** Error que lo originó. */
+  /** Error that caused it. */
   readonly cause?: unknown;
-  /** Si reintentar puede dar otro resultado (por ejemplo, un conflicto de concurrencia). Por defecto `false`. */
+  /** Whether retrying can give a different result (for example, a concurrency conflict). Defaults to `false`. */
   readonly retryable?: boolean;
 }
 
 /**
- * Base de los errores de dominio. El `code` es estable y lo consume el
- * frontend; el `message` es solo para personas. Por defecto no es reintentable:
- * una regla de negocio da el mismo resultado al repetirse.
+ * Base of domain errors. The `code` is stable and the frontend consumes
+ * it; the `message` is only for people. By default it is not retryable:
+ * a business rule gives the same result when repeated.
  */
 export abstract class DomainError extends PlatformError {
-  /** Una regla de negocio no depende de su `cause`: la clase sale solo de `retryable`. */
+  /** A business rule does not depend on its `cause`: the kind comes only from `retryable`. */
   declare readonly failureKind: FailureKind;
 
   constructor(

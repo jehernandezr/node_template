@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Las funcionalidades del plan que billing informa para cada tenant y cuándo las decidió. */
+/** The plan features billing reports for each tenant and when it decided them. */
 export class AddTenantPlanFeatures1795000800003 implements MigrationInterface {
   readonly name = 'AddTenantPlanFeatures1795000800003';
 

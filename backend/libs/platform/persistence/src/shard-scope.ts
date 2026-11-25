@@ -7,8 +7,8 @@ import {
 import type { ShardScopeInit } from './model/shard-scope-init.js';
 
 /**
- * Ejecuta un bloque en el shard de una llave explícita, para los casos del ADR 0023 (por ejemplo,
- * el usuario de otro tenant). Mientras el bloque corre, `ShardResolver` usa esta llave en lugar del contexto.
+ * Runs a block on the shard of an explicit key, for the cases of ADR 0023 (for example,
+ * the user of another tenant). While the block runs, `ShardResolver` uses this key instead of the context.
  */
 export class ShardScope {
   private readonly storage = new AsyncLocalStorage<ShardScopeInit>();
@@ -16,12 +16,12 @@ export class ShardScope {
   constructor(private readonly router: ShardRouter) {}
 
   /**
-   * @throws ShardingError `CrossShardTransaction` si hay una transacción abierta y la llave apunta a otro shard.
+   * @throws ShardingError `CrossShardTransaction` if there is an open transaction and the key points to another shard.
    */
   async run<T>(init: ShardScopeInit, fn: () => Promise<T>): Promise<T> {
     const guard = TransactionShardGuard.current();
     if (guard !== undefined) {
-      // Dentro de una transacción el bloque tiene que caer en el mismo shard que ya tocó.
+      // Inside a transaction the block must land on the same shard it already touched.
       const resolved = await this.router.resolve({
         tenantId: init.tenantId,
         keyKind: init.keyKind,
@@ -33,7 +33,7 @@ export class ShardScope {
     return this.storage.run(init, fn);
   }
 
-  /** La llave del bloque que envuelve la llamada, o `undefined` si no hay ninguno. */
+  /** The key of the block that wraps the call, or `undefined` if there is none. */
   current(): ShardScopeInit | undefined {
     return this.storage.getStore();
   }

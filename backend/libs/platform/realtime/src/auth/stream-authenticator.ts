@@ -1,9 +1,9 @@
 import type { StreamCredentials } from './stream-credentials.js';
 import type { StreamPrincipal } from './stream-principal.js';
 
-/** Autentica una conexión de tiempo real. */
+/** Authenticates a realtime connection. */
 export abstract class StreamAuthenticator {
-  /** @throws AuthenticationError si las credenciales faltan o no son válidas. */
+  /** @throws AuthenticationError if the credentials are missing or not valid. */
   abstract authenticate(
     credentials: StreamCredentials,
   ): Promise<StreamPrincipal>;

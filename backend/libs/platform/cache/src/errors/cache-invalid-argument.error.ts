@@ -2,7 +2,7 @@ import { FailureKind } from '@platform/kernel';
 import { CacheError } from './cache-error.js';
 import { CacheErrorCode } from './cache-error-code.enum.js';
 
-/** Un argumento no cumple el rango o el tipo esperado. Es un error de programación. */
+/** An argument does not meet the expected range or type. It is a programming error. */
 export class CacheInvalidArgumentError extends CacheError {
   override readonly code = CacheErrorCode.InvalidArgument;
 

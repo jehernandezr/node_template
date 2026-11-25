@@ -1,7 +1,7 @@
 import type { MigrationClass } from '@platform/persistence';
 import { emailCatalogMigrations } from '../modules/email/infrastructure/persistence/migrations/index.js';
 
-/** Migraciones del catálogo de notifications: el registro de correos y la lista de supresión. */
+/** Migrations of the notifications catalog: the email log and the suppression list. */
 export const notificationsCatalogMigrations: readonly MigrationClass[] = [
   ...emailCatalogMigrations,
 ];

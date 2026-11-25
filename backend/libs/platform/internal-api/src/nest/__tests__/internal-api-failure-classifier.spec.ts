@@ -11,7 +11,7 @@ import { FailoverHandlers } from './utils/failover-handlers.js';
 import { InternalApiPlatformTestingModule } from './utils/internal-api-platform-testing.module.js';
 import { SqlStateFailureRule } from './utils/sql-state-failure-rule.js';
 
-/** El servicio provee su clasificador con las reglas de sus adaptadores, como el runtime de la plataforma. */
+/** The service provides its classifier with the rules of its adapters, like the platform runtime. */
 @Global()
 @Module({
   providers: [

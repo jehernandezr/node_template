@@ -1,8 +1,8 @@
 import type { ShardDirectoryChangeHandler } from '../model/shard-directory-changed.js';
 
-/** Entrega los cambios del directorio que publique cualquier proceso. */
+/** Delivers the directory changes published by any process. */
 export abstract class ShardDirectoryChangeSubscriber {
-  /** @returns una función que detiene la suscripción. */
+  /** @returns a function that stops the subscription. */
   abstract subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>>;

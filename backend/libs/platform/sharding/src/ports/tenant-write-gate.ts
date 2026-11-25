@@ -1,15 +1,15 @@
 /**
- * Compuerta de escritura de un tenant durante su traslado. Cerrarla hace que las escrituras nuevas esperen y,
- * si no se abre a tiempo, fallen con `PLATFORM.SHARDING.TENANT_MIGRATING`. Es la señal para esperar: la garantía
- * de que ninguna escritura llegue al origen después del corte la da la barrera del shard (`TenantWriteFence`
- * de `@platform/persistence`), porque `isClosed` puede leer de un caché.
+ * Write gate of a tenant during its move. Closing it makes new writes wait and,
+ * if it does not open in time, fail with `PLATFORM.SHARDING.TENANT_MIGRATING`. It is the signal to wait: the guarantee
+ * that no write reaches the source after the cutover comes from the shard fence (`TenantWriteFence`
+ * from `@platform/persistence`), because `isClosed` may read from a cache.
  */
 export abstract class TenantWriteGate {
   abstract isClosed(tenantId: string): Promise<boolean>;
 
-  /** Idempotente: cerrar una compuerta cerrada no cambia nada. */
+  /** Idempotent: closing a closed gate changes nothing. */
   abstract close(tenantId: string): Promise<void>;
 
-  /** Idempotente: abrir una compuerta abierta no cambia nada. */
+  /** Idempotent: opening an open gate changes nothing. */
   abstract open(tenantId: string): Promise<void>;
 }

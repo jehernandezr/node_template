@@ -1,6 +1,6 @@
 import { NodeSha256 } from '../node-sha256.js';
 
-/** Digiere `data` con `hasher` y devuelve el resultado en hexadecimal. */
+/** Digests `data` with `hasher` and returns the result in hexadecimal. */
 async function hexOf(hasher: NodeSha256): Promise<string> {
   return Buffer.from(await hasher.digest()).toString('hex');
 }

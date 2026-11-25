@@ -7,70 +7,70 @@ import type { InternalRequestSigner } from '../signing/internal-request-signer.j
 import type { HandlerUnitOfWork } from './handler-unit-of-work.enum.js';
 import type { InternalTransportKind } from './internal-transport-kind.enum.js';
 
-/** Cómo se llega por HTTP a otros servicios y cómo se firman y verifican las llamadas. */
+/** How other services are reached over HTTP and how calls are signed and verified. */
 export interface InternalApiHttpOptions {
-  /** URL base por nombre de servicio: el primer segmento del id de sus operaciones. */
+  /** Base URL per service name: the first segment of its operations' id. */
   readonly baseUrls: Readonly<Record<string, string>>;
-  /** Secreto HMAC compartido entre servicios. Llega de la configuración validada, nunca escrito en el código. */
+  /** HMAC secret shared between services. It comes from the validated configuration, never written in the code. */
   readonly secret: string;
   /**
-   * Firmador de las llamadas salientes. Sin valor, `HmacSigner` con `secret`. Un servicio que elige
-   * `INTERNAL_API_SIGNER=sigv4` pasa aquí el `SigV4Signer` de `@platform/adapters-aws`.
+   * Signer of outgoing calls. Without a value, `HmacSigner` with `secret`. A service that chooses
+   * `INTERNAL_API_SIGNER=sigv4` passes the `SigV4Signer` from `@platform/adapters-aws` here.
    */
   readonly signer?: InternalRequestSigner;
-  /** Ventana de validez de una firma. Por defecto 60 000 ms. */
+  /** Validity window of a signature. Defaults to 60 000 ms. */
   readonly signatureWindowMs?: number;
 }
 
 /**
- * Opciones de `InternalApiModule` que pueden salir de la configuración, así
- * que `forRootAsync` las arma con una fábrica.
+ * `InternalApiModule` options that can come from the configuration, so
+ * `forRootAsync` builds them with a factory.
  */
 export interface InternalApiModuleOptions {
-  /** Operaciones que este servicio publica: cada una debe tener un handler. */
+  /** Operations this service publishes: each one must have a handler. */
   readonly operations: readonly OperationDefinition[];
-  /** Operaciones de otros servicios que este llama. Se suman al catálogo del cliente. */
+  /** Operations of other services that this one calls. They are added to the client catalog. */
   readonly remoteOperations?: readonly OperationDefinition[];
-  /** Obligatorio con `InternalTransportKind.Http`, y para que el controller autentique las llamadas entrantes. */
+  /** Required with `InternalTransportKind.Http`, and for the controller to authenticate incoming calls. */
   readonly http?: InternalApiHttpOptions;
-  /** Tope de la entrada y la salida serializadas. Por defecto 256 KiB. */
+  /** Cap on the serialized input and output. Defaults to 256 KiB. */
   readonly maxPayloadBytes?: number;
-  /** Margen del lease de idempotencia sobre el plazo de la llamada. */
+  /** Margin of the idempotency lease over the call deadline. */
   readonly leaseMarginMs?: number;
-  /** Lease mínimo de idempotencia. */
+  /** Minimum idempotency lease. */
   readonly minLeaseMs?: number;
-  /** Tope del presupuesto por defecto de una llamada. Por defecto 25 000 ms. */
+  /** Cap of the default budget of a call. Defaults to 25 000 ms. */
   readonly maxCallBudgetMs?: number;
-  /** Cuánto se conserva un resultado guardado antes de que el job de retención lo borre. */
+  /** How long a stored result is kept before the retention job deletes it. */
   readonly retentionMs?: number;
 }
 
 /**
- * Adaptadores de `InternalApiModule`. Se pasan como tipo, no como instancia,
- * y se fijan al componer el módulo: van igual en `forRoot` y en `forRootAsync`.
+ * Adapters of `InternalApiModule`. They are passed as a type, not as an instance,
+ * and are fixed when composing the module: they go the same way in `forRoot` and in `forRootAsync`.
  */
 export interface InternalApiModuleExtras {
-  /** Obligatorio. `Http` para llamar a otros procesos, `InProcess` para el modo local. */
+  /** Required. `Http` to call other processes, `InProcess` for local mode. */
   readonly transport?: InternalTransportKind;
   /**
-   * Obligatorio. Almacén de idempotencia del router; en producción, el de
-   * `adapters-postgres`, que escribe en la misma transacción que el handler.
+   * Required. Router idempotency store; in production, the one from
+   * `adapters-postgres`, which writes in the same transaction as the handler.
    */
   readonly processedStore?: Type<IdempotencyStore<FinalOutcome<unknown>>>;
   /**
-   * Almacén que el job de retención purga. Sin él, no se registra el job. Suele
-   * ser la misma clase que `processedStore`.
+   * Store that the retention job purges. Without it, the job is not registered. It is usually
+   * the same class as `processedStore`.
    */
   readonly purgeableStore?: Type<PurgeableStore>;
-  /** Por defecto `HandlerUnitOfWork.Shared`. */
+  /** Defaults to `HandlerUnitOfWork.Shared`. */
   readonly unitOfWork?: HandlerUnitOfWork;
-  /** `false` para importar el módulo en cada módulo que lo use. Por defecto, global. */
+  /** `false` to import the module in each module that uses it. Global by default. */
   readonly isGlobal?: boolean;
 }
 
 /**
- * Los extras ya validados por `InternalApiModule`: `transport` y `processedStore`
- * dejan de ser opcionales. Es lo que reciben los proveedores.
+ * The extras already validated by `InternalApiModule`: `transport` and `processedStore`
+ * are no longer optional. It is what the providers receive.
  */
 export type ResolvedInternalApiExtras = InternalApiModuleExtras &
   Required<Pick<InternalApiModuleExtras, 'transport' | 'processedStore'>>;

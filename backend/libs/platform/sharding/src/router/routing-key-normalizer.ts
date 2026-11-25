@@ -4,12 +4,12 @@ import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 import { ShardingGuard } from '../errors/sharding-guard.js';
 import type { ShardKey } from '../model/shard-key.enum.js';
 
-/** Valida y normaliza a minúsculas los ids de tenant y las claves de enrutamiento. */
+/** Validates and lowercases tenant ids and routing keys. */
 export class RoutingKeyNormalizer {
   /**
-   * @param tenantIdPattern Formato de los ids de tenant, sin las banderas `g` ni `y`.
-   * @param maxKeyLength Longitud máxima de una clave de enrutamiento.
-   * @throws ShardingError `InvalidConfiguration` si el patrón tiene `g` o `y`, o `maxKeyLength` no es un entero positivo.
+   * @param tenantIdPattern Format of tenant ids, without the `g` or `y` flags.
+   * @param maxKeyLength Maximum length of a routing key.
+   * @throws ShardingError `InvalidConfiguration` if the pattern has `g` or `y`, or `maxKeyLength` is not a positive integer.
    */
   constructor(
     private readonly tenantIdPattern: RegExp,
@@ -26,8 +26,8 @@ export class RoutingKeyNormalizer {
   }
 
   /**
-   * @throws ShardingError `KeyMissing` si no es un texto no vacío; `InvalidTenantId` si supera
-   *   `TenantId.MAX_LENGTH` o no cumple el patrón.
+   * @throws ShardingError `KeyMissing` if it is not a non-empty string; `InvalidTenantId` if it exceeds
+   *   `TenantId.MAX_LENGTH` or does not match the pattern.
    */
   tenantId(raw: unknown): string {
     if (typeof raw !== 'string' || raw.length === 0) {
@@ -47,8 +47,8 @@ export class RoutingKeyNormalizer {
   }
 
   /**
-   * @throws ShardingError `KeyMissing` si no es un texto no vacío; `InvalidKey` si supera
-   *   `maxKeyLength`, antes o después de pasar a minúsculas.
+   * @throws ShardingError `KeyMissing` if it is not a non-empty string; `InvalidKey` if it exceeds
+   *   `maxKeyLength`, before or after lowercasing.
    */
   routingKey(keyKind: ShardKey, raw: unknown): string {
     if (typeof raw !== 'string' || raw.length === 0) {

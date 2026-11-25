@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:auth/auth.dart';
 
-/// Almacén del session token en memoria que deja controlar y contar las
-/// escrituras.
+/// In-memory session token store that lets you control and count
+/// writes.
 class FakeTokenStore implements TokenStore {
   FakeTokenStore([this._sessionToken, this.sessionInCookie = false]);
 
@@ -12,13 +12,13 @@ class FakeTokenStore implements TokenStore {
   @override
   final bool sessionInCookie;
 
-  /// Si no es null, [writeSessionToken] espera a que se complete antes de
-  /// guardar. Sirve para probar lo que pasa mientras la escritura está pendiente.
+  /// If not null, [writeSessionToken] waits for it to complete before
+  /// storing. Useful to test what happens while the write is pending.
   Completer<void>? writeGate;
 
   int writeCount = 0;
 
-  /// Session token guardado, sin pasar por la interfaz asíncrona.
+  /// Stored session token, without going through the async interface.
   String? get sessionToken => _sessionToken;
 
   @override

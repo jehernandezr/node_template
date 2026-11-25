@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** El tenant de origen del dueño de cada notificación: el traslado de un tenant elige las filas por él. */
+/** The home tenant of the owner of each notification: moving a tenant selects the rows by it. */
 export class AddNotificationsHomeTenant1796100200001 implements MigrationInterface {
   readonly name = 'AddNotificationsHomeTenant1796100200001';
 

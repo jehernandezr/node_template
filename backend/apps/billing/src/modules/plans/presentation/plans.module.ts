@@ -9,7 +9,7 @@ import { PlanEntity } from '../infrastructure/persistence/entities/plan.entity.j
 import { TypeOrmPlanCatalog } from '../infrastructure/persistence/typeorm-plan-catalog.js';
 import { PlansController } from './plans.controller.js';
 
-/** Catálogo de planes y su semilla. Global solo para su fachada. */
+/** Plan catalog and its seed. Global only for its facade. */
 @Global()
 @Module({
   imports: [

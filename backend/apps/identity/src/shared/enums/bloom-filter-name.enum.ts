@@ -1,5 +1,5 @@
-/** Filtros Bloom de identity. */
+/** Identity Bloom filters. */
 export enum BloomFilterName {
-  /** Contraseñas de listas filtradas. */
+  /** Passwords from breached lists. */
   BreachedPasswords = 'identity.breached-passwords',
 }

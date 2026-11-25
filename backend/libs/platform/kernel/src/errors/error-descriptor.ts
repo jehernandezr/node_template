@@ -1,6 +1,6 @@
 import { ErrorCode } from './error-code.js';
 
-/** Datos de un error que son seguros de registrar: sin causa, detalles ni pila. */
+/** Error data that is safe to log: without cause, details or stack. */
 export interface ErrorDescription {
   readonly name: string;
   readonly code?: string;
@@ -8,12 +8,12 @@ export interface ErrorDescription {
 }
 
 /**
- * Describe cualquier valor lanzado. Es estática porque no tiene estado ni
- * dependencias, y la comparten el registro de logs, las métricas y el
- * despachador de mensajes.
+ * Describes any thrown value. It is static because it has no state or
+ * dependencies, and the log recorder, the metrics and the
+ * message dispatcher share it.
  */
 export class ErrorDescriptor {
-  /** Nombre, código válido y mensaje de `error`; un valor que no es `Error` se convierte a texto. */
+  /** Returns the name, valid code and message of `error`; a value that is not an `Error` is converted to text. */
   static describe(error: unknown): ErrorDescription {
     if (error instanceof Error) {
       const code = ErrorDescriptor.codeOf(error);
@@ -24,7 +24,7 @@ export class ErrorDescriptor {
     return { name: typeof error, message: String(error) };
   }
 
-  /** El `code` del error solo si cumple `ErrorCode.isValid`; si no, `undefined`. */
+  /** Returns the error `code` only if it satisfies `ErrorCode.isValid`; otherwise, `undefined`. */
   static codeOf(error: unknown): string | undefined {
     if (typeof error !== 'object' || error === null) {
       return undefined;

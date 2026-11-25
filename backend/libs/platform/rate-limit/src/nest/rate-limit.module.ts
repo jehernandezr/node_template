@@ -5,7 +5,7 @@ import type {
 } from './rate-limit-module-options.js';
 import { RateLimitConfigurableModule } from './rate-limit.module-definition.js';
 
-/** Módulo de límite de tasa: el limitador, el guard y el resolutor de llaves. */
+/** Rate limit module: the limiter, the guard and the key resolver. */
 @Module({})
 export class RateLimitModule extends RateLimitConfigurableModule {
   static override forRoot(

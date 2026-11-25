@@ -21,19 +21,19 @@ import type {
 } from './cache-aside.options.js';
 import type { VersionedKeyspace } from './versioned-keyspace.js';
 
-/** Lo que el líder de un vuelo compartido entrega: el texto crudo o el valor ya cargado. */
+/** What the leader of a shared flight delivers: the raw text or the already loaded value. */
 type FlightOutcome<T> =
   | { readonly kind: FlightOutcomeKind.Raw; readonly raw: string }
   | { readonly kind: FlightOutcomeKind.Value; readonly value: T };
 
 /**
- * Lecturas de caché con llaves versionadas, TTL repartido y cargas deduplicadas.
- * Las fallas del caché, los tiempos agotados y el circuito abierto caen a la
- * carga directa y se reportan; un error de `load` llega a todos los llamadores
- * que esperan esa llave.
+ * Cache reads with versioned keys, spread TTL and deduplicated loads.
+ * Cache failures, timeouts and an open circuit fall back to a
+ * direct load and are reported; an error from `load` reaches every caller
+ * waiting on that key.
  */
 export class CacheAside {
-  /** Tamaño máximo de una entrada serializada, en bytes UTF-8 (512 KiB). */
+  /** Maximum size of a serialized entry, in UTF-8 bytes (512 KiB). */
   static readonly MAX_VALUE_BYTES = 512 * 1024;
 
   private readonly wait: CallerWait;
@@ -50,7 +50,7 @@ export class CacheAside {
     options: CacheAsideOptions,
     collaborators: CacheAsideCollaborators = {},
   ) {
-    // Los valores por defecto existen para usar la clase sin NestJS; en la aplicación llegan inyectados.
+    // The defaults exist to use the class without NestJS; in the application they are injected.
     this.wait = collaborators.wait ?? new CallerWait(new SystemClock());
     this.singleFlight =
       collaborators.singleFlight ?? new SingleFlight(this.wait);
@@ -63,10 +63,10 @@ export class CacheAside {
   }
 
   /**
-   * Devuelve el valor cacheado de la consulta o lo carga y lo guarda en segundo
-   * plano. Las fallas del caché caen a `load` y se reportan.
-   * Los errores de `load` llegan a todos los llamadores concurrentes de la llave.
-   * La señal y el plazo del llamador solo acotan su propia espera.
+   * Returns the cached value of the query or loads it and stores it in the
+   * background. Cache failures fall back to `load` and are reported.
+   * Errors from `load` reach all concurrent callers of the key.
+   * The caller's signal and deadline only bound its own wait.
    */
   async getOrLoad<T>(options: GetOrLoadOptions<T>): Promise<T> {
     const { namespace, params, ttlMs, load } = options;
@@ -118,8 +118,8 @@ export class CacheAside {
   }
 
   /**
-   * Absorbe una falla del caché cargando directo, salvo que el llamador ya se
-   * haya rendido: entonces rechaza con su cancelación y no arranca la carga.
+   * Absorbs a cache failure by loading directly, unless the caller has already
+   * given up: then it rejects with its cancellation and does not start the load.
    */
   private fallback<T>(
     error: unknown,
@@ -135,14 +135,14 @@ export class CacheAside {
   }
 
   /**
-   * Vuelve inalcanzables los resultados cacheados del espacio de nombres
-   * cambiando su versión. Nunca lanza: las fallas se reportan, así que un caché
-   * caído no hace fallar la escritura.
+   * Makes the cached results of the namespace unreachable by changing
+   * its version. Never throws: failures are reported, so a cache that is
+   * down does not make the write fail.
    *
-   * Dentro de una transacción el cambio se repite después del commit. Un lector
-   * fuera de la transacción puede cargar el dato viejo entre el primer cambio y
-   * el commit y guardarlo bajo la versión nueva; el cambio posterior deja
-   * inalcanzable esa entrada. Si la transacción se deshace, no hay cambio posterior.
+   * Inside a transaction the change is repeated after the commit. A reader
+   * outside the transaction may load the old data between the first change and
+   * the commit and store it under the new version; the later change makes
+   * that entry unreachable. If the transaction rolls back, there is no later change.
    */
   async invalidate(namespace: readonly string[]): Promise<void> {
     await this.bumpSafely(namespace);
@@ -156,7 +156,7 @@ export class CacheAside {
     }
   }
 
-  /** Camino del líder del vuelo: lee el caché y, si falta, carga y guarda en segundo plano. */
+  /** Flight leader path: reads the cache and, if missing, loads and stores in the background. */
   private async fetchOrLoad<T>(
     key: string,
     ttlMs: number,
@@ -177,13 +177,13 @@ export class CacheAside {
     }
     const bytes = Buffer.byteLength(raw, 'utf8');
     if (bytes > CacheAside.MAX_VALUE_BYTES) {
-      // Se sirve, pero nunca se escribe una entrada enorme en el caché compartido.
+      // It is served, but a huge entry is never written to the shared cache.
       this.reporter.report(
         new CacheValueTooLargeError(bytes, CacheAside.MAX_VALUE_BYTES),
       );
       return { kind: FlightOutcomeKind.Raw, raw };
     }
-    // Escritura en segundo plano: quien llama no espera. `store` nunca rechaza.
+    // Background write: the caller does not wait. `store` never rejects.
     void this.store(key, raw, ttlMs);
     return { kind: FlightOutcomeKind.Raw, raw };
   }
@@ -215,9 +215,9 @@ export class CacheAside {
   }
 
   /**
-   * Ejecuta una llamada al caché bajo `PolicyName.Cache`. La política controla el
-   * plazo y el circuito: con Valkey caído, tras pocas fallas el circuito se abre
-   * y las llamadas siguientes fallan de inmediato con `CircuitOpenError`.
+   * Runs a cache call under `PolicyName.Cache`. The policy controls the
+   * deadline and the circuit: with Valkey down, after a few failures the circuit opens
+   * and the following calls fail immediately with `CircuitOpenError`.
    */
   private guarded<T>(operation: () => Promise<T>): Promise<T> {
     return this.resilience.execute(PolicyName.Cache, operation, {

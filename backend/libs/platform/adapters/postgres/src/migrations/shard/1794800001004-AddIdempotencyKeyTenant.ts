@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** El tenant de cada llave de idempotencia del shard, para que el traslado del tenant se lleve sus llaves. */
+/** The tenant of each idempotency key in the shard, so the tenant move takes its keys along. */
 export class AddIdempotencyKeyTenant1794800001004 implements MigrationInterface {
   readonly name = 'AddIdempotencyKeyTenant1794800001004';
 

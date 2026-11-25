@@ -8,14 +8,14 @@ import type { LogSink } from './log-sink.js';
 export interface StructuredLoggerOptions {
   readonly service: string;
   readonly level: LogLevel;
-  /** Módulos (valores de `context`) que emiten debug sin importar el nivel. */
+  /** Modules (`context` values) that emit debug regardless of the level. */
   readonly debugContexts: readonly string[];
   readonly sink: LogSink;
   readonly redactor: Redactor;
   readonly contextStore: RequestContextStore;
-  /** Fuente de los ids del span activo cuando no hay contexto abierto. */
+  /** Source of the active span ids when there is no open context. */
   readonly tracing: Tracing;
   readonly clock: Clock;
-  /** Valor del campo `context` de este logger. */
+  /** Value of the `context` field of this logger. */
   readonly context?: string;
 }

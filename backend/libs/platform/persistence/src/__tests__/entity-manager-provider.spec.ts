@@ -14,7 +14,7 @@ import { StubShardedLayer } from './utils/stub-sharded-layer.js';
 const FEATURE = new PersistenceFeature({ key: ShardKey.Tenant });
 const TENANT_B = StubShardedLayer.TENANT_B;
 
-/** `DataSource` que anota el modo de cada `QueryRunner` que crea. */
+/** `DataSource` that records the mode of each `QueryRunner` it creates. */
 class ModeRecordingDataSource extends StubDataSource {
   readonly modes: ReplicationMode[] = [];
 
@@ -34,7 +34,7 @@ class ModeRecordingFactory extends DataSourceFactory {
   }
 }
 
-/** Arma el proveedor sobre un `DataSource` que registra los modos, con la misma capa de ruteo. */
+/** Builds the provider over a `DataSource` that records the modes, with the same routing layer. */
 function buildProvider(layer: StubShardedLayer): {
   provider: EntityManagerProvider;
   transactions: TypeOrmTransactionManager;

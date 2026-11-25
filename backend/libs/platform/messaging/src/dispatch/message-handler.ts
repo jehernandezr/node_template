@@ -1,6 +1,6 @@
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 
-/** Atiende un mensaje ya validado. */
+/** Handles an already validated message. */
 export type MessageHandler<T> = (
   data: T,
   envelope: MessageEnvelope<T>,

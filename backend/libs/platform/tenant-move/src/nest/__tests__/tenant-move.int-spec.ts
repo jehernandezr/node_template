@@ -24,13 +24,13 @@ import {
 
 const ids = new UuidV7IdGenerator();
 const newId = (): string => ids.next().toString();
-/** Un ritmo de escritura que una ronda de copia alcanza; sin pausa, la copia nunca llegaría al umbral. */
+/** A write rate a copy round can catch up with; without a pause, the copy would never reach the threshold. */
 const WRITE_PACE_MS = 20;
 
 const pause = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, WRITE_PACE_MS));
 
-/** Repite el paso mientras su ronda no termina en el plazo de la llamada, como lo hace la saga. */
+/** Repeats the step while its round does not finish within the call's deadline, as the saga does. */
 async function untilDone<T>(step: () => Promise<T>): Promise<T> {
   for (;;) {
     try {
@@ -46,8 +46,8 @@ async function untilDone<T>(step: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Llama una operación de traslado por la API interna del proceso, como la saga, y la repite con otra llave mientras
- * responde que la ronda sigue en curso.
+ * Calls a move operation through the process internal API, like the saga, and repeats it with another key while
+ * it answers that the round is still in progress.
  */
 async function callUntilDone(
   app: INestApplicationContext,
@@ -68,7 +68,7 @@ async function callUntilDone(
   }
 }
 
-/** Escritores que escriben sin parar hasta `stop`, cada uno sobre sus propias filas. */
+/** Writers that write nonstop until `stop`, each on its own rows. */
 class ContinuousWriters {
   private writing = true;
   private readonly running: Promise<void>[];
@@ -248,7 +248,7 @@ runtime.describeIfAvailable(
       const { inA } = await ledger.deploy([tenant]);
       const client = inA.get(InternalClient);
       const requests = inA.get(RequestContextStore);
-      // Sin `requireScope` el shard de la llamada sale del tenant del contexto, como en una petición del tenant.
+      // Without `requireScope` the call's shard comes from the context tenant, as in a tenant request.
       const open = () =>
         requests.run(
           {

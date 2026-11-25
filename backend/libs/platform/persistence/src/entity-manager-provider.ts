@@ -6,8 +6,8 @@ import type { ShardResolver } from './shard-resolver.js';
 import type { TypeOrmTransactionManager } from './typeorm-transaction-manager.js';
 
 /**
- * Da el `EntityManager` correcto: el de la transacción actual o, fuera de ella, el de la réplica
- * del shard (`ManagerIntent.Read`) o del primario (`ReadPrimary`). Una escritura abre su transacción.
+ * Provides the correct `EntityManager`: the one of the current transaction or, outside of one, the one of the shard
+ * replica (`ManagerIntent.Read`) or of the primary (`ReadPrimary`). A write opens its transaction.
  */
 export class EntityManagerProvider {
   constructor(
@@ -16,8 +16,8 @@ export class EntityManagerProvider {
   ) {}
 
   /**
-   * Ejecuta `fn` con el manager y libera cualquier `QueryRunner` que haya abierto.
-   * @throws ShardingError `CrossShardTransaction` si hay una transacción abierta en otro shard.
+   * Runs `fn` with the manager and releases any `QueryRunner` it opened.
+   * @throws ShardingError `CrossShardTransaction` if there is an open transaction on another shard.
    */
   async run<T>(
     request: ManagerRequest,
@@ -37,7 +37,7 @@ export class EntityManagerProvider {
     });
     const uow = this.transactions.current();
     if (uow !== undefined) {
-      // Dentro de una transacción siempre se usa su sesión, aunque el pedido sea ReadPrimary.
+      // Inside a transaction its session is always used, even if the request is ReadPrimary.
       TransactionShardGuard.current()?.touch(handle.resolved.logicalShard);
       return fn(uow.manager);
     }

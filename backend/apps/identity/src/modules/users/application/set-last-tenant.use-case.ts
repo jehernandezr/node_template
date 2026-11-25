@@ -4,7 +4,7 @@ import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { UserRepository } from '../domain/user.repository.js';
 
-/** Recuerda el último tenant del usuario: el próximo inicio de sesión abre ahí. */
+/** Remembers the user's last tenant: the next sign-in opens there. */
 @Injectable()
 export class SetLastTenant {
   constructor(

@@ -1,8 +1,8 @@
-/** Descarga el documento JWKS del emisor. */
+/** Downloads the issuer JWKS document. */
 export abstract class JwksFetcher {
   /**
-   * El cuerpo JSON de `{ keys: [...] }` sin validar.
-   * @throws JwksUnavailableError si la red falla, la respuesta no es 200 o no es JSON.
+   * Returns the unvalidated JSON body of `{ keys: [...] }`.
+   * @throws JwksUnavailableError if the network fails, the response is not 200 or it is not JSON.
    */
   abstract fetch(): Promise<unknown>;
 }

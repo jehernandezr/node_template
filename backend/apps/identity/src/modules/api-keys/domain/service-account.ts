@@ -1,6 +1,6 @@
 import type { Permission, ServiceAccountStatus } from '@contracts/identity';
 
-/** Una cuenta de servicio del tenant: sus API keys actúan con sus permisos. */
+/** A tenant service account: its API keys act with its permissions. */
 export interface ServiceAccount {
   readonly id: string;
   readonly tenantId: string;

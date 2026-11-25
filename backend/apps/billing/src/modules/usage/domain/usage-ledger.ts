@@ -1,6 +1,6 @@
 import type { UsageMetric } from '@contracts/billing';
 
-/** Un registro de uso que llegó de un servicio que mide, con su llave de idempotencia. */
+/** A usage record that arrived from a metering service, with its idempotency key. */
 export interface MeteredUsage {
   readonly id: string;
   readonly key: string;
@@ -9,24 +9,24 @@ export interface MeteredUsage {
   readonly windowStart: Date;
 }
 
-/** Lo usado de una métrica en un rango de días. */
+/** The usage of a metric over a range of days. */
 export interface UsageLevel {
   readonly metric: UsageMetric;
   readonly used: number;
 }
 
-/** Uso del tenant del `ShardScope` abierto: registros por llave y totales por día. */
+/** Usage of the tenant of the open `ShardScope`: records by key and totals per day. */
 export abstract class UsageLedger {
-  /** Guarda el registro si su llave es nueva. Devuelve `false` si ya se había registrado. */
+  /** Stores the record if its key is new. Returns `false` if it was already recorded. */
   abstract claim(usage: MeteredUsage): Promise<boolean>;
 
-  /** Suma la cantidad al día, o deja el mayor valor si la métrica se reduce por máximo. */
+  /** Adds the quantity to the day, or keeps the larger value if the metric is reduced by maximum. */
   abstract accumulate(
     day: string,
     metric: UsageMetric,
     quantity: number,
   ): Promise<void>;
 
-  /** Lo usado por métrica entre `from` y `to` (fechas incluidas), según cómo se reduce cada una. */
+  /** Returns the usage per metric between `from` and `to` (dates inclusive), according to how each one is reduced. */
   abstract levels(from: string, to: string): Promise<readonly UsageLevel[]>;
 }

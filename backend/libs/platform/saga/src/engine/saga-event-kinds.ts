@@ -1,7 +1,7 @@
 import { SagaEventKind } from '../model/saga-event-kind.enum.js';
 import { SagaStatus } from '../model/saga-status.enum.js';
 
-/** Evento que anuncia cada estado al que la saga llega. */
+/** Event that announces each state the saga reaches. */
 export class SagaEventKinds {
   private static readonly BY_STATUS: ReadonlyMap<SagaStatus, SagaEventKind> =
     new Map([

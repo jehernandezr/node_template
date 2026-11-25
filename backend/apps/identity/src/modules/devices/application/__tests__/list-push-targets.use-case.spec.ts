@@ -5,7 +5,7 @@ import { DeviceRepository } from '../../domain/device.repository.js';
 import { Device, type DeviceState } from '../../domain/device.js';
 import { ListPushTargets } from '../list-push-targets.use-case.js';
 
-/** Devuelve los dispositivos que recibe; las escrituras no se usan. */
+/** Returns the devices it receives; writes are not used. */
 class ListedDevices extends DeviceRepository {
   constructor(private readonly devices: readonly Device[]) {
     super();
@@ -25,7 +25,7 @@ class ListedDevices extends DeviceRepository {
   }
 }
 
-/** Destino de push de prueba, armado para no parecer una credencial. */
+/** Test push target, built so it does not look like a credential. */
 const destination = (name: string): string => ['destino', name].join('-');
 
 describe('ListPushTargets', () => {

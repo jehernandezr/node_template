@@ -2,15 +2,15 @@ import type { ConfigEnv } from '@platform/config';
 import type { ServiceHostOptions } from '../runtime/service-host-options.js';
 import type { ServiceHttpOptions } from './service-http-options.js';
 
-/** Opciones de `ServiceBootstrap.http` y `ServiceBootstrap.worker`. */
+/** Options of `ServiceBootstrap.http` and `ServiceBootstrap.worker`. */
 export interface ServiceBootstrapOptions extends Omit<
   ServiceHostOptions,
   'env'
 > {
-  /** Por defecto `process.env`. */
+  /** `process.env` by default. */
   readonly env?: ConfigEnv;
-  /** Solo lo usa `ServiceBootstrap.http`. */
+  /** Used only by `ServiceBootstrap.http`. */
   readonly http?: ServiceHttpOptions;
-  /** Espera máxima de `RunningService.stop()` a que cierre todo. Por defecto 10 000 ms. */
+  /** Maximum time `RunningService.stop()` waits for everything to close. 10 000 ms by default. */
   readonly shutdownGraceMs?: number;
 }

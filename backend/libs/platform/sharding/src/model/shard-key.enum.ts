@@ -1,4 +1,4 @@
-/** Clave que elige el shard lógico dentro del grupo de shards de un tenant. */
+/** Key that picks the logical shard within a tenant's shard group. */
 export enum ShardKey {
   Tenant = 'tenant',
   User = 'user',

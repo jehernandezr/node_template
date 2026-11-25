@@ -7,7 +7,7 @@ import {
 import type { ApiKey } from '../../domain/api-key.js';
 import type { ServiceAccount } from '../../domain/service-account.js';
 
-/** Cuentas de servicio y keys de todos los tenants en memoria; el tenant no se filtra. */
+/** Service accounts and keys of all tenants in memory; the tenant is not filtered. */
 export class InMemoryApiKeyRepository extends ApiKeyRepository {
   readonly accounts = new Map<string, ServiceAccount>();
   readonly keys = new Map<string, ApiKey>();
@@ -61,7 +61,7 @@ export class InMemoryApiKeyRepository extends ApiKeyRepository {
   }
 }
 
-/** El catálogo de prefijos en memoria. */
+/** The in-memory prefix catalog. */
 export class InMemoryApiKeyDirectory extends ApiKeyDirectory {
   private readonly entries = new Map<
     string,
@@ -89,7 +89,7 @@ export class InMemoryApiKeyDirectory extends ApiKeyDirectory {
   }
 }
 
-/** HMAC con una llave de prueba construida, igual que el adaptador real. */
+/** HMAC with a constructed test key, same as the real adapter. */
 export class TestApiKeySecretHasher extends ApiKeySecretHasher {
   private readonly key = ['llave', 'de', 'prueba'].join('-');
 

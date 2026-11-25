@@ -1,4 +1,4 @@
-/** Códigos de error de `@platform/scheduling`. */
+/** Error codes of `@platform/scheduling`. */
 export enum SchedulingErrorCode {
   InvalidSchedule = 'PLATFORM.SCHEDULING.INVALID_SCHEDULE',
   InvalidCronExpression = 'PLATFORM.SCHEDULING.INVALID_CRON_EXPRESSION',

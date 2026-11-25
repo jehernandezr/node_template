@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-/** `passkey_lookup`, en el catálogo: dónde vive el dueño de cada credencial. */
+/** `passkey_lookup`, in the catalog: where the owner of each credential lives. */
 @Entity({ name: 'passkey_lookup' })
 export class PasskeyLookupEntity {
   @PrimaryColumn({ type: 'bytea', name: 'credential_id_hash' })

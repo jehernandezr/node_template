@@ -1,12 +1,12 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
-/** Lo que `passkeys` ofrece a los otros módulos. */
+/** What `passkeys` offers to the other modules. */
 export abstract class PasskeysFacade {
-  /** Si el usuario tiene alguna passkey: entonces `mfa` la ofrece como segundo factor. */
+  /** Whether the user has any passkey: if so, `mfa` offers it as a second factor. */
   abstract hasPasskeys(user: UserRef): Promise<boolean>;
-  /** Borra las passkeys del usuario y su índice global: su cuenta se borra. */
+  /** Deletes the user's passkeys and their global index: their account is being deleted. */
   abstract forget(user: UserRef): Promise<void>;
-  /** Apunta a `region` el índice de credenciales de los usuarios cuyo tenant de origen se trasladó. Idempotente. */
+  /** Points to `region` the credential index of the users whose home tenant was moved. Idempotent. */
   abstract relocateHomeTenant(
     homeTenantId: string,
     region: string,

@@ -6,7 +6,7 @@ import { CreateNotificationPreferences1796100100000 } from '../modules/preferenc
 import { AddPreferencesHomeTenant1796100100001 } from '../modules/preferences/infrastructure/persistence/migrations/1796100100001-AddPreferencesHomeTenant.js';
 // generated:modules:imports
 
-/** Migraciones de los shards de notifications, en el orden de los módulos. */
+/** Migrations of the notifications shards, in module order. */
 export const notificationsShardMigrations: readonly MigrationClass[] = [
   CreateNotificationPreferences1796100100000,
   AddPreferencesHomeTenant1796100100001,

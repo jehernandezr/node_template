@@ -15,9 +15,9 @@ import type { RepositoryKit } from './repository-kit.js';
 import { TypeOrmCriteriaTranslator } from './typeorm-criteria-translator.js';
 
 /**
- * Base de los repositorios de un módulo con datos por shard. El servicio la extiende, implementa el
- * puerto del dominio y suma sus consultas con `this.read(...)`. Aplica el tenant del contexto, la versión
- * optimista (`@VersionColumn`), el borrado lógico (`@DeleteDateColumn`), la auditoría y `Criteria`.
+ * Base of the repositories of a module with per-shard data. The service extends it, implements the
+ * domain port and adds its queries with `this.read(...)`. Applies the context tenant, optimistic
+ * versioning (`@VersionColumn`), soft delete (`@DeleteDateColumn`), audit and `Criteria`.
  */
 export abstract class ShardedRepository<
   TAggregate,
@@ -29,7 +29,7 @@ export abstract class ShardedRepository<
     protected readonly mapper: EntityMapper<TAggregate, TEntity>,
   ) {}
 
-  /** Lee con el manager de la transacción actual o, fuera de ella, el de la réplica del shard. */
+  /** Reads with the manager of the current transaction or, outside of one, the one of the shard replica. */
   protected read<T>(
     fn: (manager: EntityManager) => Promise<T>,
     source?: unknown,
@@ -40,7 +40,7 @@ export abstract class ShardedRepository<
     );
   }
 
-  /** Igual que `read`, pero contra el primario, para leer lo recién confirmado. */
+  /** Same as `read`, but against the primary, to read what was just committed. */
   protected readPrimary<T>(
     fn: (manager: EntityManager) => Promise<T>,
     source?: unknown,
@@ -51,7 +51,7 @@ export abstract class ShardedRepository<
     );
   }
 
-  /** Escribe dentro de una transacción del primario: se une a la abierta o abre una. */
+  /** Writes inside a primary transaction: joins the open one or opens one. */
   protected write<T>(
     fn: (manager: EntityManager) => Promise<T>,
     source?: unknown,
@@ -63,9 +63,9 @@ export abstract class ShardedRepository<
   }
 
   /**
-   * Tenant dueño de los datos: el del `ShardScope` activo o, sin scope, el del contexto. Un shard aloja
-   * varios tenants, así que toda consulta propia del repositorio filtra por él.
-   * @throws PersistenceError `PersistenceTenantRequired` si no hay ninguno.
+   * Tenant that owns the data: the one of the active `ShardScope` or, without a scope, the one of the context. A shard hosts
+   * several tenants, so every query of the repository itself filters by it.
+   * @throws PersistenceError `PersistenceTenantRequired` if there is none.
    */
   protected tenantId(): string {
     const tenantId =
@@ -79,7 +79,7 @@ export abstract class ShardedRepository<
     return tenantId;
   }
 
-  /** Agregado por id del tenant del contexto, o `null` si no existe o está borrado. */
+  /** Returns the aggregate by id of the context tenant, or `null` if it does not exist or is deleted. */
   async findById(id: string, source?: unknown): Promise<TAggregate | null> {
     const tenantId = this.tenantId();
     const entity = await this.read(
@@ -94,9 +94,9 @@ export abstract class ShardedRepository<
   }
 
   /**
-   * Guarda el agregado. Sin `version` inserta; con `version` actualiza solo si sigue vigente.
-   * @throws PersistenceError `PersistenceTenantRequired` si el contexto no trae tenant.
-   * @throws OptimisticLockError si la versión ya no es la guardada.
+   * Saves the aggregate. Without `version` it inserts; with `version` it updates only if it is still current.
+   * @throws PersistenceError `PersistenceTenantRequired` if the context has no tenant.
+   * @throws OptimisticLockError if the version is no longer the stored one.
    */
   async save(aggregate: TAggregate): Promise<TAggregate> {
     const entity = this.mapper.toPersistence(aggregate);
@@ -136,7 +136,7 @@ export abstract class ShardedRepository<
     }, entity);
   }
 
-  /** Borrado lógico de la fila del tenant del contexto. No hace nada si no existe. */
+  /** Soft-deletes the row of the context tenant. Does nothing if it does not exist. */
   async remove(id: string, source?: unknown): Promise<void> {
     const tenantId = this.tenantId();
     await this.write(async (manager) => {
@@ -148,9 +148,9 @@ export abstract class ShardedRepository<
   }
 
   /**
-   * Una página según el criterio, del tenant del contexto, con paginación por cursor. El `codec` firma el cursor
-   * siguiente; sin él, el cursor no va firmado.
-   * @throws CriteriaError `UnknownField` si el criterio nombra un campo que la entidad no tiene.
+   * Returns a page according to the criteria, of the context tenant, with cursor pagination. The `codec` signs the next
+   * cursor; without it, the cursor is not signed.
+   * @throws CriteriaError `UnknownField` if the criteria names a field the entity does not have.
    */
   async findByCriteria(
     criteria: Criteria<TEntity>,

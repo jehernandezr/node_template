@@ -1,7 +1,7 @@
 import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 
-/** Identity no respondió una consulta que la entrega necesita. Es reintentable: el mensaje vuelve a la cola. */
+/** Identity did not answer a query the delivery needs. It is retryable: the message goes back to the queue. */
 export class IdentityUnavailableError extends PlatformError {
   readonly code = PlatformErrorCode.InternalUnexpected;
 

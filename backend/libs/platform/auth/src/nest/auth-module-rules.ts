@@ -1,11 +1,11 @@
-/** Valores fijos del cableado de `AuthModule`. */
+/** Fixed values of the `AuthModule` wiring. */
 export class AuthModuleRules {
-  /** Sesiones revocadas vigentes para las que se dimensiona el Bloom local. */
+  /** Valid revoked sessions the local Bloom filter is sized for. */
   static readonly REVOKED_SESSIONS_EXPECTED_ITEMS = 100_000;
 
-  /** Vida en memoria de épocas, versiones de permisos y grants. */
+  /** In-memory lifetime of epochs, permission versions and grants. */
   static readonly DEFAULT_CACHE_TTL_MS = 5_000;
 
-  /** Entradas máximas de cada caché local. */
+  /** Maximum entries of each local cache. */
   static readonly DEFAULT_CACHE_MAX_ENTRIES = 10_000;
 }

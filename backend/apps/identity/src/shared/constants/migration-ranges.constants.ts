@@ -1,6 +1,6 @@
 /**
- * Primer timestamp de las migraciones de cada módulo. Dentro de su bloque, un módulo suma de 1 en 1.
- * Los timestamps de la plataforma son más bajos, así que sus migraciones corren primero.
+ * First migration timestamp of each module. Within its block, a module counts up by 1.
+ * The platform timestamps are lower, so its migrations run first.
  */
 export enum MigrationRange {
   Users = 1_795_000_100_000,

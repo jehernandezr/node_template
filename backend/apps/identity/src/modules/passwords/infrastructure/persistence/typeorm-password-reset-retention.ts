@@ -8,8 +8,8 @@ import { PasswordResetRetention } from '../../domain/password-reset-retention.js
 import { PasswordResetEntity } from './entities/password-reset.entity.js';
 
 /**
- * Recorre los shards y borra en cada uno las recuperaciones vencidas, salvo las de los usuarios cuyo tenant de
- * origen ya se trasladó a otro shard. Un shard caído se reintenta en la próxima corrida.
+ * Walks the shards and deletes the expired recoveries in each one, except those of users whose home tenant
+ * was already moved to another shard. A down shard is retried on the next run.
  */
 @Injectable()
 export class TypeOrmPasswordResetRetention extends PasswordResetRetention {

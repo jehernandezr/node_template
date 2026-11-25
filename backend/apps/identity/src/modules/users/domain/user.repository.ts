@@ -1,11 +1,11 @@
 import type { User } from './user.js';
 
-/** Usuarios en el shard del usuario. */
+/** Users in the user's shard. */
 export abstract class UserRepository {
   abstract insert(user: User): Promise<void>;
 
   abstract find(userId: string): Promise<User | undefined>;
 
-  /** @throws OptimisticLockError si otra escritura cambió el usuario. */
+  /** @throws OptimisticLockError if another write changed the user. */
   abstract update(user: User): Promise<void>;
 }

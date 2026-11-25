@@ -1,6 +1,6 @@
 import type { MessageEnvelope } from '../../../envelope/message-envelope.js';
 
-/** Contexto de ejecución de prueba que anota cuándo entra y sale, y dice si hay una entrega adentro. */
+/** Test execution context that records when it enters and exits, and tells whether a delivery is inside. */
 export class RecordingRunInContext {
   readonly events: string[] = [];
   private depth = 0;

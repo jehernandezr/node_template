@@ -4,36 +4,36 @@ import { ShardingErrorCode } from './errors/sharding-error-code.enum.js';
 import { LruMap } from './lru-map.js';
 import { ShardStrategy } from './model/shard-strategy.enum.js';
 
-/** Elige el shard lógico de una clave dentro del grupo de shards de un tenant. */
+/** Picks the logical shard of a key within a tenant's shard group. */
 export interface ShardingStrategy {
-  /** Nombre declarativo de una estrategia integrada. Las estrategias propias no lo declaran. */
+  /** Declarative name of a built-in strategy. Custom strategies do not declare it. */
   readonly kind?: ShardStrategy;
   /**
-   * @param key Clave de enrutamiento normalizada.
-   * @param group Grupo de shards del tenant, no vacío.
-   * @param version Versión del placement. Una estrategia cuyo resultado depende de algo más que el grupo
-   *   (por ejemplo rangos guardados por placement) puede indexar su estado derivado por ella; las integradas la ignoran.
-   * @throws ShardingError `UnknownShard` cuando ningún shard puede atender la clave.
+   * @param key Normalized routing key.
+   * @param group Tenant shard group, non-empty.
+   * @param version Placement version. A strategy whose result depends on more than the group
+   *   (for example ranges stored per placement) can key its derived state by it; the built-in ones ignore it.
+   * @throws ShardingError `UnknownShard` when no shard can serve the key.
    */
   locate(key: string, group: readonly string[], version?: number): string;
 }
 
-/** Opciones de {@link ConsistentHashStrategy}. */
+/** Options of {@link ConsistentHashStrategy}. */
 export interface ConsistentHashStrategyOptions {
-  /** Máximo de anillos memorizados (uno por grupo distinto); se descarta el usado menos recientemente. Por defecto 1 024. */
+  /** Maximum number of memoized rings (one per distinct group); the least recently used is discarded. Defaults to 1 024. */
   readonly maxRings?: number;
 }
 
 /**
- * Hash consistente sobre el grupo. Los anillos se memorizan por el grupo ordenado (JSON del grupo), como máximo
- * `maxRings`. El anillo depende solo de los miembros del grupo, así los tenants que comparten grupo comparten
- * un anillo sin importar sus versiones de placement; un cambio de grupo (un miembro nuevo) construye un anillo nuevo.
+ * Consistent hashing over the group. Rings are memoized by the sorted group (JSON of the group), at most
+ * `maxRings`. The ring depends only on the group members, so tenants that share a group share
+ * a ring regardless of their placement versions; a group change (a new member) builds a new ring.
  */
 export class ConsistentHashStrategy implements ShardingStrategy {
   readonly kind = ShardStrategy.ConsistentHash;
   private readonly rings: LruMap<string, ConsistentHashRing>;
 
-  /** @throws ShardingError `InvalidConfiguration` cuando `maxRings` no es un entero positivo. */
+  /** @throws ShardingError `InvalidConfiguration` when `maxRings` is not a positive integer. */
   constructor(options: ConsistentHashStrategyOptions = {}) {
     this.rings = new LruMap(options.maxRings ?? 1_024);
   }

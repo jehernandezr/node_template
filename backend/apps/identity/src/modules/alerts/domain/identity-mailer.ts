@@ -1,6 +1,6 @@
 import type { OutgoingEmail } from './outgoing-email.js';
 
-/** Envía el correo transaccional de identity. El adaptador real delega en el servicio `notifications`. */
+/** Sends identity's transactional email. The real adapter delegates to the `notifications` service. */
 export abstract class IdentityMailer {
   abstract send(email: OutgoingEmail): Promise<void>;
 }

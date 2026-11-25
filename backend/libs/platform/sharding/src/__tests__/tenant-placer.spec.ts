@@ -12,7 +12,7 @@ const SHARDS: readonly AvailableShard[] = [
   { region: 'eu', shard: 'eu-2' },
 ];
 
-/** Directorio donde otro escritor gana siempre la escritura. */
+/** Directory where another writer always wins the write. */
 class AlwaysTakenDirectory extends DirectoryWriter {
   async readPlacement(): Promise<TenantPlacement | undefined> {
     return undefined;

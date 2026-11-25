@@ -1,8 +1,8 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Constantes `IdentityLimits` del contrato `identity`.
+/// `IdentityLimits` constants of the `identity` contract.
 abstract final class IdentityLimits {
   static const int emailMaxLength = 254;
   static const int passwordMaxLength = 128;
@@ -60,7 +60,7 @@ abstract final class IdentityLimits {
   static const int maxJwks = 10;
 }
 
-/// Constantes `MfaRules` del contrato `identity`.
+/// `MfaRules` constants of the `identity` contract.
 abstract final class MfaRules {
   static const int deviceCodeLength = 8;
   static const int emailCodeLength = 6;
@@ -72,7 +72,7 @@ abstract final class MfaRules {
   static const int stepUpMaxAgeMinutes = 10;
 }
 
-/// Constantes `AccessTokenRules` del contrato `identity`.
+/// `AccessTokenRules` constants of the `identity` contract.
 abstract final class AccessTokenRules {
   static const int minLifetimeSeconds = 600;
   static const int maxLifetimeSeconds = 900;

@@ -21,7 +21,7 @@ import { TypeOrmInvoiceRepository } from '../infrastructure/persistence/typeorm-
 import { InvoicesController } from './invoices.controller.js';
 import { InvoicesInternalOperations } from './invoices.internal-operations.js';
 
-/** Facturas: cierre de periodos, numeración, cobro y su resultado. Global solo para su fachada. */
+/** Invoices: period closing, numbering, charging and its result. Global only for its facade. */
 @Global()
 @Module({
   imports: [

@@ -39,7 +39,7 @@ import {
 export const ReportColumnKindSchema = z
   .enum(ReportColumnKind)
   .describe(
-    'Tipo de dato de una columna del resultado.',
+    'Data type of a result column.',
   ) satisfies z.ZodType<ReportColumnKind>;
 
 export const ReportParamsSchema = z
@@ -49,7 +49,7 @@ export const ReportParamsSchema = z
     granularity: ReportGranularitySchema,
   })
   .describe(
-    'Rango de fechas y granularidad de un reporte.',
+    'Date range and granularity of a report.',
   ) satisfies z.ZodType<ReportParams>;
 
 export const ReportColumnSchema = z
@@ -58,9 +58,7 @@ export const ReportColumnSchema = z
     header: z.string().min(1).max(ReportsLimits.columnHeaderMaxLength),
     kind: ReportColumnKindSchema,
   })
-  .describe(
-    'Columna del resultado de un reporte.',
-  ) satisfies z.ZodType<ReportColumn>;
+  .describe('Column of a report result.') satisfies z.ZodType<ReportColumn>;
 
 export const ReportRowSchema = z
   .object({
@@ -68,7 +66,7 @@ export const ReportRowSchema = z
       .array(z.string().max(ReportsLimits.cellMaxLength))
       .max(ReportsLimits.maxColumns),
   })
-  .describe('Fila del resultado de un reporte.') satisfies z.ZodType<ReportRow>;
+  .describe('Row of a report result.') satisfies z.ZodType<ReportRow>;
 
 export const ReportResultSchema = z
   .object({
@@ -76,7 +74,7 @@ export const ReportResultSchema = z
     rows: z.array(ReportRowSchema).max(ReportsLimits.maxRows),
   })
   .describe(
-    'Resultado tabular de una ejecución terminada.',
+    'Tabular result of a finished run.',
   ) satisfies z.ZodType<ReportResult>;
 
 export const ReportCatalogEntrySchema = z
@@ -89,7 +87,7 @@ export const ReportCatalogEntrySchema = z
       .max(ReportsLimits.maxGranularities),
   })
   .describe(
-    'Tipo de reporte disponible, con sus formatos y granularidades.',
+    'Available report type, with its formats and granularities.',
   ) satisfies z.ZodType<ReportCatalogEntry>;
 
 export const ReportCatalogSchema = z
@@ -99,7 +97,7 @@ export const ReportCatalogSchema = z
       .max(ReportsLimits.maxCatalogEntries),
   })
   .describe(
-    'Catálogo de reportes que puede pedir el tenant.',
+    'Catalog of reports the tenant can request.',
   ) satisfies z.ZodType<ReportCatalog>;
 
 export const CreateReportRunRequestSchema = z
@@ -109,13 +107,13 @@ export const CreateReportRunRequestSchema = z
     params: ReportParamsSchema,
   })
   .describe(
-    'Petición de una ejecución de reporte.',
+    'Request for a report run.',
   ) satisfies z.ZodType<CreateReportRunRequest>;
 
 export const ReportRunCreatedSchema = z
   .object({ runId: IdSchema })
   .describe(
-    'Ejecución aceptada; su resultado se consulta por el id.',
+    'Run accepted; its result is queried by id.',
   ) satisfies z.ZodType<ReportRunCreated>;
 
 export const ReportRunSummarySchema = z
@@ -131,12 +129,12 @@ export const ReportRunSummarySchema = z
     expiresAt: TimestampSchema.nullable(),
   })
   .describe(
-    'Ejecución de reporte sin su resultado.',
+    'Report run without its result.',
   ) satisfies z.ZodType<ReportRunSummary>;
 
 export const ReportRunPageSchema = pageOf(
   ReportRunSummarySchema,
-  'Página de ejecuciones de reporte.',
+  'Page of report runs.',
 ) satisfies z.ZodType<ReportRunPage>;
 
 export const ListReportRunsRequestSchema = z
@@ -147,25 +145,23 @@ export const ListReportRunsRequestSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Filtros y paginación del listado de ejecuciones.',
+    'Filters and pagination of the run listing.',
   ) satisfies z.ZodType<ListReportRunsRequest>;
 
 export const GetReportRunRequestSchema = z
   .strictObject({ runId: IdSchema })
-  .describe(
-    'Ejecución de reporte a consultar.',
-  ) satisfies z.ZodType<GetReportRunRequest>;
+  .describe('Report run to query.') satisfies z.ZodType<GetReportRunRequest>;
 
 export const ReportRunDetailSchema = ReportRunSummarySchema.extend({
   result: ReportResultSchema.nullable(),
 }).describe(
-  'Ejecución de reporte con su resultado, nulo mientras no esté lista.',
+  'Report run with its result, null until it is ready.',
 ) satisfies z.ZodType<ReportRunDetail>;
 
 export const DownloadReportRunRequestSchema = z
   .strictObject({ runId: IdSchema })
   .describe(
-    'Ejecución de reporte cuyo resultado se descarga.',
+    'Report run whose result is downloaded.',
   ) satisfies z.ZodType<DownloadReportRunRequest>;
 
 export const ReportDownloadSchema = z
@@ -175,14 +171,14 @@ export const ReportDownloadSchema = z
     content: z.string().max(ReportsLimits.downloadContentMaxLength),
   })
   .describe(
-    'Contenido de un reporte listo para descargar.',
+    'Content of a report ready to download.',
   ) satisfies z.ZodType<ReportDownload>;
 
-/** Usuario cuyos datos en reports se borran. */
+/** User whose data in reports is erased. */
 export const EraseReportsUserInputSchema = z
   .strictObject({ user: UserRefSchema })
   .describe(
-    'Usuario cuyos datos se borran de reports.',
+    'User whose data is deleted from reports.',
   ) satisfies z.ZodType<EraseReportsUserInput>;
 
 export const EraseReportsUserResultSchema = z
@@ -191,5 +187,5 @@ export const EraseReportsUserResultSchema = z
     affectedRows: z.int().min(0),
   })
   .describe(
-    'Filas de reports que dejaron de guardar al usuario.',
+    'Reports rows that stopped storing the user.',
   ) satisfies z.ZodType<EraseReportsUserResult>;

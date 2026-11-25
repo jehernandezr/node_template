@@ -1,14 +1,14 @@
-/** Respuesta de un limitador. */
+/** Response of a limiter. */
 export interface RateLimitResult {
-  /** Si la operación cabe en el límite. */
+  /** Whether the operation fits in the limit. */
   readonly allowed: boolean;
-  /** Unidades estimadas en la ventana deslizante, redondeadas hacia arriba. */
+  /** Estimated units in the sliding window, rounded up. */
   readonly count: number;
-  /** Unidades que todavía caben, `limit - count` y nunca negativo. */
+  /** Units that still fit, `limit - count` and never negative. */
   readonly remaining: number;
   /**
-   * Espera hasta que la operación cabría si no llega más tráfico, en
-   * milisegundos. Es 0 cuando `allowed` es verdadero.
+   * Wait until the operation would fit if no more traffic arrives, in
+   * milliseconds. It is 0 when `allowed` is true.
    */
   readonly retryAfterMs: number;
 }

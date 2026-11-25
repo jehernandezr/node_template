@@ -7,12 +7,12 @@ import type { PlacementInvalidator } from './placement-invalidator.js';
 import type { PlacementLoader } from './placement-loader.js';
 import type { RoutingKeyNormalizer } from './routing-key-normalizer.js';
 
-/** Las piezas con las que `ShardRouter` resuelve e invalida. Las arma `ShardRouterAssembler`. */
+/** The parts `ShardRouter` resolves and invalidates with. `ShardRouterAssembler` builds them. */
 export interface ShardRouterParts {
   readonly clock: Clock;
   readonly strategy: ShardingStrategy;
   readonly currentRegion: string | undefined;
-  /** URL de la API de cada región conocida, por código. */
+  /** API URL of each known region, by code. */
   readonly regionUrls: ReadonlyMap<string, string>;
   readonly normalizer: RoutingKeyNormalizer;
   readonly cache: PlacementCache;

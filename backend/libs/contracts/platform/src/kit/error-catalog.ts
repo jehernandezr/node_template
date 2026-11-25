@@ -5,22 +5,22 @@ import type { ErrorCatalogEntry } from '../types/error-catalog-entry.type.js';
 import { ContractDefinitionError } from './contract-definition-error.js';
 
 /**
- * Formato de un código de error: `SERVICIO.SUBMÓDULO.ERROR`, con al menos tres
- * segmentos. Es la misma expresión que `ErrorCode.PATTERN` del kernel, que un
- * contrato no puede importar; una prueba de `@platform/primitives` comprueba
- * que coinciden.
+ * Format of an error code: `SERVICE.SUBMODULE.ERROR`, with at least three
+ * segments. It is the same expression as the kernel's `ErrorCode.PATTERN`, which a
+ * contract cannot import; a test in `@platform/primitives` checks
+ * that they match.
  */
 export const ERROR_CODE_PATTERN = /^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*){2,}$/;
 
 /**
- * Clave ARB del mensaje de un código. Es la misma transformación que usa el front:
+ * ARB key of a code's message. It is the same transformation the front uses:
  * `PLATFORM.AUTH.FORBIDDEN` → `error_platform_auth_forbidden`.
  */
 export function messageKeyFor(code: string): string {
   return `${ValidationRules.messageKeyPrefix}${code.toLowerCase().replace(/[.-]/g, '_')}`;
 }
 
-/** Datos de una entrada del catálogo; la clave del mensaje se deriva del código. */
+/** Data of a catalog entry; the message key is derived from the code. */
 export interface ErrorSpec {
   readonly httpStatus: number;
   readonly retryable: boolean;
@@ -30,8 +30,8 @@ export interface ErrorSpec {
 }
 
 /**
- * Atajos para declarar las entradas de un catálogo: `pub` para los códigos que
- * llegan al cliente y `internal` para los que nunca salen del backend.
+ * Shortcuts to declare the entries of a catalog: `pub` for codes that
+ * reach the client and `internal` for those that never leave the backend.
  */
 export class ErrorSpecs {
   static pub(
@@ -64,8 +64,8 @@ export class ErrorSpecs {
 }
 
 /**
- * Construye el catálogo de un enum de códigos. El tipo exige una entrada por
- * cada valor del enum, y el orden del resultado sigue el del enum.
+ * Builds the catalog of a code enum. The type requires one entry for
+ * each enum value, and the order of the result follows the enum.
  */
 export function defineErrorCatalog<E extends Record<string, string>>(
   codes: E,
@@ -75,21 +75,21 @@ export function defineErrorCatalog<E extends Record<string, string>>(
   const extra = Object.keys(specs).filter((code) => !values.includes(code));
   if (extra.length > 0) {
     throw new ContractDefinitionError(
-      `Códigos del catálogo fuera del enum: ${extra.join(', ')}`,
+      `Catalog codes outside the enum: ${extra.join(', ')}`,
     );
   }
   return Object.freeze(
     values.map((code) => {
       if (!ERROR_CODE_PATTERN.test(code)) {
-        throw new ContractDefinitionError(`Código de error inválido: ${code}`);
+        throw new ContractDefinitionError(`Invalid error code: ${code}`);
       }
       const spec = (specs as Record<string, ErrorSpec | undefined>)[code];
       if (!spec) {
-        throw new ContractDefinitionError(`Falta la entrada de ${code}`);
+        throw new ContractDefinitionError(`Missing entry for ${code}`);
       }
       if (spec.httpStatus < 400 || spec.httpStatus > 599) {
         throw new ContractDefinitionError(
-          `Estado HTTP inválido para ${code}: ${spec.httpStatus}`,
+          `Invalid HTTP status for ${code}: ${spec.httpStatus}`,
         );
       }
       return Object.freeze({ code, ...spec, messageKey: messageKeyFor(code) });
@@ -98,25 +98,25 @@ export function defineErrorCatalog<E extends Record<string, string>>(
 }
 
 /**
- * Registro en memoria de entradas del catálogo, indexado por código.
+ * In-memory registry of catalog entries, indexed by code.
  */
 export class ErrorCatalog {
   private readonly entries = new Map<string, ErrorCatalogEntry>();
 
   /**
-   * Registra entradas. Valida todas antes de guardar ninguna, así un lote
-   * inválido no deja el catálogo a medias.
+   * Registers entries. Validates all of them before storing any, so an invalid
+   * batch does not leave the catalog half-written.
    *
-   * Las librerías repiten los códigos públicos del catálogo central para ser
-   * autónomas, y el servicio registra el central y el de cada librería que usa.
-   * Por eso una entrada repetida es válida si define lo mismo, y solo se
-   * rechaza cuando cambia el estado HTTP, el reintento o la audiencia.
+   * Libraries repeat the public codes of the central catalog to be
+   * self-contained, and the service registers the central one and that of each library it uses.
+   * That is why a repeated entry is valid if it defines the same thing, and it is only
+   * rejected when the HTTP status, the retry or the audience changes.
    */
   register(entries: readonly ErrorCatalogEntry[]): void {
     const batch = new Map<string, ErrorCatalogEntry>();
     for (const entry of entries) {
       if (!ERROR_CODE_PATTERN.test(entry.code)) {
-        throw new Error(`Código de error inválido: ${entry.code}`);
+        throw new Error(`Invalid error code: ${entry.code}`);
       }
       const stored = this.entries.get(entry.code) ?? batch.get(entry.code);
       if (stored === undefined) {
@@ -125,7 +125,7 @@ export class ErrorCatalog {
       }
       if (!ErrorCatalog.sameDefinition(stored, entry)) {
         throw new Error(
-          `Código de error duplicado con otra definición: ${entry.code}`,
+          `Error code duplicated with another definition: ${entry.code}`,
         );
       }
     }

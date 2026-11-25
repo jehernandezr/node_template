@@ -4,13 +4,13 @@ import type { InMemoryCacheOptions } from './in-memory-cache.options.js';
 
 interface Entry {
   readonly value: string;
-  /** Instante de vencimiento en milisegundos del reloj, o `undefined` si nunca vence. */
+  /** Expiration instant in clock milliseconds, or `undefined` if it never expires. */
   readonly expiresAt: number | undefined;
 }
 
 /**
- * `CachePort` en el mismo proceso, con vencimiento por TTL. Sirve para pruebas y
- * para instalaciones de una sola instancia.
+ * In-process `CachePort`, with TTL expiration. Useful for tests and
+ * for single-instance deployments.
  */
 export class InMemoryCache extends CachePort {
   private readonly entries = new Map<string, Entry>();
@@ -44,7 +44,7 @@ export class InMemoryCache extends CachePort {
     this.entries.delete(key);
   }
 
-  /** Devuelve la entrada si no venció; si venció, la borra. */
+  /** Returns the entry if it has not expired; if it has, deletes it. */
   private live(key: string): Entry | undefined {
     const entry = this.entries.get(key);
     if (entry === undefined) {

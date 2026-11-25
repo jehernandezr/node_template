@@ -1,6 +1,6 @@
 const POLL_TIMEOUT_MS = 1000;
 
-/** Espera a que una condición se cumpla con temporizadores reales. */
+/** Waits for a condition to hold, with real timers. */
 export class Eventually {
   static async until(
     condition: () => boolean,

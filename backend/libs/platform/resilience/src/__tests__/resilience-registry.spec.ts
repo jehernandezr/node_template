@@ -241,7 +241,7 @@ describe('ResilienceRegistry', () => {
         { idempotent: true },
       )
       .catch((error: unknown) => error);
-    // Cada reintento sin espera cuesta 1 ms de reloj: tres intentos de 50 ms caben en 200 ms.
+    // Each retry without a wait costs 1 ms of clock: three attempts of 50 ms fit in 200 ms.
     await jest.advanceTimersByTimeAsync(200);
     expect(await outcome).toMatchObject({
       code: ResilienceErrorCode.Timeout,

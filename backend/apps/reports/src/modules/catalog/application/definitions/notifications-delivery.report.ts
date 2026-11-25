@@ -8,7 +8,7 @@ import {
 import { ProjectionsFacade } from '../../../projections/index.js';
 import { ReportDefinition } from '../report-definition.js';
 
-/** Notificaciones por periodo y tipo, contadas por cada canal por el que salieron. */
+/** Notifications per period and type, counted for each channel they went out through. */
 @Injectable()
 export class NotificationsDeliveryReport extends ReportDefinition {
   readonly type = ReportType.NotificationsDelivery;

@@ -10,7 +10,7 @@ import { CallOutcomeKind } from '@platform/primitives';
 import { PeerUnavailableError } from '../../../shared/errors/peer-unavailable.error.js';
 import { InvoiceHistory } from '../domain/invoice-history.js';
 
-/** Las facturas por la operación `billing.invoices.list-changes.v1`. */
+/** Invoices through the `billing.invoices.list-changes.v1` operation. */
 @Injectable()
 export class BillingServiceInvoiceHistory extends InvoiceHistory {
   constructor(
@@ -20,7 +20,7 @@ export class BillingServiceInvoiceHistory extends InvoiceHistory {
     super();
   }
 
-  /** @throws PeerUnavailableError si billing no responde: el relleno sigue en la próxima corrida. */
+  /** @throws PeerUnavailableError if billing does not respond: the backfill continues on the next run. */
   async page(
     tenantId: string,
     after: string | undefined,

@@ -14,7 +14,7 @@ import {
 import { SagaEngineKit } from '../../__tests__/utils/saga-engine-kit.js';
 import { SagaStatus } from '../../model/saga-status.enum.js';
 
-/** Presupuesto de estas pruebas: un intento de medio segundo. */
+/** Budget of these tests: one half-second attempt. */
 const FAST = {
   timeoutMs: 500,
   retry: { maxAttempts: 2, baseMs: 10, maxMs: 100 },
@@ -51,7 +51,7 @@ const Notify = defineOperation({
   ...FAST,
 });
 
-/** Manejador que cuenta sus llamadas y responde siempre con éxito. */
+/** Handler that counts its calls and always responds with success. */
 class CountingHandler extends OperationHandler {
   calls = 0;
 

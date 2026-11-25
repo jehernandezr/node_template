@@ -3,20 +3,20 @@ import { PrimitivesGuard } from '../errors/primitives-guard.js';
 import { BackoffStrategy } from './backoff-strategy.enum.js';
 
 /**
- * Política de reintento única de la plataforma: cuántos intentos y cómo crece
- * la espera entre ellos. Internal-api, messaging y resilience la reutilizan en
- * lugar de declarar la suya. Valida al construirse.
+ * Single retry policy of the platform: how many attempts and how the wait
+ * grows between them. Internal-api, messaging and resilience reuse it instead
+ * of declaring their own. Validates on construction.
  */
 export class RetryPolicy {
-  /** Un solo intento, sin reintentos. */
+  /** A single attempt, with no retries. */
   static readonly none = new RetryPolicy(1, 0, 0, BackoffStrategy.None);
 
   /**
-   * @param maxAttempts Intentos totales, el primero incluido. Entero positivo.
-   * @param baseMs Espera del primer reintento. Finito y no negativo.
-   * @param maxMs Tope de la espera. Mayor o igual que `baseMs`.
-   * @param strategy Cómo se reparte la espera dentro del techo.
-   * @param factor Multiplicador entre intentos. Finito y mayor o igual que 1.
+   * @param maxAttempts Total attempts, including the first. Positive integer.
+   * @param baseMs Wait of the first retry. Finite and non-negative.
+   * @param maxMs Cap of the wait. Greater than or equal to `baseMs`.
+   * @param strategy How the wait is distributed within the ceiling.
+   * @param factor Multiplier between attempts. Finite and greater than or equal to 1.
    */
   constructor(
     readonly maxAttempts: number,

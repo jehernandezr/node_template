@@ -1,13 +1,13 @@
 import { LoggerPort } from '@platform/observability';
 
-/** Un mensaje registrado con sus campos. */
+/** A logged message with its fields. */
 export interface RecordedLog {
   readonly level: 'debug' | 'info' | 'warn' | 'error';
   readonly message: string;
   readonly fields: Record<string, unknown> | undefined;
 }
 
-/** Logger que guarda sus mensajes para que la prueba los inspeccione. */
+/** Logger that stores its messages for the test to inspect. */
 export class RecordingLogger extends LoggerPort {
   readonly entries: RecordedLog[] = [];
 
@@ -31,7 +31,7 @@ export class RecordingLogger extends LoggerPort {
     return this;
   }
 
-  /** Mensajes de un nivel. */
+  /** Messages of a level. */
   at(level: RecordedLog['level']): RecordedLog[] {
     return this.entries.filter((entry) => entry.level === level);
   }

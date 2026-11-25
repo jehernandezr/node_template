@@ -13,7 +13,7 @@ import {
 } from './demo-contract.js';
 import { DemoResource } from './demo-resource.enum.js';
 
-/** Rutas de sesión del canal web y nativo. */
+/** Session routes of the web and native channels. */
 @Resource(DemoResource.Auth)
 export class SessionController {
   @Endpoint(IssueSessionRoute, {

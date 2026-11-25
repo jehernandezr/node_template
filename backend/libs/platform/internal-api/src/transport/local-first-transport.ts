@@ -3,8 +3,8 @@ import type { CallMeta } from './call-meta.js';
 import { Transport } from './transport.js';
 
 /**
- * Las operaciones del propio servicio van por el router del proceso y las de los demás, por la red. Así un
- * servicio que orquesta sus propias operaciones en una saga no necesita su URL ni se llama a sí mismo por HTTP.
+ * The service's own operations go through the process router and those of the others, over the network. This way a
+ * service that orchestrates its own operations in a saga does not need its own URL nor calls itself over HTTP.
  */
 export class LocalFirstTransport extends Transport {
   constructor(

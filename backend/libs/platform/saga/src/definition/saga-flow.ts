@@ -10,8 +10,8 @@ import type { StepDraft } from './step-draft.js';
 import type { StepInputOf, StepOutputOf } from './step-types.js';
 
 /**
- * Constructor fluido que se usa dentro de `SagaDefinition.define`. Los pasos
- * declarados antes de `pivot()` son compensables; los declarados después, no.
+ * Fluent builder used inside `SagaDefinition.define`. Steps
+ * declared before `pivot()` are compensable; those declared after are not.
  */
 export class SagaFlow<TState> {
   private readonly drafts: StepDraft<TState>[] = [];
@@ -20,9 +20,9 @@ export class SagaFlow<TState> {
   constructor(private readonly resolver: OperationResolver) {}
 
   /**
-   * Agrega un paso que llama a la operación de un contrato. Su compensación es
-   * el `compensatedBy` del contrato; `Compensation.None` y las operaciones de
-   * solo lectura no tienen. Los tipos de entrada y salida salen de sus esquemas.
+   * Adds a step that calls a contract's operation. Its compensation is
+   * the contract's `compensatedBy`; `Compensation.None` and read-only
+   * operations have none. The input and output types come from their schemas.
    */
   step<D extends OperationDefinition>(
     operation: D,
@@ -33,8 +33,8 @@ export class SagaFlow<TState> {
   }
 
   /**
-   * Registra la frontera del pivote antes del siguiente paso.
-   * @internal Lo llama `StepConfig.pivot()`.
+   * Records the pivot boundary before the next step.
+   * @internal Called by `StepConfig.pivot()`.
    */
   markPivot(): void {
     if (this.pivotIndex !== null) {
@@ -47,11 +47,11 @@ export class SagaFlow<TState> {
   }
 
   /**
-   * Valida el flujo y lo congela en una saga compilada:
-   * - un paso anterior al pivote que cambia datos declara una compensación;
-   * - un paso posterior al pivote nunca se compensa y su operación es
-   *   idempotente (se reintenta hasta completarse).
-   * @internal Lo llama `SagaDefinition.build()`.
+   * Validates the flow and freezes it into a compiled saga:
+   * - a step before the pivot that changes data declares a compensation;
+   * - a step after the pivot is never compensated and its operation is
+   *   idempotent (it is retried until it completes).
+   * @internal Called by `SagaDefinition.build()`.
    */
   compile(type: string): CompiledSaga<TState> {
     if (this.drafts.length === 0) {

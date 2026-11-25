@@ -1,5 +1,5 @@
-// Uso: node service-catalog-cli.mjs matrix|list <ambiente>  |  entry <ambiente> <servicio>
-// La raíz de Terraform es TF_ROOT o, por defecto, backend/infra/terraform.
+// Usage: node service-catalog-cli.mjs matrix|list <environment>  |  entry <environment> <service>
+// The Terraform root is TF_ROOT or, by default, backend/infra/terraform.
 import { fileURLToPath } from 'node:url';
 import { ServiceCatalog } from './service-catalog.mjs';
 

@@ -10,12 +10,12 @@ import { Deadline } from '../../deadline.js';
 import { PrimitivesErrorCode } from '../../errors/primitives-error-code.enum.js';
 import { ClaimRules } from '../../idempotency/claim-rules.js';
 
-/** Resultado que guardan las pruebas del contrato. */
+/** Result stored by the contract tests. */
 export interface ContractOrder {
   readonly orderId: string;
 }
 
-/** Entorno de una corrida del contrato: el store bajo prueba y el reloj que lo gobierna. */
+/** Environment of a contract run: the store under test and the clock that drives it. */
 export interface IdempotencyStoreContractEnv {
   readonly store: IdempotencyStore<ContractOrder>;
   readonly clock: FixedClock;
@@ -31,9 +31,9 @@ function expectAcquired<R>(result: ClaimResult<R>): AcquiredClaim {
 }
 
 /**
- * Comportamiento que todo `IdempotencyStore` cumple, sea el adaptador en
- * memoria o uno sobre una base real. Cada adaptador lo corre con su `setup`,
- * que entrega un store vacío y su reloj.
+ * Behavior that every `IdempotencyStore` satisfies, whether the in-memory
+ * adapter or one over a real database. Each adapter runs it with its `setup`,
+ * which provides an empty store and its clock.
  */
 export function runIdempotencyStoreContract(
   setup: () => Promise<IdempotencyStoreContractEnv>,

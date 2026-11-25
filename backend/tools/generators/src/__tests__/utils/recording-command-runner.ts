@@ -1,6 +1,6 @@
 import { CommandRunner, type CommandRun } from '../../command-runner.js';
 
-/** Anota cada comando y responde con el código que se le pida para la llamada número `n`, desde 1; si no, 0. */
+/** Records each command and responds with the code requested for call number `n`, starting at 1; otherwise 0. */
 export class RecordingCommandRunner extends CommandRunner {
   readonly runs: CommandRun[] = [];
 

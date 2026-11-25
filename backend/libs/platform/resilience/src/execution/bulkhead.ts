@@ -2,10 +2,10 @@ import { TimerScheduler } from '@platform/primitives';
 import type { BulkheadOptions } from './bulkhead.options.js';
 
 /**
- * Limita las llamadas simultáneas a una dependencia. Las que pasan de `limit`
- * esperan en una cola FIFO de `queue` lugares; si la cola también está llena,
- * se rechazan de inmediato, así que una dependencia lenta no acumula trabajo
- * sin límite. Una llamada terminada entrega su cupo a la siguiente en espera.
+ * Limits concurrent calls to a dependency. Those beyond `limit`
+ * wait in a FIFO queue of `queue` places; if the queue is also full,
+ * they are rejected immediately, so a slow dependency does not pile up work
+ * without limit. A finished call hands its slot to the next one waiting.
  */
 export class Bulkhead {
   private active = 0;
@@ -30,8 +30,8 @@ export class Bulkhead {
   }
 
   /**
-   * Espera un cupo. Si la llamada abandona la cola, el cupo se queda para los
-   * demás.
+   * Waits for a slot. If the call leaves the queue, the slot stays for the
+   * others.
    */
   private waitForSlot(signal: AbortSignal | undefined): Promise<void> {
     if (signal?.aborted === true) {

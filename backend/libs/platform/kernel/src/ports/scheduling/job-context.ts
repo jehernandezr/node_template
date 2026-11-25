@@ -1,8 +1,8 @@
-/** Lo que el programador entrega a cada corrida de un job. */
+/** What the scheduler hands to each run of a job. */
 export interface JobContext {
-  /** Aborta cuando se agota `timeoutMs` o la aplicación se apaga. */
+  /** Aborts when `timeoutMs` runs out or the application shuts down. */
   readonly signal: AbortSignal;
   readonly startedAt: Date;
-  /** Identificador de esta corrida, para correlacionar logs y métricas. */
+  /** Identifier of this run, to correlate logs and metrics. */
   readonly runId: string;
 }

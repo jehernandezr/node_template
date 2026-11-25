@@ -25,7 +25,7 @@ import {
 } from '../schemas/passkey.schema.js';
 import { SessionGuardErrors } from './session-guard.errors.js';
 
-/** `POST /v1/auth/passkeys/options`: opciones para iniciar sesión con passkey. */
+/** `POST /v1/auth/passkeys/options`: options to sign in with a passkey. */
 export const PasskeySignInOptionsRoute = defineRoute({
   id: IdentityRoute.PasskeySignInOptions,
   method: HttpMethod.Post,
@@ -34,10 +34,10 @@ export const PasskeySignInOptionsRoute = defineRoute({
   successStatus: 201,
   errors: [PlatformErrorCode.RateLimitExceeded],
   access: Access.public(),
-  description: 'Crea el desafío de un inicio de sesión con passkey.',
+  description: 'Creates the challenge for a passkey sign-in.',
 });
 
-/** `POST /v1/auth/passkeys/verify`: verifica la passkey e inicia la sesión. */
+/** `POST /v1/auth/passkeys/verify`: verifies the passkey and starts the session. */
 export const PasskeySignInVerifyRoute = defineRoute({
   id: IdentityRoute.PasskeySignInVerify,
   method: HttpMethod.Post,
@@ -51,10 +51,10 @@ export const PasskeySignInVerifyRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Verifica la respuesta de la passkey y devuelve tokens o un desafío MFA.',
+    'Verifies the passkey response and returns tokens or an MFA challenge.',
 });
 
-/** `POST /v1/auth/mfa/passkey/options`: opciones de passkey como segundo factor. */
+/** `POST /v1/auth/mfa/passkey/options`: passkey options as a second factor. */
 export const PasskeyMfaOptionsRoute = defineRoute({
   id: IdentityRoute.PasskeyMfaOptions,
   method: HttpMethod.Post,
@@ -68,10 +68,10 @@ export const PasskeyMfaOptionsRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Crea el desafío de passkey para el segundo factor de un login pendiente.',
+    'Creates the passkey challenge for the second factor of a pending login.',
 });
 
-/** `POST /v1/auth/mfa/passkey/verify`: verifica la passkey como segundo factor. */
+/** `POST /v1/auth/mfa/passkey/verify`: verifies the passkey as a second factor. */
 export const PasskeyMfaVerifyRoute = defineRoute({
   id: IdentityRoute.PasskeyMfaVerify,
   method: HttpMethod.Post,
@@ -85,10 +85,10 @@ export const PasskeyMfaVerifyRoute = defineRoute({
     PlatformErrorCode.RateLimitExceeded,
   ],
   access: Access.public(),
-  description: 'Verifica la passkey como segundo factor y crea la sesión.',
+  description: 'Verifies the passkey as second factor and creates the session.',
 });
 
-/** `POST /v1/me/step-up/passkey/options`: opciones de passkey para el paso adicional. */
+/** `POST /v1/me/step-up/passkey/options`: passkey options for the step-up. */
 export const PasskeyStepUpOptionsRoute = defineRoute({
   id: IdentityRoute.PasskeyStepUpOptions,
   method: HttpMethod.Post,
@@ -99,10 +99,10 @@ export const PasskeyStepUpOptionsRoute = defineRoute({
   errors: [...SessionGuardErrors, IdentityErrorCode.MfaTokenInvalid],
   access: Access.authenticated(),
   description:
-    'Crea el desafío de passkey para el paso adicional de una sesión abierta.',
+    'Creates the passkey challenge for the step-up of an open session.',
 });
 
-/** `POST /v1/me/step-up/passkey/verify`: verifica la passkey del paso adicional. */
+/** `POST /v1/me/step-up/passkey/verify`: verifies the step-up passkey. */
 export const PasskeyStepUpVerifyRoute = defineRoute({
   id: IdentityRoute.PasskeyStepUpVerify,
   method: HttpMethod.Post,
@@ -117,10 +117,10 @@ export const PasskeyStepUpVerifyRoute = defineRoute({
   ],
   access: Access.authenticated(),
   description:
-    'Verifica la passkey del paso adicional y devuelve un access token con el MFA nuevo.',
+    'Verifies the step-up passkey and returns an access token with the new MFA.',
 });
 
-/** `GET /v1/me/passkeys`: passkeys registradas del usuario. */
+/** `GET /v1/me/passkeys`: the user's registered passkeys. */
 export const ListPasskeysRoute = defineRoute({
   id: IdentityRoute.ListPasskeys,
   method: HttpMethod.Get,
@@ -129,10 +129,10 @@ export const ListPasskeysRoute = defineRoute({
   response: PasskeyPageSchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Lista las passkeys registradas del usuario.',
+  description: 'Lists the registered passkeys of the user.',
 });
 
-/** `POST /v1/me/passkeys/registration-options`: opciones para registrar una passkey. Exige MFA reciente. */
+/** `POST /v1/me/passkeys/registration-options`: options to register a passkey. Requires recent MFA. */
 export const PasskeyRegistrationOptionsRoute = defineRoute({
   id: IdentityRoute.PasskeyRegistrationOptions,
   method: HttpMethod.Post,
@@ -143,10 +143,10 @@ export const PasskeyRegistrationOptionsRoute = defineRoute({
   access: Access.authenticated({
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Crea el desafío para registrar una passkey nueva.',
+  description: 'Creates the challenge to register a new passkey.',
 });
 
-/** `POST /v1/me/passkeys`: registra la passkey con la respuesta del autenticador. */
+/** `POST /v1/me/passkeys`: registers the passkey with the authenticator response. */
 export const RegisterPasskeyRoute = defineRoute({
   id: IdentityRoute.RegisterPasskey,
   method: HttpMethod.Post,
@@ -160,10 +160,10 @@ export const RegisterPasskeyRoute = defineRoute({
     IdentityErrorCode.PasskeyChallengeExpired,
   ],
   access: Access.authenticated(),
-  description: 'Registra una passkey nueva con la respuesta del autenticador.',
+  description: 'Registers a new passkey with the authenticator response.',
 });
 
-/** `DELETE /v1/me/passkeys/{passkeyId}`: quita una passkey. Exige MFA reciente. */
+/** `DELETE /v1/me/passkeys/{passkeyId}`: removes a passkey. Requires recent MFA. */
 export const RemovePasskeyRoute = defineRoute({
   id: IdentityRoute.RemovePasskey,
   method: HttpMethod.Delete,
@@ -177,5 +177,5 @@ export const RemovePasskeyRoute = defineRoute({
   access: Access.authenticated({
     mfaMaxAgeMinutes: MfaRules.stepUpMaxAgeMinutes,
   }),
-  description: 'Quita una passkey de la cuenta.',
+  description: 'Removes a passkey from the account.',
 });

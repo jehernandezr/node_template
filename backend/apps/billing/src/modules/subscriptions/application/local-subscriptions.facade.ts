@@ -16,7 +16,7 @@ import { OpenSubscription } from './open-subscription.use-case.js';
 import { SubscriptionStanding } from './subscription-standing.js';
 import { SubscriptionsFacade } from './subscriptions.facade.js';
 
-/** `SubscriptionsFacade` dentro del proceso. */
+/** In-process `SubscriptionsFacade`. */
 @Injectable()
 export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   constructor(
@@ -81,8 +81,8 @@ export class LocalSubscriptionsFacade extends SubscriptionsFacade {
   }
 
   /**
-   * Toma la suscripción del tenant con `FOR UPDATE` en la transacción abierta, en su shard.
-   * @param tenantId Tenant de la suscripción.
+   * Takes the tenant's subscription with `FOR UPDATE` in the open transaction, on its shard.
+   * @param tenantId Tenant of the subscription.
    */
   lock(tenantId: string): Promise<void> {
     return this.shard.run(tenantId, () => this.subscriptions.lock());

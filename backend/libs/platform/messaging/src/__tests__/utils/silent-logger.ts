@@ -1,21 +1,21 @@
 import { LoggerPort } from '@platform/observability';
 
-/** Logger que descarta todo; las pruebas no ensucian la salida. */
+/** Logger that discards everything; tests do not clutter the output. */
 export class SilentLogger extends LoggerPort {
   debug(): void {
-    // Descarta el mensaje a propósito.
+    // Discards the message on purpose.
   }
 
   info(): void {
-    // Descarta el mensaje a propósito.
+    // Discards the message on purpose.
   }
 
   warn(): void {
-    // Descarta el mensaje a propósito.
+    // Discards the message on purpose.
   }
 
   error(): void {
-    // Descarta el mensaje a propósito.
+    // Discards the message on purpose.
   }
 
   child(): LoggerPort {

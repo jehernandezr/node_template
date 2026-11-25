@@ -6,7 +6,7 @@ import { UserRepository } from '../../domain/user.repository.js';
 import { UserEntity } from './entities/user.entity.js';
 import { UserMapper } from './user.mapper.js';
 
-/** `UserRepository` sobre `users` del shard del usuario. */
+/** `UserRepository` over `users` in the user's shard. */
 @Injectable()
 export class TypeOrmUserRepository
   extends UserShardRepository

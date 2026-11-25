@@ -7,32 +7,32 @@ import type {
   ReportType,
 } from '../enums/reports.enum.js';
 
-/** Parámetros de un reporte: rango de fechas de calendario y granularidad. */
+/** Parameters of a report: calendar date range and granularity. */
 export interface ReportParams {
   from: string;
   to: string;
   granularity: ReportGranularity;
 }
 
-/** Columna del resultado de un reporte. */
+/** Column of a report result. */
 export interface ReportColumn {
   key: string;
   header: string;
   kind: ReportColumnKind;
 }
 
-/** Fila del resultado: una celda de texto por columna, en el mismo orden. */
+/** Result row: one text cell per column, in the same order. */
 export interface ReportRow {
   cells: string[];
 }
 
-/** Resultado tabular de una ejecución terminada. */
+/** Tabular result of a finished run. */
 export interface ReportResult {
   columns: ReportColumn[];
   rows: ReportRow[];
 }
 
-/** Tipo de reporte disponible, con sus formatos y granularidades. */
+/** Available report type, with its formats and granularities. */
 export interface ReportCatalogEntry {
   type: ReportType;
   formats: ReportFormat[];
@@ -43,19 +43,19 @@ export interface ReportCatalog {
   items: ReportCatalogEntry[];
 }
 
-/** Petición de una ejecución de reporte. */
+/** Request for a report run. */
 export interface CreateReportRunRequest {
   type: ReportType;
   format: ReportFormat;
   params: ReportParams;
 }
 
-/** Ejecución aceptada: el resultado se consulta por su id. */
+/** Accepted run: the result is queried by its id. */
 export interface ReportRunCreated {
   runId: string;
 }
 
-/** Ejecución de reporte sin resultado, para listas. */
+/** Report run without its result, for lists. */
 export interface ReportRunSummary {
   id: string;
   type: ReportType;
@@ -70,7 +70,7 @@ export interface ReportRunSummary {
 
 export type ReportRunPage = Page<ReportRunSummary>;
 
-/** Filtros y paginación del listado de ejecuciones. */
+/** Filters and pagination of the run listing. */
 export interface ListReportRunsRequest {
   type?: ReportType;
   status?: ReportRunStatus;
@@ -82,7 +82,7 @@ export interface GetReportRunRequest {
   runId: string;
 }
 
-/** Ejecución con su resultado; `result` es null mientras no esté lista. */
+/** Run with its result; `result` is null while it is not ready. */
 export interface ReportRunDetail extends ReportRunSummary {
   result: ReportResult | null;
 }
@@ -91,14 +91,14 @@ export interface DownloadReportRunRequest {
   runId: string;
 }
 
-/** Descarga de una ejecución lista, con el contenido en el formato pedido. */
+/** Download of a ready run, with the content in the requested format. */
 export interface ReportDownload {
   fileName: string;
   contentType: string;
   content: string;
 }
 
-/** Entrada de la operación interna que borra los datos de un usuario en reports. */
+/** Input of the internal operation that deletes a user's data in reports. */
 export interface EraseReportsUserInput {
   user: UserRef;
 }

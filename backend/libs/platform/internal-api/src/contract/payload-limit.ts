@@ -1,13 +1,13 @@
-/** Tope del tamaño serializado de una entrada o una salida. */
+/** Cap on the serialized size of an input or an output. */
 export class PayloadLimit {
-  /** Tope por defecto, en bytes. */
+  /** Default cap, in bytes. */
   static readonly DEFAULT_MAX_BYTES = 256 * 1024;
 
   constructor(readonly maxBytes: number = PayloadLimit.DEFAULT_MAX_BYTES) {}
 
   /**
-   * Tamaño en bytes del texto JSON de `value`, o `undefined` si no se puede
-   * serializar (ciclos, bigint). `undefined` cuenta como cero bytes.
+   * Returns the size in bytes of the JSON text of `value`, or `undefined` if it cannot be
+   * serialized (cycles, bigint). `undefined` counts as zero bytes.
    */
   static byteLength(value: unknown): number | undefined {
     try {
@@ -18,7 +18,7 @@ export class PayloadLimit {
     }
   }
 
-  /** Indica si `value` se serializa dentro del tope. */
+  /** Whether `value` serializes within the cap. */
   fits(value: unknown): boolean {
     const size = PayloadLimit.byteLength(value);
     return size !== undefined && size <= this.maxBytes;

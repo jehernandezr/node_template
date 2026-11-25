@@ -11,8 +11,8 @@ import type { CurrentSubscription } from './current-subscription.js';
 import { SubscriptionEvents } from './subscription-events.js';
 
 /**
- * Abre la suscripción de un tenant nuevo con el plan de `BILLING_TRIAL_PLAN`, en prueba por
- * `BILLING_TRIAL_DAYS`. Es idempotente: la saga de alta puede repetirla.
+ * Opens the subscription of a new tenant with the `BILLING_TRIAL_PLAN` plan, on trial for
+ * `BILLING_TRIAL_DAYS`. It is idempotent: the signup saga can repeat it.
  */
 @Injectable()
 export class OpenSubscription {
@@ -31,7 +31,7 @@ export class OpenSubscription {
     this.settings = config.root<BillingConfig>();
   }
 
-  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` si el plan de prueba no está en el catálogo. */
+  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog. */
   execute(tenantId: string): Promise<CurrentSubscription> {
     return this.shard.run(tenantId, () =>
       this.transactions.runInTransaction(async () => {

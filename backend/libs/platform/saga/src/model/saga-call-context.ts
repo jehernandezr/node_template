@@ -1,7 +1,7 @@
 /**
- * Contexto de las llamadas de una saga, guardado con la instancia. Todo
- * intento de todo paso, también tras una recuperación, envía los mismos
- * valores, así el participante construye igual su llave de idempotencia.
+ * Context of the calls of a saga, saved with the instance. Every
+ * attempt of every step, also after a recovery, sends the same
+ * values, so the participant builds its idempotency key the same way.
  */
 export interface SagaCallContext {
   readonly tenantId?: string;

@@ -2,7 +2,7 @@ import type { Artifact, ExportReport } from './artifact.type.js';
 import type { ArtifactRenderer } from './artifact-renderer.js';
 import type { ExportMode } from './export-mode.js';
 
-/** Da formato a cada artefacto y se lo entrega al modo, que decide si lo escribe o lo compara. */
+/** Formats each artifact and hands it to the mode, which decides whether to write or compare it. */
 export class ArtifactWriter {
   constructor(
     private readonly renderer: ArtifactRenderer,

@@ -6,7 +6,7 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { FinishTenantMove } from '../application/finish-tenant-move.use-case.js';
 
-/** El último paso de `MoveTenant`, que solo identity atiende: la bitácora de traslados vive en su catálogo. */
+/** The last step of `MoveTenant`, which only identity handles: the move log lives in its catalog. */
 @Injectable()
 export class TenantMovesInternalOperations {
   constructor(private readonly finishMove: FinishTenantMove) {}

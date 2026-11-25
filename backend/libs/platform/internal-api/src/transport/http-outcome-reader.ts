@@ -8,7 +8,7 @@ import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js'
 import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
 import { InternalHeader } from './internal-header.enum.js';
 
-/** Convierte la respuesta HTTP de una llamada interna en un `CallOutcome`. */
+/** Converts the HTTP response of an internal call into a `CallOutcome`. */
 export class HttpOutcomeReader {
   private static readonly OK = 200;
   private static readonly TRANSIENT_STATUSES: ReadonlySet<number> = new Set([
@@ -26,17 +26,17 @@ export class HttpOutcomeReader {
   constructor(private readonly retryAfter: RetryAfterParser) {}
 
   /**
-   * - 200 con cuerpo `{ outcome }` cuyo `kind` es un `CallOutcomeKind`: ese `outcome`.
-   * - 200 con otro cuerpo, o que no es JSON: `protocol-violation` `invalid-response`.
-   * - 401 y 403: `protocol-violation` `unauthenticated` con el código `InternalApiErrorCode.Unauthenticated`.
-   * - 408, 425, 429 y 503: `transient-failure` con motivo `http-<estado>` y, si
-   *   `Retry-After` se puede leer con `retryAfter.parse`, `retryAfterMs`. El servidor no
-   *   empezó el trabajo.
-   * - 502 y 504: `uncertain` con motivo `http-<estado>`. Los responde un proxy cuando la
-   *   llamada pudo llegar al servidor, así que no se sabe si aplicó sus efectos.
-   * - Cualquier otro estado: `protocol-violation` `unexpected-status`, sin código.
-   * En las respuestas que no son 200 descarta el cuerpo para liberar la conexión.
-   * Nunca lanza.
+   * - 200 with a `{ outcome }` body whose `kind` is a `CallOutcomeKind`: that `outcome`.
+   * - 200 with another body, or one that is not JSON: `protocol-violation` `invalid-response`.
+   * - 401 and 403: `protocol-violation` `unauthenticated` with the code `InternalApiErrorCode.Unauthenticated`.
+   * - 408, 425, 429 and 503: `transient-failure` with reason `http-<status>` and, if
+   *   `Retry-After` can be read with `retryAfter.parse`, `retryAfterMs`. The server did not
+   *   start the work.
+   * - 502 and 504: `uncertain` with reason `http-<status>`. A proxy responds with them when the
+   *   call may have reached the server, so it is unknown whether it applied its effects.
+   * - Any other status: `protocol-violation` `unexpected-status`, without a code.
+   * On non-200 responses it discards the body to free the connection.
+   * It never throws.
    */
   async read(response: Response): Promise<Outcome<unknown>> {
     if (response.status === HttpOutcomeReader.OK) {
@@ -79,7 +79,7 @@ export class HttpOutcomeReader {
         'kind' in outcome &&
         HttpOutcomeReader.KNOWN_KINDS.has(outcome.kind)
       ) {
-        // Validado el discriminante arriba: el resto de la forma lo cubre cada resultado.
+        // The discriminant was validated above: each result covers the rest of the shape.
         return outcome as Outcome<unknown>;
       }
     }
@@ -90,7 +90,7 @@ export class HttpOutcomeReader {
     try {
       await response.body?.cancel();
     } catch {
-      // El cuerpo de una respuesta que no es 200 no aporta nada; solo se descarta para liberar la conexión.
+      // The body of a non-200 response adds nothing; it is only discarded to free the connection.
     }
   }
 }

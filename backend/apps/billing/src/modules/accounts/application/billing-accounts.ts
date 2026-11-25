@@ -8,7 +8,7 @@ import { BillingError } from '../../../shared/errors/billing.error.js';
 import { InvoicesFacade } from '../../invoices/index.js';
 import { SubscriptionsFacade } from '../../subscriptions/index.js';
 
-/** La cuenta de facturación de un tenant: se abre con su alta y solo se cierra si nunca se le facturó. */
+/** A tenant's billing account: opened at tenant signup and closed only if it was never invoiced. */
 @Injectable()
 export class BillingAccounts {
   constructor(
@@ -16,7 +16,7 @@ export class BillingAccounts {
     private readonly invoices: InvoicesFacade,
   ) {}
 
-  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` si el plan de prueba no está en el catálogo. */
+  /** @throws BillingError `BILLING.PLAN.NOT_AVAILABLE` if the trial plan is not in the catalog. */
   async open(tenantId: string): Promise<BillingAccountResult> {
     const { subscription } = await this.subscriptions.open(tenantId);
     return {
@@ -26,7 +26,7 @@ export class BillingAccounts {
     };
   }
 
-  /** @throws BillingError `BILLING.INVOICE.INVALID_STATE` si el tenant ya tiene facturas. */
+  /** @throws BillingError `BILLING.INVOICE.INVALID_STATE` if the tenant already has invoices. */
   async close(tenantId: string): Promise<BillingAccountClosed> {
     if (await this.invoices.hasInvoices(tenantId)) {
       throw new BillingError(BillingErrorCode.InvoiceInvalidState);

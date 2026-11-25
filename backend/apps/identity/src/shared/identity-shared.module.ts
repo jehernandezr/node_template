@@ -3,7 +3,7 @@ import { DeploymentRegion } from './utils/deployment-region.js';
 import { IdentityShardScopes } from './utils/identity-shard-scopes.js';
 import { SessionDelivery } from './utils/session-delivery.js';
 
-/** Servicios compartidos por todos los módulos de identity. */
+/** Services shared by all identity modules. */
 @Global()
 @Module({
   providers: [IdentityShardScopes, SessionDelivery, DeploymentRegion],

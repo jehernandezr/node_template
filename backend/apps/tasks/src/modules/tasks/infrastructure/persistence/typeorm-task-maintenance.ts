@@ -11,9 +11,9 @@ import { TaskMaintenance } from '../../domain/task-maintenance.js';
 import { TaskEntity } from './entities/task.entity.js';
 
 /**
- * Mantenimiento de `tasks` en todos los shards, cada uno en una transacción de mantenimiento: estas
- * operaciones tocan todos los tenants del shard, salvo los que ya se trasladaron a otro. Un shard caído se
- * reintenta en la próxima corrida.
+ * Maintenance of `tasks` in all shards, each in a maintenance transaction: these
+ * operations touch all tenants of the shard, except those already moved to another one. A down shard is
+ * retried on the next run.
  */
 @Injectable()
 export class TypeOrmTaskMaintenance extends TaskMaintenance {
@@ -35,7 +35,7 @@ export class TypeOrmTaskMaintenance extends TaskMaintenance {
     return TypeOrmTaskMaintenance.total(outcome);
   }
 
-  /** Una sola sentencia por shard: cada tarea cuenta una vez aunque el usuario la haya creado y editado. */
+  /** A single statement per shard: each task counts once even if the user both created and edited it. */
   async replaceAuthor(userId: string, replacement: UserRef): Promise<number> {
     const outcome = await this.inEveryShard(async (manager) => {
       const result = await manager

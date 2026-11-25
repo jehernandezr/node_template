@@ -2,18 +2,18 @@ import { ConfigValidationError } from '@platform/config';
 import type { ValkeySettings } from './valkey.config.js';
 
 /**
- * Primer segmento de cada llave y canal que toca un servicio. En AWS cada
- * usuario de servicio tiene la ACL `~<prefijo>:* &<prefijo>:*`, así que una
- * llave o un canal fuera de `<prefijo>:` falla con `NOPERM`. El prefijo es
- * `VALKEY_KEY_PREFIX` y, sin él, `SERVICE_NAME`.
+ * First segment of every key and channel a service touches. On AWS each
+ * service user has the ACL `~<prefix>:* &<prefix>:*`, so a
+ * key or a channel outside `<prefix>:` fails with `NOPERM`. The prefix is
+ * `VALKEY_KEY_PREFIX` and, without it, `SERVICE_NAME`.
  */
 export class ValkeyKeyspace {
-  /** Lo que puede llevar un prefijo: sin `:`, para que `<prefijo>:*` de la ACL cubra justo este espacio. */
+  /** What a prefix may contain: no `:`, so the ACL `<prefix>:*` covers exactly this namespace. */
   static readonly PREFIX_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
   /**
-   * @param source Variable de la que sale el prefijo, para nombrarla en el error.
-   * @throws ConfigValidationError con un prefijo vacío, con `:` o con caracteres fuera de `[A-Za-z0-9_-]`.
+   * @param source Variable the prefix comes from, to name it in the error.
+   * @throws ConfigValidationError with an empty prefix, with `:` or with characters outside `[A-Za-z0-9_-]`.
    */
   constructor(
     readonly prefix: string,
@@ -31,9 +31,9 @@ export class ValkeyKeyspace {
   }
 
   /**
-   * Espacio de llaves del servicio: `VALKEY_KEY_PREFIX` si se definió, o el
-   * nombre del servicio.
-   * @throws ConfigValidationError si el prefijo elegido no cumple {@link ValkeyKeyspace.PREFIX_PATTERN}.
+   * Returns the service key namespace: `VALKEY_KEY_PREFIX` if defined, or the
+   * service name.
+   * @throws ConfigValidationError if the chosen prefix does not match {@link ValkeyKeyspace.PREFIX_PATTERN}.
    */
   static fromSettings(
     valkey: Pick<ValkeySettings, 'VALKEY_KEY_PREFIX'>,

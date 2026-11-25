@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `invoices`: una factura por periodo cerrado de un tenant, con su consecutivo. */
+/** `invoices`: one invoice per closed period of a tenant, with its sequence number. */
 @Entity({ name: 'invoices' })
 @Index('invoices_tenant_number_key', ['tenantId', 'number'], { unique: true })
 @Index('invoices_tenant_status_idx', ['tenantId', 'status', 'id'])

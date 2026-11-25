@@ -4,7 +4,7 @@ import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 import type { DispatchOptions } from './dispatch-options.js';
 import type { TenantVerifier } from './tenant-verifier.js';
 
-/** Comprueba el tenant del sobre contra el esperado y contra el verificador. */
+/** Checks the envelope tenant against the expected one and against the verifier. */
 export class TenantGate {
   constructor(
     private readonly expectedTenantId: string | undefined,
@@ -12,10 +12,10 @@ export class TenantGate {
   ) {}
 
   /**
-   * Devuelve el rechazo (`TenantMismatch`) o `undefined` para aceptar. Sin
-   * `expectedTenantId` ni verificador, un sobre que nombra un tenant se
-   * rechaza: nada prueba que el productor pueda actuar sobre él. Si el
-   * verificador lanza, el error sale tal cual.
+   * Returns the rejection (`TenantMismatch`) or `undefined` to accept. Without
+   * `expectedTenantId` or a verifier, an envelope that names a tenant is
+   * rejected: nothing proves the producer may act on it. If the
+   * verifier throws, the error propagates as is.
    */
   async check(
     envelope: MessageEnvelope,

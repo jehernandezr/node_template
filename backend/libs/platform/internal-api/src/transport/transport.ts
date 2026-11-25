@@ -2,9 +2,9 @@ import type { CallOutcome } from '@platform/primitives';
 import type { CallMeta } from './call-meta.js';
 
 /**
- * Puerto que lleva una llamada al servidor. La entrada se transmite sin
- * cambios. Un transporte hace un solo intento: los reintentos son del
- * `InternalClient`, que los ejecuta con el `ResilienceRegistry`.
+ * Port that carries a call to the server. The input is transmitted
+ * unchanged. A transport makes a single attempt: retries belong to the
+ * `InternalClient`, which runs them with the `ResilienceRegistry`.
  */
 export abstract class Transport {
   abstract invoke(

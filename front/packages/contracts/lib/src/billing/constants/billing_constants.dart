@@ -1,8 +1,8 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Constantes `BillingLimits` del contrato `billing`.
+/// `BillingLimits` constants of the `billing` contract.
 abstract final class BillingLimits {
   static const int planNameMaxLength = 120;
   static const int invoiceNumberMaxLength = 32;
@@ -18,7 +18,7 @@ abstract final class BillingLimits {
   static const int failureReasonMaxLength = 200;
 }
 
-/// Constantes `UsageAggregation` del contrato `billing`.
+/// `UsageAggregation` constants of the `billing` contract.
 abstract final class UsageAggregation {
   static const String users = 'max';
   static const String apiCalls = 'sum';

@@ -22,35 +22,35 @@ import {
 import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 import { type OutboxWriter } from '../outbox/outbox-writer.js';
 
-/** Dependencias de {@link OutboxMessageBus}. */
+/** Dependencies of {@link OutboxMessageBus}. */
 export interface OutboxMessageBusOptions extends OutboundMessageFactoryOptions {
   readonly topology: Topology;
   readonly writer: OutboxWriter;
-  /** Transacciones del servicio: cada mensaje se guarda en la que esté abierta. */
+  /** Service transactions: each message is saved in the one that is open. */
   readonly transactions: TransactionManager;
   /**
-   * Corre una vez después del commit de cada transacción que agregó mensajes.
-   * `MessagingModule` lo cablea a `JobRunner.trigger(MessagingJob.OutboxRelay)`
-   * para despertar al relay. Si falla, la transacción ya quedó confirmada y el
-   * relay periódico publica igual.
+   * Runs once after the commit of each transaction that added messages.
+   * `MessagingModule` wires it to `JobRunner.trigger(MessagingJob.OutboxRelay)`
+   * to wake up the relay. If it fails, the transaction is already committed and the
+   * periodic relay publishes anyway.
    */
   readonly onCommitted?: () => void | Promise<void>;
 }
 
 /**
- * `MessageBus` respaldado por el outbox. Valida el mensaje contra su contrato y
- * su ruta (con las mismas reglas que cualquier otro bus), arma el sobre y lo
- * guarda en la transacción abierta, así el mensaje existe si y solo si el cambio
- * de negocio se confirmó. El `OutboxRelay` lo publica después del commit.
+ * `MessageBus` backed by the outbox. Validates the message against its contract and
+ * its route (with the same rules as any other bus), builds the envelope and
+ * saves it in the open transaction, so the message exists if and only if the business
+ * change was committed. The `OutboxRelay` publishes it after the commit.
  *
- * Fuera de una transacción lanza `PLATFORM.MESSAGING.TRANSACTION_REQUIRED`:
- * publicar sin una es justo lo que evita el outbox.
+ * Outside a transaction it throws `PLATFORM.MESSAGING.TRANSACTION_REQUIRED`:
+ * publishing without one is exactly what the outbox prevents.
  */
 export class OutboxMessageBus implements MessageBus {
   private readonly options: OutboxMessageBusOptions;
   private readonly factory: OutboundMessageFactory;
   private readonly clock: Clock;
-  /** Unidades de trabajo que ya tienen registrado el aviso de commit. */
+  /** Units of work that already have the commit notification registered. */
   private readonly notified = new WeakSet<UnitOfWork>();
 
   constructor(options: OutboxMessageBusOptions) {

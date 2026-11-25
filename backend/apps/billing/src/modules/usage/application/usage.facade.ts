@@ -1,10 +1,10 @@
 import type { UsageLevel } from '../domain/usage-ledger.js';
 
-/** Lo que `usage` ofrece a los otros módulos. */
+/** What `usage` offers to the other modules. */
 export abstract class UsageFacade {
   /**
-   * Lo usado por métrica en el periodo: los usuarios son los miembros de hoy y las demás métricas, lo
-   * registrado entre `from` y `to`.
+   * Returns the usage per metric in the period: users are today's members and the other metrics, what was
+   * recorded between `from` and `to`.
    */
   abstract levels(
     tenantId: string,

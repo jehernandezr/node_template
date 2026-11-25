@@ -6,7 +6,7 @@ import type { QueueDef } from './queue-def.js';
 import { RouteDef } from './route-def.js';
 import { TargetKind } from './target-kind.enum.js';
 
-/** Segundo paso de `Route.command(...)`. */
+/** Second step of `Route.command(...)`. */
 export class CommandRouteBuilder {
   private readonly type: string;
   private readonly contract: CommandDefinition | null;
@@ -16,7 +16,7 @@ export class CommandRouteBuilder {
     this.contract = typeof source === 'string' ? null : source;
   }
 
-  /** Envía este tipo de comando a una cola. */
+  /** Sends this command type to a queue. */
   to(queue: QueueDef): RouteDef {
     return new RouteDef(
       MessageKind.Command,

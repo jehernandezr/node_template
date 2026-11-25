@@ -29,26 +29,26 @@ import type {
 
 export const PermissionSchema = z
   .enum(Permission)
-  .describe('Permiso dentro de un tenant.') satisfies z.ZodType<Permission>;
+  .describe('Permission within a tenant.') satisfies z.ZodType<Permission>;
 export const PlatformRoleSchema = z
   .enum(PlatformRole)
-  .describe('Rol de plataforma.') satisfies z.ZodType<PlatformRole>;
+  .describe('Platform role.') satisfies z.ZodType<PlatformRole>;
 export const PlanFeatureSchema = z
   .enum(PlanFeature)
-  .describe('Funcionalidad del plan.') satisfies z.ZodType<PlanFeature>;
+  .describe('Plan feature.') satisfies z.ZodType<PlanFeature>;
 export const FeatureFlagSchema = z
   .enum(FeatureFlag)
   .describe('Feature flag.') satisfies z.ZodType<FeatureFlag>;
 export const ClientPlatformSchema = z
   .enum(ClientPlatform)
-  .describe('Plataforma del cliente.') satisfies z.ZodType<ClientPlatform>;
+  .describe('Client platform.') satisfies z.ZodType<ClientPlatform>;
 export const RevocationReasonSchema = z
   .enum(RevocationReason)
-  .describe('Motivo de una revocación.') satisfies z.ZodType<RevocationReason>;
+  .describe('Reason for a revocation.') satisfies z.ZodType<RevocationReason>;
 export const RevocationScopeSchema = z
   .enum(RevocationScope)
   .describe(
-    'Alcance de una revocación de tokens.',
+    'Scope of a token revocation.',
   ) satisfies z.ZodType<RevocationScope>;
 
 export const SessionSummarySchema = z
@@ -59,9 +59,7 @@ export const SessionSummarySchema = z
     lastSeenAt: TimestampSchema,
     current: z.boolean(),
   })
-  .describe(
-    'Sesión activa en un dispositivo.',
-  ) satisfies z.ZodType<SessionSummary>;
+  .describe('Active session on a device.') satisfies z.ZodType<SessionSummary>;
 
 export const DeviceSummarySchema = z
   .object({
@@ -72,40 +70,36 @@ export const DeviceSummarySchema = z
     trustedUntil: TimestampSchema.optional(),
     verifier: z.boolean(),
   })
-  .describe(
-    'Dispositivo con confianza vigente.',
-  ) satisfies z.ZodType<DeviceSummary>;
+  .describe('Device with active trust.') satisfies z.ZodType<DeviceSummary>;
 
 export const SessionPageSchema = pageOf(
   SessionSummarySchema,
-  'Página de sesiones.',
+  'Page of sessions.',
 ) satisfies z.ZodType<SessionPage>;
 
 export const DevicePageSchema = pageOf(
   DeviceSummarySchema,
-  'Página de dispositivos.',
+  'Page of devices.',
 ) satisfies z.ZodType<DevicePage>;
 
 export const RevokeSessionRequestSchema = z
   .strictObject({ sessionId: IdSchema })
-  .describe('Sesión a cerrar.') satisfies z.ZodType<RevokeSessionRequest>;
+  .describe('Session to close.') satisfies z.ZodType<RevokeSessionRequest>;
 
 export const RevokedSessionsSchema = z
   .object({ revoked: z.int().min(0) })
-  .describe(
-    'Cantidad de sesiones cerradas.',
-  ) satisfies z.ZodType<RevokedSessions>;
+  .describe('Number of closed sessions.') satisfies z.ZodType<RevokedSessions>;
 
 export const RevokeUserSessionsInputSchema = z
   .strictObject({ userId: IdSchema, reason: RevocationReasonSchema })
   .describe(
-    'Revoca todas las sesiones de un usuario.',
+    'Revokes all sessions of a user.',
   ) satisfies z.ZodType<RevokeUserSessionsInput>;
 
 export const GetUserAccessInputSchema = z
   .strictObject({ userId: IdSchema, tenantId: IdSchema })
   .describe(
-    'Usuario y tenant a consultar.',
+    'User and tenant to query.',
   ) satisfies z.ZodType<GetUserAccessInput>;
 
 export const UserAccessSchema = z
@@ -123,7 +117,7 @@ export const UserAccessSchema = z
     flags: z.array(FeatureFlagSchema),
   })
   .describe(
-    'Acceso efectivo de un usuario en un tenant.',
+    'Effective access of a user in a tenant.',
   ) satisfies z.ZodType<UserAccess>;
 
 export const SessionAccessSchema = z
@@ -135,7 +129,7 @@ export const SessionAccessSchema = z
     mfaVerifiedAt: TimestampSchema.nullable(),
   })
   .describe(
-    'Acceso de la sesión actual: usuario, tenant, permisos, roles, plan, flags y último MFA.',
+    'Access of the current session: user, tenant, permissions, roles, plan, flags and last MFA.',
   ) satisfies z.ZodType<SessionAccess>;
 
 export const SessionRevokedPayloadSchema = z
@@ -146,7 +140,9 @@ export const SessionRevokedPayloadSchema = z
     reason: RevocationReasonSchema,
     revokedAt: TimestampSchema,
   })
-  .describe('Se revocó una sesión.') satisfies z.ZodType<SessionRevokedPayload>;
+  .describe(
+    'A session was revoked.',
+  ) satisfies z.ZodType<SessionRevokedPayload>;
 
 export const TokensRevokedPayloadSchema = z
   .object({
@@ -155,5 +151,5 @@ export const TokensRevokedPayloadSchema = z
     revokedBefore: TimestampSchema,
   })
   .describe(
-    'Se revocaron tokens de una sesión, un usuario o un tenant.',
+    'Tokens of a session, a user or a tenant were revoked.',
   ) satisfies z.ZodType<TokensRevokedPayload>;

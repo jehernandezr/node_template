@@ -1,4 +1,4 @@
-/** Reglas del limitador con que se cuentan los fallos de inicio de sesión. */
+/** Rules of the limiter used to count sign-in failures. */
 export enum AttemptCounterRule {
   Origin = 'identity.sign-in.origin',
   Account = 'identity.sign-in.account',

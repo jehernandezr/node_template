@@ -17,8 +17,8 @@ import type { StubDataSource } from './stub-data-source.js';
 import type { StubQueryRunner } from './stub-query-runner.js';
 
 /**
- * `EntityManagerProvider` sin base: la resolución y las transacciones son las reales, pero `run` entrega
- * el manager del único `StubQueryRunner` del `StubDataSource` y registra cada petición.
+ * `EntityManagerProvider` without a database: resolution and transactions are real, but `run` provides
+ * the manager of the single `StubQueryRunner` of the `StubDataSource` and records each request.
  */
 export class FakeEntityManagerProvider extends EntityManagerProvider {
   readonly requests: ManagerRequest[] = [];
@@ -37,7 +37,7 @@ export class FakeEntityManagerProvider extends EntityManagerProvider {
     this.runnerInstance = dataSource.runners[dataSource.runners.length - 1];
   }
 
-  /** El `StubQueryRunner` que usan las peticiones de `run`. */
+  /** The `StubQueryRunner` used by the `run` requests. */
   get runner(): StubQueryRunner {
     return this.runnerInstance;
   }

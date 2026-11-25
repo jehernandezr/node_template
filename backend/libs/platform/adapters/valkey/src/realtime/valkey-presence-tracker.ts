@@ -6,11 +6,11 @@ import type { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import type { ValkeyKeyspace } from '../valkey-keyspace.js';
 
 /**
- * Presencia en un sorted set por canal (`<prefijo>:presence:{canal}`): cada conexión con su vencimiento como
- * puntaje. Un proceso que cae deja marcas que vencen solas, sin depender de que avise.
+ * Presence in a sorted set per channel (`<prefix>:presence:{channel}`): each connection with its expiry as
+ * score. A process that crashes leaves marks that expire on their own, without relying on it to notify.
  */
 export class ValkeyPresenceTracker extends PresenceTracker {
-  /** KEYS[1] set; ARGV: conexión, vencimiento en ms epoch, vida en ms. */
+  /** KEYS[1] set; ARGV: connection, expiry in epoch ms, lifetime in ms. */
   private static readonly CONNECT = new LuaScript(`
 redis.call('ZADD', KEYS[1], ARGV[2], ARGV[1])
 if redis.call('PTTL', KEYS[1]) < tonumber(ARGV[3]) then
@@ -18,7 +18,7 @@ if redis.call('PTTL', KEYS[1]) < tonumber(ARGV[3]) then
 end
 return 1
 `);
-  /** KEYS[1] set; ARGV[1] ahora en ms epoch. Limpia lo vencido y cuenta lo vigente. */
+  /** KEYS[1] set; ARGV[1] now in epoch ms. Clears expired entries and counts current ones. */
   private static readonly ONLINE = new LuaScript(`
 redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
 return redis.call('ZCARD', KEYS[1])

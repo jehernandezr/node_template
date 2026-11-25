@@ -31,7 +31,7 @@ import { TypeOrmUserRepository } from '../infrastructure/persistence/typeorm-use
 import { UsersController } from './users.controller.js';
 import { UsersInternalOperations } from './users.internal-operations.js';
 
-/** Usuarios, registro, verificación y cambio de email, perfil, suspensión y borrado de cuenta. Global solo para su fachada. */
+/** Users, registration, email verification and change, profile, suspension and account deletion. Global only for its facade. */
 @Global()
 @Module({
   imports: [

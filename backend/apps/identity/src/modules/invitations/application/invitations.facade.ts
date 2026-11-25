@@ -1,22 +1,22 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { InvitationPreview } from '../domain/invitation-preview.js';
 
-/** Lo que `invitations` ofrece a los otros módulos. */
+/** What `invitations` offers to the other modules. */
 export abstract class InvitationsFacade {
-  /** La invitación vigente del token, o `undefined` si no existe, venció o ya se usó. */
+  /** The token's valid invitation, or `undefined` if it does not exist, expired or was already used. */
   abstract preview(token: string): Promise<InvitationPreview | undefined>;
 
   /**
-   * Acepta la invitación para un usuario recién registrado con el mismo email: agrega la membresía y marca
-   * la invitación. El token llegó a ese email, así que prueba que el usuario lo controla.
+   * Accepts the invitation for a newly registered user with the same email: adds the membership and marks
+   * the invitation. The token arrived at that email, so it proves the user controls it.
    */
   abstract acceptForNewUser(token: string, user: UserRef): Promise<void>;
 
   /**
-   * Comprueba que el plan del tenant de la invitación admita un usuario más, antes de crear la cuenta que la
-   * va a aceptar.
-   * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` si el plan ya no admite otro usuario.
-   * @throws BillingUnavailableError si billing no responde.
+   * Checks that the plan of the invitation's tenant allows one more user, before creating the account that
+   * will accept it.
+   * @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the plan no longer allows another user.
+   * @throws BillingUnavailableError if billing does not respond.
    */
   abstract assertRoomForNewUser(invitation: InvitationPreview): Promise<void>;
 }

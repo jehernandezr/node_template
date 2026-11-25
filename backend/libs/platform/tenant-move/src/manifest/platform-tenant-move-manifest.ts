@@ -3,14 +3,14 @@ import { TenantMoveSelectorKind } from './tenant-move-selector-kind.enum.js';
 import type { TenantMoveTable } from './tenant-move-table.js';
 
 /**
- * Las tablas de la plataforma con datos de un tenant que viven en cada shard de todo servicio y viajan con él:
- * - `idempotency_keys`: un reintento con la misma llave después del cambio responde lo guardado en vez de repetir
- *   los efectos en el destino;
- * - `processed_messages`: un mensaje que el origen ya procesó y que llega otra vez después del cambio se reconoce
- *   como repetido en el destino;
- * - `saga.instances` y `saga.step_log`: el estado de las sagas del tenant se sigue consultando desde su shard.
+ * The platform tables with tenant data that live on every shard of every service and travel with the tenant:
+ * - `idempotency_keys`: a retry with the same key after the switch answers what was stored instead of repeating
+ *   the effects on the target;
+ * - `processed_messages`: a message the source already processed that arrives again after the switch is recognized
+ *   as a duplicate on the target;
+ * - `saga.instances` and `saga.step_log`: the state of the tenant sagas is still queried from its shard.
  *
- * `outbox` y `audit_log` se quedan en el origen a propósito (ADR 0032).
+ * `outbox` and `audit_log` stay on the source on purpose (ADR 0032).
  */
 export class PlatformTenantMoveManifest extends TenantMoveManifest {
   static readonly SAGA_INSTANCES = 'saga.instances';

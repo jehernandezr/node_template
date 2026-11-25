@@ -4,12 +4,12 @@ import type { RealtimePublisher } from '../../realtime-publisher.js';
 import type { RealtimeClientOpener } from './realtime-client.js';
 import { RealtimeTestAuth } from './realtime-test-auth.js';
 
-/** Lo que la prueba necesita de un montaje en marcha: dónde conectarse y cómo publicar. */
+/** What the test needs from a running setup: where to connect and how to publish. */
 export interface MountedTransports {
   readonly auth: RealtimeTestAuth;
-  /** Instancia a la que se conecta el cliente. */
+  /** Instance the client connects to. */
   readonly baseUrl: string;
-  /** Instancia a la que se conecta al reanudar; con un stream compartido puede ser otra. */
+  /** Instance it connects to when resuming; with a shared stream it can be a different one. */
   readonly resumeUrl: string;
   readonly publisher: RealtimePublisher;
   readonly presence: PresenceTracker;
@@ -19,8 +19,8 @@ const WAIT_MS = 5000;
 const POLL_MS = 20;
 
 /**
- * Lo que todo transporte cumple: entrega lo publicado, reanuda sin perder ni repetir tramas, se cierra con la
- * revocación de su sesión, deja de anunciar al usuario cuando el cliente se va y no deja entrar sin token.
+ * What every transport fulfills: delivers what is published, resumes without losing or repeating frames, closes on the
+ * revocation of its session, stops announcing the user when the client leaves and does not let in without a token.
  */
 export function runTransportReconnectionContract(
   name: string,

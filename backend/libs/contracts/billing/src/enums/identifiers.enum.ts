@@ -1,4 +1,4 @@
-/** Códigos de error del servicio billing. */
+/** Error codes of the billing service. */
 export enum BillingErrorCode {
   SubscriptionNotFound = 'BILLING.SUBSCRIPTION.NOT_FOUND',
   SubscriptionNotChangeable = 'BILLING.SUBSCRIPTION.NOT_CHANGEABLE',
@@ -10,7 +10,7 @@ export enum BillingErrorCode {
   QuotaExceeded = 'BILLING.QUOTA.EXCEEDED',
 }
 
-/** Identificadores de las rutas públicas de billing. */
+/** Identifiers of the billing public routes. */
 export enum BillingRoute {
   GetSubscription = 'billing.subscription.get',
   GetUsage = 'billing.usage.get',
@@ -20,7 +20,7 @@ export enum BillingRoute {
   GetInvoice = 'billing.invoice.get',
 }
 
-/** Identificadores de las operaciones internas de billing. */
+/** Identifiers of the billing internal operations. */
 export enum BillingOperation {
   OpenAccount = 'billing.accounts.open.v1',
   CloseAccount = 'billing.accounts.close.v1',
@@ -38,7 +38,7 @@ export enum BillingOperation {
   TenantDirectoryRemove = 'billing.tenant-directory.remove.v1',
 }
 
-/** Tipos CloudEvents de los eventos que publica billing. */
+/** CloudEvents types of the events billing publishes. */
 export enum BillingEvent {
   SubscriptionChanged = 'billing.subscription.changed.v1',
   SubscriptionSuspended = 'billing.subscription.suspended.v1',
@@ -49,17 +49,17 @@ export enum BillingEvent {
   InvoiceFailed = 'billing.invoice.failed.v1',
 }
 
-/** Tipos CloudEvents de los comandos que atiende billing. */
+/** CloudEvents types of the commands billing handles. */
 export enum BillingCommand {
   RecordUsage = 'billing.usage.record.v1',
 }
 
-/** Tópicos donde billing publica sus eventos. */
+/** Topics where billing publishes its events. */
 export enum BillingTopic {
   Events = 'billing-events',
 }
 
-/** Colas que consume billing. */
+/** Queues billing consumes. */
 export enum BillingQueue {
   Usage = 'billing-usage',
   Identity = 'billing-identity',

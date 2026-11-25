@@ -56,12 +56,12 @@ class FlowSaga extends SagaDefinition<unknown> {
 
 const resolver = new OperationResolver();
 
-/** Compila la saga del flujo con sus contratos de prueba. */
+/** Compiles the flow's saga with its test contracts. */
 function compiled(): CompiledSaga<unknown>[] {
   return [new FlowSaga().build(resolver)];
 }
 
-/** Registro con las operaciones que se pasen; el resto no existe para el validador. */
+/** Registry with the given operations; the rest do not exist for the validator. */
 function registryWith(...definitions: OperationDefinition[]): ContractRegistry {
   const registry = new ContractRegistry();
   registry.register(...definitions);

@@ -89,9 +89,9 @@ describe('QueryParamsCodec', () => {
     );
 
     it.each([
-      [z.string().nullable(), 'la query no puede llevar null; usa optional'],
-      [z.object({}), 'debe ser un escalar o una lista de escalares'],
-      [z.array(z.string().nullable()), 'la query no puede llevar null'],
+      [z.string().nullable(), 'the query cannot carry null; use optional'],
+      [z.object({}), 'must be a scalar or a list of scalars'],
+      [z.array(z.string().nullable()), 'the query cannot carry null'],
     ])(
       'rejects the query field %# with the reason for its shape',
       (schema, reason) => {

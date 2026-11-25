@@ -27,7 +27,7 @@ const principal = (
   ...overrides,
 });
 
-/** Resolutor que siempre falla con un error ajeno a la autenticación. */
+/** Resolver that always fails with an error unrelated to authentication. */
 class ThrowingApiKeyResolver extends ApiKeyResolver {
   async resolve(): Promise<ApiKeyPrincipal | undefined> {
     throw new Error('resolver down');

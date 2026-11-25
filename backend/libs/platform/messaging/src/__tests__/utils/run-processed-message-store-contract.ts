@@ -5,7 +5,7 @@ import { ProcessedMessageKey } from '../../dispatch/processed-message-key.js';
 import { AcquiredClaim } from './acquired-claim.js';
 import type { ProcessedMessageStore } from '../../dispatch/processed-message-store.js';
 
-/** Entorno de una corrida del contrato de mensajes procesados. */
+/** Environment of one run of the processed messages contract. */
 export interface ProcessedMessageStoreContractEnv {
   readonly store: ProcessedMessageStore;
   readonly clock: FixedClock;
@@ -15,8 +15,8 @@ const FAR_PAST = new Date('2000-01-01T00:00:00.000Z');
 const FAR_FUTURE = new Date('2999-01-01T00:00:00.000Z');
 
 /**
- * Contrato de `ProcessedMessageStore`: los casos que cumplen el adaptador en
- * memoria y el de Postgres. Cada adaptador lo llama desde su propio `describe`.
+ * `ProcessedMessageStore` contract: the cases that the in-memory adapter and
+ * the Postgres one satisfy. Each adapter calls it from its own `describe`.
  */
 export function runProcessedMessageStoreContract(
   setup: () => Promise<ProcessedMessageStoreContractEnv>,

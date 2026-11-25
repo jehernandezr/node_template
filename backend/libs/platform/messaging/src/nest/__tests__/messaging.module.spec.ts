@@ -72,7 +72,7 @@ function userRegistered(id: string, tenantid?: string) {
   });
 }
 
-/** Bus que publica directo, sin outbox, para probar la opción `bus`. */
+/** Bus that publishes directly, without an outbox, to test the `bus` option. */
 class DirectBus extends MessageBus {
   publish(): Promise<never> {
     return Promise.reject(new Error('direct bus'));

@@ -1,35 +1,35 @@
 import type { Deadline } from '@platform/primitives';
 
-/** Opciones de cada llamada a `ResilienceRegistry.execute`. */
+/** Options of each call to `ResilienceRegistry.execute`. */
 export interface ResilienceCallOptions {
-  /** Permite reintentos. Por defecto no: una llamada que falla nunca se repite. */
+  /** Allows retries. Off by default: a failing call is never repeated. */
   readonly idempotent?: boolean;
-  /** Dependencia cuyo breaker y bulkhead se usan. Por defecto, el nombre de la política. */
+  /** Dependency whose breaker and bulkhead are used. Defaults to the policy name. */
   readonly dependencyKey?: string;
-  /** Cancelación del llamador: corta reintentos, esperas pendientes y rechaza con el motivo de la señal. */
+  /** Caller cancellation: cuts retries and pending waits and rejects with the signal's reason. */
   readonly signal?: AbortSignal;
   /**
-   * Plazo del llamador. Toda la llamada, reintentos y esperas incluidos, no
-   * pasa de él; si la política también tiene presupuesto, gana el más cercano.
+   * Caller deadline. The whole call, retries and waits included, does not
+   * go past it; if the policy also has a budget, the nearest one wins.
    */
   readonly deadline?: Deadline;
-  /** Presupuesto de toda la llamada, reintentos incluidos. Reemplaza el de la política. */
+  /** Budget of the whole call, retries included. Replaces the policy's. */
   readonly totalTimeoutMs?: number;
 }
 
-/** Lo que la operación sabe del intento que ejecuta. */
+/** What the operation knows about the attempt it runs. */
 export interface ResilienceAttempt {
-  /** Número del intento, desde 1. */
+  /** Attempt number, starting at 1. */
   readonly number: number;
   /**
-   * Límite de este intento: `deadline.child(timeoutMs)` del plazo de la
-   * llamada, o `timeoutMs` desde ahora si la llamada no tiene plazo. Se pasa
-   * hacia abajo.
+   * Limit of this attempt: `deadline.child(timeoutMs)` of the call's
+   * deadline, or `timeoutMs` from now if the call has no deadline. It is passed
+   * down.
    */
   readonly deadline: Deadline;
 }
 
-/** Operación que ejecuta `ResilienceRegistry.execute`. */
+/** Operation that `ResilienceRegistry.execute` runs. */
 export type ResilientOperation<T> = (
   signal: AbortSignal,
   attempt: ResilienceAttempt,

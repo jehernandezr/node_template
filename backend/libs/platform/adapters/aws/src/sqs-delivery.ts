@@ -1,9 +1,9 @@
-/** Una entrega, venga de Lambda o de `ReceiveMessage`. */
+/** A delivery, whether from Lambda or from `ReceiveMessage`. */
 export interface SqsDelivery {
   readonly messageId: string;
   readonly receiptHandle: string;
   readonly body: string;
-  /** Entregas hasta ahora, contando esta (`ApproximateReceiveCount`). */
+  /** Deliveries so far, counting this one (`ApproximateReceiveCount`). */
   readonly receiveCount: number;
   readonly groupId?: string;
 }

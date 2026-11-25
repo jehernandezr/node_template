@@ -4,7 +4,7 @@ import { ProbeEntity } from './utils/probe.entity.js';
 import { StubDataSource } from './utils/stub-data-source.js';
 import type { StubQueryRunner } from './utils/stub-query-runner.js';
 
-/** Un `StubQueryRunner` nuevo del `DataSource` de prueba, con su manager. */
+/** A new `StubQueryRunner` from the test `DataSource`, with its manager. */
 async function newRunner(): Promise<StubQueryRunner> {
   const dataSource = new StubDataSource('writer', [ProbeEntity]);
   await dataSource.initialize();

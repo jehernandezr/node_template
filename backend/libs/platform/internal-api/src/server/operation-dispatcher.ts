@@ -21,7 +21,7 @@ import type { IdempotencyGate } from './idempotency-gate.js';
 import type { OperationRoute } from './operation-route.js';
 import type { UnitOfWorkRunner } from './unit-of-work-runner.js';
 
-/** Valida una llamada entrante contra el contrato y la lleva hasta su handler con la llave de idempotencia reclamada. */
+/** Validates an incoming call against the contract and takes it to its handler with the idempotency key claimed. */
 export class OperationDispatcher {
   constructor(
     private readonly payload: PayloadLimit,
@@ -34,18 +34,18 @@ export class OperationDispatcher {
   ) {}
 
   /**
-   * En este orden:
-   * 1. `rawInput` pasa del tope: `protocol-violation` `payload-too-large`.
-   * 2. Llave o tenant inválidos (`IdempotencyKeyPolicy.isValid`): `protocol-violation` `invalid-idempotency-key`.
-   * 3. Entrada que rompe el contrato: `InputViolation.outcome` (no se guarda).
-   * 4. Plazo (`Deadline.at(meta.deadline, clock)`) y huella (`CanonicalJson.digest` de la entrada
-   *    parseada); si lanzan, `outcomes.fromError`. Plazo vencido: `transient-failure` `deadline-exceeded`.
-   * 5. Llave del almacén (`IdempotencyKeyPolicy.storeKey`) que no cabe: `protocol-violation` `invalid-idempotency-key`.
-   * 6. Con `forwards`, la llamada es la compensación de esas operaciones: `tombstones.lay` deja la lápida del paso que
-   *    deshace y, si ese paso sigue en curso, esa es la respuesta.
-   * 7. `gate.claim`: si responde, esa es la respuesta; si no, `runner.run` con la entrada parseada, mientras
-   *    `keeper` renueva el lease de la llave. El handler recibe en `meta.signal` una señal que aborta al vencer el plazo
-   *    del intento o cuando quien llama cancela.
+   * In this order:
+   * 1. `rawInput` exceeds the cap: `protocol-violation` `payload-too-large`.
+   * 2. Invalid key or tenant (`IdempotencyKeyPolicy.isValid`): `protocol-violation` `invalid-idempotency-key`.
+   * 3. Input that breaks the contract: `InputViolation.outcome` (not stored).
+   * 4. Deadline (`Deadline.at(meta.deadline, clock)`) and hash (`CanonicalJson.digest` of the parsed
+   *    input); if they throw, `outcomes.fromError`. Expired deadline: `transient-failure` `deadline-exceeded`.
+   * 5. Store key (`IdempotencyKeyPolicy.storeKey`) that does not fit: `protocol-violation` `invalid-idempotency-key`.
+   * 6. With `forwards`, the call is the compensation of those operations: `tombstones.lay` lays the tombstone of the step it
+   *    undoes and, if that step is still in progress, that is the response.
+   * 7. `gate.claim`: if it responds, that is the response; otherwise, `runner.run` with the parsed input, while
+   *    `keeper` renews the key lease. The handler receives in `meta.signal` a signal that aborts when the attempt
+   *    deadline expires or when the caller cancels.
    */
   async dispatch(
     route: OperationRoute,

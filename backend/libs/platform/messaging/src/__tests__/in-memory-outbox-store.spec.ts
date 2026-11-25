@@ -27,7 +27,7 @@ describe('InMemoryOutboxStore', () => {
     store.add(make('future'), { now: at(0) });
     store.add(make('early'), { now: at(-2_000) });
     store.add(make('mid'), { now: at(-1_000) });
-    // "future" no vence hasta los 9 s, después de que una falla lo reprograma.
+    // "future" is not due until 9 s, after a failure reschedules it.
     const setup = lease('setup');
     await claim(store, at(0), setup, 10);
     await store.markFailed('future', setup, 'x', at(9_000));
@@ -68,7 +68,7 @@ describe('InMemoryOutboxStore', () => {
     store.add(make('a'), { now: t0 });
     const first = lease('relay-1');
     await claim(store, t0, first);
-    // El lease vence y otro relay toma el registro.
+    // The lease expires and another relay takes the record.
     const second = lease('relay-2');
     await claim(store, at(1_000), second);
 
@@ -76,7 +76,7 @@ describe('InMemoryOutboxStore', () => {
     expect(await store.markFailed('a', first, 'late', at(5_000))).toBe(false);
     expect(await store.markDead('a', first, 'late')).toBe(false);
     expect(await store.releaseLease('a', first)).toBe(false);
-    // Mismo dueño, token anterior (una pasada previa de la misma instancia).
+    // Same owner, previous token (an earlier pass of the same instance).
     expect(await store.markPublished('a', lease('relay-2', 'old-pass'))).toBe(
       false,
     );

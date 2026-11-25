@@ -8,7 +8,7 @@ import {
 import { ProjectionsFacade } from '../../../projections/index.js';
 import { ReportDefinition } from '../report-definition.js';
 
-/** Facturas emitidas por periodo y moneda, cuántas se pagaron o fallaron y el total emitido en unidades menores. */
+/** Invoices issued per period and currency, how many were paid or failed and the total issued in minor units. */
 @Injectable()
 export class InvoicesSummaryReport extends ReportDefinition {
   readonly type = ReportType.InvoicesSummary;

@@ -5,7 +5,7 @@ import type {
 } from '@contracts/reports';
 import type { ReportRunState } from '../domain/report-run.js';
 
-/** La ejecución como la publica el contrato. Utilidad pura. */
+/** The run as the contract publishes it. Pure utility. */
 export class RunViews {
   static summary(state: ReportRunState): ReportRunSummary {
     return {

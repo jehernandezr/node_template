@@ -11,10 +11,10 @@ import { NodeSha256 } from './node-sha256.js';
 import type { SigV4SignerSettings } from './sigv4-signer-settings.js';
 
 /**
- * Firma las llamadas internas con AWS Signature V4 y las credenciales del rol
- * del servicio. El destino las verifica con IAM, sin secreto compartido. Firma
- * el cuerpo como lo envía `HttpTransport` (`JSON.stringify`) y el host de
- * `baseUrl`, así que la firma solo vale para ese destino.
+ * Signs internal calls with AWS Signature V4 and the credentials of the service
+ * role. The destination verifies them with IAM, without a shared secret. Signs
+ * the body as `HttpTransport` sends it (`JSON.stringify`) and the host of
+ * `baseUrl`, so the signature is only valid for that destination.
  */
 export class SigV4Signer extends InternalRequestSigner {
   private static readonly HOST_HEADER = 'host';
@@ -36,9 +36,9 @@ export class SigV4Signer extends InternalRequestSigner {
   }
 
   /**
-   * Devuelve `authorization`, `x-amz-date`, `x-amz-content-sha256` y, con
-   * credenciales temporales, `x-amz-security-token`.
-   * @throws InternalApiError `InvalidConfiguration` si la petición no trae `baseUrl`.
+   * Returns `authorization`, `x-amz-date`, `x-amz-content-sha256` and, with
+   * temporary credentials, `x-amz-security-token`.
+   * @throws InternalApiError `InvalidConfiguration` if the request has no `baseUrl`.
    */
   async sign(request: SignableRequest): Promise<Record<string, string>> {
     if (request.baseUrl === undefined) {

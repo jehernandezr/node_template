@@ -8,9 +8,9 @@ import {
 } from 'typeorm';
 
 /**
- * `email_messages`, en el catálogo: qué salió con qué plantilla y a qué huella, sin cuerpo ni dirección. Es
- * global por `messageId` porque un correo de identity puede no tener tenant (ADR 0030), y no lleva
- * `created_by` ni `updated_by` porque solo la escribe el servicio.
+ * `email_messages`, in the catalog: what went out with which template and to which hash, without body or address. It is
+ * global by `messageId` because an identity email may have no tenant (ADR 0030), and it has no
+ * `created_by` or `updated_by` because only the service writes it.
  */
 @Entity({ name: 'email_messages' })
 export class EmailMessageEntity {

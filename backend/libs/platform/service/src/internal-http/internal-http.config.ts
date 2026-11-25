@@ -19,8 +19,8 @@ const BaseUrlsSchema = z
   .pipe(z.record(z.string().min(1), z.url()));
 
 /**
- * Variables del transporte HTTP de la API interna. `INTERNAL_API_BASE_URLS` es un mapa JSON de servicio a URL
- * base, por ejemplo `{"identity":"http://identity.internal"}`; un servicio que no llama a otros lo deja vacío.
+ * Variables of the internal API HTTP transport. `INTERNAL_API_BASE_URLS` is a JSON map from service to base
+ * URL, for example `{"identity":"http://identity.internal"}`; a service that does not call others leaves it empty.
  */
 export const internalHttpConfigSchema = z.object({
   INTERNAL_API_SHARED_SECRET: secret({ minLength: 32 }),

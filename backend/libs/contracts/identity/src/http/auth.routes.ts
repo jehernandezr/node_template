@@ -15,7 +15,7 @@ import {
   SignInResponseSchema,
 } from '../schemas/auth.schema.js';
 
-/** `POST /v1/auth/sign-in`: email y contraseña. Puede pedir un segundo factor. */
+/** `POST /v1/auth/sign-in`: email and password. May require a second factor. */
 export const SignInRoute = defineRoute({
   id: IdentityRoute.SignIn,
   method: HttpMethod.Post,
@@ -28,13 +28,13 @@ export const SignInRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Inicia sesión con email y contraseña. Responde tokens o un desafío MFA.',
+    'Signs in with email and password. Responds with tokens or an MFA challenge.',
 });
 
 /**
- * `POST /v1/auth/mfa/challenges`: pide un desafío con uno de los métodos que
- * ofreció el inicio de sesión. Con un dispositivo registrado, el código aparece
- * en su app; si es el primer dispositivo, llega por email.
+ * `POST /v1/auth/mfa/challenges`: requests a challenge with one of the methods
+ * the sign-in offered. With a registered device, the code appears
+ * in its app; if it is the first device, it arrives by email.
  */
 export const RequestMfaChallengeRoute = defineRoute({
   id: IdentityRoute.RequestMfaChallenge,
@@ -51,10 +51,10 @@ export const RequestMfaChallengeRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Crea un desafío MFA para el login pendiente y envía el código por el método elegido.',
+    'Creates an MFA challenge for the pending login and sends the code through the chosen method.',
 });
 
-/** `POST /v1/auth/mfa/verify`: verifica el desafío y crea la sesión. */
+/** `POST /v1/auth/mfa/verify`: verifies the challenge and creates the session. */
 export const VerifyMfaRoute = defineRoute({
   id: IdentityRoute.VerifyMfa,
   method: HttpMethod.Post,
@@ -70,15 +70,15 @@ export const VerifyMfaRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Verifica un desafío MFA, crea la sesión y registra el dispositivo nuevo.',
+    'Verifies an MFA challenge, creates the session and registers the new device.',
 });
 
 /**
- * `POST /v1/auth/refresh`: rota el session token y emite un access token
- * nuevo. En móvil el session token viaja en el cuerpo y la respuesta trae el
- * siguiente; en web viaja en la cookie `httpOnly`, el servidor la reemplaza con
- * `Set-Cookie` y la respuesta no trae `sessionToken`. Presentar un session
- * token ya rotado revoca la sesión completa.
+ * `POST /v1/auth/refresh`: rotates the session token and issues a new access
+ * token. On mobile the session token travels in the body and the response carries the
+ * next one; on web it travels in the `httpOnly` cookie, the server replaces it with
+ * `Set-Cookie` and the response does not carry `sessionToken`. Presenting an already
+ * rotated session token revokes the whole session.
  */
 export const RefreshSessionRoute = defineRoute({
   id: IdentityRoute.RefreshSession,
@@ -97,13 +97,13 @@ export const RefreshSessionRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Rota el session token (cuerpo en móvil, cookie httpOnly en web) y emite un access token nuevo.',
+    'Rotates the session token (body on mobile, httpOnly cookie on web) and issues a new access token.',
 });
 
 /**
- * `POST /v1/auth/sign-out`: cierra la sesión del session token (cuerpo en
- * móvil, cookie en web), revoca sus tokens y borra la cookie. Es idempotente:
- * una sesión que ya no existe responde igual.
+ * `POST /v1/auth/sign-out`: closes the session of the session token (body on
+ * mobile, cookie on web), revokes its tokens and clears the cookie. It is idempotent:
+ * a session that no longer exists gets the same response.
  */
 export const SignOutRoute = defineRoute({
   id: IdentityRoute.SignOut,
@@ -113,5 +113,5 @@ export const SignOutRoute = defineRoute({
   errors: [PlatformErrorCode.RateLimitExceeded],
   access: Access.public(),
   description:
-    'Cierra la sesión del session token, revoca sus tokens y borra la cookie en web.',
+    'Closes the session of the session token, revokes its tokens and clears the cookie on web.',
 });

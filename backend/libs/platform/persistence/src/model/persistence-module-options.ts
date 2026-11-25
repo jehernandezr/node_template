@@ -2,28 +2,28 @@ import type { ShardKey, ShardStrategy } from '@platform/sharding';
 import type { ShardKeyResolver } from '@platform/sharding';
 import type { DatabaseSetDefinition } from './database-set-definition.js';
 
-/** Declaración de sharding por defecto del servicio, la que usan las transacciones sin módulo. */
+/** Default sharding declaration of the service, used by transactions without a module. */
 export interface DefaultShardingOptions {
   readonly key: ShardKey;
   readonly strategy?: ShardStrategy;
   readonly keyResolver?: ShardKeyResolver;
 }
 
-/** Opciones de `PersistenceModule.forRoot` que pueden salir de la configuración. */
+/** Options of `PersistenceModule.forRoot` that can come from the configuration. */
 export interface PersistenceModuleOptions {
-  /** Entidades y migraciones de las bases de shard (las del servicio más `platformShardEntities` y `platformShardMigrations`). */
+  /** Entities and migrations of the shard databases (the service's plus `platformShardEntities` and `platformShardMigrations`). */
   readonly shard: DatabaseSetDefinition;
-  /** Entidades y migraciones del catálogo. */
+  /** Entities and migrations of the catalog. */
   readonly catalog: DatabaseSetDefinition;
-  /** Por defecto `{ key: ShardKey.Tenant }`. */
+  /** `{ key: ShardKey.Tenant }` by default. */
   readonly defaultSharding?: DefaultShardingOptions;
-  /** Con `true`, sin un `ShardScope` activo toda resolución falla con `PLATFORM.SHARDING.KEY_MISSING`. Por defecto `false`. */
+  /** With `true`, without an active `ShardScope` every resolution fails with `PLATFORM.SHARDING.KEY_MISSING`. `false` by default. */
   readonly requireScope?: boolean;
   /**
-   * Con `true` cada escritura espera a que se abra la compuerta de traslado de su tenant y pasa por la barrera de
-   * `tenant_write_fences`, que el shard debe tener migrada. Por defecto `false`.
+   * With `true` each write waits for its tenant's relocation gate to open and goes through the
+   * `tenant_write_fences` barrier, which the shard must have migrated. `false` by default.
    */
   readonly tenantMoves?: boolean;
-  /** Milisegundos sin uso tras los que `ShardDataSources` cierra un `DataSource`. Por defecto 300 000. */
+  /** Idle milliseconds after which `ShardDataSources` closes a `DataSource`. 300 000 by default. */
   readonly idleTtlMs?: number;
 }

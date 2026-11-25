@@ -1,18 +1,18 @@
 /**
- * Puerto de almacenamiento del caché de consultas. Los valores son texto
- * opaco. Todos sus miembros son abstractos, así que un objeto literal con esos
- * métodos sigue sirviendo de doble.
+ * Storage port of the query cache. Values are opaque
+ * text. All its members are abstract, so an object literal with those
+ * methods still works as a double.
  */
 export abstract class CachePort {
-  /** Valor guardado, o `undefined` si no existe o venció. */
+  /** Returns the stored value, or `undefined` if it does not exist or expired. */
   abstract get(key: string): Promise<string | undefined>;
 
-  /** Guarda un valor. Vence a los `ttlMs` milisegundos, o nunca si se omite. */
+  /** Stores a value. It expires after `ttlMs` milliseconds, or never if omitted. */
   abstract set(key: string, value: string, ttlMs?: number): Promise<void>;
 
-  /** Guarda solo si la llave no existe o venció. Devuelve `true` si guardó. */
+  /** Stores only if the key does not exist or expired. Returns `true` if it stored. */
   abstract setIfAbsent(key: string, value: string): Promise<boolean>;
 
-  /** Borra la llave si existe. */
+  /** Deletes the key if it exists. */
   abstract delete(key: string): Promise<void>;
 }

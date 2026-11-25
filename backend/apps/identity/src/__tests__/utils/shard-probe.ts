@@ -3,8 +3,8 @@ import type { UserRef } from '../../shared/types/user-ref.type.js';
 import type { IdentityTestServers } from './identity-test-servers.js';
 
 /**
- * Mira las bases desde fuera de la app: en qué shard pone el router a un usuario o a un tenant y en qué
- * shard quedó de verdad una fila. Los nombres de los shards lógicos son los de sus bases.
+ * Inspects the databases from outside the app: on which shard the router places a user or a tenant and on which
+ * shard a row actually ended up. The logical shard names are those of their databases.
  */
 export class ShardProbe {
   constructor(
@@ -31,7 +31,7 @@ export class ShardProbe {
     return resolved.logicalShard;
   }
 
-  /** Los shards donde `sql` devuelve alguna fila. */
+  /** The shards where `sql` returns any row. */
   async shardsWith(sql: string): Promise<string[]> {
     const found: string[] = [];
     for (const shard of this.servers.shards()) {
@@ -54,7 +54,7 @@ export class ShardProbe {
     return this.servers.catalog().rows<T>(sql);
   }
 
-  /** La conexión del rol del servicio, sujeta al RLS, para abrir una a un shard. */
+  /** The service role connection, subject to RLS, to open one to a shard. */
   serviceConnection(): ReturnType<IdentityTestServers['serviceConnection']> {
     return this.servers.serviceConnection();
   }

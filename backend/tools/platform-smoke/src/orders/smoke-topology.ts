@@ -13,7 +13,7 @@ const ordersTopic = defineTopic({
   description: 'Eventos de pedidos de la prueba de humo.',
 });
 
-/** Contrato del servicio de prueba: un tópico con el evento y la cola que se suscribe a él. */
+/** Contract of the test service: a topic with the event and the queue that subscribes to it. */
 export const smokeContract = defineServiceContract({
   service: 'smoke',
   description: 'Prueba de humo de la plataforma.',
@@ -30,7 +30,7 @@ export const smokeContract = defineServiceContract({
   },
 });
 
-/** Topología del servicio de prueba, armada desde su contrato. */
+/** Topology of the test service, built from its contract. */
 export class SmokeTopology {
   static readonly topology = topologyFromContracts([smokeContract]);
 }

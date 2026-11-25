@@ -2,7 +2,7 @@ import type { Subscription as SubscriptionView } from '@contracts/billing';
 import { PlanViews } from '../../plans/index.js';
 import type { CurrentSubscription } from './current-subscription.js';
 
-/** La suscripción como la publica el contrato. Utilidad pura. */
+/** The subscription as the contract publishes it. Pure utility. */
 export class SubscriptionViews {
   static of(current: CurrentSubscription): SubscriptionView {
     const state = current.subscription;

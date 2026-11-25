@@ -1,4 +1,4 @@
-/** Orígenes permitidos para el header `Origin`, comparados en forma normalizada. */
+/** Allowed origins for the `Origin` header, compared in normalized form. */
 export class OriginPolicy {
   private readonly allowed: ReadonlySet<string>;
 
@@ -9,7 +9,7 @@ export class OriginPolicy {
     this.allowed = new Set(normalized);
   }
 
-  /** Sin `Origin` la petición no viene de un navegador y se acepta. */
+  /** Without `Origin` the request does not come from a browser and is accepted. */
   isAllowed(origin: string | undefined): boolean {
     if (origin === undefined) {
       return true;
@@ -18,7 +18,7 @@ export class OriginPolicy {
     return normalized !== undefined && this.allowed.has(normalized);
   }
 
-  /** `esquema://host` en minúsculas, sin barra final. `undefined` si no parsea. */
+  /** `scheme://host` in lowercase, without a trailing slash. `undefined` if it does not parse. */
   private static normalize(origin: string): string | undefined {
     const trimmed = origin.endsWith('/') ? origin.slice(0, -1) : origin;
     try {

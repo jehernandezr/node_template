@@ -1,4 +1,4 @@
-/** Espera a que una condición asíncrona se cumpla, consultándola de nuevo hasta un tiempo máximo. */
+/** Waits for an asynchronous condition to hold, polling it again up to a maximum time. */
 export class Eventually {
   private static readonly POLL_MS = 20;
 

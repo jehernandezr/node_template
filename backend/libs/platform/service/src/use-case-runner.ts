@@ -7,8 +7,8 @@ import type { UseCaseRunOptions } from './use-case-run-options.js';
 import { UseCaseOutcome } from './use-case-outcome.enum.js';
 
 /**
- * Ejecuta casos de uso con span, métricas de latencia y de error y, si se pide, dentro de
- * una transacción. Lo comparten HTTP, consumidores y operaciones internas.
+ * Runs use cases with a span, latency and error metrics and, if requested, inside
+ * a transaction. Shared by HTTP, consumers and internal operations.
  */
 export class UseCaseRunner {
   private static readonly SPAN_PREFIX = 'use-case';

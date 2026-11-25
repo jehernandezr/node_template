@@ -1,11 +1,11 @@
 import type { TenantPlacement } from '@platform/sharding';
 
-/** Si un tenant ya tiene datos del servicio en alguno de los shards de su placement. */
+/** Whether a tenant already has service data on any of the shards of its placement. */
 export abstract class TenantDataPresence {
   /**
-   * Indica si el tenant tiene filas del servicio en algún shard de su placement.
-   * @param placement Ubicación actual del tenant en el directorio.
-   * @returns `true` si hay al menos una fila: retirarlo del directorio las dejaría huérfanas.
+   * Returns whether the tenant has service rows on any shard of its placement.
+   * @param placement Current location of the tenant in the directory.
+   * @returns `true` if there is at least one row: removing it from the directory would orphan them.
    */
   abstract holdsData(placement: TenantPlacement): Promise<boolean>;
 }

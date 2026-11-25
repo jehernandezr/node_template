@@ -5,7 +5,7 @@ import { PlansFacade } from '../../plans/index.js';
 import { SubscriptionRepository } from '../domain/subscription.repository.js';
 import type { ClosedSubscriptionPeriod } from './current-subscription.js';
 
-/** Pasa la suscripción al periodo siguiente y devuelve lo que su factura debe cobrar. */
+/** Moves the subscription to the next period and returns what its invoice must charge. */
 @Injectable()
 export class CloseSubscriptionPeriod {
   constructor(
@@ -15,7 +15,7 @@ export class CloseSubscriptionPeriod {
     private readonly transactions: TransactionManager,
   ) {}
 
-  /** Corre dentro de la transacción de quien factura, para que la factura y el periodo nuevo vayan juntos. */
+  /** Runs inside the invoicing caller's transaction, so that the invoice and the new period go together. */
   execute(
     tenantId: string,
     today: string,

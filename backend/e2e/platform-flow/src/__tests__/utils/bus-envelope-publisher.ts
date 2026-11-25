@@ -7,7 +7,7 @@ import {
 } from '@platform/messaging';
 import { InMemoryBus } from '@platform/messaging/test-utils';
 
-/** El publicador del relay de cada servicio: deja el sobre en el bus en memoria que comparten los cinco. */
+/** The relay publisher of each service: drops the envelope on the in-memory bus shared by all five. */
 @Injectable()
 export class BusEnvelopePublisher extends EnvelopePublisher {
   constructor(private readonly bus: InMemoryBus) {

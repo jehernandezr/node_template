@@ -52,7 +52,7 @@ export class DevicesController {
     await this.mine.untrust(userRefOf(requireUserActor(actor)), input.deviceId);
   }
 
-  /** El dispositivo actual es el de la sesión (`did`); una sesión sin dispositivo no tiene a quién avisar. */
+  /** The current device is the session's (`did`); a session without a device has no one to notify. */
   @Endpoint(UpdatePushTokenRoute)
   async updatePushToken(
     @Input() input: PushTokenRequest,

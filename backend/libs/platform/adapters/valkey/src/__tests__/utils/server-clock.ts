@@ -3,11 +3,11 @@ import { CachePort } from '@platform/cache';
 import { RoutingCache } from '@platform/sharding';
 
 /**
- * Hace determinista un TTL de milisegundos contra un servidor real. Un reloj
- * falso no llega a Valkey y esperar `ttl - 1` ms reales es una carrera con la
- * latencia, así que los TTL se escalan por `SCALE` y `advance` envejece las
- * llaves quitándoles tiempo restante: la latencia real de unos milisegundos
- * queda muy por debajo de un milisegundo virtual.
+ * Makes a millisecond TTL deterministic against a real server. A fake clock
+ * does not reach Valkey and waiting `ttl - 1` real ms is a race with
+ * latency, so the TTLs are scaled by `SCALE` and `advance` ages the
+ * keys by removing remaining time: the real latency of a few milliseconds
+ * stays well below one virtual millisecond.
  */
 export class ServerClock {
   static readonly SCALE = 1_000;
@@ -17,7 +17,7 @@ export class ServerClock {
     private readonly pattern: string,
   ) {}
 
-  /** Envejece cada llave con TTL `virtualMs` milisegundos virtuales; la que llega a 0 vence. */
+  /** Ages each key with a TTL by `virtualMs` virtual milliseconds; the one that reaches 0 expires. */
   async advance(virtualMs: number): Promise<void> {
     const keys = (await this.admin.call('KEYS', this.pattern)) as string[];
     for (const key of keys) {
@@ -32,18 +32,18 @@ export class ServerClock {
     }
   }
 
-  /** Envuelve un caché para que sus TTL vivan en milisegundos virtuales. */
+  /** Wraps a cache so its TTLs live in virtual milliseconds. */
   scaled(cache: CachePort): CachePort {
     return new ScaledTtlCache(cache);
   }
 
-  /** Envuelve un caché de enrutamiento para que sus TTL vivan en milisegundos virtuales. */
+  /** Wraps a routing cache so its TTLs live in virtual milliseconds. */
   scaledRouting(cache: RoutingCache): RoutingCache {
     return new ScaledTtlRoutingCache(cache);
   }
 }
 
-/** Multiplica cada TTL por {@link ServerClock.SCALE} antes de pasarlo al caché real. */
+/** Multiplies each TTL by {@link ServerClock.SCALE} before passing it to the real cache. */
 class ScaledTtlCache extends CachePort {
   constructor(private readonly inner: CachePort) {
     super();
@@ -70,7 +70,7 @@ class ScaledTtlCache extends CachePort {
   }
 }
 
-/** Multiplica cada TTL por {@link ServerClock.SCALE} antes de pasarlo al caché de enrutamiento real. */
+/** Multiplies each TTL by {@link ServerClock.SCALE} before passing it to the real routing cache. */
 class ScaledTtlRoutingCache extends RoutingCache {
   constructor(private readonly inner: RoutingCache) {
     super();

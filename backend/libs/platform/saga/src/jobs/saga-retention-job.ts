@@ -8,11 +8,11 @@ import type { SagaSettings } from '../engine/saga-settings.js';
 import type { SagaStore } from '../store/saga-store.js';
 import { SagaJob } from './saga-job.enum.js';
 
-/** Borra las sagas terminadas con éxito hace más de `settings.retentionMs`. */
+/** Deletes the sagas that finished successfully more than `settings.retentionMs` ago. */
 export class SagaRetentionJob extends ScheduledJob {
-  /** La retención se mide en días: purgar cada hora basta y mantiene cada lote pequeño. */
+  /** Retention is measured in days: purging every hour is enough and keeps each batch small. */
   static readonly EVERY_MS = 3_600_000;
-  /** Desfasa las pasadas de varios nodos para que no borren a la vez. */
+  /** Staggers the passes of several nodes so they do not delete at the same time. */
   static readonly JITTER_RATIO = 0.1;
 
   readonly name = SagaJob.Retention;
@@ -30,7 +30,7 @@ export class SagaRetentionJob extends ScheduledJob {
     super();
   }
 
-  /** Purga las sagas `Completed` o `Compensated` anteriores a `now - retentionMs`. */
+  /** Purges the `Completed` or `Compensated` sagas older than `now - retentionMs`. */
   async run(): Promise<void> {
     await this.store.purge({
       before: new Date(this.clock.now().getTime() - this.settings.retentionMs),

@@ -3,12 +3,12 @@ import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js'
 import type { OperationSchemas } from './operation-schemas.js';
 
 /**
- * Comprueba que los esquemas de una operación sobreviven al transporte JSON.
- * Un esquema con transformaciones, pipes o `z.date()` validaría distinto en
- * cada lado del cable.
+ * Checks that the schemas of an operation survive JSON transport.
+ * A schema with transforms, pipes or `z.date()` would validate differently on
+ * each side of the wire.
  */
 export class JsonSafetyChecker {
-  /** Tipos de esquema zod que no hacen ida y vuelta por JSON sin cambiar. */
+  /** zod schema types that do not round-trip through JSON unchanged. */
   private static readonly NON_JSON_TYPES: ReadonlySet<string> = new Set([
     'pipe',
     'transform',
@@ -16,7 +16,7 @@ export class JsonSafetyChecker {
   ]);
 
   /**
-   * @throws InternalApiError `NonJsonSafeSchema` si el esquema de entrada o de salida no es seguro.
+   * @throws InternalApiError `NonJsonSafeSchema` if the input or output schema is not safe.
    */
   assertSafe(contract: OperationSchemas, label = 'contract'): void {
     const sides: Array<[string, unknown]> = [

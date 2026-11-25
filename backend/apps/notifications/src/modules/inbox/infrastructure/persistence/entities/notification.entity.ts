@@ -1,14 +1,14 @@
 import { TimestampTransformer, VersionedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `notifications`, la bandeja, en el shard del usuario. */
+/** `notifications`, the inbox, in the user's shard. */
 @Entity({ name: 'notifications' })
 @Index('notifications_user_idx', ['userId', 'id'])
 export class NotificationEntity extends VersionedEntity {
   @Column({ type: 'uuid', name: 'user_id', nullable: false })
   userId!: string;
 
-  /** Nulo solo en las filas anteriores a la columna. */
+  /** Null only in rows created before the column. */
   @Column({ type: 'uuid', name: 'home_tenant_id', nullable: true })
   homeTenantId!: string | null;
 

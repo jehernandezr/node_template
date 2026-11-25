@@ -6,10 +6,10 @@ import {
   type ApiKeyUsage,
 } from '../domain/api-key-usage-buffer.js';
 
-/** Un mapa en Valkey con un campo por key: cada uso pisa el anterior, así el mapa no crece con el tráfico. */
+/** A Valkey map with one field per key: each use overwrites the previous one, so the map does not grow with traffic. */
 @Injectable()
 export class EphemeralApiKeyUsageBuffer extends ApiKeyUsageBuffer {
-  /** Si el job deja de correr, lo acumulado se pierde en un día en vez de quedarse para siempre. */
+  /** If the job stops running, what was accumulated is lost within a day instead of staying forever. */
   private static readonly TTL_MS = 24 * 60 * 60_000;
   private static readonly SEPARATOR = '/';
 

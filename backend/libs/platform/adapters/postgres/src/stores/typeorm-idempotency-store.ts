@@ -6,8 +6,8 @@ import type {
 import type { ClaimTable } from './claim-table.js';
 
 /**
- * Adaptador TypeORM del puerto `IdempotencyStore` del kernel sobre `idempotency_keys`, con los mismos tres estados y
- * el mismo fencing que el adaptador en memoria. La lógica vive en `ClaimTable`, que se inyecta ya armada con
+ * TypeORM adapter of the kernel `IdempotencyStore` port on `idempotency_keys`, with the same three states and
+ * the same fencing as the in-memory adapter. The logic lives in `ClaimTable`, which is injected already built with
  * `IdempotencyKeyEntity`.
  */
 export class TypeOrmIdempotencyStore<
@@ -27,7 +27,7 @@ export class TypeOrmIdempotencyStore<
     return this.table.release(key, claimToken);
   }
 
-  /** Extiende el lease de un claim en curso del token; `false` si ya terminó o lo tomó otro intento. */
+  /** Extends the lease of an in-progress claim of the token; `false` if it already finished or another attempt took it. */
   renew(
     key: string,
     claimToken: string,
@@ -36,7 +36,7 @@ export class TypeOrmIdempotencyStore<
     return this.table.renew(key, claimToken, new Date(leaseUntilMs));
   }
 
-  /** Borra resultados completados antes de `before`. Para el job de retención. Devuelve cuántos borró. */
+  /** Deletes results completed before `before`. For the retention job. Returns how many it deleted. */
   purgeCompleted(before: Date): Promise<number> {
     return this.table.purgeCompleted(before);
   }

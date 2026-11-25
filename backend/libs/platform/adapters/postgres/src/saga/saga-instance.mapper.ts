@@ -5,11 +5,11 @@ import {
 } from '@platform/saga';
 import { SagaInstanceEntity } from './saga-instance.entity.js';
 
-/** Convierte entre la instancia de saga y su fila, con `tenantId` como el tenant dueño del shard. */
+/** Converts between the saga instance and its row, with `tenantId` as the tenant that owns the shard. */
 export class SagaInstanceMapper {
   /**
-   * Fila nueva con todos los campos de la instancia y `tenantId`. Un `state`
-   * indefinido se guarda como `null`, porque la columna es `jsonb` anulable.
+   * Returns a new row with all the instance fields and `tenantId`. An undefined
+   * `state` is stored as `null`, because the column is nullable `jsonb`.
    */
   toPersistence(instance: SagaInstance, tenantId: string): SagaInstanceEntity {
     const props = instance.toProps();
@@ -38,7 +38,7 @@ export class SagaInstanceMapper {
     return entity;
   }
 
-  /** Instancia reconstruida con `SagaInstance.rehydrate`. Un `state` nulo vuelve como `undefined`. */
+  /** Returns the instance rebuilt with `SagaInstance.rehydrate`. A null `state` comes back as `undefined`. */
   toDomain(entity: SagaInstanceEntity): SagaInstance {
     return SagaInstance.rehydrate({
       id: entity.id,

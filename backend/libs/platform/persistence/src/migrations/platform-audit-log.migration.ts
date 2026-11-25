@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { PlatformSchemaSql } from './platform-schema-sql.js';
 
-/** `audit_log` de cada shard: particionada por mes, solo inserciones. Ver `PlatformSchemaSql`. */
+/** `audit_log` of each shard: partitioned by month, inserts only. See `PlatformSchemaSql`. */
 export class PlatformAuditLog1794600000002 implements MigrationInterface {
   readonly name = PlatformSchemaSql.auditLogName;
 

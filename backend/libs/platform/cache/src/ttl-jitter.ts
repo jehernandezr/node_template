@@ -3,18 +3,18 @@ import { CacheInvalidArgumentError } from './errors/cache-invalid-argument.error
 import { CacheGuard } from './errors/cache-guard.js';
 
 /**
- * Reparte los vencimientos al azar alrededor de su base, para que muchas
- * entradas creadas a la vez no caduquen en el mismo instante.
+ * Spreads expirations randomly around their base, so many
+ * entries created at the same time do not expire at the same instant.
  */
 export class TtlJitter {
-  /** Desviación relativa por defecto (10 %). */
+  /** Default relative deviation (10 %). */
   static readonly DEFAULT_RATIO = 0.1;
 
   constructor(private readonly random: RandomSource) {}
 
   /**
-   * TTL entero en milisegundos dentro de `[base * (1 - ratio), base * (1 + ratio)]`.
-   * @throws CacheInvalidArgumentError cuando `baseMs` o `ratio` están fuera de rango.
+   * Returns an integer TTL in milliseconds within `[base * (1 - ratio), base * (1 + ratio)]`.
+   * @throws CacheInvalidArgumentError when `baseMs` or `ratio` are out of range.
    */
   jitter(baseMs: number, ratio: number = TtlJitter.DEFAULT_RATIO): number {
     CacheGuard.instance.nonNegativeFinite('baseMs', baseMs);
@@ -27,7 +27,7 @@ export class TtlJitter {
       return Math.round(baseMs);
     }
     const span = high - low;
-    // Una fuente fuera de [0, 1) o NaN no debe sacar el TTL de sus límites.
+    // A source outside [0, 1) or NaN must not push the TTL out of its bounds.
     const sample = this.random.next();
     const bounded = Number.isFinite(sample) && sample > 0 ? sample : 0;
     const offset = Math.min(Math.floor(bounded * (span + 1)), span);

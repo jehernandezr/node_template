@@ -1,4 +1,4 @@
-/** Una página de resultados. `nextCursor` es `null` en la última página. */
+/** A page of results. `nextCursor` is `null` on the last page. */
 export interface Page<T> {
   items: T[];
   nextCursor: string | null;

@@ -1,7 +1,7 @@
 import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-/** Shard lógico a instancia física, en el catálogo global. */
+/** Logical shard to physical instance, in the global catalog. */
 @Entity({ name: 'shard_instances' })
 export class ShardInstanceEntity {
   @PrimaryColumn({ type: 'text', name: 'logical_shard' })

@@ -1,4 +1,4 @@
-/** Agregado de ejemplo de las pruebas. `version` es 0 mientras no se guarda. */
+/** Sample aggregate for the tests. `version` is 0 until it is saved. */
 export class Probe {
   constructor(
     readonly id: string,

@@ -11,15 +11,15 @@ import { AccessTokenInput } from '../domain/access-token-input.js';
 import { SigningKeyProvider } from '../domain/signing-key-provider.js';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 
-/** Access token firmado y cuándo vence. */
+/** Signed access token and when it expires. */
 export interface IssuedAccessToken {
   readonly accessToken: string;
   readonly accessExpiresAt: Date;
 }
 
 /**
- * Firma un access token con el acceso vigente del usuario en el tenant activo. Antes de firmar deja el
- * `AccessGrant` en `auth:access:*`, así los demás servicios no tienen que pedírselo a identity.
+ * Signs an access token with the user's current access in the active tenant. Before signing it stores the
+ * `AccessGrant` in `auth:access:*`, so the other services do not have to ask identity for it.
  */
 @Injectable()
 export class IssueAccessToken implements UseCase<

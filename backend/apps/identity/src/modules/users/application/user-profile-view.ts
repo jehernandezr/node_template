@@ -1,7 +1,7 @@
 import type { UserProfile } from '@contracts/identity';
 import type { UserSnapshot } from '../domain/user-snapshot.js';
 
-/** El perfil que responde el contrato a partir de la vista del usuario. */
+/** The profile the contract returns, built from the user view. */
 export class UserProfileView {
   static of(user: UserSnapshot): UserProfile {
     return {

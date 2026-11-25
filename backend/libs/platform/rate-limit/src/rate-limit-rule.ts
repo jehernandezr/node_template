@@ -2,13 +2,13 @@ import { RateLimitArgumentGuard } from './errors/rate-limit-argument-guard.js';
 import { RateLimitLimits } from './rate-limit-limits.js';
 
 /**
- * Límite de `limit` unidades por ventana deslizante de `windowMs`. El nombre y
- * la ventana identifican los contadores: cambiar el límite de una regla
- * conserva lo contado, cambiar la ventana empieza de cero.
+ * Limit of `limit` units per sliding window of `windowMs`. The name and
+ * the window identify the counters: changing a rule's limit
+ * keeps what was counted, changing the window starts from zero.
  *
- * Solo tiene campos de lectura, así que un objeto literal con la misma forma
- * también es una regla; por eso la validación es estática y no un método de
- * instancia, y los limitadores validan cada regla que reciben.
+ * It only has read-only fields, so an object literal with the same shape
+ * is also a rule; that is why validation is static and not an instance
+ * method, and the limiters validate each rule they receive.
  */
 export class RateLimitRule {
   private constructor(
@@ -18,9 +18,9 @@ export class RateLimitRule {
   ) {}
 
   /**
-   * Valida y congela una regla. Pensado para declararlas como constantes al
-   * cargar el módulo, de modo que una regla mal escrita falle al arrancar.
-   * @throws InvalidArgumentError como {@link RateLimitRule.validate}.
+   * Validates and freezes a rule. Meant for declaring them as constants when
+   * the module loads, so that a badly written rule fails at startup.
+   * @throws InvalidArgumentError like {@link RateLimitRule.validate}.
    */
   static define(rule: RateLimitRule): RateLimitRule {
     RateLimitRule.validate(rule);
@@ -30,9 +30,9 @@ export class RateLimitRule {
   }
 
   /**
-   * @throws InvalidArgumentError si el nombre no cumple
-   *   `RateLimitLimits.RULE_NAME_PATTERN` o el límite o la ventana no son
-   *   enteros dentro de su rango.
+   * @throws InvalidArgumentError if the name does not match
+   *   `RateLimitLimits.RULE_NAME_PATTERN` or the limit or the window are not
+   *   integers within their range.
    */
   static validate(rule: RateLimitRule): void {
     const guard = RateLimitArgumentGuard.instance;

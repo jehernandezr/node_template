@@ -1,4 +1,4 @@
-/** Promesa que el test resuelve cuando quiere. */
+/** Promise that the test resolves whenever it wants. */
 export class Deferred<T> {
   readonly promise: Promise<T>;
   private settle: ((value: T) => void) | undefined;

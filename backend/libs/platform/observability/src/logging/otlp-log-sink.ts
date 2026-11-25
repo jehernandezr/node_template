@@ -11,11 +11,11 @@ import { LogSink } from './log-sink.js';
 import type { LogRecord } from './log-record.js';
 
 /**
- * Un log OTel con el contexto del span activo, que el SDK exporta por OTLP al
- * Collector. Sin SDK registrado se pierde: usarlo solo con la telemetría encendida.
+ * An OTel log with the context of the active span, which the SDK exports over OTLP to the
+ * Collector. Without a registered SDK it is lost: use it only with telemetry on.
  */
 export class OtlpLogSink extends LogSink {
-  /** Nombre del instrumentation scope con el que el sink emite logs OTel. */
+  /** Name of the instrumentation scope the sink emits OTel logs with. */
   static readonly SCOPE = '@platform/observability';
 
   private static readonly SEVERITY: Record<LogLevel, SeverityNumber> = {
@@ -34,7 +34,7 @@ export class OtlpLogSink extends LogSink {
   write(record: LogRecord): void {
     const attributes: Attributes = {};
     for (const [key, value] of Object.entries(record.fields)) {
-      // trace_id y span_id viajan en el contexto del registro OTel, no como atributos.
+      // trace_id and span_id travel in the OTel record context, not as attributes.
       if (key === LogField.TraceId || key === LogField.SpanId) {
         continue;
       }

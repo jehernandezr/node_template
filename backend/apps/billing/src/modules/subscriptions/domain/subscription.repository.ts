@@ -1,16 +1,16 @@
 import type { Subscription } from './subscription.js';
 
-/** La suscripción del tenant del `ShardScope` abierto. Hay a lo sumo una por tenant. */
+/** The subscription of the tenant of the open `ShardScope`. There is at most one per tenant. */
 export abstract class SubscriptionRepository {
   abstract find(): Promise<Subscription | undefined>;
   /**
-   * Toma la fila con `FOR UPDATE` hasta el fin de la transacción abierta: serializa los cambios de cobro del tenant,
-   * así dos pagos simultáneos no deciden cada uno con la factura del otro todavía sin pagar.
+   * Takes the row with `FOR UPDATE` until the end of the open transaction: serializes the tenant's charge changes,
+   * so two concurrent payments do not each decide while the other's invoice is still unpaid.
    */
   abstract lock(): Promise<void>;
   abstract insert(subscription: Subscription): Promise<void>;
-  /** @throws OptimisticLockError si otra escritura la cambió desde que se leyó. */
+  /** @throws OptimisticLockError if another write changed it since it was read. */
   abstract update(subscription: Subscription): Promise<void>;
-  /** Devuelve `false` si no había suscripción. */
+  /** Returns `false` if there was no subscription. */
   abstract remove(): Promise<boolean>;
 }

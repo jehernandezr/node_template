@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { PostgresPlatformModuleOptions } from '../model/postgres-platform-module-options.js';
 
-/** Opciones de `PostgresPlatformModule.forRootAsync`. */
+/** Options of `PostgresPlatformModule.forRootAsync`. */
 export type PostgresPlatformModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<PostgresPlatformModuleOptions>;
 

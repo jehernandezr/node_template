@@ -1,26 +1,26 @@
-/** Temporizadores y señales de aborto que comparten `Deadline` y las esperas con plazo. */
+/** Timers and abort signals shared by `Deadline` and the waits with a deadline. */
 export class TimerScheduler {
-  /** Mayor espera que acepta `setTimeout`; un valor mayor dispara casi de inmediato. */
+  /** Largest wait that `setTimeout` accepts; a larger value fires almost immediately. */
   static readonly MAX_TIMER_MS = 2_147_483_647;
 
   /**
-   * Arma un temporizador de `ms` milisegundos aunque supere el máximo de
-   * `setTimeout`, por tramos. Devuelve la función que lo cancela. Mantiene vivo
-   * el proceso mientras espera.
+   * Arms a timer of `ms` milliseconds even if it exceeds the `setTimeout`
+   * maximum, in segments. Returns the function that cancels it. Keeps the
+   * process alive while it waits.
    */
   static arm(ms: number, fire: () => void): () => void {
     return TimerScheduler.schedule(ms, fire, false);
   }
 
   /**
-   * Igual que `arm`, pero el temporizador no mantiene vivo el proceso: sirve
-   * para señales de plazo que nadie más espera.
+   * Same as `arm`, but the timer does not keep the process alive: it suits
+   * deadline signals that nothing else waits for.
    */
   static armDetached(ms: number, fire: () => void): () => void {
     return TimerScheduler.schedule(ms, fire, true);
   }
 
-  /** Motivo de aborto como `Error`, para rechazar siempre con un error. */
+  /** Abort reason as an `Error`, so it always rejects with an error. */
   static abortReason(signal: AbortSignal): Error {
     return signal.reason instanceof Error
       ? signal.reason

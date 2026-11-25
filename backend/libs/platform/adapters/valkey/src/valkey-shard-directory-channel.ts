@@ -15,17 +15,17 @@ import type { ValkeySubscriberSource } from './valkey-subscriber-source.js';
 import { ValkeyUnexpectedReplyError } from './valkey-unexpected-reply.error.js';
 
 /**
- * `ShardingEvent.ShardDirectoryChanged` sobre el pub/sub de Valkey. La entrega
- * es como máximo una vez y solo a los procesos conectados en ese momento, que
- * es lo que pide una invalidación de caché: un proceso que pierde un mensaje
- * igual encuentra la lápida en el caché compartido y suelta su copia al vencer
- * `localTtlMs`. El bus de mensajería puede implementar los mismos puertos
- * cuando se quiere entrega durable.
+ * `ShardingEvent.ShardDirectoryChanged` on Valkey pub/sub. Delivery
+ * is at most once and only to the processes connected at that moment, which
+ * is what a cache invalidation needs: a process that misses a message
+ * still finds the tombstone in the shared cache and drops its copy when
+ * `localTtlMs` expires. The messaging bus can implement the same ports
+ * when durable delivery is wanted.
  *
- * El canal es `<prefijo>:sharding:directory-changed`: uno por servicio los
- * mantiene separados y queda dentro de la ACL de canales `&<prefijo>:*` del
- * usuario del servicio. Los mensajes malformados y las fallas de los handlers
- * van a `onError` y nunca detienen el canal.
+ * The channel is `<prefix>:sharding:directory-changed`: one per service keeps them
+ * separate and stays inside the `&<prefix>:*` channel ACL of the
+ * service user. Malformed messages and handler failures
+ * go to `onError` and never stop the channel.
  */
 export class ValkeyShardDirectoryChannel extends ShardDirectoryChannel {
   private readonly channel: string;
@@ -54,7 +54,7 @@ export class ValkeyShardDirectoryChannel extends ShardDirectoryChannel {
   async subscribe(
     handler: ShardDirectoryChangeHandler,
   ): Promise<() => Promise<void>> {
-    // Se envuelve para poder suscribir el mismo handler dos veces y darlo de baja una sola.
+    // It is wrapped so the same handler can be subscribed twice and unsubscribed only once.
     const entry: ShardDirectoryChangeHandler = (event) => handler(event);
     const first = this.handlers.size === 0;
     this.handlers.add(entry);

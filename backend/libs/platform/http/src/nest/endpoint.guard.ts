@@ -22,9 +22,9 @@ import { HttpRequestKey } from './http-metadata-key.enum.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
 /**
- * Autentica, aplica el tenant, el límite de tasa y el acceso, revisa el sunset y la versión de la
- * API, y deja en la petición la `EndpointCall` que usan el decorador `@CurrentActor()` y los
- * interceptores. Las rutas sin `@Endpoint` pasan sin tocar nada.
+ * Authenticates, applies the tenant, the rate limit and access, checks the sunset and the API
+ * version, and leaves on the request the `EndpointCall` used by the `@CurrentActor()` decorator and the
+ * interceptors. Routes without `@Endpoint` pass through untouched.
  */
 @Injectable()
 export class EndpointGuard implements CanActivate {

@@ -3,7 +3,7 @@ import { Column, Entity, Index } from 'typeorm';
 
 const timestamp = new TimestampTransformer();
 
-/** `password_resets`, en el shard del usuario. */
+/** `password_resets`, in the user's shard. */
 @Entity({ name: 'password_resets' })
 @Index('password_resets_user_idx', ['userId'])
 export class PasswordResetEntity extends VersionedEntity {

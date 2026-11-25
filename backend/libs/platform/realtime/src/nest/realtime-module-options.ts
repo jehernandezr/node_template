@@ -4,17 +4,17 @@ import type { PresenceTracker } from '../presence/presence-tracker.js';
 import type { RealtimeStream } from '../stream/realtime-stream.js';
 
 export interface RealtimeModuleOptions {
-  /** Ruta `GET` de la transmisión SSE, por ejemplo `/v1/notifications/stream`. */
+  /** `GET` route of the SSE stream, for example `/v1/notifications/stream`. */
   readonly ssePath: string;
-  /** Namespace de Socket.IO, por ejemplo `/notifications`. */
+  /** Socket.IO namespace, for example `/notifications`. */
   readonly socketNamespace: string;
-  /** Lo provee otro módulo global, como `ValkeyRealtimeStream`. Por defecto `InMemoryRealtimeStream`, válido solo con una instancia. */
+  /** Provided by another global module, such as `ValkeyRealtimeStream`. Defaults to `InMemoryRealtimeStream`, valid only with a single instance. */
   readonly stream?: Type<RealtimeStream>;
-  /** Por defecto `InMemoryPresenceTracker`, válido solo con una instancia. */
+  /** Defaults to `InMemoryPresenceTracker`, valid only with a single instance. */
   readonly presence?: Type<PresenceTracker>;
   /**
-   * Si este proceso atiende conexiones. Sin transportes el módulo solo publica: así lo monta el servicio que
-   * decide qué enviar cuando otro proceso (`apps/realtime`) atiende las conexiones.
+   * Whether this process serves connections. Without transports the module only publishes: that is how the service that
+   * decides what to send mounts it when another process (`apps/realtime`) serves the connections.
    */
   readonly serveConnections: (config: AppConfig) => boolean;
 }

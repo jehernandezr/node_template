@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { PersistenceModuleOptions } from '../model/persistence-module-options.js';
 
-/** Opciones de `PersistenceModule.forRootAsync`, sin los adaptadores. */
+/** Options of `PersistenceModule.forRootAsync`, without the adapters. */
 export type PersistenceModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<PersistenceModuleOptions>;
 

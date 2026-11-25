@@ -18,13 +18,13 @@ import { PlacementMapper } from './placement.mapper.js';
 import { PlacementValidator } from './placement.validator.js';
 
 /**
- * Adaptador TypeORM del `DirectoryStore` y el `DirectoryWriter` de `@platform/sharding`, sobre las tablas
- * `shard_directory`, `shard_instances` y `shard_locks` del catálogo.
+ * TypeORM adapter of the `DirectoryStore` and `DirectoryWriter` of `@platform/sharding`, on the catalog tables
+ * `shard_directory`, `shard_instances` and `shard_locks`.
  *
- * `putPlacement` es la escritura de las sagas de alta y traslado: compare-and-set por versión y exclusividad de shards
- * en una sola transacción. Toma con `SELECT ... FOR UPDATE` la fila de cada shard destino en `shard_locks` (creándola
- * si falta, en orden para evitar interbloqueos) y la del tenant; con los candados puestos relee el directorio y
- * comprueba versión y exclusividad. `setPlacementIfNewer` es la escritura simple por versión, un solo
+ * `putPlacement` is the write of the onboarding and move sagas: compare-and-set by version and shard exclusivity
+ * in a single transaction. It takes with `SELECT ... FOR UPDATE` the row of each target shard in `shard_locks` (creating it
+ * if missing, in order to avoid deadlocks) and the tenant row; with the locks held it rereads the directory and
+ * checks version and exclusivity. `setPlacementIfNewer` is the simple write by version, a single
  * `INSERT ... ON CONFLICT DO UPDATE ... WHERE version < EXCLUDED.version`.
  */
 export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
@@ -55,7 +55,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     return entity === null ? undefined : PlacementMapper.toPlacement(entity);
   }
 
-  /** Siempre del primario: la política de ubicación no tolera datos atrasados. */
+  /** Always from the primary: the placement policy does not tolerate stale data. */
   async listPlacements(region: string): Promise<readonly TenantPlacement[]> {
     if (typeof region !== 'string' || region.length === 0) {
       throw PersistenceError.invalidConfiguration(
@@ -73,8 +73,8 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
   }
 
   /**
-   * @throws ShardingError `InvalidConfiguration` cuando la versión nueva no es `expectedVersion + 1` (o 1 para un
-   * tenant nuevo).
+   * @throws ShardingError `InvalidConfiguration` when the new version is not `expectedVersion + 1` (or 1 for a
+   * new tenant).
    */
   async putPlacement(
     placement: TenantPlacement,
@@ -129,7 +129,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
       : DirectoryWriteResult.VersionConflict;
   }
 
-  /** Shards lógicos registrados, ordenados por id. */
+  /** Returns the registered logical shards, ordered by id. */
   async listShards(): Promise<string[]> {
     const entities = await this.read((manager) =>
       manager.find(ShardInstanceEntity, { order: { logicalShard: 'ASC' } }),
@@ -137,7 +137,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     return entities.map((entity) => entity.logicalShard);
   }
 
-  /** Shards lógicos con su instancia, ordenados por id. Es lo que lista `DirectoryShardLister`. */
+  /** Returns the logical shards with their instance, ordered by id. This is what `DirectoryShardLister` lists. */
   async listShardLocations(): Promise<readonly ShardLocation[]> {
     const entities = await this.read((manager) =>
       manager.find(ShardInstanceEntity, { order: { logicalShard: 'ASC' } }),
@@ -148,12 +148,12 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     }));
   }
 
-  /** Escribe la ubicación si es nueva o su versión es mayor que la guardada. Devuelve `true` si escribió. */
+  /** Writes the placement if it is new or its version is greater than the stored one. Returns `true` if it wrote. */
   async setPlacementIfNewer(placement: TenantPlacement): Promise<boolean> {
     PlacementValidator.assert(placement);
     return this.catalog.write(async (manager) => {
-      // orUpdate de TypeORM no admite el WHERE de versión, y Postgres no devuelve fila si la versión guardada no es
-      // menor: por eso el INSERT va como SQL y la respuesta dice si la fila se escribió.
+      // TypeORM's orUpdate does not accept the version WHERE, and Postgres returns no row if the stored version is not
+      // lower: that is why the INSERT goes as SQL and the response tells whether the row was written.
       const rows: { version: string | number }[] = await manager.query(
         'INSERT INTO shard_directory (tenant_id, region, shard_group, status, version, dedicated, updated_at) ' +
           'VALUES ($1, $2, $3, $4, $5, $6, $7) ' +
@@ -174,7 +174,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     });
   }
 
-  /** Registra o mueve un shard lógico a una instancia física. */
+  /** Registers or moves a logical shard to a physical instance. */
   async setInstance(logicalShard: string, instance: string): Promise<void> {
     if (typeof logicalShard !== 'string' || logicalShard.length === 0) {
       throw PersistenceError.invalidConfiguration(
@@ -205,7 +205,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
       : this.catalog.read(fn);
   }
 
-  /** Toma el candado de cada shard, en orden y sin repetidos, hasta el fin de la transacción. */
+  /** Takes the lock of each shard, in order and without duplicates, until the end of the transaction. */
   private async lockShards(
     manager: EntityManager,
     shards: readonly string[],
@@ -229,8 +229,8 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
   }
 
   /**
-   * Otro tenant ocupa un shard del grupo: si este placement es dedicado, cualquier otro tenant; si no, solo un tenant
-   * dedicado. El QueryBuilder no tiene el operador de solape de arreglos.
+   * Whether another tenant occupies a shard of the group: if this placement is dedicated, any other tenant; otherwise, only a
+   * dedicated tenant. The QueryBuilder does not have the array overlap operator.
    */
   private async isShardTaken(
     manager: EntityManager,
@@ -243,7 +243,7 @@ export class TypeOrmDirectoryStore implements DirectoryStore, DirectoryWriter {
     return taken.length > 0;
   }
 
-  /** Inserta si no hay versión esperada, o actualiza solo si la versión guardada sigue siendo la esperada. */
+  /** Inserts if there is no expected version, or updates only if the stored version is still the expected one. */
   private async writeGuarded(
     manager: EntityManager,
     placement: TenantPlacement,

@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
-/** `tenant_lookup`, en el catálogo: un slug por plataforma. */
+/** `tenant_lookup`, in the catalog: one slug per platform. */
 @Entity({ name: 'tenant_lookup' })
 export class TenantLookupEntity {
   @PrimaryColumn({ type: 'text', name: 'slug' })

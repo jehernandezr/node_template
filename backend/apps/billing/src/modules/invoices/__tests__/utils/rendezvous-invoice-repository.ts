@@ -4,9 +4,9 @@ import type { InvoicePageRequest } from '../../domain/invoice.repository.js';
 import type { Invoice } from '../../domain/invoice.js';
 
 /**
- * `InvoiceRepository` real que, en `any`, hace esperar a cada transacción hasta que lleguen `parties` o pase
- * `patienceMs`. Así dos pagos simultáneos leen las facturas fallidas a la vez, el orden exacto del write skew, salvo que
- * un candado deje pasar a una sola: entonces la primera sigue sola al vencer la paciencia.
+ * Real `InvoiceRepository` that, in `any`, makes each transaction wait until `parties` arrive or
+ * `patienceMs` elapses. This way two concurrent payments read the failed invoices at the same time, the exact write skew
+ * ordering, unless a lock lets only one through: then the first continues alone when the patience runs out.
  */
 export class RendezvousInvoiceRepository extends InvoiceRepository {
   private arrived = 0;
@@ -23,27 +23,27 @@ export class RendezvousInvoiceRepository extends InvoiceRepository {
     super();
   }
 
-  /** Inserta en el repositorio real. */
+  /** Inserts into the real repository. */
   insert(invoice: Invoice): Promise<void> {
     return this.inner.insert(invoice);
   }
 
-  /** Busca en el repositorio real. */
+  /** Finds in the real repository. */
   find(invoiceId: string): Promise<Invoice | undefined> {
     return this.inner.find(invoiceId);
   }
 
-  /** Actualiza en el repositorio real. */
+  /** Updates in the real repository. */
   update(invoice: Invoice): Promise<void> {
     return this.inner.update(invoice);
   }
 
-  /** Pagina en el repositorio real. */
+  /** Pages through the real repository. */
   page(request: InvoicePageRequest): Promise<readonly Invoice[]> {
     return this.inner.page(request);
   }
 
-  /** Espera a las demás transacciones, o a que se acabe la paciencia, y consulta el repositorio real. */
+  /** Waits for the other transactions, or for the patience to run out, and queries the real repository. */
   async any(status?: InvoiceStatus): Promise<boolean> {
     this.arrived += 1;
     if (this.arrived >= this.parties) {

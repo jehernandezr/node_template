@@ -2,15 +2,15 @@ import type { CursorCodec } from './cursor-codec.js';
 import { CriteriaValidator } from './criteria-validator.js';
 import type { Page } from './page.js';
 
-/** Arma una página de resultados y el cursor siguiente con el `CursorCodec` que recibe. */
+/** Builds a page of results and the next cursor with the `CursorCodec` it receives. */
 export class PageBuilder {
   constructor(private readonly codec: CursorCodec) {}
 
   /**
-   * Aplica el límite original a las filas leídas con `limit + 1`: una fila de más significa que hay otra página,
-   * se descarta y el cursor apunta a la última fila que se queda.
-   * @param getSortValues valores de los campos de `orderBy` distintos del id, en el mismo orden. No pueden ser nulos.
-   * @throws CriteriaError `InvalidLimit` si `limit` no es un entero entre 1 y `MAX_LIMIT`.
+   * Applies the original limit to rows read with `limit + 1`: an extra row means there is another page,
+   * it is discarded and the cursor points to the last row that stays.
+   * @param getSortValues values of the `orderBy` fields other than the id, in the same order. Cannot be null.
+   * @throws CriteriaError `InvalidLimit` if `limit` is not an integer between 1 and `MAX_LIMIT`.
    */
   build<T>(
     rows: readonly T[],

@@ -1,9 +1,9 @@
-/** Datos con los que `UsersFacade.register` crea un usuario y su credencial inicial. */
+/** Data with which `UsersFacade.register` creates a user and their initial credential. */
 export interface RegisterUserInput {
   readonly email: string;
   readonly password: string;
   readonly displayName: string;
   readonly locale: string;
-  /** Tenant de origen: el tenant compartido de la región o el que invita. */
+  /** Home tenant: the region's shared tenant or the inviting one. */
   readonly homeTenantId: string;
 }

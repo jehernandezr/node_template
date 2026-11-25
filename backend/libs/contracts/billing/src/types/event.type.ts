@@ -2,19 +2,19 @@ import type { MoneyAmount } from '@contracts/platform';
 import type { PlanFeature } from '@contracts/identity';
 import type { UsageMetric } from '../enums/billing.enum.js';
 
-/** Periodo de facturación: fechas de calendario `AAAA-MM-DD`. */
+/** Billing period: calendar dates `YYYY-MM-DD`. */
 export interface BillingPeriod {
   start: string;
   end: string;
 }
 
-/** Límite de una métrica en un plan. */
+/** Limit of a metric in a plan. */
 export interface QuotaLimit {
   metric: UsageMetric;
   limit: number;
 }
 
-/** Uso de una métrica en una ventana de tiempo, con su llave de idempotencia. */
+/** Usage of a metric in a time window, with its idempotency key. */
 export interface UsageRecord {
   metric: UsageMetric;
   quantity: number;
@@ -22,7 +22,7 @@ export interface UsageRecord {
   key: string;
 }
 
-/** Comando que lleva un lote de registros de uso de un tenant. */
+/** Command that carries a batch of usage records of a tenant. */
 export interface RecordUsagePayload {
   tenantId: string;
   records: UsageRecord[];
@@ -31,7 +31,7 @@ export interface RecordUsagePayload {
 export interface SubscriptionChangedPayload {
   tenantId: string;
   subscriptionId: string;
-  /** Plan anterior; null en la primera suscripción. */
+  /** Previous plan; null on the first subscription. */
   previousPlanId: string | null;
   planId: string;
   changedAt: string;
@@ -49,7 +49,7 @@ export interface SubscriptionReactivatedPayload {
   reactivatedAt: string;
 }
 
-/** Funcionalidades y cuotas vigentes de un tenant después de un cambio de plan o de estado. */
+/** Current features and quotas of a tenant after a plan or status change. */
 export interface EntitlementsChangedPayload {
   tenantId: string;
   features: PlanFeature[];
@@ -79,7 +79,7 @@ export interface InvoiceFailedPayload {
   invoiceId: string;
   number: string;
   total: MoneyAmount;
-  /** Intentos de cobro hechos hasta el fallo. */
+  /** Payment attempts made up to the failure. */
   attempts: number;
   failedAt: string;
 }

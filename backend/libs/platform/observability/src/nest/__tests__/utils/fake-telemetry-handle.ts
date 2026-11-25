@@ -1,7 +1,7 @@
 import { NoopMetrics } from '../../../metrics/noop-metrics.js';
 import { TelemetryHandle } from '../../../telemetry/telemetry-handle.js';
 
-/** Telemetría sin SDK que cuenta los cierres y los vaciados, para pruebas. */
+/** SDK-less telemetry that counts shutdowns and flushes, for tests. */
 export class FakeTelemetryHandle extends TelemetryHandle {
   readonly metrics = new NoopMetrics();
   forceFlushCalls = 0;

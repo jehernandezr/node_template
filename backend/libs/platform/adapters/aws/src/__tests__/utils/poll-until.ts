@@ -1,11 +1,11 @@
-/** Consumidor que se puede sondear con una vuelta de long polling. */
+/** Consumer that can be polled with one round of long polling. */
 export interface SingleBatchPoller {
   pollOnce(): Promise<unknown>;
 }
 
 /**
- * Repite `pollOnce` hasta que se cumpla la condición. El número de vueltas
- * está acotado: si la entrega no llega, la prueba falla en vez de colgarse.
+ * Repeats `pollOnce` until the condition holds. The number of rounds
+ * is bounded: if the delivery does not arrive, the test fails instead of hanging.
  */
 export class PollUntil {
   static readonly DEFAULT_MAX_POLLS = 20;

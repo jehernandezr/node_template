@@ -1,17 +1,17 @@
 import { Pagination } from '@contracts/platform';
 
-/** Posición de keyset: los valores de orden de la última fila (sin el id) y su id. */
+/** Keyset position: the sort values of the last row (without the id) and its id. */
 export interface Cursor {
   readonly values: readonly unknown[];
   readonly id: string;
 }
 
-/** Valores que puede llevar un cursor. El NULL todavía no se admite. */
+/** Values a cursor can carry. NULL is not supported yet. */
 export type CursorValue = string | number | boolean;
 
-/** Token más largo que acepta el decodificador y produce el codificador. Coincide con el contrato. */
+/** Longest token the decoder accepts and the encoder produces. Matches the contract. */
 export const MAX_CURSOR_LENGTH = Pagination.maxCursorLength;
-/** Número máximo de valores de orden en un cursor. */
+/** Maximum number of sort values in a cursor. */
 export const MAX_CURSOR_VALUES = 16;
-/** Longitud máxima del id del cursor y de cada valor de texto. */
+/** Maximum length of the cursor id and of each text value. */
 export const MAX_CURSOR_TEXT_LENGTH = 512;

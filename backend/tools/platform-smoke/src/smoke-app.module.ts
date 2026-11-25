@@ -60,8 +60,8 @@ import { SmokeKernelModule } from './smoke-kernel.module.js';
 import type { SmokeEnvironment } from './smoke-environment.js';
 
 /**
- * Composición de referencia de un servicio: el `AppModule` de la guía de cableado con todos los módulos de
- * librería, compilado. Lo arma `register` con el entorno que valida la configuración.
+ * Reference composition of a service: the `AppModule` from the wiring guide with all the library
+ * modules, compiled. `register` assembles it with the environment that validates the configuration.
  */
 @Module({})
 export class SmokeAppModule {

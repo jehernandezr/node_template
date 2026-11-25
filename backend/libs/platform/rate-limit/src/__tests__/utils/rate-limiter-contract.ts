@@ -9,8 +9,8 @@ const KEY = 'k';
 const RULE: RateLimitRule = { name: 'contract.rule', limit: 3, windowMs: 1000 };
 
 /**
- * Pruebas que todo {@link RateLimiter} debe pasar. Los valores salen de la
- * ventana deslizante de referencia; no se recalculan aquí.
+ * Tests that every {@link RateLimiter} must pass. The values come from the
+ * reference sliding window; they are not recomputed here.
  */
 export function runRateLimiterContract(
   name: string,
@@ -125,7 +125,7 @@ export function runRateLimiterContract(
   });
 }
 
-/** Consume `times` unidades de costo 1 y devuelve la última respuesta. */
+/** Consumes `times` units of cost 1 and returns the last response. */
 async function consumeTimes(
   limiter: RateLimiter,
   times: number,

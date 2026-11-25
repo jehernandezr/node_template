@@ -5,7 +5,7 @@ import {
 } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Evento que publica la sonda del runtime; su tópico lo declara el contrato. */
+/** Event the runtime probe publishes; its topic is declared by the contract. */
 export const RuntimeProbeRecorded = defineEvent({
   type: 'runtime-probe.probe.recorded.v1',
   payload: z.object({ probeId: z.string() }),

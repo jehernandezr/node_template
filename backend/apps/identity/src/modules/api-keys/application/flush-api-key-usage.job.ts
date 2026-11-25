@@ -9,7 +9,7 @@ import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes
 import { ApiKeyRepository } from '../domain/api-key-store.js';
 import { ApiKeyUsageBuffer } from '../domain/api-key-usage-buffer.js';
 
-/** Vuelca a cada shard el último uso de las API keys que acumuló el buffer. */
+/** Flushes to each shard the last use of the API keys accumulated in the buffer. */
 @Injectable()
 export class FlushApiKeyUsageJob extends ScheduledJob {
   private static readonly EVERY_MS = 60_000;

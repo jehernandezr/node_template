@@ -15,7 +15,7 @@ import type {
   ResilienceModuleOptions,
 } from './resilience-module-options.js';
 
-/** Proveedores del módulo de resiliencia. */
+/** Providers of the resilience module. */
 export class ResilienceProviders {
   static build(extras: ResilienceModuleExtras): Provider[] {
     const providers: Provider[] = [

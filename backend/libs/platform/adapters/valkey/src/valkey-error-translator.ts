@@ -3,14 +3,14 @@ import { FailureRule } from '@platform/primitives';
 import { ValkeyCommandError } from './valkey-command.error.js';
 
 /**
- * Traduce los errores del cliente iovalkey. Como `FailureRule` le dice al
- * `FailureClassifier` cómo falla un error de respuesta del servidor; como
- * traductor envuelve cualquier error del cliente en un `ValkeyCommandError`.
+ * Translates iovalkey client errors. As a `FailureRule` it tells the
+ * `FailureClassifier` how a server reply error fails; as a
+ * translator it wraps any client error in a `ValkeyCommandError`.
  */
 export class ValkeyErrorTranslator extends FailureRule {
   /**
-   * Respuestas de error que un intento posterior puede arreglar: el servidor
-   * está cargando, ocupado, en failover o en solo lectura durante un cambio.
+   * Error replies that a later attempt can fix: the server
+   * is loading, busy, in failover or read-only during a switch.
    */
   private static readonly TRANSIENT_REPLIES: ReadonlySet<string> = new Set([
     'LOADING',
@@ -22,19 +22,19 @@ export class ValkeyErrorTranslator extends FailureRule {
     'NOREPLICAS',
   ]);
 
-  /** Mensaje que usa iovalkey cuando vence `commandTimeout`. */
+  /** Message iovalkey uses when `commandTimeout` expires. */
   private static readonly COMMAND_TIMEOUT_MESSAGE = 'Command timed out';
 
-  /** Solo opina de un error de respuesta del servidor; el resto lo deja al clasificador. */
+  /** Only judges a server reply error; the rest is left to the classifier. */
   classify(error: object): FailureKind | undefined {
     return this.isReplyError(error) ? this.kindOf(error) : undefined;
   }
 
   /**
-   * Cómo falla un error del cliente:
-   * - una respuesta de error es pasajera solo con los prefijos de un servidor cargando, ocupado o en failover;
-   * - el `commandTimeout` de iovalkey es un tiempo agotado;
-   * - cualquier otra cosa (conexión rechazada o cerrada, reintentos agotados, cola sin conexión) es pasajera.
+   * Returns how a client error fails:
+   * - an error reply is transient only with the prefixes of a server that is loading, busy or in failover;
+   * - the iovalkey `commandTimeout` is a timeout;
+   * - anything else (connection refused or closed, retries exhausted, queue without connection) is transient.
    */
   kindOf(error: unknown): FailureKind {
     if (this.isReplyError(error)) {
@@ -52,7 +52,7 @@ export class ValkeyErrorTranslator extends FailureRule {
     return FailureKind.Transient;
   }
 
-  /** Envuelve un error del cliente en un {@link ValkeyCommandError}. Los errores de la plataforma pasan sin cambios. */
+  /** Wraps a client error in a {@link ValkeyCommandError}. Platform errors pass through unchanged. */
   translate(error: unknown, command: string): PlatformError {
     if (error instanceof PlatformError) {
       return error;
@@ -60,7 +60,7 @@ export class ValkeyErrorTranslator extends FailureRule {
     return new ValkeyCommandError(command, this.kindOf(error), error);
   }
 
-  /** `true` para una respuesta de error del servidor (no una falla de conexión o del cliente). */
+  /** `true` for a server error reply (not a connection or client failure). */
   isReplyError(error: unknown): boolean {
     return (
       typeof error === 'object' &&
@@ -69,7 +69,7 @@ export class ValkeyErrorTranslator extends FailureRule {
     );
   }
 
-  /** Primera palabra de una respuesta de error, como `WRONGTYPE` o `NOSCRIPT`. */
+  /** Returns the first word of an error reply, such as `WRONGTYPE` or `NOSCRIPT`. */
   replyPrefix(error: unknown): string {
     return this.messageOf(error).split(' ', 1)[0] ?? '';
   }

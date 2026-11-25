@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Catálogo de planes y sus cuotas por métrica, compartido por todos los tenants. */
+/** Plan catalog and its quotas per metric, shared by all tenants. */
 export class CreatePlans1796200100000 implements MigrationInterface {
   readonly name = 'CreatePlans1796200100000';
 

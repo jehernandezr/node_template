@@ -1,7 +1,7 @@
 import type { TokenAudience } from '@contracts/identity';
 
-/** Opciones de `AccessTokenVerifier.verify`. */
+/** Options of `AccessTokenVerifier.verify`. */
 export interface VerifyOptions {
-  /** Destinatario que debe nombrar el claim `aud`. */
+  /** Audience that the `aud` claim must name. */
   readonly audience: TokenAudience;
 }

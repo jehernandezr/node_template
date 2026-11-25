@@ -1,5 +1,5 @@
-/** Mantenimiento de las bandejas de todos los shards. */
+/** Maintenance of the inboxes of all shards. */
 export abstract class InboxMaintenance {
-  /** Borra las notificaciones leídas antes de `cutoff` y devuelve cuántas. */
+  /** Deletes the notifications read before `cutoff` and returns how many. */
   abstract purgeReadBefore(cutoff: Date): Promise<number>;
 }

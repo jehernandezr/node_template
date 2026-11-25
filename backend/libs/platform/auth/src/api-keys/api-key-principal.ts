@@ -1,13 +1,13 @@
 import type { Permission } from '@contracts/identity';
 import type { ApiKeyEnvironment } from './api-key-environment.enum.js';
 
-/** A quién representa una API key válida. Los instantes son epoch en segundos. */
+/** Whom a valid API key represents. Instants are epoch in seconds. */
 export interface ApiKeyPrincipal {
   readonly apiKeyId: string;
   readonly serviceAccountId: string;
   readonly tenantId: string;
   readonly environment: ApiKeyEnvironment;
   readonly permissions: readonly Permission[];
-  /** Sin valor, la key no vence. */
+  /** Without a value, the key does not expire. */
   readonly expiresAt?: number;
 }

@@ -4,19 +4,19 @@ import type { AwsErrorTranslator } from './aws-error-translator.js';
 import { AwsOperation } from './aws-operation.enum.js';
 import type { AwsSettings } from './aws.config.js';
 
-/** Lo que `AwsMessagingNames` lee de la configuración. */
+/** What `AwsMessagingNames` reads from the configuration. */
 export type AwsNamingSettings = Pick<
   AwsSettings,
   'AWS_REGION' | 'AWS_ACCOUNT_ID' | 'MESSAGING_NAME_PREFIX'
 >;
 
 /**
- * Traduce los nombres lógicos de la topología a los físicos que crea Terraform
- * (`modules/messaging`): `<prefijo>-<nombre>[.fifo]` y `<prefijo>-<nombre>-dlq[.fifo]`.
- * Resuelve las URLs de las colas con `GetQueueUrl` y las guarda.
+ * Translates the logical topology names to the physical ones Terraform creates
+ * (`modules/messaging`): `<prefix>-<name>[.fifo]` and `<prefix>-<name>-dlq[.fifo]`.
+ * Resolves the queue URLs with `GetQueueUrl` and caches them.
  */
 export class AwsMessagingNames {
-  /** Sufijo obligatorio de tópicos y colas FIFO. */
+  /** Required suffix of FIFO topics and queues. */
   static readonly FIFO_SUFFIX = '.fifo';
 
   private readonly urls = new Map<string, Promise<string>>();
@@ -44,7 +44,7 @@ export class AwsMessagingNames {
     return `arn:${this.partition(region)}:sns:${region}:${account}:${this.topicName(name, fifo)}`;
   }
 
-  /** URL de una cola por su nombre físico. Un fallo no queda en caché. */
+  /** URL of a queue by its physical name. A failure is not cached. */
   queueUrl(physicalName: string): Promise<string> {
     let url = this.urls.get(physicalName);
     if (!url) {
@@ -70,7 +70,7 @@ export class AwsMessagingNames {
     }
   }
 
-  /** Partición del ARN según la región. */
+  /** ARN partition according to the region. */
   private partition(region: string): string {
     if (region.startsWith('cn-')) return 'aws-cn';
     if (region.startsWith('us-gov-')) return 'aws-us-gov';

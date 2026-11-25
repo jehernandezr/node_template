@@ -23,10 +23,10 @@ import { ValkeyAuthStateWriter } from '../valkey-auth-state-writer.js';
 import { ValkeySubscriberSource } from '../../valkey-subscriber-source.js';
 
 /**
- * Estado de autenticación contra un Valkey real, con los dos usuarios de la ACL de
- * Terraform. Sin Docker se saltan; con `INTEGRATION_TESTS=require` la falta de
- * Docker es un error. El reloj es el real del sistema: el TTL y el puntaje del índice
- * se evalúan contra el reloj del servidor.
+ * Authentication state against a real Valkey, with the two users of the Terraform
+ * ACL. Without Docker they are skipped; with `INTEGRATION_TESTS=require` missing
+ * Docker is an error. The clock is the real system clock: the TTL and the index score
+ * are evaluated against the server clock.
  */
 jest.setTimeout(60_000);
 

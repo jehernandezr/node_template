@@ -1,10 +1,10 @@
-/** Estado de un intento guardado en la bitácora de pasos. */
+/** Status of an attempt saved in the step journal. */
 export enum StepStatus {
-  /** Se escribe antes de la llamada; el resultado aún no se conoce. */
+  /** Written before the call; the result is not known yet. */
   Dispatched = 'dispatched',
   Succeeded = 'succeeded',
-  /** Error de negocio definitivo: la operación no se aplicó. */
+  /** Definitive business error: the operation was not applied. */
   Failed = 'failed',
-  /** Falla transitoria, resultado desconocido o violación de protocolo: la operación pudo aplicarse. */
+  /** Transient failure, unknown result or protocol violation: the operation may have applied. */
   Uncertain = 'uncertain',
 }

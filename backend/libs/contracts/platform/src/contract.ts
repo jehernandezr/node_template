@@ -45,11 +45,11 @@ import {
 } from './schemas/tenant-directory.schema.js';
 import { UserRefSchema } from './schemas/user-ref.schema.js';
 
-/** Piezas transversales que usan todos los contratos y clientes. */
+/** Cross-cutting pieces used by every contract and client. */
 export const platformContract = defineServiceContract({
   service: 'platform',
   description:
-    'Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, directorio y traslado de tenants y errores.',
+    'Contract kit and cross-cutting pieces: identifiers, pagination, amounts, dates, user references, tenant directory and move, and errors.',
   enums: {
     PlatformErrorCode,
     ErrorAudience,

@@ -7,7 +7,7 @@ import { TenantMoveLog } from '../../domain/tenant-move-log.js';
 import { TenantMoveStatus } from '../../domain/tenant-move-status.enum.js';
 import { TenantMoveEntity } from './entities/tenant-move.entity.js';
 
-/** `TenantMoveLog` sobre `tenant_moves` del catálogo. Cada cambio de etapa solo avanza desde la anterior. */
+/** `TenantMoveLog` over `tenant_moves` in the catalog. Each stage change only advances from the previous one. */
 @Injectable()
 export class TypeOrmTenantMoveLog
   extends CatalogTableRepository
@@ -18,7 +18,7 @@ export class TypeOrmTenantMoveLog
   }
 
   async start(move: TenantMove): Promise<boolean> {
-    // El índice único de los traslados en curso decide entre dos lanzamientos a la vez.
+    // The unique index of moves in progress decides between two simultaneous launches.
     const inserted: unknown[] = await this.write((manager) =>
       manager.query(
         'INSERT INTO "tenant_moves" ("move_id", "tenant_id", "target_group", "target_region", "saga_id", "status", "started_at") ' +

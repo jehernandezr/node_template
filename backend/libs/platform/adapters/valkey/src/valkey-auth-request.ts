@@ -1,13 +1,13 @@
 /**
- * Identidad que un token autentica. Sale de la configuración de Valkey
- * (`VALKEY_USER`, `VALKEY_CACHE_NAME`, `VALKEY_AUTH`), así el proveedor del
- * token no repite esas variables.
+ * Identity that a token authenticates. It comes from the Valkey configuration
+ * (`VALKEY_USER`, `VALKEY_CACHE_NAME`, `VALKEY_AUTH`), so the token
+ * provider does not repeat those variables.
  */
 export interface ValkeyAuthRequest {
-  /** Usuario de la ACL; con IAM su id y su nombre coinciden. */
+  /** ACL user; with IAM its id and its name match. */
   readonly userId: string;
-  /** Nombre de la caché (no su endpoint): el host que firma el token. */
+  /** Cache name (not its endpoint): the host that signs the token. */
   readonly cacheName: string;
-  /** La caché es serverless (`VALKEY_AUTH=iam-serverless`). */
+  /** Whether the cache is serverless (`VALKEY_AUTH=iam-serverless`). */
   readonly serverless: boolean;
 }

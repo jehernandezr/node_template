@@ -5,7 +5,7 @@ import type { HandlerResult } from '../../../server/handler-result.js';
 import type { CallMeta } from '../../../transport/call-meta.js';
 import { E2eOperations } from './e2e-operations.js';
 
-/** Handlers del servidor del flujo de extremo a extremo, con contadores públicos para verificarlo. */
+/** Server handlers of the end-to-end flow, with public counters to verify it. */
 @Injectable()
 export class GreeterHandlers {
   greetCalls = 0;

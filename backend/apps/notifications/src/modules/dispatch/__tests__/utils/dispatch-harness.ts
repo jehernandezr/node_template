@@ -26,7 +26,7 @@ import {
   StaticRecipients,
 } from './dispatch-fakes.js';
 
-/** Las entregas pendientes o fallidas de la memoria cuyo próximo intento ya llegó, como las vería el job. */
+/** The pending or failed in-memory deliveries whose next attempt is due, as the job would see them. */
 class InMemoryFailedDeliveries extends FailedDeliveries {
   constructor(private readonly deliveries: InMemoryDeliveries) {
     super();
@@ -46,7 +46,7 @@ class InMemoryFailedDeliveries extends FailedDeliveries {
   }
 }
 
-/** `NotifyUser` y su job de reintentos sobre fakes, con reloj e ids deterministas. */
+/** `NotifyUser` and its retry job over fakes, with deterministic clock and ids. */
 export class DispatchHarness {
   static readonly TENANT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
   static readonly ANA: UserRef = {

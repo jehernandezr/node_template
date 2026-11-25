@@ -1,6 +1,6 @@
 import { SmokeOrderStatus } from './smoke-order-status.enum.js';
 
-/** Agregado de pedido. `version` es 0 mientras no se ha guardado. */
+/** Order aggregate. `version` is 0 while it has not been saved. */
 export class SmokeOrder {
   constructor(
     readonly id: string,

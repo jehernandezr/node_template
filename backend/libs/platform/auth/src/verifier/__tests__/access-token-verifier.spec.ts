@@ -18,11 +18,11 @@ import { VerifierHarness } from './utils/verifier-harness.js';
 const USER_ID = VerifierHarness.USER_ID;
 const TENANT_ID = VerifierHarness.TENANT_ID;
 const SESSION_ID = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f04';
-/** `jti` del access token de prueba. */
+/** `jti` of the test access token. */
 const JTI = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f05';
 const UNAUTHENTICATED = PlatformErrorCode.AuthUnauthenticated;
 
-/** Fuente de claves que simula un JWKS caído. */
+/** Key source that simulates a down JWKS. */
 class FailingKeySource extends JwksKeySource {
   async keyFor(): Promise<KeyObject | undefined> {
     throw new Error('jwks down');
@@ -46,7 +46,7 @@ const setVersions = async (
   await harness.state.setPermissionVersion(TENANT_ID, USER_ID, user);
 };
 
-/** Token con alg HS256 firmado con la clave pública PEM, el ataque clásico de confusión de algoritmo. */
+/** Token with alg HS256 signed with the PEM public key, the classic algorithm confusion attack. */
 const hs256Token = (harness: VerifierHarness): string => {
   const pem = harness.keyPair.publicKey.export({
     type: 'spki',
@@ -63,7 +63,7 @@ const hs256Token = (harness: VerifierHarness): string => {
   return `${signingInput}.${signature}`;
 };
 
-/** Token con el payload de otro sub pegado sobre la firma original, que ya no le corresponde. */
+/** Token with another sub's payload pasted over the original signature, which no longer matches it. */
 const payloadSwapped = (harness: VerifierHarness, sub: string): string => {
   const [header, , signature] = harness.token().split('.');
   const [, payload] = harness

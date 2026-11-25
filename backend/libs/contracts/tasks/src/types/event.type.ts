@@ -1,7 +1,7 @@
 import type { UserRef } from '@contracts/platform';
 import type { TaskField, TaskStatus } from '../enums/tasks.enum.js';
 
-/** Se creó una tarea. */
+/** A task was created. */
 export interface TaskCreatedPayload {
   tenantId: string;
   taskId: string;
@@ -11,7 +11,7 @@ export interface TaskCreatedPayload {
   createdAt: string;
 }
 
-/** Se cambió una tarea. `actor` es quien la cambió y `createdBy` quien la creó. */
+/** A task was changed. `actor` is who changed it and `createdBy` who created it. */
 export interface TaskUpdatedPayload {
   tenantId: string;
   taskId: string;
@@ -24,7 +24,7 @@ export interface TaskUpdatedPayload {
   updatedAt: string;
 }
 
-/** Se borró una tarea (borrado lógico). */
+/** A task was deleted (soft delete). */
 export interface TaskDeletedPayload {
   tenantId: string;
   taskId: string;

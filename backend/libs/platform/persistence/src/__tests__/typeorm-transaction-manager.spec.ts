@@ -18,7 +18,7 @@ const SHARD_A = StubShardedLayer.SHARD_A;
 const SHARD_B = StubShardedLayer.SHARD_B;
 const TRACE_ID = '0193f1c2000070008000000000000001';
 
-/** `DataSource` que hace fallar el commit de cada runner que crea. */
+/** `DataSource` that makes the commit of each runner it creates fail. */
 class CommitFailingDataSource extends StubDataSource {
   override createQueryRunner(mode: ReplicationMode = 'master'): QueryRunner {
     const runner = super.createQueryRunner(mode);
@@ -39,7 +39,7 @@ class CommitFailingFactory extends DataSourceFactory {
   }
 }
 
-/** Las cuatro variables de sesión que la capa fija al abrir cada transacción del contexto de `asTenant`. */
+/** The four session variables that the layer sets when opening each transaction of the `asTenant` context. */
 function sessionCalls(tenantId: string): string[] {
   return [
     `query SELECT set_config($1, $2, true) ${JSON.stringify(['app.actor_id', 'stub-actor'])}`,

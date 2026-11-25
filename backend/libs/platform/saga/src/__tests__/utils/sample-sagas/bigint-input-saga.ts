@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { LOOSE_A } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Un paso cuya entrada no se puede guardar: un bigint, que JSON no tiene. */
+/** A step whose input cannot be stored: a bigint, which JSON does not have. */
 export class BigIntInputSaga extends SagaDefinition<SampleState> {
   readonly type = 'input-bigint';
 

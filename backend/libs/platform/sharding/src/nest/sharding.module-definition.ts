@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { ShardingModuleOptions } from './sharding-module-options.js';
 
-/** Opciones de `ShardingModule.forRootAsync`, sin los adaptadores. */
+/** Options of `ShardingModule.forRootAsync`, without the adapters. */
 export type ShardingModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<ShardingModuleOptions>;
 

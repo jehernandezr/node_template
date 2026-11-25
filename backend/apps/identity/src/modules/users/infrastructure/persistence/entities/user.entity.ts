@@ -3,7 +3,7 @@ import { Column, Entity, Index } from 'typeorm';
 
 const timestamp = new TimestampTransformer();
 
-/** `users`, en el shard del usuario. */
+/** `users`, in the user's shard. */
 @Entity({ name: 'users' })
 export class UserEntity extends VersionedEntity {
   @Column({ type: 'uuid', name: 'home_tenant_id', nullable: false })

@@ -16,7 +16,7 @@ import { UsersFacade } from '../../users/index.js';
 import { PasswordAcceptance } from './password-acceptance.js';
 import { PasswordVerifier } from './password-verifier.js';
 
-/** Cambia la contraseña de la sesión actual (pide step-up) y cierra las demás sesiones. */
+/** Changes the password of the current session (requires step-up) and closes the other sessions. */
 @Injectable()
 export class ChangePassword {
   constructor(

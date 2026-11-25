@@ -1,6 +1,6 @@
 import type { SagaDefinition } from './saga-definition.js';
 
-/** Clase concreta de una definición de saga, con el estado que arranca. */
+/** Concrete class of a saga definition, with the state it starts with. */
 export type SagaDefinitionClass<TState> = abstract new (
   ...args: never[]
 ) => SagaDefinition<TState>;

@@ -10,19 +10,19 @@ import {
   type TelemetrySettings,
 } from './telemetry.config.js';
 
-/** Arma `TelemetryOptions` desde las secciones de configuración. */
+/** Builds `TelemetryOptions` from the configuration sections. */
 export class TelemetryOptionsReader {
   private static readonly SCHEMA = serviceConfigSchema.extend(
     telemetryConfigSchema.shape,
   );
 
-  /** Valida `ServiceConfig` y `TelemetryConfig` contra `env` y arma las opciones. */
+  /** Validates `ServiceConfig` and `TelemetryConfig` against `env` and builds the options. */
   read(env: ConfigEnv): TelemetryOptions {
     const settings = new ConfigLoader(env).load(TelemetryOptionsReader.SCHEMA);
     return this.fromSettings(settings, settings);
   }
 
-  /** Arma las opciones desde valores ya validados. */
+  /** Builds the options from already validated values. */
   fromSettings(
     service: ServiceSettings,
     telemetry: TelemetrySettings,

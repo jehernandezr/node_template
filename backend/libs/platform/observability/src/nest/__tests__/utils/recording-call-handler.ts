@@ -3,7 +3,7 @@ import { of, type Observable } from 'rxjs';
 import type { RequestContextData } from '../../../context/request-context-data.js';
 import type { RequestContextStore } from '../../../context/request-context-store.js';
 
-/** Handler que emite el contexto de petición vigente en el momento de la llamada. */
+/** Handler that emits the request context current at the time of the call. */
 export class RecordingCallHandler implements CallHandler {
   constructor(private readonly store: RequestContextStore) {}
 

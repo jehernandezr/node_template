@@ -3,7 +3,7 @@ import { Column, Entity, Index } from 'typeorm';
 
 const timestamp = new TimestampTransformer();
 
-/** `sessions`, en el shard del usuario. */
+/** `sessions`, in the user's shard. */
 @Entity({ name: 'sessions' })
 @Index('sessions_user_active_idx', ['userId', 'lastRefreshAt'], {
   where: '"revoked_at" IS NULL',

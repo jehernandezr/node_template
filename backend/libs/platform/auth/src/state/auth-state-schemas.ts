@@ -8,9 +8,9 @@ import { z } from 'zod';
 import { ApiKeyEnvironment } from '../api-keys/api-key-environment.enum.js';
 
 /**
- * Forma con que se guardan en Valkey las épocas, los grants y los principales de
- * API key. Escritor y lector la comparten, así un cambio de forma rompe a los dos
- * a la vez y no en producción.
+ * Shape in which epochs, grants and API key principals are stored in Valkey.
+ * Writer and reader share it, so a shape change breaks both at once and not
+ * in production.
  */
 export class AuthStateSchemas {
   static readonly EPOCH = z.object({

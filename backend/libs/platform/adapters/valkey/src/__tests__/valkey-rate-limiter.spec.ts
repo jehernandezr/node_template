@@ -18,7 +18,7 @@ const RULE: RateLimitRule = {
   limit: 5,
   windowMs: 60_000,
 };
-// 250 ms dentro de la ventana 28 928 160 de un minuto.
+// 250 ms inside the one-minute window 28 928 160.
 const NOW = new Date('2025-01-01T00:00:00.250Z');
 
 function limiterWith(runner: ScriptedValkeyRunner): ValkeyRateLimiter {
@@ -46,7 +46,7 @@ describe('ValkeyRateLimiter', () => {
     );
     expect(result).toEqual({
       allowed: true,
-      // Los 2 de la ventana anterior pesan poco menos de 2 a 250 ms de 60 s, más 3 de la actual.
+      // The 2 from the previous window weigh just under 2 at 250 ms of 60 s, plus 3 from the current one.
       count: 5,
       remaining: 0,
       retryAfterMs: 0,
@@ -64,7 +64,7 @@ describe('ValkeyRateLimiter', () => {
       allowed: false,
       count: 5,
       remaining: 0,
-      // La ventana siguiente, cuando los 5 bajan a 4: 59 750 + 12 000 ms.
+      // The next window, when the 5 drop to 4: 59 750 + 12 000 ms.
       retryAfterMs: 71_750,
     });
   });

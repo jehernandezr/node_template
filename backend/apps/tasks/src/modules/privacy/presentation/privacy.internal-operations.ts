@@ -12,12 +12,12 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { TasksFacade } from '../../tasks/index.js';
 
-/** Operaciones internas sobre los datos de tasks de un usuario o un tenant. */
+/** Internal operations over the tasks data of a user or a tenant. */
 @Injectable()
 export class PrivacyInternalOperations {
   constructor(private readonly tasks: TasksFacade) {}
 
-  /** Repetirla no cambia nada: el usuario ya no figura en ninguna tarea. */
+  /** Repeating it changes nothing: the user no longer appears in any task. */
   @InternalHandler(EraseTasksUserDataOperation)
   async eraseUserData(
     input: EraseTasksUserInput,

@@ -11,8 +11,8 @@ import { Subscribe } from '@platform/messaging/nest';
 import { ApplyBillingStanding } from '../modules/tenants/index.js';
 
 /**
- * Cola `identity-billing`: la morosidad suspende al tenant, un pago lo reactiva y un cambio de plan
- * refresca las funcionalidades que viajan en el acceso de sus miembros.
+ * Queue `identity-billing`: delinquency suspends the tenant, a payment reactivates it and a plan change
+ * refreshes the features that travel in its members' access.
  */
 @Injectable()
 export class BillingStandingConsumer {

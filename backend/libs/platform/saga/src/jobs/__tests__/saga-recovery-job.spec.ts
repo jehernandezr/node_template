@@ -14,7 +14,7 @@ import { SagaInstanceBuilder } from '../../__tests__/utils/saga-instance-builder
 
 const NOW = SagaInstanceBuilder.NOW;
 
-/** Motor de prueba: responde según el id de la saga y cuenta las reanudaciones. */
+/** Test engine: responds based on the saga id and counts the resumes. */
 class ScriptedEngine {
   readonly resumed: string[] = [];
   private readonly outcomes = new Map<string, Error>();
@@ -33,7 +33,7 @@ class ScriptedEngine {
   }
 }
 
-/** Almacén que recuerda con qué límite se consultó. */
+/** Store that remembers which limit it was queried with. */
 class RecordingStore extends InMemorySagaStore {
   readonly limits: number[] = [];
 
@@ -46,7 +46,7 @@ class RecordingStore extends InMemorySagaStore {
   }
 }
 
-/** Ámbito que recuerda qué instancias recibió. */
+/** Scope that remembers which instances it received. */
 class RecordingScopes extends SagaScopes {
   readonly seen: string[] = [];
 
@@ -56,7 +56,7 @@ class RecordingScopes extends SagaScopes {
   }
 }
 
-/** Registro en memoria de los mensajes de error. */
+/** In-memory log of the error messages. */
 class RecordingLogger extends LoggerPort {
   readonly errors: { message: string; fields?: Record<string, unknown> }[] = [];
 
@@ -89,7 +89,7 @@ function settings(extra: { recoveryBatchSize?: number } = {}): SagaSettings {
   );
 }
 
-/** Una saga vencida que el job debe retomar, en `Running` con lease caducado. */
+/** An overdue saga that the job must resume, in `Running` with an expired lease. */
 function expiredSaga(id: string): SagaInstance {
   return SagaInstanceBuilder.aSaga()
     .with({

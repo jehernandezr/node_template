@@ -7,41 +7,41 @@ import type { OperationDefinition } from './define-operation.js';
 import type { RouteDefinition } from './define-route.js';
 import { ServiceContractValidator } from './service-contract-validator.js';
 
-/** Valor permitido en una constante exportada. */
+/** Value allowed in an exported constant. */
 export type ConstantValue =
   string | number | boolean | readonly (string | number | boolean)[];
 
-/** Enum de TypeScript con valores de texto. */
+/** TypeScript enum with string values. */
 export type StringEnum = Readonly<Record<string, string>>;
 
 /**
- * Todo lo que un servicio expone: es la entrada de `contracts-export`.
- * Las claves de cada mapa son los nombres públicos (tipos en PascalCase,
- * rutas, operaciones, eventos, comandos, tópicos y colas en camelCase).
+ * Everything a service exposes: it is the input of `contracts-export`.
+ * The keys of each map are the public names (types in PascalCase,
+ * routes, operations, events, commands, topics and queues in camelCase).
  */
 export interface ServiceContract {
-  /** Nombre del servicio en minúsculas, igual a la carpeta de `libs/contracts`. */
+  /** Service name in lowercase, same as the folder in `libs/contracts`. */
   readonly service: string;
   readonly description: string;
   readonly enums: Readonly<Record<string, StringEnum>>;
   readonly constants: Readonly<
     Record<string, Readonly<Record<string, ConstantValue>>>
   >;
-  /** Esquemas con nombre. Toda ruta, operación y mensaje usa esquemas de aquí o de otro contrato. */
+  /** Named schemas. Every route, operation and message uses schemas from here or from another contract. */
   readonly schemas: Readonly<Record<string, z.ZodType>>;
   readonly routes: Readonly<Record<string, RouteDefinition>>;
   readonly operations: Readonly<Record<string, OperationDefinition>>;
-  /** Eventos que publica el servicio. Cada uno va en uno de sus `topics`. */
+  /** Events the service publishes. Each one goes in one of its `topics`. */
   readonly events: Readonly<Record<string, EventDefinition>>;
-  /** Comandos que atiende el servicio. Cada uno llega a una de sus `queues`. */
+  /** Commands the service handles. Each one arrives at one of its `queues`. */
   readonly commands: Readonly<Record<string, CommandDefinition>>;
-  /** Tópicos del servicio, con los eventos que publica en cada uno. */
+  /** Topics of the service, with the events it publishes on each one. */
   readonly topics: Readonly<Record<string, TopicDefinition>>;
-  /** Colas que consume el servicio: sus comandos y sus suscripciones. */
+  /** Queues the service consumes: its commands and its subscriptions. */
   readonly queues: Readonly<Record<string, QueueDefinition>>;
-  /** Comandos de otros servicios (o propios) que este servicio envía. */
+  /** Commands of other services (or its own) that this service sends. */
   readonly sends: readonly CommandDefinition[];
-  /** Catálogo de cada enum de códigos de error, por nombre del enum. */
+  /** Catalog of each error code enum, by enum name. */
   readonly errors: Readonly<Record<string, readonly ErrorCatalogEntry[]>>;
 }
 
@@ -53,7 +53,7 @@ export type ServiceContractSpec = Partial<
 const validator = new ServiceContractValidator();
 
 /**
- * Reúne el contrato de un servicio y lo valida con `ServiceContractValidator`.
+ * Assembles a service's contract and validates it with `ServiceContractValidator`.
  */
 export function defineServiceContract(
   spec: ServiceContractSpec,

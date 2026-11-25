@@ -7,8 +7,8 @@ import {
 } from './message-definition.js';
 
 /**
- * Comando: pedido de trabajo a un servicio concreto. Lo declara el servicio que
- * lo atiende y llega a una de sus colas; quien lo envía lo declara en `sends`.
+ * Command: work request to a specific service. Declared by the service that
+ * handles it and arrives at one of its queues; the sender declares it in `sends`.
  */
 export type CommandDefinition<P extends z.ZodType = z.ZodType> =
   MessageDefinition<MessageKind.Command, P>;
@@ -16,21 +16,21 @@ export type CommandDefinition<P extends z.ZodType = z.ZodType> =
 export type CommandSpec<P extends z.ZodType> = MessageSpec<P>;
 
 /**
- * Declara un comando. El tipo es `servicio.entidad.verbo.vN`, con el mismo
- * formato y la misma regla de versiones que los eventos.
+ * Declares a command. The type is `service.entity.verb.vN`, with the same
+ * format and the same versioning rule as events.
  */
 export function defineCommand<P extends z.ZodType>(
   spec: CommandSpec<P>,
 ): CommandDefinition<P> {
   return defineMessage(
     MessageKind.Command,
-    'Comando',
-    'servicio.entidad.verbo.vN',
+    'Command',
+    'service.entity.verb.vN',
     spec,
   );
 }
 
-/** Tipo del payload de un comando. */
+/** Payload type of a command. */
 export type CommandPayload<C extends CommandDefinition> = z.output<
   C['payload']
 >;

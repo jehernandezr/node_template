@@ -3,7 +3,7 @@ import type { Actor } from '@platform/auth';
 import { HttpRequestKey } from './http-metadata-key.enum.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
-/** Lee el actor que dejó `EndpointGuard`. */
+/** Reads the actor left by `EndpointGuard`. */
 export class CurrentActorFactory {
   static create(_data: unknown, context: ExecutionContext): Actor | undefined {
     const request = context.switchToHttp().getRequest<PipelineRequest>();
@@ -12,7 +12,7 @@ export class CurrentActorFactory {
 }
 
 /**
- * `@CurrentActor()`: el `Actor` autenticado, o `undefined` en una ruta pública. Se llama así para
- * no chocar con el tipo `Actor`.
+ * `@CurrentActor()`: the authenticated `Actor`, or `undefined` on a public route. It is named this way so as
+ * not to clash with the `Actor` type.
  */
 export const CurrentActor = createParamDecorator(CurrentActorFactory.create);

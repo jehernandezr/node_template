@@ -7,8 +7,8 @@ import { InvalidQuietHoursError } from './preferences.error.js';
 import { QuietHours } from './quiet-hours.js';
 
 /**
- * Por qué canales quiere el usuario cada tipo de notificación y cuándo no quiere que lo molesten. Un tipo
- * que el usuario nunca configuró sale por todos los canales.
+ * Which channels the user wants for each notification type and when they do not want to be disturbed. A type
+ * the user never configured goes out through all channels.
  */
 export class NotificationPreferences {
   private constructor(
@@ -16,7 +16,7 @@ export class NotificationPreferences {
     readonly quietHours: QuietHours,
   ) {}
 
-  /** @throws InvalidQuietHoursError si las horas o la zona no son válidas. */
+  /** @throws InvalidQuietHoursError if the hours or the zone are not valid. */
   static of(view: PreferencesView): NotificationPreferences {
     const quietHours = QuietHours.parse(
       view.quietStart,
@@ -29,7 +29,7 @@ export class NotificationPreferences {
     return new NotificationPreferences(view, quietHours);
   }
 
-  /** Los canales que el usuario eligió para el tipo, o `undefined` si no lo configuró. */
+  /** The channels the user chose for the type, or `undefined` if they did not configure it. */
   channelsFor(
     type: NotificationType,
   ): readonly NotificationChannel[] | undefined {

@@ -4,7 +4,7 @@ import {
   type TenantMoveTable,
 } from '@platform/tenant-move';
 
-/** Las tablas de shard de identity que viajan con un tenant: las del tenant y las de los usuarios cuyo tenant de origen es él, que cuelgan de `users`. */
+/** The identity shard tables that travel with a tenant: the tenant's own and those of the users whose home tenant it is, which hang off `users`. */
 export class IdentityTenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [
     {

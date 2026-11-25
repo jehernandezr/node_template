@@ -1,7 +1,7 @@
 import type { Task as TaskView, TaskChange } from '@contracts/tasks';
 import type { Task } from '../domain/task.js';
 
-/** Cómo sale una tarea por el contrato. Utilidad pura. */
+/** How a task goes out through the contract. Pure utility. */
 export class TaskViews {
   static of(task: Task): TaskView {
     const state = task.snapshot();

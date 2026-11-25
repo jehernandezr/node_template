@@ -1,7 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { ObservabilityErrorCode } from './observability-error-code.enum.js';
 
-/** Se registró dos veces una dependencia con el mismo nombre en el `HealthRegistry`. */
+/** A dependency with the same name was registered twice in the `HealthRegistry`. */
 export class DuplicateHealthCheckError extends PlatformError {
   override readonly code = ObservabilityErrorCode.DuplicateHealthCheck;
 

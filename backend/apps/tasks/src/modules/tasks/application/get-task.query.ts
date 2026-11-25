@@ -5,7 +5,7 @@ import { TaskRepository } from '../domain/task.repository.js';
 import { TasksError } from '../domain/tasks.error.js';
 import { TaskViews } from './task-view.js';
 
-/** Una tarea vigente del tenant. */
+/** A current task of the tenant. */
 @Injectable()
 export class GetTask {
   constructor(

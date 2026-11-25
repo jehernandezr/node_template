@@ -5,24 +5,24 @@ import type {
 } from '@platform/sharding';
 import type { EntityClass } from '../metadata/entity-metadata.js';
 
-/** Módulo con datos por shard: declara su llave de enrutamiento. */
+/** Module with per-shard data: declares its routing key. */
 export interface ShardedFeatureOptions {
   readonly entities: readonly EntityClass[];
   readonly sharding: {
     readonly key: ShardKey;
-    /** Por defecto `ShardStrategy.Directory`. */
+    /** `ShardStrategy.Directory` by default. */
     readonly strategy?: ShardStrategy;
-    /** Obligatorio con `ShardKey.Custom`. */
+    /** Required with `ShardKey.Custom`. */
     readonly keyResolver?: ShardKeyResolver;
   };
 }
 
-/** Módulo con datos del catálogo global. */
+/** Module with global catalog data. */
 export interface CatalogFeatureOptions {
   readonly entities: readonly EntityClass[];
   readonly catalog: true;
 }
 
-/** Opciones de `PersistenceModule.forFeature`. */
+/** Options of `PersistenceModule.forFeature`. */
 export type PersistenceFeatureOptions =
   ShardedFeatureOptions | CatalogFeatureOptions;

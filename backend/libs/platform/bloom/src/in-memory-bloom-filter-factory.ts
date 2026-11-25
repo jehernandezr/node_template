@@ -4,7 +4,7 @@ import type { ResolvedBloomFilterDefinition } from './bloom-filter-definition.js
 import { InMemoryAsyncBloomFilter } from './in-memory-async-bloom-filter.js';
 import type { RebuildableBloomFilter } from './rebuildable-bloom-filter.js';
 
-/** Fábrica de filtros en memoria del proceso. */
+/** Factory of in-process memory filters. */
 export class InMemoryBloomFilterFactory extends BloomFilterFactory {
   create(definition: ResolvedBloomFilterDefinition): RebuildableBloomFilter {
     return new InMemoryAsyncBloomFilter(

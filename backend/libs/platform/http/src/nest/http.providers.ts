@@ -29,7 +29,7 @@ import { HttpRouteExplorer } from './http-route.explorer.js';
 import { ProblemDetailsFilter } from './problem-details.filter.js';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
-/** Proveedores de `HttpModule`: el guard, los interceptores, el filtro y las piezas que usan. */
+/** Providers of `HttpModule`: the guard, the interceptors, the filter and the pieces they use. */
 export class HttpProviders {
   static build(options: HttpModuleOptions): Provider[] {
     return [
@@ -97,7 +97,7 @@ export class HttpProviders {
     ];
   }
 
-  /** Lo que `HttpModule` exporta a los módulos que lo importan. */
+  /** What `HttpModule` exports to the modules that import it. */
   static exports(): Array<
     symbol | (abstract new (...args: never[]) => object)
   > {

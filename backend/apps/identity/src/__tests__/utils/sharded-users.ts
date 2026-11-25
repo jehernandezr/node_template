@@ -14,16 +14,16 @@ import { UserRepository } from '../../modules/users/domain/user.repository.js';
 import type { IdentityTestApp } from './identity-test-app.js';
 import { PresetIdGenerator } from './preset-id-generator.js';
 
-/** Un usuario verificado de prueba con su email. */
+/** A verified test user with their email. */
 export interface PlacedUser {
   readonly ref: UserRef;
   readonly email: string;
 }
 
 /**
- * Usuarios del tenant compartido repartidos en los dos shards. El router los reparte por el hash de su id,
- * así que se eligen de antemano ids cuyo hash cae en cada shard y se registran con esos ids: el reparto no
- * depende del azar. Los candidatos salen del prefijo, para que dos llamadas de una suite no choquen.
+ * Users of the shared tenant spread across both shards. The router distributes them by the hash of their id,
+ * so ids whose hash falls on each shard are chosen in advance and registered with those ids: the distribution does not
+ * depend on chance. The candidates come from the prefix, so that two calls in a suite do not collide.
  */
 export class ShardedUsers {
   private static readonly MAX_CANDIDATES = 256;
@@ -38,7 +38,7 @@ export class ShardedUsers {
 
   constructor(private readonly app: IdentityTestApp) {}
 
-  /** Un usuario verificado por shard, con su email, indexado por el nombre del shard. */
+  /** One verified user per shard, with their email, keyed by shard name. */
   async oneInEachShard(
     prefix: string,
   ): Promise<ReadonlyMap<string, PlacedUser>> {
@@ -51,7 +51,7 @@ export class ShardedUsers {
     return placed;
   }
 
-  /** Registra un usuario verificado y miembro de su tenant de origen, como el registro por HTTP; con `userId`, ese es su id. */
+  /** Registers a verified user who is a member of their home tenant, like HTTP signup; with `userId`, that is their id. */
   async register(email: string, userId?: string): Promise<UserRef> {
     const ref = await this.registrar(userId).register(
       {
@@ -97,7 +97,7 @@ export class ShardedUsers {
     return chosen;
   }
 
-  /** Un instante propio del prefijo: los ids candidatos de cada prefijo son distintos y siempre los mismos. */
+  /** An instant specific to the prefix: the candidate ids of each prefix are distinct and always the same. */
   private epochOf(prefix: string): Date {
     const offset = createHash('sha256')
       .update(prefix)

@@ -1,10 +1,10 @@
 import type { ShardAccess } from '@platform/sharding';
 import type { PersistenceFeature } from '../persistence-feature.js';
 
-/** Qué se quiere resolver: la declaración de sharding del módulo y la intención de acceso. */
+/** What is to be resolved: the module's sharding declaration and the access intent. */
 export interface ShardRequest {
   readonly feature: PersistenceFeature;
-  /** Entidad, criterio o petición que el `ShardKeyResolver` del módulo lee con `ShardKey.Custom`. */
+  /** Entity, criteria or request that the module's `ShardKeyResolver` reads with `ShardKey.Custom`. */
   readonly source?: unknown;
   readonly access: ShardAccess;
 }

@@ -1,23 +1,23 @@
 import { GeneratorError, GeneratorErrorReason } from './generator-error.js';
 
-/** Las formas de un nombre en kebab-case que usan las plantillas. */
+/** The forms of a kebab-case name that the templates use. */
 export class NameForms {
   private static readonly KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
   private constructor(
-    /** `api-keys`: carpetas, archivos, ids de contrato y `__name__`. */
+    /** `api-keys`: folders, files, contract ids and `__name__`. */
     readonly kebab: string,
     /** `apiKeys`: variables, `__nameCamel__`. */
     readonly camel: string,
-    /** `ApiKeys`: clases y enums, `__Name__`. */
+    /** `ApiKeys`: classes and enums, `__Name__`. */
     readonly pascal: string,
     /** `API_KEYS`: constantes, `__NAME__`. */
     readonly upperSnake: string,
-    /** `api_keys`: bases de datos, `__name_snake__`. */
+    /** `api_keys`: databases, `__name_snake__`. */
     readonly snake: string,
   ) {}
 
-  /** @throws GeneratorError `InvalidName` si el nombre no está en kebab-case. */
+  /** @throws GeneratorError `InvalidName` if the name is not in kebab-case. */
   static of(name: string): NameForms {
     if (!NameForms.KEBAB.test(name)) {
       throw new GeneratorError(

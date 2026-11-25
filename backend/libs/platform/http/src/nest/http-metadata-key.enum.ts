@@ -1,13 +1,13 @@
-/** Llaves de los metadatos que escriben `@Resource` y `@Endpoint`. */
+/** Keys of the metadata written by `@Resource` and `@Endpoint`. */
 export enum HttpMetadataKey {
   Resource = 'platform:http:resource',
   Endpoint = 'platform:http:endpoint',
 }
 
-/** Propiedades que los middlewares y el guard dejan en el objeto de la petición. */
+/** Properties that the middlewares and the guard leave on the request object. */
 export enum HttpRequestKey {
-  /** `ClientInfo`, escrito por `OriginPolicyMiddleware`. */
+  /** `ClientInfo`, written by `OriginPolicyMiddleware`. */
   ClientInfo = 'platformHttpClientInfo',
-  /** `EndpointCall`, escrito por `EndpointGuard`. */
+  /** `EndpointCall`, written by `EndpointGuard`. */
   Call = 'platformHttpCall',
 }

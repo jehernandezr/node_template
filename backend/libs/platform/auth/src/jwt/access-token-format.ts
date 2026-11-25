@@ -1,16 +1,16 @@
 import { IdentityLimits } from '@contracts/identity';
 
-/** Reglas fijas del formato del access token. */
+/** Fixed rules of the access token format. */
 export class AccessTokenFormat {
-  /** Valor del header `typ` (RFC 9068). */
+  /** Value of the `typ` header (RFC 9068). */
   static readonly TYPE = 'at+jwt';
 
-  /** Tolerancia entre relojes al comparar `exp` e `iat`. */
+  /** Clock skew tolerance when comparing `exp` and `iat`. */
   static readonly CLOCK_SKEW_MS = 30_000;
 
-  /** Un token más largo se rechaza sin decodificarlo. */
+  /** A longer token is rejected without decoding it. */
   static readonly MAX_LENGTH = IdentityLimits.tokenMaxLength;
 
-  /** Largo máximo del `kid`: acota lo que se busca en el JWKS con un dato que aún no está verificado. */
+  /** Maximum length of the `kid`: bounds what is looked up in the JWKS with data that is not yet verified. */
   static readonly MAX_KID_LENGTH = 128;
 }

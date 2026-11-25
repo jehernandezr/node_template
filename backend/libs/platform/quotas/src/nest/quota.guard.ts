@@ -11,8 +11,8 @@ import { QuotaChecker } from '../quota-checker.js';
 import { QUOTA_METRIC } from './quota-metadata.js';
 
 /**
- * Rechaza con `BILLING.QUOTA.EXCEEDED` la llamada de una service account cuyo tenant agotó la métrica de la
- * ruta. Las personas no consumen esa cuota: lo que se mide y se limita es el uso de integración.
+ * Rejects with `BILLING.QUOTA.EXCEEDED` the call of a service account whose tenant exhausted the route's
+ * metric. People do not consume that quota: what is measured and limited is integration usage.
  */
 @Injectable()
 export class QuotaGuard implements CanActivate {

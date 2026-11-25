@@ -6,7 +6,7 @@ import { PasswordHasher } from '../domain/password-hasher.js';
 
 const argon2Async = promisify(argon2);
 
-/** Parámetros y partes de un hash PHC de argon2id ya leído. */
+/** Parameters and parts of an already parsed argon2id PHC hash. */
 interface ParsedPhc {
   readonly memoryKiB: number;
   readonly passes: number;
@@ -16,8 +16,8 @@ interface ParsedPhc {
 }
 
 /**
- * argon2id con `crypto.argon2` de Node (desde 24.7.0) y los parámetros de OWASP. La codificación PHC
- * `$argon2id$v=19$m=…,t=…,p=…$sal$hash` es propia, con base64 sin relleno como la de la referencia.
+ * argon2id with Node's `crypto.argon2` (since 24.7.0) and the OWASP parameters. The PHC encoding
+ * `$argon2id$v=19$m=…,t=…,p=…$salt$hash` is our own, with unpadded base64 like the reference one.
  */
 @Injectable()
 export class NodeArgon2idHasher extends PasswordHasher {

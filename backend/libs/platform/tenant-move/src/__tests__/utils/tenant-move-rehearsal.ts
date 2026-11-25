@@ -31,27 +31,27 @@ import { TenantRowFilter } from '../../transfer/batch/tenant-row-filter.js';
 import { TenantSession } from '../../transfer/batch/tenant-session.js';
 import { ManifestRowSeeder, type FixedColumns } from './manifest-row-seeder.js';
 
-/** Los dos shards del ensayo. */
+/** The two rehearsal shards. */
 export enum RehearsalShard {
   A = 'test_shard_0',
   B = 'test_shard_1',
 }
 
-/** Opciones de {@link TenantMoveRehearsal}. */
+/** Options of {@link TenantMoveRehearsal}. */
 export interface TenantMoveRehearsalOptions {
   readonly manifest: TenantMoveManifest;
-  /** Migraciones de cada shard: las de la plataforma y las del servicio. */
+  /** Migrations of each shard: the platform ones and the service ones. */
   readonly shardMigrations: readonly MigrationClass[];
   readonly fixedColumns?: FixedColumns;
-  /** Imagen de PostgreSQL, para los servicios que necesitan pgvector. */
+  /** PostgreSQL image, for services that need pgvector. */
   readonly image?: string;
-  /** Extensiones que el aprovisionamiento crea en cada shard antes de migrar. */
+  /** Extensions that provisioning creates in each shard before migrating. */
   readonly extensions?: readonly string[];
-  /** Filas por lote; uno chico hace que cada tabla se copie en varios lotes. */
+  /** Rows per batch; a small one makes each table get copied in several batches. */
   readonly batchSize?: number;
 }
 
-/** Las piezas de `TenantMoves` que el ensayo arma una vez y comparte entre sus variantes. */
+/** The `TenantMoves` parts the rehearsal builds once and shares across its variants. */
 interface RehearsalParts {
   readonly shards: TenantMoveShards;
   readonly transfer: TenantDataTransfer;
@@ -59,17 +59,17 @@ interface RehearsalParts {
   readonly transition: PlacementTransition;
 }
 
-/** Conteo y suma de cada tabla del manifiesto. */
+/** Count and sum of each manifest table. */
 export type ManifestChecksums = Readonly<Record<string, TableChecksum>>;
 
-/** Filas de cada tabla del manifiesto. */
+/** Rows of each manifest table. */
 export type ManifestRows = Readonly<Record<string, number>>;
 
-/** Lo que deja un ensayo completo: un tenant sembrado en A, trasladado a B y limpiado de A, con un vecino en A. */
+/** What a full rehearsal leaves: a tenant seeded in A, moved to B and cleaned from A, with a neighbor in A. */
 export interface RehearsalReport {
   readonly tenantId: string;
   readonly seeded: ManifestChecksums;
-  /** Lo que `finalize` comparó en cada lado, con el origen congelado. */
+  /** What `finalize` compared on each side, with the source frozen. */
   readonly verifiedSource: ManifestChecksums;
   readonly verifiedTarget: ManifestChecksums;
   readonly verified: boolean;
@@ -80,9 +80,9 @@ export interface RehearsalReport {
 }
 
 /**
- * Ensayo de traslados de un servicio sobre sus migraciones reales: un PostgreSQL con dos shards y `TenantMoves`
- * cableado sin NestJS, con el directorio en memoria y la barrera en los shards. Cada shard es un grupo de destino con
- * su propia región, así cada traslado cambia de shard y de región.
+ * Move rehearsal of a service on its real migrations: a PostgreSQL with two shards and `TenantMoves`
+ * wired without NestJS, with the directory in memory and the fence in the shards. Each shard is a target group with
+ * its own region, so each move changes shard and region.
  */
 export class TenantMoveRehearsal {
   static readonly REGIONS: Readonly<Record<RehearsalShard, string>> = {
@@ -90,7 +90,7 @@ export class TenantMoveRehearsal {
     [RehearsalShard.B]: 'rehearsal-b',
   };
 
-  /** Las sagas sembradas ya terminaron: una abierta frenaría el traslado. */
+  /** The seeded sagas already finished: an open one would hold back the move. */
   private static readonly SETTLED_SAGAS: FixedColumns = {
     [PlatformTenantMoveManifest.SAGA_INSTANCES]: {
       status: () => SagaStatus.Completed,
@@ -98,7 +98,7 @@ export class TenantMoveRehearsal {
   };
 
   readonly fence = new TenantWriteFence();
-  /** El manifiesto del servicio con las tablas de la plataforma, como lo copia el módulo. */
+  /** The service manifest with the platform tables, as the module copies it. */
   readonly manifest: TenantMoveManifest;
   readonly db: ShardedTestDatabase;
   private readonly ids = new UuidV7IdGenerator();
@@ -178,8 +178,8 @@ export class TenantMoveRehearsal {
   }
 
   /**
-   * Siembra un tenant y un vecino en A, traslada el tenant a B mientras el vecino se queda y limpia A. Con el informe
-   * se comprueba que cada tabla llegó entera y sin cambios, que el origen quedó vacío y que el vecino no se tocó.
+   * Seeds a tenant and a neighbor in A, moves the tenant to B while the neighbor stays, and cleans A. The report
+   * checks that each table arrived whole and unchanged, that the source was left empty and that the neighbor was not touched.
    */
   async rehearse(rowsPerTable = 2): Promise<RehearsalReport> {
     const tenantId = this.ids.next().toString();
@@ -218,14 +218,14 @@ export class TenantMoveRehearsal {
     };
   }
 
-  /** Las mismas filas en cada tabla del manifiesto, para comparar con un informe. */
+  /** The same rows in each manifest table, to compare with a report. */
   everyTable(rows: number): ManifestRows {
     return Object.fromEntries(
       this.manifest.tables().map((entry) => [entry.table, rows]),
     );
   }
 
-  /** Ubica un tenant nuevo en el shard dado, con la región de ese shard. */
+  /** Places a new tenant on the given shard, with that shard's region. */
   place(tenantId: string, shard: RehearsalShard): void {
     this.db.directory.setPlacement(
       PlacementBuilder.aPlacement()
@@ -236,7 +236,7 @@ export class TenantMoveRehearsal {
     );
   }
 
-  /** Ubica el tenant en el shard y siembra sus filas en cada tabla del manifiesto. */
+  /** Places the tenant on the shard and seeds its rows in each manifest table. */
   async seed(
     tenantId: string,
     shard: RehearsalShard,
@@ -246,7 +246,7 @@ export class TenantMoveRehearsal {
     await this.seeder.seed(await this.shard(shard), tenantId, rowsPerTable);
   }
 
-  /** Corre el traslado completo hasta `switch`, repitiendo cada paso mientras su ronda no termina, como la saga. */
+  /** Runs the full move up to `switch`, repeating each step while its round is not finished, like the saga. */
   async move(
     tenantId: string,
     to: RehearsalShard,
@@ -264,7 +264,7 @@ export class TenantMoveRehearsal {
     return { ref, verification };
   }
 
-  /** Un traslado nuevo del tenant al shard dado, sin correrlo. */
+  /** A new move of the tenant to the given shard, without running it. */
   refTo(tenantId: string, to: RehearsalShard): TenantMoveRef {
     return {
       moveId: this.ids.next().toString(),
@@ -274,12 +274,12 @@ export class TenantMoveRehearsal {
     };
   }
 
-  /** Los pasos del traslado, para correrlos uno a uno. */
+  /** The move steps, to run them one by one. */
   steps(): TenantMoves {
     return this.started();
   }
 
-  /** Los mismos pasos sobre la copia que arma `decorate` alrededor de la real, para observarla o hacerla fallar. */
+  /** The same steps on the copy that `decorate` builds around the real one, to observe it or make it fail. */
   stepsWith(
     decorate: (transfer: TenantDataTransfer) => TenantDataTransfer,
   ): TenantMoves {
@@ -297,7 +297,7 @@ export class TenantMoveRehearsal {
     return this.db.router.placement(tenantId);
   }
 
-  /** Conteo y suma de las filas del tenant en cada tabla del manifiesto, en un shard. */
+  /** Count and sum of the tenant rows in each manifest table, on a shard. */
   async checksums(
     shard: RehearsalShard,
     tenantId: string,
@@ -319,7 +319,7 @@ export class TenantMoveRehearsal {
     return result;
   }
 
-  /** Los valores de una columna en las filas del tenant de una tabla, en un shard. */
+  /** The values of a column in the tenant rows of a table, on a shard. */
   async values(
     shard: RehearsalShard,
     table: string,

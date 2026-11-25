@@ -44,16 +44,16 @@ import {
 } from './utils/index.js';
 
 /**
- * Pruebas contra un Valkey real con el módulo de bloom. Sin Docker se saltan;
- * con `INTEGRATION_TESTS=require` la falta de Docker es un error.
+ * Tests against a real Valkey with the bloom module. Without Docker they are skipped;
+ * with `INTEGRATION_TESTS=require` missing Docker is an error.
  */
 jest.setTimeout(60_000);
 
 const PREFIX = 'orders';
 /**
- * La prueba de CacheAside cuenta cargas: una entrada que vence a mitad de la prueba vuelve a cargar. Con
- * todas las suites de integración en paralelo la prueba puede durar varios segundos, así que la entrada
- * vive mucho más que la prueba y su vencimiento no entra en juego.
+ * The CacheAside test counts loads: an entry that expires midway through the test loads again. With
+ * all the integration suites in parallel the test can take several seconds, so the entry
+ * lives much longer than the test and its expiry does not come into play.
  */
 const CACHE_ASIDE_ENTRY_TTL_MS = 10 * 60_000;
 const CACHE_ASIDE_CALL_BUDGET_MS = 10_000;
@@ -97,7 +97,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
   });
 
   describe('connections created by the factory', () => {
-    /** Entrega la contraseña vigente de cada conexión, como un token IAM que se renueva. */
+    /** Returns the current password for each connection, like an IAM token that is renewed. */
     class RotatingPassword extends ValkeyAuthTokenProvider {
       current = server.password;
 
@@ -106,7 +106,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       }
     }
 
-    /** El servidor de prueba no habla TLS, que el resolutor exige con IAM. */
+    /** The test server does not speak TLS, which the resolver requires with IAM. */
     class PlainTextResolver extends ValkeyConnectionResolver {
       override resolve(
         ...args: Parameters<ValkeyConnectionResolver['resolve']>
@@ -137,14 +137,14 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
         { commandTimeoutMs: 5_000 },
         provider,
       ).create();
-      // Mientras la contraseña rota, las reconexiones con la vieja fallan: es lo que se prueba.
+      // While the password rotates, reconnections with the old one fail: that is what is tested.
       client.on('error', () => undefined);
       try {
         await expect(client.call('SET', `${PREFIX}:auth`, '1')).resolves.toBe(
           'OK',
         );
 
-        // Se rota la contraseña: solo vale la nueva, y se corta la conexión.
+        // The password is rotated: only the new one is valid, and the connection is cut.
         const rotated = randomUUID();
         provider.current = rotated;
         await server.rotatePassword(rotated);
@@ -200,10 +200,10 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       const absorbed = new RecordingCacheErrorReporter();
       const store = cache();
       const aside = new CacheAside(store, new VersionedKeyspace(store), {
-        // La política por defecto corta cada llamada a los 100 ms y la llamada completa a los 200 ms; con
-        // todas las suites en paralelo una respuesta de Valkey tarda más, CacheAside la absorbe cargando
-        // directo y la cuenta de cargas cambia. Esta prueba trata del viaje al servidor, no de los plazos:
-        // los dos presupuestos se amplían juntos (ampliar solo el del intento deja el total en 200 ms).
+        // The default policy cuts each call at 100 ms and the whole call at 200 ms; with
+        // all the suites in parallel a Valkey reply takes longer, CacheAside absorbs it by loading
+        // directly and the load count changes. This test is about the round trip to the server, not the deadlines:
+        // both budgets are widened together (widening only the attempt one leaves the total at 200 ms).
         resilience: new ResilienceRegistry({
           [PolicyName.Cache.value]: {
             timeoutMs: CACHE_ASIDE_CALL_BUDGET_MS,
@@ -222,7 +222,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
         });
 
       await expect(read()).resolves.toEqual({ total: 3 });
-      // La escritura no se espera: se sondea hasta que una lectura sale del caché.
+      // The write is not awaited: it polls until a read comes from the cache.
       await PollUntil.run(async () => {
         const loads = loader.calls;
         await read();
@@ -235,7 +235,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await aside.invalidate(['t1', 'orders']);
       await read();
       expect(loader.calls).toBe(cachedLoads + 1);
-      // Si algo se absorbió, la cuenta de cargas ya no prueba el viaje al servidor: que lo diga.
+      // If something was absorbed, the load count no longer proves the round trip to the server: say so.
       expect(absorbed.errors).toEqual([]);
     });
   });
@@ -265,8 +265,8 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await expect(writers[0]?.get('race')).resolves.toBe('value-199');
     });
 
-    // La carrera de la prueba de ShardRouter (una lectura lenta que termina tras una invalidación), ahora
-    // contra Valkey y dos conexiones.
+    // The ShardRouter test race (a slow read that finishes after an invalidation), now
+    // against Valkey and two connections.
     it('does not let a read in flight in another process resurrect an invalidated placement', async () => {
       const store = new InMemoryDirectoryStore();
       store.setInstance('shard-1', 'pg-1');
@@ -369,7 +369,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       await expect(
         second.tryAcquire('outbox-relay', 10_000),
       ).resolves.toBeUndefined();
-      // Otro job no se ve afectado.
+      // Another job is not affected.
       await expect(
         second.tryAcquire('retention', 10_000),
       ).resolves.toBeDefined();
@@ -432,7 +432,7 @@ runtime.describeIfAvailable('Valkey adapters against a real server', () => {
       const members = Array.from({ length: 5_000 }, (_, i) => `member-${i}`);
       await filter.addMany(members);
       await filter.add('one-more');
-      // Las consultas salen juntas: el cliente las encadena en una conexión en vez de pagar un viaje cada una.
+      // The queries go out together: the client pipelines them on one connection instead of paying a round trip each.
       const present = await Promise.all(
         [...members.slice(0, 200), 'one-more'].map((item) =>
           filter.mightContain(item),

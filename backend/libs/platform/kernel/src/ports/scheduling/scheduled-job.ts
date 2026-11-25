@@ -2,20 +2,20 @@ import type { JobContext } from './job-context.js';
 import type { JobSchedule } from './job-schedule.js';
 
 /**
- * Trabajo periódico de una librería o de un servicio. Lo ejecuta el
- * `JobRunner` de `@platform/scheduling`; la librería dueña solo declara la
- * clase, sin depender del programador ni de NestJS.
+ * Periodic work of a library or a service. It is run by the
+ * `JobRunner` of `@platform/scheduling`; the owning library only declares the
+ * class, without depending on the scheduler or on NestJS.
  */
 export abstract class ScheduledJob {
-  /** Valor de un enum de la librería dueña, por ejemplo `MessagingJob.OutboxRelay`. */
+  /** Value of an enum of the owning library, for example `MessagingJob.OutboxRelay`. */
   abstract readonly name: string;
 
   abstract readonly schedule: JobSchedule;
 
-  /** `true`: un solo proceso del clúster la corre a la vez, con `JobLock`. */
+  /** `true`: only one process in the cluster runs it at a time, with `JobLock`. */
   readonly exclusive: boolean = false;
 
-  /** Tiempo máximo de una corrida; al agotarse se aborta su `signal`. */
+  /** Maximum duration of a run; when it runs out, its `signal` is aborted. */
   readonly timeoutMs: number = 60_000;
 
   abstract run(context: JobContext): Promise<void>;

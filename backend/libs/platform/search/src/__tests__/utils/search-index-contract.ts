@@ -9,8 +9,8 @@ const ids = {
 };
 
 /**
- * Lo que todo `SearchIndex` cumple sobre la base real, sea de texto o híbrido. `database` devuelve la base
- * ya iniciada y `create` arma el adaptador con su kit. Cada adaptador usa su propia colección.
+ * What every `SearchIndex` satisfies on the real database, whether text or hybrid. `database` returns the database
+ * already started and `create` builds the adapter with its kit. Each adapter uses its own collection.
  */
 export function runSearchIndexContract(
   name: string,

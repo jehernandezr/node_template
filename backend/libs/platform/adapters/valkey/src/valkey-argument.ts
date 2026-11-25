@@ -1,2 +1,2 @@
-/** Argumento de un comando. */
+/** Argument of a command. */
 export type ValkeyArgument = string | number | Buffer;

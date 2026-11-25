@@ -6,14 +6,14 @@ import type { ModuleGenerator } from './module-generator.js';
 import type { ServiceGenerator } from './service-generator.js';
 import type { SkeletonVerifier } from './skeleton-verifier.js';
 
-/** Código de salida de la línea de comandos. */
+/** Command line exit code. */
 export enum GeneratorExitCode {
   Success = 0,
   Failure = 1,
   Usage = 2,
 }
 
-/** Los subcomandos de `nx run generators:<subcomando>`. */
+/** The subcommands of `nx run generators:<subcommand>`. */
 export enum GeneratorSubcommand {
   Service = 'service',
   Module = 'module',
@@ -21,7 +21,7 @@ export enum GeneratorSubcommand {
   Smoke = 'smoke',
 }
 
-/** Lee los argumentos, corre el generador pedido y traduce sus errores a un mensaje y un código de salida. */
+/** Reads the arguments, runs the requested generator and translates its errors into a message and an exit code. */
 export class GeneratorCommand {
   private static readonly USAGE = [
     'Uso:',

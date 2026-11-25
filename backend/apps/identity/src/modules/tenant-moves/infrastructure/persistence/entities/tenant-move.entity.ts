@@ -1,7 +1,7 @@
 import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
-/** `tenant_moves`, en el catálogo: un traslado de tenant, su saga y en qué etapa está. */
+/** `tenant_moves`, in the catalog: a tenant move, its saga and what stage it is in. */
 @Entity({ name: 'tenant_moves' })
 @Index('tenant_moves_one_running_key', ['tenantId'], {
   unique: true,

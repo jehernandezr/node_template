@@ -1,4 +1,4 @@
-/** Recursos de los controllers de prueba. */
+/** Resources of the test controllers. */
 export enum DemoResource {
   Items = 'items',
   Me = 'me',

@@ -9,7 +9,7 @@ import {
 } from '../../__tests__/utils/index.js';
 import { PlacementTransition } from '../placement-transition.js';
 
-/** Directorio en el que otro escritor gana la primera escritura condicional. */
+/** Directory in which another writer wins the first conditional write. */
 class RacingDirectoryStore extends InMemoryDirectoryStore {
   private raced = false;
 

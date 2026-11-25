@@ -7,8 +7,8 @@ import { IdentityPushTargetDirectory } from '../infrastructure/identity-push-tar
 import { InMemoryPushSender } from '../infrastructure/in-memory-push-sender.js';
 
 /**
- * Push a los dispositivos del usuario. `NOTIFICATIONS_PUSH_SENDER` solo admite memoria: los proveedores reales
- * piden cuentas propias y entran como otro `PushSender` sin cambiar el resto.
+ * Push to the user's devices. `NOTIFICATIONS_PUSH_SENDER` only accepts memory: the real providers
+ * require their own accounts and come in as another `PushSender` without changing the rest.
  */
 @Global()
 @Module({

@@ -31,9 +31,9 @@ type StoredClaim =
     };
 
 /**
- * Doble en memoria de `ProcessedMessageStore`. Es atómico dentro de un proceso
- * porque cada método resuelve sin ceder el hilo. Sirve para pruebas y para un
- * servicio de un solo proceso.
+ * In-memory double of `ProcessedMessageStore`. It is atomic within a process
+ * because each method resolves without yielding the thread. It serves tests and a
+ * single-process service.
  */
 export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
   private readonly records = new Map<string, StoredClaim>();
@@ -121,8 +121,8 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
       throw new DeadlineExceededError(request.deadline.atMs);
     }
 
-    // Llave libre o lease vencido: token nuevo e invalida el anterior. Al tomar
-    // un lease vencido se conserva la huella del primer claim.
+    // Free key or expired lease: new token, invalidating the previous one. When taking
+    // an expired lease, the fingerprint of the first claim is kept.
     const fingerprint = record?.fingerprint ?? request.fingerprint;
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now);
@@ -141,7 +141,7 @@ export class InMemoryProcessedMessageStore extends ProcessedMessageStore {
     };
   }
 
-  /** Registro en curso cuyo token vigente es `claimToken`, aunque su lease haya vencido. */
+  /** In-progress record whose current token is `claimToken`, even if its lease has expired. */
   private ownedRecord(
     key: string,
     claimToken: string,

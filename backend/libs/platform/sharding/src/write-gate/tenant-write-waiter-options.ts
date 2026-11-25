@@ -1,7 +1,7 @@
-/** Cuánto espera una escritura a que se abra la compuerta de su tenant. */
+/** How long a write waits for its tenant gate to open. */
 export interface TenantWriteWaiterOptions {
-  /** Espera máxima antes de responder `PLATFORM.SHARDING.TENANT_MIGRATING`. */
+  /** Maximum wait before answering `PLATFORM.SHARDING.TENANT_MIGRATING`. */
   readonly maxWaitMs: number;
-  /** Cada cuánto vuelve a mirar la compuerta mientras espera. */
+  /** How often it checks the gate again while waiting. */
   readonly pollMs: number;
 }

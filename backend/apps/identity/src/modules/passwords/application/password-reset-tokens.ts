@@ -10,8 +10,8 @@ import { PasswordReset } from '../domain/password-reset.js';
 import { PasswordResetRepository } from '../domain/password-reset.repository.js';
 
 /**
- * Emite y canjea los tokens de recuperación. La fila vive en el shard del usuario y el token lleva la ruta
- * hasta ella; canjear bloquea la fila, así que un token sirve una sola vez aunque llegue dos veces a la vez.
+ * Issues and redeems recovery tokens. The row lives in the user's shard and the token carries the route
+ * to it; redeeming locks the row, so a token works only once even if it arrives twice at the same time.
  */
 @Injectable()
 export class PasswordResetTokens {
@@ -45,7 +45,7 @@ export class PasswordResetTokens {
     ).format();
   }
 
-  /** El usuario dueño del token si es bien formado; no dice si sirve. */
+  /** The user that owns the token if it is well formed; does not say whether it is valid. */
   ownerOf(text: string): UserRef | undefined {
     const token = PasswordResetToken.parse(text);
     return token === undefined
@@ -54,9 +54,9 @@ export class PasswordResetTokens {
   }
 
   /**
-   * Marca el token como usado si sirve. Corre dentro de la transacción que abre el llamador en el shard del
-   * usuario, para que el canje y su efecto se confirmen o se deshagan juntos.
-   * @returns `false` si el token está mal formado, no existe, venció, ya se usó o su secreto no coincide.
+   * Marks the token as used if it is valid. Runs inside the transaction the caller opens in the user's
+   * shard, so the redemption and its effect commit or roll back together.
+   * @returns `false` if the token is malformed, does not exist, expired, was already used or its secret does not match.
    */
   async redeem(text: string): Promise<boolean> {
     const token = PasswordResetToken.parse(text);

@@ -14,21 +14,21 @@ import {
   type Topology,
 } from '@platform/messaging';
 
-/** Dependencias de {@link SnsSqsMessageBus}. */
+/** Dependencies of {@link SnsSqsMessageBus}. */
 export interface SnsSqsMessageBusOptions extends OutboundMessageFactoryOptions {
   readonly topology: Topology;
-  /** Normalmente un `SnsSqsEnvelopePublisher`. */
+  /** Usually a `SnsSqsEnvelopePublisher`. */
   readonly publisher: EnvelopePublisher;
 }
 
 /**
- * `MessageBus` que publica directo en SNS y SQS, sin outbox. Sirve para
- * mensajes que no acompañan un cambio en la base (un job, una Lambda sin
- * transacción). Cuando el mensaje sale de un caso de uso que escribe datos,
- * el outbox guarda el sobre en la misma transacción y el relay lo publica
- * con `SnsSqsEnvelopePublisher`.
+ * `MessageBus` that publishes directly on SNS and SQS, without an outbox. Useful for
+ * messages that do not accompany a database change (a job, a Lambda without a
+ * transaction). When the message comes from a use case that writes data,
+ * the outbox stores the envelope in the same transaction and the relay publishes it
+ * with `SnsSqsEnvelopePublisher`.
  *
- * Valida ruta, contrato, `groupId` FIFO, retraso y tamaño antes de llamar.
+ * Validates route, contract, FIFO `groupId`, delay and size before calling.
  */
 export class SnsSqsMessageBus extends MessageBus {
   private readonly factory: OutboundMessageFactory;

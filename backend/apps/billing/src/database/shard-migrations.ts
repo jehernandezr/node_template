@@ -5,7 +5,7 @@ import { subscriptionShardMigrations } from '../modules/subscriptions/infrastruc
 import { usageShardMigrations } from '../modules/usage/infrastructure/persistence/migrations/index.js';
 // generated:modules:imports
 
-/** Migraciones de los shards de billing, en el orden de los módulos. */
+/** Billing shard migrations, in module order. */
 export const billingShardMigrations: readonly MigrationClass[] = [
   ...subscriptionShardMigrations,
   ...usageShardMigrations,

@@ -5,7 +5,7 @@ import type { TenantMoveOperations } from '@contracts/platform';
 import { ReportsTenantMoveOperations } from '@contracts/reports';
 import { TasksTenantMoveOperations } from '@contracts/tasks';
 
-/** Los servicios que guardan datos de un tenant, en el orden en que la saga los traslada. */
+/** The services that store a tenant's data, in the order in which the saga moves them. */
 export class TenantMoveParticipants {
   static readonly ALL: readonly TenantMoveOperations[] = [
     IdentityTenantMoveOperations,

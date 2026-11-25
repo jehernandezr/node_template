@@ -11,7 +11,7 @@ import {
   type OperationDefinition,
 } from './define-operation.js';
 
-/** Las cinco operaciones de traslado de un servicio, con las claves que usa su contrato. */
+/** The five move operations of a service, with the keys its contract uses. */
 export interface TenantMoveOperations {
   readonly tenantMoveSync: OperationDefinition<
     typeof TenantMoveRefSchema,
@@ -36,9 +36,9 @@ export interface TenantMoveOperations {
 }
 
 /**
- * Declara las operaciones `<servicio>.tenant-move.{sync,finalize,abort,switch,cleanup}.v1`
- * que `@platform/tenant-move` registra en cada servicio. Los ids se arman con el
- * nombre del servicio y el enum `<S>Operation` de cada contrato debe repetirlos.
+ * Declares the `<service>.tenant-move.{sync,finalize,abort,switch,cleanup}.v1` operations
+ * that `@platform/tenant-move` registers in each service. The ids are built from the
+ * service name and the `<S>Operation` enum of each contract must repeat them.
  */
 export function defineTenantMoveOperations(
   service: string,
@@ -51,9 +51,9 @@ export function defineTenantMoveOperations(
     idempotent: true,
     compensatedBy: Compensation.None,
     compensationReason:
-      'Solo corre como compensación de la copia: descarta lo copiado al destino y no hay nada que restaurar.',
+      'Only runs as compensation of the copy: discards what was copied to the target and there is nothing to restore.',
     timeoutMs: TenantMoveLimits.abortTimeoutMs,
-    description: `Cancela el traslado de un tenant y descarta lo copiado de ${service} al destino.`,
+    description: `Cancels the move of a tenant and discards what was copied from ${service} to the target.`,
   });
   return {
     tenantMoveSync: defineOperation({
@@ -63,7 +63,7 @@ export function defineTenantMoveOperations(
       idempotent: true,
       compensatedBy: id('abort'),
       timeoutMs: TenantMoveLimits.syncTimeoutMs,
-      description: `Copia un lote de los datos del tenant en ${service} al destino mientras las escrituras siguen; la saga repite hasta completar la ronda.`,
+      description: `Copies a batch of the tenant data in ${service} to the target while writes continue; the saga repeats until the round completes.`,
     }),
     tenantMoveFinalize: defineOperation({
       id: id('finalize'),
@@ -72,7 +72,7 @@ export function defineTenantMoveOperations(
       idempotent: true,
       compensatedBy: id('abort'),
       timeoutMs: TenantMoveLimits.finalizeTimeoutMs,
-      description: `Copia la última ronda de ${service} con el tenant congelado y verifica conteos y sumas.`,
+      description: `Copies the last round of ${service} with the tenant frozen and verifies counts and sums.`,
     }),
     tenantMoveAbort,
     tenantMoveSwitch: defineOperation({
@@ -82,9 +82,9 @@ export function defineTenantMoveOperations(
       idempotent: true,
       compensatedBy: Compensation.None,
       compensationReason:
-        'Corre después del pivote: el tenant ya vive en el destino y se reintenta hasta completarse.',
+        'Runs after the pivot: the tenant already lives in the target and it is retried until completed.',
       timeoutMs: TenantMoveLimits.switchTimeoutMs,
-      description: `Apunta ${service} al destino del tenant trasladado y vuelve a abrir sus escrituras.`,
+      description: `Points ${service} to the target of the moved tenant and reopens its writes.`,
     }),
     tenantMoveCleanup: defineOperation({
       id: id('cleanup'),
@@ -93,9 +93,9 @@ export function defineTenantMoveOperations(
       idempotent: true,
       compensatedBy: Compensation.None,
       compensationReason:
-        'Borra del origen los datos ya trasladados una vez vencida la gracia: no se restauran.',
+        'Deletes from the source the data already moved once the grace period expires: it is not restored.',
       timeoutMs: TenantMoveLimits.cleanupTimeoutMs,
-      description: `Borra de ${service} los datos del tenant trasladado cuando pasa el periodo de gracia.`,
+      description: `Deletes from ${service} the data of the moved tenant when the grace period ends.`,
     }),
   };
 }

@@ -1,9 +1,9 @@
-/** Opciones de `ClaimTable`. */
+/** Options of `ClaimTable`. */
 export interface ClaimTableOptions<R> {
-  /** Convierte el resultado a JSON. Por defecto lo guarda tal cual en `jsonb`. */
+  /** Converts the result to JSON. By default it stores it as is in `jsonb`. */
   readonly serialize?: (result: R) => unknown;
-  /** Reconstruye el resultado desde el `jsonb` guardado. */
+  /** Rebuilds the result from the stored `jsonb`. */
   readonly deserialize?: (stored: unknown) => R;
-  /** La tabla tiene `tenant_id` y guarda ahí el `tenantId` del claim. */
+  /** Whether the table has `tenant_id` and stores the claim's `tenantId` there. */
   readonly tenantColumn?: boolean;
 }

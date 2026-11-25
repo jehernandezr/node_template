@@ -1,11 +1,11 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Permiso dentro de un tenant.
+/// Permission within a tenant.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum Permission {
   tasksRead('tasks:read'),
   tasksWrite('tasks:write'),
@@ -25,10 +25,10 @@ enum Permission {
 
   const Permission(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static Permission? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -37,10 +37,10 @@ enum Permission {
   }
 }
 
-/// Rol de plataforma.
+/// Platform role.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum PlatformRole {
   superAdmin('super_admin'),
   support('support'),
@@ -49,10 +49,10 @@ enum PlatformRole {
 
   const PlatformRole(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static PlatformRole? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -61,10 +61,10 @@ enum PlatformRole {
   }
 }
 
-/// Funcionalidad del plan.
+/// Plan feature.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum PlanFeature {
   aiAssistant('ai_assistant'),
   webhooks('webhooks'),
@@ -73,10 +73,10 @@ enum PlanFeature {
 
   const PlanFeature(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static PlanFeature? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -87,17 +87,17 @@ enum PlanFeature {
 
 /// Feature flag.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum FeatureFlag {
   newReports('new_reports');
 
   const FeatureFlag(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static FeatureFlag? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -108,8 +108,8 @@ enum FeatureFlag {
 
 /// Second factor method.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum MfaFactor {
   deviceOtp('device_otp'),
   emailOtp('email_otp'),
@@ -119,10 +119,10 @@ enum MfaFactor {
 
   const MfaFactor(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static MfaFactor? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -133,18 +133,18 @@ enum MfaFactor {
 
 /// Result of a sign-in.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum SignInStatus {
   authenticated('authenticated'),
   mfaRequired('mfa_required');
 
   const SignInStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static SignInStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -153,10 +153,10 @@ enum SignInStatus {
   }
 }
 
-/// Plataforma del cliente.
+/// Client platform.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ClientPlatform {
   ios('ios'),
   android('android'),
@@ -167,10 +167,10 @@ enum ClientPlatform {
 
   const ClientPlatform(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ClientPlatform? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -179,10 +179,10 @@ enum ClientPlatform {
   }
 }
 
-/// Motivo de una revocación.
+/// Reason for a revocation.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum RevocationReason {
   logout('logout'),
   userAction('user_action'),
@@ -192,10 +192,10 @@ enum RevocationReason {
 
   const RevocationReason(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static RevocationReason? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -204,10 +204,10 @@ enum RevocationReason {
   }
 }
 
-/// Alcance de una revocación de tokens.
+/// Scope of a token revocation.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum RevocationScope {
   session('session'),
   user('user'),
@@ -215,10 +215,10 @@ enum RevocationScope {
 
   const RevocationScope(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static RevocationScope? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -229,8 +229,8 @@ enum RevocationScope {
 
 /// Method with which the session was authenticated (amr).
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum AuthMethodReference {
   password('pwd'),
   passkey('passkey'),
@@ -241,10 +241,10 @@ enum AuthMethodReference {
 
   const AuthMethodReference(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static AuthMethodReference? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -253,20 +253,20 @@ enum AuthMethodReference {
   }
 }
 
-/// Destinatario de un access token.
+/// Audience of an access token.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TokenAudience {
   api('api'),
   backoffice('backoffice');
 
   const TokenAudience(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TokenAudience? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -275,10 +275,10 @@ enum TokenAudience {
   }
 }
 
-/// Rol de sistema de un tenant.
+/// System role of a tenant.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TenantRole {
   owner('owner'),
   admin('admin'),
@@ -287,10 +287,10 @@ enum TenantRole {
 
   const TenantRole(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TenantRole? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -299,10 +299,10 @@ enum TenantRole {
   }
 }
 
-/// Tipo de tenant.
+/// Tenant type.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TenantKind {
   organization('organization'),
   sharedCustomers('shared_customers'),
@@ -310,10 +310,10 @@ enum TenantKind {
 
   const TenantKind(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TenantKind? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -322,10 +322,10 @@ enum TenantKind {
   }
 }
 
-/// Ciclo de vida de un tenant.
+/// Lifecycle of a tenant.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TenantLifecycle {
   provisioning('provisioning'),
   active('active'),
@@ -334,10 +334,10 @@ enum TenantLifecycle {
 
   const TenantLifecycle(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TenantLifecycle? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -346,10 +346,10 @@ enum TenantLifecycle {
   }
 }
 
-/// Estado de una invitación.
+/// Status of an invitation.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum InvitationStatus {
   pending('pending'),
   accepted('accepted'),
@@ -358,10 +358,10 @@ enum InvitationStatus {
 
   const InvitationStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static InvitationStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -370,10 +370,10 @@ enum InvitationStatus {
   }
 }
 
-/// Qué cambió en la membresía de un usuario.
+/// What changed in the membership of a user.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum MembershipChangeKind {
   added('added'),
   removed('removed'),
@@ -381,10 +381,10 @@ enum MembershipChangeKind {
 
   const MembershipChangeKind(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static MembershipChangeKind? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -393,10 +393,10 @@ enum MembershipChangeKind {
   }
 }
 
-/// Estado de la cuenta de un usuario.
+/// Status of a user account.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum UserStatus {
   pendingVerification('pending_verification'),
   active('active'),
@@ -405,10 +405,10 @@ enum UserStatus {
 
   const UserStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static UserStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -417,10 +417,10 @@ enum UserStatus {
   }
 }
 
-/// Alerta de seguridad sobre una cuenta.
+/// Security alert on an account.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum SecurityAlertType {
   newDeviceSignIn('new_device_sign_in'),
   verifierRegistered('verifier_registered'),
@@ -439,10 +439,10 @@ enum SecurityAlertType {
 
   const SecurityAlertType(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static SecurityAlertType? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -451,20 +451,20 @@ enum SecurityAlertType {
   }
 }
 
-/// Entorno de una API key.
+/// Environment of an API key.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ApiKeyEnvironment {
   live('live'),
   test('test');
 
   const ApiKeyEnvironment(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ApiKeyEnvironment? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -473,10 +473,10 @@ enum ApiKeyEnvironment {
   }
 }
 
-/// Estado de una API key.
+/// Status of an API key.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ApiKeyStatus {
   active('active'),
   rotated('rotated'),
@@ -484,10 +484,10 @@ enum ApiKeyStatus {
 
   const ApiKeyStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ApiKeyStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -496,20 +496,20 @@ enum ApiKeyStatus {
   }
 }
 
-/// Estado de una service account.
+/// Status of a service account.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ServiceAccountStatus {
   active('active'),
   disabled('disabled');
 
   const ServiceAccountStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ServiceAccountStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -518,12 +518,12 @@ enum ServiceAccountStatus {
   }
 }
 
-/// Códigos de error públicos del contrato `identity`.
+/// Public error codes of the `identity` contract.
 ///
-/// Solo incluye los códigos con audiencia `public`: los internos nunca
-/// llegan al cliente. [messageKey] es la clave del mensaje en el ARB.
+/// Only includes codes with `public` audience: internal ones never
+/// reach the client. [messageKey] is the message key in the ARB.
 enum IdentityErrorCode {
-  /// El email o la contraseña no son válidos, o el origen está bloqueado por intentos fallidos.
+  /// The email or password is not valid, or the origin is blocked after failed attempts.
   authInvalidCredentials(
     'IDENTITY.AUTH.INVALID_CREDENTIALS',
     httpStatus: 401,
@@ -531,7 +531,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_auth_invalid_credentials',
   ),
 
-  /// El desafío MFA no existe o venció. Inicia sesión de nuevo.
+  /// The MFA challenge does not exist or expired. Sign in again.
   mfaTokenInvalid(
     'IDENTITY.MFA.TOKEN_INVALID',
     httpStatus: 401,
@@ -539,7 +539,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_token_invalid',
   ),
 
-  /// El código de verificación no es correcto.
+  /// The verification code is not correct.
   mfaCodeInvalid(
     'IDENTITY.MFA.CODE_INVALID',
     httpStatus: 400,
@@ -547,7 +547,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_code_invalid',
   ),
 
-  /// El código de verificación expiró. Solicita uno nuevo.
+  /// The verification code expired. Request a new one.
   mfaCodeExpired(
     'IDENTITY.MFA.CODE_EXPIRED',
     httpStatus: 400,
@@ -555,7 +555,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_code_expired',
   ),
 
-  /// Se agotaron los intentos del desafío. Solicita uno nuevo.
+  /// The challenge attempts ran out. Request a new one.
   mfaTooManyAttempts(
     'IDENTITY.MFA.TOO_MANY_ATTEMPTS',
     httpStatus: 429,
@@ -563,7 +563,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_too_many_attempts',
   ),
 
-  /// La operación exige verificar de nuevo el segundo factor.
+  /// The operation requires verifying the second factor again.
   mfaStepUpRequired(
     'IDENTITY.MFA.STEP_UP_REQUIRED',
     httpStatus: 403,
@@ -571,7 +571,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_step_up_required',
   ),
 
-  /// El método pedido no está entre los que ofreció el desafío MFA. Elige otro.
+  /// The requested method is not among those offered by the MFA challenge. Choose another.
   mfaMethodUnavailable(
     'IDENTITY.MFA.METHOD_UNAVAILABLE',
     httpStatus: 400,
@@ -579,7 +579,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_method_unavailable',
   ),
 
-  /// La sesión fue cerrada. Inicia sesión de nuevo.
+  /// The session was closed. Sign in again.
   sessionRevoked(
     'IDENTITY.SESSION.REVOKED',
     httpStatus: 401,
@@ -587,7 +587,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_session_revoked',
   ),
 
-  /// La sesión venció por inactividad o por el tope absoluto. Inicia sesión de nuevo.
+  /// The session expired due to inactivity or the absolute limit. Sign in again.
   sessionExpired(
     'IDENTITY.SESSION.EXPIRED',
     httpStatus: 401,
@@ -595,7 +595,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_session_expired',
   ),
 
-  /// Se presentó un session token ya rotado. La sesión completa quedó revocada. Inicia sesión de nuevo.
+  /// An already rotated session token was presented. The whole session was revoked. Sign in again.
   sessionReused(
     'IDENTITY.SESSION.REUSED',
     httpStatus: 401,
@@ -603,7 +603,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_session_reused',
   ),
 
-  /// Los permisos cambiaron desde que se emitió el token. El cliente refresca y reintenta.
+  /// Permissions changed since the token was issued. The client refreshes and retries.
   tokenStalePermissions(
     'IDENTITY.TOKEN.STALE_PERMISSIONS',
     httpStatus: 401,
@@ -611,7 +611,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_token_stale_permissions',
   ),
 
-  /// El access token fue revocado por la época del usuario o del tenant. Inicia sesión de nuevo.
+  /// The access token was revoked by the user or tenant epoch. Sign in again.
   tokenRevoked(
     'IDENTITY.TOKEN.REVOKED',
     httpStatus: 401,
@@ -619,7 +619,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_token_revoked',
   ),
 
-  /// El usuario está suspendido. Sus sesiones quedan cerradas hasta que se reactive.
+  /// The user is suspended. Their sessions stay closed until reactivated.
   userSuspended(
     'IDENTITY.USER.SUSPENDED',
     httpStatus: 403,
@@ -627,7 +627,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_user_suspended',
   ),
 
-  /// El tenant está suspendido. Las sesiones en él quedan cerradas hasta que se reactive.
+  /// The tenant is suspended. Sessions in it stay closed until reactivated.
   tenantSuspended(
     'IDENTITY.TENANT.SUSPENDED',
     httpStatus: 403,
@@ -635,7 +635,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_tenant_suspended',
   ),
 
-  /// El email todavía no está verificado. Confirma el enlace que enviamos a tu correo.
+  /// The email is not verified yet. Confirm the link sent to your email.
   authEmailNotVerified(
     'IDENTITY.AUTH.EMAIL_NOT_VERIFIED',
     httpStatus: 403,
@@ -643,7 +643,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_auth_email_not_verified',
   ),
 
-  /// El enlace de verificación del email no es válido o venció. Solicita uno nuevo.
+  /// The email verification link is not valid or expired. Request a new one.
   userEmailVerificationInvalid(
     'IDENTITY.USER.EMAIL_VERIFICATION_INVALID',
     httpStatus: 400,
@@ -651,7 +651,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_user_email_verification_invalid',
   ),
 
-  /// La contraseña no cumple la política: de 12 a 128 caracteres y distinta del email.
+  /// The password does not meet the policy: 12 to 128 characters and different from the email.
   passwordPolicyViolation(
     'IDENTITY.PASSWORD.POLICY_VIOLATION',
     httpStatus: 400,
@@ -659,7 +659,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_password_policy_violation',
   ),
 
-  /// La contraseña aparece en filtraciones conocidas. Elige otra.
+  /// The password appears in known breaches. Choose another.
   passwordBreached(
     'IDENTITY.PASSWORD.BREACHED',
     httpStatus: 400,
@@ -667,7 +667,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_password_breached',
   ),
 
-  /// La contraseña actual no es correcta.
+  /// The current password is not correct.
   passwordCurrentInvalid(
     'IDENTITY.PASSWORD.CURRENT_INVALID',
     httpStatus: 400,
@@ -675,7 +675,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_password_current_invalid',
   ),
 
-  /// El enlace para restablecer la contraseña no es válido o venció. Solicita uno nuevo.
+  /// The password reset link is not valid or expired. Request a new one.
   passwordResetInvalid(
     'IDENTITY.PASSWORD.RESET_INVALID',
     httpStatus: 400,
@@ -683,7 +683,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_password_reset_invalid',
   ),
 
-  /// La firma del dispositivo no es válida.
+  /// The device signature is not valid.
   deviceSignatureInvalid(
     'IDENTITY.DEVICE.SIGNATURE_INVALID',
     httpStatus: 401,
@@ -691,7 +691,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_device_signature_invalid',
   ),
 
-  /// La clave pública del dispositivo no es válida.
+  /// The device public key is not valid.
   deviceKeyInvalid(
     'IDENTITY.DEVICE.KEY_INVALID',
     httpStatus: 400,
@@ -699,7 +699,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_device_key_invalid',
   ),
 
-  /// La recuperación del segundo factor todavía no está disponible. Intenta de nuevo cuando termine la espera.
+  /// Second factor recovery is not available yet. Try again when the waiting period ends.
   mfaRecoveryNotReady(
     'IDENTITY.MFA.RECOVERY_NOT_READY',
     httpStatus: 403,
@@ -707,7 +707,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_recovery_not_ready',
   ),
 
-  /// Ese segundo factor ya está activo.
+  /// That second factor is already active.
   mfaFactorAlreadyEnrolled(
     'IDENTITY.MFA.FACTOR_ALREADY_ENROLLED',
     httpStatus: 409,
@@ -715,7 +715,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_factor_already_enrolled',
   ),
 
-  /// Ese segundo factor no está activo.
+  /// That second factor is not active.
   mfaFactorNotEnrolled(
     'IDENTITY.MFA.FACTOR_NOT_ENROLLED',
     httpStatus: 400,
@@ -723,7 +723,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_mfa_factor_not_enrolled',
   ),
 
-  /// No se pudo verificar la passkey.
+  /// The passkey could not be verified.
   passkeyVerificationFailed(
     'IDENTITY.PASSKEY.VERIFICATION_FAILED',
     httpStatus: 400,
@@ -731,7 +731,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_passkey_verification_failed',
   ),
 
-  /// El desafío de la passkey venció. Inténtalo de nuevo.
+  /// The passkey challenge expired. Try again.
   passkeyChallengeExpired(
     'IDENTITY.PASSKEY.CHALLENGE_EXPIRED',
     httpStatus: 400,
@@ -739,7 +739,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_passkey_challenge_expired',
   ),
 
-  /// El identificador del tenant ya está en uso. Elige otro.
+  /// The tenant identifier is already in use. Choose another.
   tenantSlugTaken(
     'IDENTITY.TENANT.SLUG_TAKEN',
     httpStatus: 409,
@@ -747,7 +747,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_tenant_slug_taken',
   ),
 
-  /// No eres miembro de ese tenant.
+  /// You are not a member of that tenant.
   tenantNotMember(
     'IDENTITY.TENANT.NOT_MEMBER',
     httpStatus: 403,
@@ -755,7 +755,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_tenant_not_member',
   ),
 
-  /// El tenant debe conservar al menos un propietario.
+  /// The tenant must keep at least one owner.
   accessLastOwner(
     'IDENTITY.ACCESS.LAST_OWNER',
     httpStatus: 409,
@@ -763,7 +763,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_access_last_owner',
   ),
 
-  /// Los roles de sistema no se pueden modificar ni borrar.
+  /// System roles cannot be modified or deleted.
   accessSystemRoleImmutable(
     'IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE',
     httpStatus: 409,
@@ -771,7 +771,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_access_system_role_immutable',
   ),
 
-  /// Ya existe un grupo o rol con ese nombre.
+  /// A group or role with that name already exists.
   accessNameTaken(
     'IDENTITY.ACCESS.NAME_TAKEN',
     httpStatus: 409,
@@ -779,7 +779,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_access_name_taken',
   ),
 
-  /// La invitación no es válida, venció o ya se usó.
+  /// The invitation is not valid, expired or was already used.
   invitationInvalid(
     'IDENTITY.INVITATION.INVALID',
     httpStatus: 400,
@@ -787,7 +787,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_invitation_invalid',
   ),
 
-  /// El email verificado de tu cuenta no coincide con el de la invitación.
+  /// The verified email of your account does not match the invitation email.
   invitationEmailMismatch(
     'IDENTITY.INVITATION.EMAIL_MISMATCH',
     httpStatus: 403,
@@ -795,7 +795,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_invitation_email_mismatch',
   ),
 
-  /// La API key no es válida.
+  /// The API key is not valid.
   apiKeyInvalid(
     'IDENTITY.API_KEY.INVALID',
     httpStatus: 401,
@@ -803,7 +803,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_api_key_invalid',
   ),
 
-  /// La API key venció.
+  /// The API key expired.
   apiKeyExpired(
     'IDENTITY.API_KEY.EXPIRED',
     httpStatus: 401,
@@ -811,7 +811,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_api_key_expired',
   ),
 
-  /// La API key no puede usarse desde esta dirección IP.
+  /// The API key cannot be used from this IP address.
   apiKeyIpNotAllowed(
     'IDENTITY.API_KEY.IP_NOT_ALLOWED',
     httpStatus: 403,
@@ -819,7 +819,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_api_key_ip_not_allowed',
   ),
 
-  /// No puedes otorgar permisos que tu cuenta no tiene.
+  /// You cannot grant permissions your account does not have.
   apiKeyPermissionNotGrantable(
     'IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE',
     httpStatus: 403,
@@ -827,7 +827,7 @@ enum IdentityErrorCode {
     messageKey: 'error_identity_api_key_permission_not_grantable',
   ),
 
-  /// La cuenta de servicio está deshabilitada.
+  /// The service account is disabled.
   serviceAccountDisabled(
     'IDENTITY.SERVICE_ACCOUNT.DISABLED',
     httpStatus: 403,
@@ -842,22 +842,22 @@ enum IdentityErrorCode {
     required this.messageKey,
   });
 
-  /// Código exacto que envía el backend, por ejemplo `IDENTITY.AUTH.INVALID_CREDENTIALS`.
+  /// Exact code sent by the backend, for example `IDENTITY.AUTH.INVALID_CREDENTIALS`.
   final String code;
 
-  /// Estado HTTP con el que responde el backend.
+  /// HTTP status the backend responds with.
   final int httpStatus;
 
-  /// Si el cliente puede reintentar la misma petición.
+  /// Whether the client may retry the same request.
   final bool retryable;
 
-  /// Clave ARB del mensaje para personas.
+  /// ARB key of the human-readable message.
   final String messageKey;
 
-  /// Igual a [code].
+  /// Same as [code].
   String get wireCode => code;
 
-  /// Valor con [code], o null si este cliente no lo conoce.
+  /// Value with [code], or null if this client does not know it.
   static IdentityErrorCode? fromCode(String code) {
     for (final value in values) {
       if (value.code == code) return value;
@@ -865,14 +865,14 @@ enum IdentityErrorCode {
     return null;
   }
 
-  /// Igual a [fromCode].
+  /// Same as [fromCode].
   static IdentityErrorCode? tryParse(String code) => fromCode(code);
 }
 
-/// Enum `IdentityRoute` del contrato `identity`.
+/// Enum `IdentityRoute` of the `identity` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentityRoute {
   signIn('identity.auth.sign-in'),
   requestMfaChallenge('identity.auth.mfa-challenge'),
@@ -953,10 +953,10 @@ enum IdentityRoute {
 
   const IdentityRoute(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentityRoute? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -965,10 +965,10 @@ enum IdentityRoute {
   }
 }
 
-/// Enum `IdentityOperation` del contrato `identity`.
+/// Enum `IdentityOperation` of the `identity` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentityOperation {
   revokeUserSessions('identity.sessions.revoke-for-user.v1'),
   getUserAccess('identity.users.get-access.v1'),
@@ -993,10 +993,10 @@ enum IdentityOperation {
 
   const IdentityOperation(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentityOperation? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -1005,10 +1005,10 @@ enum IdentityOperation {
   }
 }
 
-/// Enum `IdentityEvent` del contrato `identity`.
+/// Enum `IdentityEvent` of the `identity` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentityEvent {
   sessionRevoked('identity.session.revoked.v1'),
   tokensRevoked('identity.tokens.revoked.v1'),
@@ -1030,10 +1030,10 @@ enum IdentityEvent {
 
   const IdentityEvent(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentityEvent? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -1042,19 +1042,19 @@ enum IdentityEvent {
   }
 }
 
-/// Enum `IdentityTopic` del contrato `identity`.
+/// Enum `IdentityTopic` of the `identity` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentityTopic {
   events('identity-events');
 
   const IdentityTopic(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentityTopic? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -1063,19 +1063,19 @@ enum IdentityTopic {
   }
 }
 
-/// Enum `IdentityCommand` del contrato `identity`.
+/// Enum `IdentityCommand` of the `identity` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentityCommand {
   sendPasswordReset('identity.password-reset.send.v1');
 
   const IdentityCommand(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentityCommand? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -1084,10 +1084,10 @@ enum IdentityCommand {
   }
 }
 
-/// Enum `IdentityQueue` del contrato `identity`.
+/// Enum `IdentityQueue` of the `identity` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentityQueue {
   accessProjection('identity-access-projection'),
   authState('identity-auth-state'),
@@ -1096,10 +1096,10 @@ enum IdentityQueue {
 
   const IdentityQueue(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentityQueue? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -1108,10 +1108,10 @@ enum IdentityQueue {
   }
 }
 
-/// Saga que orquesta identity.
+/// Saga orchestrated by identity.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentitySaga {
   tenantOnboarding('identity.tenant-onboarding'),
   deleteAccount('identity.delete-account'),
@@ -1119,10 +1119,10 @@ enum IdentitySaga {
 
   const IdentitySaga(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentitySaga? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -1131,10 +1131,10 @@ enum IdentitySaga {
   }
 }
 
-/// Estado de una saga de identity.
+/// Status of an identity saga.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum IdentitySagaStatus {
   running('running'),
   suspended('suspended'),
@@ -1146,10 +1146,10 @@ enum IdentitySagaStatus {
 
   const IdentitySagaStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static IdentitySagaStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;

@@ -11,7 +11,7 @@ import {
 import { UsageRecordEntity } from './entities/usage-record.entity.js';
 import { UsageTotalEntity } from './entities/usage-total.entity.js';
 
-/** `UsageLedger` sobre `usage_records` y `usage_totals` del shard del tenant. */
+/** `UsageLedger` over `usage_records` and `usage_totals` of the tenant shard. */
 @Injectable()
 export class TypeOrmUsageLedger
   extends TenantIsolatedRepository

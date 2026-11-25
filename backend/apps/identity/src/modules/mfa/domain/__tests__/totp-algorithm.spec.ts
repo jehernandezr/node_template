@@ -1,6 +1,6 @@
 import { TotpAlgorithm } from '../totp-algorithm.js';
 
-/** Secreto SHA-1 de los vectores del apéndice B de RFC 6238. */
+/** SHA-1 secret of the test vectors in RFC 6238 appendix B. */
 const RFC_SECRET = Buffer.from('12345678901234567890', 'ascii');
 
 describe('TotpAlgorithm', () => {

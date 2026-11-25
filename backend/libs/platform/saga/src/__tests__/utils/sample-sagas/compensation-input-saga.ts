@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { STEP_A, STEP_C } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Su constructor de entrada de compensación lanza: no hay referencia para deshacer. */
+/** Its compensation input builder throws: there is no reference to undo. */
 export class CompensationInputSaga extends SagaDefinition<SampleState> {
   readonly type = 'comp-input-throws';
 

@@ -1,9 +1,9 @@
 import type { RoutingCache } from '../../ports/routing-cache.js';
 
-/** Lo que la prueba de contrato necesita de un caché compartido: el puerto y cómo adelantar el tiempo. */
+/** What the contract test needs from a shared cache: the port and how to advance time. */
 export interface RoutingCacheContractSubject {
   readonly cache: RoutingCache;
-  /** Adelanta el tiempo `ms` milisegundos (reloj falso en memoria; espera real en el adaptador). */
+  /** Advances time by `ms` milliseconds (fake in-memory clock; real wait in the adapter). */
   advance(ms: number): Promise<void>;
 }
 
@@ -11,8 +11,8 @@ const KEY = 'sharding:placement:contract';
 const TTL_MS = 1000;
 
 /**
- * Prueba de contrato de `RoutingCache`: la corren el doble en memoria y el adaptador real.
- * @param factory Crea un caché vacío y aislado para cada prueba.
+ * Contract test of `RoutingCache`: both the in-memory double and the real adapter run it.
+ * @param factory Creates an empty, isolated cache for each test.
  */
 export function runRoutingCacheContract(
   name: string,

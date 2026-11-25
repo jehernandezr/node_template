@@ -168,54 +168,54 @@ const reporting = defineServiceContract({
   },
 });
 
-/** Contratos de ejemplo compartidos por varias pruebas de la exportación. */
+/** Sample contracts shared by several export tests. */
 export class ContractFixtures {
-  /** Los contratos del registro real, en el orden en que se exportan. */
+  /** The contracts of the real registry, in export order. */
   static registered(): readonly ServiceContract[] {
     return [platformContract, identityContract, billingContract];
   }
 
-  /** Servicio con tópico y comando, sin esquemas propios. */
+  /** Service with a topic and a command, without its own schemas. */
   static tasks(): ServiceContract {
     return tasks;
   }
 
-  /** Servicio que consume comandos en una cola propia. */
+  /** Service that consumes commands on its own queue. */
   static reports(): ServiceContract {
     return reports;
   }
 
-  /** Servicio que se suscribe a un tópico de tareas. */
+  /** Service that subscribes to a tasks topic. */
   static notifications(): ServiceContract {
     return notifications;
   }
 
-  /** Servicio que publica un tópico FIFO y envía un comando. */
+  /** Service that publishes a FIFO topic and sends a command. */
   static orders(): ServiceContract {
     return orders;
   }
 
-  /** Servicio que publica un tópico y envía dos comandos. */
+  /** Service that publishes a topic and sends two commands. */
   static audit(): ServiceContract {
     return audit;
   }
 
-  /** Servicio con dos colas de comandos, una sin remitentes. */
+  /** Service with two command queues, one without senders. */
   static payments(): ServiceContract {
     return payments;
   }
 
-  /** Servicio que se suscribe a tópicos de pedidos y auditoría. */
+  /** Service that subscribes to orders and audit topics. */
   static reporting(): ServiceContract {
     return reporting;
   }
 
-  /** Ejemplo de mensajería de tareas, con platform. */
+  /** Tasks messaging example, with platform. */
   static tasksMessaging(): readonly ServiceContract[] {
     return [platformContract, tasks, reports, notifications];
   }
 
-  /** Ejemplo de mensajería de pedidos, con platform. */
+  /** Orders messaging example, with platform. */
   static ordersMessaging(): readonly ServiceContract[] {
     return [platformContract, orders, audit, payments, reporting];
   }

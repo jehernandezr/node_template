@@ -2,7 +2,7 @@ import type { Clock } from '@platform/kernel';
 import { TenantMoveErrorCode } from '../errors/tenant-move-error-code.enum.js';
 import { TenantMoveError } from '../errors/tenant-move.error.js';
 
-/** El tiempo de trabajo de una llamada de traslado, que queda bajo el plazo de la operación. */
+/** The working time of a move call, kept under the operation's deadline. */
 export class TransferBudget {
   private readonly endsAt: number;
 
@@ -13,7 +13,7 @@ export class TransferBudget {
     this.endsAt = clock.now().getTime() + budgetMs;
   }
 
-  /** @throws TenantMoveError `RoundPending` si el tiempo se acabó: la saga repite la llamada. */
+  /** @throws TenantMoveError `RoundPending` if the time ran out: the saga repeats the call. */
   check(table: string): void {
     if (this.clock.now().getTime() >= this.endsAt) {
       throw new TenantMoveError(

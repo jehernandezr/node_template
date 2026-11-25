@@ -10,7 +10,7 @@ import { NotificationPreferences } from '../../domain/notification-preferences.j
 import { PreferencesRepository } from '../../domain/preferences.repository.js';
 import { NotificationPreferencesEntity } from './entities/notification-preferences.entity.js';
 
-/** `PreferencesRepository` sobre `notification_preferences` del shard del usuario. */
+/** `PreferencesRepository` over `notification_preferences` in the user's shard. */
 @Injectable()
 export class TypeOrmPreferencesRepository extends PreferencesRepository {
   constructor(
@@ -38,7 +38,7 @@ export class TypeOrmPreferencesRepository extends PreferencesRepository {
         });
   }
 
-  /** Reemplaza la fila entera: guardar las mismas preferencias dos veces deja una sola fila igual. */
+  /** Replaces the whole row: saving the same preferences twice leaves a single identical row. */
   async save(
     owner: UserRef,
     preferences: NotificationPreferences,

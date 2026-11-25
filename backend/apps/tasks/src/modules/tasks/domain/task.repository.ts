@@ -3,31 +3,31 @@ import type { TaskChangesRequest } from './task-changes-request.js';
 import type { TaskPageRequest } from './task-page-request.js';
 import type { Task } from './task.js';
 
-/** Tareas del tenant del `ShardScope` abierto. */
+/** Tasks of the tenant of the open `ShardScope`. */
 export abstract class TaskRepository {
-  /** La tarea vigente, o `undefined` si no existe o está borrada. */
+  /** The current task, or `undefined` if it does not exist or is deleted. */
   abstract find(taskId: string): Promise<Task | undefined>;
 
-  /** Las tareas vigentes con esos ids, en el orden pedido; las que no existen no aparecen. */
+  /** The current tasks with those ids, in the requested order; those that do not exist are omitted. */
   abstract findMany(taskIds: readonly string[]): Promise<readonly Task[]>;
 
-  /** Inserta la tarea nueva y devuelve su estado guardado. */
+  /** Inserts the new task and returns its saved state. */
   abstract insert(task: Task): Promise<Task>;
 
   /**
-   * Guarda los cambios de una tarea leída y devuelve su estado guardado.
-   * @throws OptimisticLockError si otra escritura la cambió desde que se leyó.
+   * Saves the changes of a read task and returns its saved state.
+   * @throws OptimisticLockError if another write changed it since it was read.
    */
   abstract update(task: Task, actor: UserRef): Promise<Task>;
 
   /**
-   * Guarda el borrado lógico de una tarea leída y devuelve su estado guardado.
-   * @throws OptimisticLockError si otra escritura la cambió desde que se leyó.
+   * Saves the soft delete of a read task and returns its saved state.
+   * @throws OptimisticLockError if another write changed it since it was read.
    */
   abstract remove(task: Task, actor: UserRef): Promise<Task>;
 
   abstract page(request: TaskPageRequest): Promise<readonly Task[]>;
 
-  /** Incluye las borradas: quien sincroniza necesita saber que dejaron de existir. */
+  /** Includes deleted ones: whoever synchronizes needs to know they no longer exist. */
   abstract changes(request: TaskChangesRequest): Promise<readonly Task[]>;
 }

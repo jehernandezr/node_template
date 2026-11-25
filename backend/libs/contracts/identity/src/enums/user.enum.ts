@@ -1,4 +1,4 @@
-/** Estado de la cuenta de un usuario. */
+/** Status of a user's account. */
 export enum UserStatus {
   PendingVerification = 'pending_verification',
   Active = 'active',
@@ -6,7 +6,7 @@ export enum UserStatus {
   Deleted = 'deleted',
 }
 
-/** Alertas de seguridad que identity levanta sobre una cuenta. */
+/** Security alerts identity raises on an account. */
 export enum SecurityAlertType {
   NewDeviceSignIn = 'new_device_sign_in',
   VerifierRegistered = 'verifier_registered',

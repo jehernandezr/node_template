@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import 'package:meta/meta.dart';
 
@@ -9,12 +9,12 @@ import '../../core/core.dart';
 import '../../identity/enums/identity_enums.dart';
 import '../../platform/types/platform_types.dart';
 
-/// Periodo de facturación con fechas de calendario.
+/// Billing period with calendar dates.
 @immutable
 final class BillingPeriod {
   const BillingPeriod({required this.start, required this.end});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory BillingPeriod.fromJson(Map<String, dynamic> json) {
     try {
       return BillingPeriod(
@@ -30,13 +30,13 @@ final class BillingPeriod {
 
   final String end;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'start': start,
     'end': end,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(BillingPeriod value) => value.toJson();
 
   @override
@@ -50,12 +50,12 @@ final class BillingPeriod {
   int get hashCode => contractHash([start, end]);
 }
 
-/// Límite de una métrica en un plan.
+/// Limit of a metric in a plan.
 @immutable
 final class QuotaLimit {
   const QuotaLimit({required this.metric, required this.limit});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory QuotaLimit.fromJson(Map<String, dynamic> json) {
     try {
       return QuotaLimit(
@@ -71,13 +71,13 @@ final class QuotaLimit {
 
   final int limit;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'metric': metric.wireCode,
     'limit': limit,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(QuotaLimit value) => value.toJson();
 
   @override
@@ -91,7 +91,7 @@ final class QuotaLimit {
   int get hashCode => contractHash([metric, limit]);
 }
 
-/// Uso de una métrica en una ventana, con su llave de idempotencia.
+/// Usage of a metric in a window, with its idempotency key.
 @immutable
 final class UsageRecord {
   const UsageRecord({
@@ -101,7 +101,7 @@ final class UsageRecord {
     required this.key,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory UsageRecord.fromJson(Map<String, dynamic> json) {
     try {
       return UsageRecord(
@@ -123,7 +123,7 @@ final class UsageRecord {
 
   final String key;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'metric': metric.wireCode,
     'quantity': quantity,
@@ -131,7 +131,7 @@ final class UsageRecord {
     'key': key,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(UsageRecord value) => value.toJson();
 
   @override
@@ -147,12 +147,12 @@ final class UsageRecord {
   int get hashCode => contractHash([metric, quantity, windowStart, key]);
 }
 
-/// Lote de registros de uso de un tenant.
+/// Batch of usage records of a tenant.
 @immutable
 final class RecordUsagePayload {
   const RecordUsagePayload({required this.tenantId, required this.records});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory RecordUsagePayload.fromJson(Map<String, dynamic> json) {
     try {
       return RecordUsagePayload(
@@ -171,13 +171,13 @@ final class RecordUsagePayload {
 
   final List<UsageRecord> records;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'records': [for (final e0 in records) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(RecordUsagePayload value) =>
       value.toJson();
 
@@ -192,7 +192,7 @@ final class RecordUsagePayload {
   int get hashCode => contractHash([tenantId, records]);
 }
 
-/// Cambió el plan de una suscripción.
+/// The plan of a subscription changed.
 @immutable
 final class SubscriptionChangedPayload {
   const SubscriptionChangedPayload({
@@ -203,7 +203,7 @@ final class SubscriptionChangedPayload {
     required this.changedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory SubscriptionChangedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return SubscriptionChangedPayload(
@@ -228,7 +228,7 @@ final class SubscriptionChangedPayload {
 
   final DateTime changedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'subscriptionId': subscriptionId,
@@ -237,7 +237,7 @@ final class SubscriptionChangedPayload {
     'changedAt': changedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(SubscriptionChangedPayload value) =>
       value.toJson();
 
@@ -261,7 +261,7 @@ final class SubscriptionChangedPayload {
   ]);
 }
 
-/// Se suspendió una suscripción por falta de pago.
+/// A subscription was suspended for non-payment.
 @immutable
 final class SubscriptionSuspendedPayload {
   const SubscriptionSuspendedPayload({
@@ -270,7 +270,7 @@ final class SubscriptionSuspendedPayload {
     required this.suspendedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory SubscriptionSuspendedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return SubscriptionSuspendedPayload(
@@ -292,14 +292,14 @@ final class SubscriptionSuspendedPayload {
 
   final DateTime suspendedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'subscriptionId': subscriptionId,
     'suspendedAt': suspendedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(SubscriptionSuspendedPayload value) =>
       value.toJson();
 
@@ -315,7 +315,7 @@ final class SubscriptionSuspendedPayload {
   int get hashCode => contractHash([tenantId, subscriptionId, suspendedAt]);
 }
 
-/// Se reactivó una suscripción suspendida.
+/// A suspended subscription was reactivated.
 @immutable
 final class SubscriptionReactivatedPayload {
   const SubscriptionReactivatedPayload({
@@ -324,7 +324,7 @@ final class SubscriptionReactivatedPayload {
     required this.reactivatedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory SubscriptionReactivatedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return SubscriptionReactivatedPayload(
@@ -346,14 +346,14 @@ final class SubscriptionReactivatedPayload {
 
   final DateTime reactivatedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'subscriptionId': subscriptionId,
     'reactivatedAt': reactivatedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(SubscriptionReactivatedPayload value) =>
       value.toJson();
 
@@ -369,7 +369,7 @@ final class SubscriptionReactivatedPayload {
   int get hashCode => contractHash([tenantId, subscriptionId, reactivatedAt]);
 }
 
-/// Cambiaron las funcionalidades o cuotas vigentes de un tenant.
+/// The active features or quotas of a tenant changed.
 @immutable
 final class EntitlementsChangedPayload {
   const EntitlementsChangedPayload({
@@ -379,7 +379,7 @@ final class EntitlementsChangedPayload {
     required this.changedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EntitlementsChangedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return EntitlementsChangedPayload(
@@ -407,7 +407,7 @@ final class EntitlementsChangedPayload {
 
   final DateTime changedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'features': [for (final e0 in features) e0.wireCode],
@@ -415,7 +415,7 @@ final class EntitlementsChangedPayload {
     'changedAt': changedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EntitlementsChangedPayload value) =>
       value.toJson();
 
@@ -432,7 +432,7 @@ final class EntitlementsChangedPayload {
   int get hashCode => contractHash([tenantId, features, quotas, changedAt]);
 }
 
-/// Se emitió una factura.
+/// An invoice was issued.
 @immutable
 final class InvoiceIssuedPayload {
   const InvoiceIssuedPayload({
@@ -444,7 +444,7 @@ final class InvoiceIssuedPayload {
     required this.issuedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceIssuedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceIssuedPayload(
@@ -472,7 +472,7 @@ final class InvoiceIssuedPayload {
 
   final DateTime issuedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'invoiceId': invoiceId,
@@ -482,7 +482,7 @@ final class InvoiceIssuedPayload {
     'issuedAt': issuedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceIssuedPayload value) =>
       value.toJson();
 
@@ -502,7 +502,7 @@ final class InvoiceIssuedPayload {
       contractHash([tenantId, invoiceId, number, period, total, issuedAt]);
 }
 
-/// Se pagó una factura.
+/// An invoice was paid.
 @immutable
 final class InvoicePaidPayload {
   const InvoicePaidPayload({
@@ -513,7 +513,7 @@ final class InvoicePaidPayload {
     required this.paidAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoicePaidPayload.fromJson(Map<String, dynamic> json) {
     try {
       return InvoicePaidPayload(
@@ -538,7 +538,7 @@ final class InvoicePaidPayload {
 
   final DateTime paidAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'invoiceId': invoiceId,
@@ -547,7 +547,7 @@ final class InvoicePaidPayload {
     'paidAt': paidAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoicePaidPayload value) =>
       value.toJson();
 
@@ -566,7 +566,7 @@ final class InvoicePaidPayload {
       contractHash([tenantId, invoiceId, number, total, paidAt]);
 }
 
-/// Falló el cobro de una factura.
+/// Charging an invoice failed.
 @immutable
 final class InvoiceFailedPayload {
   const InvoiceFailedPayload({
@@ -578,7 +578,7 @@ final class InvoiceFailedPayload {
     required this.failedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceFailedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceFailedPayload(
@@ -606,7 +606,7 @@ final class InvoiceFailedPayload {
 
   final DateTime failedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'invoiceId': invoiceId,
@@ -616,7 +616,7 @@ final class InvoiceFailedPayload {
     'failedAt': failedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceFailedPayload value) =>
       value.toJson();
 
@@ -636,7 +636,7 @@ final class InvoiceFailedPayload {
       contractHash([tenantId, invoiceId, number, total, attempts, failedAt]);
 }
 
-/// Plan del catálogo con su precio y sus límites.
+/// Catalog plan with its price and limits.
 @immutable
 final class Plan {
   const Plan({
@@ -648,7 +648,7 @@ final class Plan {
     required this.features,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory Plan.fromJson(Map<String, dynamic> json) {
     try {
       return Plan(
@@ -686,7 +686,7 @@ final class Plan {
 
   final List<PlanFeature> features;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'name': name,
@@ -696,7 +696,7 @@ final class Plan {
     'features': [for (final e0 in features) e0.wireCode],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(Plan value) => value.toJson();
 
   @override
@@ -715,12 +715,12 @@ final class Plan {
       contractHash([id, name, price, periodicity, quotas, features]);
 }
 
-/// Catálogo de planes disponibles.
+/// Catalog of available plans.
 @immutable
 final class PlanCatalog {
   const PlanCatalog({required this.items});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory PlanCatalog.fromJson(Map<String, dynamic> json) {
     try {
       return PlanCatalog(
@@ -736,12 +736,12 @@ final class PlanCatalog {
 
   final List<Plan> items;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(PlanCatalog value) => value.toJson();
 
   @override
@@ -753,7 +753,7 @@ final class PlanCatalog {
   int get hashCode => contractHash([items]);
 }
 
-/// Suscripción del tenant con su plan y el periodo vigente.
+/// Tenant subscription with its plan and current period.
 @immutable
 final class Subscription {
   const Subscription({
@@ -763,7 +763,7 @@ final class Subscription {
     required this.period,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory Subscription.fromJson(Map<String, dynamic> json) {
     try {
       return Subscription(
@@ -789,7 +789,7 @@ final class Subscription {
 
   final BillingPeriod period;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'plan': plan.toJson(),
@@ -797,7 +797,7 @@ final class Subscription {
     'period': period.toJson(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(Subscription value) => value.toJson();
 
   @override
@@ -813,7 +813,7 @@ final class Subscription {
   int get hashCode => contractHash([id, plan, status, period]);
 }
 
-/// Uso de una métrica frente a su límite.
+/// Usage of a metric against its limit.
 @immutable
 final class QuotaUsage {
   const QuotaUsage({
@@ -822,7 +822,7 @@ final class QuotaUsage {
     required this.used,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory QuotaUsage.fromJson(Map<String, dynamic> json) {
     try {
       return QuotaUsage(
@@ -841,14 +841,14 @@ final class QuotaUsage {
 
   final int used;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'metric': metric.wireCode,
     'limit': limit,
     'used': used,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(QuotaUsage value) => value.toJson();
 
   @override
@@ -863,12 +863,12 @@ final class QuotaUsage {
   int get hashCode => contractHash([metric, limit, used]);
 }
 
-/// Uso del periodo vigente de cada métrica con cuota.
+/// Current period usage of each metric with a quota.
 @immutable
 final class UsageOverview {
   const UsageOverview({required this.items});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory UsageOverview.fromJson(Map<String, dynamic> json) {
     try {
       return UsageOverview(
@@ -884,12 +884,12 @@ final class UsageOverview {
 
   final List<QuotaUsage> items;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(UsageOverview value) => value.toJson();
 
   @override
@@ -901,7 +901,7 @@ final class UsageOverview {
   int get hashCode => contractHash([items]);
 }
 
-/// Línea de una factura.
+/// Invoice line.
 @immutable
 final class InvoiceLine {
   const InvoiceLine({
@@ -910,7 +910,7 @@ final class InvoiceLine {
     required this.amount,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceLine.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceLine(
@@ -933,14 +933,14 @@ final class InvoiceLine {
 
   final MoneyAmount amount;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'kind': kind.wireCode,
     'description': description,
     'amount': amount.toJson(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceLine value) => value.toJson();
 
   @override
@@ -955,7 +955,7 @@ final class InvoiceLine {
   int get hashCode => contractHash([kind, description, amount]);
 }
 
-/// Factura completa con sus líneas.
+/// Full invoice with its lines.
 @immutable
 final class Invoice {
   const Invoice({
@@ -968,7 +968,7 @@ final class Invoice {
     required this.total,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory Invoice.fromJson(Map<String, dynamic> json) {
     try {
       return Invoice(
@@ -1006,7 +1006,7 @@ final class Invoice {
 
   final MoneyAmount total;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'number': number,
@@ -1017,7 +1017,7 @@ final class Invoice {
     'total': total.toJson(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(Invoice value) => value.toJson();
 
   @override
@@ -1037,7 +1037,7 @@ final class Invoice {
       contractHash([id, number, period, status, currency, lines, total]);
 }
 
-/// Factura sin líneas, para listados.
+/// Invoice without lines, for listings.
 @immutable
 final class InvoiceSummary {
   const InvoiceSummary({
@@ -1049,7 +1049,7 @@ final class InvoiceSummary {
     required this.total,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceSummary.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceSummary(
@@ -1081,7 +1081,7 @@ final class InvoiceSummary {
 
   final MoneyAmount total;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'number': number,
@@ -1091,7 +1091,7 @@ final class InvoiceSummary {
     'total': total.toJson(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceSummary value) => value.toJson();
 
   @override
@@ -1110,12 +1110,12 @@ final class InvoiceSummary {
       contractHash([id, number, period, status, currency, total]);
 }
 
-/// Página de facturas, más nuevas primero.
+/// Page of invoices, newest first.
 @immutable
 final class InvoicePage {
   const InvoicePage({required this.items, required this.nextCursor});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoicePage.fromJson(Map<String, dynamic> json) {
     try {
       return InvoicePage(
@@ -1134,13 +1134,13 @@ final class InvoicePage {
 
   final String? nextCursor;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
     'nextCursor': nextCursor,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoicePage value) => value.toJson();
 
   @override
@@ -1154,12 +1154,12 @@ final class InvoicePage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Plan al que cambia la suscripción.
+/// Plan the subscription changes to.
 @immutable
 final class ChangePlanRequest {
   const ChangePlanRequest({required this.planId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ChangePlanRequest.fromJson(Map<String, dynamic> json) {
     try {
       return ChangePlanRequest(planId: json['planId'] as String);
@@ -1170,10 +1170,10 @@ final class ChangePlanRequest {
 
   final String planId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'planId': planId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ChangePlanRequest value) => value.toJson();
 
   @override
@@ -1185,12 +1185,12 @@ final class ChangePlanRequest {
   int get hashCode => contractHash([planId]);
 }
 
-/// Filtros y paginación del listado de facturas.
+/// Filters and pagination of the invoice listing.
 @immutable
 final class ListInvoicesRequest {
   const ListInvoicesRequest({this.status, this.limit, this.after});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ListInvoicesRequest.fromJson(Map<String, dynamic> json) {
     try {
       return ListInvoicesRequest(
@@ -1215,14 +1215,14 @@ final class ListInvoicesRequest {
 
   final String? after;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     if (status case final value?) 'status': value.wireCode,
     'limit': ?limit,
     'after': ?after,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ListInvoicesRequest value) =>
       value.toJson();
 
@@ -1238,12 +1238,12 @@ final class ListInvoicesRequest {
   int get hashCode => contractHash([status, limit, after]);
 }
 
-/// Factura a consultar.
+/// Invoice to query.
 @immutable
 final class GetInvoiceRequest {
   const GetInvoiceRequest({required this.invoiceId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory GetInvoiceRequest.fromJson(Map<String, dynamic> json) {
     try {
       return GetInvoiceRequest(invoiceId: json['invoiceId'] as String);
@@ -1254,10 +1254,10 @@ final class GetInvoiceRequest {
 
   final String invoiceId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'invoiceId': invoiceId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(GetInvoiceRequest value) => value.toJson();
 
   @override
@@ -1269,7 +1269,7 @@ final class GetInvoiceRequest {
   int get hashCode => contractHash([invoiceId]);
 }
 
-/// Abre la cuenta de facturación de un tenant nuevo.
+/// Opens the billing account of a new tenant.
 @immutable
 final class OpenBillingAccountInput {
   const OpenBillingAccountInput({
@@ -1277,7 +1277,7 @@ final class OpenBillingAccountInput {
     required this.ownerUserId,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory OpenBillingAccountInput.fromJson(Map<String, dynamic> json) {
     try {
       return OpenBillingAccountInput(
@@ -1293,13 +1293,13 @@ final class OpenBillingAccountInput {
 
   final String ownerUserId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'ownerUserId': ownerUserId,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(OpenBillingAccountInput value) =>
       value.toJson();
 
@@ -1314,7 +1314,7 @@ final class OpenBillingAccountInput {
   int get hashCode => contractHash([tenantId, ownerUserId]);
 }
 
-/// Cuenta de facturación abierta con su suscripción.
+/// Billing account opened with its subscription.
 @immutable
 final class BillingAccountResult {
   const BillingAccountResult({
@@ -1323,7 +1323,7 @@ final class BillingAccountResult {
     required this.status,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory BillingAccountResult.fromJson(Map<String, dynamic> json) {
     try {
       return BillingAccountResult(
@@ -1346,14 +1346,14 @@ final class BillingAccountResult {
 
   final SubscriptionStatus status;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'subscriptionId': subscriptionId,
     'status': status.wireCode,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(BillingAccountResult value) =>
       value.toJson();
 
@@ -1369,12 +1369,12 @@ final class BillingAccountResult {
   int get hashCode => contractHash([tenantId, subscriptionId, status]);
 }
 
-/// Cierra la cuenta de facturación de un tenant.
+/// Closes the billing account of a tenant.
 @immutable
 final class CloseBillingAccountInput {
   const CloseBillingAccountInput({required this.tenantId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory CloseBillingAccountInput.fromJson(Map<String, dynamic> json) {
     try {
       return CloseBillingAccountInput(tenantId: json['tenantId'] as String);
@@ -1385,10 +1385,10 @@ final class CloseBillingAccountInput {
 
   final String tenantId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'tenantId': tenantId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(CloseBillingAccountInput value) =>
       value.toJson();
 
@@ -1402,12 +1402,12 @@ final class CloseBillingAccountInput {
   int get hashCode => contractHash([tenantId]);
 }
 
-/// Cuenta de facturación cerrada.
+/// Billing account closed.
 @immutable
 final class BillingAccountClosed {
   const BillingAccountClosed({required this.tenantId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory BillingAccountClosed.fromJson(Map<String, dynamic> json) {
     try {
       return BillingAccountClosed(tenantId: json['tenantId'] as String);
@@ -1418,10 +1418,10 @@ final class BillingAccountClosed {
 
   final String tenantId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'tenantId': tenantId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(BillingAccountClosed value) =>
       value.toJson();
 
@@ -1434,12 +1434,12 @@ final class BillingAccountClosed {
   int get hashCode => contractHash([tenantId]);
 }
 
-/// Tenant cuyas funcionalidades y cuotas se consultan.
+/// Tenant whose features and quotas are queried.
 @immutable
 final class GetEntitlementsInput {
   const GetEntitlementsInput({required this.tenantId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory GetEntitlementsInput.fromJson(Map<String, dynamic> json) {
     try {
       return GetEntitlementsInput(tenantId: json['tenantId'] as String);
@@ -1450,10 +1450,10 @@ final class GetEntitlementsInput {
 
   final String tenantId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'tenantId': tenantId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(GetEntitlementsInput value) =>
       value.toJson();
 
@@ -1466,7 +1466,7 @@ final class GetEntitlementsInput {
   int get hashCode => contractHash([tenantId]);
 }
 
-/// Funcionalidades y cuotas vigentes de un tenant.
+/// Active features and quotas of a tenant.
 @immutable
 final class Entitlements {
   const Entitlements({
@@ -1476,7 +1476,7 @@ final class Entitlements {
     required this.quotas,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory Entitlements.fromJson(Map<String, dynamic> json) {
     try {
       return Entitlements(
@@ -1508,7 +1508,7 @@ final class Entitlements {
 
   final List<QuotaLimit> quotas;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'status': status.wireCode,
@@ -1516,7 +1516,7 @@ final class Entitlements {
     'quotas': [for (final e0 in quotas) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(Entitlements value) => value.toJson();
 
   @override
@@ -1532,7 +1532,7 @@ final class Entitlements {
   int get hashCode => contractHash([tenantId, status, features, quotas]);
 }
 
-/// Consulta si un tenant puede consumir una cantidad de una métrica.
+/// Checks whether a tenant can consume an amount of a metric.
 @immutable
 final class CheckQuotaInput {
   const CheckQuotaInput({
@@ -1541,7 +1541,7 @@ final class CheckQuotaInput {
     this.requested,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory CheckQuotaInput.fromJson(Map<String, dynamic> json) {
     try {
       return CheckQuotaInput(
@@ -1562,14 +1562,14 @@ final class CheckQuotaInput {
 
   final int? requested;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'metric': metric.wireCode,
     'requested': ?requested,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(CheckQuotaInput value) => value.toJson();
 
   @override
@@ -1584,7 +1584,7 @@ final class CheckQuotaInput {
   int get hashCode => contractHash([tenantId, metric, requested]);
 }
 
-/// Resultado de consultar una cuota.
+/// Result of a quota check.
 @immutable
 final class QuotaCheck {
   const QuotaCheck({
@@ -1594,7 +1594,7 @@ final class QuotaCheck {
     required this.allowed,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory QuotaCheck.fromJson(Map<String, dynamic> json) {
     try {
       return QuotaCheck(
@@ -1616,7 +1616,7 @@ final class QuotaCheck {
 
   final bool allowed;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'metric': metric.wireCode,
     'limit': limit,
@@ -1624,7 +1624,7 @@ final class QuotaCheck {
     'allowed': allowed,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(QuotaCheck value) => value.toJson();
 
   @override
@@ -1640,7 +1640,7 @@ final class QuotaCheck {
   int get hashCode => contractHash([metric, limit, used, allowed]);
 }
 
-/// Marca una factura como pagada con la referencia del proveedor.
+/// Marks an invoice as paid with the provider reference.
 @immutable
 final class MarkInvoicePaidInput {
   const MarkInvoicePaidInput({
@@ -1652,7 +1652,7 @@ final class MarkInvoicePaidInput {
     this.attemptId,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory MarkInvoicePaidInput.fromJson(Map<String, dynamic> json) {
     try {
       return MarkInvoicePaidInput(
@@ -1680,7 +1680,7 @@ final class MarkInvoicePaidInput {
 
   final String? attemptId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'invoiceId': invoiceId,
@@ -1690,7 +1690,7 @@ final class MarkInvoicePaidInput {
     'attemptId': ?attemptId,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(MarkInvoicePaidInput value) =>
       value.toJson();
 
@@ -1710,7 +1710,7 @@ final class MarkInvoicePaidInput {
       contractHash([tenantId, invoiceId, paidAt, reference, amount, attemptId]);
 }
 
-/// Marca una factura como fallida después de un cobro rechazado.
+/// Marks an invoice as failed after a declined charge.
 @immutable
 final class MarkInvoiceFailedInput {
   const MarkInvoiceFailedInput({
@@ -1721,7 +1721,7 @@ final class MarkInvoiceFailedInput {
     this.attemptId,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory MarkInvoiceFailedInput.fromJson(Map<String, dynamic> json) {
     try {
       return MarkInvoiceFailedInput(
@@ -1746,7 +1746,7 @@ final class MarkInvoiceFailedInput {
 
   final String? attemptId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'invoiceId': invoiceId,
@@ -1755,7 +1755,7 @@ final class MarkInvoiceFailedInput {
     'attemptId': ?attemptId,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(MarkInvoiceFailedInput value) =>
       value.toJson();
 
@@ -1774,12 +1774,12 @@ final class MarkInvoiceFailedInput {
       contractHash([tenantId, invoiceId, failedAt, reason, attemptId]);
 }
 
-/// Estado de una factura después de la operación.
+/// Invoice status after the operation.
 @immutable
 final class InvoiceStateResult {
   const InvoiceStateResult({required this.invoiceId, required this.status});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceStateResult.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceStateResult(
@@ -1799,13 +1799,13 @@ final class InvoiceStateResult {
 
   final InvoiceStatus status;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'invoiceId': invoiceId,
     'status': status.wireCode,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceStateResult value) =>
       value.toJson();
 
@@ -1820,7 +1820,7 @@ final class InvoiceStateResult {
   int get hashCode => contractHash([invoiceId, status]);
 }
 
-/// Factura con sus fechas de emisión y de pago, para sincronizar otro servicio.
+/// Invoice with its issue and payment dates, to sync another service.
 @immutable
 final class InvoiceChange {
   const InvoiceChange({
@@ -1834,7 +1834,7 @@ final class InvoiceChange {
     required this.paidAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceChange.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceChange(
@@ -1874,7 +1874,7 @@ final class InvoiceChange {
 
   final DateTime? paidAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'number': number,
@@ -1889,7 +1889,7 @@ final class InvoiceChange {
     },
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceChange value) => value.toJson();
 
   @override
@@ -1918,12 +1918,12 @@ final class InvoiceChange {
   ]);
 }
 
-/// Página de facturas de un tenant, más nuevas primero.
+/// Page of a tenant invoices, newest first.
 @immutable
 final class InvoiceChangePage {
   const InvoiceChangePage({required this.items, required this.nextCursor});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory InvoiceChangePage.fromJson(Map<String, dynamic> json) {
     try {
       return InvoiceChangePage(
@@ -1942,13 +1942,13 @@ final class InvoiceChangePage {
 
   final String? nextCursor;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
     'nextCursor': nextCursor,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(InvoiceChangePage value) => value.toJson();
 
   @override
@@ -1962,7 +1962,7 @@ final class InvoiceChangePage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Entrada para paginar las facturas de un tenant.
+/// Input to page the invoices of a tenant.
 @immutable
 final class ListInvoiceChangesInput {
   const ListInvoiceChangesInput({
@@ -1971,7 +1971,7 @@ final class ListInvoiceChangesInput {
     this.after,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ListInvoiceChangesInput.fromJson(Map<String, dynamic> json) {
     try {
       return ListInvoiceChangesInput(
@@ -1990,14 +1990,14 @@ final class ListInvoiceChangesInput {
 
   final String? after;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'limit': ?limit,
     'after': ?after,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ListInvoiceChangesInput value) =>
       value.toJson();
 

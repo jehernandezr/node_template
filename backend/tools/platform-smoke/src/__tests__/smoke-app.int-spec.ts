@@ -39,7 +39,7 @@ jest.setTimeout(120_000);
 
 const runtime = new ContainerRuntime(process.env);
 
-/** Ubicación de un tenant en un shard lógico, como la guarda el directorio. */
+/** Location of a tenant in a logical shard, as the directory stores it. */
 function placement(tenantId: string, shard: string): TenantPlacement {
   return {
     tenantId,
@@ -63,7 +63,7 @@ runtime.describeIfAvailable(
     let tenants: SmokeTenantContext;
     let closed = false;
 
-    /** Cuerpos publicados a SNS, en orden: lo que recibiría SQS. */
+    /** Bodies published to SNS, in order: what SQS would receive. */
     function published(): string[] {
       return sns
         .sentOf(PublishCommand)
@@ -73,8 +73,8 @@ runtime.describeIfAvailable(
     }
 
     /**
-     * Cuerpo publicado del evento del pedido. El commit dispara el relay en segundo plano y la pasada
-     * explícita puede no encontrar nada que tomar, así que se espera a que cualquiera de las dos publique.
+     * Published body of the order event. The commit triggers the relay in the background and the explicit
+     * pass may find nothing to take, so it waits for either of the two to publish.
      */
     async function publishedFor(orderId: string): Promise<string> {
       await app.get(OutboxRelayJob, { strict: false }).run();
@@ -95,7 +95,7 @@ runtime.describeIfAvailable(
         .useValue(sqs)
         .compile();
 
-      // El catálogo primero: en él viven el directorio y la lista de shards.
+      // The catalog first: the directory and the shard list live in it.
       const runner = app.get(ShardedMigrationRunner);
       await runner.migrateCatalog();
       const directory = app.get(TypeOrmDirectoryStore);
@@ -229,7 +229,7 @@ runtime.describeIfAvailable(
           ],
         }));
 
-      // El consumidor corre como el de un tenant: sus escrituras de idempotencia van al shard de ese tenant.
+      // The consumer runs as a tenant's would: its idempotency writes go to that tenant's shard.
       await tenants.runAs(SmokeInfrastructure.TENANT_A, () =>
         poller.pollOnce(),
       );

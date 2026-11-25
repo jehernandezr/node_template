@@ -12,7 +12,7 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { UsersFacade } from '../../users/index.js';
 import { RevokeSessions } from '../application/revoke-sessions.use-case.js';
 
-/** Operaciones internas de sessions. */
+/** Internal operations of sessions. */
 @Injectable()
 export class SessionsInternalOperations {
   constructor(

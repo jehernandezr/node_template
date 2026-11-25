@@ -18,7 +18,7 @@ const TENANT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f02';
 const MEMBER = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f01';
 const STRANGER = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f09';
 
-/** Identity de mentira: conoce el acceso de un solo miembro del tenant. */
+/** Fake identity: knows the access of a single tenant member. */
 class StubUserAccessHandler extends OperationHandler<
   typeof GetUserAccessOperation
 > {

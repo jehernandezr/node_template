@@ -8,7 +8,7 @@ import {
   TOPOLOGY_PATH,
 } from './export-constants.js';
 
-/** Rutas absolutas de todo lo que se lee y se genera, a partir de la raíz `backend/`. */
+/** Absolute paths of everything that is read and generated, from the `backend/` root. */
 export class ExportPaths {
   constructor(private readonly backendRoot: string) {}
 

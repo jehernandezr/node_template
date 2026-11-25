@@ -28,7 +28,7 @@ class ChargeHarness {
     readonly attempts: PaymentAttempts = new InMemoryPaymentAttempts(),
   ) {}
 
-  /** Una réplica del servicio: su propio caso de uso sobre la misma base y el mismo proveedor. */
+  /** A service replica: its own use case over the same database and the same provider. */
   replica(): ChargeInvoice {
     return new ChargeInvoice(
       this.provider,

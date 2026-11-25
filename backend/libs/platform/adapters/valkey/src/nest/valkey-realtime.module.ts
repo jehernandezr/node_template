@@ -9,8 +9,8 @@ import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { ValkeySubscriberSource } from '../valkey-subscriber-source.js';
 
 /**
- * Stream y presencia de tiempo real sobre el cliente de `ValkeyModule`. Va aparte para que solo el servicio
- * con tiempo real valide `REALTIME_*`. Es global porque `RealtimeModule` los toma por su clase.
+ * Realtime stream and presence on the `ValkeyModule` client. It is separate so only the service
+ * with realtime validates `REALTIME_*`. It is global because `RealtimeModule` takes them by their class.
  */
 @Global()
 @Module({

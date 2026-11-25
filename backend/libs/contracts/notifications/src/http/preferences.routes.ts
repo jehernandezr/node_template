@@ -13,7 +13,7 @@ import { NotificationPreferencesSchema } from '../schemas/notification.schema.js
 
 const guard = SessionGuardErrors;
 
-/** `GET /v1/notification-preferences`: preferencias del usuario. */
+/** `GET /v1/notification-preferences`: the user's preferences. */
 export const GetPreferencesRoute = defineRoute({
   id: NotificationsRoute.GetPreferences,
   method: HttpMethod.Get,
@@ -21,10 +21,10 @@ export const GetPreferencesRoute = defineRoute({
   response: NotificationPreferencesSchema,
   errors: guard,
   access: Access.authenticated(),
-  description: 'Devuelve las preferencias de notificaciones del usuario.',
+  description: 'Returns the notification preferences of the user.',
 });
 
-/** `PUT /v1/notification-preferences`: reemplaza las preferencias del usuario. */
+/** `PUT /v1/notification-preferences`: replaces the user's preferences. */
 export const SavePreferencesRoute = defineRoute({
   id: NotificationsRoute.SavePreferences,
   method: HttpMethod.Put,
@@ -36,5 +36,5 @@ export const SavePreferencesRoute = defineRoute({
     NotificationsErrorCode.PreferencesInvalidQuietHours,
   ],
   access: Access.authenticated(),
-  description: 'Guarda las preferencias de notificaciones del usuario.',
+  description: 'Saves the notification preferences of the user.',
 });

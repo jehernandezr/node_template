@@ -20,47 +20,47 @@ import { DispatchOutcome } from '../../dispatch/dispatch-outcome.enum.js';
 import type { OutboundTarget } from '../../outbox/outbox.js';
 import { TargetKind } from '../../topology/target-kind.enum.js';
 
-/** Opciones del bus en memoria. */
+/** Options of the in-memory bus. */
 export interface InMemoryBusOptions {
-  /** Valor del atributo `source` del sobre. */
+  /** Value of the envelope `source` attribute. */
   readonly source: string;
-  /** Reloj de los tiempos del sobre, las esperas y los reintentos. Por defecto, el del sistema. */
+  /** Clock for the envelope times, the waits and the retries. Defaults to the system clock. */
   readonly clock?: Clock;
-  /** Generador de ids de los sobres. Por defecto, UUIDv7. */
+  /** Envelope id generator. Defaults to UUIDv7. */
   readonly ids?: IdGenerator;
-  /** Fuente del `traceparent` por defecto. Por defecto, el del span activo. */
+  /** Source of the default `traceparent`. Defaults to the one of the active span. */
   readonly traceparent?: () => string | undefined;
 }
 
-/** Mensaje que espera en una cola. */
+/** Message waiting in a queue. */
 export interface QueuedMessage {
   readonly envelope: MessageEnvelope;
   readonly receiveCount: number;
   readonly availableAt: number;
 }
 
-/** Mensaje que el dispatcher dio por perdido. */
+/** Message the dispatcher gave up on. */
 export interface DeadLetterEntry {
   readonly envelope: MessageEnvelope;
   readonly receiveCount: number;
   readonly error: string;
 }
 
-/** Conteos de una pasada de {@link InMemoryBus.drain}. */
+/** Counts of one pass of {@link InMemoryBus.drain}. */
 export interface DrainReport {
   readonly processed: number;
   readonly duplicates: number;
   readonly ignored: number;
   readonly retried: number;
   readonly deadLettered: number;
-  /** Entregas que quedan para reentrega porque otra tiene el claim. */
+  /** Deliveries left for redelivery because another one holds the claim. */
   readonly inProgress: number;
 }
 
 /**
- * Bus en memoria que resuelve las rutas con una topología. Un evento se reparte
- * a cada cola suscrita (filtrando por el `type` del sobre); un comando va a una
- * sola cola.
+ * In-memory bus that resolves routes with a topology. An event is fanned out
+ * to each subscribed queue (filtering by the envelope `type`); a command goes to a
+ * single queue.
  */
 export class InMemoryBus implements MessageBus {
   private readonly topology: Topology;
@@ -114,8 +114,8 @@ export class InMemoryBus implements MessageBus {
   }
 
   /**
-   * Encola un sobre ya armado, como lo entrega el relay de un outbox: un evento va a cada cola suscrita a su
-   * tópico y un comando a su cola, visible después de `delayMs`.
+   * Enqueues an already built envelope, as an outbox relay delivers it: an event goes to each queue subscribed to its
+   * topic and a command to its queue, visible after `delayMs`.
    */
   accept(envelope: MessageEnvelope, target: OutboundTarget, delayMs = 0): void {
     if (target.kind === TargetKind.Topic) {
@@ -130,9 +130,9 @@ export class InMemoryBus implements MessageBus {
   }
 
   /**
-   * Entrega una vez cada mensaje vencido de una cola. Los reintentos vuelven a
-   * la cola con la espera de su backoff y los descartados quedan en
-   * {@link deadLetters}. El consumidor del dispatcher debe ser esta cola.
+   * Delivers each due message of a queue once. Retries go back to
+   * the queue with their backoff wait and discarded ones end up in
+   * {@link deadLetters}. The dispatcher consumer must be this queue.
    */
   async drain(
     queueName: string,
@@ -209,12 +209,12 @@ export class InMemoryBus implements MessageBus {
     return report;
   }
 
-  /** Mensajes que esperan en una cola, incluidos los que tienen una espera futura. */
+  /** Messages waiting in a queue, including those with a future wait. */
   pendingCount(queueName: string): number {
     return this.requireQueue(queueName).length;
   }
 
-  /** Mensajes de una cola que fueron a la cola de errores. */
+  /** Messages of a queue that went to the dead-letter queue. */
   deadLetters(queueName: string): readonly DeadLetterEntry[] {
     this.requireQueue(queueName);
     return [...(this.deadLetterQueues.get(queueName) ?? [])];

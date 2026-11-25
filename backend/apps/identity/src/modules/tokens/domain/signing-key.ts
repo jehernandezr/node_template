@@ -1,7 +1,7 @@
 import type { KeyObject } from 'node:crypto';
 import type { SigningKeyState } from './signing-key-state.enum.js';
 
-/** Una clave ES256 de identity con su `kid` y su momento en la rotación. */
+/** An identity ES256 key with its `kid` and its stage in the rotation. */
 export interface SigningKey {
   readonly kid: string;
   readonly privateKey: KeyObject;

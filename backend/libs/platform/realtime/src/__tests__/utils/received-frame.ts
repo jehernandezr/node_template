@@ -1,4 +1,4 @@
-/** Una trama tal como la recibe un cliente de prueba. */
+/** A frame as a test client receives it. */
 export interface ReceivedFrame {
   readonly id: string;
   readonly type: string;

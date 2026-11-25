@@ -2,7 +2,7 @@ import { TenantStatus } from '../../model/tenant-status.enum.js';
 import type { TenantPlacement } from '../../model/tenant-placement.js';
 import { TestTenants } from './test-tenants.js';
 
-/** Arma un `TenantPlacement` válido; cada prueba cambia solo lo que le importa. */
+/** Builds a valid `TenantPlacement`; each test changes only what matters to it. */
 export class PlacementBuilder {
   private placement: TenantPlacement = {
     tenantId: TestTenants.One,

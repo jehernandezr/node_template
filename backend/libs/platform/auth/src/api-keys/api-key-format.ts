@@ -3,18 +3,18 @@ import { ApiKeyEnvironment } from './api-key-environment.enum.js';
 import type { ParsedApiKey } from './parsed-api-key.js';
 
 /**
- * Formato `sk_<live|test>_<prefijo>_<secreto>`: el prefijo son de 8 a 16
- * caracteres `[A-Za-z0-9]` y el secreto de 32 a 64 del mismo alfabeto. Utilidad
- * pura, sin estado.
+ * Format `sk_<live|test>_<prefix>_<secret>`: the prefix is 8 to 16
+ * `[A-Za-z0-9]` characters and the secret 32 to 64 of the same alphabet. Pure
+ * stateless utility.
  */
 export class ApiKeyFormat {
-  /** Largo máximo de una key completa; más largo se rechaza sin analizarlo. */
+  /** Maximum length of a full key; anything longer is rejected without parsing it. */
   static readonly MAX_LENGTH = 128;
 
   private static readonly PATTERN =
     /^sk_(live|test)_([A-Za-z0-9]{8,16})_([A-Za-z0-9]{32,64})$/;
 
-  /** `undefined` si `raw` no cumple el formato. Nunca lanza. */
+  /** `undefined` if `raw` does not match the format. Never throws. */
   static parse(raw: string): ParsedApiKey | undefined {
     if (raw.length > ApiKeyFormat.MAX_LENGTH) {
       return undefined;
@@ -33,7 +33,7 @@ export class ApiKeyFormat {
     };
   }
 
-  /** SHA-256 del secreto en hexadecimal: el campo del hash `auth:apikey:{prefix}`. */
+  /** Hex SHA-256 of the secret: the field of the `auth:apikey:{prefix}` hash. */
   static hashSecret(secret: string): string {
     return createHash('sha256').update(secret).digest('hex');
   }

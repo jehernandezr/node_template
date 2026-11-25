@@ -4,13 +4,13 @@
   "info": {
     "title": "notifications",
     "version": "2",
-    "description": "Notificaciones: bandeja del usuario, preferencias, despacho por canal, correo transaccional y tiempo real."
+    "description": "Notifications: user inbox, preferences, per-channel dispatch, transactional email and realtime."
   },
   "paths": {
     "/v1/notifications": {
       "get": {
         "operationId": "notifications.inbox.list",
-        "description": "Lista las notificaciones de la bandeja del usuario.",
+        "description": "Lists the notifications in the user inbox.",
         "parameters": [
           {
             "name": "limit",
@@ -27,7 +27,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/NotificationPage" }
@@ -35,7 +35,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -60,11 +60,11 @@
     "/v1/notifications/unread-count": {
       "get": {
         "operationId": "notifications.inbox.unread-count",
-        "description": "Cuenta las notificaciones sin leer de la bandeja del usuario.",
+        "description": "Counts the unread notifications in the user inbox.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UnreadCount" }
@@ -72,7 +72,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -97,7 +97,7 @@
     "/v1/notifications/{notificationId}/read": {
       "post": {
         "operationId": "notifications.inbox.mark-read",
-        "description": "Marca como leída una notificación; repetirlo no falla.",
+        "description": "Marks a notification as read; repeating it does not fail.",
         "parameters": [
           {
             "name": "notificationId",
@@ -107,9 +107,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, NOTIFICATIONS.INBOX.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, NOTIFICATIONS.INBOX.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -145,12 +145,12 @@
     "/v1/notifications/read-all": {
       "post": {
         "operationId": "notifications.inbox.mark-all-read",
-        "description": "Marca como leídas todas las notificaciones del usuario.",
+        "description": "Marks all notifications of the user as read.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -185,11 +185,11 @@
     "/v1/notification-preferences": {
       "get": {
         "operationId": "notifications.preferences.get",
-        "description": "Devuelve las preferencias de notificaciones del usuario.",
+        "description": "Returns the notification preferences of the user.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -199,7 +199,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -222,12 +222,12 @@
       },
       "put": {
         "operationId": "notifications.preferences.save",
-        "description": "Guarda las preferencias de notificaciones del usuario.",
+        "description": "Saves the notification preferences of the user.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT, NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT, NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -272,12 +272,12 @@
           "invoice_issued",
           "account_activity"
         ],
-        "description": "Tipo de notificación."
+        "description": "Notification type."
       },
       "NotificationChannel": {
         "type": "string",
         "enum": ["in_app", "push", "email"],
-        "description": "Canal de una notificación."
+        "description": "Channel of a notification."
       },
       "NotificationCreatedPayload": {
         "type": "object",
@@ -305,7 +305,7 @@
           "channels",
           "createdAt"
         ],
-        "description": "Se creó una notificación."
+        "description": "A notification was created."
       },
       "AppNotification": {
         "type": "object",
@@ -322,7 +322,7 @@
           "read": { "type": "boolean" }
         },
         "required": ["id", "type", "title", "body", "createdAt", "read"],
-        "description": "Notificación de la bandeja del usuario."
+        "description": "Notification in the user inbox."
       },
       "NotificationPage": {
         "type": "object",
@@ -342,7 +342,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de la bandeja, de la más nueva a la más antigua."
+        "description": "Page of the inbox, newest to oldest."
       },
       "UnreadCount": {
         "type": "object",
@@ -354,7 +354,7 @@
           }
         },
         "required": ["count"],
-        "description": "Notificaciones sin leer de la bandeja."
+        "description": "Unread notifications in the inbox."
       },
       "MarkNotificationReadRequest": {
         "type": "object",
@@ -365,7 +365,7 @@
         },
         "required": ["notificationId"],
         "additionalProperties": false,
-        "description": "Notificación a marcar como leída."
+        "description": "Notification to mark as read."
       },
       "NotificationPreferenceEntry": {
         "type": "object",
@@ -378,7 +378,7 @@
           }
         },
         "required": ["type", "channels"],
-        "description": "Canales por los que el usuario recibe un tipo de notificación."
+        "description": "Channels through which the user receives a notification type."
       },
       "NotificationPreferences": {
         "type": "object",
@@ -406,7 +406,7 @@
         },
         "required": ["enabled", "quietStart", "quietEnd", "timezone"],
         "additionalProperties": false,
-        "description": "Preferencias de notificaciones del usuario."
+        "description": "Notification preferences of the user."
       },
       "EmailTemplate": {
         "type": "string",
@@ -419,7 +419,7 @@
           "email_already_registered",
           "mfa_recovery"
         ],
-        "description": "Plantilla de correo transaccional."
+        "description": "Transactional email template."
       },
       "TemplateParameter": {
         "type": "string",
@@ -431,7 +431,7 @@
           "reference",
           "available_at"
         ],
-        "description": "Nombre de un dato que llena una plantilla."
+        "description": "Name of a value that fills a template."
       },
       "TemplateParameterValue": {
         "type": "object",
@@ -441,7 +441,7 @@
         },
         "required": ["name", "value"],
         "additionalProperties": false,
-        "description": "Valor de un dato de plantilla."
+        "description": "Value of a template field."
       },
       "SendEmailInput": {
         "type": "object",
@@ -465,7 +465,7 @@
         },
         "required": ["messageId", "template", "to", "parameters"],
         "additionalProperties": false,
-        "description": "Correo transaccional a enviar, con sus datos de plantilla."
+        "description": "Transactional email to send, with its template values."
       },
       "SendEmailResult": {
         "type": "object",
@@ -475,7 +475,7 @@
           }
         },
         "required": ["messageId"],
-        "description": "Correo transaccional aceptado para envío."
+        "description": "Transactional email accepted for sending."
       },
       "NotifyUserInput": {
         "type": "object",
@@ -504,7 +504,7 @@
           "parameters"
         ],
         "additionalProperties": false,
-        "description": "Notificación a entregar a un usuario por sus canales."
+        "description": "Notification to deliver to a user through their channels."
       },
       "NotifyUserResult": {
         "type": "object",
@@ -519,7 +519,7 @@
           }
         },
         "required": ["notificationId", "channels"],
-        "description": "Canales por los que salió una notificación."
+        "description": "Channels through which a notification was sent."
       },
       "EraseNotificationsUserInput": {
         "type": "object",
@@ -530,7 +530,7 @@
         },
         "required": ["user"],
         "additionalProperties": false,
-        "description": "Usuario cuyos datos de notificaciones se borran."
+        "description": "User whose notification data is deleted."
       },
       "EraseNotificationsUserResult": {
         "type": "object",
@@ -545,7 +545,7 @@
           }
         },
         "required": ["userId", "affectedRows"],
-        "description": "Filas de notificaciones borradas para un usuario."
+        "description": "Notification rows deleted for a user."
       }
     },
     "securitySchemes": {

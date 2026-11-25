@@ -22,7 +22,7 @@ describe('TransactionShardGuard', () => {
     );
   });
 
-  // Con un guard por petición, una segunda transacción legítima de la misma petición fallaba.
+  // With one guard per request, a second legitimate transaction of the same request used to fail.
   it('lets one request run successive transactions on different shards', async () => {
     const transaction = (shard: string) =>
       TransactionShardGuard.run(async () => {

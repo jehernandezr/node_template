@@ -1,7 +1,7 @@
-// Lee lo que el pipeline necesita de un terraform.tfvars: bloques de primer nivel con llaves,
-// cadenas entre comillas y comentarios con #. Antes de contar llaves se enmascaran las cadenas
-// y los comentarios (mismo largo, mismos saltos de línea), así un "}" dentro de una cadena no
-// cierra un bloque y un bloque comentado no cuenta.
+// Reads what the pipeline needs from a terraform.tfvars: top-level blocks with braces,
+// quoted strings and comments with #. Before counting braces, strings and comments are masked
+// (same length, same line breaks), so a "}" inside a string does not
+// close a block and a commented-out block does not count.
 export class TfvarsBlockReader {
   static #CHARACTER_MASK = ' ';
 
@@ -13,12 +13,12 @@ export class TfvarsBlockReader {
     this.#masked = TfvarsBlockReader.#mask(text);
   }
 
-  /** Indica si hay un bloque `name = {` (o `name = {}`) sin sangría. */
+  /** Whether there is an unindented `name = {` (or `name = {}`) block. */
   hasBlock(name) {
     return this.#openBrace(name) !== -1;
   }
 
-  /** Texto entre las llaves del bloque de primer nivel, o undefined si no existe. */
+  /** Text between the braces of the top-level block, or undefined if it does not exist. */
   block(name) {
     const open = this.#openBrace(name);
     if (open === -1) return undefined;
@@ -26,7 +26,7 @@ export class TfvarsBlockReader {
     return this.#text.slice(open + 1, close);
   }
 
-  /** Indica si el bloque existe y tiene algo dentro que no sea espacio ni comentario. */
+  /** Whether the block exists and has something inside other than whitespace or comments. */
   hasContent(name) {
     const open = this.#openBrace(name);
     if (open === -1) return false;
@@ -34,7 +34,7 @@ export class TfvarsBlockReader {
     return this.#masked.slice(open + 1, close).trim() !== '';
   }
 
-  /** Valor de `key = "valor"` a un nivel dentro del bloque, o undefined. */
+  /** Value of `key = "value"` one level inside the block, or undefined. */
   stringIn(blockName, key) {
     const open = this.#openBrace(blockName);
     if (open === -1) return undefined;
@@ -42,7 +42,7 @@ export class TfvarsBlockReader {
     return this.#stringAtDepthZero(open + 1, close, key, '\\s*');
   }
 
-  /** Valor de `key = "valor"` sin sangría en el nivel principal, o undefined. */
+  /** Value of an unindented `key = "value"` at the top level, or undefined. */
   topLevelString(key) {
     return this.#stringAtDepthZero(0, this.#masked.length, key, '');
   }

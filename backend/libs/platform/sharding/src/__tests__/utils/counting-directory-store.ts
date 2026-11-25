@@ -2,9 +2,9 @@ import type { TenantPlacement } from '../../model/tenant-placement.js';
 import { InMemoryDirectoryStore } from './in-memory-directory-store.js';
 
 /**
- * Directorio en memoria que cuenta sus lecturas y puede retener la respuesta de
- * una lectura en vuelo. La cantidad de lecturas es un requisito (vuelo único),
- * así que el contador es público en vez de un `jest.fn`.
+ * In-memory directory that counts its reads and can hold back the response of
+ * an in-flight read. The number of reads is a requirement (single flight),
+ * so the counter is public instead of a `jest.fn`.
  */
 export class CountingDirectoryStore extends InMemoryDirectoryStore {
   placementReads = 0;
@@ -12,9 +12,9 @@ export class CountingDirectoryStore extends InMemoryDirectoryStore {
   private gate: Promise<void> | undefined;
 
   /**
-   * Desde ahora, cada lectura lee su valor al empezar pero no responde hasta que se
-   * llame a la función devuelta; así una prueba simula una lectura lenta que devuelve datos viejos.
-   * @returns la función que libera las lecturas retenidas.
+   * From now on, each read reads its value when it starts but does not respond until
+   * the returned function is called; that way a test simulates a slow read that returns stale data.
+   * @returns the function that releases the held reads.
    */
   hold(): () => void {
     let release!: () => void;

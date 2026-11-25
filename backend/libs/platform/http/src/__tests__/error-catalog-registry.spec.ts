@@ -67,7 +67,7 @@ describe('ErrorCatalogRegistry', () => {
 
     expect(
       () => new ErrorCatalogRegistry([serviceCatalog, conflicting]),
-    ).toThrow('Código de error duplicado con otra definición');
+    ).toThrow('Error code duplicated with another definition');
   });
 
   it('passes a contract whose codes are all registered', () => {

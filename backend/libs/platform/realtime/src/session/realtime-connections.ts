@@ -8,7 +8,7 @@ import type { FrameSink } from './frame-sink.js';
 import { RealtimeConnection } from './realtime-connection.js';
 import { RealtimeSession } from './realtime-session.js';
 
-/** Abre las conexiones de los transportes y las cierra todas al apagar. */
+/** Opens the transports' connections and closes them all on shutdown. */
 export class RealtimeConnections {
   private readonly open = new Map<string, RealtimeConnection>();
 
@@ -22,7 +22,7 @@ export class RealtimeConnections {
     private readonly heartbeatMs: number,
   ) {}
 
-  /** Entrega lo pendiente desde `lastEventId` y deja la conexión escuchando hasta que venza la sesión. */
+  /** Delivers what is pending since `lastEventId` and leaves the connection listening until the session expires. */
   async connect(
     principal: StreamPrincipal,
     sink: FrameSink,

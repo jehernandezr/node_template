@@ -20,9 +20,9 @@ import { SeedPlans } from '../../modules/plans/index.js';
 import { FakePaymentOutcome } from '../../shared/enums/fake-payment-outcome.enum.js';
 
 /**
- * Billing completo sobre PostgreSQL y Valkey reales, con el catálogo de planes sembrado y un tenant ubicado en
- * cada shard. El proveedor de cobro falso deja los cobros en curso: las pruebas los resuelven con
- * `mark-paid` y `mark-failed`, como lo haría el webhook del proveedor.
+ * Full billing on real PostgreSQL and Valkey, with the plan catalog seeded and one tenant placed on each
+ * shard. The fake charge provider leaves charges pending: the tests resolve them with
+ * `mark-paid` and `mark-failed`, as the provider webhook would.
  */
 export class BillingTestApp {
   static readonly TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
@@ -98,7 +98,7 @@ export class BillingTestApp {
     return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
   }
 
-  /** Cliente de un miembro con los permisos de billing, salvo que se pidan otros. */
+  /** Client of a member with the billing permissions, unless others are requested. */
   async clientOf(
     member: Partial<StubMember> & { userId: string; tenantId: string },
   ): Promise<HttpTestClient> {
@@ -123,7 +123,7 @@ export class BillingTestApp {
     );
   }
 
-  /** Corre una sentencia en el shard del tenant, con el superusuario: para mover fechas y mirar filas. */
+  /** Runs a statement on the tenant shard as the superuser: to move dates and inspect rows. */
   rowsOf<T>(tenantId: string, sql: string): Promise<readonly T[]> {
     const shard = BillingTestApp.SHARD_OF[tenantId] ?? 0;
     return this.servers.shards()[shard].rows<T>(sql);

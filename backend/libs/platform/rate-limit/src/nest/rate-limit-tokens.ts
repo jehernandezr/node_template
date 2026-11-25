@@ -1,8 +1,8 @@
-/** Token de las opciones del módulo. */
+/** Token of the module options. */
 export const RATE_LIMIT_OPTIONS = Symbol('RATE_LIMIT_OPTIONS');
-/** Token de la métrica de fallas del limitador. */
+/** Token of the limiter failure metric. */
 export const RATE_LIMIT_METRICS = Symbol('RATE_LIMIT_METRICS');
-/** Token del logger de fallas del limitador. */
+/** Token of the limiter failure logger. */
 export const RATE_LIMIT_LOGGER = Symbol('RATE_LIMIT_LOGGER');
-/** Clave de la metadata que guarda la regla de cada ruta. */
+/** Metadata key that stores each route's rule. */
 export const RATE_LIMIT_METADATA = Symbol('RATE_LIMIT_METADATA');

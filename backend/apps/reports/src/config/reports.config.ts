@@ -4,18 +4,18 @@ import { internalHttpConfigSchema } from '@platform/service';
 import { ReportsDefaults } from '../shared/constants/reports-defaults.constants.js';
 import { ReportResultStoreKind } from '../shared/enums/report-result-store-kind.enum.js';
 
-/** Configuración de reports. */
+/** reports configuration. */
 export const reportsConfigSchema = serviceConfigSchema.extend({
   ...internalHttpConfigSchema.shape,
-  /** Tamaño máximo del resultado de una ejecución, en bytes de su JSON. */
+  /** Maximum size of a run's result, in bytes of its JSON. */
   REPORTS_MAX_RESULT_BYTES: envNumber({ min: 1024 }).default(
     ReportsDefaults.maxResultBytes,
   ),
-  /** Dónde se guarda el resultado de cada ejecución hasta que vence. */
+  /** Where each run's result is stored until it expires. */
   REPORTS_RESULT_STORE: z
     .enum(ReportResultStoreKind)
     .default(ReportResultStoreKind.Row),
-  /** Días que se guarda el resultado de una ejecución lista. */
+  /** Days a ready run's result is kept. */
   REPORTS_RESULT_TTL_DAYS: envNumber({ min: 1 }).default(
     ReportsDefaults.resultTtlDays,
   ),

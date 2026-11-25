@@ -1,7 +1,7 @@
-/** Cómo se hace cumplir el tiempo de un intento. */
+/** How an attempt's timeout is enforced. */
 export enum TimeoutStrategy {
-  /** Aborta la señal y espera a que la operación la respete. */
+  /** Aborts the signal and waits for the operation to honor it. */
   Cooperative = 'cooperative',
-  /** Rechaza en cuanto vence el tiempo, aunque la operación siga corriendo. */
+  /** Rejects as soon as the time expires, even if the operation keeps running. */
   Aggressive = 'aggressive',
 }

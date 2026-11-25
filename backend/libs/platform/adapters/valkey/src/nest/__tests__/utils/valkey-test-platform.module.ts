@@ -5,15 +5,15 @@ import type { RecordingLogger } from '../../../__tests__/utils/recording-logger.
 import { StaticTokenProvider } from '../../../__tests__/utils/static-token-provider.js';
 
 /**
- * Lo que una aplicación real aporta alrededor del adaptador: configuración,
- * observabilidad y, en AWS, el proveedor del token. Es global, como en el servicio.
+ * What a real application provides around the adapter: configuration,
+ * observability and, on AWS, the token provider. It is global, as in the service.
  */
 @Global()
 @Module({})
 export class ValkeyTestPlatformModule {
   static readonly ENV = {
     SERVICE_NAME: 'orders',
-    // Nada escucha en el puerto 1: el cliente se crea sin conectar.
+    // Nothing listens on port 1: the client is created without connecting.
     VALKEY_URL: 'redis://127.0.0.1:1',
   };
 

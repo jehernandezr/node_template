@@ -14,7 +14,7 @@ import { ExplorerOperations } from './utils/explorer-operations.js';
 import { InternalApiPlatformTestingModule } from './utils/index.js';
 import { RecordingPurgeableStore } from '../../server/__tests__/utils/recording-purgeable-store.js';
 
-/** Módulo global que expone el almacén purgable a `InternalApiModule`, que no ve los providers de la raíz. */
+/** Global module that exposes the purgeable store to `InternalApiModule`, which does not see the root providers. */
 const PurgeableStoreModule: DynamicModule = {
   module: class PurgeableStoreTestingModule {},
   global: true,
@@ -22,7 +22,7 @@ const PurgeableStoreModule: DynamicModule = {
   exports: [RecordingPurgeableStore],
 };
 
-/** Operación que modifica datos sin compensación declarada en el registro. */
+/** Operation that modifies data without a compensation declared in the registry. */
 const Uncompensated = defineOperation({
   id: 'stock.reserve.v1',
   input: z.object({ sku: z.string() }),

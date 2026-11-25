@@ -1,13 +1,13 @@
-/** Valores de la conexión que vienen del runtime y no del entorno. */
+/** Connection values that come from the runtime and not from the environment. */
 export interface ValkeyRuntimeOptions {
-  /** Nombre que muestra `CLIENT LIST`, por ejemplo el nombre del servicio. */
+  /** Name shown by `CLIENT LIST`, for example the service name. */
   readonly connectionName?: string;
-  /** Tiempo para establecer una conexión. Por defecto 2 000 ms. */
+  /** Time to establish a connection. Defaults to 2 000 ms. */
   readonly connectTimeoutMs?: number;
   /**
-   * Cota de un comando en el cliente. Por defecto 1 000 ms. La política de
-   * resilience de cada llamador fija el límite real, más corto; esta solo
-   * evita que un comando quede colgado para siempre.
+   * Client-side bound of a command. Defaults to 1 000 ms. The resilience
+   * policy of each caller sets the real, shorter limit; this one only
+   * keeps a command from hanging forever.
    */
   readonly commandTimeoutMs?: number;
 }

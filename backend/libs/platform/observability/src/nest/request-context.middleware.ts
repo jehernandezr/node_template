@@ -8,13 +8,13 @@ import type {
 } from './request-context.http.js';
 
 /**
- * Abre el `RequestContext` de cada petición HTTP: `traceId` UUIDv7 propio (o el
- * del span activo), `externalTraceId` si el cliente mandó un `traceparent`
- * válido, muestra de debug, y devuelve el `traceId` en el header `x-trace-id`.
+ * Opens the `RequestContext` of each HTTP request: its own UUIDv7 `traceId` (or the
+ * active span's one), `externalTraceId` if the client sent a valid `traceparent`,
+ * the debug sample, and returns the `traceId` in the `x-trace-id` header.
  */
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
-  /** Header de respuesta con el `traceId` de la plataforma. */
+  /** Response header with the platform `traceId`. */
   static readonly TRACE_ID_HEADER = 'x-trace-id';
 
   constructor(

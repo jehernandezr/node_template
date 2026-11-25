@@ -55,7 +55,7 @@ describe('defineErrorCatalog', () => {
   it('rejects a missing entry', () => {
     expect(() =>
       defineErrorCatalog(Sample, { [Sample.One]: spec } as never),
-    ).toThrow(/Falta la entrada/);
+    ).toThrow(/Missing entry/);
   });
 
   it('rejects entries outside the enum and invalid statuses', () => {
@@ -65,22 +65,20 @@ describe('defineErrorCatalog', () => {
         [Sample.Two]: spec,
         'SAMPLE.TEST.THREE': spec,
       } as never),
-    ).toThrow(/fuera del enum/);
+    ).toThrow(/outside the enum/);
     expect(() =>
       defineErrorCatalog(Sample, {
         [Sample.One]: spec,
         [Sample.Two]: { ...spec, httpStatus: 200 },
       }),
-    ).toThrow(/Estado HTTP/);
+    ).toThrow(/Invalid HTTP status/);
   });
 
   it('rejects codes with an invalid format', () => {
     enum Bad {
       X = 'bad.code',
     }
-    expect(() => defineErrorCatalog(Bad, { [Bad.X]: spec })).toThrow(
-      /inválido/,
-    );
+    expect(() => defineErrorCatalog(Bad, { [Bad.X]: spec })).toThrow(/Invalid/);
   });
 });
 
@@ -123,7 +121,7 @@ describe('ErrorCatalog', () => {
         { ...sample('PLATFORM.TEST.ONE'), httpStatus: 409 },
       ]),
     ).toThrow(
-      'Código de error duplicado con otra definición: PLATFORM.TEST.ONE',
+      'Error code duplicated with another definition: PLATFORM.TEST.ONE',
     );
     expect(catalog.all().map((e) => e.code)).toEqual(['PLATFORM.TEST.ONE']);
   });
@@ -135,7 +133,7 @@ describe('ErrorCatalog', () => {
         sample('PLATFORM.TEST.ONE'),
         { ...sample('PLATFORM.TEST.ONE'), retryable: true },
       ]),
-    ).toThrow(/otra definición/);
+    ).toThrow(/another definition/);
     expect(catalog.all()).toHaveLength(0);
   });
 
@@ -146,7 +144,7 @@ describe('ErrorCatalog', () => {
       catalog.register([
         { ...sample('PLATFORM.TEST.ONE'), audience: ErrorAudience.Internal },
       ]),
-    ).toThrow(/otra definición/);
+    ).toThrow(/another definition/);
     expect(catalog.get('PLATFORM.TEST.ONE')?.audience).toBe(
       ErrorAudience.Public,
     );
@@ -159,7 +157,7 @@ describe('ErrorCatalog', () => {
     'PLATFORM.test.ONE',
   ])('throws for invalid code %s', (code) => {
     const catalog = new ErrorCatalog();
-    expect(() => catalog.register([sample(code)])).toThrow(/inválido/);
+    expect(() => catalog.register([sample(code)])).toThrow(/Invalid/);
   });
 
   it.each(['PLATFORM.TEST.ONE.TWO', 'PLATFORM.V2.ONE_1'])(

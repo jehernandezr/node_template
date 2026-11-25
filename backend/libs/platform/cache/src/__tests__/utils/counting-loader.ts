@@ -1,4 +1,4 @@
-/** Carga de prueba que cuenta sus llamadas en `calls` y puede fallar o quedarse esperando. */
+/** Test loader that counts its calls in `calls` and can fail or stay pending. */
 export class CountingLoader<T> {
   calls = 0;
   private error: Error | undefined;
@@ -6,7 +6,7 @@ export class CountingLoader<T> {
 
   constructor(private readonly value: T) {}
 
-  /** Función de carga. Es una propiedad flecha para pasarla como `load` sin perder `this`. */
+  /** Load function. It is an arrow property so it can be passed as `load` without losing `this`. */
   load = async (): Promise<T> => {
     this.calls += 1;
     if (this.gate !== undefined) {
@@ -18,12 +18,12 @@ export class CountingLoader<T> {
     return this.value;
   };
 
-  /** Hace que cada carga posterior rechace con `error`. */
+  /** Makes every subsequent load reject with `error`. */
   failWith(error: Error): void {
     this.error = error;
   }
 
-  /** Deja la siguiente carga pendiente hasta que se llame a la función devuelta. */
+  /** Leaves the next load pending until the returned function is called. */
   hold(): () => void {
     let release: () => void = () => undefined;
     this.gate = new Promise<void>((resolve) => {

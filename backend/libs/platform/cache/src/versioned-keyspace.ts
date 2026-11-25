@@ -7,23 +7,23 @@ import { CacheGuard } from './errors/cache-guard.js';
 import type { VersionedKeyspaceOptions } from './versioned-keyspace.options.js';
 
 /**
- * Arma llaves de caché que llevan un token de versión por espacio de nombres.
- * Cambiar el token deja inalcanzables de golpe todas las llaves emitidas antes.
+ * Builds cache keys that carry a version token per namespace.
+ * Changing the token makes all keys issued before unreachable at once.
  *
- * Los tokens son aleatorios y nunca salen de un contador. Si la llave de versión
- * desaparece, se crea un token nuevo, así que los datos escritos con el token
- * viejo no pueden volver.
+ * Tokens are random and never come from a counter. If the version key
+ * disappears, a new token is created, so data written with the old
+ * token cannot come back.
  *
- * Concurrencia: el primer uso crea el token con `setIfAbsent` y lo vuelve a leer,
- * así que los primeros lectores concurrentes acuerdan un solo token. Un cambio
- * escribe un token nuevo; un lector que tomó el token viejo solo puede escribir
- * bajo la llave vieja, que ningún lector posterior volverá a construir.
+ * Concurrency: the first use creates the token with `setIfAbsent` and reads it again,
+ * so the first concurrent readers agree on a single token. A change
+ * writes a new token; a reader that took the old token can only write
+ * under the old key, which no later reader will build again.
  */
 export class VersionedKeyspace {
-  /** Largo máximo por defecto de cualquier llave, en caracteres. */
+  /** Default maximum length of any key, in characters. */
   static readonly DEFAULT_MAX_KEY_LENGTH = 512;
 
-  /** Forma de un token de versión: un UUID. Cualquier otro valor se reemplaza. */
+  /** Shape of a version token: a UUID. Any other value is replaced. */
   private static readonly TOKEN_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -47,11 +47,11 @@ export class VersionedKeyspace {
       'maxKeyLength',
       options.maxKeyLength ?? VersionedKeyspace.DEFAULT_MAX_KEY_LENGTH,
     );
-    // El reloj del sistema solo entra cuando el llamador no trae su propio generador (uso sin NestJS).
+    // The system clock only comes in when the caller does not bring its own generator (use without NestJS).
     this.ids = options.ids ?? new UuidV7IdGenerator(new SystemClock());
   }
 
-  /** Token de versión actual de un espacio de nombres. Se crea en el primer uso. */
+  /** Returns the current version token of a namespace. It is created on first use. */
   async version(namespace: readonly string[]): Promise<string> {
     const key = this.versionKey(namespace);
     const existing = await this.cache.get(key);
@@ -62,19 +62,19 @@ export class VersionedKeyspace {
       return existing;
     }
     if (existing !== undefined) {
-      // Un token corrupto o ajeno produciría llaves de largo sin límite: se reemplaza.
+      // A corrupt or foreign token would produce keys of unbounded length: it is replaced.
       return this.bump(namespace);
     }
     await this.cache.setIfAbsent(key, this.token());
-    // Otro escritor pudo ganar la carrera: se lee el token que quedó guardado.
+    // Another writer may have won the race: the token that remained stored is read.
     const stored = await this.cache.get(key);
-    // Si desapareció (expulsión), un token desechable deja esta lectura sin caché.
+    // If it disappeared (eviction), a throwaway token leaves this read without cache.
     return stored !== undefined && VersionedKeyspace.TOKEN_PATTERN.test(stored)
       ? stored
       : this.token();
   }
 
-  /** Reemplaza el token de versión. Devuelve el token nuevo. */
+  /** Replaces the version token. Returns the new token. */
   async bump(namespace: readonly string[]): Promise<string> {
     const token = this.token();
     await this.cache.set(this.versionKey(namespace), token);
@@ -82,12 +82,12 @@ export class VersionedKeyspace {
   }
 
   /**
-   * Llave de caché para `params` bajo el token actual del espacio de nombres.
-   * @throws CacheKeyTooLongError cuando el espacio de nombres hace la llave demasiado larga.
-   * @throws NonJsonValueError (primitives) cuando `params` no es JSON canónico.
+   * Returns the cache key for `params` under the namespace's current token.
+   * @throws CacheKeyTooLongError when the namespace makes the key too long.
+   * @throws NonJsonValueError (primitives) when `params` is not canonical JSON.
    */
   async key(namespace: readonly string[], params: unknown): Promise<string> {
-    // Se valida antes de tocar el almacén, para que una llamada mala no cueste un viaje.
+    // Validated before touching the store, so a bad call does not cost a round trip.
     const encoded = this.encodedNamespace(namespace);
     const digest = CanonicalJson.digest(params);
     const token = await this.version(namespace);
@@ -105,8 +105,8 @@ export class VersionedKeyspace {
   }
 
   /**
-   * Codifica cada segmento para que uno con ':' no choque con otro espacio de
-   * nombres, y rechaza los espacios que no caben en una llave.
+   * Encodes each segment so one with ':' does not collide with another
+   * namespace, and rejects namespaces that do not fit in a key.
    */
   private encodedNamespace(namespace: readonly string[]): string {
     if (!Array.isArray(namespace)) {
@@ -120,7 +120,7 @@ export class VersionedKeyspace {
             'an array of strings',
           );
         }
-        // Codificar nunca acorta un segmento: los enormes se rechazan antes de codificar.
+        // Encoding never shortens a segment: huge ones are rejected before encoding.
         this.bounded(segment);
         return encodeURIComponent(segment);
       })

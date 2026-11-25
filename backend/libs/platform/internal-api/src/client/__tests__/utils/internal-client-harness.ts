@@ -17,8 +17,8 @@ import { OperationPolicyResolver } from '../../operation-policy-resolver.js';
 import { ScriptedTransport } from './scripted-transport.js';
 
 /**
- * Cliente con sus colaboradores reales y un transporte de guion. Cada prueba
- * crea el suyo para que el breaker de la política no se arrastre entre casos.
+ * Client with its real collaborators and a scripted transport. Each test
+ * creates its own so the policy breaker does not carry over between cases.
  */
 export class InternalClientHarness {
   readonly transport = new ScriptedTransport();

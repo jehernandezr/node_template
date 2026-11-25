@@ -1,6 +1,6 @@
 import type { UserRef } from '@contracts/platform';
 
-/** A quién se le avisa: su referencia, su correo y su idioma. */
+/** Who is notified: their reference, their email and their language. */
 export interface Recipient {
   readonly ref: UserRef;
   readonly email: string;

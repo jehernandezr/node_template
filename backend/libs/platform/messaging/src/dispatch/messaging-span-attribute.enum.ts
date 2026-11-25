@@ -1,4 +1,4 @@
-/** Atributos del span de consumidor de cada entrega (convenciones semánticas de OpenTelemetry). */
+/** Attributes of the consumer span of each delivery (OpenTelemetry semantic conventions). */
 export enum MessagingSpanAttribute {
   OperationType = 'messaging.operation.type',
   DestinationName = 'messaging.destination.name',

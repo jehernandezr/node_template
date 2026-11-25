@@ -34,7 +34,7 @@ const SSE_PATH = '/v1/notifications/stream';
 const NAMESPACE = '/notifications';
 const HEARTBEAT_MS = 60_000;
 
-/** Un proceso que atiende conexiones: su servidor, su conexión a Valkey y sus transportes. */
+/** A process that serves connections: its server, its Valkey connection and its transports. */
 class RealtimeInstance {
   readonly host = new TestRealtimeHost();
   private readonly keyspace = new ValkeyKeyspace(PREFIX);

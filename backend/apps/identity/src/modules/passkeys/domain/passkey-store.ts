@@ -1,7 +1,7 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { Passkey } from './passkey.js';
 
-/** Passkeys en el shard del usuario. */
+/** Passkeys in the user's shard. */
 export abstract class PasskeyRepository {
   abstract list(userId: string): Promise<readonly Passkey[]>;
   abstract findByCredential(
@@ -16,7 +16,7 @@ export abstract class PasskeyRepository {
   ): Promise<Passkey | undefined>;
 }
 
-/** Índice global de credenciales (`passkey_lookup`): el inicio de sesión sin usuario llega al shard por ellas. */
+/** Global credential index (`passkey_lookup`): passwordless sign-in reaches the shard through them. */
 export abstract class PasskeyDirectory {
   abstract register(
     credentialId: string,
@@ -25,7 +25,7 @@ export abstract class PasskeyDirectory {
   ): Promise<void>;
   abstract ownerOf(credentialId: string): Promise<UserRef | undefined>;
   abstract remove(credentialId: string): Promise<void>;
-  /** Apunta a `region` las credenciales de los usuarios cuyo tenant de origen es `homeTenantId`. */
+  /** Points to `region` the credentials of the users whose home tenant is `homeTenantId`. */
   abstract relocateHomeTenant(
     homeTenantId: string,
     region: string,

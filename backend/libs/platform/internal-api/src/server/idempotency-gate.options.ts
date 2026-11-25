@@ -1,10 +1,10 @@
-/** Ajustes del lease de idempotencia. */
+/** Settings of the idempotency lease. */
 export interface IdempotencyGateOptions {
   /**
-   * Tiempo extra que el claim sobrevive al plazo de la petición, para que un
-   * handler lento conserve la llave hasta terminar. Por defecto, el del almacén (5 s).
+   * Extra time the claim outlives the request deadline, so a
+   * slow handler keeps the key until it finishes. By default, the store's (5 s).
    */
   readonly leaseMarginMs?: number;
-  /** Lease más corto, contado desde el claim. Por defecto ninguno. */
+  /** Shortest lease, counted from the claim. None by default. */
   readonly minLeaseMs?: number;
 }

@@ -12,7 +12,7 @@ const principal = {
   sessionExpiresAt: 4_102_444_800,
 };
 
-/** Stream que deja de responder las lecturas cuando la prueba lo corta, como Valkey caído un instante. */
+/** Stream that stops answering reads when the test cuts it, like Valkey down for an instant. */
 class FlakyStream extends InMemoryRealtimeStream {
   down = false;
 

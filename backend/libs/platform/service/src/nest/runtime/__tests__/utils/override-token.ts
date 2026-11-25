@@ -1,2 +1,2 @@
-/** Token de un provider de prueba que entrega `ServiceOverridesModule`. */
+/** Token of a test provider that `ServiceOverridesModule` supplies. */
 export abstract class OverrideToken {}

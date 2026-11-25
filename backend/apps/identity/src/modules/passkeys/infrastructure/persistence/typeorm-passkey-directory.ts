@@ -6,7 +6,7 @@ import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import { PasskeyDirectory } from '../../domain/passkey-store.js';
 import { PasskeyLookupEntity } from './entities/passkey-lookup.entity.js';
 
-/** `PasskeyDirectory` sobre `passkey_lookup` del catálogo, bajo el SHA-256 del id de la credencial. */
+/** `PasskeyDirectory` over `passkey_lookup` in the catalog, under the SHA-256 of the credential id. */
 @Injectable()
 export class TypeOrmPasskeyDirectory
   extends CatalogTableRepository

@@ -15,9 +15,9 @@ import { UserRepository } from '../domain/user.repository.js';
 import { User } from '../domain/user.js';
 
 /**
- * Crea un usuario entre el catálogo y su shard, que no comparten transacción: reserva el email en el
- * catálogo, crea el usuario, su contraseña y el evento en el shard, y activa la reserva. Si el shard falla,
- * libera la reserva; una reserva huérfana la barre `IdentityJob.SweepReservedLookups`.
+ * Creates a user across the catalog and their shard, which do not share a transaction: reserves the email in the
+ * catalog, creates the user, their password and the event in the shard, and activates the reservation. If the shard fails,
+ * it releases the reservation; an orphan reservation is swept by `IdentityJob.SweepReservedLookups`.
  */
 @Injectable()
 export class UserRegistrar {
@@ -34,7 +34,7 @@ export class UserRegistrar {
     private readonly settings: IdentitySettings,
   ) {}
 
-  /** Devuelve `undefined` si el email ya es de otro usuario. */
+  /** Returns `undefined` if the email already belongs to another user. */
   async register(
     input: RegisterUserInput,
     verifiedAt?: Date,

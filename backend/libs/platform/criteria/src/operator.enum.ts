@@ -1,4 +1,4 @@
-/** Operadores de comparación que admite una condición. */
+/** Comparison operators a condition supports. */
 export enum Operator {
   Eq = 'eq',
   Ne = 'ne',

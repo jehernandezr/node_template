@@ -6,11 +6,11 @@ import type { ShardLister } from './ports/shard-lister.js';
 import type { ShardDataSources } from './shard-data-sources.js';
 
 /**
- * Corre las migraciones pendientes del catálogo y de cada shard lógico, cada base bajo
- * `pg_advisory_lock` para que dos procesos no las apliquen a la vez. Lo usa el binario `migrate` de cada app.
+ * Runs the pending migrations of the catalog and of each logical shard, each database under
+ * `pg_advisory_lock` so two processes do not apply them at the same time. Used by the `migrate` binary of each app.
  */
 export class ShardedMigrationRunner {
-  /** Llave de `pg_advisory_lock` de las migraciones de la plataforma. */
+  /** `pg_advisory_lock` key of the platform migrations. */
   static readonly LOCK_KEY = 7_948_310_215_002;
 
   constructor(
@@ -20,8 +20,8 @@ export class ShardedMigrationRunner {
   ) {}
 
   /**
-   * Catálogo primero, luego cada shard en orden. Las bases se migran una a una: un fallo corta la corrida
-   * y las bases ya migradas quedan al día. Repetirlo no aplica nada dos veces.
+   * Catalog first, then each shard in order. Databases are migrated one by one: a failure stops the run
+   * and the already migrated databases stay up to date. Repeating it never applies anything twice.
    */
   async migrateAll(): Promise<readonly MigrationReport[]> {
     const reports: MigrationReport[] = [await this.migrateCatalog()];
@@ -40,8 +40,8 @@ export class ShardedMigrationRunner {
   }
 
   /**
-   * Toma el lock en una conexión dedicada y corre las migraciones en otra del pool. El lock vale por
-   * base, así que dos procesos que migran la misma base se turnan.
+   * Takes the lock on a dedicated connection and runs the migrations on another one from the pool. The lock is per
+   * database, so two processes that migrate the same database take turns.
    */
   private async migrate(dataSource: DataSource): Promise<MigrationReport> {
     const runner = dataSource.createQueryRunner('master');
@@ -67,8 +67,8 @@ export class ShardedMigrationRunner {
   }
 
   /**
-   * Nombre de la base que se migra. Con réplicas, TypeORM deja `options.database` sin valor y el
-   * nombre vive en `replication.master`.
+   * Name of the database being migrated. With replicas, TypeORM leaves `options.database` unset and the
+   * name lives in `replication.master`.
    */
   private static databaseOf(dataSource: DataSource): string {
     const { options } = dataSource;

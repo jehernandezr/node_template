@@ -1,4 +1,4 @@
-/** Códigos de error estables de `@platform/saga`. */
+/** Stable error codes of `@platform/saga`. */
 export enum SagaErrorCode {
   NotFound = 'PLATFORM.SAGA.NOT_FOUND',
   DuplicateSaga = 'PLATFORM.SAGA.DUPLICATE_SAGA',

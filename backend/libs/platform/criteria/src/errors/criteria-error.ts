@@ -1,9 +1,9 @@
 import { PlatformError } from '@platform/kernel';
 import type { CriteriaErrorCode } from './criteria-error-code.enum.js';
 
-/** Se lanza cuando un criterio se construye o se traduce con datos inválidos. */
+/** Thrown when a criteria is built or translated with invalid data. */
 export class CriteriaError extends PlatformError {
-  /** Código estable con formato `PLATFORM.CRITERIA.<ERROR>`. */
+  /** Stable code with format `PLATFORM.CRITERIA.<ERROR>`. */
   readonly code: CriteriaErrorCode;
 
   constructor(code: CriteriaErrorCode, message: string) {

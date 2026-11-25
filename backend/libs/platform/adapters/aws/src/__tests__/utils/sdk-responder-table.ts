@@ -1,22 +1,22 @@
-/** Comando del SDK tal como lo ve un cliente falso. */
+/** SDK command as a fake client sees it. */
 export interface SdkCommand {
   readonly input: object;
 }
 
-/** Constructor de la clase de un comando del SDK. */
+/** Constructor of an SDK command class. */
 export type SdkCommandClass<I extends object> = new (input: I) => SdkCommand;
 
 /**
- * Tabla de respuestas de un cliente falso del SDK: se registra una respuesta
- * por clase de comando, así las pruebas no comparan nombres de comando con `if`.
- * Guarda cada comando recibido en orden.
+ * Response table of a fake SDK client: one response is registered
+ * per command class, so tests do not compare command names with `if`.
+ * Stores each received command in order.
  */
 export class SdkResponderTable {
   readonly sent: SdkCommand[] = [];
   private readonly responders = new Map<unknown, (input: never) => unknown>();
   private readonly pending = new Map<unknown, ((input: never) => unknown)[]>();
 
-  /** La respuesta puede ser un valor, una promesa o lanzar un error. */
+  /** The response can be a value, a promise or throw an error. */
   on<I extends object>(
     command: SdkCommandClass<I>,
     responder: (input: I) => unknown,
@@ -25,8 +25,8 @@ export class SdkResponderTable {
   }
 
   /**
-   * Respuesta de un solo uso: la siguiente llamada de esa clase la consume y
-   * tiene prioridad sobre `on`. Varias se consumen en el orden en que se registraron.
+   * One-time response: the next call of that class consumes it and
+   * it takes priority over `on`. Several are consumed in the order they were registered.
    */
   once<I extends object>(
     command: SdkCommandClass<I>,
@@ -37,14 +37,14 @@ export class SdkResponderTable {
     this.pending.set(command, queue);
   }
 
-  /** Comandos recibidos de esa clase, en orden. */
+  /** Commands received of that class, in order. */
   sentOf<I extends object>(command: SdkCommandClass<I>): SdkCommand[] {
     return this.sent.filter((sent) => sent instanceof command);
   }
 
   /**
-   * Responde con la primera respuesta de un solo uso de la clase del comando o,
-   * si no queda ninguna, con la de `on`; `found` es `false` si no hay ninguna.
+   * Responds with the first one-time response of the command's class or,
+   * if none is left, with the `on` one; `found` is `false` if there is none.
    */
   respond(command: SdkCommand): { readonly found: boolean; value?: unknown } {
     this.sent.push(command);

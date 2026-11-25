@@ -1,9 +1,9 @@
 import type { UserRef } from '@contracts/platform';
 import type { NotificationPreferences } from '../domain/notification-preferences.js';
 
-/** Lo que los otros módulos de notifications piden de las preferencias. */
+/** What the other notifications modules ask of the preferences. */
 export abstract class PreferencesFacade {
-  /** Las guardadas o, si el usuario nunca guardó, las de por defecto. */
+  /** The saved ones or, if the user never saved any, the defaults. */
   abstract get(user: UserRef): Promise<NotificationPreferences>;
 
   abstract erase(user: UserRef): Promise<number>;

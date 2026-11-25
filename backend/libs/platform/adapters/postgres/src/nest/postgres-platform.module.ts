@@ -33,15 +33,15 @@ import {
 } from './postgres-platform.module-definition.js';
 
 /**
- * Registra las tablas de la plataforma sobre TypeORM: `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`,
- * `TypeOrmIdempotencyStore`, `CatalogIdempotencyStore`, `TypeOrmDirectoryStore`, `DirectoryShardLister` y `ShardedRelayScopes`, con el cableado
- * de `PlatformEntityManagers`. Es global y exporta cada clase: el servicio pasa su tipo a `MessagingModule`
- * (`outboxStore`, `processedStore`, `relayScopes`), a `ShardingModule` (directorio) y a `PersistenceModule`
- * (`shardLister: DirectoryShardLister`). Requiere `PersistenceModule` y `ShardingModule`.
+ * Registers the platform tables on TypeORM: `TypeOrmOutboxStore`, `TypeOrmProcessedMessageStore`,
+ * `TypeOrmIdempotencyStore`, `CatalogIdempotencyStore`, `TypeOrmDirectoryStore`, `DirectoryShardLister` and `ShardedRelayScopes`, with the wiring
+ * of `PlatformEntityManagers`. It is global and exports each class: the service passes its type to `MessagingModule`
+ * (`outboxStore`, `processedStore`, `relayScopes`), to `ShardingModule` (directory) and to `PersistenceModule`
+ * (`shardLister: DirectoryShardLister`). Requires `PersistenceModule` and `ShardingModule`.
  *
- * Las entidades y migraciones de estas tablas las suma la app a sus `DataSource` con `platformShardEntities`,
- * `platformShardMigrations`, `platformCatalogEntities` y `platformCatalogMigrations`. `forRootAsync` arma las
- * opciones con una fábrica, por ejemplo desde `AppConfig`.
+ * The app adds the entities and migrations of these tables to its `DataSource` with `platformShardEntities`,
+ * `platformShardMigrations`, `platformCatalogEntities` and `platformCatalogMigrations`. `forRootAsync` builds the
+ * options with a factory, for example from `AppConfig`.
  */
 @Module({})
 export class PostgresPlatformModule extends PostgresPlatformModuleClass {

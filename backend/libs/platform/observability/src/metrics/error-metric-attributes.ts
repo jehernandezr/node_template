@@ -2,14 +2,14 @@ import { ErrorDescriptor } from '@platform/kernel';
 import { MetricAttribute } from './metric-attribute.enum.js';
 import type { MetricAttributes } from './metric-attributes.js';
 
-/** Atributos de baja cardinalidad para un error. Nunca usa el mensaje, que puede llevar datos. */
+/** Low-cardinality attributes for an error. Never uses the message, which may carry data. */
 export class ErrorMetricAttributes {
-  /** Longitud máxima de `error.code` y `error.name`. */
+  /** Maximum length of `error.code` and `error.name`. */
   static readonly MAX_LABEL_LENGTH = 128;
 
   /**
-   * `error.code` si el error trae un código válido (`ErrorDescriptor.codeOf`) y
-   * `error.name`. Un valor que no es objeto da solo `error.name` con su `typeof`.
+   * `error.code` if the error carries a valid code (`ErrorDescriptor.codeOf`) and
+   * `error.name`. A value that is not an object gives only `error.name` with its `typeof`.
    */
   static of(error: unknown): MetricAttributes {
     if (typeof error !== 'object' || error === null) {

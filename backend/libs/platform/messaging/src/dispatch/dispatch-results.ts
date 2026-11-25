@@ -1,11 +1,11 @@
 import { DispatchOutcome } from './dispatch-outcome.enum.js';
 import type { DispatchResult } from './dispatch-result.js';
 
-/** Reglas sobre el resultado de una entrega. */
+/** Rules about the result of a delivery. */
 export class DispatchResults {
   /**
-   * Si el transporte debe dejar la entrega para reentrega en vez de
-   * confirmarla (SQS: reportarla como fallo del ítem del lote).
+   * Whether the transport must leave the delivery for redelivery instead of
+   * acknowledging it (SQS: report it as a failed item of the batch).
    */
   static requiresRedelivery(result: DispatchResult): boolean {
     return (

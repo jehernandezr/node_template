@@ -7,8 +7,8 @@ import { RealtimeConnections } from '../session/realtime-connections.js';
 import { SseResponseSink } from './sse-response-sink.js';
 
 /**
- * `GET <path>` como `text/event-stream`. Reanuda desde `Last-Event-ID`, que el navegador manda solo al
- * reconectar, así una conexión cortada no pierde tramas mientras sigan retenidas en el stream.
+ * `GET <path>` as `text/event-stream`. Resumes from `Last-Event-ID`, which the browser sends only when
+ * reconnecting, so a dropped connection loses no frames as long as they are still retained in the stream.
  */
 export class SseTransport extends RealtimeTransport {
   private static readonly UNAUTHORIZED = 401;
@@ -52,7 +52,7 @@ export class SseTransport extends RealtimeTransport {
       new SseResponseSink(response),
       typeof lastEventId === 'string' ? lastEventId : undefined,
     );
-    // Un cliente que cortó durante la puesta al día ya no emitirá `close`.
+    // A client that disconnected during the catch-up will no longer emit `close`.
     if (response.closed) {
       await connection.close();
       return;
@@ -60,7 +60,7 @@ export class SseTransport extends RealtimeTransport {
     response.on('close', () => void connection.close());
   }
 
-  /** Un fallo que no es de autenticación es un error del servidor y sigue su camino. */
+  /** A failure that is not an authentication one is a server error and goes on its way. */
   private static rejected(response: ServerResponse, error: unknown): undefined {
     if (!(error instanceof AuthenticationError)) {
       throw error;

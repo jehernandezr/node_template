@@ -1,6 +1,6 @@
 import { RelayScopes } from '../../../relay/relay-scopes.js';
 
-/** Recorridos de particiones que corren el cuerpo dos veces, para probar que una segunda pasada no duplica. */
+/** Partition traversals that run the body twice, to test that a second pass does not duplicate. */
 export class TwiceRelayScopes extends RelayScopes {
   async forEach(body: () => Promise<void>): Promise<void> {
     await body();

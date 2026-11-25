@@ -1,7 +1,7 @@
 import type { FlagRule } from './flag-rule.js';
 import { FlagStore } from './flag-store.js';
 
-/** Reglas fijas que llegan validadas de la configuración del ambiente (`FEATURE_FLAGS`). */
+/** Fixed rules that come validated from the environment configuration (`FEATURE_FLAGS`). */
 export class ConfigFlagStore extends FlagStore {
   constructor(private readonly configured: readonly FlagRule[]) {
     super();

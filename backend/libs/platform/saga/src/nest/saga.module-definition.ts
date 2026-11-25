@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { SagaModuleOptions } from './saga-module-options.js';
 
-/** Opciones de `SagaModule.forRootAsync`, sin los adaptadores. */
+/** Options of `SagaModule.forRootAsync`, without the adapters. */
 export type SagaModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<SagaModuleOptions>;
 

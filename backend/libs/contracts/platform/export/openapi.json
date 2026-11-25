@@ -4,7 +4,7 @@
   "info": {
     "title": "platform",
     "version": "2",
-    "description": "Kit de contratos y piezas transversales: identificadores, paginación, montos, fechas, referencias de usuario, directorio y traslado de tenants y errores."
+    "description": "Contract kit and cross-cutting pieces: identifiers, pagination, amounts, dates, user references, tenant directory and move, and errors."
   },
   "paths": {},
   "components": {
@@ -13,26 +13,26 @@
         "type": "string",
         "format": "uuid",
         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-        "description": "Identificador UUIDv7."
+        "description": "UUIDv7 identifier."
       },
       "Timestamp": {
         "type": "string",
         "format": "date-time",
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
-        "description": "Instante ISO 8601 en UTC."
+        "description": "ISO 8601 instant in UTC."
       },
       "Cursor": {
         "type": "string",
         "minLength": 1,
         "maxLength": 512,
         "pattern": "^[A-Za-z0-9_-]+$",
-        "description": "Cursor opaco de paginación."
+        "description": "Opaque pagination cursor."
       },
       "PageLimit": {
         "type": "integer",
         "minimum": 1,
         "maximum": 100,
-        "description": "Tamaño de página."
+        "description": "Page size."
       },
       "PageQuery": {
         "type": "object",
@@ -41,12 +41,12 @@
           "after": { "$ref": "#/components/schemas/Cursor" }
         },
         "additionalProperties": false,
-        "description": "Parámetros de paginación por cursor."
+        "description": "Cursor pagination parameters."
       },
       "CurrencyCode": {
         "type": "string",
         "pattern": "^[A-Z]{3}$",
-        "description": "Código de moneda ISO 4217."
+        "description": "ISO 4217 currency code."
       },
       "MoneyAmount": {
         "type": "object",
@@ -59,7 +59,7 @@
           "currency": { "$ref": "#/components/schemas/CurrencyCode" }
         },
         "required": ["amountMinor", "currency"],
-        "description": "Monto en unidades menores de la moneda."
+        "description": "Amount in minor units of the currency."
       },
       "FieldError": {
         "type": "object",
@@ -69,7 +69,7 @@
           "message": { "type": "string", "maxLength": 1024 }
         },
         "required": ["code"],
-        "description": "Error de un campo."
+        "description": "Error of a field."
       },
       "ProblemDetails": {
         "type": "object",
@@ -91,22 +91,22 @@
               "apiBaseUrl": { "type": "string", "maxLength": 2048 },
               "region": { "type": "string", "maxLength": 64 }
             },
-            "description": "Datos públicos del error, por ejemplo la URL de la región del tenant."
+            "description": "Public error data, for example the URL of the tenant region."
           }
         },
         "required": ["type", "title", "status", "code"],
-        "description": "Respuesta de error RFC 9457."
+        "description": "RFC 9457 error response."
       },
       "Empty": {
         "type": "object",
         "properties": {},
         "additionalProperties": false,
-        "description": "Petición sin campos."
+        "description": "Request without fields."
       },
       "CalendarDate": {
         "type": "string",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-        "description": "Fecha de calendario AAAA-MM-DD, sin hora ni zona."
+        "description": "Calendar date YYYY-MM-DD, without time or zone."
       },
       "UserRef": {
         "type": "object",
@@ -115,7 +115,7 @@
           "homeTenantId": { "$ref": "#/components/schemas/Id" }
         },
         "required": ["userId", "homeTenantId"],
-        "description": "Referencia a un usuario con su tenant de origen."
+        "description": "Reference to a user with their home tenant."
       },
       "TenantMoveRef": {
         "type": "object",
@@ -127,7 +127,7 @@
         },
         "required": ["moveId", "tenantId", "targetGroup", "targetRegion"],
         "additionalProperties": false,
-        "description": "Traslado de un tenant a otro grupo de shards o región."
+        "description": "Move of a tenant to another shard group or region."
       },
       "TenantMoveTableProgress": {
         "type": "object",
@@ -145,7 +145,7 @@
           }
         },
         "required": ["table", "copiedRows", "pendingRows"],
-        "description": "Avance de la copia de una tabla."
+        "description": "Copy progress of a table."
       },
       "TenantMoveProgress": {
         "type": "object",
@@ -158,7 +158,7 @@
           "caughtUp": { "type": "boolean" }
         },
         "required": ["tables", "caughtUp"],
-        "description": "Resultado de una ronda de copia."
+        "description": "Result of a copy round."
       },
       "TenantMoveTableCheck": {
         "type": "object",
@@ -192,7 +192,7 @@
           "sourceChecksum",
           "targetChecksum"
         ],
-        "description": "Conteo y suma de verificación de una tabla en el origen y el destino."
+        "description": "Count and checksum of a table in the source and the target."
       },
       "TenantMoveVerification": {
         "type": "object",
@@ -205,13 +205,13 @@
           }
         },
         "required": ["verified", "tables"],
-        "description": "Resultado de la última ronda y de la verificación de un traslado."
+        "description": "Result of the last round and the verification of a move."
       },
       "TenantMoveAck": {
         "type": "object",
         "properties": { "moveId": { "$ref": "#/components/schemas/Id" } },
         "required": ["moveId"],
-        "description": "Acuse de una cancelación o una limpieza de traslado."
+        "description": "Acknowledgement of a move cancellation or cleanup."
       },
       "TenantDirectoryEntry": {
         "type": "object",
@@ -228,20 +228,20 @@
         },
         "required": ["tenantId", "region", "groups", "dedicated"],
         "additionalProperties": false,
-        "description": "Ubicación de un tenant que cada servicio anota en su directorio de shards."
+        "description": "Location of a tenant that each service records in its shard directory."
       },
       "TenantDirectoryRef": {
         "type": "object",
         "properties": { "tenantId": { "$ref": "#/components/schemas/Id" } },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Tenant cuya fila se retira del directorio de un servicio."
+        "description": "Tenant whose row is removed from the directory of a service."
       },
       "TenantDirectoryAck": {
         "type": "object",
         "properties": { "tenantId": { "$ref": "#/components/schemas/Id" } },
         "required": ["tenantId"],
-        "description": "Acuse de la ubicación o del retiro de un tenant en el directorio de un servicio."
+        "description": "Acknowledgement of the placement or removal of a tenant in the directory of a service."
       }
     },
     "securitySchemes": {

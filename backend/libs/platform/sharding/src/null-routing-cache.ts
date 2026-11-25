@@ -1,9 +1,9 @@
 import { RoutingCache } from './ports/routing-cache.js';
 
 /**
- * Caché compartido que no guarda nada: toda lectura es un fallo y ninguna
- * escritura se acepta. Es el valor por defecto sin Valkey, así `ShardRouter`
- * siempre consulta el directorio y su caché en proceso.
+ * Shared cache that stores nothing: every read is a miss and no
+ * write is accepted. It is the default without Valkey, so `ShardRouter`
+ * always queries the directory and its in-process cache.
  */
 export class NullRoutingCache extends RoutingCache {
   get(): Promise<string | undefined> {

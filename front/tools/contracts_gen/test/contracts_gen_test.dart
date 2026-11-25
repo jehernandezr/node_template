@@ -50,7 +50,7 @@ Json _platform() => {
         'retryable': false,
         'audience': 'public',
         'messageKey': 'error_platform_validation_required',
-        'description': 'Falta un campo.',
+        'description': 'A field is missing.',
       },
       {
         'name': 'SagaLeaseLost',
@@ -102,7 +102,7 @@ Json _sample() => _doc(
   },
 );
 
-/// Igual que leer `contract.json` del disco: mapas `Map<String, dynamic>`.
+/// Same as reading `contract.json` from disk: `Map<String, dynamic>` maps.
 ContractModel _model(Map<String, Json> docs) => ContractModel({
   for (final entry in docs.entries)
     entry.key: jsonDecode(jsonEncode(entry.value)) as Json,
@@ -354,7 +354,7 @@ void main() {
           'errors': <dynamic>[],
           'access': access,
           'deprecated': deprecated,
-          'description': 'Guarda un ítem.',
+          'description': 'Saves an item.',
         },
       ],
       'events': [
@@ -364,7 +364,7 @@ void main() {
           'kind': 'event',
           'version': 1,
           'payload': {r'$ref': '#/schemas/Item'},
-          'description': 'Se guardó un ítem.',
+          'description': 'An item was saved.',
         },
       ],
       'commands': <dynamic>[],

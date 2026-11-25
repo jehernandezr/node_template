@@ -10,14 +10,12 @@ const EpochSecondsSchema = z.number().int().positive();
 
 export const TokenAudienceSchema = z
   .enum(TokenAudience)
-  .describe(
-    'Destinatario de un access token.',
-  ) satisfies z.ZodType<TokenAudience>;
+  .describe('Audience of an access token.') satisfies z.ZodType<TokenAudience>;
 
 /**
- * Claims del access token. Los claims desconocidos se descartan y no se
- * rechazan, para que un emisor nuevo y un verificador viejo convivan durante un
- * despliegue.
+ * Access token claims. Unknown claims are discarded and not
+ * rejected, so a new issuer and an old verifier can coexist during a
+ * deployment.
  */
 export const AccessTokenClaimsSchema = z
   .object({
@@ -43,8 +41,8 @@ export const AccessTokenClaimsSchema = z
     (claims) =>
       claims.exp - claims.iat >= AccessTokenRules.minLifetimeSeconds &&
       claims.exp - claims.iat <= AccessTokenRules.maxLifetimeSeconds,
-    { message: 'La vida del token queda fuera del rango permitido.' },
+    { message: 'The token lifetime is outside the allowed range.' },
   )
   .describe(
-    'Claims del access token JWT.',
+    'Claims of the JWT access token.',
   ) satisfies z.ZodType<AccessTokenClaims>;

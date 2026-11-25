@@ -19,7 +19,7 @@ import { SqsDeliveryMapper } from './sqs-delivery-mapper.js';
 import type { SqsDelivery } from './sqs-delivery.js';
 import type { SqsDeliveryProcessor } from './sqs-delivery-processor.js';
 
-/** Consume una cola SQS con long polling (modo servicio, Fargate). */
+/** Consumes an SQS queue with long polling (service mode, Fargate). */
 export class SqsPoller {
   private loop: Promise<void> | undefined;
   private abort: AbortController | undefined;
@@ -35,7 +35,7 @@ export class SqsPoller {
     private readonly clock: Clock,
   ) {}
 
-  /** Una vuelta de long polling: recibe, procesa y borra los confirmados. */
+  /** One round of long polling: receives, processes and deletes the acknowledged ones. */
   async pollOnce(signal?: AbortSignal): Promise<PollReport> {
     const queueUrl = await this.names.queueUrl(
       this.names.queueName(this.queue.name, this.queue.isFifo),
@@ -78,7 +78,7 @@ export class SqsPoller {
     };
   }
 
-  /** Arranca el ciclo de long polling. No hace nada si ya corre. */
+  /** Starts the long polling loop. Does nothing if it is already running. */
   start(): void {
     if (this.loop) return;
     const abort = new AbortController();
@@ -86,7 +86,7 @@ export class SqsPoller {
     this.loop = this.run(abort.signal);
   }
 
-  /** Corta la espera del long polling y deja terminar el lote en curso. */
+  /** Cuts the long polling wait and lets the current batch finish. */
   async stop(): Promise<void> {
     this.abort?.abort();
     await this.loop;
@@ -101,8 +101,8 @@ export class SqsPoller {
       } catch (err) {
         if (signal.aborted) return;
         this.reportFailure(err);
-        // Espera antes de reintentar. El plazo es holgado: solo importa la pausa,
-        // y la cancelación llega por `signal`.
+        // Waits before retrying. The timeout is generous: only the pause matters,
+        // and cancellation arrives through `signal`.
         await Deadline.after(this.config.errorDelayMs * 2 + 1_000, this.clock)
           .sleep(this.config.errorDelayMs, signal)
           .catch(() => undefined);
@@ -117,11 +117,11 @@ export class SqsPoller {
         error: err,
       });
     } catch {
-      // Un fallo del logger no puede terminar el ciclo de consumo.
+      // A logger failure cannot end the consumption loop.
     }
   }
 
-  /** Borra los confirmados en lotes de hasta 10; un fallo no se relanza, el mensaje vuelve después. */
+  /** Deletes the acknowledged ones in batches of up to 10; a failure is not rethrown, the message comes back later. */
   private async delete(
     queueUrl: string,
     deliveries: readonly SqsDelivery[],
@@ -153,7 +153,7 @@ export class SqsPoller {
           });
         }
       } catch (err) {
-        // Los mensajes que vuelvan los absorbe el registro de mensajes procesados.
+        // Messages that come back are absorbed by the processed message registry.
         const error = this.errors.translate(
           AwsOperation.DeleteMessageBatch,
           err,

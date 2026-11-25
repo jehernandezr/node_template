@@ -6,7 +6,7 @@ import {
 import type { Task } from '../../domain/task.js';
 import type { TaskRepository } from '../../domain/task.repository.js';
 
-/** Búsqueda en memoria: encuentra las tareas indexadas cuyo texto contiene todas las palabras buscadas. */
+/** In-memory search: finds the indexed tasks whose text contains all the searched words. */
 export class InMemoryTaskSearch extends TaskSearch {
   private readonly texts = new Map<string, string>();
 

@@ -1,7 +1,7 @@
 import { ResilienceError } from './resilience-error.js';
 import { ResilienceErrorCode } from './resilience-error-code.enum.js';
 
-/** No hay ninguna política registrada con ese nombre. */
+/** There is no policy registered with that name. */
 export class UnknownPolicyError extends ResilienceError {
   constructor(policy: string) {
     super(

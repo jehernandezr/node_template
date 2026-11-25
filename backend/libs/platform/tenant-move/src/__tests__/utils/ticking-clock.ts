@@ -1,6 +1,6 @@
 import type { Clock } from '@platform/kernel';
 
-/** Un reloj que avanza un milisegundo cada vez que se consulta: el plazo de una llamada se mide en consultas. */
+/** A clock that advances one millisecond each time it is read: a call's deadline is measured in reads. */
 export class TickingClock implements Clock {
   private current = Date.UTC(2026, 10, 1);
 

@@ -16,8 +16,8 @@ const ChallengeSchema = z.object({
 });
 
 /**
- * Desafíos en Valkey. El contador de intentos es un `INCR` atómico y el uso único un `GETDEL` del
- * marcador del desafío: los dos son scripts del servidor, así que dos réplicas no compiten.
+ * Challenges in Valkey. The attempt counter is an atomic `INCR` and single use is a `GETDEL` of the
+ * challenge marker: both are server-side scripts, so two replicas do not race.
  */
 @Injectable()
 export class EphemeralChallengeStore extends ChallengeStore {

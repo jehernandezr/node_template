@@ -1,8 +1,8 @@
 import { BlockList, isIP } from 'node:net';
 
 /**
- * Indica si una IP cae dentro de un bloque CIDR, IPv4 o IPv6. Una IP o un bloque mal formados dan
- * `false`: una entrada inválida nunca concede acceso.
+ * Returns whether an IP falls within a CIDR block, IPv4 or IPv6. A malformed IP or block gives
+ * `false`: an invalid input never grants access.
  */
 export function isIpInCidr(ip: string, cidr: string): boolean {
   const parts = cidr.split('/');
@@ -24,7 +24,7 @@ export function isIpInCidr(ip: string, cidr: string): boolean {
   return list.check(ip, blockType);
 }
 
-/** Verdadero si la IP cae dentro de alguno de los bloques. */
+/** Whether the IP falls within any of the blocks. */
 export function isIpInAnyCidr(ip: string, cidrs: readonly string[]): boolean {
   return cidrs.some((cidr) => isIpInCidr(ip, cidr));
 }

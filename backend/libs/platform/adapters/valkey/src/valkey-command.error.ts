@@ -2,15 +2,15 @@ import { FailureKind, PlatformError } from '@platform/kernel';
 import { ValkeyErrorCode } from './valkey-error-code.enum.js';
 
 /**
- * Falló un comando de Valkey. `failureKind` deja que el `FailureClassifier` (y
- * así el breaker de resilience) distinga un servidor caído o en failover
- * (pasajero) de un comando mal armado (permanente). El mensaje nombra el
- * comando, nunca llaves ni valores.
+ * A Valkey command failed. `failureKind` lets the `FailureClassifier` (and
+ * thus the resilience breaker) tell a server that is down or in failover
+ * (transient) from a malformed command (permanent). The message names the
+ * command, never keys or values.
  */
 export class ValkeyCommandError extends PlatformError {
   override readonly code = ValkeyErrorCode.CommandFailed;
   declare readonly failureKind: FailureKind;
-  /** Comando que falló, por ejemplo `GET` o `EVALSHA`. */
+  /** Command that failed, for example `GET` or `EVALSHA`. */
   readonly command: string;
 
   constructor(command: string, failureKind: FailureKind, cause: unknown) {

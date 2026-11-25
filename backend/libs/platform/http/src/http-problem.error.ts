@@ -11,14 +11,14 @@ interface HttpProblemOptions {
 }
 
 /**
- * Error que la entrada HTTP lanza antes de llegar a un caso de uso. El `code` es uno del catálogo
- * de la plataforma o de identity; el filtro lo convierte en Problem Details.
+ * Error the HTTP entry throws before reaching a use case. The `code` is one from the platform
+ * or identity catalog; the filter converts it into Problem Details.
  */
 export class HttpProblemError extends PlatformError {
   override readonly code: string;
-  /** Un error por campo, cuando la validación del contrato falla. */
+  /** One error per field, when contract validation fails. */
   readonly fieldErrors?: FieldError[];
-  /** Segundos de espera para `Retry-After`, cuando el cliente debe esperar. */
+  /** Seconds to wait for `Retry-After`, when the client must wait. */
   readonly retryAfterSeconds?: number;
 
   private constructor(
@@ -112,7 +112,7 @@ export class HttpProblemError extends PlatformError {
     );
   }
 
-  /** El flag apagado se responde como una ruta inexistente: no revela que la funcionalidad existe. */
+  /** A disabled flag responds like a nonexistent route: it does not reveal that the feature exists. */
   static flagDisabled(): HttpProblemError {
     return new HttpProblemError(
       'Not found',

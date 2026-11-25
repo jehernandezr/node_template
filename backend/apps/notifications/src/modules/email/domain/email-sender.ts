@@ -1,11 +1,11 @@
 import type { OutgoingEmail } from './outgoing-email.js';
 
-/** Proveedor que entrega los correos. */
+/** Provider that delivers the emails. */
 export abstract class EmailSender {
-  /** Devuelve el id que el proveedor asigna al correo. */
+  /** Returns the id the provider assigns to the email. */
   abstract send(email: OutgoingEmail): Promise<string>;
 
-  /** Libera las conexiones del proveedor al apagar; los que no guardan ninguna no hacen nada. */
+  /** Releases the provider's connections on shutdown; those that keep none do nothing. */
   close(): void {
     return;
   }

@@ -1,7 +1,7 @@
 import type { ExportReport } from '../../artifact.type.js';
 import { ExportMode } from '../../export-mode.js';
 
-/** Modo que solo guarda cada llamada, en orden, para comprobar qué recibió. */
+/** Mode that only stores each call, in order, to check what it received. */
 export class RecordingExportMode extends ExportMode {
   readonly applied: { readonly path: string; readonly content: string }[] = [];
 

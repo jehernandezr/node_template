@@ -1,15 +1,15 @@
-/** Resultado de atender una entrega. */
+/** Result of handling a delivery. */
 export enum DispatchOutcome {
   Processed = 'processed',
   Duplicate = 'duplicate',
-  /** Tipo de evento sin manejador: se confirma y se descarta. */
+  /** Event type without a handler: acknowledged and discarded. */
   Ignored = 'ignored',
   RetryLater = 'retry-later',
   DeadLetter = 'dead-letter',
   /**
-   * Otra entrega del mismo mensaje tiene el claim y su lease sigue vigente (el
-   * primer manejador puede seguir corriendo). Nunca se confirma: se deja para
-   * reentrega, por ejemplo como fallo de un ítem del lote de SQS.
+   * Another delivery of the same message holds the claim and its lease is still valid (the
+   * first handler may still be running). It is never acknowledged: it is left for
+   * redelivery, for example as a failed item of the SQS batch.
    */
   InProgress = 'in-progress',
 }

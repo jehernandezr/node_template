@@ -15,7 +15,7 @@ import { TypeOrmDeliveryRepository } from '../infrastructure/persistence/typeorm
 import { TypeOrmFailedDeliveries } from '../infrastructure/persistence/typeorm-failed-deliveries.js';
 import { DispatchInternalOperations } from './dispatch.internal-operations.js';
 
-/** Entrada única de los avisos: canales, textos, entregas y sus reintentos. Global solo para su fachada. */
+/** Single entry point for notifications: channels, texts, deliveries and their retries. Global only for its facade. */
 @Global()
 @Module({
   imports: [

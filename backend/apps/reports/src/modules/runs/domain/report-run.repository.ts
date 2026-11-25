@@ -1,7 +1,7 @@
 import type { ReportRunStatus, ReportType } from '@contracts/reports';
 import type { ReportRun } from './report-run.js';
 
-/** Una página de ejecuciones, de la más nueva a la más vieja. */
+/** A page of runs, from newest to oldest. */
 export interface ReportRunPageRequest {
   readonly type?: ReportType;
   readonly status?: ReportRunStatus;
@@ -9,13 +9,13 @@ export interface ReportRunPageRequest {
   readonly limit: number;
 }
 
-/** Ejecuciones de reporte del tenant del `ShardScope` abierto. */
+/** Report runs of the tenant of the open `ShardScope`. */
 export abstract class ReportRunRepository {
   abstract insert(run: ReportRun): Promise<void>;
   abstract find(runId: string): Promise<ReportRun | undefined>;
   /**
-   * Guarda los cambios y devuelve la ejecución con su versión nueva.
-   * @throws OptimisticLockError si otra escritura la cambió desde que se leyó.
+   * Saves the changes and returns the run with its new version.
+   * @throws OptimisticLockError if another write changed it since it was read.
    */
   abstract update(run: ReportRun): Promise<ReportRun>;
   abstract page(request: ReportRunPageRequest): Promise<readonly ReportRun[]>;

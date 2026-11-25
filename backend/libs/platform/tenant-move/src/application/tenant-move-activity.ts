@@ -1,7 +1,7 @@
 import type { DataSource } from 'typeorm';
 
-/** Trabajo del tenant en un shard que todavía puede escribir ahí y que el traslado no puede llevarse a medias. */
+/** Tenant work on a shard that can still write there and that the move cannot carry half-finished. */
 export abstract class TenantMoveActivity {
-  /** Cuántos trabajos del tenant siguen abiertos en el shard. */
+  /** How many tenant jobs are still open on the shard. */
   abstract openWork(shard: DataSource, tenantId: string): Promise<number>;
 }

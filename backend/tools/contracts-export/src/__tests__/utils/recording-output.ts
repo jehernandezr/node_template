@@ -1,6 +1,6 @@
 import { Output } from '../../output.js';
 
-/** Salida que guarda las líneas para que las pruebas las comprueben. */
+/** Output that stores the lines so tests can check them. */
 export class RecordingOutput extends Output {
   readonly infoLines: string[] = [];
   readonly errorLines: string[] = [];

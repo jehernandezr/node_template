@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { LOOKUP, STEP_A, STEP_C } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Un paso de solo lectura entre dos escrituras: al deshacer, se salta. */
+/** A read-only step between two writes: when undoing, it is skipped. */
 export class LookupSaga extends SagaDefinition<SampleState> {
   readonly type = 'with-lookup';
 

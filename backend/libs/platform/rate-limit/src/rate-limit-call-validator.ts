@@ -3,12 +3,12 @@ import { RateLimitArgumentGuard } from './errors/rate-limit-argument-guard.js';
 import { RateLimitLimits } from './rate-limit-limits.js';
 import { RateLimitRule } from './rate-limit-rule.js';
 
-/** Valida una llamada a un `RateLimiter` antes de contar nada. */
+/** Validates a call to a `RateLimiter` before counting anything. */
 export class RateLimitCallValidator {
   /**
-   * Valida la llave, la regla y el costo. El costo va de 1 al límite: uno
-   * mayor nunca cabría y delata un error de programación.
-   * @throws InvalidArgumentError con el primer argumento inválido.
+   * Validates the key, the rule and the cost. The cost goes from 1 to the limit: a
+   * larger one would never fit and reveals a programming error.
+   * @throws InvalidArgumentError with the first invalid argument.
    */
   static validate(key: string, rule: RateLimitRule, cost = 1): void {
     if (

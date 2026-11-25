@@ -14,8 +14,8 @@ import { NotificationIds } from './notification-ids.js';
 import { TenantMembers } from './tenant-members.js';
 
 /**
- * Traduce los eventos de otros servicios en avisos. El id de cada aviso sale del id del mensaje y del
- * destinatario, así una reentrega del mismo evento no avisa dos veces.
+ * Translates events from other services into notices. Each notice id comes from the message id and the
+ * recipient, so a redelivery of the same event does not notify twice.
  */
 @Injectable()
 export class TriggerNotifications {
@@ -25,7 +25,7 @@ export class TriggerNotifications {
     private readonly members: TenantMembers,
   ) {}
 
-  /** Una alerta de seguridad es de la cuenta, no de un tenant: el aviso queda en el tenant de origen del usuario. */
+  /** A security alert belongs to the account, not a tenant: the notice stays in the user's home tenant. */
   async securityAlert(
     messageId: string,
     alert: SecurityAlertRaisedPayload,
@@ -42,7 +42,7 @@ export class TriggerNotifications {
     }
   }
 
-  /** Solo avisa al autor cuando otra persona cambió su tarea. */
+  /** Only notifies the author when another person changed their task. */
   async taskUpdated(
     messageId: string,
     task: TaskUpdatedPayload,

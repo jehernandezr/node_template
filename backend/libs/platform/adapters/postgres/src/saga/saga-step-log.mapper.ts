@@ -1,7 +1,7 @@
 import type { StepDirection, StepLogEntry, StepStatus } from '@platform/saga';
 import { SagaStepLogEntity } from './saga-step-log.entity.js';
 
-/** Convierte entre la entrada de bitácora y su fila. `input` y `output` indefinidos se guardan como `null`. */
+/** Converts between the log entry and its row. Undefined `input` and `output` are stored as `null`. */
 export class SagaStepLogMapper {
   toPersistence(entry: StepLogEntry): SagaStepLogEntity {
     const row = new SagaStepLogEntity();

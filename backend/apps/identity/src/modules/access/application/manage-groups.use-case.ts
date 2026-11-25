@@ -14,8 +14,8 @@ import { AccessVersionPublisher } from './access-version-publisher.js';
 import { GrantCeiling } from './grant-ceiling.js';
 
 /**
- * Grupos del tenant. Los de sistema no se renombran ni se borran, y los roles de un grupo no otorgan ni
- * quitan permisos que quien edita no tiene.
+ * Tenant groups. System groups are not renamed or deleted, and a group's roles do not grant or
+ * remove permissions the editor does not have.
  */
 @Injectable()
 export class ManageGroups {

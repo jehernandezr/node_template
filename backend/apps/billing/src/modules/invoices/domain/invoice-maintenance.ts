@@ -1,15 +1,15 @@
-/** Una factura de algún tenant, para los jobs que recorren todos los shards. */
+/** An invoice of some tenant, for the jobs that walk all shards. */
 export interface TenantInvoice {
   readonly tenantId: string;
   readonly invoiceId: string;
 }
 
-/** Consultas sobre las facturas de todos los tenants, en todos los shards, para los jobs. */
+/** Queries over the invoices of all tenants, across all shards, for the jobs. */
 export abstract class InvoiceMaintenance {
   /**
-   * Facturas sin pagar cuyo cobro ya toca: recién emitidas o con un reintento vencido.
-   * @param now Momento de referencia.
-   * @returns Las facturas de todos los shards, sin los tenants ya trasladados.
+   * Unpaid invoices whose charge is due: newly issued or with an overdue retry.
+   * @param now Reference instant.
+   * @returns The invoices of all shards, excluding tenants already moved.
    */
   abstract dueForCollection(now: Date): Promise<readonly TenantInvoice[]>;
 }

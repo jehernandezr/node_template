@@ -1,10 +1,10 @@
 import type { MessageEnvelope } from '../../envelope/message-envelope.js';
 
-/** Arma sobres de prueba como objetos literales, con valores fijos que cada prueba puede cambiar. */
+/** Builds test envelopes as object literals, with fixed values that each test can change. */
 export class EnvelopeBuilder {
   static readonly TIME = '2026-01-01T00:00:00.000Z';
 
-  /** Sobre válido con id `msg-1`, tipo `test.event.v1`, fuente `/test` y datos vacíos. */
+  /** Valid envelope with id `msg-1`, type `test.event.v1`, source `/test` and empty data. */
   static anEnvelope<T = Record<string, never>>(
     overrides: Partial<MessageEnvelope<T>> = {},
   ): MessageEnvelope<T> {

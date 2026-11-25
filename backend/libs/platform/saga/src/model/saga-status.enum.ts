@@ -1,4 +1,4 @@
-/** Ciclo de vida de una instancia de saga. */
+/** Life cycle of a saga instance. */
 export enum SagaStatus {
   Running = 'running',
   Suspended = 'suspended',
@@ -6,6 +6,6 @@ export enum SagaStatus {
   Completed = 'completed',
   Compensated = 'compensated',
   CompensationFailed = 'compensation_failed',
-  /** Necesita a una persona: la saga no puede completarse ni compensarse sola. */
+  /** Needs a person: the saga cannot complete or compensate on its own. */
   RequiresIntervention = 'requires_intervention',
 }

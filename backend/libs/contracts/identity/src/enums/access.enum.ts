@@ -1,4 +1,4 @@
-/** Permisos de un usuario dentro de un tenant. */
+/** Permissions of a user within a tenant. */
 export enum Permission {
   TasksRead = 'tasks:read',
   TasksWrite = 'tasks:write',
@@ -17,7 +17,7 @@ export enum Permission {
   IdentityTenantManage = 'identity:tenant:manage',
 }
 
-/** Roles de la plataforma, fuera de cualquier tenant. */
+/** Platform roles, outside any tenant. */
 export enum PlatformRole {
   SuperAdmin = 'super_admin',
   Support = 'support',
@@ -25,7 +25,7 @@ export enum PlatformRole {
   ReadOnly = 'read_only',
 }
 
-/** Funcionalidades incluidas en el plan de un tenant. */
+/** Features included in a tenant's plan. */
 export enum PlanFeature {
   AiAssistant = 'ai_assistant',
   Webhooks = 'webhooks',
@@ -33,7 +33,7 @@ export enum PlanFeature {
   AdvancedReports = 'advanced_reports',
 }
 
-/** Feature flags que habilitan partes del producto. */
+/** Feature flags that enable parts of the product. */
 export enum FeatureFlag {
   NewReports = 'new_reports',
 }

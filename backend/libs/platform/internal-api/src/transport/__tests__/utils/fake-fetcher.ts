@@ -1,4 +1,4 @@
-/** Petición que recibió un `FakeFetcher`, con sus cabeceras en minúscula. */
+/** Request received by a `FakeFetcher`, with its headers in lowercase. */
 export interface RecordedRequest {
   readonly url: string;
   readonly method: string;
@@ -7,25 +7,25 @@ export interface RecordedRequest {
   readonly signal: AbortSignal | null | undefined;
 }
 
-/** `fetch` de prueba: registra cada petición y responde o falla según lo programado. */
+/** Test `fetch`: records each request and responds or fails as programmed. */
 export class FakeFetcher {
   readonly requests: RecordedRequest[] = [];
   private response: Response | undefined;
   private error: unknown;
 
-  /** Respuesta que devuelve la siguiente llamada. */
+  /** Sets the response the next call returns. */
   respondWith(response: Response): void {
     this.response = response;
     this.error = undefined;
   }
 
-  /** Error que lanza la siguiente llamada, como un fallo de red. */
+  /** Sets the error the next call throws, like a network failure. */
   failWith(error: unknown): void {
     this.error = error;
     this.response = undefined;
   }
 
-  /** Flecha para que `this` quede enlazado al pasarla como `fetcher`. */
+  /** Arrow function so `this` stays bound when passed as `fetcher`. */
   readonly fetch: typeof fetch = async (input, init) => {
     const headers: Record<string, string> = {};
     new Headers(init?.headers).forEach((value, name) => {

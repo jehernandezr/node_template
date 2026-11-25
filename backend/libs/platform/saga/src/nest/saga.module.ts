@@ -17,16 +17,16 @@ import {
 import { SagaProviders } from './saga.providers.js';
 
 /**
- * Cableado de sagas. Provee `Sagas` (lo que inyecta un caso de uso), `SagaStore` (para consultar el estado
- * de una instancia),
- * `SagaEngine`, `SagaRegistry`, los jobs de recuperación y de retención, que
- * `SchedulingModule` descubre sin que este módulo lo importe. Es global para
- * que los casos de uso inyecten `Sagas` sin importarlo.
+ * Saga wiring. Provides `Sagas` (what a use case injects), `SagaStore` (to query the state
+ * of an instance),
+ * `SagaEngine`, `SagaRegistry`, and the recovery and retention jobs, which
+ * `SchedulingModule` discovers without this module importing it. It is global so
+ * that use cases inject `Sagas` without importing it.
  *
- * Lo normal es arrancar la saga después del commit del caso de uso. Si se
- * arranca dentro de una transacción abierta, la instancia se crea con ella y
- * los pasos corren tras el commit: si la transacción se deshace, la saga no
- * existe, y si la corrida falla después del commit la retoma `SagaRecoveryJob`.
+ * The normal case is to start the saga after the use case commit. If it is
+ * started inside an open transaction, the instance is created with it and
+ * the steps run after the commit: if the transaction is rolled back, the saga does not
+ * exist, and if the run fails after the commit, `SagaRecoveryJob` resumes it.
  *
  * ```ts
  * @Module({
@@ -47,8 +47,8 @@ import { SagaProviders } from './saga.providers.js';
  * }
  * ```
  *
- * `forRoot` y `forRootAsync` exigen `store`. Con `forFeature`, la definición
- * inválida tumba el arranque, porque el registro se sella en `onApplicationBootstrap`.
+ * `forRoot` and `forRootAsync` require `store`. With `forFeature`, an invalid
+ * definition brings down the startup, because the registry is sealed in `onApplicationBootstrap`.
  */
 @Module({})
 export class SagaModule extends SagaModuleClass {
@@ -65,8 +65,8 @@ export class SagaModule extends SagaModuleClass {
   }
 
   /**
-   * Registra las definiciones de un módulo. Cada llamada usa su propio símbolo,
-   * así dos `forFeature` no chocan. Requiere `forRoot` en la aplicación.
+   * Registers the definitions of a module. Each call uses its own symbol,
+   * so two `forFeature` calls do not collide. Requires `forRoot` in the application.
    */
   static forFeature(
     definitions: readonly Type<SagaDefinition<unknown>>[],
@@ -90,7 +90,7 @@ export class SagaModule extends SagaModuleClass {
     };
   }
 
-  /** @throws SagaError `InvalidConfiguration` cuando falta el almacén. */
+  /** @throws SagaError `InvalidConfiguration` when the store is missing. */
   private static complete(
     base: DynamicModule,
     extras: SagaModuleExtras,

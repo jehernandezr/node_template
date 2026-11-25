@@ -8,7 +8,7 @@ import type {
 import type { HandlerResult } from '../../handler-result.js';
 import { OperationHandler } from '../../operation-handler.js';
 
-/** Un paso programado: devuelve un valor o lanza, y puede esperar una compuerta antes. */
+/** A programmed step: returns a value or throws, and can wait on a gate first. */
 interface ScriptedStep {
   readonly throws: boolean;
   readonly value?: unknown;
@@ -17,10 +17,10 @@ interface ScriptedStep {
 }
 
 /**
- * Handler de prueba con pasos programados en orden; el último se repite. Cuenta
- * las llamadas y guarda la entrada y el `CallMeta` de cada una. El valor
- * devuelto no se valida aquí: así una prueba puede programar un resultado mal
- * formado a propósito.
+ * Test handler with programmed steps in order; the last one repeats. It counts
+ * the calls and stores the input and the `CallMeta` of each one. The returned
+ * value is not validated here: this way a test can program a malformed
+ * result on purpose.
  */
 export class ScriptedHandler<
   S extends OperationDefinition = OperationDefinition,
@@ -30,13 +30,13 @@ export class ScriptedHandler<
   readonly contexts: CallMeta[] = [];
   private readonly steps: ScriptedStep[] = [];
 
-  /** Programa un resultado; `gate`, si se da, detiene el paso hasta que se resuelva. */
+  /** Programs a result; `gate`, if given, holds the step until it resolves. */
   thenReturn(result: unknown, gate?: Promise<void>): this {
     this.steps.push({ throws: false, value: result, gate });
     return this;
   }
 
-  /** Programa un lanzamiento. */
+  /** Queues a step that throws `error`. */
   thenThrow(error: unknown): this {
     this.steps.push({ throws: true, error });
     return this;

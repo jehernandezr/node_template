@@ -1,7 +1,7 @@
-/** Shard que no respondió a tiempo o falló durante un recorrido. */
+/** Shard that did not respond in time or failed during a walk. */
 export interface ShardFailure {
   readonly shard: string;
   readonly timedOut: boolean;
-  /** Código estable del error, si era un `PlatformError`. */
+  /** Stable error code, if it was a `PlatformError`. */
   readonly code?: string;
 }

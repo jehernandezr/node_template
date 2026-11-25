@@ -1,7 +1,7 @@
 import { defineOperation } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Operaciones del servicio `stock` y una remota de `billing` que usan las pruebas del explorador. */
+/** Operations of the `stock` service and a remote one from `billing` used by the explorer tests. */
 export class ExplorerOperations {
   static readonly Count = defineOperation({
     id: 'stock.count.v1',

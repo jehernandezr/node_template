@@ -15,8 +15,8 @@ import {
 } from '../../../__tests__/utils/index.js';
 
 /**
- * Adaptadores y servicios que en una aplicación aportan la observabilidad y los
- * almacenes. Son globales, como lo serían en el servicio real.
+ * Adapters and services that, in an application, provide observability and the
+ * stores. They are global, as they would be in the real service.
  */
 @Global()
 @Module({

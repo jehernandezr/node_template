@@ -1,12 +1,12 @@
 import type { DataSource } from 'typeorm';
 import type { TransferBudget } from './transfer-budget.js';
 
-/** Un traslado en curso dentro de un servicio: el tenant, su shard de origen y el de destino. */
+/** An ongoing move within a service: the tenant, its source shard and its target shard. */
 export interface TenantTransfer {
   readonly moveId: string;
   readonly tenantId: string;
   readonly source: DataSource;
   readonly target: DataSource;
-  /** El plazo de la llamada cuando varias copias lo comparten; sin él, cada método abre el suyo. */
+  /** The call budget when several copies share it; without it, each method opens its own. */
   readonly budget?: TransferBudget;
 }

@@ -1,10 +1,10 @@
 /**
- * Lo mínimo que la librería lee de una petición. Es un tipo propio para no depender de los
- * tipos de Express: el adaptador HTTP real los cumple de forma estructural.
+ * The minimum the library reads from a request. It is its own type so as not to depend on the
+ * Express types: the real HTTP adapter satisfies them structurally.
  */
 export interface HttpRequestView {
   readonly method: string;
-  /** Ruta sin query. */
+  /** Path without query. */
   readonly path: string;
   readonly headers: Readonly<Record<string, string | string[] | undefined>>;
   readonly ip?: string;

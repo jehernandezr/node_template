@@ -3,19 +3,19 @@ import type { IdGenerator } from '@platform/kernel';
 import { LuaScript } from './lua-script.js';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
-/** Llaves, lotes y scripts de los filtros de Bloom en Valkey. */
+/** Keys, batches and scripts of the Bloom filters in Valkey. */
 export class BloomKeys {
-  /** Lo más que vive una llave temporal de reconstrucción si su job muere a medias. */
+  /** The longest a temporary rebuild key lives if its job dies halfway. */
   static readonly REBUILD_KEY_TTL_MS = 6 * 60 * 60 * 1_000;
 
-  /** Ítems por comando al agregar muchos. */
+  /** Items per command when adding many. */
   static readonly BATCH_SIZE = 1_000;
 
   private static readonly NAME_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
   /**
-   * Pone un filtro reconstruido en su lugar de una vez: renombra la llave
-   * temporal sobre la viva y le quita el TTL. KEYS[1] llave temporal, KEYS[2] llave viva.
+   * Puts a rebuilt filter in place at once: renames the temporary
+   * key over the live one and removes its TTL. KEYS[1] temporary key, KEYS[2] live key.
    */
   static readonly SWAP_REBUILT = new LuaScript(`
 redis.call('RENAME', KEYS[1], KEYS[2])
@@ -24,10 +24,10 @@ return 1
 `);
 
   /**
-   * Llave de un filtro, `<prefijo>:bloom:{nombre}`. El nombre va en una hash
-   * tag, así la llave viva y las de reconstrucción comparten slot en un clúster
-   * y el script de intercambio puede tocar ambas.
-   * @throws InvalidParametersError con un nombre vacío, con caracteres fuera de `[A-Za-z0-9._:-]` o de más de 128.
+   * Returns the key of a filter, `<prefix>:bloom:{name}`. The name goes in a hash
+   * tag, so the live key and the rebuild keys share a slot in a cluster
+   * and the swap script can touch both.
+   * @throws InvalidParametersError with an empty name, with characters outside `[A-Za-z0-9._:-]` or longer than 128.
    */
   static filter(keyspace: ValkeyKeyspace, name: string): string {
     if (!BloomKeys.NAME_PATTERN.test(name)) {
@@ -38,12 +38,12 @@ return 1
     return keyspace.key('bloom', `{${name}}`);
   }
 
-  /** Llave temporal que una reconstrucción llena antes del intercambio. */
+  /** Returns the temporary key that a rebuild fills before the swap. */
   static rebuild(liveKey: string, ids: IdGenerator): string {
     return `${liveKey}:rebuild:${ids.next().toString()}`;
   }
 
-  /** Parte los ítems en lotes del tamaño de un comando. */
+  /** Splits the items into batches the size of one command. */
   static *batches<T>(
     items: readonly T[],
     size: number = BloomKeys.BATCH_SIZE,

@@ -1,9 +1,9 @@
 import type { NotificationChannel } from '@contracts/notifications';
 import type { NotifyCommand } from './notify-command.js';
 
-/** La entrada única de las notificaciones: el tipo fija la criticidad y las preferencias, los canales. */
+/** The single entry point for notifications: the type sets the criticality and the preferences, the channels. */
 export abstract class DispatchFacade {
-  /** Devuelve los canales por los que salió; vacío si el usuario ya no existe. */
+  /** Returns the channels it went out through; empty if the user no longer exists. */
   abstract notify(
     command: NotifyCommand,
   ): Promise<readonly NotificationChannel[]>;

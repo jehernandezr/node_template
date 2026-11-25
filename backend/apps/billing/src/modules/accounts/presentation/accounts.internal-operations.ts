@@ -13,7 +13,7 @@ import { CallOutcome } from '@platform/primitives';
 import { BillingAccounts } from '../application/billing-accounts.js';
 
 /**
- * Apertura y cierre de la cuenta de facturación, los pasos de billing en la saga de alta de tenant.
+ * Opening and closing of the billing account, the billing steps in the tenant signup saga.
  */
 @Injectable()
 export class AccountsInternalOperations {

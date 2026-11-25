@@ -8,21 +8,21 @@ import type { PlacementCache } from './placement-cache.js';
 import { SharedRecordKind } from './shared-record-kind.enum.js';
 
 interface InFlightLoad {
-  /** Secuencia de invalidación cuando empezó la carga. */
+  /** Invalidation sequence when the load started. */
   readonly startedAt: number;
   readonly promise: Promise<TenantPlacement>;
 }
 
 /**
- * Carga el placement de un tenant (caché compartido y, si falla, directorio) con
- * vuelo único: las cargas simultáneas del mismo tenant comparten una sola lectura,
- * salvo que una invalidación ocurriera después de que empezó.
+ * Loads a tenant placement (shared cache and, on a miss, directory) with
+ * single flight: simultaneous loads of the same tenant share a single read,
+ * unless an invalidation happened after it started.
  */
 export class PlacementLoader {
   private readonly inflight = new Map<string, InFlightLoad>();
 
   /**
-   * @param maxInFlight Máximo de cargas en vuelo registradas; pasado el límite una carga corre sin vuelo único.
+   * @param maxInFlight Maximum number of tracked in-flight loads; past the limit a load runs without single flight.
    */
   constructor(
     private readonly directory: DirectoryStore,
@@ -33,7 +33,7 @@ export class PlacementLoader {
   ) {}
 
   /**
-   * @throws ShardingError `UnknownTenant` si el directorio no tiene el tenant.
+   * @throws ShardingError `UnknownTenant` if the directory does not have the tenant.
    */
   loadOrJoin(tenantId: string): Promise<TenantPlacement> {
     const pending = this.inflight.get(tenantId);
@@ -89,8 +89,8 @@ export class PlacementLoader {
       !this.invalidations.isCurrent(tenantId, sequence) ||
       this.cache.isOutdated(tenantId, placement.version)
     ) {
-      // Invalidado mientras se leía el directorio, o una réplica atrasada respecto
-      // a una versión que este proceso ya vio: se responde al llamador sin cachear.
+      // Invalidated while the directory was being read, or a replica lagging behind
+      // a version this process already saw: answer the caller without caching.
       return placement;
     }
     const sharedExpiresAt = this.cache.sharedExpiry();

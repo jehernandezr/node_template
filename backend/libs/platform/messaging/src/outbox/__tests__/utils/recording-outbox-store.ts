@@ -7,11 +7,11 @@ import type {
 } from '../../outbox.js';
 
 /**
- * Almacén en memoria que guarda cada pedido de reclamo y puede rechazar las
- * próximas marcas de publicado, para probar el fencing sin espías.
+ * In-memory store that keeps each claim request and can reject the
+ * next published marks, to test fencing without spies.
  */
 export class RecordingOutboxStore extends InMemoryOutboxStore {
-  /** Pedidos de reclamo, en el orden en que llegaron. */
+  /** Claim requests, in the order they arrived. */
   readonly claims: ClaimOutboxRequest[] = [];
   private rejectedMarks = 0;
 
@@ -19,7 +19,7 @@ export class RecordingOutboxStore extends InMemoryOutboxStore {
     super({ clock });
   }
 
-  /** Hace que las próximas `count` marcas de publicado devuelvan `false`. */
+  /** Makes the next `count` published marks return `false`. */
   rejectNextPublishedMarks(count: number): void {
     this.rejectedMarks = count;
   }

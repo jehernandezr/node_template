@@ -6,9 +6,9 @@ import { LockoutKeys } from './lockout-keys.js';
 import { LoginLockout } from './login-lockout.js';
 
 /**
- * Desbloquea una cuenta: quita el bloqueo de todos sus orígenes, el modo protegido y sus fallos contados.
- * Lo usa soporte o un flujo de recuperación ya verificado; el bloqueo de una IP no cambia, porque no es de
- * la cuenta. Repetirlo es inocuo.
+ * Unlocks an account: removes the lockout of all its origins, protected mode and its counted failures.
+ * Used by support or by an already verified recovery flow; an IP lockout does not change, because it does not belong to
+ * the account. Repeating it is harmless.
  */
 @Injectable()
 export class UnlockAccount implements UseCase<UserRef, void> {

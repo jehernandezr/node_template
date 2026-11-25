@@ -1,4 +1,4 @@
-/** Recurso de cada controller de identity, el nombre que recibe `@Resource`. */
+/** Resource of each identity controller, the name `@Resource` receives. */
 export enum IdentityResource {
   Users = 'users',
   Passwords = 'passwords',

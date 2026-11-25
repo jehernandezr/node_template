@@ -1,7 +1,7 @@
 import type { FlagRule } from '../../flag-rule.js';
 import type { FlagStore } from '../../flag-store.js';
 
-/** Crea el adaptador bajo prueba con las reglas que el ambiente le daría. */
+/** Creates the adapter under test with the rules the environment would give it. */
 export type FlagStoreFactory = (rules: readonly FlagRule[]) => FlagStore;
 
 const NEW_REPORTS: FlagRule = {
@@ -17,7 +17,7 @@ const DARK_MODE: FlagRule = {
   rolloutPercent: 100,
 };
 
-/** Lo que todo `FlagStore` cumple, sea de configuración o en memoria. */
+/** What every `FlagStore` satisfies, whether config-based or in memory. */
 export function runFlagStoreContract(
   name: string,
   factory: FlagStoreFactory,

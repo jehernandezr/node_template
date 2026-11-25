@@ -1,10 +1,10 @@
 import type { DatabaseKind } from './database-kind.enum.js';
 
-/** Una base lógica en una instancia física: lo que identifica un `DataSource`. */
+/** A logical database on a physical instance: what identifies a `DataSource`. */
 export interface DatabaseTarget {
   readonly kind: DatabaseKind;
-  /** Nombre de la instancia física, tal como la entrega el directorio. */
+  /** Name of the physical instance, as provided by the directory. */
   readonly instance: string;
-  /** Nombre de la base: el id del shard lógico, o el nombre del catálogo. */
+  /** Name of the database: the logical shard id, or the catalog name. */
   readonly database: string;
 }

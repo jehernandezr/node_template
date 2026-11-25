@@ -3,7 +3,7 @@ import type { ResolvedBloomFilterDefinition } from '../../../bloom-filter-defini
 import { InMemoryBloomFilterFactory } from '../../../in-memory-bloom-filter-factory.js';
 import type { RebuildableBloomFilter } from '../../../rebuildable-bloom-filter.js';
 
-/** Fábrica de prueba que cuenta los filtros creados y delega en la de memoria. */
+/** Test factory that counts the created filters and delegates to the in-memory one. */
 export class CountingBloomFilterFactory extends BloomFilterFactory {
   created = 0;
   private readonly delegate = new InMemoryBloomFilterFactory();

@@ -28,7 +28,7 @@ import { SagaRetentionJob } from '../../jobs/saga-retention-job.js';
 import { SagaStatus } from '../../model/saga-status.enum.js';
 import { SagaModule } from '../saga.module.js';
 
-/** Aleatoriedad con un valor fijo que la prueba puede reconocer. */
+/** Randomness with a fixed value that the test can recognize. */
 class FixedRandom extends FixedRandomSource {
   constructor() {
     super([0.25]);
@@ -36,8 +36,8 @@ class FixedRandom extends FixedRandomSource {
 }
 
 /**
- * Lo que `SagaModule` necesita de su entorno y que en una app daría otro
- * módulo: el almacén, el invocador, la traza y el logger.
+ * What `SagaModule` needs from its environment and that in an app another
+ * module would provide: the store, the invoker, the trace and the logger.
  */
 @Global()
 @Module({
@@ -64,7 +64,7 @@ class FixedRandom extends FixedRandomSource {
 })
 class SagaTestEnvironment {}
 
-/** Caso de uso que arranca la saga con `Sagas`, como lo haría un servicio. */
+/** Use case that starts the saga with `Sagas`, as a service would. */
 @Injectable()
 class CreateOnboarding {
   constructor(private readonly sagas: Sagas) {}
@@ -74,7 +74,7 @@ class CreateOnboarding {
   }
 }
 
-/** Definición sin compensación antes del pivote: sellar el registro debe fallar. */
+/** Definition without compensation before the pivot: sealing the registry must fail. */
 class BrokenSaga extends SagaDefinition<unknown> {
   readonly type = 'broken';
 
@@ -104,7 +104,7 @@ class BrokenSaga extends SagaDefinition<unknown> {
   }
 }
 
-/** Opciones mínimas de `forRoot`, con los tiempos de las pruebas. */
+/** Minimal `forRoot` options, with the test timings. */
 function rootOptions(
   extra: { owner?: string; random?: typeof FixedRandom } = {},
 ) {
@@ -117,7 +117,7 @@ function rootOptions(
   };
 }
 
-/** Módulo de pruebas con el `SagaModule` dado y el caso de uso. */
+/** Test module with the given `SagaModule` and the use case. */
 async function compile(imports: DynamicModule[]): Promise<TestingModule> {
   return Test.createTestingModule({
     imports: [SagaTestEnvironment, ...imports],

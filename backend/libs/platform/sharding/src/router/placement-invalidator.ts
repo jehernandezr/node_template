@@ -11,7 +11,7 @@ import { PlacementCodec } from './placement-codec.js';
 import type { RoutingKeyNormalizer } from './routing-key-normalizer.js';
 import { SharedRecordKind } from './shared-record-kind.enum.js';
 
-/** Invalida el placement de un tenant en todos los niveles y avisa a los demás procesos. */
+/** Invalidates a tenant placement at every level and notifies the other processes. */
 export class PlacementInvalidator {
   constructor(
     private readonly cache: PlacementCache,
@@ -23,12 +23,12 @@ export class PlacementInvalidator {
   ) {}
 
   /**
-   * Descarta el placement en proceso y las instancias de su grupo de shards, reemplaza la
-   * entrada compartida por una lápida versionada y publica
-   * `ShardingEvent.ShardDirectoryChanged`. Una falla del caché o del canal se informa a
-   * `onError` y no la lanza.
-   * @throws ShardingError `KeyMissing` o `InvalidTenantId` por un id malo; `InvalidConfiguration`
-   *   si `options.version` no es un entero no negativo.
+   * Discards the in-process placement and the instances of its shard group, replaces the
+   * shared entry with a versioned tombstone and publishes
+   * `ShardingEvent.ShardDirectoryChanged`. A cache or channel failure is reported to
+   * `onError` and not thrown.
+   * @throws ShardingError `KeyMissing` or `InvalidTenantId` for a bad id; `InvalidConfiguration`
+   *   if `options.version` is not a non-negative integer.
    */
   async invalidate(
     tenantId: string,

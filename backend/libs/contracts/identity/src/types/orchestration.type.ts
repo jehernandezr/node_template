@@ -6,49 +6,49 @@ import type {
   IdentitySagaStatus,
 } from '../enums/identifiers.enum.js';
 
-/** Respuesta 202 de `POST /v1/tenants`: el tenant se aprovisiona en una saga. */
+/** 202 response of `POST /v1/tenants`: the tenant is provisioned in a saga. */
 export interface TenantCreation {
   tenantId: string;
   sagaId: string;
 }
 
-/** Respuesta 202 de `POST /v1/me/deletion`. */
+/** 202 response of `POST /v1/me/deletion`. */
 export interface AccountDeletionStarted {
   sagaId: string;
 }
 
-/** Consulta de una saga propia. */
+/** Query of one's own saga. */
 export interface GetSagaRequest {
   sagaId: string;
 }
 
-/** Estado de una saga de identity. */
+/** Status of an identity saga. */
 export interface SagaSummary {
   sagaId: string;
   saga: IdentitySaga;
   status: IdentitySagaStatus;
   startedAt: string;
-  /** Instante en que terminó; null mientras corre. */
+  /** Instant it finished; null while it runs. */
   finishedAt: string | null;
 }
 
-/** Borra los datos personales de un usuario. */
+/** Deletes a user's personal data. */
 export interface EraseUserInput {
   userId: string;
 }
 
 export interface EraseUserResult {
   userId: string;
-  /** Instante en que quedó borrado. */
+  /** Instant it was deleted. */
   erasedAt: string;
 }
 
-/** Usuario cuyos dispositivos con push se piden. */
+/** User whose push-enabled devices are requested. */
 export interface ListPushTargetsInput {
   user: UserRef;
 }
 
-/** Dispositivo al que se puede enviar un push. */
+/** Device a push can be sent to. */
 export interface PushTarget {
   deviceId: string;
   platform: ClientPlatform;
@@ -59,7 +59,7 @@ export interface PushTargets {
   targets: PushTarget[];
 }
 
-/** Miembros de un tenant que tienen un permiso. */
+/** Members of a tenant that have a permission. */
 export interface ListMembersByPermissionInput {
   tenantId: string;
   permission: Permission;
@@ -69,7 +69,7 @@ export interface ListMembersByPermissionInput {
 
 export type UserRefPage = Page<UserRef>;
 
-/** Payload de `identity.user.erased.v1`. */
+/** Payload of `identity.user.erased.v1`. */
 export interface UserErasedPayload {
   userId: string;
   homeTenantId: string;

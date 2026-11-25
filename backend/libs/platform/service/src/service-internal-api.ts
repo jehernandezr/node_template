@@ -2,43 +2,43 @@ import type { AwsCredentialsProvider } from '@platform/adapters-aws';
 import type { AppConfig } from '@platform/config';
 import type { InternalRequestSigner } from '@platform/internal-api';
 
-/** Cómo llega una llamada interna al dueño de la operación. */
+/** How an internal call reaches the owner of the operation. */
 export enum ServiceInternalTransport {
-  /** Directo al router del mismo proceso: el modo local y el de las pruebas. */
+  /** Straight to the router of the same process: local mode and test mode. */
   InProcess = 'in-process',
-  /** Por HTTP firmado hacia otro proceso. */
+  /** Over signed HTTP to another process. */
   Http = 'http',
 }
 
-/** Datos del transporte HTTP de la API interna; salen de la configuración validada. */
+/** Data of the internal API HTTP transport; it comes from the validated configuration. */
 export interface ServiceInternalHttpSettings {
-  /** URL base por nombre de servicio. */
+  /** Base URL per service name. */
   readonly baseUrls: Readonly<Record<string, string>>;
-  /** Secreto HMAC compartido entre servicios. */
+  /** HMAC secret shared between services. */
   readonly secret: string;
-  /** Firmador de salida; sin valor, HMAC con `secret`. Lo arma el servicio según `INTERNAL_API_SIGNER`. */
+  /** Outgoing signer; without a value, HMAC with `secret`. The service builds it according to `INTERNAL_API_SIGNER`. */
   readonly signer?: InternalRequestSigner;
   readonly signatureWindowMs?: number;
 }
 
-/** Credenciales y región del rol del servicio, con las que se firma con SigV4. */
+/** Credentials and region of the service role, used to sign with SigV4. */
 export interface ServiceAwsIdentity {
   readonly credentials: AwsCredentialsProvider;
   readonly region: string;
 }
 
-/** Lo que el runtime ofrece al servicio para armar su transporte HTTP. */
+/** What the runtime offers the service to build its HTTP transport. */
 export interface ServiceInternalHttpContext {
-  /** Solo con el adaptador de AWS activo. */
+  /** Only with the AWS adapter enabled. */
   readonly aws?: ServiceAwsIdentity;
 }
 
-/** Cómo declara el servicio su API interna. */
+/** How the service declares its internal API. */
 export interface ServiceInternalApi {
   readonly transport: ServiceInternalTransport;
   /**
-   * Obligatorio con `ServiceInternalTransport.Http`; también autentica las llamadas entrantes. El servicio
-   * elige aquí su firmador según `INTERNAL_API_SIGNER`.
+   * Required with `ServiceInternalTransport.Http`; it also authenticates incoming calls. The service
+   * chooses its signer here according to `INTERNAL_API_SIGNER`.
    */
   readonly http?: (
     config: AppConfig,

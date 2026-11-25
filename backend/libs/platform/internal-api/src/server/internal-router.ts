@@ -26,10 +26,10 @@ import type { OperationHandler } from './operation-handler.js';
 import { OperationRoute } from './operation-route.js';
 
 /**
- * Lado servidor de la API interna: tabla de operaciones con su handler.
- * Atiende cada llamada en un span de servidor que continúa la traza de
- * `CallMeta.traceparent` (la llaman otros servicios de la plataforma, así que
- * su `traceparent` es de confianza) y la entrega a `OperationDispatcher`.
+ * Server side of the internal API: table of operations with their handler.
+ * It serves each call in a server span that continues the trace from
+ * `CallMeta.traceparent` (other platform services call it, so
+ * its `traceparent` is trusted) and hands it to `OperationDispatcher`.
  */
 export class InternalRouter {
   private readonly routes = new Map<string, OperationRoute>();
@@ -43,9 +43,9 @@ export class InternalRouter {
   ) {}
 
   /**
-   * Une un handler con una operación declarada con `defineOperation`.
-   * @throws InternalApiError `InvalidOperation` para cualquier otro valor y
-   *   `DuplicateOperation` si la operación ya tiene handler.
+   * Binds a handler to an operation declared with `defineOperation`.
+   * @throws InternalApiError `InvalidOperation` for any other value and
+   *   `DuplicateOperation` if the operation already has a handler.
    */
   register<S extends OperationDefinition>(
     operation: S,
@@ -68,7 +68,7 @@ export class InternalRouter {
     }
   }
 
-  /** @throws InternalApiError `MissingHandler` con todas las operaciones del registro que no tienen handler. */
+  /** @throws InternalApiError `MissingHandler` with every registry operation that has no handler. */
   assertComplete(registry: ContractRegistry): void {
     const missing = registry
       .operations()
@@ -83,9 +83,9 @@ export class InternalRouter {
   }
 
   /**
-   * Atiende una llamada. Operación desconocida: `protocol-violation` `unknown-operation`.
-   * Si no, la corre `dispatcher.dispatch` dentro de un span de servidor con los
-   * atributos de `InternalApiSpanAttribute`, con las operaciones registradas que esta compensa.
+   * Handles a call. Unknown operation: `protocol-violation` `unknown-operation`.
+   * Otherwise, `dispatcher.dispatch` runs it inside a server span with the
+   * attributes of `InternalApiSpanAttribute`, with the registered operations this one compensates.
    */
   handle(
     operationId: string,
@@ -124,8 +124,8 @@ export class InternalRouter {
   }
 
   /**
-   * Contexto en el que corre una llamada. Si el transporte ya continuó esa
-   * traza (hay un span activo con el mismo traceId), se conserva el activo.
+   * Returns the context a call runs in. If the transport already continued that
+   * trace (there is an active span with the same traceId), the active one is kept.
    */
   private traceContext(traceparent: string | undefined): Context {
     const active = otelContext.active();

@@ -8,7 +8,7 @@ import {
 import { AuthMethod } from './auth-method.enum.js';
 import { BearerTokenReader } from './bearer-token-reader.js';
 
-/** Autentica el `Authorization` de una petición con los métodos que la ruta acepta. */
+/** Authenticates the `Authorization` of a request with the methods the route accepts. */
 export class RequestAuthenticator {
   constructor(
     private readonly verifier: AccessTokenVerifier,
@@ -17,8 +17,8 @@ export class RequestAuthenticator {
   ) {}
 
   /**
-   * @throws AuthenticationError si falta el token, si es un session token (que nunca autentica una
-   *   ruta), o si el método del token no está entre los que acepta la ruta.
+   * @throws AuthenticationError if the token is missing, if it is a session token (which never authenticates a
+   *   route), or if the token's method is not among the ones the route accepts.
    */
   async authenticate(
     authorization: string | string[] | undefined,

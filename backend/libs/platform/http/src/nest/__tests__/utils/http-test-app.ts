@@ -12,7 +12,7 @@ import { HttpTestRootModule } from './http-test-root.module.js';
 import { StartedHttpTestApp } from './started-http-test-app.js';
 import { demoErrorCatalog } from './demo-contract.js';
 
-/** Arranca una app Nest real con la entrada HTTP, escuchando en un puerto libre. */
+/** Starts a real Nest app with the HTTP entry, listening on a free port. */
 export class HttpTestApp {
   static async start(options: {
     readonly controllers: Type<unknown>[];

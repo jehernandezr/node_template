@@ -1,17 +1,17 @@
-/** Entorno de una API key: el prefijo `sk_live_` o `sk_test_`. */
+/** Environment of an API key: the `sk_live_` or `sk_test_` prefix. */
 export enum ApiKeyEnvironment {
   Live = 'live',
   Test = 'test',
 }
 
-/** Estado de una API key. `rotated` sigue válida hasta su `validUntil`. */
+/** Status of an API key. `rotated` remains valid until its `validUntil`. */
 export enum ApiKeyStatus {
   Active = 'active',
   Rotated = 'rotated',
   Revoked = 'revoked',
 }
 
-/** Estado de una service account. */
+/** Status of a service account. */
 export enum ServiceAccountStatus {
   Active = 'active',
   Disabled = 'disabled',

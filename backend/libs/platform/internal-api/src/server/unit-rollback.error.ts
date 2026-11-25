@@ -1,8 +1,8 @@
 /**
- * `TransactionManager.runInTransaction` solo deshace la unidad de trabajo
- * cuando la función lanza, así que el `UnitOfWorkRunner` lanza este error para
- * deshacerla y lo atrapa él mismo. Lo que se decidió viaja en `UnitProgress`,
- * no en el error, y nunca sale de `run`.
+ * `TransactionManager.runInTransaction` only rolls back the unit of work
+ * when the function throws, so the `UnitOfWorkRunner` throws this error to
+ * roll it back and catches it itself. What was decided travels in `UnitProgress`,
+ * not in the error, and it never leaves `run`.
  */
 export class UnitRollbackError extends Error {
   constructor() {

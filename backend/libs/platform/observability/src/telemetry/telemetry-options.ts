@@ -10,26 +10,26 @@ export interface TelemetryOptions {
   readonly serviceVersion?: string;
   /** Ambiente desplegado (`local`, `dev`, `staging`, `prod`). */
   readonly environment?: string;
-  /** Apaga el SDK: no registra proveedores ni instrumentaciones. */
+  /** Turns off the SDK: registers no providers or instrumentations. */
   readonly disabled?: boolean;
   /**
-   * Base OTLP HTTP del Collector. Sin valor, los exportadores leen
-   * `OTEL_EXPORTER_OTLP_ENDPOINT` y `OTEL_EXPORTER_OTLP_HEADERS` del ambiente
-   * (por defecto `http://localhost:4318`).
+   * OTLP HTTP base of the Collector. Without a value, the exporters read
+   * `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` from the environment
+   * (`http://localhost:4318` by default).
    */
   readonly otlpEndpoint?: string;
-  /** Intervalo de exportación de métricas. Por defecto 60 s. */
+  /** Metrics export interval. 60 s by default. */
   readonly metricExportIntervalMs?: number;
-  /** Qué hacer con el `traceparent` entrante. Por defecto se trata como externo. */
+  /** What to do with the incoming `traceparent`. By default it is treated as external. */
   readonly incomingTraceparent?: ExternalTraceparentPropagatorOptions;
-  /** Instrumentaciones automáticas. Por defecto todas. */
+  /** Automatic instrumentations. All by default. */
   readonly instrumentations?: readonly TelemetryInstrumentation[];
-  /** Generador de UUIDv7 para los trace ids. */
+  /** UUIDv7 generator for trace ids. */
   readonly ids?: IdGenerator;
-  /** Exportadores alternativos (pruebas o depuración). */
+  /** Alternative exporters (tests or debugging). */
   readonly spanExporter?: SpanExporter;
   readonly logExporter?: LogRecordExporter;
   readonly metricReader?: IMetricReader;
-  /** Exporta cada span y log en cuanto termina, sin lotes. Solo para pruebas. */
+  /** Exports each span and log as soon as it ends, without batching. Tests only. */
   readonly exportImmediately?: boolean;
 }

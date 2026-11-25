@@ -1,14 +1,14 @@
 import { ShardingGuard } from './errors/sharding-guard.js';
 
 /**
- * Mapa con un máximo de entradas. Leer con `get` o escribir marca la entrada
- * como recién usada; al llenarse, una escritura expulsa la menos reciente y la
- * informa a `onEvict`.
+ * Map with a maximum number of entries. Reading with `get` or writing marks the entry
+ * as most recently used; when full, a write evicts the least recent one and
+ * reports it to `onEvict`.
  */
 export class LruMap<K, V> {
   private readonly entries = new Map<K, V>();
 
-  /** @throws ShardingError `InvalidConfiguration` si `maxEntries` no es un entero positivo. */
+  /** @throws ShardingError `InvalidConfiguration` if `maxEntries` is not a positive integer. */
   constructor(
     readonly maxEntries: number,
     private readonly onEvict?: (key: K, value: V) => void,
@@ -20,7 +20,7 @@ export class LruMap<K, V> {
     return this.entries.size;
   }
 
-  /** Devuelve el valor y lo marca como recién usado. */
+  /** Returns the value and marks it as most recently used. */
   get(key: K): V | undefined {
     if (!this.entries.has(key)) {
       return undefined;
@@ -31,7 +31,7 @@ export class LruMap<K, V> {
     return value;
   }
 
-  /** Devuelve el valor sin cambiar su posición. */
+  /** Returns the value without changing its position. */
   peek(key: K): V | undefined {
     return this.entries.get(key);
   }

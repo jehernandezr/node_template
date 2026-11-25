@@ -27,10 +27,10 @@ import type {
 } from './messaging-module-options.js';
 import { MESSAGING_MODULE_OPTIONS } from './messaging.module-definition.js';
 
-/** Proveedores base de `MessagingModule`: almacenes, dispatcher, bus y explorador. */
+/** Base providers of `MessagingModule`: stores, dispatcher, bus and explorer. */
 export class MessagingProviders {
   static build(extras: MessagingModuleExtras): Provider[] {
-    // `MessagingModule` ya comprobó que los dos adaptadores obligatorios existen.
+    // `MessagingModule` already checked that both required adapters exist.
     const { outboxStore, processedStore } = extras as Required<
       Pick<MessagingModuleExtras, 'outboxStore' | 'processedStore'>
     >;

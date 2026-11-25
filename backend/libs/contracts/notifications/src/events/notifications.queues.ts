@@ -12,8 +12,8 @@ import { ReportsEventsTopic, RunCompletedEvent } from '@contracts/reports';
 import { NotificationsQueue } from '../enums/identifiers.enum.js';
 
 /**
- * Traduce eventos de otros servicios en notificaciones: alertas de seguridad,
- * cambios de membresía, tareas actualizadas, facturas emitidas y reportes listos.
+ * Translates events from other services into notifications: security alerts,
+ * membership changes, updated tasks, issued invoices and ready reports.
  */
 export const TriggersQueue = defineQueue({
   name: NotificationsQueue.Triggers,
@@ -36,12 +36,12 @@ export const TriggersQueue = defineQueue({
     },
   ],
   description:
-    'Convierte eventos de identity, tasks, billing y reports en notificaciones para sus destinatarios.',
+    'Turns identity, tasks, billing and reports events into notifications for their recipients.',
 });
 
 /**
- * Cierra las conexiones de tiempo real cuando una sesión o un token se revoca,
- * para que el cliente no siga recibiendo tramas.
+ * Closes real-time connections when a session or a token is revoked,
+ * so the client stops receiving frames.
  */
 export const RealtimeControlQueue = defineQueue({
   name: NotificationsQueue.RealtimeControl,
@@ -52,5 +52,5 @@ export const RealtimeControlQueue = defineQueue({
     },
   ],
   description:
-    'Cierra las conexiones de tiempo real de las sesiones y tokens revocados.',
+    'Closes the realtime connections of revoked sessions and tokens.',
 });

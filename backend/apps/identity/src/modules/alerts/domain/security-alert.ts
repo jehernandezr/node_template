@@ -1,10 +1,10 @@
 import type { SecurityAlertType } from '@contracts/identity';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
-/** Aviso de seguridad para un usuario. No lleva códigos ni secretos. */
+/** Security alert for a user. It carries no codes or secrets. */
 export interface SecurityAlert {
   readonly type: SecurityAlertType;
   readonly user: UserRef;
-  /** Datos para el texto del aviso: dispositivo, ciudad aproximada, método. Nunca secretos. */
+  /** Data for the alert text: device, approximate city, method. Never secrets. */
   readonly context?: Readonly<Record<string, string>>;
 }

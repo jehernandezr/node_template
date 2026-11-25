@@ -12,7 +12,7 @@ import { schedulingErrorCatalog } from '@platform/scheduling';
 import { shardingErrorCatalog } from '@platform/sharding';
 import { serviceErrorCatalog } from './errors/service-error-catalog.js';
 
-/** Catálogos de las librerías que corren en todo servicio; cada servicio les suma los de su contrato. */
+/** Catalogs of the libraries that run in every service; each service adds those of its contract. */
 export const PLATFORM_LIBRARY_ERROR_CATALOGS: readonly (readonly ErrorCatalogEntry[])[] =
   [
     shardingErrorCatalog,

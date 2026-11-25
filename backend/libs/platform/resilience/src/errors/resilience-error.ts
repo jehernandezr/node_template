@@ -1,20 +1,20 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { ResilienceErrorCode } from './resilience-error-code.enum.js';
 
-/** Opciones de {@link ResilienceError}. */
+/** Options of {@link ResilienceError}. */
 export interface ResilienceErrorOptions {
   readonly cause?: unknown;
-  /** Espera sugerida antes de reintentar, en milisegundos. */
+  /** Suggested wait before retrying, in milliseconds. */
   readonly retryAfterMs?: number;
-  /** Datos de diagnóstico, sin secretos ni valores de entrada. */
+  /** Diagnostic data, without secrets or input values. */
   readonly details?: Readonly<Record<string, unknown>>;
 }
 
 /**
- * Error que lanza una política al rechazar o cortar una llamada. La clase de
- * falla sale del código: un circuito abierto o un bulkhead lleno no corrieron
- * la llamada, así que reintentarla es seguro; un timeout deja el efecto
- * incierto; una política desconocida o inválida es un error de programación.
+ * Error that a policy throws when rejecting or cutting a call. The failure
+ * class comes from the code: an open circuit or a full bulkhead did not run
+ * the call, so retrying it is safe; a timeout leaves the effect
+ * uncertain; an unknown or invalid policy is a programming error.
  */
 export class ResilienceError extends PlatformError {
   private static readonly FAILURE_KINDS: Readonly<
@@ -28,7 +28,7 @@ export class ResilienceError extends PlatformError {
   };
 
   override readonly code: ResilienceErrorCode;
-  /** Espera sugerida antes de reintentar, cuando se conoce. */
+  /** Suggested wait before retrying, when known. */
   readonly retryAfterMs?: number;
 
   constructor(

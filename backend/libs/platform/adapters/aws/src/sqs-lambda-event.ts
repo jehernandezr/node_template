@@ -1,4 +1,4 @@
-/** Registro SQS que entrega Lambda (solo los campos que se usan). */
+/** SQS record Lambda delivers (only the fields that are used). */
 export interface SqsLambdaRecord {
   readonly messageId: string;
   readonly receiptHandle: string;
@@ -9,12 +9,12 @@ export interface SqsLambdaRecord {
   };
 }
 
-/** Evento SQS de Lambda. */
+/** Lambda SQS event. */
 export interface SqsLambdaEvent {
   readonly Records: readonly SqsLambdaRecord[];
 }
 
-/** Respuesta de Lambda con `ReportBatchItemFailures` activado en el event source mapping. */
+/** Lambda response with `ReportBatchItemFailures` enabled on the event source mapping. */
 export interface SqsBatchResponse {
   readonly batchItemFailures: { readonly itemIdentifier: string }[];
 }

@@ -35,7 +35,7 @@ describe('OutboxRetentionJob', () => {
     store.add(envelope('pending'), { now: T0 });
     store.add(envelope('dead'), { now: T0 });
 
-    // El instante de cambio de un registro terminal es la hora del reloj al marcarlo.
+    // The change instant of a terminal record is the clock time when it was marked.
     await store.claimPending({ now: OLD, limit: 1, lease, leaseMs: 1_000 });
     await store.markPublished('old-published', lease);
 

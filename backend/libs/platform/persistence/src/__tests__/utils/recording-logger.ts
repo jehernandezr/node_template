@@ -1,22 +1,22 @@
 import { LoggerPort } from '@platform/observability';
 
-/** Una entrada de log guardada por {@link RecordingLogger}. */
+/** A log entry stored by {@link RecordingLogger}. */
 export interface RecordedLog {
   readonly message: string;
   readonly fields?: Record<string, unknown>;
 }
 
-/** `LoggerPort` que guarda los errores y los avisos para que la prueba los compruebe. */
+/** `LoggerPort` that stores errors and warnings so the test can check them. */
 export class RecordingLogger extends LoggerPort {
   readonly errors: RecordedLog[] = [];
   readonly warnings: RecordedLog[] = [];
 
   debug(): void {
-    // Las pruebas no miran los niveles bajos.
+    // Tests do not look at the low levels.
   }
 
   info(): void {
-    // Las pruebas no miran los niveles bajos.
+    // Tests do not look at the low levels.
   }
 
   warn(message: string, fields?: Record<string, unknown>): void {

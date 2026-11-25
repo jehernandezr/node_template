@@ -19,10 +19,10 @@ import type { TenantDataPresence } from './tenant-data-presence.js';
 import type { TenantShardGroups } from './tenant-shard-groups.js';
 
 /**
- * La fila de un tenant en el directorio de shards de un servicio que sigue la ubicación que eligió identity. `place`
- * la crea en los shards del servicio que corresponden a los grupos elegidos y, si ya existe, la deja como está: la
- * saga de alta la repite y un traslado posterior pudo cambiarla. `remove` es su reversa, antes de que el tenant tenga
- * datos: se niega a retirar un tenant que ya tiene datos en el servicio o que está en medio de un traslado.
+ * A tenant row in the shard directory of a service that follows the placement identity chose. `place`
+ * creates it on the service shards that match the chosen groups and, if it already exists, leaves it as is: the
+ * sign-up saga repeats it and a later move may have changed it. `remove` is its reverse, before the tenant has
+ * data: it refuses to remove a tenant that already has data in the service or is in the middle of a move.
  */
 export class TenantDirectoryEntries {
   private static readonly MAX_ATTEMPTS = 3;
@@ -36,9 +36,9 @@ export class TenantDirectoryEntries {
   ) {}
 
   /**
-   * @throws TenantMoveError `UnknownTarget` si un grupo no lleva a un shard del directorio de este servicio.
-   * @throws TenantMoveError `ShardTaken` si el grupo choca con un tenant dedicado, o el tenant es dedicado y el
-   *   shard está ocupado.
+   * @throws TenantMoveError `UnknownTarget` if a group does not lead to a shard in this service's directory.
+   * @throws TenantMoveError `ShardTaken` if the group collides with a dedicated tenant, or the tenant is dedicated and the
+   *   shard is occupied.
    */
   async place(entry: TenantDirectoryEntry): Promise<TenantDirectoryAck> {
     const shardGroup = await this.shardsOf(entry);
@@ -77,8 +77,8 @@ export class TenantDirectoryEntries {
   }
 
   /**
-   * @throws TenantMoveError `MoveInProgress` si el tenant tiene la compuerta cerrada por un traslado.
-   * @throws TenantMoveError `TenantHasData` si el tenant ya tiene filas en las tablas del servicio.
+   * @throws TenantMoveError `MoveInProgress` if the tenant has its gate closed by a move.
+   * @throws TenantMoveError `TenantHasData` if the tenant already has rows in the service tables.
    */
   async remove(ref: TenantDirectoryRef): Promise<TenantDirectoryAck> {
     for (

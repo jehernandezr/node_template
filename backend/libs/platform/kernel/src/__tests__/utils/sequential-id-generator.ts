@@ -2,8 +2,8 @@ import { Id } from '../../ids/id.js';
 import type { IdGenerator } from '../../ids/id-generator.js';
 
 /**
- * Generador determinista para tests. Produce UUIDv7 válidos y distintos:
- * el prefijo de tiempo es fijo y un contador ocupa los últimos 48 bits.
+ * Deterministic generator for tests. It produces valid, distinct UUIDv7s:
+ * the time prefix is fixed and a counter fills the last 48 bits.
  */
 export class SequentialIdGenerator implements IdGenerator {
   private counter = 0;

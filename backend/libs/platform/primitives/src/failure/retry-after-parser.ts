@@ -1,12 +1,12 @@
 import type { Clock } from '@platform/kernel';
 import { PrimitivesGuard } from '../errors/primitives-guard.js';
 
-/** Interpreta la espera que sugiere un servidor en `Retry-After`. */
+/** Interprets the wait suggested by a server in `Retry-After`. */
 export class RetryAfterParser {
-  /** Tope por defecto de la espera sugerida. */
+  /** Default cap of the suggested wait. */
   static readonly DEFAULT_MAX_MS = 60_000;
 
-  /** Longitud máxima de un encabezado que se intenta interpretar. */
+  /** Maximum length of a header that is parsed. */
   private static readonly MAX_LENGTH = 64;
 
   private static readonly DELAY_SECONDS = /^\d{1,10}$/;
@@ -19,9 +19,9 @@ export class RetryAfterParser {
   }
 
   /**
-   * Espera sugerida en milisegundos, acotada a `[0, maxMs]`. Acepta el
-   * encabezado (segundos enteros o fecha HTTP), segundos como número o una fecha.
-   * @returns `undefined` si el valor falta o no se puede interpretar.
+   * Returns the suggested wait in milliseconds, bounded to `[0, maxMs]`. Accepts the
+   * header (integer seconds or HTTP date), seconds as a number or a date.
+   * @returns `undefined` if the value is missing or cannot be parsed.
    */
   parse(value: string | number | Date | null | undefined): number | undefined {
     const delay = this.rawDelayMs(value);
@@ -51,8 +51,8 @@ export class RetryAfterParser {
     if (RetryAfterParser.DELAY_SECONDS.test(trimmed)) {
       return Number(trimmed) * 1000;
     }
-    // Solo una fecha HTTP con nombre de día (IMF-fixdate, RFC 850 o asctime);
-    // evita que Date.parse acepte números sueltos u otros formatos ambiguos.
+    // Only an HTTP date with a day name (IMF-fixdate, RFC 850 or asctime);
+    // prevents Date.parse from accepting loose numbers or other ambiguous formats.
     if (!/^[A-Za-z]{3}/.test(trimmed)) {
       return undefined;
     }

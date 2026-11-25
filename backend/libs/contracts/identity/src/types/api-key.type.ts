@@ -6,51 +6,51 @@ import type {
   ServiceAccountStatus,
 } from '../enums/api-key.enum.js';
 
-/** Identidad no humana del tenant que usa API keys. */
+/** Non-human tenant identity that uses API keys. */
 export interface ServiceAccountSummary {
   id: string;
   name: string;
   permissions: Permission[];
   status: ServiceAccountStatus;
-  /** Versión de la API a la que queda fijada la cuenta, o null para la actual. */
+  /** API version the account is pinned to, or null for the current one. */
   pinnedApiVersion: string | null;
   createdAt: string;
 }
 
 export type ServiceAccountPage = Page<ServiceAccountSummary>;
 
-/** Alta de una service account. */
+/** Creation of a service account. */
 export interface CreateServiceAccountRequest {
   name: string;
   permissions: Permission[];
   pinnedApiVersion?: string;
 }
 
-/** Cambios parciales de una service account. */
+/** Partial changes to a service account. */
 export interface UpdateServiceAccountRequest {
   serviceAccountId: string;
   name?: string;
   permissions?: Permission[];
 }
 
-/** Borrado de una service account con sus API keys. */
+/** Deletion of a service account with its API keys. */
 export interface DeleteServiceAccountRequest {
   serviceAccountId: string;
 }
 
 /**
- * API key sin secreto. El secreto solo se muestra al crear o rotar la clave,
- * por eso este resumen nunca lo incluye.
+ * API key without its secret. The secret is only shown when creating or rotating the key,
+ * which is why this summary never includes it.
  */
 export interface ApiKeySummary {
   id: string;
   serviceAccountId: string;
-  /** Prefijo visible de la clave, para identificarla en listados. */
+  /** Visible prefix of the key, to identify it in listings. */
   prefix: string;
   environment: ApiKeyEnvironment;
   status: ApiKeyStatus;
   expiresAt: string | null;
-  /** Fin de la validez de una clave rotada. */
+  /** End of validity of a rotated key. */
   validUntil: string | null;
   allowedCidrs: string[];
   lastUsedAt: string | null;
@@ -59,14 +59,14 @@ export interface ApiKeySummary {
 
 export type ApiKeyPage = Page<ApiKeySummary>;
 
-/** Listado de las API keys de una service account. */
+/** Listing of a service account's API keys. */
 export interface ListApiKeysRequest {
   serviceAccountId: string;
   limit?: number;
   after?: string;
 }
 
-/** Alta de una API key. */
+/** Creation of an API key. */
 export interface CreateApiKeyRequest {
   serviceAccountId: string;
   environment: ApiKeyEnvironment;
@@ -74,29 +74,29 @@ export interface CreateApiKeyRequest {
   allowedCidrs?: string[];
 }
 
-/** API key creada: el secreto aparece solo en esta respuesta. */
+/** Created API key: the secret appears only in this response. */
 export interface CreatedApiKey {
   apiKey: ApiKeySummary;
   secret: string;
 }
 
-/** Rotación de una API key: la anterior sigue válida hasta su `validUntil`. */
+/** Rotation of an API key: the previous one remains valid until its `validUntil`. */
 export interface RotateApiKeyRequest {
   apiKeyId: string;
 }
 
-/** Revocación inmediata de una API key. */
+/** Immediate revocation of an API key. */
 export interface RevokeApiKeyRequest {
   apiKeyId: string;
 }
 
-/** Entrada de la operación interna que valida una API key. */
+/** Input of the internal operation that validates an API key. */
 export interface AuthenticateApiKeyInput {
   apiKey: string;
   clientIp?: string;
 }
 
-/** Principal que resulta de validar una API key. */
+/** Principal that results from validating an API key. */
 export interface ApiKeyPrincipal {
   apiKeyId: string;
   serviceAccountId: string;
@@ -107,7 +107,7 @@ export interface ApiKeyPrincipal {
   pinnedApiVersion: string | null;
 }
 
-/** Payload de `identity.api-key.created.v1`. No incluye el secreto. */
+/** Payload of `identity.api-key.created.v1`. Does not include the secret. */
 export interface ApiKeyCreatedPayload {
   apiKeyId: string;
   serviceAccountId: string;
@@ -118,7 +118,7 @@ export interface ApiKeyCreatedPayload {
   createdAt: string;
 }
 
-/** Payload de `identity.api-key.revoked.v1`. */
+/** Payload of `identity.api-key.revoked.v1`. */
 export interface ApiKeyRevokedPayload {
   apiKeyId: string;
   tenantId: string;

@@ -4,7 +4,7 @@ import { HttpApplicationSetup } from '@platform/http/nest';
 import { LambdaBootstrap } from '@platform/service/nest';
 import { notificationsService } from './notifications.service.js';
 
-/** API de notifications en Lambda: `api.runtime = "lambda"` en los tfvars del servicio usa este handler. */
+/** Notifications API on Lambda: `api.runtime = "lambda"` in the service's tfvars uses this handler. */
 export const handler = LambdaBootstrap.http(notificationsService, {
   env: process.env,
   telemetry,

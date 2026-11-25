@@ -1,9 +1,9 @@
 import type { UserRef } from '@contracts/platform';
 import { ActorGuards, AuthenticationError, type Actor } from '@platform/auth';
 
-/** La bandeja y las preferencias son de un usuario: una API key no tiene. */
+/** The inbox and preferences belong to a user: an API key has none. */
 export class UserOfActor {
-  /** @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` si el actor no es un usuario. */
+  /** @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is not a user. */
   static of(actor: Actor | undefined): UserRef {
     if (actor === undefined || !ActorGuards.isUser(actor)) {
       throw AuthenticationError.unauthenticated('a user session is required');

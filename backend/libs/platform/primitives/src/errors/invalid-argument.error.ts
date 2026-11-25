@@ -1,7 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { PrimitivesErrorCode } from './primitives-error-code.enum.js';
 
-/** Un argumento no cumple el rango o el tipo esperado. Es un error de programación. */
+/** An argument does not meet the expected range or type. It is a programming error. */
 export class InvalidArgumentError extends PlatformError {
   override readonly code = PrimitivesErrorCode.InvalidArgument;
 

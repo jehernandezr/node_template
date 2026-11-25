@@ -1,8 +1,8 @@
 import { RandomSource } from '../../random/random-source.js';
 
 /**
- * Fuente aleatoria determinista para pruebas. `next` recorre los valores dados
- * en círculo; `bytes` repite el byte `fill`.
+ * Deterministic random source for tests. `next` cycles through the given values
+ * in a loop; `bytes` repeats the byte `fill`.
  */
 export class FixedRandomSource extends RandomSource {
   private index = 0;

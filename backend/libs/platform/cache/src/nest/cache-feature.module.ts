@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
 
-/** Módulo de característica del caché: solo agrupa los `CacheAside` de un espacio de nombres. */
+/** Cache feature module: only groups the `CacheAside` instances of one namespace. */
 @Module({})
 export class CacheFeatureModule {}

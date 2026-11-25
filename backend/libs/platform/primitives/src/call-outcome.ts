@@ -1,4 +1,4 @@
-/** Discriminante de `CallOutcome`. */
+/** Discriminant of `CallOutcome`. */
 export enum CallOutcomeKind {
   Success = 'success',
   BusinessError = 'business-error',
@@ -7,13 +7,13 @@ export enum CallOutcomeKind {
   Uncertain = 'uncertain',
 }
 
-/** La llamada terminó y devolvió un valor válido. */
+/** The call finished and returned a valid value. */
 export interface SuccessOutcome<T> {
   readonly kind: CallOutcomeKind.Success;
   readonly value: T;
 }
 
-/** La llamada terminó con un error de negocio declarado por el contrato. Es final. */
+/** The call finished with a business error declared by the contract. It is final. */
 export interface BusinessErrorOutcome {
   readonly kind: CallOutcomeKind.BusinessError;
   readonly code: string;
@@ -21,26 +21,26 @@ export interface BusinessErrorOutcome {
   readonly details?: Readonly<Record<string, unknown>>;
 }
 
-/** Contrato roto o fallo de implementación. Nunca se reintenta ni se guarda. */
+/** Broken contract or implementation failure. Never retried or stored. */
 export interface ProtocolViolationOutcome {
   readonly kind: CallOutcomeKind.ProtocolViolation;
   readonly reason: string;
   readonly code?: string;
 }
 
-/** La llamada no produjo efectos y reintentarla puede funcionar. */
+/** The call produced no effects and retrying it may work. */
 export interface TransientFailureOutcome {
   readonly kind: CallOutcomeKind.TransientFailure;
   readonly reason: string;
-  /** Espera sugerida antes de reintentar, en milisegundos. */
+  /** Suggested wait before retrying, in milliseconds. */
   readonly retryAfterMs?: number;
   readonly cause?: unknown;
 }
 
 /**
- * No se sabe si la llamada aplicó sus efectos (tiempo agotado o cancelación
- * después de enviar). Solo se reintenta si la operación es idempotente; si no,
- * se consulta el estado o se compensa.
+ * It is unknown whether the call applied its effects (timeout or cancellation
+ * after sending). It is retried only if the operation is idempotent; otherwise,
+ * the state is queried or compensated.
  */
 export interface UncertainOutcome {
   readonly kind: CallOutcomeKind.Uncertain;
@@ -48,7 +48,7 @@ export interface UncertainOutcome {
   readonly cause?: unknown;
 }
 
-/** Resultado de una llamada entre procesos. Quien llama decide según `kind`. */
+/** Result of a call between processes. The caller decides based on `kind`. */
 export type CallOutcome<T> =
   | SuccessOutcome<T>
   | BusinessErrorOutcome
@@ -56,7 +56,7 @@ export type CallOutcome<T> =
   | TransientFailureOutcome
   | UncertainOutcome;
 
-/** Resultado final: ya no cambia al repetir la llamada y se puede guardar para idempotencia. */
+/** Final result: it no longer changes when the call is repeated and can be stored for idempotency. */
 export type FinalOutcome<T> = SuccessOutcome<T> | BusinessErrorOutcome;
 
 function success<T>(value: T): SuccessOutcome<T> {
@@ -95,7 +95,7 @@ function uncertain(reason: string, cause?: unknown): UncertainOutcome {
     : { kind: CallOutcomeKind.Uncertain, reason, cause };
 }
 
-/** Constructores de `CallOutcome`. */
+/** Builders of `CallOutcome`. */
 export const CallOutcome = {
   success,
   businessError,
@@ -104,14 +104,14 @@ export const CallOutcome = {
   uncertain,
 } as const;
 
-/** Indica si la llamada devolvió un valor. */
+/** Whether the call returned a value. */
 export function isSuccess<T>(
   outcome: CallOutcome<T>,
 ): outcome is SuccessOutcome<T> {
   return outcome.kind === CallOutcomeKind.Success;
 }
 
-/** Indica si el resultado es final (éxito o error de negocio) y se puede guardar. */
+/** Whether the result is final (success or business error) and can be stored. */
 export function isFinalOutcome<T>(
   outcome: CallOutcome<T>,
 ): outcome is FinalOutcome<T> {

@@ -13,7 +13,7 @@ const SECRET = 'test-secret-of-the-controller';
 const OPERATION_ID = 'billing.invoices.create.v1';
 const DEADLINE = '1767225600000';
 
-/** Cabeceras de una llamada completa, como las envía el transporte. */
+/** Headers of a complete call, as the transport sends them. */
 function baseHeaders(): Record<string, string> {
   return {
     [InternalHeader.IdempotencyKey]: 'key-1',
@@ -34,7 +34,7 @@ describe('InternalApiController', () => {
       new CallMetaReader(),
     );
     const signer = new HmacSigner(secret, clock);
-    /** Firma las cabeceras y el cuerpo dados, como lo haría el transporte del otro servicio. */
+    /** Signs the given headers and body, as the other service's transport would. */
     async function signedHeaders(body: unknown, headers = baseHeaders()) {
       const signature = await signer.sign({
         method: 'POST',

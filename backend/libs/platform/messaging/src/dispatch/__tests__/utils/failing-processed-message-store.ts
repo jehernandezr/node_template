@@ -3,8 +3,8 @@ import { InMemoryProcessedMessageStore } from '../../../__tests__/utils/in-memor
 import { StoreOperation } from './store-operation.enum.js';
 
 /**
- * Almacén que lanza `error` en la operación indicada, las veces indicadas. Las
- * demás operaciones se comportan como el almacén en memoria.
+ * Store that throws `error` on the given operation, the given number of times. The
+ * other operations behave like the in-memory store.
  */
 export class FailingProcessedMessageStore extends InMemoryProcessedMessageStore {
   private remaining: number;

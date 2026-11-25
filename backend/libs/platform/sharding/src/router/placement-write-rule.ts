@@ -2,10 +2,10 @@ import { ShardingError } from '../errors/sharding-error.js';
 import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 import { TenantStatus } from '../model/tenant-status.enum.js';
 
-/** Decide si el estado de un tenant permite escribir. */
+/** Decides whether a tenant's state allows writing. */
 export class PlacementWriteRule {
   /**
-   * @throws ShardingError `TenantMigrating` si está migrando; `TenantNotWritable` si el estado no es `Active`.
+   * @throws ShardingError `TenantMigrating` if it is migrating; `TenantNotWritable` if the status is not `Active`.
    */
   static assertWritable(tenantId: string, status: TenantStatus): void {
     if (status === TenantStatus.Active) {

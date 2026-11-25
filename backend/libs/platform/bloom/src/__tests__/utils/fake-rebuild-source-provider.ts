@@ -2,11 +2,11 @@ import { BloomRebuildSourceProvider } from '../../bloom-rebuild-source-provider.
 import type { BloomRebuildSource } from '../../bloom-rebuild-source.js';
 
 /**
- * Fuente de prueba. Sin argumentos obligatorios para que Nest la instancie como provider: por eso no
- * lleva decoradores, así no se emiten metadatos de parámetros que Nest intentaría resolver.
+ * Test source. No required arguments so Nest can instantiate it as a provider: that is why it
+ * has no decorators, so no parameter metadata is emitted that Nest would try to resolve.
  */
 export class FakeRebuildSourceProvider extends BloomRebuildSourceProvider {
-  /** Veces que se pidió una fuente nueva. */
+  /** Times a new source was requested. */
   calls = 0;
 
   constructor(
@@ -23,7 +23,7 @@ export class FakeRebuildSourceProvider extends BloomRebuildSourceProvider {
     return this.generate();
   }
 
-  /** Entrega los lotes; si hay `failure`, lanza al empezar a leer. */
+  /** Yields the batches; if there is a `failure`, throws when reading starts. */
   private async *generate(): AsyncGenerator<readonly string[]> {
     if (this.failure !== undefined) {
       throw this.failure;

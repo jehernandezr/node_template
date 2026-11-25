@@ -1,11 +1,11 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Tipo de reporte.
+/// Report type.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportType {
   tasksByStatus('tasks_by_status'),
   tasksActivity('tasks_activity'),
@@ -14,10 +14,10 @@ enum ReportType {
 
   const ReportType(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportType? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -26,10 +26,10 @@ enum ReportType {
   }
 }
 
-/// Estado de una ejecución de reporte.
+/// Status of a report run.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportRunStatus {
   queued('queued'),
   running('running'),
@@ -39,10 +39,10 @@ enum ReportRunStatus {
 
   const ReportRunStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportRunStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -51,20 +51,20 @@ enum ReportRunStatus {
   }
 }
 
-/// Formato de un reporte.
+/// Format of a report.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportFormat {
   json('json'),
   csv('csv');
 
   const ReportFormat(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportFormat? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -73,10 +73,10 @@ enum ReportFormat {
   }
 }
 
-/// Granularidad temporal de un reporte.
+/// Time granularity of a report.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportGranularity {
   day('day'),
   week('week'),
@@ -84,10 +84,10 @@ enum ReportGranularity {
 
   const ReportGranularity(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportGranularity? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -96,10 +96,10 @@ enum ReportGranularity {
   }
 }
 
-/// Tipo de dato de una columna del resultado.
+/// Data type of a result column.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportColumnKind {
   text('text'),
   integer('integer'),
@@ -107,10 +107,10 @@ enum ReportColumnKind {
 
   const ReportColumnKind(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportColumnKind? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -119,12 +119,12 @@ enum ReportColumnKind {
   }
 }
 
-/// Códigos de error públicos del contrato `reports`.
+/// Public error codes of the `reports` contract.
 ///
-/// Solo incluye los códigos con audiencia `public`: los internos nunca
-/// llegan al cliente. [messageKey] es la clave del mensaje en el ARB.
+/// Only includes codes with `public` audience: internal ones never
+/// reach the client. [messageKey] is the message key in the ARB.
 enum ReportsErrorCode {
-  /// La ejecución del reporte no existe.
+  /// The report run does not exist.
   runNotFound(
     'REPORTS.RUN.NOT_FOUND',
     httpStatus: 404,
@@ -132,7 +132,7 @@ enum ReportsErrorCode {
     messageKey: 'error_reports_run_not_found',
   ),
 
-  /// La ejecución todavía no termina: el resultado no está listo.
+  /// The run has not finished yet: the result is not ready.
   runNotReady(
     'REPORTS.RUN.NOT_READY',
     httpStatus: 409,
@@ -140,7 +140,7 @@ enum ReportsErrorCode {
     messageKey: 'error_reports_run_not_ready',
   ),
 
-  /// El resultado de la ejecución venció y ya no se guarda. Genera el reporte de nuevo.
+  /// The run result expired and is no longer stored. Generate the report again.
   runExpired(
     'REPORTS.RUN.EXPIRED',
     httpStatus: 410,
@@ -148,7 +148,7 @@ enum ReportsErrorCode {
     messageKey: 'error_reports_run_expired',
   ),
 
-  /// El tipo de reporte no existe.
+  /// The report type does not exist.
   typeUnknown(
     'REPORTS.TYPE.UNKNOWN',
     httpStatus: 400,
@@ -156,7 +156,7 @@ enum ReportsErrorCode {
     messageKey: 'error_reports_type_unknown',
   ),
 
-  /// El rango de fechas es inválido: el fin es anterior al inicio o supera el máximo.
+  /// The date range is invalid: the end is before the start or exceeds the maximum.
   paramsInvalidRange(
     'REPORTS.PARAMS.INVALID_RANGE',
     httpStatus: 400,
@@ -164,7 +164,7 @@ enum ReportsErrorCode {
     messageKey: 'error_reports_params_invalid_range',
   ),
 
-  /// El resultado supera el tamaño máximo. Acota el rango de fechas.
+  /// The result exceeds the maximum size. Narrow the date range.
   resultTooLarge(
     'REPORTS.RESULT.TOO_LARGE',
     httpStatus: 422,
@@ -179,22 +179,22 @@ enum ReportsErrorCode {
     required this.messageKey,
   });
 
-  /// Código exacto que envía el backend, por ejemplo `REPORTS.RUN.NOT_FOUND`.
+  /// Exact code sent by the backend, for example `REPORTS.RUN.NOT_FOUND`.
   final String code;
 
-  /// Estado HTTP con el que responde el backend.
+  /// HTTP status the backend responds with.
   final int httpStatus;
 
-  /// Si el cliente puede reintentar la misma petición.
+  /// Whether the client may retry the same request.
   final bool retryable;
 
-  /// Clave ARB del mensaje para personas.
+  /// ARB key of the human-readable message.
   final String messageKey;
 
-  /// Igual a [code].
+  /// Same as [code].
   String get wireCode => code;
 
-  /// Valor con [code], o null si este cliente no lo conoce.
+  /// Value with [code], or null if this client does not know it.
   static ReportsErrorCode? fromCode(String code) {
     for (final value in values) {
       if (value.code == code) return value;
@@ -202,14 +202,14 @@ enum ReportsErrorCode {
     return null;
   }
 
-  /// Igual a [fromCode].
+  /// Same as [fromCode].
   static ReportsErrorCode? tryParse(String code) => fromCode(code);
 }
 
-/// Enum `ReportsRoute` del contrato `reports`.
+/// Enum `ReportsRoute` of the `reports` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportsRoute {
   listCatalog('reports.catalog.list'),
   createRun('reports.run.create'),
@@ -219,10 +219,10 @@ enum ReportsRoute {
 
   const ReportsRoute(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportsRoute? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -231,10 +231,10 @@ enum ReportsRoute {
   }
 }
 
-/// Enum `ReportsOperation` del contrato `reports`.
+/// Enum `ReportsOperation` of the `reports` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportsOperation {
   eraseUserData('reports.user-data.erase.v1'),
   tenantMoveSync('reports.tenant-move.sync.v1'),
@@ -247,10 +247,10 @@ enum ReportsOperation {
 
   const ReportsOperation(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportsOperation? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -259,19 +259,19 @@ enum ReportsOperation {
   }
 }
 
-/// Enum `ReportsEvent` del contrato `reports`.
+/// Enum `ReportsEvent` of the `reports` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportsEvent {
   runCompleted('reports.run.completed.v1');
 
   const ReportsEvent(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportsEvent? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -280,19 +280,19 @@ enum ReportsEvent {
   }
 }
 
-/// Enum `ReportsCommand` del contrato `reports`.
+/// Enum `ReportsCommand` of the `reports` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportsCommand {
   executeRun('reports.run.execute.v1');
 
   const ReportsCommand(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportsCommand? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -301,19 +301,19 @@ enum ReportsCommand {
   }
 }
 
-/// Enum `ReportsTopic` del contrato `reports`.
+/// Enum `ReportsTopic` of the `reports` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportsTopic {
   events('reports-events');
 
   const ReportsTopic(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportsTopic? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -322,10 +322,10 @@ enum ReportsTopic {
   }
 }
 
-/// Enum `ReportsQueue` del contrato `reports`.
+/// Enum `ReportsQueue` of the `reports` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum ReportsQueue {
   runs('reports-runs'),
   projections('reports-projections'),
@@ -333,10 +333,10 @@ enum ReportsQueue {
 
   const ReportsQueue(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static ReportsQueue? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;

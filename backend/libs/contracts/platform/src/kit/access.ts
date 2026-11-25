@@ -1,24 +1,24 @@
 import { AccessKind } from '../enums/access-kind.enum.js';
 import type { AccessRequirement } from '../types/access-requirement.type.js';
 
-/** Opciones de una ruta autenticada. */
+/** Options of an authenticated route. */
 export interface AuthenticatedAccessOptions {
   readonly permissions?: readonly string[];
   readonly platformRoles?: readonly string[];
   readonly mfaMaxAgeMinutes?: number;
-  /** Funcionalidades que el plan del tenant debe incluir (todas). */
+  /** Features the tenant's plan must include (all of them). */
   readonly features?: readonly string[];
-  /** Feature flags que deben estar encendidos para el usuario (todos). */
+  /** Feature flags that must be on for the user (all of them). */
   readonly flags?: readonly string[];
 }
 
-/** Constructores de `AccessRequirement`. */
+/** Builders of `AccessRequirement`. */
 export const Access = {
-  /** Ruta sin sesión. */
+  /** Route without a session. */
   public(): AccessRequirement {
     return Object.freeze({ kind: AccessKind.Public });
   },
-  /** Ruta con access token y, opcionalmente, permisos, roles, funcionalidades del plan, flags o MFA reciente. */
+  /** Route with an access token and, optionally, permissions, roles, plan features, flags or recent MFA. */
   authenticated(options: AuthenticatedAccessOptions = {}): AccessRequirement {
     const requirement: {
       kind: AccessKind;

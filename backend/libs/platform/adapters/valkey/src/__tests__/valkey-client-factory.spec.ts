@@ -14,7 +14,7 @@ import { ValkeyErrorTranslator } from '../valkey-error-translator.js';
 import { ValkeyKeyspace } from '../valkey-keyspace.js';
 import { valkeyConfigSchema } from '../valkey.config.js';
 
-/** Entrega un token distinto en cada pedido y guarda a quién se lo dio. */
+/** Hands out a different token on each request and records whom it gave it to. */
 class CountingTokenProvider extends ValkeyAuthTokenProvider {
   readonly requests: ValkeyAuthRequest[] = [];
 
@@ -24,7 +24,7 @@ class CountingTokenProvider extends ValkeyAuthTokenProvider {
   }
 }
 
-// Nada escucha en el puerto 1: cada conexión se rechaza de una vez.
+// Nothing listens on port 1: each connection is refused at once.
 const DOWN = {
   VALKEY_HOST: '127.0.0.1',
   VALKEY_PORT: '1',
@@ -137,10 +137,10 @@ describe('ValkeyClientFactory', () => {
           serverless: true,
         });
         expect(client.options.password).toBe('token-1');
-        // Un comando en cola mientras falla el primer intento se rechaza, no se pierde.
+        // A command queued while the first attempt fails is rejected, not lost.
         await expect(client.call('GET', ['svc:a'])).rejects.toThrow();
 
-        // Cada reconexión, automática o explícita, pidió su propio token.
+        // Each reconnection, automatic or explicit, requested its own token.
         client.disconnect();
         await expect(client.connect()).rejects.toThrow();
         expect(provider.requests.length).toBeGreaterThan(1);
@@ -162,7 +162,7 @@ describe('ValkeyClientFactory', () => {
         client.disconnect();
         const outcome = await new Promise<Error | null | undefined>(
           (resolve) => {
-            // iovalkey reconecta con `connect(callback)`; la prueba lo hace a mano.
+            // iovalkey reconnects with `connect(callback)`; the test does it by hand.
             void client
               .connect((error) => resolve(error))
               .catch(() => undefined);

@@ -8,9 +8,9 @@ import { ProcessedMessageStore } from '../dispatch/processed-message-store.js';
 import { MessagingJob } from './messaging-job.enum.js';
 
 /**
- * Borra los mensajes procesados hace más de `retentionMs`. La retención debe
- * superar el tiempo máximo que la cola puede redistribuir un mensaje, o un
- * duplicado tardío se procesaría otra vez. Corre cada hora.
+ * Deletes messages processed more than `retentionMs` ago. The retention must
+ * exceed the maximum time the queue can redeliver a message, or a
+ * late duplicate would be processed again. Runs every hour.
  */
 export class ProcessedMessageRetentionJob extends ScheduledJob {
   readonly name = MessagingJob.ProcessedMessageRetention;

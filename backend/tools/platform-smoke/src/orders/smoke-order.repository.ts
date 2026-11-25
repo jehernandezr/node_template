@@ -4,7 +4,7 @@ import { SmokeOrder } from './smoke-order.js';
 import { SmokeOrderEntity } from './smoke-order.entity.js';
 import { SmokeOrderMapper } from './smoke-order.mapper.js';
 
-/** Pedidos del tenant del contexto, en el shard que le toca. */
+/** Orders of the context tenant, on its assigned shard. */
 @Injectable()
 export class SmokeOrderRepository extends ShardedRepository<
   SmokeOrder,

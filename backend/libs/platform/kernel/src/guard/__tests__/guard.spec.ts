@@ -4,7 +4,7 @@ import { Guard } from '../guard.js';
 
 class CustomError extends Error {}
 
-/** Un número que llega donde el tipo promete texto, como desde una entrada sin validar. */
+/** A number that arrives where the type promises text, as from unvalidated input. */
 const NOT_A_STRING = JSON.parse('5') as string;
 
 describe('Guard', () => {

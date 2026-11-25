@@ -6,7 +6,7 @@ import {
 import type { ReportRunState } from '../domain/report-run.js';
 import { CsvWriter } from './csv-writer.js';
 
-/** El archivo de descarga de una ejecución lista, en su formato. Utilidad pura. */
+/** The download file of a ready run, in its format. Pure utility. */
 export class ReportFiles {
   static of(run: ReportRunState, result: ReportResult): ReportDownload {
     const name = `${run.type}-${run.params.from}-${run.params.to}`;

@@ -23,15 +23,15 @@ interface MailpitMessage {
 }
 
 /**
- * Mailpit en un contenedor: recibe por SMTP y expone lo recibido por su API HTTP. Con su modo de caos puede
- * rechazar los destinatarios, como un proveedor que falla un rato.
+ * Mailpit in a container: receives over SMTP and exposes what it received through its HTTP API. With its chaos mode it can
+ * reject recipients, like a provider that fails for a while.
  */
 export class MailpitServer {
   static readonly IMAGE = 'axllent/mailpit:v1.33.1';
   private static readonly SMTP_PORT = 1025;
   private static readonly API_PORT = 8025;
   private static readonly POLL_MS = 100;
-  /** Respuesta SMTP de fallo temporal: el remitente puede reintentar. */
+  /** SMTP temporary failure response: the sender can retry. */
   private static readonly TEMPORARY_FAILURE = 451;
   private static readonly ALWAYS = 100;
   private static readonly NEVER = 0;
@@ -56,17 +56,17 @@ export class MailpitServer {
     return `smtp://${container.getHost()}:${container.getMappedPort(MailpitServer.SMTP_PORT)}`;
   }
 
-  /** Desde ahora rechaza todo destinatario con un fallo temporal. */
+  /** From now on rejects every recipient with a temporary failure. */
   rejectRecipients(): Promise<void> {
     return this.recipientFailures(MailpitServer.ALWAYS);
   }
 
-  /** Vuelve a aceptar a todos los destinatarios. */
+  /** Accepts all recipients again. */
   acceptRecipients(): Promise<void> {
     return this.recipientFailures(MailpitServer.NEVER);
   }
 
-  /** Los correos recibidos, del más nuevo al más viejo. */
+  /** The received emails, newest to oldest. */
   async received(): Promise<readonly ReceivedEmail[]> {
     const list = (await this.get('/api/v1/messages')) as {
       messages: MailpitSummary[];
@@ -87,7 +87,7 @@ export class MailpitServer {
     );
   }
 
-  /** Espera a que llegue un correo para `to`, consultando la API hasta `timeoutMs`. */
+  /** Waits for an email for `to` to arrive, polling the API until `timeoutMs`. */
   async waitForMailTo(to: string, timeoutMs: number): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (!(await this.received()).some((mail) => mail.to === to)) {

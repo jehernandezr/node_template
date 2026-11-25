@@ -3,14 +3,14 @@ import type { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.
 import type { ClientInfo } from '../../../shared/types/client-info.type.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
-/** Datos con los que `MfaFacade.startPending` abre una autenticación pendiente. */
+/** Data with which `MfaFacade.startPending` opens a pending authentication. */
 export interface StartPendingInput {
   readonly user: UserRef;
   readonly purpose: PendingPurpose;
   readonly client: ClientInfo;
-  /** Métodos ya cumplidos: la contraseña en un inicio de sesión, los de la sesión en un step-up. */
+  /** Methods already satisfied: the password in a sign-in, the session's methods in a step-up. */
   readonly authMethods: readonly AuthMethodReference[];
   readonly deviceId?: string;
-  /** Sesión a elevar, solo con `PendingPurpose.StepUp`. */
+  /** Session to elevate, only with `PendingPurpose.StepUp`. */
   readonly sessionId?: string;
 }

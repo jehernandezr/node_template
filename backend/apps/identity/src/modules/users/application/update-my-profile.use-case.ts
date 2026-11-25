@@ -12,7 +12,7 @@ import { UserRepository } from '../domain/user.repository.js';
 import { UserProfileView } from './user-profile-view.js';
 import { UserReader } from './user-reader.js';
 
-/** Cambia el nombre visible o el idioma del usuario. */
+/** Changes the user's display name or language. */
 @Injectable()
 export class UpdateMyProfile {
   constructor(

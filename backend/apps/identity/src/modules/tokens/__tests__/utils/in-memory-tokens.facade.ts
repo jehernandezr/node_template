@@ -5,7 +5,7 @@ import type { AccessTokenInput } from '../../domain/access-token-input.js';
 
 const ACCESS_TTL_MS = 600_000;
 
-/** Emisor de access tokens en memoria: el token de prueba es `token-for-<sessionId>`. */
+/** In-memory access token issuer: the test token is `token-for-<sessionId>`. */
 export class InMemoryTokensFacade extends TokensFacade {
   readonly issued: AccessTokenInput[] = [];
 

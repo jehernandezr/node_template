@@ -3,13 +3,13 @@ import { transform, type Options } from '@swc/core';
 import type { Plugin, PluginBuild } from 'esbuild';
 
 /**
- * esbuild no emite `emitDecoratorMetadata`, y la inyección de NestJS lee los tipos del
- * constructor de esa metadata. Este plugin compila el TypeScript propio con SWC (la misma
- * configuración de decoradores que usan las pruebas) y deja a esbuild solo el empaquetado.
+ * esbuild does not emit `emitDecoratorMetadata`, and NestJS injection reads the
+ * constructor types from that metadata. This plugin compiles our own TypeScript with SWC (the same
+ * decorator configuration the tests use) and leaves only bundling to esbuild.
  */
 export class DecoratorMetadataPlugin {
-  // Con `packages: 'external'` esbuild no carga nada de node_modules: solo llega aquí
-  // el TypeScript del repositorio.
+  // With `packages: 'external'` esbuild loads nothing from node_modules: only the
+  // repository TypeScript reaches this point.
   private static readonly TYPESCRIPT = /\.ts$/;
 
   private readonly swcOptions: Options = {

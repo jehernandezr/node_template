@@ -1,4 +1,4 @@
-/** Códigos de error que emite `@platform/resilience`. */
+/** Error codes that `@platform/resilience` emits. */
 export enum ResilienceErrorCode {
   CircuitOpen = 'PLATFORM.RESILIENCE.CIRCUIT_OPEN',
   Timeout = 'PLATFORM.RESILIENCE.TIMEOUT',

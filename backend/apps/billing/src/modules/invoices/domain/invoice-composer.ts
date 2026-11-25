@@ -5,7 +5,7 @@ import {
 } from '@contracts/billing';
 import type { InvoiceLineState } from './invoice.js';
 
-/** Lo que la factura necesita del plan con que se cobra el periodo. */
+/** What the invoice needs from the plan the period is charged with. */
 export interface BilledPlan {
   readonly name: string;
   readonly priceMinor: number;
@@ -16,7 +16,7 @@ export interface BilledPlan {
   }[];
 }
 
-/** Lo que se factura de un periodo cerrado. */
+/** What is invoiced for a closed period. */
 export interface BilledPeriod {
   readonly start: string;
   readonly end: string;
@@ -29,8 +29,8 @@ export interface BilledPeriod {
 }
 
 /**
- * Las líneas de la factura de un periodo: el cargo fijo del plan, el ajuste de los cambios de plan si lo hubo
- * y una línea por cada métrica que el plan cobra por unidad. Utilidad pura.
+ * The invoice lines of a period: the plan's fixed charge, the plan change adjustment if there was one,
+ * and one line for each metric the plan charges per unit. Pure utility.
  */
 export class InvoiceComposer {
   static lines(period: BilledPeriod): InvoiceLineState[] {

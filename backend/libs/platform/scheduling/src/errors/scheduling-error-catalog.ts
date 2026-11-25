@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { SchedulingErrorCode } from './scheduling-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/scheduling`; ninguno llega al cliente. */
+/** Catalog of the `@platform/scheduling` codes; none of them reaches the client. */
 export const schedulingErrorCatalog = defineErrorCatalog(SchedulingErrorCode, {
   [SchedulingErrorCode.InvalidSchedule]: ErrorSpecs.internal(
     500,

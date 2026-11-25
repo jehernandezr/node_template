@@ -10,7 +10,7 @@ import { TenantDataTransfer } from '../tenant-data-transfer.js';
 import type { TenantTransfer } from '../tenant-transfer.js';
 import type { TransferBudget } from '../transfer-budget.js';
 
-/** Una copia de una sola tabla que anota cada paso que le piden, con el avance y la verificación dados. */
+/** A single-table copy that records each step requested of it, with the given progress and verification. */
 class ScriptedTransfer extends TenantDataTransfer {
   constructor(
     private readonly table: string,
@@ -62,7 +62,7 @@ class ScriptedTransfer extends TenantDataTransfer {
   }
 }
 
-/** Una copia que gasta `spentMs` del plazo de la llamada en cada tabla que copia o borra. */
+/** A copy that spends `spentMs` of the call deadline on each table it copies or deletes. */
 class SlowTransfer extends TenantDataTransfer {
   constructor(
     private readonly table: string,

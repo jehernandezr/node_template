@@ -1,16 +1,16 @@
-/** Un comando del sistema que corre la prueba de humo de los generadores. */
+/** A system command run by the generators smoke test. */
 export interface CommandRun {
   readonly command: string;
   readonly args: readonly string[];
   readonly cwd: string;
-  /** Variables que se suman a las del proceso. */
+  /** Variables added to those of the process. */
   readonly env?: Readonly<Record<string, string>>;
-  /** Variables del proceso que el comando no hereda. */
+  /** Process variables the command does not inherit. */
   readonly unset?: readonly string[];
 }
 
-/** Corre comandos del sistema, para probar la prueba de humo sin lanzar procesos. */
+/** Runs system commands, to test the smoke test without launching processes. */
 export abstract class CommandRunner {
-  /** @returns el código de salida del comando. */
+  /** @returns the command exit code. */
   abstract run(run: CommandRun): Promise<number>;
 }

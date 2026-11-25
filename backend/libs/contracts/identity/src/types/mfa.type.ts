@@ -1,35 +1,35 @@
-/** Alta del TOTP: el secreto y la URI que la app autenticadora escanea. */
+/** TOTP enrollment: the secret and the URI the authenticator app scans. */
 export interface TotpEnrollment {
-  /** Secreto en base32. El cliente lo muestra una sola vez. */
+  /** Secret in base32. The client shows it only once. */
   secret: string;
   otpauthUri: string;
 }
 
-/** Confirmación del TOTP con el primer código que genera la app. */
+/** TOTP confirmation with the first code the app generates. */
 export interface TotpConfirmRequest {
   code: string;
 }
 
-/** Códigos de recuperación en claro. Se muestran una sola vez. */
+/** Recovery codes in plain text. They are shown only once. */
 export interface RecoveryCodes {
   codes: string[];
 }
 
-/** Pedido de recuperación de una cuenta sin acceso a sus factores. */
+/** Recovery request for an account without access to its factors. */
 export interface MfaRecoveryStartRequest {
   mfaToken: string;
 }
 
-/** Recuperación iniciada: el usuario puede confirmarla desde esa fecha. */
+/** Recovery started: the user can confirm it from that date. */
 export interface MfaRecoveryStarted {
-  /** Instante ISO 8601 desde el que se puede confirmar la recuperación. */
+  /** ISO 8601 instant from which the recovery can be confirmed. */
   availableAt: string;
 }
 
-/** Confirmación de la recuperación con el token enviado por email. */
+/** Confirmation of the recovery with the token sent by email. */
 export interface MfaRecoveryConfirmRequest {
   mfaToken: string;
   token: string;
-  /** Clave pública del dispositivo en base64url, para registrar uno nuevo. */
+  /** Public key of the device in base64url, to register a new one. */
   devicePublicKey?: string;
 }

@@ -1,6 +1,6 @@
-/** Índice global de slugs en el catálogo (`tenant_lookup`). */
+/** Global slug index in the catalog (`tenant_lookup`). */
 export abstract class TenantDirectory {
-  /** Reserva el slug. Devuelve `false` si ya es de otro tenant. */
+  /** Reserves the slug. Returns `false` if it already belongs to another tenant. */
   abstract reserve(
     slug: string,
     tenantId: string,
@@ -9,12 +9,12 @@ export abstract class TenantDirectory {
 
   abstract release(slug: string, tenantId: string): Promise<void>;
 
-  /** Si algún tenant tiene reservado el slug. */
+  /** Whether any tenant has the slug reserved. */
   abstract isTaken(slug: string): Promise<boolean>;
 
-  /** El slug del tenant, si lo tiene reservado. */
+  /** The tenant's slug, if it has one reserved. */
   abstract slugOf(tenantId: string): Promise<string | undefined>;
 
-  /** Apunta el slug del tenant a su región nueva después de un traslado. */
+  /** Points the tenant's slug to its new region after a move. */
   abstract relocate(tenantId: string, region: string): Promise<void>;
 }

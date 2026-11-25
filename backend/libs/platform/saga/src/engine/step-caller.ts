@@ -34,7 +34,7 @@ import {
   type StepTarget,
 } from './step-attempt.js';
 
-/** Colaboradores de `StepCaller`. */
+/** Collaborators of `StepCaller`. */
 export interface StepCallerDeps {
   readonly store: SagaStore;
   readonly invoker: OperationInvoker;
@@ -43,30 +43,30 @@ export interface StepCallerDeps {
   readonly clock: Clock;
   readonly tracing: Tracing;
   readonly restorer: TraceContextRestorer;
-  /** Clasifica lo que lanza el invocador. */
+  /** Classifies what the invoker throws. */
   readonly outcomes: CallOutcomeFactory;
   readonly logger?: LoggerPort;
 }
 
-/** Un valor construido para la entrada, o la razón por la que no se pudo construir. */
+/** A value built for the input, or the reason it could not be built. */
 type Built =
   | { readonly ok: true; readonly value: unknown }
   | { readonly ok: false; readonly error: unknown; readonly detail: string };
 
-/** Lo que quedó escrito al despachar: la entrada de bitácora y la instancia con su versión nueva. */
+/** What was written on dispatch: the log entry and the instance with its new version. */
 interface Dispatched {
   readonly dispatched: StepLogEntry;
   readonly current: SagaInstance;
 }
 
 /**
- * Mecánica común a los pasos hacia delante y a las compensaciones: escribe la
- * intención antes de llamar (write-ahead), llama a la operación por el
- * `OperationInvoker` dentro de un `Deadline` y de un span, y hace las
- * escrituras protegidas por el token del lease y la versión.
+ * Mechanics shared by forward steps and compensations: writes the
+ * intent before calling (write-ahead), calls the operation through the
+ * `OperationInvoker` inside a `Deadline` and a span, and performs the
+ * writes guarded by the lease token and the version.
  */
 export class StepCaller {
-  /** Motivo del `protocolViolation` cuando el invocador devuelve algo que no es un `CallOutcome`. */
+  /** Reason for the `protocolViolation` when the invoker returns something that is not a `CallOutcome`. */
   static readonly INVALID_INVOKER_RESULT = 'invalid-invoker-result';
 
   private static readonly OUTCOME_KINDS: ReadonlySet<unknown> = new Set(
@@ -76,20 +76,20 @@ export class StepCaller {
   constructor(private readonly deps: StepCallerDeps) {}
 
   /**
-   * Despacha un intento de un paso en cualquier dirección y llama a la operación.
-   * - Una entrada `Dispatched` (el proceso murió tras el despacho) se invoca otra vez tal cual.
-   * - Cualquier otro intento registrado se reintenta con su entrada guardada, nunca una reconstruida, con la misma llave de idempotencia.
-   * - Un primer intento construye su entrada con `target.buildInput` sobre una copia del estado; si no se construye o no es JSON, escribe `RequiresIntervention` con `InputBuildFailed` y devuelve `Halted`.
-   * - Antes de llamar renueva el lease más allá del `Deadline` del paso (`settings.maxStepDurationMs`); la llamada corre en un span `SagaSpan.Step` hijo de la traza guardada en la entrada o, si no hay, de la de la instancia.
-   * - Si el plazo vence, la señal se aborta y el resultado es `uncertain` con el motivo `timed out after N ms`; un error lanzado se clasifica con `outcomes.fromError`; un resultado que no es un `CallOutcome` es `protocolViolation` con el motivo `invalid-invoker-result`.
+   * Dispatches one attempt of a step in either direction and calls the operation.
+   * - A `Dispatched` entry (the process died after the dispatch) is invoked again as is.
+   * - Any other recorded attempt is retried with its saved input, never a rebuilt one, with the same idempotency key.
+   * - A first attempt builds its input with `target.buildInput` on a copy of the state; if it is not built or is not JSON, it writes `RequiresIntervention` with `InputBuildFailed` and returns `Halted`.
+   * - Before calling, it renews the lease past the step `Deadline` (`settings.maxStepDurationMs`); the call runs in a `SagaSpan.Step` span that is a child of the trace saved in the entry or, if there is none, of the instance trace.
+   * - If the deadline expires, the signal is aborted and the result is `uncertain` with the reason `timed out after N ms`; a thrown error is classified with `outcomes.fromError`; a result that is not a `CallOutcome` is `protocolViolation` with the reason `invalid-invoker-result`.
    */
   call(
     run: SagaRun,
     instance: SagaInstance,
     target: StepTarget,
   ): Promise<StepCall> {
-    // El span hereda la traza en la que se despachó el paso la primera vez, así
-    // un reintento desde otro nodo cae en la misma traza.
+    // The span inherits the trace in which the step was first dispatched, so
+    // a retry from another node lands in the same trace.
     const parent =
       target.entry?.traceparent ?? instance.context?.traceparent ?? undefined;
     return otelContext.with(
@@ -118,7 +118,7 @@ export class StepCaller {
     );
   }
 
-  /** Escritura protegida de una transición, con su entrada de bitácora si la hay. Devuelve la instancia guardada. */
+  /** Guarded write of a transition, with its journal entry if any. Returns the saved instance. */
   commit(
     run: SagaRun,
     instance: SagaInstance,
@@ -132,7 +132,7 @@ export class StepCaller {
     });
   }
 
-  /** La entrada con su resultado: estado, código de error, salida y `finishedAt` del reloj. */
+  /** The entry with its result: status, error code, output and `finishedAt` from the clock. */
   finish(
     dispatched: StepLogEntry,
     status: StepStatus,
@@ -187,9 +187,9 @@ export class StepCaller {
   }
 
   /**
-   * Escribe el despacho. Un primer intento construye su entrada; cualquier
-   * otro intento reutiliza la guardada, así el participante recibe la misma
-   * entrada y la misma llave.
+   * Writes the dispatch. A first attempt builds its input; any other
+   * attempt reuses the saved one, so the participant receives the same
+   * input and the same key.
    */
   private async dispatch(
     run: SagaRun,
@@ -251,8 +251,8 @@ export class StepCaller {
   }
 
   /**
-   * Llama a la operación dentro de su plazo. Un plazo vencido es un resultado
-   * incierto: la operación pudo aplicarse aunque ya no se espere su respuesta.
+   * Calls the operation within its deadline. An expired deadline is an uncertain
+   * result: the operation may have applied even though its response is no longer awaited.
    */
   private async invoke(
     operationId: string,

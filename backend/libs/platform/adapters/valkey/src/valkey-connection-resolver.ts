@@ -7,11 +7,11 @@ import type { ValkeyRuntimeOptions } from './valkey-runtime-options.js';
 import type { ValkeyTokenAuth } from './valkey-token-auth.js';
 import type { ValkeySettings } from './valkey.config.js';
 
-/** Convierte la configuración en datos de conexión y revisa lo que un esquema plano no puede. */
+/** Converts the configuration into connection data and checks what a flat schema cannot. */
 export class ValkeyConnectionResolver {
   /**
-   * @throws ConfigValidationError listando cada variable incoherente: `VALKEY_URL` y `VALKEY_HOST`
-   *   a la vez o ninguna, o un modo IAM sin host, usuario, nombre de caché, TLS o proveedor de token.
+   * @throws ConfigValidationError listing each inconsistent variable: `VALKEY_URL` and `VALKEY_HOST`
+   *   both or neither, or an IAM mode without host, user, cache name, TLS or token provider.
    */
   resolve(
     settings: ValkeySettings,
@@ -50,7 +50,7 @@ export class ValkeyConnectionResolver {
     return { connection, auth };
   }
 
-  /** La identidad del token sale de las mismas variables que la conexión. */
+  /** The token identity comes from the same variables as the connection. */
   private iamAuth(
     settings: ValkeySettings,
     authToken: ValkeyAuthTokenProvider | undefined,

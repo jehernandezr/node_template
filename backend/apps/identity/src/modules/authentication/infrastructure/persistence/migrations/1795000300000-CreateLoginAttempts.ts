@@ -7,8 +7,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { LoginAttemptPartitions } from '../login-attempt-partitions.js';
 
 /**
- * `login_attempts` particionada por mes sobre `id` (UUIDv7): cada mes es una tabla, así la retención de 12
- * meses borra particiones enteras en vez de filas. La llave primaria es la columna de partición.
+ * `login_attempts` partitioned by month on `id` (UUIDv7): each month is a table, so the 12-month retention
+ * drops whole partitions instead of rows. The primary key is the partition column.
  */
 export class CreateLoginAttempts1795000300000 implements MigrationInterface {
   readonly name = 'CreateLoginAttempts1795000300000';

@@ -8,7 +8,7 @@ import { InternalApiContractProviders } from './internal-api-contract.providers.
 import type { ResolvedInternalApiExtras } from './internal-api-module-options.js';
 import { InternalApiServerProviders } from './internal-api-server.providers.js';
 
-/** Proveedores del módulo de la API interna y lo que exporta. */
+/** Providers of the internal API module and what it exports. */
 export class InternalApiProviders {
   static build(extras: ResolvedInternalApiExtras): Provider[] {
     return [

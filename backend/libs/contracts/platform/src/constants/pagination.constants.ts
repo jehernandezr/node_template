@@ -1,11 +1,11 @@
-/** Límites de la paginación por cursor. */
+/** Limits of cursor pagination. */
 export const Pagination = {
-  /** Tamaño de página cuando la petición no indica `limit`. */
+  /** Page size when the request does not specify `limit`. */
   defaultLimit: 20,
-  /** Tamaño de página máximo que acepta una ruta. */
+  /** Maximum page size a route accepts. */
   maxLimit: 100,
-  /** Longitud máxima de un cursor opaco. */
+  /** Maximum length of an opaque cursor. */
   maxCursorLength: 512,
-  /** Expresión regular del cursor: base64url sin relleno. */
+  /** Regular expression of the cursor: base64url without padding. */
   cursorPattern: '^[A-Za-z0-9_-]+$',
 } as const;

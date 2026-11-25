@@ -1,9 +1,9 @@
 /**
- * Fuente de reconstrucción que no entrega nada hasta que se libera. Cuenta las
- * veces que empieza a leerse y avisa cuando ya lo hace, para probar carreras.
+ * Rebuild source that delivers nothing until released. It counts the
+ * times it starts being read and signals when it does, to test races.
  */
 export class GatedRebuildSource implements AsyncIterable<readonly string[]> {
-  /** Veces que empezó a iterarse la fuente. */
+  /** Number of times iteration over the source started. */
   reads = 0;
 
   private readonly gate: Promise<void>;
@@ -23,12 +23,12 @@ export class GatedRebuildSource implements AsyncIterable<readonly string[]> {
     });
   }
 
-  /** Abre la compuerta: la iteración puede seguir. */
+  /** Opens the gate: iteration can continue. */
   release(): void {
     this.openGate();
   }
 
-  /** Resuelve cuando la iteración ya empezó (antes de esperar la compuerta). */
+  /** Resolves when iteration has already started (before waiting on the gate). */
   waitUntilReading(): Promise<void> {
     return this.started;
   }

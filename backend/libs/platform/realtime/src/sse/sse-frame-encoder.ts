@@ -1,8 +1,8 @@
 import type { StoredFrame } from '../stream/realtime-frame.js';
 
-/** Formato `text/event-stream`: el id permite reanudar con `Last-Event-ID`. Utilidad pura. */
+/** `text/event-stream` format: the id allows resuming with `Last-Event-ID`. Pure utility. */
 export class SseFrameEncoder {
-  /** Pausa que el navegador espera antes de reconectar. */
+  /** Pause the browser waits before reconnecting. */
   static readonly RETRY_MS = 3000;
 
   static frame(frame: StoredFrame): string {
@@ -13,7 +13,7 @@ export class SseFrameEncoder {
     return `retry: ${SseFrameEncoder.RETRY_MS}\n\n`;
   }
 
-  /** Comentario que el cliente ignora y que mantiene la conexión con tráfico. */
+  /** Comment that the client ignores and that keeps traffic on the connection. */
   static keepAlive(): string {
     return ': keep-alive\n\n';
   }

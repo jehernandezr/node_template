@@ -86,7 +86,7 @@ describe('ProblemDetailsFactory', () => {
 
       expect(problem).toEqual({
         type: 'https://docs.example.com/errors/PLATFORM.INTERNAL.UNEXPECTED',
-        title: 'Ocurrió un error inesperado en el servidor.',
+        title: 'An unexpected server error occurred.',
         status: 500,
         code: PlatformErrorCode.InternalUnexpected,
         instance: '/v1/tenants',

@@ -1,4 +1,4 @@
-/** Tipo de notificación: fija la criticidad y qué preferencias aplican. */
+/** Notification type: sets the criticality and which preferences apply. */
 export enum NotificationType {
   SecurityAlert = 'security_alert',
   TaskUpdated = 'task_updated',
@@ -6,21 +6,21 @@ export enum NotificationType {
   AccountActivity = 'account_activity',
 }
 
-/** Canal por el que sale una notificación. */
+/** Channel through which a notification goes out. */
 export enum NotificationChannel {
   InApp = 'in_app',
   Push = 'push',
   Email = 'email',
 }
 
-/** Tramas que el servidor envía por la transmisión en tiempo real (SSE o Socket.IO). */
+/** Frames the server sends over the real-time stream (SSE or Socket.IO). */
 export enum NotificationFrameType {
   Notification = 'notification',
   UnreadCount = 'unread-count',
   SessionClosed = 'session-closed',
 }
 
-/** Plantillas de correo transaccional. */
+/** Transactional email templates. */
 export enum EmailTemplate {
   VerifyEmail = 'verify_email',
   PasswordReset = 'password_reset',
@@ -31,7 +31,7 @@ export enum EmailTemplate {
   MfaRecovery = 'mfa_recovery',
 }
 
-/** Nombres de los datos que llenan una plantilla o el texto de una notificación. */
+/** Names of the data that fill a template or the text of a notification. */
 export enum TemplateParameter {
   Code = 'code',
   Link = 'link',

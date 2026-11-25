@@ -3,8 +3,8 @@ import type { RealtimeFrame } from './stream/realtime-frame.js';
 import { RealtimeStream } from './stream/realtime-stream.js';
 
 /**
- * Entrada del servicio que decide qué enviar: escribe en el stream del usuario y responde si tiene una
- * conexión abierta. No sabe qué transportes atienden ni en qué proceso corren.
+ * Entry point of the service that decides what to send: writes to the user's stream and answers whether they have an
+ * open connection. It does not know which transports serve or in which process they run.
  */
 export class RealtimePublisher {
   constructor(

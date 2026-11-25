@@ -1,6 +1,6 @@
 /**
- * Todos los códigos de error que existían antes de limpiar el catálogo central (101). Una prueba exige que
- * cada uno siga declarado por el catálogo central o por el de su librería, para que ninguno observable se pierda.
+ * All error codes that existed before cleaning up the central catalog (101). A test requires that
+ * each one is still declared by the central catalog or by its library's, so no observable one is lost.
  */
 export class PreviousErrorCodes {
   static readonly ALL: readonly string[] = [

@@ -13,18 +13,18 @@ import { QuotaChecker } from './quota-checker.js';
 interface CachedUsage {
   readonly limit: number;
   readonly used: number;
-  /** Lo que billing respondió para una unidad: `false` también cuando la suscripción está suspendida o cancelada. */
+  /** What billing answered for one unit: `false` also when the subscription is suspended or canceled. */
   readonly allowed: boolean;
   readonly expiresAt: number;
 }
 
 /**
- * Cuotas por la operación `billing.quotas.check.v1`. Guarda el límite y el uso de cada tenant y métrica
- * `ttlMs` en el proceso, así que el resultado puede ir hasta ese tiempo detrás de billing; lo pedido se
- * compara aquí contra lo guardado. Un `allowed: false` de billing con cupo de sobra es una suscripción bloqueada y se
- * respeta. Un tenant sin suscripción (los que siembra la plataforma) no tiene cuota.
- * Lo guardado se acota a `maxEntries` descartando la entrada más antigua, para que un proceso que atiende
- * muchos tenants no crezca sin límite.
+ * Quotas through the `billing.quotas.check.v1` operation. Keeps the limit and usage of each tenant and metric
+ * for `ttlMs` in the process, so the result can lag billing by up to that time; the requested amount is
+ * compared here against what is stored. An `allowed: false` from billing with plenty of room is a blocked subscription and is
+ * respected. A tenant without a subscription (the ones the platform seeds) has no quota.
+ * What is stored is bounded to `maxEntries` by discarding the oldest entry, so that a process serving
+ * many tenants does not grow without limit.
  */
 export class BillingQuotaChecker extends QuotaChecker {
   static readonly DEFAULT_TTL_MS = 10_000;
@@ -42,7 +42,7 @@ export class BillingQuotaChecker extends QuotaChecker {
     super();
   }
 
-  /** @throws BillingUnavailableError si billing no responde. */
+  /** @throws BillingUnavailableError if billing does not respond. */
   async check(
     tenantId: string,
     metric: UsageMetric,
@@ -96,8 +96,8 @@ export class BillingQuotaChecker extends QuotaChecker {
   }
 
   /**
-   * El `Map` recorre en orden de inserción y cada llave se reinserta al refrescarse, así que la primera es
-   * la que lleva más tiempo sin consultarse a billing.
+   * The `Map` iterates in insertion order and each key is reinserted when refreshed, so the first one is
+   * the one that has gone longest without querying billing.
    */
   private keep(key: string, usage: CachedUsage): void {
     const oldest = this.cache.keys().next();

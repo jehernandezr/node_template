@@ -8,7 +8,7 @@ import {
 } from '@contracts/reports';
 import { ReportsError } from '../../../shared/errors/reports.error.js';
 
-/** Estado completo de una ejecución de reporte, tal como se guarda. */
+/** Full state of a report run, as stored. */
 export interface ReportRunState {
   readonly id: string;
   readonly type: ReportType;
@@ -25,8 +25,8 @@ export interface ReportRunState {
 }
 
 /**
- * Una ejecución de reporte: en cola, corriendo, lista hasta que su resultado vence, o fallida. El resultado
- * lo guarda `ReportResultStore`; la ejecución sabe su tamaño y hasta cuándo se entrega.
+ * A report run: queued, running, ready until its result expires, or failed. The result
+ * is stored by `ReportResultStore`; the run knows its size and until when it is delivered.
  */
 export class ReportRun {
   private constructor(private state: ReportRunState) {}
@@ -58,7 +58,7 @@ export class ReportRun {
     return this.state;
   }
 
-  /** En cola o corriendo: un worker puede tomarla, también si murió a mitad del cálculo. */
+  /** Queued or running: a worker can pick it up, also if it died halfway through the computation. */
   isPending(): boolean {
     return (
       this.state.status === ReportRunStatus.Queued ||
@@ -90,8 +90,8 @@ export class ReportRun {
   }
 
   /**
-   * Que la ejecución esté lista y su resultado vigente.
-   * @throws ReportsError `REPORTS.RUN.EXPIRED` si venció, o `REPORTS.RUN.NOT_READY` si no terminó bien.
+   * Ensures the run is ready and its result is current.
+   * @throws ReportsError `REPORTS.RUN.EXPIRED` if it expired, or `REPORTS.RUN.NOT_READY` if it did not finish successfully.
    */
   assertReady(now: Date): void {
     const { status, expiresAt } = this.state;

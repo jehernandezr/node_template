@@ -1,10 +1,10 @@
 import '../ports.dart';
 
-/// [TokenStore] que guarda el session token solo en memoria.
+/// [TokenStore] that keeps the session token only in memory.
 ///
-/// Es el almacén del shell móvil mientras no exista el adaptador de Keychain
-/// y Keystore: la sesión sobrevive a la navegación, pero no a un reinicio de
-/// la app, que vuelve a pedir el login.
+/// It is the mobile shell's store until the Keychain and Keystore adapter
+/// exists: the session survives navigation, but not an app restart,
+/// which asks for login again.
 final class InMemoryTokenStore implements TokenStore {
   String? _sessionToken;
 

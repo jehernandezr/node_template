@@ -4,7 +4,7 @@ import type { UserActor } from '@platform/auth';
 import { SessionsFacade } from '../../sessions/index.js';
 import { AccessResolver } from './access-resolver.js';
 
-/** El acceso de la sesión actual, para llenar la sesión del front. */
+/** The access of the current session, to fill the front-end session. */
 @Injectable()
 export class GetSessionAccess {
   constructor(

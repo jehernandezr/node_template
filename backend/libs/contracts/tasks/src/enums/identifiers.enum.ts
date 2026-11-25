@@ -1,11 +1,11 @@
-/** Códigos de error del servicio tasks. */
+/** Error codes of the tasks service. */
 export enum TasksErrorCode {
   TaskNotFound = 'TASKS.TASK.NOT_FOUND',
   TaskVersionConflict = 'TASKS.TASK.VERSION_CONFLICT',
   SearchQueryTooShort = 'TASKS.SEARCH.QUERY_TOO_SHORT',
 }
 
-/** Identificadores de las rutas públicas de tasks. */
+/** Identifiers of the public routes of tasks. */
 export enum TasksRoute {
   ListTasks = 'tasks.task.list',
   GetTask = 'tasks.task.get',
@@ -14,7 +14,7 @@ export enum TasksRoute {
   DeleteTask = 'tasks.task.delete',
 }
 
-/** Identificadores de las operaciones internas de tasks. */
+/** Identifiers of the internal operations of tasks. */
 export enum TasksOperation {
   ListChanges = 'tasks.tasks.list-changes.v1',
   EraseUserData = 'tasks.user-data.erase.v1',
@@ -27,14 +27,14 @@ export enum TasksOperation {
   TenantDirectoryRemove = 'tasks.tenant-directory.remove.v1',
 }
 
-/** Tipos CloudEvents de los eventos que publica tasks. */
+/** CloudEvents types of the events tasks publishes. */
 export enum TasksEvent {
   TaskCreated = 'tasks.task.created.v1',
   TaskUpdated = 'tasks.task.updated.v1',
   TaskDeleted = 'tasks.task.deleted.v1',
 }
 
-/** Tópicos donde tasks publica sus eventos. */
+/** Topics where tasks publishes its events. */
 export enum TasksTopic {
   Events = 'tasks-events',
 }

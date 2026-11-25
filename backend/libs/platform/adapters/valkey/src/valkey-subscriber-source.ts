@@ -5,20 +5,20 @@ import type {
 } from './valkey-subscriber-connection.js';
 
 /**
- * Entrega la conexión dedicada del suscriptor de pub/sub y la abre la primera
- * vez que se pide, así un servicio que no se suscribe no gasta una conexión.
+ * Provides the dedicated pub/sub subscriber connection and opens it the first
+ * time it is requested, so a service that does not subscribe does not spend a connection.
  */
 export class ValkeySubscriberSource {
   private opened: Promise<ValkeySubscriberClient> | undefined;
 
   constructor(private readonly opener: ValkeyConnectionOpener) {}
 
-  /** La misma conexión en cada llamada. */
+  /** Returns the same connection on each call. */
   connection(): Promise<ValkeySubscriberConnection> {
     if (this.opened === undefined) {
       const opening = this.opener.create();
       this.opened = opening;
-      // Si abrir falla, el siguiente intento vuelve a abrir en lugar de repetir el error.
+      // If opening fails, the next attempt opens again instead of repeating the error.
       opening.catch(() => {
         if (this.opened === opening) {
           this.opened = undefined;
@@ -28,7 +28,7 @@ export class ValkeySubscriberSource {
     return this.opened;
   }
 
-  /** Cierra la conexión con `quit` si se abrió; si el servidor no responde, la corta. */
+  /** Closes the connection with `quit` if it was opened; if the server does not respond, cuts it. */
   async close(): Promise<void> {
     const opened = this.opened;
     this.opened = undefined;

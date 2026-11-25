@@ -6,5 +6,5 @@ export const NotificationCreatedEvent = defineEvent({
   type: NotificationsEvent.NotificationCreated,
   payload: NotificationCreatedPayloadSchema,
   description:
-    'Se creó una notificación: tenant, tipo y canales usados, sin texto. Reports lo cuenta.',
+    'A notification was created: tenant, type and channels used, without text. Reports counts it.',
 });

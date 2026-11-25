@@ -17,7 +17,7 @@ import { TenantShardGroups } from '../tenant-shard-groups.js';
 const TENANT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a05';
 const NEIGHBOUR = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a06';
 
-/** Un directorio donde otra escritura gana siempre entre la lectura y la escritura. */
+/** A directory where another write always wins between the read and the write. */
 class ContendedDirectoryStore extends InMemoryDirectoryStore {
   override async putPlacement(): Promise<DirectoryWriteResult> {
     return DirectoryWriteResult.VersionConflict;
@@ -28,7 +28,7 @@ class ContendedDirectoryStore extends InMemoryDirectoryStore {
   }
 }
 
-/** Datos del servicio por tenant, sin base: lo que diría la consulta a las tablas del manifiesto. */
+/** Service data per tenant, without a database: what the query on the manifest tables would say. */
 class KnownTenantData extends TenantDataPresence {
   readonly withData = new Set<string>();
 

@@ -25,7 +25,7 @@ import { TypeOrmTaskProjection } from '../infrastructure/persistence/typeorm-tas
 import { TasksServiceHistory } from '../infrastructure/tasks-service-history.js';
 import { ProjectionsConsumer } from './projections.consumer.js';
 
-/** Proyecciones propias de reports, alimentadas por eventos y por el relleno desde tasks y billing. */
+/** reports' own projections, fed by events and by the backfill from tasks and billing. */
 @Global()
 @Module({
   imports: [

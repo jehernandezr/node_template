@@ -2,9 +2,9 @@ import type { ServiceContract } from '@contracts/platform';
 import { ExportError } from './export-error.js';
 
 /**
- * Comprueba que los identificadores que viajan entre servicios no se repitan
- * entre contratos: ids de ruta y de operación, tipos de mensaje y nombres de
- * tópicos y colas. Dentro de cada contrato ya lo valida `defineServiceContract`.
+ * Checks that identifiers that travel between services are not repeated
+ * across contracts: route and operation ids, message types and topic and
+ * queue names. Within each contract `defineServiceContract` already validates it.
  */
 export class GlobalUniquenessChecker {
   check(contracts: readonly ServiceContract[]): void {
@@ -15,7 +15,7 @@ export class GlobalUniquenessChecker {
       if (previous !== undefined && previous !== service) {
         throw ExportError.forService(
           service,
-          `${kind} ${id} ya está declarado en ${previous}`,
+          `${kind} ${id} is already declared in ${previous}`,
         );
       }
       seen.set(key, service);
@@ -23,22 +23,22 @@ export class GlobalUniquenessChecker {
     for (const contract of contracts) {
       const { service } = contract;
       for (const route of Object.values(contract.routes)) {
-        claim('la ruta', route.id, service);
+        claim('route', route.id, service);
       }
       for (const op of Object.values(contract.operations)) {
-        claim('la operación', op.id, service);
+        claim('operation', op.id, service);
       }
       for (const message of [
         ...Object.values(contract.events),
         ...Object.values(contract.commands),
       ]) {
-        claim('el mensaje', message.type, service);
+        claim('message', message.type, service);
       }
       for (const target of [
         ...Object.values(contract.topics),
         ...Object.values(contract.queues),
       ]) {
-        claim('el tópico o la cola', target.name, service);
+        claim('topic or queue', target.name, service);
       }
     }
   }

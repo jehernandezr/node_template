@@ -1,7 +1,7 @@
 import { DomainError } from '@platform/kernel';
 import { NotificationsErrorCode } from '@contracts/notifications';
 
-/** La notificación no existe en la bandeja de quien pregunta. */
+/** The notification does not exist in the requester's inbox. */
 export class NotificationNotFoundError extends DomainError {
   readonly code = NotificationsErrorCode.InboxNotFound;
 

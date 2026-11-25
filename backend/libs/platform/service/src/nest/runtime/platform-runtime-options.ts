@@ -4,27 +4,27 @@ import type { EnvelopePublisher } from '@platform/messaging';
 import type { TelemetryHandle } from '@platform/observability';
 import type { SchedulingMode } from '@platform/scheduling';
 
-/** Qué adaptadores de infraestructura se registran. */
+/** Which infrastructure adapters are registered. */
 export interface RuntimeAdapters {
-  /** Valkey para caché, límite de tasa, ruteo, canal del directorio, Bloom y lock de jobs. Sin él, modo local en memoria. */
+  /** Valkey for cache, rate limiting, routing, directory channel, Bloom and job lock. Without it, in-memory local mode. */
   readonly valkey: boolean;
-  /** AWS para publicar en SNS y consumir de SQS. Sin él, el outbox no se publica salvo que se pase `publisher`. */
+  /** AWS to publish to SNS and consume from SQS. Without it, the outbox is not published unless `publisher` is passed. */
   readonly aws: boolean;
 }
 
-/** Opciones de `PlatformRuntimeModule.forService`. */
+/** Options of `PlatformRuntimeModule.forService`. */
 export interface PlatformRuntimeOptions {
-  /** Entorno que valida `ConfigModule`. */
+  /** Environment that `ConfigModule` validates. */
   readonly env: ConfigEnv;
-  /** Telemetría ya arrancada en `instrumentation.ts`. Sin valor, `ObservabilityModule` arranca una. */
+  /** Telemetry already started in `instrumentation.ts`. Without a value, `ObservabilityModule` starts one. */
   readonly telemetry?: TelemetryHandle;
-  /** Lo que no se indique se deduce del entorno con `RuntimeAdapterSelector`. */
+  /** Whatever is not specified is inferred from the environment with `RuntimeAdapterSelector`. */
   readonly adapters?: Partial<RuntimeAdapters>;
   /**
-   * Publicador del relay del outbox. Por defecto `SnsSqsEnvelopePublisher` cuando `adapters.aws`
-   * es `true`; sin ninguno de los dos, el relay no se registra.
+   * Publisher of the outbox relay. `SnsSqsEnvelopePublisher` by default when `adapters.aws`
+   * is `true`; with neither of the two, the relay is not registered.
    */
   readonly publisher?: Type<EnvelopePublisher>;
-  /** Por defecto `SchedulingMode.InProcess`. */
+  /** `SchedulingMode.InProcess` by default. */
   readonly schedulingMode?: SchedulingMode;
 }

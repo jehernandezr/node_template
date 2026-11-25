@@ -4,7 +4,7 @@ import { CatalogTableRepository } from '../../../../database/catalog-table-repos
 import { ApiKeyDirectory } from '../../domain/api-key-store.js';
 import { ApiKeyLookupEntity } from './entities/api-key-lookup.entity.js';
 
-/** `ApiKeyDirectory` sobre `api_key_lookup` del catálogo. */
+/** `ApiKeyDirectory` over `api_key_lookup` in the catalog. */
 @Injectable()
 export class TypeOrmApiKeyDirectory
   extends CatalogTableRepository

@@ -1,6 +1,6 @@
-/** Cifra secretos que el servidor necesita leer después, como el del TOTP. */
+/** Encrypts secrets the server needs to read later, such as the TOTP one. */
 export abstract class SecretBox {
   abstract seal(plain: Buffer): string;
-  /** @throws Error si el texto no lo cifró esta llave o fue alterado. */
+  /** @throws Error if the text was not encrypted with this key or was tampered with. */
   abstract open(sealed: string): Buffer;
 }

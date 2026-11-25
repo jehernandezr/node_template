@@ -5,9 +5,9 @@ import {
 } from '@platform/resilience';
 
 /**
- * Políticas de resiliencia de messaging. `Queue` cubre las llamadas al
- * transporte (SNS, SQS): tiempo por intento y circuit breaker, sin reintentos,
- * porque el relay del outbox ya reintenta con su propio backoff.
+ * Messaging resilience policies. `Queue` covers the calls to the
+ * transport (SNS, SQS): per-attempt timeout and circuit breaker, without retries,
+ * because the outbox relay already retries with its own backoff.
  */
 export class MessagingPolicies {
   static readonly Queue = PolicyName.of('queue');

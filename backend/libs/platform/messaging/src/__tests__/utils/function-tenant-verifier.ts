@@ -1,7 +1,7 @@
 import { TenantVerifier } from '../../dispatch/tenant-verifier.js';
 import type { MessageEnvelope } from '../../envelope/message-envelope.js';
 
-/** Verificador de tenants de prueba cuya decisión sale de una función. */
+/** Test tenant verifier whose decision comes from a function. */
 export class FunctionTenantVerifier extends TenantVerifier {
   constructor(
     private readonly decide: (

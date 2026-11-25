@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** La tabla de la barrera de traslado, que en un servicio crean las migraciones de shard de la plataforma. */
+/** The relocation barrier table, which in a service is created by the platform shard migrations. */
 export class CreateTenantWriteFences1794700000002 implements MigrationInterface {
   readonly name = 'CreateTenantWriteFences1794700000002';
 

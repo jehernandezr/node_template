@@ -1,20 +1,20 @@
 import type { ClaimRequest } from '@platform/kernel';
 import { PrimitivesGuard } from '../errors/primitives-guard.js';
 
-/** Reglas comunes de los claims de idempotencia que los adaptadores aplican antes de tocar el almacenamiento. */
+/** Common rules for idempotency claims that adapters apply before touching storage. */
 export class ClaimRules {
-  /** Margen por defecto entre el límite de la operación y el fin del lease. */
+  /** Default margin between the operation deadline and the end of the lease. */
   static readonly DEFAULT_LEASE_MARGIN_MS = 5_000;
 
-  /** Longitud máxima de una llave de idempotencia. */
+  /** Maximum length of an idempotency key. */
   static readonly MAX_KEY_LENGTH = 512;
 
-  /** Longitud máxima de una huella. */
+  /** Maximum length of a fingerprint. */
   static readonly MAX_FINGERPRINT_LENGTH = 256;
 
   /**
-   * Fin del lease en milisegundos epoch: el límite más el margen, y al menos
-   * `minLeaseMs` desde `nowMs`. Así el lease siempre cubre la operación completa.
+   * Returns the lease end in epoch milliseconds: the deadline plus the margin, and at least
+   * `minLeaseMs` from `nowMs`. So the lease always covers the whole operation.
    */
   static computeLeaseUntil(
     request: Pick<ClaimRequest, 'deadline' | 'leaseMarginMs' | 'minLeaseMs'>,
@@ -27,7 +27,7 @@ export class ClaimRules {
     return Math.max(request.deadline.atMs + margin, nowMs + minimum);
   }
 
-  /** Valida la llave y la huella. Lanza `InvalidArgumentError`. */
+  /** Validates the key and the fingerprint. Throws `InvalidArgumentError`. */
   static assertInput(key: string, fingerprint: string): void {
     PrimitivesGuard.instance.integerInRange(
       'key',

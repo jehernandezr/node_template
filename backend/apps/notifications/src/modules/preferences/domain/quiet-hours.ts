@@ -1,6 +1,6 @@
 /**
- * Horario de silencio en la zona del usuario. Si el inicio es posterior al fin, cruza la medianoche
- * (`22:00` a `07:00`). Inicio igual a fin es un horario vacío.
+ * Quiet hours in the user's time zone. If the start is after the end, it crosses midnight
+ * (`22:00` to `07:00`). A start equal to the end is an empty schedule.
  */
 export class QuietHours {
   private static readonly MINUTES_PER_DAY = 24 * 60;
@@ -11,7 +11,7 @@ export class QuietHours {
     readonly timezone: string,
   ) {}
 
-  /** `undefined` si alguna hora no es `HH:mm` o la zona no es IANA. */
+  /** `undefined` if any time is not `HH:mm` or the zone is not IANA. */
   static parse(
     start: string,
     end: string,

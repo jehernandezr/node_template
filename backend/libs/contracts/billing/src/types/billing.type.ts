@@ -10,7 +10,7 @@ import type {
 } from '../enums/billing.enum.js';
 import type { BillingPeriod, QuotaLimit } from './event.type.js';
 
-/** Plan del catálogo: precio, periodicidad, cuotas y funcionalidades. */
+/** Catalog plan: price, billing interval, quotas and features. */
 export interface Plan {
   id: string;
   name: string;
@@ -24,7 +24,7 @@ export interface PlanCatalog {
   items: Plan[];
 }
 
-/** Suscripción del tenant con su plan y el periodo que cubre. */
+/** Tenant subscription with its plan and the period it covers. */
 export interface Subscription {
   id: string;
   plan: Plan;
@@ -32,7 +32,7 @@ export interface Subscription {
   period: BillingPeriod;
 }
 
-/** Uso de una métrica frente a su límite en el periodo vigente. */
+/** Usage of a metric against its limit in the current period. */
 export interface QuotaUsage {
   metric: UsageMetric;
   limit: number;
@@ -43,14 +43,14 @@ export interface UsageOverview {
   items: QuotaUsage[];
 }
 
-/** Línea de una factura: cargo fijo o uso medido. */
+/** Invoice line: fixed charge or metered usage. */
 export interface InvoiceLine {
   kind: InvoiceLineKind;
   description: string;
   amount: MoneyAmount;
 }
 
-/** Factura completa con sus líneas. */
+/** Full invoice with its lines. */
 export interface Invoice {
   id: string;
   number: string;
@@ -61,7 +61,7 @@ export interface Invoice {
   total: MoneyAmount;
 }
 
-/** Factura sin líneas, para listados. */
+/** Invoice without lines, for listings. */
 export interface InvoiceSummary {
   id: string;
   number: string;
@@ -73,7 +73,7 @@ export interface InvoiceSummary {
 
 export type InvoicePage = Page<InvoiceSummary>;
 
-/** Factura tal como la ve la sincronización de otro servicio, con las fechas de emisión y de pago. */
+/** Invoice as another service's synchronization sees it, with the issue and payment dates. */
 export interface InvoiceChange extends InvoiceSummary {
   issuedAt: string;
   paidAt: string | null;
@@ -81,19 +81,19 @@ export interface InvoiceChange extends InvoiceSummary {
 
 export type InvoiceChangePage = Page<InvoiceChange>;
 
-/** Entrada de la operación que pagina las facturas de un tenant. */
+/** Input of the operation that pages a tenant's invoices. */
 export interface ListInvoiceChangesInput {
   tenantId: string;
   limit?: number;
   after?: string;
 }
 
-/** Cambio de plan de la suscripción del tenant. */
+/** Plan change of the tenant's subscription. */
 export interface ChangePlanRequest {
   planId: string;
 }
 
-/** Filtros y paginación del listado de facturas. */
+/** Filters and pagination of the invoice listing. */
 export interface ListInvoicesRequest {
   status?: InvoiceStatus;
   limit?: number;
@@ -104,13 +104,13 @@ export interface GetInvoiceRequest {
   invoiceId: string;
 }
 
-/** Entrada de la operación interna que abre la cuenta de facturación de un tenant. */
+/** Input of the internal operation that opens a tenant's billing account. */
 export interface OpenBillingAccountInput {
   tenantId: string;
   ownerUserId: string;
 }
 
-/** Resultado de abrir la cuenta: la suscripción creada y su estado. */
+/** Result of opening the account: the created subscription and its status. */
 export interface BillingAccountResult {
   tenantId: string;
   subscriptionId: string;
@@ -129,7 +129,7 @@ export interface GetEntitlementsInput {
   tenantId: string;
 }
 
-/** Funcionalidades y cuotas vigentes de un tenant. */
+/** Current features and quotas of a tenant. */
 export interface Entitlements {
   tenantId: string;
   status: SubscriptionStatus;
@@ -140,11 +140,11 @@ export interface Entitlements {
 export interface CheckQuotaInput {
   tenantId: string;
   metric: UsageMetric;
-  /** Cantidad que se quiere consumir; si se omite se evalúa con uno. */
+  /** Quantity to consume; if omitted it is evaluated with one. */
   requested?: number;
 }
 
-/** Resultado de consultar una cuota antes de consumirla. */
+/** Result of checking a quota before consuming it. */
 export interface QuotaCheck {
   metric: UsageMetric;
   limit: number;
@@ -157,9 +157,9 @@ export interface MarkInvoicePaidInput {
   invoiceId: string;
   paidAt: string;
   reference: string;
-  /** Lo que cobró el proveedor: debe ser el total de la factura en su moneda. */
+  /** What the provider charged: it must be the invoice total in its currency. */
   amount: MoneyAmount;
-  /** Id del intento que billing le pasó al proveedor como llave de idempotencia; sin él, el pago no salió de billing. */
+  /** Id of the attempt billing passed to the provider as idempotency key; without it, the payment did not originate in billing. */
   attemptId?: string;
 }
 
@@ -168,11 +168,11 @@ export interface MarkInvoiceFailedInput {
   invoiceId: string;
   failedAt: string;
   reason?: string;
-  /** Id del intento que billing le pasó al proveedor como llave de idempotencia; sin él, el cobro no salió de billing. */
+  /** Id of the attempt billing passed to the provider as idempotency key; without it, the charge did not originate in billing. */
   attemptId?: string;
 }
 
-/** Estado de una factura después de marcarla como pagada o fallida. */
+/** Status of an invoice after marking it as paid or failed. */
 export interface InvoiceStateResult {
   invoiceId: string;
   status: InvoiceStatus;

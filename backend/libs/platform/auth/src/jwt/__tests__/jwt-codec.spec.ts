@@ -10,7 +10,7 @@ const RFC_7515_JWK = {
   y: 'x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0',
 };
 
-/** Token de ejemplo del RFC 7515, apéndice A.3, por partes: cabecera, payload y firma. */
+/** Example token from RFC 7515, appendix A.3, in parts: header, payload and signature. */
 const RFC_7515_TOKEN = [
   'eyJhbGciOiJFUzI1NiJ9',
   'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ',
@@ -28,19 +28,19 @@ const encodeJson = (value: unknown): string => encode(JSON.stringify(value));
 const generatePair = (): { privateKey: KeyObject; publicKey: KeyObject } =>
   generateKeyPairSync('ec', { namedCurve: 'P-256' });
 
-/** Reemplaza el payload de un token firmado y deja la firma original. */
+/** Replaces the payload of a signed token and keeps the original signature. */
 const withPayload = (token: string, claims: unknown): string => {
   const [header, , signature] = token.split('.');
   return `${header}.${encodeJson(claims)}.${signature}`;
 };
 
-/** Reemplaza la firma de un token por otra cadena base64url. */
+/** Replaces the signature of a token with another base64url string. */
 const withSignature = (token: string, signature: string): string => {
   const [header, payload] = token.split('.');
   return `${header}.${payload}.${signature}`;
 };
 
-/** Firma DER: la que sale de `sign` sin `dsaEncoding`. */
+/** DER signature: the one `sign` produces without `dsaEncoding`. */
 const derToken = (privateKey: KeyObject): string => {
   const signingInput = `${encodeJson(HEADER)}.${encodeJson(CLAIMS)}`;
   const signature = sign('sha256', Buffer.from(signingInput), privateKey);

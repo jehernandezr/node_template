@@ -1,7 +1,7 @@
-/** Cómo se dispara el trabajo periódico de un proceso. */
+/** How the periodic work of a process is triggered. */
 export enum SchedulingMode {
-  /** El `JobRunner` arma sus propios temporizadores. */
+  /** The `JobRunner` builds its own timers. */
   InProcess = 'in-process',
-  /** Sin temporizadores: EventBridge o un cron externo llama a `runNow`. */
+  /** No timers: EventBridge or an external cron calls `runNow`. */
   External = 'external',
 }

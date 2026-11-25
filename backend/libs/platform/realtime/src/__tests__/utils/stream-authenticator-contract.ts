@@ -3,10 +3,10 @@ import type { StreamAuthenticator } from '../../auth/stream-authenticator.js';
 import type { StreamCredentials } from '../../auth/stream-credentials.js';
 import { RealtimeTestAuth } from './realtime-test-auth.js';
 
-/** Cómo lleva cada adaptador el token en la petición. */
+/** How each adapter carries the token in the request. */
 export type CredentialsCarrier = (token: string) => StreamCredentials;
 
-/** Lo que todo `StreamAuthenticator` cumple, con el token puesto donde ese adaptador lo busca. */
+/** What every `StreamAuthenticator` fulfills, with the token placed where that adapter looks for it. */
 export function runStreamAuthenticatorContract(
   name: string,
   factory: (auth: RealtimeTestAuth) => StreamAuthenticator,

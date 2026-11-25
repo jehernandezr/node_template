@@ -8,7 +8,7 @@ import { TasksByStatusReport } from './definitions/tasks-by-status.report.js';
 import type { ReportDefinition } from './report-definition.js';
 import { ReportDefinitionRegistry } from './report-definition-registry.js';
 
-/** Los cuatro reportes de la plantilla. Un reporte nuevo es una clase más en este constructor. */
+/** The template's four reports. A new report is one more class in this constructor. */
 @Injectable()
 export class ReportCatalog extends ReportDefinitionRegistry {
   private readonly definitions: readonly ReportDefinition[];

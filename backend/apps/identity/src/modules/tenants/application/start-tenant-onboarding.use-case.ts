@@ -16,11 +16,11 @@ import { TenantDirectoryEntryFactory } from './tenant-directory-entry.factory.js
 import { TenantOnboardingSaga } from './tenant-onboarding.saga.js';
 
 /**
- * `POST /v1/tenants`: ubica al tenant en un shard de su región (ahí vive la bitácora de la saga) y arranca
- * `TenantOnboarding` con esa ubicación, que la saga lleva a los demás servicios. Su primer paso reserva el slug con su
- * reversa. Así ninguna caída deja un slug tomado
- * sin una saga que lo libere. El tenant queda en aprovisionamiento hasta que la saga lo activa; el cliente
- * sigue su avance con `GET /v1/sagas/{sagaId}`.
+ * `POST /v1/tenants`: places the tenant in a shard of its region (the saga's log lives there) and starts
+ * `TenantOnboarding` with that placement, which the saga carries to the other services. Its first step reserves the slug with its
+ * reversal. This way no crash leaves a slug taken
+ * without a saga that releases it. The tenant stays in provisioning until the saga activates it; the client
+ * follows its progress with `GET /v1/sagas/{sagaId}`.
  */
 @Injectable()
 export class StartTenantOnboarding {
@@ -34,9 +34,9 @@ export class StartTenantOnboarding {
   ) {}
 
   /**
-   * Un slug tomado se rechaza de una vez; si otro alta lo toma en el mismo instante, la saga termina
-   * compensada.
-   * @throws IdentityError `IDENTITY.TENANT.SLUG_TAKEN` si el slug ya es de otro tenant.
+   * A taken slug is rejected right away; if another creation takes it at the same instant, the saga ends
+   * compensated.
+   * @throws IdentityError `IDENTITY.TENANT.SLUG_TAKEN` if the slug already belongs to another tenant.
    */
   async execute(
     owner: UserRef,

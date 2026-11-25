@@ -30,7 +30,7 @@ export const TenantMoveRefSchema = z
     targetRegion: TargetFieldSchema,
   })
   .describe(
-    'Traslado de un tenant a otro grupo de shards o región.',
+    'Move of a tenant to another shard group or region.',
   ) satisfies z.ZodType<TenantMoveRef>;
 
 export const TenantMoveTableProgressSchema = z
@@ -40,7 +40,7 @@ export const TenantMoveTableProgressSchema = z
     pendingRows: RowCountSchema,
   })
   .describe(
-    'Avance de la copia de una tabla.',
+    'Copy progress of a table.',
   ) satisfies z.ZodType<TenantMoveTableProgress>;
 
 export const TenantMoveProgressSchema = z
@@ -50,9 +50,7 @@ export const TenantMoveProgressSchema = z
       .max(TenantMoveLimits.maxTables),
     caughtUp: z.boolean(),
   })
-  .describe(
-    'Resultado de una ronda de copia.',
-  ) satisfies z.ZodType<TenantMoveProgress>;
+  .describe('Result of a copy round.') satisfies z.ZodType<TenantMoveProgress>;
 
 export const TenantMoveTableCheckSchema = z
   .object({
@@ -63,7 +61,7 @@ export const TenantMoveTableCheckSchema = z
     targetChecksum: z.string().min(1).max(TenantMoveLimits.checksumMaxLength),
   })
   .describe(
-    'Conteo y suma de verificación de una tabla en el origen y el destino.',
+    'Count and checksum of a table in the source and the target.',
   ) satisfies z.ZodType<TenantMoveTableCheck>;
 
 export const TenantMoveVerificationSchema = z
@@ -72,11 +70,11 @@ export const TenantMoveVerificationSchema = z
     tables: z.array(TenantMoveTableCheckSchema).max(TenantMoveLimits.maxTables),
   })
   .describe(
-    'Resultado de la última ronda y de la verificación de un traslado.',
+    'Result of the last round and the verification of a move.',
   ) satisfies z.ZodType<TenantMoveVerification>;
 
 export const TenantMoveAckSchema = z
   .object({ moveId: IdSchema })
   .describe(
-    'Acuse de una cancelación o una limpieza de traslado.',
+    'Acknowledgement of a move cancellation or cleanup.',
   ) satisfies z.ZodType<TenantMoveAck>;

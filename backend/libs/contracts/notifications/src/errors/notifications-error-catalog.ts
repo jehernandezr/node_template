@@ -4,41 +4,41 @@ import { NotificationsErrorCode as C } from '../enums/identifiers.enum.js';
 const pub = ErrorSpecs.pub;
 const internal = ErrorSpecs.internal;
 
-/** Catálogo de los códigos de notifications. */
+/** Catalog of the notifications codes. */
 export const notificationsErrorCatalog = defineErrorCatalog(C, {
   [C.InboxNotFound]: pub(
     404,
     false,
-    'La notificación no existe en la bandeja del usuario.',
+    'The notification does not exist in the user inbox.',
   ),
   [C.PreferencesInvalidQuietHours]: pub(
     400,
     false,
-    'El horario de silencio es inválido: falta la zona horaria o las horas no tienen el formato HH:mm.',
+    'The quiet hours are invalid: the time zone is missing or the hours do not have the HH:mm format.',
   ),
   [C.EmailRecipientSuppressed]: internal(
     422,
     false,
-    'El destinatario está en la lista de supresión (rebote o queja) y no se le envía correo.',
+    'The recipient is on the suppression list (bounce or complaint) and is not sent email.',
   ),
   [C.EmailTemplateUnknown]: internal(
     400,
     false,
-    'La plantilla de correo pedida no existe.',
+    'The requested email template does not exist.',
   ),
   [C.EmailTemplateParameterMissing]: internal(
     400,
     false,
-    'Falta un dato obligatorio de la plantilla: el correo no se envía incompleto. Los detalles traen parameter.',
+    'A required template value is missing: the email is not sent incomplete. The details carry parameter.',
   ),
   [C.EmailInProgress]: internal(
     409,
     true,
-    'Otro envío del mismo correo está en curso; se reintenta sin volver a enviarlo.',
+    'Another send of the same email is in progress; it is retried without sending it again.',
   ),
   [C.RealtimeUnauthenticated]: pub(
     401,
     false,
-    'La conexión en tiempo real no trae una credencial válida.',
+    'The realtime connection does not carry a valid credential.',
   ),
 });

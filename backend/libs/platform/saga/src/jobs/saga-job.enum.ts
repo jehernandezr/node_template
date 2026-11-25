@@ -1,4 +1,4 @@
-/** Nombres de los jobs programados de saga. */
+/** Names of the scheduled saga jobs. */
 export enum SagaJob {
   Recovery = 'saga.recovery',
   Retention = 'saga.retention',

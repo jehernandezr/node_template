@@ -4,17 +4,17 @@ import type { Epoch } from './epoch.js';
 import type { PermissionVersion } from './permission-version.js';
 
 /**
- * Lectura del estado compartido `auth:*`. Es el puerto que ven los servicios;
- * `ValkeyAuthStateReader` lo implementa sobre Valkey y `CachedAuthStateReader`
- * lo envuelve con las cachés locales.
+ * Reads the shared `auth:*` state. It is the port services see;
+ * `ValkeyAuthStateReader` implements it on Valkey and `CachedAuthStateReader`
+ * wraps it with the local caches.
  */
 export abstract class AuthStateReader {
-  /** `true` si `auth:revoked:{sid}` existe. */
+  /** `true` if `auth:revoked:{sid}` exists. */
   abstract isSessionRevoked(sessionId: string): Promise<boolean>;
 
   /**
-   * Los `sid` revocados que siguen vigentes, en lotes, leídos de `auth:revoked-index`
-   * (puntaje mayor que ahora). Alimenta la reconstrucción del Bloom local.
+   * The revoked `sid` values still in force, in batches, read from `auth:revoked-index`
+   * (score greater than now). Feeds the rebuild of the local Bloom.
    */
   abstract revokedSessionIds(
     signal?: AbortSignal,
@@ -24,7 +24,7 @@ export abstract class AuthStateReader {
 
   abstract tenantEpoch(tenantId: string): Promise<Epoch | undefined>;
 
-  /** `undefined` si falta alguna de las dos llaves `auth:pv:*`. */
+  /** `undefined` if either of the two `auth:pv:*` keys is missing. */
   abstract permissionVersion(
     tenantId: string,
     userId: string,
@@ -35,7 +35,7 @@ export abstract class AuthStateReader {
     userId: string,
   ): Promise<AccessGrant | undefined>;
 
-  /** El principal guardado bajo el campo `secretHash` del hash `auth:apikey:{prefix}`. */
+  /** The principal stored under the `secretHash` field of the `auth:apikey:{prefix}` hash. */
   abstract apiKey(
     prefix: string,
     secretHash: string,

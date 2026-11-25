@@ -4,25 +4,25 @@ import type { LoggerPort, MetricsPort } from '@platform/observability';
 import type { SchedulingMode } from '../scheduling-mode.enum.js';
 
 /**
- * Opciones de `SchedulingModule` que pueden salir de la configuración, así que
- * `forRootAsync` las arma con una fábrica.
+ * `SchedulingModule` options that can come from configuration, so
+ * `forRootAsync` builds them with a factory.
  */
 export interface SchedulingModuleOptions {
-  /** Por defecto `SchedulingMode.InProcess`. */
+  /** `SchedulingMode.InProcess` by default. */
   readonly mode?: SchedulingMode;
-  /** Tiempo que `stop` espera a los jobs en curso al apagar. Por defecto 10 000 ms. */
+  /** Time that `stop` waits for running jobs on shutdown. 10 000 ms by default. */
   readonly shutdownGraceMs?: number;
 }
 
 /**
- * Adaptadores de `SchedulingModule`. Se pasan como tipo o token, no como
- * instancia, y se fijan al componer el módulo: van igual en `forRoot` y en `forRootAsync`.
+ * Adapters of `SchedulingModule`. They are passed as a type or token, not as an
+ * instance, and are fixed when composing the module: they are the same in `forRoot` and in `forRootAsync`.
  */
 export interface SchedulingModuleExtras {
-  /** Obligatorio: implementación de `LoggerPort` que provee la observabilidad del servicio. */
+  /** Required: `LoggerPort` implementation provided by the service observability. */
   readonly logger?: Type<LoggerPort> | Abstract<LoggerPort>;
-  /** Por defecto `InProcessJobLock`; con varios procesos, `ValkeyJobLock`. */
+  /** `InProcessJobLock` by default; with several processes, `ValkeyJobLock`. */
   readonly lock?: Type<JobLock> | Abstract<JobLock>;
-  /** Implementación de `MetricsPort`. Por defecto `NoopMetrics`. */
+  /** `MetricsPort` implementation. `NoopMetrics` by default. */
   readonly metrics?: Type<MetricsPort> | Abstract<MetricsPort>;
 }

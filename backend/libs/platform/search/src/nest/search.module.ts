@@ -6,8 +6,8 @@ import { SearchConfig, type SearchSettings } from '../search.config.js';
 import type { SearchModuleOptions } from './search-module-options.js';
 
 /**
- * Configuración de búsqueda y `SearchIndexFactory`, globales. El `SearchIndex` lo provee cada módulo de
- * negocio con su `RepositoryKit`, porque el índice escribe en el shard de ese módulo.
+ * Global search configuration and `SearchIndexFactory`. Each business module provides the `SearchIndex` with
+ * its `RepositoryKit`, because the index writes to that module's shard.
  */
 @Module({})
 export class SearchModule {

@@ -1,4 +1,4 @@
-/** Una búsqueda de texto libre en una colección del tenant del `ShardScope`, con paginación por desplazamiento. */
+/** A free-text search in a collection of the `ShardScope` tenant, with offset pagination. */
 export interface SearchQuery {
   readonly collection: string;
   readonly text: string;

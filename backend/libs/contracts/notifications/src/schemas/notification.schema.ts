@@ -52,14 +52,12 @@ const ParameterValueSchema = z
 
 export const EmailTemplateSchema = z
   .enum(EmailTemplate)
-  .describe(
-    'Plantilla de correo transaccional.',
-  ) satisfies z.ZodType<EmailTemplate>;
+  .describe('Transactional email template.') satisfies z.ZodType<EmailTemplate>;
 
 export const TemplateParameterSchema = z
   .enum(TemplateParameter)
   .describe(
-    'Nombre de un dato que llena una plantilla.',
+    'Name of a value that fills a template.',
   ) satisfies z.ZodType<TemplateParameter>;
 
 export const AppNotificationSchema = z
@@ -72,24 +70,24 @@ export const AppNotificationSchema = z
     read: z.boolean(),
   })
   .describe(
-    'Notificación de la bandeja del usuario.',
+    'Notification in the user inbox.',
   ) satisfies z.ZodType<AppNotification>;
 
 export const NotificationPageSchema = pageOf(
   AppNotificationSchema,
-  'Página de la bandeja, de la más nueva a la más antigua.',
+  'Page of the inbox, newest to oldest.',
 ) satisfies z.ZodType<NotificationPage>;
 
 export const UnreadCountSchema = z
   .object({ count: z.int().min(0) })
   .describe(
-    'Notificaciones sin leer de la bandeja.',
+    'Unread notifications in the inbox.',
   ) satisfies z.ZodType<UnreadCount>;
 
 export const MarkNotificationReadRequestSchema = z
   .strictObject({ notificationId: IdSchema })
   .describe(
-    'Notificación a marcar como leída.',
+    'Notification to mark as read.',
   ) satisfies z.ZodType<MarkNotificationReadRequest>;
 
 export const NotificationPreferenceEntrySchema = z
@@ -100,7 +98,7 @@ export const NotificationPreferenceEntrySchema = z
       .max(NotificationsLimits.maxChannels),
   })
   .describe(
-    'Canales por los que el usuario recibe un tipo de notificación.',
+    'Channels through which the user receives a notification type.',
   ) satisfies z.ZodType<NotificationPreferenceEntry>;
 
 export const NotificationPreferencesSchema = z
@@ -113,7 +111,7 @@ export const NotificationPreferencesSchema = z
     timezone: TimezoneSchema,
   })
   .describe(
-    'Preferencias de notificaciones del usuario.',
+    'Notification preferences of the user.',
   ) satisfies z.ZodType<NotificationPreferences>;
 
 export const TemplateParameterValueSchema = z
@@ -122,7 +120,7 @@ export const TemplateParameterValueSchema = z
     value: ParameterValueSchema,
   })
   .describe(
-    'Valor de un dato de plantilla.',
+    'Value of a template field.',
   ) satisfies z.ZodType<TemplateParameterValue>;
 
 export const SendEmailInputSchema = z
@@ -140,13 +138,13 @@ export const SendEmailInputSchema = z
       .max(NotificationsLimits.maxParameters),
   })
   .describe(
-    'Correo transaccional a enviar, con sus datos de plantilla.',
+    'Transactional email to send, with its template values.',
   ) satisfies z.ZodType<SendEmailInput>;
 
 export const SendEmailResultSchema = z
   .object({ messageId: IdSchema })
   .describe(
-    'Correo transaccional aceptado para envío.',
+    'Transactional email accepted for sending.',
   ) satisfies z.ZodType<SendEmailResult>;
 
 export const NotifyUserInputSchema = z
@@ -160,7 +158,7 @@ export const NotifyUserInputSchema = z
       .max(NotificationsLimits.maxParameters),
   })
   .describe(
-    'Notificación a entregar a un usuario por sus canales.',
+    'Notification to deliver to a user through their channels.',
   ) satisfies z.ZodType<NotifyUserInput>;
 
 export const NotifyUserResultSchema = z
@@ -171,17 +169,17 @@ export const NotifyUserResultSchema = z
       .max(NotificationsLimits.maxChannels),
   })
   .describe(
-    'Canales por los que salió una notificación.',
+    'Channels through which a notification was sent.',
   ) satisfies z.ZodType<NotifyUserResult>;
 
 export const EraseNotificationsUserInputSchema = z
   .strictObject({ user: UserRefSchema })
   .describe(
-    'Usuario cuyos datos de notificaciones se borran.',
+    'User whose notification data is deleted.',
   ) satisfies z.ZodType<EraseNotificationsUserInput>;
 
 export const EraseNotificationsUserResultSchema = z
   .object({ userId: IdSchema, affectedRows: z.int().min(0) })
   .describe(
-    'Filas de notificaciones borradas para un usuario.',
+    'Notification rows deleted for a user.',
   ) satisfies z.ZodType<EraseNotificationsUserResult>;

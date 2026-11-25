@@ -6,7 +6,7 @@ import { DeliveryRepository } from '../../domain/delivery.repository.js';
 import { DeliveryRowMapper } from './delivery-row.mapper.js';
 import { DeliveryEntity } from './entities/delivery.entity.js';
 
-/** `DeliveryRepository` sobre `notification_deliveries` del shard del usuario. */
+/** `DeliveryRepository` over `notification_deliveries` in the user's shard. */
 @Injectable()
 export class TypeOrmDeliveryRepository extends DeliveryRepository {
   private static readonly ERROR_MAX = 500;
@@ -16,8 +16,8 @@ export class TypeOrmDeliveryRepository extends DeliveryRepository {
   }
 
   /**
-   * Un solo `INSERT ... ON CONFLICT` para que dos escrituras de la misma entrega no choquen por llave; el
-   * conflicto sube `version` y `updated_at` a mano porque el upsert de TypeORM no lo hace.
+   * A single `INSERT ... ON CONFLICT` so that two writes of the same delivery do not collide on the key; the
+   * conflict bumps `version` and `updated_at` by hand because TypeORM's upsert does not.
    */
   async save(delivery: Delivery): Promise<void> {
     await this.run(ManagerIntent.Write, (manager) =>

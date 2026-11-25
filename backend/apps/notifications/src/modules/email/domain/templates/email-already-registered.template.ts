@@ -2,7 +2,7 @@ import { EmailTemplate as EmailTemplateKey } from '@contracts/notifications';
 import type { EmailCopy } from './email-copy.js';
 import { EmailTemplate } from './email-template.js';
 
-/** Respuesta a un registro con un correo que ya tiene cuenta: la API no revela que existe, el correo sí. */
+/** Response to a registration with an email that already has an account: the API does not reveal that it exists, the email does. */
 export class EmailAlreadyRegisteredTemplate extends EmailTemplate {
   readonly key = EmailTemplateKey.EmailAlreadyRegistered;
   readonly version = 1;

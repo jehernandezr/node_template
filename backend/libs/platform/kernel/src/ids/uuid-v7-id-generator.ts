@@ -5,14 +5,14 @@ import type { Clock } from '../time/clock.js';
 import { Id } from './id.js';
 import { IdGenerator } from './id-generator.js';
 
-/** Mayor valor del contador de 12 bits de `rand_a`. */
+/** Highest value of the 12-bit `rand_a` counter. */
 const MAX_COUNTER = 0xfff;
 
 /**
- * Genera UUIDv7 (RFC 9562): 48 bits de milisegundos epoch, versión, 12 bits de
- * contador y 62 bits aleatorios. Dentro del mismo milisegundo el contador sube,
- * así los ids de un proceso salen ordenados; si se agota, o si el reloj
- * retrocede, el instante sigue al último usado en lugar de repetir el orden.
+ * Generates UUIDv7 (RFC 9562): 48 bits of epoch milliseconds, version, 12 bits of
+ * counter and 62 random bits. Within the same millisecond the counter goes up,
+ * so the ids of a process come out ordered; if it runs out, or if the clock
+ * goes back, the instant follows the last one used instead of repeating the order.
  */
 export class UuidV7IdGenerator extends IdGenerator {
   private lastMs = -1;
@@ -33,7 +33,7 @@ export class UuidV7IdGenerator extends IdGenerator {
     const random = this.random.bytes(10);
     let ms = this.clock.now().getTime();
     if (ms > this.lastMs) {
-      // El contador arranca en la mitad baja para dejar margen de subida.
+      // The counter starts in the lower half to leave room to go up.
       this.counter = ((random[0] << 4) | (random[1] >> 4)) & 0x7ff;
     } else {
       ms = this.lastMs;

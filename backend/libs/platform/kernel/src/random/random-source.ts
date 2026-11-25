@@ -1,9 +1,9 @@
 /**
- * Fuente de aleatoriedad. Inyectarla vuelve deterministas las esperas con
- * jitter, el muestreo y la generación de identificadores en las pruebas.
+ * Source of randomness. Injecting it makes jittered waits, sampling and
+ * identifier generation deterministic in tests.
  */
 export abstract class RandomSource {
-  /** Valor uniforme en `[0, 1)`. */
+  /** Uniform value in `[0, 1)`. */
   abstract next(): number;
 
   /** `length` bytes aleatorios. */

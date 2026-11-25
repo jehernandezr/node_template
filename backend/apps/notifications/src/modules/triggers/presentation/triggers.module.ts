@@ -5,7 +5,7 @@ import { IdentityTenantMembers } from '../infrastructure/identity-tenant-members
 import { RealtimeControlConsumer } from './realtime-control.consumer.js';
 import { TriggersConsumer } from './triggers.consumer.js';
 
-/** Consumidores que convierten eventos de otros servicios en avisos y cierran conexiones revocadas. */
+/** Consumers that turn events from other services into notices and close revoked connections. */
 @Module({
   providers: [
     { provide: TenantMembers, useClass: IdentityTenantMembers },

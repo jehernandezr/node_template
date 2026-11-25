@@ -7,8 +7,8 @@ import type { SecurityAlert } from '../domain/security-alert.js';
 import { SecurityAlerts } from '../domain/security-alerts.js';
 
 /**
- * Publica `identity.security-alert.raised.v1` por el outbox del shard del usuario. Si quien llama ya tiene
- * una transacción en ese shard, el aviso sale con ella; si no, abre una propia.
+ * Publishes `identity.security-alert.raised.v1` through the outbox of the user shard. If the caller already has
+ * a transaction on that shard, the alert goes out with it; otherwise, it opens its own.
  */
 @Injectable()
 export class OutboxSecurityAlerts extends SecurityAlerts {
@@ -33,8 +33,8 @@ export class OutboxSecurityAlerts extends SecurityAlerts {
             type: alert.type,
             raisedAt: this.clock.now().toISOString(),
           },
-          // Se publica fuera de una petición de tenant (al iniciar sesión, por ejemplo): el tenant del sobre es el de
-          // origen del usuario, que es donde lo ubican quienes consumen el aviso.
+          // Published outside a tenant request (at sign-in, for example): the envelope tenant is the user's
+          // home tenant, which is where the alert consumers locate them.
           { tenantId: alert.user.homeTenantId },
         );
       }),

@@ -17,7 +17,7 @@ import { SagaErrorCode } from '../errors/saga-error-code.enum.js';
 import type { RecoveryFailure, RecoveryReport } from './recovery-report.js';
 import { SagaJob } from './saga-job.enum.js';
 
-/** Colaboradores de `SagaRecoveryJob`. */
+/** Collaborators of `SagaRecoveryJob`. */
 export interface SagaRecoveryJobDeps {
   readonly engine: Pick<SagaEngine, 'resume'>;
   readonly store: SagaStore;
@@ -27,9 +27,9 @@ export interface SagaRecoveryJobDeps {
   readonly logger?: LoggerPort;
 }
 
-/** Retoma las sagas que se quedaron sin corrida o que ya toca reintentar. */
+/** Resumes the sagas that were left without a run or that are due for a retry. */
 export class SagaRecoveryJob extends ScheduledJob {
-  /** Errores de contención: otra corrida tiene la saga, así que no es un fallo. */
+  /** Contention errors: another run holds the saga, so it is not a failure. */
   private static readonly CONTENTION: ReadonlySet<string> = new Set([
     SagaErrorCode.ConcurrentModification,
     SagaErrorCode.LeaseNotAcquired,
@@ -37,11 +37,11 @@ export class SagaRecoveryJob extends ScheduledJob {
   ]);
 
   /**
-   * Muy por debajo del lease por defecto (30 s): una saga huérfana se retoma
-   * poco después de vencer su lease, sin sondear la base a cada instante.
+   * Well below the default lease (30 s): an orphaned saga is resumed
+   * shortly after its lease expires, without polling the database all the time.
    */
   static readonly EVERY_MS = 5_000;
-  /** Desfasa las pasadas de varios nodos para que no consulten la base a la vez. */
+  /** Staggers the passes of several nodes so they do not query the database at the same time. */
   static readonly JITTER_RATIO = 0.1;
 
   readonly name = SagaJob.Recovery;
@@ -55,14 +55,14 @@ export class SagaRecoveryJob extends ScheduledJob {
     super();
   }
 
-  /** Una pasada: `runOnce(settings.recoveryBatchSize)`. */
+  /** One pass: `runOnce(settings.recoveryBatchSize)`. */
   async run(): Promise<void> {
     await this.runOnce(this.deps.settings.recoveryBatchSize);
   }
 
   /**
-   * Retoma hasta `limit` sagas recuperables. Un error en una se registra y el
-   * lote sigue; las que otra corrida tiene (contención) se saltan.
+   * Resumes up to `limit` recoverable sagas. An error in one is logged and the
+   * batch continues; those held by another run (contention) are skipped.
    */
   async runOnce(limit: number): Promise<RecoveryReport> {
     const candidates = await this.deps.store.findRecoverable(

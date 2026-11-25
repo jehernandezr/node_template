@@ -1,6 +1,6 @@
 import { Id, IdGenerator } from '@platform/kernel';
 
-/** Entrega primero los ids dados, en orden, y después los del generador de respaldo. */
+/** Yields the given ids first, in order, and then those of the fallback generator. */
 export class PresetIdGenerator extends IdGenerator {
   private readonly pending: string[];
 

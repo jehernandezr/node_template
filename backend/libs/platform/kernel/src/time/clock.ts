@@ -1,4 +1,4 @@
-/** Fuente de tiempo. Inyectarla permite controlar el tiempo en las pruebas. */
+/** Source of time. Injecting it allows controlling time in tests. */
 export abstract class Clock {
   abstract now(): Date;
 }

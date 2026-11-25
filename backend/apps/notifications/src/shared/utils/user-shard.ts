@@ -3,7 +3,7 @@ import type { UserRef } from '@contracts/platform';
 import { ShardScope } from '@platform/persistence';
 import { ShardKey } from '@platform/sharding';
 
-/** Corre un bloque en el shard del usuario, que vive en el shard de su tenant de origen. */
+/** Runs a block in the user's shard, which lives in the shard of their home tenant. */
 @Injectable()
 export class UserShard {
   constructor(private readonly scope: ShardScope) {}

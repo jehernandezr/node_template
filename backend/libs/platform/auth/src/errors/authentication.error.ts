@@ -3,14 +3,14 @@ import { IdentityErrorCode } from '@contracts/identity';
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { AuthErrorCode } from './auth-error-code.enum.js';
 
-/** Códigos con los que se rechaza una autenticación. */
+/** Codes with which an authentication is rejected. */
 export type AuthenticationErrorCode =
   AuthErrorCode | PlatformErrorCode | IdentityErrorCode;
 
 /**
- * Rechazo de un token o de una API key. El `code` decide la respuesta: el
- * catálogo de cada código fija el estado HTTP. Los constructores con nombre
- * son la única forma de crearlo, así cada motivo tiene un solo código.
+ * Rejection of a token or an API key. The `code` decides the response: the
+ * catalog of each code sets the HTTP status. The named constructors
+ * are the only way to create it, so each reason has a single code.
  */
 export class AuthenticationError extends PlatformError {
   override readonly code: AuthenticationErrorCode;
@@ -28,7 +28,7 @@ export class AuthenticationError extends PlatformError {
     this.code = code;
   }
 
-  /** Formato, algoritmo, firma, emisor, audiencia o llave inválidos. El motivo exacto no sale al cliente. */
+  /** Invalid format, algorithm, signature, issuer, audience or key. The exact reason does not reach the client. */
   static unauthenticated(reason: string): AuthenticationError {
     return new AuthenticationError(
       PlatformErrorCode.AuthUnauthenticated,
@@ -90,7 +90,7 @@ export class AuthenticationError extends PlatformError {
     );
   }
 
-  /** No se puede revisar la revocación ni obtener la clave del emisor: se rechaza en lugar de aceptar un token sin revisar. */
+  /** Revocation cannot be checked or the issuer key cannot be obtained: it rejects instead of accepting an unchecked token. */
   static stateUnavailable(cause: unknown): AuthenticationError {
     return new AuthenticationError(
       PlatformErrorCode.ResilienceCircuitOpen,

@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { IdentitySettings } from '../../../config/identity-settings.js';
 import { EmailFingerprinter } from '../domain/email-fingerprinter.js';
 
-/** HMAC-SHA256 del email normalizado con `IDENTITY_EMAIL_PEPPER`: sin la llave, la huella no revela el email. */
+/** HMAC-SHA256 of the normalized email with `IDENTITY_EMAIL_PEPPER`: without the key, the hash does not reveal the email. */
 @Injectable()
 export class HmacEmailFingerprinter extends EmailFingerprinter {
   private readonly key: string;

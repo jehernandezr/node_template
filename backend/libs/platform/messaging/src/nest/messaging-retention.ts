@@ -1,10 +1,10 @@
-/** Cuánto se conserva lo terminado antes de que los jobs de retención lo borren. */
+/** How long finished items are kept before the retention jobs delete them. */
 export interface MessagingRetention {
-  /** Registros publicados del outbox. Por defecto 7 días. */
+  /** Published outbox records. Defaults to 7 days. */
   readonly outboxMs?: number;
   /**
-   * Mensajes procesados. Debe superar la retención máxima de la cola (14 días en
-   * SQS) para que un duplicado tardío no se procese otra vez. Por defecto 30 días.
+   * Processed messages. Must exceed the maximum queue retention (14 days in
+   * SQS) so a late duplicate is not processed again. Defaults to 30 days.
    */
   readonly processedMs?: number;
 }

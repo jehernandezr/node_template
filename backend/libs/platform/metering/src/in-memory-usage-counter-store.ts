@@ -1,7 +1,7 @@
 import type { UsageCount, UsageWindow } from './usage-count.js';
 import { UsageCounterStore } from './usage-counter-store.js';
 
-/** Contadores en el proceso, para un servicio sin Valkey: un reinicio pierde lo que no se envió. */
+/** In-process counters, for a service without Valkey: a restart loses what was not sent. */
 export class InMemoryUsageCounterStore extends UsageCounterStore {
   private readonly windows = new Map<number, Map<string, UsageCount>>();
 

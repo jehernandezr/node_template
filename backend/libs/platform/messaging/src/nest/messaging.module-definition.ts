@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { MessagingModuleOptions } from './messaging-module-options.js';
 
-/** Opciones de `MessagingModule.forRootAsync`, sin los adaptadores. */
+/** Options of `MessagingModule.forRootAsync`, without the adapters. */
 export type MessagingModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<MessagingModuleOptions>;
 

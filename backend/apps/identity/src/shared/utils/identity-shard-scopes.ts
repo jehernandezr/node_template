@@ -5,8 +5,8 @@ import { ShardKey } from '@platform/sharding';
 import type { UserRef } from '../types/user-ref.type.js';
 
 /**
- * Ejecuta un bloque en el shard del usuario o del tenant. Así un caso de uso no arma llaves de shard a mano
- * y el shard de cada operación sale siempre del mismo lugar.
+ * Runs a block in the user's or the tenant's shard. This way a use case does not build shard keys by hand
+ * and the shard of each operation always comes from the same place.
  */
 @Injectable()
 export class IdentityShardScopes {
@@ -15,7 +15,7 @@ export class IdentityShardScopes {
     private readonly context: RequestContextStore,
   ) {}
 
-  /** Corre el bloque en el shard del usuario, que vive en el shard de su tenant de origen. */
+  /** Runs the block in the user's shard, which lives in the shard of their home tenant. */
   inUserShard<T>(ref: UserRef, fn: () => Promise<T>): Promise<T> {
     return this.scope.run(
       {
@@ -28,11 +28,11 @@ export class IdentityShardScopes {
   }
 
   /**
-   * Corre el bloque en el shard del tenant y con ese tenant en el contexto: la persistencia lo fija en
-   * `app.tenant_id` al abrir cada transacción, `TenantIsolatedRepository` lo fija también en cada lectura, y las
-   * políticas de RLS de las tablas de tenant no dejan ver ninguna fila sin él.
-   * Identity trabaja sobre tenants que no son el de la sesión (aceptar una invitación, cambiar de tenant,
-   * las operaciones internas), así que el tenant del contexto es el del bloque, no el de quien llama.
+   * Runs the block in the tenant's shard and with that tenant in the context: persistence sets it in
+   * `app.tenant_id` when opening each transaction, `TenantIsolatedRepository` also sets it on each read, and the
+   * RLS policies of the tenant tables do not show any row without it.
+   * Identity works on tenants that are not the session's (accepting an invitation, switching tenants,
+   * the internal operations), so the context tenant is the block's, not the caller's.
    */
   inTenantShard<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
     const current = this.context.current();

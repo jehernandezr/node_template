@@ -17,11 +17,11 @@ import { UnitRollbackError } from './unit-rollback.error.js';
 import { UnitStage } from './unit-stage.enum.js';
 
 /**
- * Corre el handler de una llamada con la llave ya reclamada y guarda su
- * resultado final. Con `transactions`, el handler y `gate.complete` comparten
- * una unidad de trabajo: el resultado queda guardado si y solo si los efectos
- * se confirmaron. Sin `transactions`, un fallo entre el handler y `complete`
- * deja la llave reclamada hasta que venza el lease.
+ * Runs the handler of a call with the key already claimed and stores its
+ * final result. With `transactions`, the handler and `gate.complete` share
+ * a unit of work: the result is stored if and only if the effects
+ * were committed. Without `transactions`, a failure between the handler and `complete`
+ * leaves the key claimed until the lease expires.
  */
 export class UnitOfWorkRunner {
   constructor(
@@ -35,16 +35,16 @@ export class UnitOfWorkRunner {
   ) {}
 
   /**
-   * Corre el handler y devuelve el resultado que se le responde a quien llama.
-   * Qué hace con la llave y la transacción según lo que ocurra:
-   * - resultado final y `commit` distinto de `false`: se guarda dentro de la unidad de trabajo y se confirma;
-   * - `commit: false` (o el handler lanzó) y el resultado es final: la unidad de
-   *   trabajo se deshace con `UnitRollbackError` y el resultado se guarda aparte;
-   * - resultado no final (transitorio, incierto, violación de protocolo): se deshace y se libera la llave;
-   * - la unidad de trabajo no abrió o falló antes de guardar: se libera la llave;
-   * - falló `complete` con `StaleClaimError`: `transient-failure` `stale-claim` con
-   *   transacción, `uncertain` `stale-claim` sin ella;
-   * - falló la confirmación: `uncertain` `commit-failed`.
+   * Runs the handler and returns the result sent back to the caller.
+   * What it does with the key and the transaction depending on what happens:
+   * - final result and `commit` other than `false`: it is stored inside the unit of work and committed;
+   * - `commit: false` (or the handler threw) and the result is final: the unit of
+   *   work is rolled back with `UnitRollbackError` and the result is stored separately;
+   * - non-final result (transient, uncertain, protocol violation): it is rolled back and the key is released;
+   * - the unit of work did not open or failed before storing: the key is released;
+   * - `complete` failed with `StaleClaimError`: `transient-failure` `stale-claim` with
+   *   a transaction, `uncertain` `stale-claim` without one;
+   * - the commit failed: `uncertain` `commit-failed`.
    */
   async run(
     route: OperationRoute,
@@ -64,7 +64,7 @@ export class UnitOfWorkRunner {
     }
   }
 
-  /** Corre el handler y guarda su resultado final con el token, dentro de la unidad de trabajo si la hay. */
+  /** Runs the handler and stores its final result with the token, inside the unit of work if there is one. */
   private async runAndStore(
     route: OperationRoute,
     claimed: ClaimedOperation,
@@ -88,7 +88,7 @@ export class UnitOfWorkRunner {
       progress.rejected = outcome;
       throw new UnitRollbackError();
     }
-    // Sin `TransactionManager` no hay nada que deshacer: el resultado sigue el camino normal.
+    // Without `TransactionManager` there is nothing to roll back: the result follows the normal path.
     if (
       (result as HandlerResult<unknown>).commit === false &&
       this.transactions !== undefined
@@ -102,7 +102,7 @@ export class UnitOfWorkRunner {
     return outcome;
   }
 
-  /** Cierra la llave según hasta dónde llegó la unidad de trabajo cuando algo falló. */
+  /** Closes the key according to how far the unit of work got when something failed. */
   private async recover(
     route: OperationRoute,
     claimed: ClaimedOperation,
@@ -111,7 +111,7 @@ export class UnitOfWorkRunner {
   ): Promise<CallOutcome<unknown>> {
     if (error instanceof UnitRollbackError) {
       if (progress.thrown !== undefined) {
-        // Un error lanzado se clasifica: un `DomainError` declarado es un resultado final.
+        // A thrown error is classified: a declared `DomainError` is a final result.
         return this.storeAlone(
           route,
           claimed,
@@ -127,13 +127,13 @@ export class UnitOfWorkRunner {
     switch (progress.stage) {
       case UnitStage.Begin:
       case UnitStage.Handler:
-        // La unidad de trabajo no llegó a abrirse o no corrió nada: se libera la llave.
+        // The unit of work never opened or nothing ran: the key is released.
         await this.gate.release(claimed);
         return this.outcomes.fromError(error);
       case UnitStage.Complete:
         if (error instanceof StaleClaimError) {
-          // Otro intento tomó la llave. Sin unidad de trabajo los efectos ya están aplicados,
-          // así que no se sabe si este resultado cuenta.
+          // Another attempt took the key. Without a unit of work the effects are already applied,
+          // so it is unknown whether this result counts.
           return this.transactions !== undefined
             ? CallOutcome.transientFailure(InternalApiReason.StaleClaim, {
                 cause: error,
@@ -141,19 +141,19 @@ export class UnitOfWorkRunner {
             : CallOutcome.uncertain(InternalApiReason.StaleClaim, error);
         }
         if (this.transactions !== undefined) {
-          // Los efectos se deshicieron junto con el resultado: un reintento los aplica una sola vez.
+          // The effects were rolled back along with the result: a retry applies them only once.
           await this.gate.release(claimed);
         }
         return this.outcomes.fromError(error);
       case UnitStage.Commit:
-        // La confirmación falló: los efectos y el resultado pueden o no estar guardados.
+        // The commit failed: the effects and the result may or may not be stored.
         return CallOutcome.uncertain(InternalApiReason.CommitFailed, error);
     }
   }
 
   /**
-   * Guarda el resultado de un handler cuya unidad de trabajo ya se deshizo, por
-   * su cuenta; así un reintento lo repite sin volver a correr el handler.
+   * Stores, on its own, the result of a handler whose unit of work was already rolled back;
+   * this way a retry repeats it without running the handler again.
    */
   private async storeAlone(
     route: OperationRoute,

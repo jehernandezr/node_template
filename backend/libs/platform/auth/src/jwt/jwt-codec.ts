@@ -4,17 +4,17 @@ import { AuthenticationError } from '../errors/authentication.error.js';
 import type { AccessTokenHeader } from './access-token-header.js';
 import type { ParsedJwt } from './parsed-jwt.js';
 
-/** Codifica, separa y firma JWT compactos con ES256 sobre `node:crypto`. Utilidad pura, sin estado. */
+/** Encodes, splits and signs compact JWTs with ES256 on `node:crypto`. Pure stateless utility. */
 export class JwtCodec {
-  /** Cada parte del token es base64url sin relleno. */
+  /** Each part of the token is base64url without padding. */
   private static readonly SEGMENT = /^[A-Za-z0-9_-]+$/;
 
-  /** Una firma ES256 en formato IEEE P1363 mide siempre r y s de 32 bytes. */
+  /** An ES256 signature in IEEE P1363 format always has r and s of 32 bytes. */
   private static readonly SIGNATURE_BYTES = 64;
 
   /**
-   * `<header>.<claims>.<firma>` en base64url. Firma con SHA-256 y
-   * `dsaEncoding: 'ieee-p1363'`, el formato que exige JWS para ES256.
+   * Returns `<header>.<claims>.<signature>` in base64url. Signs with SHA-256 and
+   * `dsaEncoding: 'ieee-p1363'`, the format JWS requires for ES256.
    */
   static sign(
     header: AccessTokenHeader | Readonly<Record<string, unknown>>,
@@ -36,8 +36,8 @@ export class JwtCodec {
   }
 
   /**
-   * Separa un JWT compacto sin verificar la firma.
-   * @throws AuthenticationError (`PLATFORM.AUTH.UNAUTHENTICATED`) si no tiene tres partes base64url, si el header o los claims no son un objeto JSON o si la firma no mide 64 bytes.
+   * Splits a compact JWT without verifying the signature.
+   * @throws AuthenticationError (`PLATFORM.AUTH.UNAUTHENTICATED`) if it does not have three base64url parts, if the header or the claims are not a JSON object or if the signature is not 64 bytes.
    */
   static parse(token: string): ParsedJwt {
     const parts = token.split('.');
@@ -65,7 +65,7 @@ export class JwtCodec {
     };
   }
 
-  /** Verifica la firma ES256 de un token ya separado con la clave pública. Nunca lanza por una firma incorrecta: devuelve `false`. */
+  /** Verifies the ES256 signature of an already split token with the public key. It never throws for a wrong signature: it returns `false`. */
   static verifySignature(parsed: ParsedJwt, publicKey: KeyObject): boolean {
     try {
       return verify(

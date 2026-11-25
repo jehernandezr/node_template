@@ -1,10 +1,10 @@
 import { HttpLimits } from './http-limits.js';
 
-/** Lee el `Bearer` del header `Authorization` y distingue sus tipos por prefijo. */
+/** Reads the `Bearer` from the `Authorization` header and distinguishes its types by prefix. */
 export class BearerTokenReader {
   private static readonly PATTERN = /^Bearer ([^\s]+)$/i;
 
-  /** Token del header, o `undefined` si no hay un `Bearer` bien formado. Un header repetido no cuenta. */
+  /** Returns the header token, or `undefined` if there is no well-formed `Bearer`. A repeated header does not count. */
   static read(header: string | string[] | undefined): string | undefined {
     if (typeof header !== 'string') {
       return undefined;

@@ -1,7 +1,7 @@
-/** Qué pasa con una entrega después de procesarla. */
+/** What happens to a delivery after processing it. */
 export enum DeliveryAction {
-  /** Se borra de la cola: procesada, duplicada, ignorada o ya copiada a la DLQ. */
+  /** Deleted from the queue: processed, duplicated, ignored or already copied to the DLQ. */
   Acknowledge = 'acknowledge',
-  /** Vuelve a la cola cuando vence su visibilidad. */
+  /** Returns to the queue when its visibility expires. */
   Redeliver = 'redeliver',
 }

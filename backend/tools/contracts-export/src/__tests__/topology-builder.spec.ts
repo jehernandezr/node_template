@@ -101,7 +101,7 @@ describe('TopologyBuilder', () => {
     it('fails when a service sends a command nobody declares', () => {
       expect(() =>
         builder.build([platformContract, ContractFixtures.tasks()]),
-      ).toThrow(/ningún contrato declara/);
+      ).toThrow(/which no contract declares/);
     });
 
     it('fails when a queue subscribes to an undeclared topic', () => {
@@ -111,7 +111,7 @@ describe('TopologyBuilder', () => {
           ContractFixtures.reports(),
           ContractFixtures.notifications(),
         ]),
-      ).toThrow(/se suscribe a tasks-events/);
+      ).toThrow(/subscribes to tasks-events/);
     });
 
     it('handles contracts with no messaging at all', () => {
@@ -180,7 +180,7 @@ describe('TopologyBuilder', () => {
           orders,
           { ...orders, service: 'copy' },
         ]),
-      ).toThrow(/ya está declarado en orders/);
+      ).toThrow(/is already declared in orders/);
     });
   });
 
@@ -241,7 +241,7 @@ describe('TopologyBuilder', () => {
     it('fails when the reference names an event the owner does not publish', () => {
       expect(() =>
         builder.build([...owners, ledger(['orders.order.cancelled.v1'])]),
-      ).toThrow(/espera orders.order.cancelled.v1 en orders-events/);
+      ).toThrow(/expects orders.order.cancelled.v1 on orders-events/);
     });
   });
 });

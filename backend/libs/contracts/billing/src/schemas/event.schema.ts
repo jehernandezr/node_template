@@ -24,19 +24,17 @@ import type {
 
 export const UsageMetricSchema = z
   .enum(UsageMetric)
-  .describe('Métrica de uso que tiene cuota.') satisfies z.ZodType<UsageMetric>;
+  .describe('Usage metric that has a quota.') satisfies z.ZodType<UsageMetric>;
 
 export const BillingPeriodSchema = z
   .object({ start: CalendarDateSchema, end: CalendarDateSchema })
   .describe(
-    'Periodo de facturación con fechas de calendario.',
+    'Billing period with calendar dates.',
   ) satisfies z.ZodType<BillingPeriod>;
 
 export const QuotaLimitSchema = z
   .object({ metric: UsageMetricSchema, limit: z.int().min(0) })
-  .describe(
-    'Límite de una métrica en un plan.',
-  ) satisfies z.ZodType<QuotaLimit>;
+  .describe('Limit of a metric in a plan.') satisfies z.ZodType<QuotaLimit>;
 
 export const UsageRecordSchema = z
   .strictObject({
@@ -46,7 +44,7 @@ export const UsageRecordSchema = z
     key: z.string().min(1).max(BillingLimits.usageKeyMaxLength),
   })
   .describe(
-    'Uso de una métrica en una ventana, con su llave de idempotencia.',
+    'Usage of a metric in a window, with its idempotency key.',
   ) satisfies z.ZodType<UsageRecord>;
 
 export const RecordUsagePayloadSchema = z
@@ -58,7 +56,7 @@ export const RecordUsagePayloadSchema = z
       .max(BillingLimits.maxUsageRecordsPerBatch),
   })
   .describe(
-    'Lote de registros de uso de un tenant.',
+    'Batch of usage records of a tenant.',
   ) satisfies z.ZodType<RecordUsagePayload>;
 
 export const SubscriptionChangedPayloadSchema = z
@@ -70,7 +68,7 @@ export const SubscriptionChangedPayloadSchema = z
     changedAt: TimestampSchema,
   })
   .describe(
-    'Cambió el plan de una suscripción.',
+    'The plan of a subscription changed.',
   ) satisfies z.ZodType<SubscriptionChangedPayload>;
 
 export const SubscriptionSuspendedPayloadSchema = z
@@ -80,7 +78,7 @@ export const SubscriptionSuspendedPayloadSchema = z
     suspendedAt: TimestampSchema,
   })
   .describe(
-    'Se suspendió una suscripción por falta de pago.',
+    'A subscription was suspended for non-payment.',
   ) satisfies z.ZodType<SubscriptionSuspendedPayload>;
 
 export const SubscriptionReactivatedPayloadSchema = z
@@ -90,7 +88,7 @@ export const SubscriptionReactivatedPayloadSchema = z
     reactivatedAt: TimestampSchema,
   })
   .describe(
-    'Se reactivó una suscripción suspendida.',
+    'A suspended subscription was reactivated.',
   ) satisfies z.ZodType<SubscriptionReactivatedPayload>;
 
 export const EntitlementsChangedPayloadSchema = z
@@ -101,7 +99,7 @@ export const EntitlementsChangedPayloadSchema = z
     changedAt: TimestampSchema,
   })
   .describe(
-    'Cambiaron las funcionalidades o cuotas vigentes de un tenant.',
+    'The active features or quotas of a tenant changed.',
   ) satisfies z.ZodType<EntitlementsChangedPayload>;
 
 const InvoiceNumberSchema = z
@@ -118,7 +116,7 @@ export const InvoiceIssuedPayloadSchema = z
     total: MoneyAmountSchema,
     issuedAt: TimestampSchema,
   })
-  .describe('Se emitió una factura.') satisfies z.ZodType<InvoiceIssuedPayload>;
+  .describe('An invoice was issued.') satisfies z.ZodType<InvoiceIssuedPayload>;
 
 export const InvoicePaidPayloadSchema = z
   .object({
@@ -128,7 +126,7 @@ export const InvoicePaidPayloadSchema = z
     total: MoneyAmountSchema,
     paidAt: TimestampSchema,
   })
-  .describe('Se pagó una factura.') satisfies z.ZodType<InvoicePaidPayload>;
+  .describe('An invoice was paid.') satisfies z.ZodType<InvoicePaidPayload>;
 
 export const InvoiceFailedPayloadSchema = z
   .object({
@@ -140,5 +138,5 @@ export const InvoiceFailedPayloadSchema = z
     failedAt: TimestampSchema,
   })
   .describe(
-    'Falló el cobro de una factura.',
+    'Charging an invoice failed.',
   ) satisfies z.ZodType<InvoiceFailedPayload>;

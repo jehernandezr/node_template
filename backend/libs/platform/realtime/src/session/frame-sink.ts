@@ -1,11 +1,11 @@
 import type { StoredFrame } from '../stream/realtime-frame.js';
 
-/** Hacia dónde salen las tramas de una conexión: la respuesta SSE o el socket. */
+/** Where a connection's frames go out: the SSE response or the socket. */
 export interface FrameSink {
-  /** La conexión ya tiene su posición en el stream: lo que se publique desde ahora le llega. */
+  /** The connection already has its position in the stream: whatever is published from now on reaches it. */
   ready(): void;
   send(frame: StoredFrame): void;
-  /** Señal de vida para que un proxy no corte la conexión por inactividad; los transportes con ping propio no hacen nada. */
+  /** Keep-alive signal so a proxy does not cut the connection for inactivity; transports with their own ping do nothing. */
   keepAlive(): void;
   close(): void;
 }

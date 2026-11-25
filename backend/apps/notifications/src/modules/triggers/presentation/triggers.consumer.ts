@@ -18,7 +18,7 @@ import type { MessageEnvelope } from '@platform/messaging';
 import { Subscribe } from '@platform/messaging/nest';
 import { TriggerNotifications } from '../application/trigger-notifications.js';
 
-/** Cola `notifications-triggers`: eventos de identity, tasks, billing y reports que avisan a alguien. */
+/** `notifications-triggers` queue: identity, tasks, billing and reports events that notify someone. */
 @Injectable()
 export class TriggersConsumer {
   constructor(private readonly triggers: TriggerNotifications) {}

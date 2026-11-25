@@ -7,7 +7,7 @@ import { BloomFilterName } from '../../../../shared/enums/bloom-filter-name.enum
 import { BloomBreachedPasswordList } from '../bloom-breached-password-list.js';
 import { KnownBreachedPasswordsSource } from '../known-breached-passwords-source.js';
 
-/** Filtro que falla la primera carga, como un Valkey que no responde al arrancar. */
+/** Filter that fails the first load, like a Valkey that does not respond at startup. */
 class FlakyFilter extends AsyncBloomFilter {
   private failures = 1;
 

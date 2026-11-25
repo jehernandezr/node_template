@@ -20,7 +20,7 @@ import { EraseUser } from '../application/erase-user.use-case.js';
 import { UserProfileView } from '../application/user-profile-view.js';
 import { UserReader } from '../application/user-reader.js';
 
-/** Operaciones internas de users: suspensión, reactivación, perfil y el borrado de la saga de baja. */
+/** Internal operations of users: suspension, reactivation, profile and the deletion of the account deletion saga. */
 @Injectable()
 export class UsersInternalOperations {
   constructor(

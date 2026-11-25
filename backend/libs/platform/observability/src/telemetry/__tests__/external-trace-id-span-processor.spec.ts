@@ -31,7 +31,7 @@ function externalContext(): Context {
   );
 }
 
-/** Abre y cierra un span bajo `parent` con el procesador registrado y devuelve lo exportado. */
+/** Opens and closes a span under `parent` with the registered processor and returns what was exported. */
 async function spanStartedIn(parent: Context): Promise<ReadableSpan> {
   const exporter = new InMemorySpanExporter();
   const provider = new TracerProvider({

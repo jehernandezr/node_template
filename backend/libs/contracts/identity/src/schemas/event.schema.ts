@@ -39,7 +39,7 @@ export const UserRegisteredPayloadSchema = z
     registeredAt: TimestampSchema,
   })
   .describe(
-    'Se registró un usuario.',
+    'A user was registered.',
   ) satisfies z.ZodType<UserRegisteredPayload>;
 
 export const UserSuspendedPayloadSchema = z
@@ -48,9 +48,7 @@ export const UserSuspendedPayloadSchema = z
     reason: ReasonFieldSchema.optional(),
     suspendedAt: TimestampSchema,
   })
-  .describe(
-    'Se suspendió un usuario.',
-  ) satisfies z.ZodType<UserSuspendedPayload>;
+  .describe('A user was suspended.') satisfies z.ZodType<UserSuspendedPayload>;
 
 export const UserReactivatedPayloadSchema = z
   .object({
@@ -58,7 +56,7 @@ export const UserReactivatedPayloadSchema = z
     reactivatedAt: TimestampSchema,
   })
   .describe(
-    'Se reactivó un usuario.',
+    'A user was reactivated.',
   ) satisfies z.ZodType<UserReactivatedPayload>;
 
 export const UserEmailChangedPayloadSchema = z
@@ -67,7 +65,7 @@ export const UserEmailChangedPayloadSchema = z
     changedAt: TimestampSchema,
   })
   .describe(
-    'Cambió el email de un usuario.',
+    'The email of a user changed.',
   ) satisfies z.ZodType<UserEmailChangedPayload>;
 
 export const DeviceRegisteredPayloadSchema = z
@@ -79,7 +77,7 @@ export const DeviceRegisteredPayloadSchema = z
     registeredAt: TimestampSchema,
   })
   .describe(
-    'Se registró un dispositivo verificador.',
+    'A verifier device was registered.',
   ) satisfies z.ZodType<DeviceRegisteredPayload>;
 
 export const DeviceRemovedPayloadSchema = z
@@ -89,7 +87,7 @@ export const DeviceRemovedPayloadSchema = z
     removedAt: TimestampSchema,
   })
   .describe(
-    'Se quitó un dispositivo de la cuenta.',
+    'A device was removed from the account.',
   ) satisfies z.ZodType<DeviceRemovedPayload>;
 
 export const TenantCreatedPayloadSchema = z
@@ -104,7 +102,7 @@ export const TenantCreatedPayloadSchema = z
     ownerUserId: IdSchema.optional(),
     createdAt: TimestampSchema,
   })
-  .describe('Se creó un tenant.') satisfies z.ZodType<TenantCreatedPayload>;
+  .describe('A tenant was created.') satisfies z.ZodType<TenantCreatedPayload>;
 
 export const TenantSuspendedPayloadSchema = z
   .object({
@@ -112,7 +110,7 @@ export const TenantSuspendedPayloadSchema = z
     suspendedAt: TimestampSchema,
   })
   .describe(
-    'Se suspendió un tenant.',
+    'A tenant was suspended.',
   ) satisfies z.ZodType<TenantSuspendedPayload>;
 
 export const TenantReactivatedPayloadSchema = z
@@ -121,7 +119,7 @@ export const TenantReactivatedPayloadSchema = z
     reactivatedAt: TimestampSchema,
   })
   .describe(
-    'Se reactivó un tenant.',
+    'A tenant was reactivated.',
   ) satisfies z.ZodType<TenantReactivatedPayload>;
 
 export const MembershipChangedPayloadSchema = z
@@ -133,7 +131,7 @@ export const MembershipChangedPayloadSchema = z
     changedAt: TimestampSchema,
   })
   .describe(
-    'Cambió la membresía de un usuario en un tenant.',
+    'The membership of a user in a tenant changed.',
   ) satisfies z.ZodType<MembershipChangedPayload>;
 
 export const PermissionsChangedPayloadSchema = z
@@ -147,7 +145,7 @@ export const PermissionsChangedPayloadSchema = z
     changedAt: TimestampSchema,
   })
   .describe(
-    'Cambiaron los permisos de un usuario o de un tenant.',
+    'The permissions of a user or a tenant changed.',
   ) satisfies z.ZodType<PermissionsChangedPayload>;
 
 export const ApiKeyCreatedPayloadSchema = z
@@ -164,7 +162,7 @@ export const ApiKeyCreatedPayloadSchema = z
     createdAt: TimestampSchema,
   })
   .describe(
-    'Se creó una API key. No incluye el secreto.',
+    'An API key was created. It does not include the secret.',
   ) satisfies z.ZodType<ApiKeyCreatedPayload>;
 
 export const ApiKeyRevokedPayloadSchema = z
@@ -177,7 +175,9 @@ export const ApiKeyRevokedPayloadSchema = z
       .max(IdentityLimits.apiKeyPrefixLength),
     revokedAt: TimestampSchema,
   })
-  .describe('Se revocó una API key.') satisfies z.ZodType<ApiKeyRevokedPayload>;
+  .describe(
+    'An API key was revoked.',
+  ) satisfies z.ZodType<ApiKeyRevokedPayload>;
 
 export const SecurityAlertRaisedPayloadSchema = z
   .object({
@@ -187,5 +187,5 @@ export const SecurityAlertRaisedPayloadSchema = z
     raisedAt: TimestampSchema,
   })
   .describe(
-    'Se levantó una alerta de seguridad sobre una cuenta.',
+    'A security alert was raised on an account.',
   ) satisfies z.ZodType<SecurityAlertRaisedPayload>;

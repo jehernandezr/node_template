@@ -6,9 +6,9 @@ import { SharedFileEdits } from './shared-file-edits.js';
 import type { WorkspaceCopier } from './workspace-copier.js';
 
 /**
- * Prueba de humo de los generadores: en una copia del workspace genera un servicio y un módulo, agrega las líneas
- * compartidas que el generador pide y corre `lint`, `test`, `typecheck` y `build` de los dos proyectos generados.
- * La copia se borra en todos los caminos.
+ * Generators smoke test: in a copy of the workspace it generates a service and a module, adds the shared lines
+ * the generator asks for and runs `lint`, `test`, `typecheck` and `build` on the two generated projects.
+ * The copy is deleted on every path.
  */
 export class GeneratorSmoke {
   static readonly SERVICE = 'smoke-probe';
@@ -27,7 +27,7 @@ export class GeneratorSmoke {
     private readonly files: FileSystem,
   ) {}
 
-  /** @returns el código de salida del primer paso que falla, o 0. */
+  /** @returns the exit code of the first failing step, or 0. */
   async run(): Promise<number> {
     const root = await this.copier.copy();
     try {
@@ -81,9 +81,9 @@ export class GeneratorSmoke {
       command: 'pnpm',
       args,
       cwd,
-      // La copia es desechable: sin daemon ni caché remota, Nx no deja procesos ni datos fuera de ella.
+      // The copy is disposable: without the daemon or remote cache, Nx leaves no processes or data outside it.
       env: { NX_DAEMON: 'false', NX_NO_CLOUD: 'true' },
-      // tsx deja en el entorno el tsconfig con que corre este proceso, una ruta relativa que en la copia no existe.
+      // tsx leaves in the environment the tsconfig this process runs with, a relative path that does not exist in the copy.
       unset: ['TSX_TSCONFIG_PATH'],
     });
   }

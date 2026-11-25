@@ -16,7 +16,7 @@ import { TransferBudget } from '../transfer-budget.js';
 import type { LogicalReplicationOptions } from './logical-replication-options.js';
 import { ReplicationNames } from './replication-names.js';
 
-/** Los datos de conexión de un `DataSource` de Postgres, con o sin réplicas. */
+/** The connection data of a Postgres `DataSource`, with or without replicas. */
 interface ConnectionFields {
   readonly host?: string;
   readonly port?: number;
@@ -31,31 +31,31 @@ interface ReplicatedTable {
 }
 
 /**
- * Copia con la replicación lógica de PostgreSQL: una publicación en el origen con el filtro de filas del tenant y una
- * suscripción en el destino que hace la copia inicial y sigue los cambios, también los borrados. Pide
- * `wal_level=logical` en el origen, un rol con `REPLICATION` y permiso de crear suscripciones en el destino, y red
- * del destino al origen. La suscripción aplica los cambios con el rol que la crea (`run_as_owner`), que debe saltarse
- * el RLS: Postgres no replica hacia tablas con RLS cuando el rol que aplica está sujeto a él.
+ * Copy with PostgreSQL logical replication: a publication on the source with the tenant row filter and a
+ * subscription on the target that does the initial copy and follows the changes, including deletes. Requires
+ * `wal_level=logical` on the source, a role with `REPLICATION` and permission to create subscriptions on the target, and network
+ * access from the target to the source. The subscription applies changes with the role that creates it (`run_as_owner`), which must bypass
+ * RLS: Postgres does not replicate into tables with RLS when the applying role is subject to it.
  *
- * El filtro de una publicación no admite subconsultas, así que solo sirve a manifiestos cuyas tablas tienen columna del
- * tenant (`supports`). Mientras alguna publicación incluya una tabla, la tabla queda con `REPLICA IDENTITY FULL`, que
- * el filtro exige para replicar cambios y borrados; la identidad vuelve a la normal cuando la última publicación que
- * la incluye se retira. Crear y retirar publicaciones toma un candado del shard, para que dos traslados a la vez no
- * dejen una tabla publicada sin la identidad que su filtro necesita. Cambiar la identidad toma un candado exclusivo
- * de la tabla, que se espera solo hasta `lockTimeoutMs`, y mientras dure la publicación cada cambio de la tabla
- * escribe la fila vieja completa en el WAL. La verificación final y la reconciliación son
- * las de la copia por lotes.
+ * A publication filter does not allow subqueries, so it only serves manifests whose tables have a
+ * tenant column (`supports`). While any publication includes a table, the table keeps `REPLICA IDENTITY FULL`, which
+ * the filter requires to replicate updates and deletes; the identity returns to normal when the last publication that
+ * includes it is dropped. Creating and dropping publications takes a shard lock, so that two concurrent moves do not
+ * leave a table published without the identity its filter needs. Changing the identity takes an exclusive lock
+ * on the table, waited for only up to `lockTimeoutMs`, and while the publication lasts every change to the table
+ * writes the full old row to the WAL. The final verification and reconciliation are
+ * those of the batch copy.
  */
 export class LogicalReplicationTransfer extends TenantDataTransfer {
   private static readonly POLL_MS = 100;
-  /** Espacio propio del candado consultivo de las publicaciones, para no chocar con otros candados de dos enteros. */
+  /** Own advisory lock space for publications, to avoid clashing with other two-integer locks. */
   private static readonly PUBLICATIONS_LOCK_SPACE = 0x544d;
   private static readonly PUBLICATIONS_LOCK = `SELECT pg_advisory_xact_lock(${LogicalReplicationTransfer.PUBLICATIONS_LOCK_SPACE}, 0)`;
-  /** SQLSTATE de `lock_timeout` agotado. */
+  /** SQLSTATE of an expired `lock_timeout`. */
   private static readonly LOCK_NOT_AVAILABLE = '55P03';
   private readonly tables: readonly ReplicatedTable[];
 
-  /** Si el manifiesto se puede copiar con replicación lógica: todas sus tablas tienen columna del tenant. */
+  /** Whether the manifest can be copied with logical replication: all its tables have a tenant column. */
   static supports(manifest: TenantMoveManifest): boolean {
     return manifest
       .tables()
@@ -64,7 +64,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
       );
   }
 
-  /** @throws TenantMoveError `InvalidManifest` si alguna tabla llega al tenant por su padre. */
+  /** @throws TenantMoveError `InvalidManifest` if any table reaches the tenant through its parent. */
   constructor(
     manifest: TenantMoveManifest,
     private readonly batch: TenantDataTransfer,
@@ -101,7 +101,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     };
   }
 
-  /** Espera a que la suscripción reciba todo el WAL del origen congelado, la retira y verifica como la copia por lotes. */
+  /** Waits for the subscription to receive all the WAL of the frozen source, drops it and verifies like the batch copy. */
   async verify(transfer: TenantTransfer): Promise<TenantMoveVerification> {
     const name = ReplicationNames.of(transfer.moveId);
     const budget = transfer.budget ?? this.newBudget();
@@ -183,7 +183,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     }
   }
 
-  /** El slot se crea aparte: crearlo desde la suscripción se bloquea cuando origen y destino comparten servidor. */
+  /** The slot is created separately: creating it from the subscription blocks when source and target share a server. */
   private async subscribe(
     target: DataSource,
     source: DataSource,
@@ -200,8 +200,8 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Retira suscripción, slot y publicación, y devuelve a su identidad de réplica normal las tablas que ya no están en
-   * ninguna publicación. Idempotente.
+   * Drops the subscription, slot and publication, and returns to their normal replica identity the tables that are no longer in
+   * any publication. Idempotent.
    */
   private async unsubscribe(
     target: DataSource,
@@ -233,9 +233,9 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Borra el slot cuando ya nadie lo usa: el proceso que enviaba los cambios a la suscripción tarda un momento en
-   * terminar después de que la suscripción se retira.
-   * @throws TenantMoveError `RoundPending` si sigue en uso al acabarse el plazo de la llamada.
+   * Deletes the slot once nobody uses it: the process that sent changes to the subscription takes a moment to
+   * finish after the subscription is dropped.
+   * @throws TenantMoveError `RoundPending` if it is still in use when the call's budget runs out.
    */
   private async dropSlot(
     source: DataSource,
@@ -261,9 +261,9 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Una transacción con el candado de las publicaciones del shard. Si el candado de una tabla no llega en
-   * `lockTimeoutMs`, la ronda se repite en la llamada siguiente.
-   * @throws TenantMoveError `RoundPending` si se agotó la espera por un candado.
+   * A transaction holding the shard's publications lock. If a table lock is not acquired within
+   * `lockTimeoutMs`, the round is repeated in the next call.
+   * @throws TenantMoveError `RoundPending` if the wait for a lock ran out.
    */
   private async inPublicationsLock(
     source: DataSource,
@@ -286,8 +286,8 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
   }
 
   /**
-   * `REPLICA IDENTITY` toma un candado exclusivo de la tabla: sin límite, esperaría detrás de una transacción larga y
-   * dejaría en cola a todas las escrituras que llegan después.
+   * `REPLICA IDENTITY` takes an exclusive lock on the table: without a limit, it would wait behind a long transaction and
+   * queue all the writes that arrive after it.
    */
   private async limitLockWait(manager: EntityManager): Promise<void> {
     await manager.query("SELECT set_config('lock_timeout', $1, true)", [
@@ -308,7 +308,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     name: string,
   ): Promise<boolean> {
     const rows: unknown[] = await target.query(
-      // pg_subscription es un catálogo de todo el servidor: sin el filtro vería suscripciones de otras bases.
+      // pg_subscription is a server-wide catalog: without the filter it would see subscriptions from other databases.
       `SELECT 1 FROM pg_subscription
         WHERE subname = $1 AND subdbid = (SELECT oid FROM pg_database WHERE datname = current_database())`,
       [name],
@@ -316,7 +316,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     return rows.length > 0;
   }
 
-  /** La copia inicial de la suscripción terminó en todas sus tablas. */
+  /** Whether the subscription's initial copy finished on all its tables. */
   private async initialCopyDone(
     target: DataSource,
     name: string,
@@ -366,7 +366,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
     return rows[0]?.reached === true;
   }
 
-  /** Cadena de conexión al origen tal como la ve el servidor de destino. */
+  /** Connection string to the source as the target server sees it. */
   private connectionOf(source: DataSource): string {
     const options = source.options as ConnectionFields & {
       readonly replication?: { readonly master: ConnectionFields };
@@ -387,7 +387,7 @@ export class LogicalReplicationTransfer extends TenantDataTransfer {
       .join(' ');
   }
 
-  /** Un texto como literal SQL con las comillas que pone el propio servidor, para las sentencias sin parámetros. */
+  /** A text as an SQL literal with the quotes the server itself adds, for statements without parameters. */
   private async literal(
     dataSource: DataSource,
     value: string,

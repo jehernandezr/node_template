@@ -8,17 +8,17 @@ import type { AccessGrant } from './access-grant.js';
 import { AccessOutcome } from './access-outcome.enum.js';
 
 /**
- * Aplica el `AccessRequirement` de una ruta a un actor, sin estado y sin I/O.
+ * Applies the `AccessRequirement` of a route to an actor, without state and without I/O.
  *
- * - Ruta pública: `Allowed`.
- * - `SystemActor`: `Forbidden` en cualquier ruta autenticada.
- * - `flags`: el grant los tiene todos encendidos; si no, `FlagDisabled`. Se evalúa primero porque un flag
- *   apagado hace que la ruta no exista para el usuario, tenga o no permisos.
- * - `permissions`: el grant las tiene todas (`missing` lista las que faltan).
- * - `platformRoles`: el grant tiene alguno. Un `ServiceAccountActor` nunca lo cumple.
- * - `features`: el plan del tenant las incluye todas; si no, `FeatureNotIncluded` con las que faltan.
- * - `mfaMaxAgeMinutes`: el actor es un usuario cuyo `authMethods` incluye algún método distinto de `Password` y `now - authTime` cabe en la ventana. Un `ServiceAccountActor` nunca lo cumple y recibe `Forbidden`.
- * - Con varios incumplimientos gana `Forbidden` sobre `FeatureNotIncluded` y este sobre `StepUpRequired`.
+ * - Public route: `Allowed`.
+ * - `SystemActor`: `Forbidden` on any authenticated route.
+ * - `flags`: the grant has all of them on; otherwise, `FlagDisabled`. It is evaluated first because a disabled flag
+ *   makes the route not exist for the user, whether or not they have permissions.
+ * - `permissions`: the grant has all of them (`missing` lists the missing ones).
+ * - `platformRoles`: the grant has at least one. A `ServiceAccountActor` never satisfies it.
+ * - `features`: the tenant plan includes all of them; otherwise, `FeatureNotIncluded` with the missing ones.
+ * - `mfaMaxAgeMinutes`: the actor is a user whose `authMethods` includes some method other than `Password` and `now - authTime` fits in the window. A `ServiceAccountActor` never satisfies it and gets `Forbidden`.
+ * - With several failures `Forbidden` wins over `FeatureNotIncluded` and that one over `StepUpRequired`.
  */
 export class AccessEvaluator {
   evaluate(evaluation: AccessEvaluation): AccessDecision {

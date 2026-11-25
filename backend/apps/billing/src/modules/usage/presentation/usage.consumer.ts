@@ -11,7 +11,7 @@ import { Subscribe } from '@platform/messaging/nest';
 import { RecordUsage } from '../application/record-usage.use-case.js';
 import { TrackMembership } from '../application/track-membership.use-case.js';
 
-/** Colas `billing-usage` (lotes de uso de los servicios) y `billing-identity` (cambios de membresía). */
+/** Queues `billing-usage` (usage batches from the services) and `billing-identity` (membership changes). */
 @Injectable()
 export class UsageConsumer {
   constructor(

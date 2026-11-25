@@ -2,9 +2,9 @@ import { format, resolveConfig } from 'prettier';
 import { ArtifactRenderer } from './artifact-renderer.js';
 
 /**
- * Formatea con la configuración de prettier del repositorio, así lo generado
- * pasa `nx format:check` sin otro paso. Prettier carga sus plugins con
- * `import()` dinámico y no corre dentro de jest: se prueba con `check`.
+ * Formats with the repository prettier configuration, so the generated output
+ * passes `nx format:check` with no extra step. Prettier loads its plugins with
+ * dynamic `import()` and does not run inside jest: it is tested with `check`.
  */
 export class PrettierArtifactRenderer extends ArtifactRenderer {
   async render(path: string, value: unknown): Promise<string> {

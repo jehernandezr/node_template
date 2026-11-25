@@ -1,8 +1,8 @@
 import { CursorCodec } from '@platform/criteria';
 
 /**
- * Cursores opacos de las páginas de tareas. La lista pagina por el id de la última tarea (UUIDv7, ordenado
- * por creación); la búsqueda, por la posición dentro del ranking; los cambios, por fecha de cambio e id.
+ * Opaque cursors for task pages. The list pages by the id of the last task (UUIDv7, ordered
+ * by creation); the search, by the position within the ranking; the changes, by change date and id.
  */
 export class TaskCursors {
   private static readonly SEARCH = 'search';

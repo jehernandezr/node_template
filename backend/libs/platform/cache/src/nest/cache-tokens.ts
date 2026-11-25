@@ -1,16 +1,16 @@
-/** Token de las opciones de `CacheModule`, que lee `CacheProviders`. */
+/** Token of the `CacheModule` options, read by `CacheProviders`. */
 export const CACHE_OPTIONS = Symbol('CACHE_OPTIONS');
 
-/** Token del puerto de métricas del caché, presente solo si el módulo recibe métricas. */
+/** Token of the cache metrics port, present only if the module receives metrics. */
 export const CACHE_METRICS = Symbol('CACHE_METRICS');
 
-/** Tokens de inyección que dependen de un nombre, como el de un espacio de caché. */
+/** Injection tokens that depend on a name, such as that of a cache namespace. */
 export class CacheTokens {
-  /** Token del `CacheAside` de un espacio de nombres. Es el mismo en cada llamada con ese nombre. */
+  /** Returns the token of the `CacheAside` of a namespace. It is the same on every call with that name. */
   static aside(namespace: string): symbol {
     return Symbol.for(`platform.cache.aside.${namespace}`);
   }
 }
 
-/** Token del `CacheAside` de un espacio de nombres. */
+/** Returns the token of the `CacheAside` of a namespace. */
 export const cacheAsideToken = CacheTokens.aside;

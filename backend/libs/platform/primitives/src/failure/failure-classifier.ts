@@ -1,7 +1,7 @@
 import { FailureKind } from '@platform/kernel';
 import type { FailureRule } from './failure-rule.js';
 
-/** Propiedades de un error que el clasificador sabe leer. */
+/** Properties of an error that the classifier knows how to read. */
 interface ErrorLike {
   readonly name?: unknown;
   readonly code?: unknown;
@@ -13,24 +13,24 @@ interface ErrorLike {
 }
 
 /**
- * Clasifica cualquier valor lanzado. Recorre el error y su cadena `cause`
- * (hasta `MAX_CAUSE_DEPTH` niveles) y usa la primera señal explícita, de
- * afuera hacia adentro:
- * 1. Las reglas inyectadas (los adaptadores traducen aquí los errores de su
- *    proveedor: Postgres, AWS, Valkey).
- * 2. Una propiedad `failureKind` con un valor de `FailureKind`.
- * 3. `name` `AbortError` (cancelado) o `TimeoutError` (tiempo agotado).
+ * Classifies any thrown value. Walks the error and its `cause` chain
+ * (up to `MAX_CAUSE_DEPTH` levels) and uses the first explicit signal, from
+ * the outside in:
+ * 1. The injected rules (adapters translate their provider's errors
+ *    here: Postgres, AWS, Valkey).
+ * 2. A `failureKind` property with a `FailureKind` value.
+ * 3. `name` `AbortError` (cancelled) or `TimeoutError` (timed out).
  * 4. `retryable: true`.
- * 5. Un código de red de Node o de su `fetch`.
- * 6. Un estado HTTP: 408, 425, 429, 502, 503 y 504 son pasajeros; el resto de
- *    4xx y 5xx, permanentes.
+ * 5. A Node network code or one from its `fetch`.
+ * 6. An HTTP status: 408, 425, 429, 502, 503 and 504 are transient; the rest of
+ *    4xx and 5xx, permanent.
  *
- * Sin señal, un `TypeError`, `ReferenceError`, `SyntaxError`, `RangeError` o
- * `ZodError` es una violación de protocolo, y cualquier otra cosa es
- * permanente. Lo desconocido no se reintenta.
+ * Without a signal, a `TypeError`, `ReferenceError`, `SyntaxError`, `RangeError` or
+ * `ZodError` is a protocol violation, and anything else is
+ * permanent. The unknown is not retried.
  */
 export class FailureClassifier {
-  /** Niveles de `cause` que se revisan además del error de arriba. */
+  /** Levels of `cause` that are checked in addition to the top error. */
   static readonly MAX_CAUSE_DEPTH = 3;
 
   private static readonly TRANSIENT_NETWORK_CODES: ReadonlySet<string> =
@@ -54,7 +54,7 @@ export class FailureClassifier {
     408, 425, 429, 502, 503, 504,
   ]);
 
-  /** Errores de JavaScript que delatan un fallo de implementación cuando nada más los explica. */
+  /** JavaScript errors that reveal an implementation failure when nothing else explains them. */
   private static readonly IMPLEMENTATION_ERROR_NAMES: ReadonlySet<string> =
     new Set([
       'TypeError',
@@ -68,7 +68,7 @@ export class FailureClassifier {
     Object.values(FailureKind),
   );
 
-  /** `rules` se consultan en cada nodo de la cadena, antes de las reglas propias. */
+  /** `rules` are consulted at each node of the chain, before the built-in rules. */
   constructor(private readonly rules: readonly FailureRule[] = []) {}
 
   classify(error: unknown): FailureKind {
@@ -99,12 +99,12 @@ export class FailureClassifier {
     return FailureKind.Permanent;
   }
 
-  /** Solo `Transient` es reintentable: un `Timeout` o `Cancelled` dejan el resultado incierto. */
+  /** Only `Transient` is retryable: a `Timeout` or `Cancelled` leaves the result uncertain. */
   isTransient(error: unknown): boolean {
     return this.classify(error) === FailureKind.Transient;
   }
 
-  /** Clasificación que un nodo declara por sí mismo, o `undefined` si no dice nada. */
+  /** Classification that a node declares by itself, or `undefined` if it says nothing. */
   private explicitKind(node: object): FailureKind | undefined {
     for (const rule of this.rules) {
       const ruled = rule.classify(node);

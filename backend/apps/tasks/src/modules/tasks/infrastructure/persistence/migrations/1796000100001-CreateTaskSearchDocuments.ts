@@ -2,7 +2,7 @@ import { TenantIsolationSql } from '@platform/persistence';
 import { SearchSchema } from '@platform/search';
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Índice de búsqueda de las tareas, con RLS por tenant como las tareas. */
+/** Task search index, with RLS per tenant like the tasks. */
 export class CreateTaskSearchDocuments1796000100001 implements MigrationInterface {
   readonly name = 'CreateTaskSearchDocuments1796000100001';
 

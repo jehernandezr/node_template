@@ -13,7 +13,7 @@ import { FailedDeliveries } from '../domain/failed-deliveries.js';
 import { RecipientDirectory } from '../domain/recipient-directory.js';
 import { ChannelDeliverer } from './channel-deliverer.js';
 
-/** Reintenta las entregas por correo y push cuyo próximo intento ya llegó, una tanda por corrida. */
+/** Retries the email and push deliveries whose next attempt is due, one batch per run. */
 @Injectable()
 export class RetryDeliveriesJob extends ScheduledJob {
   private static readonly EVERY_MS = 60_000;

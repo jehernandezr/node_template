@@ -1,6 +1,6 @@
 import type { Clock, UseCase } from '@platform/kernel';
 
-/** Caso de uso que adelanta el reloj un tiempo conocido, para fijar la duración que se registra. */
+/** Use case that advances the clock by a known time, to fix the duration that is logged. */
 export class AdvancingUseCase implements UseCase<string, string> {
   constructor(
     private readonly clock: Clock & { advance(ms: number): void },

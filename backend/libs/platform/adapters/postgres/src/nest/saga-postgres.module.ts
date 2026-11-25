@@ -16,9 +16,9 @@ import { SagaStepLogMapper } from '../saga/saga-step-log.mapper.js';
 import { TypeOrmSagaStore } from '../saga/typeorm-saga-store.js';
 
 /**
- * Almacén de sagas sobre Postgres para `SagaModule`: declara las tablas de la
- * bitácora en el shard del tenant y provee `TypeOrmSagaStore` y
- * `ShardedSagaScopes`. Es global, como `SagaModule`. Va antes de `SagaModule`:
+ * Postgres saga store for `SagaModule`: declares the log tables
+ * in the tenant shard and provides `TypeOrmSagaStore` and
+ * `ShardedSagaScopes`. It is global, like `SagaModule`. It goes before `SagaModule`:
  *
  * ```ts
  * imports: [

@@ -14,7 +14,7 @@ interface HitRow {
   readonly score: string | number;
 }
 
-/** Lo que comparten los dos modos sobre `search_documents`: alta, reemplazo y baja en el shard del tenant. */
+/** What both modes share over `search_documents`: insert, replace and delete in the tenant's shard. */
 export abstract class PostgresSearchIndex extends SearchIndex {
   private readonly repository: SearchRowRepository;
 
@@ -42,20 +42,20 @@ export abstract class PostgresSearchIndex extends SearchIndex {
     return rows.map((row) => ({ id: row.id, score: Number(row.score) }));
   }
 
-  /** Vector del texto en el formato de pgvector, o `null` si el modo no lo usa. */
+  /** Vector of the text in pgvector format, or `null` if the mode does not use it. */
   protected abstract embeddingOf(text: string): Promise<string | null>;
 
-  /** Consulta que devuelve `id` y `score` de la página pedida, con `$1` el tenant y `$2` la colección. */
+  /** Query that returns `id` and `score` of the requested page, with `$1` the tenant and `$2` the collection. */
   protected abstract rankingSql(query: SearchQuery): Promise<RankingSql>;
 }
 
-/** SQL de una búsqueda y sus parámetros, en orden. */
+/** SQL of a search and its parameters, in order. */
 export interface RankingSql {
   readonly sql: string;
   readonly parameters: readonly unknown[];
 }
 
-/** Acceso a las filas de `search_documents` con el tenant del scope fijado en la sesión. */
+/** Access to the `search_documents` rows with the scope's tenant set in the session. */
 class SearchRowRepository extends TenantIsolatedRepository {
   constructor(kit: RepositoryKit) {
     super(kit);

@@ -1,4 +1,4 @@
-/** Contadores que publica cada pasada del relay del outbox, uno por campo de `RelayReport`. */
+/** Counters each outbox relay pass publishes, one per `RelayReport` field. */
 export enum OutboxMetric {
   Published = 'messaging.outbox.published',
   Failed = 'messaging.outbox.failed',

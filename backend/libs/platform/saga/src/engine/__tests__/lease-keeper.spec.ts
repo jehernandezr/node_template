@@ -12,7 +12,7 @@ import { SagaInstanceBuilder } from '../../__tests__/utils/saga-instance-builder
 import { LeaseKeeper } from '../lease-keeper.js';
 import { SagaSettings } from '../saga-settings.js';
 
-/** Almacén cuya liberación del lease falla, como una base caída. */
+/** Store whose lease release fails, like a database that is down. */
 class BrokenReleaseStore extends InMemorySagaStore {
   override async releaseLease(): Promise<void> {
     throw new Error('database unavailable');

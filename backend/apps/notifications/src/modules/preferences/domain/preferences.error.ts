@@ -1,7 +1,7 @@
 import { DomainError } from '@platform/kernel';
 import { NotificationsErrorCode } from '@contracts/notifications';
 
-/** El horario de silencio no tiene horas `HH:mm` o la zona horaria no existe. */
+/** The quiet hours do not have `HH:mm` times or the time zone does not exist. */
 export class InvalidQuietHoursError extends DomainError {
   readonly code = NotificationsErrorCode.PreferencesInvalidQuietHours;
 

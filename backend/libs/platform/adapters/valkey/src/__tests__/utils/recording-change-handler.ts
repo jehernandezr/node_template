@@ -3,13 +3,13 @@ import type {
   ShardDirectoryChanged,
 } from '@platform/sharding';
 
-/** Receptor de cambios del directorio que guarda lo que recibe y puede fallar a propósito. */
+/** Directory change receiver that records what it receives and can fail on purpose. */
 export class RecordingChangeHandler {
   readonly received: ShardDirectoryChanged[] = [];
 
   constructor(private readonly failure?: Error) {}
 
-  /** Lo que se pasa a `subscribe`. */
+  /** What is passed to `subscribe`. */
   readonly handle: ShardDirectoryChangeHandler = (event) => {
     this.received.push(event);
     if (this.failure !== undefined) {

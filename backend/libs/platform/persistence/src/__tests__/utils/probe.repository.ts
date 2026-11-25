@@ -4,7 +4,7 @@ import { ProbeEntity } from './probe.entity.js';
 import type { ProbeMapper } from './probe.mapper.js';
 import type { Probe } from './probe.js';
 
-/** Repositorio de ejemplo: lo mínimo que escribe un servicio sobre `ShardedRepository`. */
+/** Sample repository: the minimum a service writes on top of `ShardedRepository`. */
 export class ProbeRepository extends ShardedRepository<Probe, ProbeEntity> {
   constructor(kit: RepositoryKit, mapper: ProbeMapper) {
     super(ProbeEntity, kit, mapper);

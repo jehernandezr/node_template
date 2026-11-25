@@ -1,20 +1,20 @@
 import type { MetricAttributes, MetricsPort } from '@platform/observability';
 
-/** Un incremento recibido por {@link RecordingMetricsPort}. */
+/** An increment received by {@link RecordingMetricsPort}. */
 export interface RecordedIncrement {
   readonly name: string;
   readonly attributes?: MetricAttributes;
   readonly value?: number;
 }
 
-/** Una medición recibida por {@link RecordingMetricsPort}. */
+/** A measurement received by {@link RecordingMetricsPort}. */
 export interface RecordedRecord {
   readonly name: string;
   readonly value: number;
   readonly attributes?: MetricAttributes;
 }
 
-/** Puerto de métricas que solo guarda lo recibido, para pruebas. */
+/** Metrics port that only stores what it receives, for tests. */
 export class RecordingMetricsPort implements MetricsPort {
   readonly increments: RecordedIncrement[] = [];
   readonly records: RecordedRecord[] = [];

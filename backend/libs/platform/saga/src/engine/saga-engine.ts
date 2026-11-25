@@ -22,7 +22,7 @@ import type { SagaRun } from './saga-run.js';
 import type { StartOptions } from './start-options.js';
 import type { StepExecutor } from './step-executor.js';
 
-/** Colaboradores de `SagaEngine`. */
+/** Collaborators of `SagaEngine`. */
 export interface SagaEngineDeps {
   readonly store: SagaStore;
   readonly registry: SagaRegistry;
@@ -33,34 +33,34 @@ export interface SagaEngineDeps {
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly restorer: TraceContextRestorer;
-  /** Sin él, el contexto de las llamadas es solo el que pasa `StartOptions`. */
+  /** Without it, the calls' context is only what `StartOptions` passes. */
   readonly requestContext?: RequestContextStore;
-  /** Con él, una saga arrancada dentro de una transacción abierta corre después del commit. */
+  /** With it, a saga started inside an open transaction runs after the commit. */
   readonly transactions?: TransactionManager;
 }
 
 /**
- * Fachada del motor: arranca y retoma sagas. Cada intento persiste su
- * intención antes de llamar a la operación y su resultado junto con el estado
- * siguiente; toda escritura va protegida por el token del lease y la versión.
- * El trabajo de cada paso es de `StepExecutor` y de `CompensationRunner`.
+ * Engine facade: starts and resumes sagas. Each attempt persists its
+ * intent before calling the operation and its result together with the next
+ * state; every write is guarded by the lease token and the version.
+ * The work of each step belongs to `StepExecutor` and `CompensationRunner`.
  */
 export class SagaEngine {
   constructor(private readonly deps: SagaEngineDeps) {}
 
-  /** Suscribe un oyente de eventos. Devuelve la función que lo retira. */
+  /** Subscribes an event listener. Returns the function that removes it. */
   onEvent(listener: SagaEventListener): () => void {
     return this.deps.events.subscribe(listener);
   }
 
   /**
-   * Crea una instancia y la corre hasta que se pause o termine. El lease ya es
-   * de esta corrida. Con una `idempotencyKey` existente devuelve esa instancia.
-   * Dentro de una transacción abierta la instancia se crea con ella y se
-   * devuelve en `Running`: los pasos corren tras el commit, porque una llamada
-   * remota hecha dentro de una transacción que luego se deshace dejaría efectos
-   * sin bitácora que los compense. Si la transacción se deshace, la saga no existe.
-   * @throws SagaError `UnknownDefinition`, `InvalidState` (estado no JSON), `IdempotencyKeyConflict`.
+   * Creates an instance and runs it until it pauses or finishes. The lease already
+   * belongs to this run. With an existing `idempotencyKey` it returns that instance.
+   * Inside an open transaction the instance is created with it and
+   * returned in `Running`: the steps run after the commit, because a remote call
+   * made inside a transaction that is later rolled back would leave effects
+   * without a log to compensate them. If the transaction rolls back, the saga does not exist.
+   * @throws SagaError `UnknownDefinition`, `InvalidState` (non-JSON state), `IdempotencyKeyConflict`.
    */
   async start(
     type: string,
@@ -112,7 +112,7 @@ export class SagaEngine {
     }
     const transactions = this.deps.transactions;
     if (transactions?.isInTransaction() === true) {
-      // Si la corrida falla tras el commit, el lease vence y la retoma `SagaRecoveryJob`.
+      // If the run fails after the commit, the lease expires and `SagaRecoveryJob` resumes it.
       transactions.afterCommit(async () => {
         await this.execute(run);
       });
@@ -121,7 +121,7 @@ export class SagaEngine {
     return this.execute(run);
   }
 
-  /** Continúa una saga desde su bitácora. @throws SagaError `NotFound`, `LeaseNotAcquired`, `LeaseLost`. */
+  /** Continues a saga from its log. @throws SagaError `NotFound`, `LeaseNotAcquired`, `LeaseLost`. */
   async resume(sagaId: string): Promise<SagaInstance> {
     const run = this.deps.leases.newRun(sagaId);
     await this.deps.leases.acquire(run);
@@ -138,7 +138,7 @@ export class SagaEngine {
     }
     await this.deps.leases.release(run);
     const final = await this.load(run.sagaId);
-    // Solo se anuncia un cambio de estado hecho por esta corrida; un resume sin efecto es silencioso.
+    // Only a state change made by this run is announced; a resume with no effect is silent.
     const kind = SagaEventKinds.of(final.status);
     if (kind !== undefined && final.status !== before.status) {
       this.deps.events.publish(kind, final);
@@ -151,8 +151,8 @@ export class SagaEngine {
     let instance = await this.load(run.sagaId);
     const compiled = registry.get(instance.type);
     let firstAttempt = true;
-    // Una instancia `Suspended` la reintenta solo el primer intento; los
-    // siguientes paran en la próxima pausa para que quien llama decida cuándo volver.
+    // A `Suspended` instance is retried only by the first attempt; the
+    // following ones stop at the next pause so the caller decides when to come back.
     while (
       !instance.isFinished() &&
       (instance.status !== SagaStatus.Suspended || firstAttempt)
@@ -166,7 +166,7 @@ export class SagaEngine {
     }
   }
 
-  /** Lo que no da `StartOptions` sale de la petición en curso y del span activo: la saga continúa a quien la arrancó. */
+  /** Whatever `StartOptions` does not provide comes from the current request and the active span: the saga continues on behalf of whoever started it. */
   private contextOf(options: StartOptions): SagaCallContext {
     const request = this.deps.requestContext?.current();
     const tenantId = options.context?.tenantId ?? request?.tenantId;

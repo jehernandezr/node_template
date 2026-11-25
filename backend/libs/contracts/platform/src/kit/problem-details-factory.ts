@@ -13,12 +13,12 @@ const UNEXPECTED = platformErrorCatalog.find(
 ) as ErrorCatalogEntry;
 
 /**
- * Construye la respuesta Problem Details a partir de una entrada del catálogo.
- * `type` apunta a la documentación del código: `${typeBaseUrl}/errors/${code}`.
+ * Builds the Problem Details response from a catalog entry.
+ * `type` points to the code's documentation: `${typeBaseUrl}/errors/${code}`.
  *
- * Un código con `audience: internal` nunca llega al cliente: la respuesta es
- * `PLATFORM.INTERNAL.UNEXPECTED` con su `traceId` e `instance`, sin `detail`
- * ni `errors`, y con el título de esa entrada.
+ * A code with `audience: internal` never reaches the client: the response is
+ * `PLATFORM.INTERNAL.UNEXPECTED` with its `traceId` and `instance`, without `detail`
+ * or `errors`, and with the title of that entry.
  */
 export class ProblemDetailsFactory {
   constructor(
@@ -45,7 +45,7 @@ export class ProblemDetailsFactory {
     return problem;
   }
 
-  /** Solo los datos de texto que la entrada declara públicos; los demás nunca salen. */
+  /** Only the text data the entry declares public; the rest never goes out. */
   private publicDetails(
     input: ProblemDetailsInput,
   ): ProblemDetailsDetails | undefined {

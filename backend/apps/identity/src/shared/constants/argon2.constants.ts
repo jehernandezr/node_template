@@ -1,4 +1,4 @@
-/** Parámetros de argon2id (OWASP): 19 456 KiB de memoria, 2 pasadas, paralelismo 1. */
+/** argon2id parameters (OWASP): 19 456 KiB of memory, 2 passes, parallelism 1. */
 export const Argon2Params = {
   version: 19,
   memoryKiB: 19_456,

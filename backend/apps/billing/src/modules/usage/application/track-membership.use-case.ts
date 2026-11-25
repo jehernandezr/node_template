@@ -7,7 +7,7 @@ import { TransactionManager } from '@platform/kernel';
 import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { MemberRoster } from '../domain/member-roster.js';
 
-/** Lleva la lista de miembros del tenant: su conteo de hoy es el uso de usuarios (ver `LocalUsageFacade`). */
+/** Keeps the tenant's member list: today's count is the user usage (see `LocalUsageFacade`). */
 @Injectable()
 export class TrackMembership {
   constructor(

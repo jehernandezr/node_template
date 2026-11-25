@@ -17,9 +17,9 @@ import type {
 } from '../types/user.type.js';
 
 /**
- * Contraseña en la petición. La política (largo mínimo, contraseñas filtradas)
- * la aplica el servidor y responde sus códigos, así que aquí solo se acota el
- * largo máximo.
+ * Password in the request. The policy (minimum length, leaked passwords)
+ * is applied by the server, which responds with its codes, so here only the
+ * maximum length is bounded.
  */
 export const PasswordFieldSchema = z
   .string()
@@ -30,20 +30,18 @@ const LOCALE_PATTERN = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 
 export const UserStatusSchema = z
   .enum(UserStatus)
-  .describe(
-    'Estado de la cuenta de un usuario.',
-  ) satisfies z.ZodType<UserStatus>;
+  .describe('Status of a user account.') satisfies z.ZodType<UserStatus>;
 
 export const SecurityAlertTypeSchema = z
   .enum(SecurityAlertType)
   .describe(
-    'Alerta de seguridad sobre una cuenta.',
+    'Security alert on an account.',
   ) satisfies z.ZodType<SecurityAlertType>;
 
-/** Email con el largo máximo del contrato. */
+/** Email with the contract's maximum length. */
 export const EmailFieldSchema = z.email().max(IdentityLimits.emailMaxLength);
 
-/** Token de un solo uso que llega por email o por invitación. */
+/** Single-use token that arrives by email or by invitation. */
 export const ActionTokenFieldSchema = z
   .string()
   .min(1)
@@ -69,19 +67,19 @@ export const SignUpRequestSchema = z
     invitationToken: ActionTokenFieldSchema.optional(),
   })
   .describe(
-    'Alta de un usuario con email, contraseña, nombre e idioma.',
+    'Registration of a user with email, password, name and language.',
   ) satisfies z.ZodType<SignUpRequest>;
 
 export const EmailVerificationRequestSchema = z
   .strictObject({ email: EmailFieldSchema })
   .describe(
-    'Pedido de un email de verificación.',
+    'Request for a verification email.',
   ) satisfies z.ZodType<EmailVerificationRequest>;
 
 export const EmailVerificationConfirmRequestSchema = z
   .strictObject({ token: ActionTokenFieldSchema })
   .describe(
-    'Confirmación de la verificación del email.',
+    'Confirmation of the email verification.',
   ) satisfies z.ZodType<EmailVerificationConfirmRequest>;
 
 export const UserProfileSchema = z
@@ -95,7 +93,9 @@ export const UserProfileSchema = z
     homeTenantId: IdSchema,
     lastTenantId: IdSchema.nullable(),
   })
-  .describe('Perfil del usuario autenticado.') satisfies z.ZodType<UserProfile>;
+  .describe(
+    'Profile of the authenticated user.',
+  ) satisfies z.ZodType<UserProfile>;
 
 export const UpdateProfileRequestSchema = z
   .strictObject({
@@ -103,19 +103,19 @@ export const UpdateProfileRequestSchema = z
     locale: LocaleFieldSchema.optional(),
   })
   .describe(
-    'Cambios parciales del perfil.',
+    'Partial changes of the profile.',
   ) satisfies z.ZodType<UpdateProfileRequest>;
 
 export const EmailChangeRequestSchema = z
   .strictObject({ newEmail: EmailFieldSchema })
   .describe(
-    'Pedido de cambio de email a una dirección nueva.',
+    'Request to change the email to a new address.',
   ) satisfies z.ZodType<EmailChangeRequest>;
 
 export const EmailChangeConfirmRequestSchema = z
   .strictObject({ token: ActionTokenFieldSchema })
   .describe(
-    'Confirmación del cambio de email.',
+    'Confirmation of the email change.',
   ) satisfies z.ZodType<EmailChangeConfirmRequest>;
 
 export const SuspendUserInputSchema = z
@@ -124,21 +124,21 @@ export const SuspendUserInputSchema = z
     reason: z.string().min(1).max(IdentityLimits.reasonMaxLength).optional(),
   })
   .describe(
-    'Suspende a un usuario y revoca sus sesiones.',
+    'Suspends a user and revokes their sessions.',
   ) satisfies z.ZodType<SuspendUserInput>;
 
 export const ReactivateUserInputSchema = z
   .strictObject({ userId: IdSchema })
   .describe(
-    'Reactiva a un usuario suspendido.',
+    'Reactivates a suspended user.',
   ) satisfies z.ZodType<ReactivateUserInput>;
 
 export const UserOperationResultSchema = z
   .object({ userId: IdSchema, status: UserStatusSchema })
   .describe(
-    'Resultado de suspender o reactivar a un usuario.',
+    'Result of suspending or reactivating a user.',
   ) satisfies z.ZodType<UserOperationResult>;
 
 export const GetUserProfileInputSchema = z
   .strictObject({ userId: IdSchema })
-  .describe('Usuario a consultar.') satisfies z.ZodType<GetUserProfileInput>;
+  .describe('User to query.') satisfies z.ZodType<GetUserProfileInput>;

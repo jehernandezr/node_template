@@ -27,7 +27,7 @@ const GenerateReport = defineCommand({
   description: 'Mensaje de prueba.',
 });
 
-/** Contratos genéricos para las pruebas de validación puntuales. */
+/** Generic contracts for the targeted validation tests. */
 const RunJob = defineCommand({
   type: 'tests.job.run.v1',
   payload: z.object({}),
@@ -40,7 +40,7 @@ const ThingHappened = defineEvent({
   description: 'Mensaje de prueba.',
 });
 
-/** Topología canónica de prueba. La prueba de JSON de más abajo comprueba su `toJSON()`. */
+/** Canonical test topology. The JSON test further below checks its `toJSON()`. */
 function platformTopology(): Topology {
   const topics = [
     new TopicDef('tasks-events'),
@@ -72,7 +72,7 @@ function platformTopology(): Topology {
   return new Topology({ topics, queues, routes });
 }
 
-/** Arma una topología con una cola, para las pruebas de validación puntuales. */
+/** Builds a topology with one queue, for the targeted validation tests. */
 function singleQueue(queue: QueueDef, topics: TopicDef[] = []): Topology {
   return new Topology({
     topics,
@@ -166,7 +166,7 @@ describe('Topology.validate', () => {
   });
 
   it('requires maxReceiveCount to be at least the retry maxAttempts', () => {
-    // La política por defecto tiene 5 intentos.
+    // The default policy has 5 attempts.
     expect(
       kindsOf(
         singleQueue(new QueueDef('queue-a').deadLetter({ maxReceiveCount: 4 })),
@@ -242,7 +242,7 @@ describe('Topology.validate', () => {
   });
 
   it('limits queue names to 80 characters including -dlq and .fifo', () => {
-    // 76 + "-dlq" = 80: se acepta. 77 + "-dlq" = 81: se rechaza.
+    // 76 + "-dlq" = 80: accepted. 77 + "-dlq" = 81: rejected.
     expect(
       kindsOf(
         singleQueue(
@@ -257,7 +257,7 @@ describe('Topology.validate', () => {
         ),
       ),
     ).toEqual([TopologyIssueKind.NameTooLong]);
-    // Una cola FIFO suma ".fifo" (5 caracteres) al nombre más largo: 71 + 4 + 5 = 80 se acepta, 72 se rechaza.
+    // A FIFO queue adds ".fifo" (5 characters) to the longest name: 71 + 4 + 5 = 80 is accepted, 72 is rejected.
     expect(
       kindsOf(
         singleQueue(

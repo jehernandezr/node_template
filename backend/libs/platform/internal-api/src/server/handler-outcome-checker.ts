@@ -4,9 +4,9 @@ import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
 import type { PayloadLimit } from '../contract/payload-limit.js';
 import type { OperationRoute } from './operation-route.js';
 
-/** Comprueba el resultado de un handler contra el contrato de su operación. */
+/** Checks the result of a handler against the contract of its operation. */
 export class HandlerOutcomeChecker {
-  /** Tipos de resultado que el protocolo conoce; cualquier otro valor viene de un handler mal escrito. */
+  /** Result types the protocol knows; any other value comes from a badly written handler. */
   private static readonly KNOWN_KINDS: ReadonlySet<unknown> = new Set(
     Object.values(CallOutcomeKind),
   );
@@ -14,14 +14,14 @@ export class HandlerOutcomeChecker {
   constructor(private readonly payload: PayloadLimit) {}
 
   /**
-   * Devuelve el resultado que se le responde a quien llama:
-   * - algo que no es un `CallOutcome` conocido: `protocol-violation` `invalid-handler-result`;
-   * - un éxito cuya salida no cumple el esquema: `protocol-violation` `invalid-output`; si
-   *   cumple, `CallOutcome.success` con la salida parseada, salvo que pase del tope
+   * Returns the result sent back to the caller:
+   * - something that is not a known `CallOutcome`: `protocol-violation` `invalid-handler-result`;
+   * - a success whose output does not match the schema: `protocol-violation` `invalid-output`; if
+   *   it matches, `CallOutcome.success` with the parsed output, unless it exceeds the cap
    *   (`protocol-violation` `payload-too-large`);
-   * - un error de negocio fuera de `route.allowedCodes`: `protocol-violation`
-   *   `undeclared-error` con ese código;
-   * - cualquier otro resultado, sin cambios.
+   * - a business error outside `route.allowedCodes`: `protocol-violation`
+   *   `undeclared-error` with that code;
+   * - any other result, unchanged.
    */
   check(
     route: OperationRoute,
@@ -66,8 +66,8 @@ export class HandlerOutcomeChecker {
   }
 
   /**
-   * Saca el `CallOutcome` de lo que devolvió un handler. Un valor que no es un
-   * `HandlerResult` queda como está y `check` lo rechaza como `invalid-handler-result`.
+   * Extracts the `CallOutcome` from what a handler returned. A value that is not a
+   * `HandlerResult` stays as it is and `check` rejects it as `invalid-handler-result`.
    */
   static outcomeOf(result: unknown): CallOutcome<unknown> {
     if (typeof result === 'object' && result !== null) {

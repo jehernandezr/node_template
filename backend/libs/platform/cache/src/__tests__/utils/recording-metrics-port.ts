@@ -1,6 +1,6 @@
 import type { MetricAttributes, MetricsPort } from '@platform/observability';
 
-/** Puerto de métricas de prueba que guarda cada contador y cada medición. */
+/** Test metrics port that stores each counter and each measurement. */
 export class RecordingMetricsPort implements MetricsPort {
   readonly increments: {
     readonly name: string;

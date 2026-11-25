@@ -1,4 +1,4 @@
-/** Adaptador de `FlagStore` que elige `FLAGS_STORE`. */
+/** `FlagStore` adapter that `FLAGS_STORE` selects. */
 export enum FlagStoreKind {
   Config = 'config',
   Memory = 'memory',

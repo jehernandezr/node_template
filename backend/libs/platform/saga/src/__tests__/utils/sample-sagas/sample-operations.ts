@@ -1,7 +1,7 @@
 import { Compensation, defineOperation } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Presupuesto que cabe en los de estas pruebas: un intento de 50 ms y sin reintentos. */
+/** Budget that fits within those of these tests: a 50 ms attempt and no retries. */
 const FAST = {
   timeoutMs: 50,
   retry: { maxAttempts: 1, baseMs: 0, maxMs: 0 },

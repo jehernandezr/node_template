@@ -6,12 +6,12 @@ import type { TemplateRenderer } from './template-renderer.js';
 import type { TemplateSource } from './template-source.js';
 
 /**
- * Agrega un módulo a un servicio generado: sus capas, su fachada con un fake, su bloque de migraciones y las líneas
- * en `app.module.ts` y `database/shard-migrations.ts`, en los marcadores `// generated:modules`.
+ * Adds a module to a generated service: its layers, its facade with a fake, its migrations block and the lines
+ * in `app.module.ts` and `database/shard-migrations.ts`, at the `// generated:modules` markers.
  */
 export class ModuleGenerator {
   static readonly KIND = 'module';
-  /** Primer bloque de migraciones de un servicio sin módulos: después de los de la plataforma y de identity. */
+  /** First migrations block of a service without modules: after the platform and identity ones. */
   static readonly FIRST_RANGE = 1_797_000_100_000;
   static readonly RANGE_STEP = 100_000;
   private static readonly RANGE_VALUE = /=\s*([\d_]+)\s*,/g;
@@ -23,8 +23,8 @@ export class ModuleGenerator {
   ) {}
 
   /**
-   * Calcula todos los cambios antes de escribir: si falta un marcador o un archivo ya existe, no escribe nada.
-   * @throws GeneratorError `InvalidName`, `MissingService`, `MissingMarker` o `AlreadyExists`.
+   * Computes all changes before writing: if a marker is missing or a file already exists, it writes nothing.
+   * @throws GeneratorError `InvalidName`, `MissingService`, `MissingMarker` or `AlreadyExists`.
    */
   async generate(serviceName: string, moduleName: string): Promise<void> {
     const service = NameForms.of(serviceName);
@@ -109,7 +109,7 @@ export class ModuleGenerator {
     return { path, content };
   }
 
-  /** `1797000100000` como `1_797_000_100_000`, como se escriben los bloques a mano. */
+  /** `1797000100000` as `1_797_000_100_000`, the way blocks are written by hand. */
   private static grouped(value: number): string {
     return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
   }

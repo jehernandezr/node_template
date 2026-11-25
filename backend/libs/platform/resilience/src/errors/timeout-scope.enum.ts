@@ -1,7 +1,7 @@
-/** Alcance de un tiempo agotado. */
+/** Scope of a timeout. */
 export enum TimeoutScope {
-  /** Un intento se quedó sin tiempo. */
+  /** An attempt ran out of time. */
   Attempt = 'attempt',
-  /** La llamada completa se quedó sin presupuesto. */
+  /** The whole call ran out of budget. */
   Total = 'total',
 }

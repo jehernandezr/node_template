@@ -21,16 +21,16 @@ import { TenantSession } from './tenant-session.js';
 import { TransferCheckpoints } from './transfer-checkpoints.js';
 
 /**
- * Copia por lotes. No guarda estado entre llamadas: la copia inicial sigue desde la llave más alta que ya tiene el
- * destino (los ids son UUIDv7 y crecen con el tiempo), y cada ronda delta relee desde el `updated_at` más reciente
- * del destino menos un margen. Las escrituras son `INSERT ... ON CONFLICT` por llave primaria, así que repetir un
- * lote no duplica nada.
+ * Batch copy. It keeps no state between calls: the initial copy continues from the highest key the
+ * target already has (ids are UUIDv7 and grow over time), and each delta round rereads from the latest `updated_at`
+ * on the target minus a margin. Writes are `INSERT ... ON CONFLICT` by primary key, so repeating a
+ * batch duplicates nothing.
  *
- * Una tabla sin `updated_at` solo copia sus filas nuevas en las rondas de `sync`. Sus cambios, los borrados físicos y
- * las transacciones que confirman más tarde que el margen no los ven las rondas delta: los
- * corrige `verify`, que con el tenant congelado compara conteo y suma de cada tabla y, si difieren, la reconcilia por
- * tramos de `batchSize` filas: compara cada tramo y solo reescribe los que difieren. El avance queda en
- * `tenant_move_checkpoints` del destino, así una tabla que no cabe en el plazo de una llamada sigue en la siguiente.
+ * A table without `updated_at` only copies its new rows in the `sync` rounds. Its changes, hard deletes and
+ * transactions that commit later than the margin are not seen by the delta rounds: they are
+ * fixed by `verify`, which with the tenant frozen compares count and sum of each table and, if they differ, reconciles it in
+ * ranges of `batchSize` rows: it compares each range and only rewrites those that differ. Progress is stored in
+ * `tenant_move_checkpoints` on the target, so a table that does not fit in one call's deadline continues on the next.
  */
 export class BatchTenantDataTransfer extends TenantDataTransfer {
   private readonly filter: TenantRowFilter;
@@ -128,7 +128,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     }
   }
 
-  /** La última ronda de una tabla y su comparación, siguiendo donde quedó la llamada anterior. */
+  /** The last round of a table and its comparison, continuing where the previous call left off. */
   private async verifyTable(
     transfer: TenantTransfer,
     table: string,
@@ -177,9 +177,9 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Copia inicial y una ronda delta de una tabla. Devuelve cuántas filas insertó o cambió en el destino. Una tabla sin
-   * `updated_at` (una bitácora como `login_attempts`) solo recibe sus filas nuevas: releerla completa en cada llamada
-   * agotaría el plazo siempre en ella. Lo que cambió o se borró ahí lo corrige `verify` por tramos.
+   * Initial copy and one delta round of a table. Returns how many rows it inserted or changed on the target. A table without
+   * `updated_at` (a log like `login_attempts`) only receives its new rows: rereading it in full on every call
+   * would always exhaust the deadline on it. What changed or was deleted there is fixed by `verify` in ranges.
    */
   private async copy(
     transfer: TenantTransfer,
@@ -232,9 +232,9 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Relee lo cambiado desde la marca del destino menos el margen hasta el cambio más reciente del origen al empezar,
-   * así la ronda termina aunque las escrituras sigan. Sin `updated_at`, la tabla se relee completa hasta la última
-   * llave del origen: las filas iguales no se reescriben.
+   * Rereads what changed from the target mark minus the margin up to the latest source change at the start,
+   * so the round finishes even if writes continue. Without `updated_at`, the table is reread in full up to the last
+   * source key: identical rows are not rewritten.
    */
   private async copyChangedRows(
     transfer: TenantTransfer,
@@ -285,7 +285,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return written;
   }
 
-  /** Inicio de la ronda delta, o `undefined` para releer la tabla completa. */
+  /** Start of the delta round, or `undefined` to reread the whole table. */
   private async deltaStart(
     transfer: TenantTransfer,
     copier: TableCopier,
@@ -305,9 +305,9 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
   }
 
   /**
-   * Recorre la tabla por tramos de `batchSize` filas del origen desde `from`. En cada tramo que difiere borra del
-   * destino las filas que el origen ya no tiene y reescribe las del origen; el último tramo no tiene límite superior,
-   * así también borra las filas del destino que quedaron después de la última del origen.
+   * Walks the table in ranges of `batchSize` source rows from `from`. In each range that differs it deletes from the
+   * target the rows the source no longer has and rewrites the source ones; the last range has no upper bound,
+   * so it also deletes target rows left after the last source row.
    */
   private async reconcile(
     transfer: TenantTransfer,
@@ -359,7 +359,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     }
   }
 
-  /** Borra del destino las filas del tramo que el origen ya no tiene. */
+  /** Deletes from the target the range rows the source no longer has. */
   private async deleteGone(
     transfer: TenantTransfer,
     table: string,
@@ -409,7 +409,7 @@ export class BatchTenantDataTransfer extends TenantDataTransfer {
     return BatchTenantDataTransfer.checkOf(table, source, target);
   }
 
-  /** Borra las filas del tenant de las tablas del manifiesto, los hijos primero. */
+  /** Deletes the tenant rows from the manifest tables, children first. */
   private async purge(
     tenantId: string,
     dataSource: DataSource,

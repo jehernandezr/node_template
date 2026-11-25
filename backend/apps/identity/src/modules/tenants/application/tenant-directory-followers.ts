@@ -5,8 +5,8 @@ import { ReportsTenantDirectoryOperations } from '@contracts/reports';
 import { TasksTenantDirectoryOperations } from '@contracts/tasks';
 
 /**
- * Los servicios que guardan datos de un tenant y lo enrutan con su propio directorio de shards, en el orden en que
- * el alta los ubica. Billing va último porque el paso que le sigue abre su cuenta.
+ * The services that store a tenant's data and route it with their own shard directory, in the order in which
+ * creation places them. Billing goes last because the step after it opens its account.
  */
 export class TenantDirectoryFollowers {
   static readonly ALL: readonly TenantDirectoryOperations[] = [

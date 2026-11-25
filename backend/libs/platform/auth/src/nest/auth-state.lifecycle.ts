@@ -12,18 +12,18 @@ import { AuthRevocationFeed } from '../state/auth-revocation-feed.js';
 import { RevokedSessionRegistry } from '../state/revoked-session-registry.js';
 
 /**
- * Deja listo el Bloom de sesiones revocadas al arrancar. Primero se suscribe al
- * canal de avisos, para que ninguna revocación se pierda mientras llena el filtro, y
- * luego corre una vez el job de reconstrucción, que deja el registro lleno. Si la
- * reconstrucción falla, el registro queda frío y cada consulta va a Valkey hasta
- * que el job periódico lo consiga. Nunca lanza: un Valkey caído al arrancar no
- * puede tumbar el servicio. Se da de baja del canal al apagar.
+ * Gets the revoked sessions Bloom filter ready at startup. First it subscribes to the
+ * notice channel, so no revocation is lost while it fills the filter, and
+ * then it runs the rebuild job once, which leaves the registry filled. If the
+ * rebuild fails, the registry stays cold and each query goes to Valkey until
+ * the periodic job succeeds. It never throws: a Valkey that is down at startup
+ * cannot bring the service down. It unsubscribes from the channel at shutdown.
  */
 @Injectable()
 export class AuthStateLifecycle
   implements OnApplicationBootstrap, OnModuleDestroy
 {
-  /** `runId` de la corrida inicial de la reconstrucción. */
+  /** `runId` of the initial rebuild run. */
   static readonly BOOTSTRAP_RUN_ID = 'auth-bootstrap';
 
   private unsubscribe: (() => Promise<void>) | undefined;

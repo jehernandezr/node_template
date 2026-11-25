@@ -9,12 +9,12 @@ import type { NotificationCreatedPayload } from '../types/event.type.js';
 
 export const NotificationTypeSchema = z
   .enum(NotificationType)
-  .describe('Tipo de notificación.') satisfies z.ZodType<NotificationType>;
+  .describe('Notification type.') satisfies z.ZodType<NotificationType>;
 
 export const NotificationChannelSchema = z
   .enum(NotificationChannel)
   .describe(
-    'Canal de una notificación.',
+    'Channel of a notification.',
   ) satisfies z.ZodType<NotificationChannel>;
 
 export const NotificationCreatedPayloadSchema = z
@@ -28,5 +28,5 @@ export const NotificationCreatedPayloadSchema = z
     createdAt: TimestampSchema,
   })
   .describe(
-    'Se creó una notificación.',
+    'A notification was created.',
   ) satisfies z.ZodType<NotificationCreatedPayload>;

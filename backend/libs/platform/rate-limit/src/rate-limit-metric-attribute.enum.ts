@@ -1,4 +1,4 @@
-/** Atributos de las métricas del limitador. */
+/** Attributes of the limiter metrics. */
 export enum RateLimitMetricAttribute {
   Operation = 'operation',
   Rule = 'rule',

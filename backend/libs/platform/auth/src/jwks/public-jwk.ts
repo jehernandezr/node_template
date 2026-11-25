@@ -1,4 +1,4 @@
-/** JWK público de una clave EC P-256 que firma access tokens. */
+/** Public JWK of an EC P-256 key that signs access tokens. */
 export interface PublicJwk {
   readonly kty: 'EC';
   readonly crv: 'P-256';

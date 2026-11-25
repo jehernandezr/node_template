@@ -3,10 +3,10 @@ import type { EnvelopeValidator } from './envelope-validator.js';
 import type { MessageEnvelope } from './message-envelope.js';
 
 /**
- * Convierte una entrega cruda en un sobre validado. Acepta un JSON como texto
- * (como lo recibe un transporte) o un valor ya decodificado. El límite de
- * tamaño corre primero, antes de `JSON.parse` y de cualquier esquema, así que
- * la entrada sobredimensionada nunca llega a los parsers.
+ * Turns a raw delivery into a validated envelope. Accepts JSON as text
+ * (as a transport receives it) or an already decoded value. The size
+ * limit runs first, before `JSON.parse` and any schema, so
+ * oversized input never reaches the parsers.
  */
 export class EnvelopeParser {
   constructor(private readonly validator: EnvelopeValidator) {}
@@ -21,7 +21,7 @@ export class EnvelopeParser {
       this.validator.assertSize(this.serializedSize(raw));
       return raw;
     }
-    // Un largo UTF-16 sobre el límite ya implica más bytes que el límite.
+    // A UTF-16 length over the limit already implies more bytes than the limit.
     if (raw.length > EnvelopeLimits.MAX_BYTES) {
       this.validator.assertSize();
     }

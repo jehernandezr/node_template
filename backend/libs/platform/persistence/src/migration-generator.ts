@@ -8,8 +8,8 @@ import type { MigrationGenerateRequest } from './model/migration-generate-reques
 import type { MigrationSourceRenderer } from './migration-source-renderer.js';
 
 /**
- * Genera una migración de TypeORM: crea una base temporal, le aplica las migraciones existentes,
- * compara el esquema con las entidades y escribe `<Nombre><timestamp>.ts` con `up` y `down`.
+ * Generates a TypeORM migration: creates a temporary database, applies the existing migrations to it,
+ * compares the schema with the entities and writes `<Name><timestamp>.ts` with `up` and `down`.
  */
 export class MigrationGenerator {
   private static readonly NAME_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
@@ -19,7 +19,7 @@ export class MigrationGenerator {
     private readonly renderer: MigrationSourceRenderer,
   ) {}
 
-  /** @returns la ruta del archivo escrito, o `null` si las entidades ya coinciden con las migraciones. */
+  /** @returns the path of the written file, or `null` if the entities already match the migrations. */
   async generate(request: MigrationGenerateRequest): Promise<string | null> {
     if (!MigrationGenerator.NAME_PATTERN.test(request.name)) {
       throw PersistenceError.invalidConfiguration(
@@ -82,7 +82,7 @@ export class MigrationGenerator {
     });
   }
 
-  /** Corre una sentencia de administración fuera de cualquier transacción, en la base `postgres`. */
+  /** Runs an administration statement outside any transaction, on the `postgres` database. */
   private async adminQuery(
     request: MigrationGenerateRequest,
     sql: string,

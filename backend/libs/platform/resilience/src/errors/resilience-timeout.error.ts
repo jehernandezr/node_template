@@ -3,7 +3,7 @@ import { ResilienceError } from './resilience-error.js';
 import { ResilienceErrorCode } from './resilience-error-code.enum.js';
 import { TimeoutScope } from './timeout-scope.enum.js';
 
-/** Un intento o la llamada completa se quedaron sin tiempo. */
+/** An attempt or the whole call ran out of time. */
 export class ResilienceTimeoutError extends ResilienceError {
   readonly scope: TimeoutScope;
   readonly timeoutMs: number;

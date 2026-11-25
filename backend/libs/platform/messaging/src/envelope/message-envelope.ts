@@ -1,4 +1,4 @@
-/** Sobre CloudEvents 1.0 que envuelve un payload tipado. Admite atributos de extensión. */
+/** CloudEvents 1.0 envelope that wraps a typed payload. Allows extension attributes. */
 export interface MessageEnvelope<T = unknown> {
   readonly specversion: '1.0';
   readonly id: string;

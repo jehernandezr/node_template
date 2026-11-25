@@ -21,8 +21,8 @@ import { TypeOrmTenantMoveLog } from '../infrastructure/persistence/typeorm-tena
 import { TenantMovesInternalOperations } from './tenant-moves.internal-operations.js';
 
 /**
- * Traslado de tenants: la saga `MoveTenant`, su bitácora, la limpieza del origen y las operaciones de traslado de
- * identity. Es global para que el oyente de esas operaciones, que vive en `TenantMoveModule`, alcance la bitácora.
+ * Tenant moves: the `MoveTenant` saga, its log, the source cleanup and identity's move
+ * operations. It is global so that the listener of those operations, which lives in `TenantMoveModule`, reaches the log.
  */
 @Global()
 @Module({

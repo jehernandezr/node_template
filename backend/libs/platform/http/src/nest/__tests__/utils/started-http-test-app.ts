@@ -17,12 +17,12 @@ import { HttpTestClient } from '../../../__tests__/utils/index.js';
 export const TEST_USER_ID = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
 export const TEST_TENANT_ID = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
 
-/** Usuario nuevo por token: el caché de grants es por usuario y cada prueba fija sus permisos. */
+/** New user per token: the grant cache is per user and each test sets its permissions. */
 function freshUserId(): string {
   return '0192f1b4-7c3a-7d2e-9a41-' + randomBytes(6).toString('hex');
 }
 
-/** App de prueba arrancada: cliente HTTP, dobles de auth y claves para firmar tokens. */
+/** Started test app: HTTP client, auth doubles and keys to sign tokens. */
 export class StartedHttpTestApp {
   constructor(
     readonly client: HttpTestClient,
@@ -33,8 +33,8 @@ export class StartedHttpTestApp {
   ) {}
 
   /**
-   * Access token firmado. Siembra la versión de permisos y el grant del usuario para que el
-   * verificador lo acepte, y devuelve el token.
+   * Returns a signed access token. Seeds the user's permission version and grant so the
+   * verifier accepts it, and returns the token.
    */
   async tokenFor(
     options: {
@@ -63,7 +63,7 @@ export class StartedHttpTestApp {
     return token.sign(this.keys);
   }
 
-  /** API key válida de prueba con secreto aleatorio, sembrada en el estado de auth. */
+  /** Returns a valid test API key with a random secret, seeded in the auth state. */
   async seedApiKey(): Promise<string> {
     const prefix = randomBytes(4).toString('hex');
     const secret = randomBytes(24).toString('hex');

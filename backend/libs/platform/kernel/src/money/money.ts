@@ -1,22 +1,22 @@
 import { InvalidMoneyError } from './invalid-money.error.js';
 import { ValueObject } from '../value-object.js';
 
-/** Monto en unidades menores (centavos) y su moneda ISO 4217. */
+/** Amount in minor units (cents) and its ISO 4217 currency. */
 export class Money extends ValueObject<{
   amountMinor: number;
   currency: string;
 }> {
-  /** Mayor monto absoluto representable sin pérdida en JavaScript y en Dart web. */
+  /** Largest absolute amount representable without loss in JavaScript and in Dart web. */
   static readonly MAX_ABS_AMOUNT_MINOR = Number.MAX_SAFE_INTEGER;
 
-  /** Código de moneda ISO 4217: tres letras mayúsculas. */
+  /** ISO 4217 currency code: three uppercase letters. */
   static readonly CURRENCY_PATTERN = /^[A-Z]{3}$/;
 
   private constructor(amountMinor: number, currency: string) {
     super({ amountMinor, currency });
   }
 
-  /** Crea un monto. Lanza `InvalidMoneyError` si no es entero seguro o la moneda es inválida. */
+  /** Creates an amount. Throws `InvalidMoneyError` if it is not a safe integer or the currency is invalid. */
   static of(amountMinor: number, currency: string): Money {
     if (!Money.CURRENCY_PATTERN.test(currency)) {
       throw new InvalidMoneyError('invalid currency');
@@ -27,16 +27,16 @@ export class Money extends ValueObject<{
     ) {
       throw new InvalidMoneyError('amount out of range');
     }
-    // Normaliza -0 para que la igualdad y la serialización no distingan los ceros.
+    // Normalizes -0 so equality and serialization do not tell the zeros apart.
     return new Money(amountMinor === 0 ? 0 : amountMinor, currency);
   }
 
-  /** Monto cero en `currency`. */
+  /** Zero amount in `currency`. */
   static zero(currency: string): Money {
     return Money.of(0, currency);
   }
 
-  /** Suma una lista de montos; la lista vacía da cero en `currency`. */
+  /** Sums a list of amounts; the empty list gives zero in `currency`. */
   static sum(values: readonly Money[], currency: string): Money {
     return values.reduce(
       (total, value) => total.add(value),
@@ -52,19 +52,19 @@ export class Money extends ValueObject<{
     return this.props.currency;
   }
 
-  /** Suma dos montos de la misma moneda. */
+  /** Adds two amounts of the same currency. */
   add(other: Money): Money {
     this.assertSameCurrency(other);
     return Money.of(this.amountMinor + other.amountMinor, this.currency);
   }
 
-  /** Resta `other` de este monto, de la misma moneda. */
+  /** Subtracts `other` from this amount, of the same currency. */
   subtract(other: Money): Money {
     this.assertSameCurrency(other);
     return Money.of(this.amountMinor - other.amountMinor, this.currency);
   }
 
-  /** Multiplica por una cantidad entera, por ejemplo unidades de un ítem. */
+  /** Multiplies by an integer quantity, for example units of an item. */
   multiply(quantity: number): Money {
     if (!Number.isInteger(quantity)) {
       throw new InvalidMoneyError('quantity must be an integer');
@@ -73,8 +73,8 @@ export class Money extends ValueObject<{
   }
 
   /**
-   * Reparte el monto en `parts` partes enteras que suman exactamente el total.
-   * Los centavos sobrantes van a las primeras partes.
+   * Splits the amount into `parts` integer parts that add up exactly to the total.
+   * The leftover cents go to the first parts.
    */
   allocate(parts: number): Money[] {
     if (!Number.isInteger(parts) || parts < 1) {
@@ -89,13 +89,13 @@ export class Money extends ValueObject<{
     );
   }
 
-  /** Compara dos montos de la misma moneda: negativo, cero o positivo. */
+  /** Compares two amounts of the same currency: negative, zero or positive. */
   compareTo(other: Money): number {
     this.assertSameCurrency(other);
     return Math.sign(this.amountMinor - other.amountMinor);
   }
 
-  /** Formatea para personas en `locale`, por ejemplo `$ 1.500,00`. */
+  /** Formats for people in `locale`, for example `$ 1.500,00`. */
   format(locale: string): string {
     const digits = Money.digitsOf(this.currency);
     return new Intl.NumberFormat(locale, {
@@ -116,7 +116,7 @@ export class Money extends ValueObject<{
     }
   }
 
-  /** Decimales de la moneda según ISO 4217 (2 para USD, 0 para JPY). */
+  /** Returns the currency decimals according to ISO 4217 (2 for USD, 0 for JPY). */
   private static digitsOf(currency: string): number {
     return (
       new Intl.NumberFormat('en', {

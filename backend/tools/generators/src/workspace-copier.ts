@@ -1,6 +1,6 @@
-/** Hace y borra una copia del workspace donde la prueba de humo puede generar sin tocar el repositorio. */
+/** Creates and deletes a copy of the workspace where the smoke test can generate without touching the repository. */
 export abstract class WorkspaceCopier {
-  /** @returns la raíz de la copia. */
+  /** @returns the root of the copy. */
   abstract copy(): Promise<string>;
 
   abstract remove(root: string): Promise<void>;

@@ -20,7 +20,7 @@ import { ShardLockEntity } from './entities/shard-lock.entity.js';
 import { TenantMoveCheckpointEntity } from './entities/tenant-move-checkpoint.entity.js';
 import { TenantWriteFenceEntity } from './entities/tenant-write-fence.entity.js';
 
-/** Entidades de las tablas de la plataforma que viven en cada base de shard. La app las suma a las suyas. */
+/** Entities of the platform tables that live in each shard database. The app adds them to its own. */
 export const platformShardEntities: readonly EntityClass[] = [
   OutboxEntity,
   ProcessedMessageEntity,
@@ -30,8 +30,8 @@ export const platformShardEntities: readonly EntityClass[] = [
 ];
 
 /**
- * Entidades de las tablas de la plataforma que viven en el catálogo global. `idempotency_keys` está también
- * aquí para los servicios con `requireScope`, cuyas operaciones internas eligen su shard en el handler.
+ * Entities of the platform tables that live in the global catalog. `idempotency_keys` is also
+ * here for services with `requireScope`, whose internal operations choose their shard in the handler.
  */
 export const platformCatalogEntities: readonly EntityClass[] = [
   ShardDirectoryEntity,
@@ -40,7 +40,7 @@ export const platformCatalogEntities: readonly EntityClass[] = [
   IdempotencyKeyEntity,
 ];
 
-/** Migraciones de cada shard: las funciones y `audit_log` de `@platform/persistence` y las tablas de la plataforma. */
+/** Migrations of each shard: the functions and `audit_log` of `@platform/persistence` and the platform tables. */
 export const platformShardMigrations: readonly MigrationClass[] = [
   ...PlatformPersistenceMigrations.shard,
   CreatePlatformShardTables1794800001001,
@@ -50,7 +50,7 @@ export const platformShardMigrations: readonly MigrationClass[] = [
   AddProcessedMessageTenant1794800001005,
 ];
 
-/** Migraciones del catálogo global. */
+/** Migrations of the global catalog. */
 export const platformCatalogMigrations: readonly MigrationClass[] = [
   CreatePlatformCatalogTables1794800001101,
   CreateCatalogIdempotencyKeys1794800001102,

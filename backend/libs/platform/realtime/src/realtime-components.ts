@@ -10,14 +10,14 @@ import type { RealtimeConnections } from './session/realtime-connections.js';
 import { SocketIoTransport } from './socket-io/socket-io-transport.js';
 import { SseTransport } from './sse/sse-transport.js';
 
-/** Dónde atiende cada transporte. */
+/** Where each transport serves. */
 export interface RealtimeEndpoints {
   readonly ssePath: string;
   readonly socketNamespace: string;
   readonly allowedOrigins: readonly string[];
 }
 
-/** Arma el autenticador de `REALTIME_AUTH` y los transportes de `REALTIME_TRANSPORTS`. */
+/** Builds the `REALTIME_AUTH` authenticator and the `REALTIME_TRANSPORTS` transports. */
 export class RealtimeComponents {
   constructor(private readonly settings: RealtimeSettings) {}
 

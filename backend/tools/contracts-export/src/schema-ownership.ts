@@ -7,9 +7,9 @@ export interface SchemaOwner {
   readonly name: string;
 }
 
-/** Averigua a qué contrato pertenece cada esquema con nombre. */
+/** Determines which contract each named schema belongs to. */
 export class SchemaOwnership {
-  /** Falla si un mismo esquema está registrado con dos nombres. */
+  /** Fails if the same schema is registered under two names. */
   of(contracts: readonly ServiceContract[]): Map<z.ZodType, SchemaOwner> {
     const owners = new Map<z.ZodType, SchemaOwner>();
     for (const contract of contracts) {
@@ -18,7 +18,7 @@ export class SchemaOwnership {
         if (previous) {
           throw ExportError.forService(
             contract.service,
-            `el esquema ${name} ya está registrado como ${previous.service}.${name}`,
+            `schema ${name} is already registered as ${previous.service}.${name}`,
           );
         }
         owners.set(schema, { service: contract.service, name });

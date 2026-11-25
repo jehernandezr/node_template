@@ -17,7 +17,7 @@ const ProofSchema = z.object({
   email: z.string(),
 });
 
-/** Tokens de email en Valkey bajo la huella del token: quien lee Valkey no puede usar un token guardado. */
+/** Email tokens in Valkey under the token's hash: whoever reads Valkey cannot use a stored token. */
 @Injectable()
 export class EphemeralEmailProofStore extends EmailProofStore {
   private static readonly TOKEN_BYTES = 32;

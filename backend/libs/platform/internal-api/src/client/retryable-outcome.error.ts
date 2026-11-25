@@ -4,11 +4,11 @@ import type {
 } from '@platform/primitives';
 
 /**
- * Control de flujo: un intento que terminó en un resultado no final lo lanza
- * para que el `ResilienceRegistry` lo reintente (`retryable` lo marca como
- * transitorio y `retryAfterMs` es la pista de espera que ya sabe leer). Si no
- * quedan intentos, el `CallErrorTranslator` lo vuelve a convertir en su
- * resultado. Nunca sale del cliente.
+ * Flow control: an attempt that ended in a non-final result throws it
+ * so the `ResilienceRegistry` retries it (`retryable` marks it as
+ * transient and `retryAfterMs` is the wait hint it already knows how to read). If no
+ * attempts remain, the `CallErrorTranslator` converts it back into its
+ * result. It never leaves the client.
  */
 export class RetryableOutcomeError extends Error {
   readonly retryable = true;

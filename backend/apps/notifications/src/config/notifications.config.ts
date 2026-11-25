@@ -11,17 +11,17 @@ import { EmailSenderKind } from '../shared/enums/email-sender-kind.enum.js';
 import { PushSenderKind } from '../shared/enums/push-sender-kind.enum.js';
 import { RealtimeHost } from '../shared/enums/realtime-host.enum.js';
 
-/** Configuración de notifications. Las librerías leen las suyas (base, Valkey, auth, tiempo real) por su sección. */
+/** Notifications configuration. The libraries read their own (database, Valkey, auth, real time) through their section. */
 export const notificationsConfigSchema = serviceConfigSchema
   .extend({
     ...internalHttpConfigSchema.shape,
     NOTIFICATIONS_EMAIL_SENDER: z
       .enum(EmailSenderKind)
       .default(EmailSenderKind.Memory),
-    /** Servidor SMTP de desarrollo (Mailpit), `smtp://host:puerto`; sin puerto, el 25. */
+    /** Development SMTP server (Mailpit), `smtp://host:port`; without a port, 25. */
     SMTP_URL: z.url().optional(),
     NOTIFICATIONS_FROM_ADDRESS: z.email(),
-    /** Huella de los destinatarios en `email_messages` y en la lista de supresión: nunca se guarda el correo. */
+    /** Hash of the recipients in `email_messages` and in the suppression list: the email address is never stored. */
     NOTIFICATIONS_EMAIL_PEPPER: secret({ minLength: 32 }),
     NOTIFICATIONS_PUSH_SENDER: z
       .enum(PushSenderKind)

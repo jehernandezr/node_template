@@ -1,19 +1,19 @@
 import type { TransactionHook } from './transaction-hook.js';
 
 /**
- * Unidad de trabajo: una transacción abierta sobre una base lógica. No expone
- * la sesión de la base; el adaptador que la necesita (un repositorio, el
- * outbox) la toma de su propio `TransactionManager`.
+ * Unit of work: an open transaction on a logical database. It does not expose
+ * the database session; the adapter that needs it (a repository, the
+ * outbox) takes it from its own `TransactionManager`.
  */
 export interface UnitOfWork {
-  /** Nombre de la base lógica (el shard) donde vive la transacción. */
+  /** Name of the logical database (the shard) where the transaction lives. */
   readonly database: string;
   /**
-   * Registra un efecto para después del commit: publicar eventos, invalidar
-   * caché, avisar a otro proceso. Corre fuera de la transacción, en orden de
-   * registro. Si falla se reporta y no deshace el commit.
+   * Registers an effect for after the commit: publishing events, invalidating
+   * cache, notifying another process. It runs outside the transaction, in
+   * registration order. If it fails, it is reported and does not undo the commit.
    */
   afterCommit(hook: TransactionHook): void;
-  /** Registra un efecto que corre solo si la transacción se deshace. */
+  /** Registers an effect that runs only if the transaction is rolled back. */
   afterRollback(hook: TransactionHook): void;
 }

@@ -1,9 +1,9 @@
 /**
- * Transforma la entrada y la salida de una ruta entre una versión anterior de la API y la actual. Mientras exista una
- * sola versión no hay transformadores: la clase queda lista para la primera que cambie un contrato.
+ * Transforms the input and output of a route between an earlier API version and the current one. While there is only
+ * one version there are no transformers: the class is ready for the first one that changes a contract.
  */
 export abstract class VersionTransformer {
-  /** Versión anterior que este transformador sabe traducir. */
+  /** Earlier version this transformer knows how to translate. */
   abstract readonly fromVersion: string;
 
   abstract transformRequest(routeId: string, input: unknown): unknown;

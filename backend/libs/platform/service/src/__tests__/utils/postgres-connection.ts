@@ -1,4 +1,4 @@
-/** Datos de conexión al servidor PostgreSQL de las pruebas de integración. */
+/** Connection data for the PostgreSQL server of the integration tests. */
 export interface PostgresConnection {
   readonly host: string;
   readonly port: number;

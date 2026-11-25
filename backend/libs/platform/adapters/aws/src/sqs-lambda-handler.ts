@@ -3,11 +3,11 @@ import { SqsDeliveryMapper } from './sqs-delivery-mapper.js';
 import type { SqsDeliveryProcessor } from './sqs-delivery-processor.js';
 import type { SqsBatchResponse, SqsLambdaEvent } from './sqs-lambda-event.js';
 
-/** Handler de Lambda para un evento SQS con fallos parciales por lote. */
+/** Lambda handler for an SQS event with partial batch failures. */
 export class SqsLambdaHandler {
   constructor(private readonly processor: SqsDeliveryProcessor) {}
 
-  /** Responde con `batchItemFailures` para las entregas que deben volver a la cola. */
+  /** Responds with `batchItemFailures` for the deliveries that must go back to the queue. */
   async handle(event: SqsLambdaEvent): Promise<SqsBatchResponse> {
     const reports = await this.processor.process(
       event.Records.map((record) => SqsDeliveryMapper.fromRecord(record)),

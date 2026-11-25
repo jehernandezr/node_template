@@ -9,12 +9,12 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { EraseRequester } from '../application/erase-requester.use-case.js';
 
-/** Borrado de los datos de un usuario en reports. */
+/** Deletion of a user's data in reports. */
 @Injectable()
 export class RunsInternalOperations {
   constructor(private readonly eraseRequester: EraseRequester) {}
 
-  /** Repetirla no cambia nada: el usuario ya no figura en ninguna ejecución. */
+  /** Repeating it changes nothing: the user no longer appears in any run. */
   @InternalHandler(EraseReportsUserDataOperation)
   async eraseUserData(
     input: EraseReportsUserInput,

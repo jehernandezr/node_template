@@ -18,12 +18,12 @@ import { UserReader } from './user-reader.js';
 import { UserRegistrar } from './user-registrar.js';
 
 /**
- * Registro desde la ruta pública. Responde igual exista o no el email: si ya tiene cuenta, se envía un
- * correo "ya tienes cuenta" en lugar del de verificación. La política de contraseña se revisa antes de
- * mirar el email, para que su error tampoco revele nada. El cupo del plan del tenant que invita también se
- * revisa antes de crear la cuenta: si no alcanza, no queda un usuario sin membresía que bloquee el reintento.
- * Si otro miembro toma el último cupo entre esa revisión y la aceptación, la cuenta queda creada sin membresía;
- * el reintento con la misma invitación la acepta para esa cuenta en lugar de responder que el email ya existe.
+ * Registration from the public route. Responds the same whether or not the email exists: if it already has an account, an
+ * "ya tienes cuenta" email is sent instead of the verification one. The password policy is checked before
+ * looking at the email, so its error does not reveal anything either. The plan quota of the inviting tenant is also
+ * checked before creating the account: if it is not enough, no user without a membership is left to block the retry.
+ * If another member takes the last slot between that check and the acceptance, the account is created without a membership;
+ * the retry with the same invitation accepts it for that account instead of responding that the email already exists.
  */
 @Injectable()
 export class RegisterUser implements UseCase<SignUpCommand, void> {
@@ -94,9 +94,9 @@ export class RegisterUser implements UseCase<SignUpCommand, void> {
   }
 
   /**
-   * La cuenta que dejó un registro con esta invitación cuya aceptación falló: tiene el email invitado, su tenant de
-   * origen es el que invita, se verificó después de emitirse la invitación (que sigue pendiente) y no es miembro de
-   * ningún tenant. Una cuenta que ya era miembro, o que salió de un tenant antes de esta invitación, no lo cumple.
+   * The account left by a registration with this invitation whose acceptance failed: it has the invited email, its home
+   * tenant is the inviting one, it was verified after the invitation was issued (which is still pending) and it is not a member of
+   * any tenant. An account that was already a member, or that left a tenant before this invitation, does not qualify.
    */
   private async accountLeftByInvitation(
     email: string,

@@ -15,10 +15,10 @@ import { IdentityMailer } from '../domain/identity-mailer.js';
 import type { OutgoingEmail } from '../domain/outgoing-email.js';
 
 /**
- * Correo real (`IDENTITY_MAILER=notifications`): pide el envío a notifications por la API interna, así los
- * códigos nunca pasan por el bus. Los tokens viajan como código porque la web todavía no tiene las pantallas
- * a las que apuntaría un enlace. Un destinatario suprimido (rebotó o se quejó) no recibe el correo y el caso de
- * uso responde igual que con un envío: un error revelaría qué direcciones están suprimidas.
+ * Real mailer (`IDENTITY_MAILER=notifications`): requests the send from notifications through the internal API, so
+ * codes never go through the bus. Tokens travel as codes because the web app does not yet have the screens
+ * a link would point to. A suppressed recipient (bounced or complained) does not receive the email and the use
+ * case responds the same as with a send: an error would reveal which addresses are suppressed.
  */
 @Injectable()
 export class NotificationsIdentityMailer extends IdentityMailer {
@@ -52,7 +52,7 @@ export class NotificationsIdentityMailer extends IdentityMailer {
     super();
   }
 
-  /** @throws NotificationsUnavailableError si notifications no confirma el envío ni lo descarta por supresión. */
+  /** @throws NotificationsUnavailableError if notifications neither confirms the send nor discards it by suppression. */
   async send(email: OutgoingEmail): Promise<void> {
     const messageId = this.ids.next().toString();
     const template = NotificationsIdentityMailer.TEMPLATES[email.template];

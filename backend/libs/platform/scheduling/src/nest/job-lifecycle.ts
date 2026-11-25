@@ -8,14 +8,14 @@ import { SCHEDULING_OPTIONS } from './scheduling.module-definition.js';
 import type { SchedulingModuleOptions } from './scheduling-module-options.js';
 
 /**
- * Registra en el `JobRunner` todos los providers que son `ScheduledJob`, sin
- * que su módulo importe el de scheduling, y lo inicia o lo detiene con la app.
+ * Registers in the `JobRunner` all the providers that are `ScheduledJob`, without
+ * their module importing the scheduling one, and starts or stops it with the app.
  *
- * Se detiene en `onModuleDestroy` y no en `beforeApplicationShutdown` porque Nest
- * llama a todos los `onModuleDestroy` antes: un job en curso todavía encontraría
- * cerradas las conexiones que usa. Nest destruye los módulos globales al final y
- * en orden inverso al de importación, así que `SchedulingModule` se importa
- * después de los módulos cuyos recursos usan los jobs (Valkey, AWS, persistencia).
+ * It stops in `onModuleDestroy` and not in `beforeApplicationShutdown` because Nest
+ * calls all the `onModuleDestroy` hooks first: a running job would still find
+ * the connections it uses closed. Nest destroys global modules last and
+ * in reverse import order, so `SchedulingModule` is imported
+ * after the modules whose resources the jobs use (Valkey, AWS, persistence).
  */
 @Injectable()
 export class JobLifecycle implements OnApplicationBootstrap, OnModuleDestroy {

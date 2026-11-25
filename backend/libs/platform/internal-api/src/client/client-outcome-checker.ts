@@ -8,16 +8,16 @@ import { InternalApiReason } from '../contract/internal-api-reason.enum.js';
 import type { PayloadLimit } from '../contract/payload-limit.js';
 import { InternalApiErrorCode } from '../errors/internal-api-error-code.enum.js';
 
-/** Comprueba el resultado que entrega un transporte contra el contrato de la operación. */
+/** Checks the result a transport delivers against the operation contract. */
 export class ClientOutcomeChecker {
   constructor(private readonly payload: PayloadLimit) {}
 
   /**
-   * - Éxito que pasa del tope: `protocol-violation` `payload-too-large`; si la salida no
-   *   cumple el esquema: `protocol-violation` `invalid-output`; si cumple, `CallOutcome.success` con la salida parseada.
-   * - Error de negocio fuera de `metadata.allowedErrorCodes()`: `protocol-violation` `undeclared-error` con ese código; si está permitido, sin cambios.
-   * - `protocol-violation`, `transient-failure` y `uncertain`: sin cambios.
-   * - Cualquier otra forma: `protocol-violation` `invalid-handler-result`.
+   * - Success over the cap: `protocol-violation` `payload-too-large`; if the output does not
+   *   match the schema: `protocol-violation` `invalid-output`; if it does, `CallOutcome.success` with the parsed output.
+   * - Business error outside `metadata.allowedErrorCodes()`: `protocol-violation` `undeclared-error` with that code; if allowed, unchanged.
+   * - `protocol-violation`, `transient-failure` and `uncertain`: unchanged.
+   * - Any other shape: `protocol-violation` `invalid-handler-result`.
    */
   settle(
     descriptor: OperationDescriptor,

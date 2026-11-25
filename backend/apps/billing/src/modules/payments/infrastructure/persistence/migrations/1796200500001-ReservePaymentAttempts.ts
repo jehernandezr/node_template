@@ -1,9 +1,9 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Cada intento lleva su número dentro de la factura y cuándo se pidió, y el número es único: el intento se anota antes
- * de cobrar y esa llave impide que dos corridas pidan el mismo cobro. Las filas que ya existían son el primer intento
- * de su factura, porque hasta ahora se cobraba una sola vez.
+ * Each attempt carries its number within the invoice and when it was requested, and the number is unique: the attempt is
+ * recorded before charging and that key prevents two runs from requesting the same charge. Existing rows are the first
+ * attempt of their invoice, because until now each invoice was charged only once.
  */
 export class ReservePaymentAttempts1796200500001 implements MigrationInterface {
   readonly name = 'ReservePaymentAttempts1796200500001';

@@ -4,7 +4,7 @@ import { CatalogTableRepository } from '../../../../database/catalog-table-repos
 import { TenantDirectory } from '../../domain/tenant-directory.js';
 import { TenantLookupEntity } from './entities/tenant-lookup.entity.js';
 
-/** `TenantDirectory` sobre `tenant_lookup` del catálogo. */
+/** `TenantDirectory` over `tenant_lookup` in the catalog. */
 @Injectable()
 export class TypeOrmTenantDirectory
   extends CatalogTableRepository
@@ -19,7 +19,7 @@ export class TypeOrmTenantDirectory
     tenantId: string,
     region: string,
   ): Promise<boolean> {
-    // El mismo tenant puede repetir la reserva: la operación de alta es idempotente.
+    // The same tenant can repeat the reservation: the creation operation is idempotent.
     const inserted: unknown[] = await this.write((manager) =>
       manager.query(
         'INSERT INTO "tenant_lookup" ("slug", "tenant_id", "region") VALUES ($1, $2, $3) ' +

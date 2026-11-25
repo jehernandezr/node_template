@@ -8,12 +8,12 @@ import { InternalCallAuthenticator } from './internal-call-authenticator.js';
 import type { SignableRequest } from './signable-request.js';
 
 /**
- * Autentica las llamadas entrantes firmadas con `HmacSigner`. La
- * firma solo vale dentro de una ventana de tiempo, a cada lado del reloj, para
- * que una llamada interceptada no se repita más tarde.
+ * Authenticates incoming calls signed with `HmacSigner`. The
+ * signature is only valid within a time window, on each side of the clock, so
+ * that an intercepted call cannot be replayed later.
  */
 export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
-  /** Ventana de validez de una firma. */
+  /** Validity window of a signature. */
   static readonly DEFAULT_WINDOW_MS = 60_000;
 
   private readonly calculator: HmacSignatureCalculator;
@@ -52,9 +52,9 @@ export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
   }
 
   /**
-   * Firma esperada, o `undefined` si el cuerpo no es JSON firmable: una
-   * petición así no pudo salir de un firmador legítimo y se rechaza igual que
-   * una firma inválida, sin dejar escapar otro error.
+   * Returns the expected signature, or `undefined` if the body is not signable JSON: such a
+   * request could not have come from a legitimate signer and is rejected just like
+   * an invalid signature, without leaking a different error.
    */
   private expectedSignature(
     request: SignableRequest,
@@ -67,7 +67,7 @@ export class HmacInternalCallAuthenticator extends InternalCallAuthenticator {
     }
   }
 
-  /** El mensaje no distingue el motivo, para no ayudar a quien prueba firmas. */
+  /** The message does not tell the reason apart, so it does not help someone probing signatures. */
   private static rejection(): InternalApiError {
     return new InternalApiError(
       InternalApiErrorCode.Unauthenticated,

@@ -3,25 +3,25 @@ import type { RateLimitDegradationReporter } from './rate-limit-degradation-repo
 import type { RateLimitDegradedListener } from './rate-limit-degraded-listener.js';
 import type { RateLimiter } from './rate-limiter.js';
 
-/** Opciones de {@link DegradingRateLimiter}. */
+/** Options of {@link DegradingRateLimiter}. */
 export interface DegradingRateLimiterOptions {
-  /** Limitador compartido entre instancias, normalmente el de Valkey. */
+  /** Limiter shared between instances, usually the Valkey one. */
   readonly primary: RateLimiter;
   /**
-   * Divide el límite de cada regla mientras responde el limitador local, por
-   * lo general el número de instancias del servicio: cada una cuenta solo su
-   * tráfico, y entre todas no deberían pasar mucho más del límite global.
+   * Divides the limit of each rule while the local limiter responds,
+   * usually the number of service instances: each one counts only its own
+   * traffic, and together they should not let through much more than the global limit.
    */
   readonly localDivisor: number;
-  /** Limitador local. Por defecto un `InMemoryRateLimiter` con `clock`. */
+  /** Local limiter. Defaults to an `InMemoryRateLimiter` with `clock`. */
   readonly fallback?: RateLimiter;
-  /** Reloj del limitador local por defecto. */
+  /** Clock of the default local limiter. */
   readonly clock?: Clock;
   /**
-   * Se llama con cada falla del limitador compartido. Una excepción dentro de
-   * él se ignora.
+   * Called with each failure of the shared limiter. An exception inside
+   * it is ignored.
    */
   readonly onDegraded?: RateLimitDegradedListener;
-  /** Reporta cada falla. Por defecto no hace nada. */
+  /** Reports each failure. Does nothing by default. */
   readonly reporter?: RateLimitDegradationReporter;
 }

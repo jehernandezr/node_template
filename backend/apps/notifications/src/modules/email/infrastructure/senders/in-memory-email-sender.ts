@@ -1,7 +1,7 @@
 import type { OutgoingEmail } from '../../domain/outgoing-email.js';
 import { EmailSender } from '../../domain/email-sender.js';
 
-/** Modo sin proveedor: guarda los correos en el proceso. Sirve en local sin Mailpit y en las pruebas. */
+/** Provider-less mode: keeps emails in the process. Used locally without Mailpit and in tests. */
 export class InMemoryEmailSender extends EmailSender {
   readonly sent: OutgoingEmail[] = [];
 

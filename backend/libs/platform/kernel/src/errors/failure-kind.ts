@@ -1,10 +1,10 @@
 /**
- * Clase de una falla, compartida por resilience, messaging, internal-api y saga.
- * - `Transient`: reintentar la misma llamada puede funcionar.
- * - `Permanent`: repetirla da el mismo resultado (regla de negocio, 4xx, recurso inexistente).
- * - `ProtocolViolation`: contrato roto o fallo de implementación. Nunca se reintenta.
- * - `Timeout`: se agotó el tiempo; el efecto pudo o no aplicarse.
- * - `Cancelled`: el llamador abortó; el efecto pudo o no aplicarse.
+ * Kind of a failure, shared by resilience, messaging, internal-api and saga.
+ * - `Transient`: retrying the same call may work.
+ * - `Permanent`: repeating it gives the same result (business rule, 4xx, missing resource).
+ * - `ProtocolViolation`: broken contract or implementation fault. Never retried.
+ * - `Timeout`: time ran out; the effect may or may not have been applied.
+ * - `Cancelled`: the caller aborted; the effect may or may not have been applied.
  */
 export enum FailureKind {
   Transient = 'transient',

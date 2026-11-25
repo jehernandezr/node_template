@@ -7,9 +7,9 @@ import type { ValkeyTokenAuth } from './valkey-token-auth.js';
 import type { ValkeySettings } from './valkey.config.js';
 
 /**
- * Crea clientes de iovalkey desde la configuración: por URL y sin
- * autenticación en local, o con un token IAM nuevo en cada conexión en AWS.
- * Quien crea un cliente lo cierra con `quit()`.
+ * Creates iovalkey clients from the configuration: by URL and without
+ * authentication locally, or with a new IAM token on each connection on AWS.
+ * Whoever creates a client closes it with `quit()`.
  */
 export class ValkeyClientFactory {
   private static readonly DEFAULT_CONNECT_TIMEOUT_MS = 2_000;
@@ -23,11 +23,11 @@ export class ValkeyClientFactory {
   ) {}
 
   /**
-   * Abre una conexión nueva. Una por cliente de comandos y otra para el
-   * suscriptor de pub/sub, que no puede compartirla. Un token IAM vive 15
-   * minutos y solo se revisa en `AUTH`; por eso cada conexión pide el suyo y
-   * no se usa `client.duplicate()`, que copiaría el token pero no quien lo renueva.
-   * @throws ConfigValidationError listando cada variable incoherente.
+   * Opens a new connection. One per command client and another for the
+   * pub/sub subscriber, which cannot share it. An IAM token lives 15
+   * minutes and is only checked on `AUTH`; that is why each connection requests its own and
+   * `client.duplicate()` is not used, since it would copy the token but not what renews it.
+   * @throws ConfigValidationError listing each inconsistent variable.
    */
   async create(): Promise<Valkey> {
     const { connection, auth } = this.resolver.resolve(
@@ -40,16 +40,16 @@ export class ValkeyClientFactory {
       return client;
     }
     client.options.password = await auth.provider.token(auth.request);
-    // La primera conexión arranca aquí con el token en mano; las fallas salen en los comandos
-    // y el cliente sigue reconectando.
+    // The first connection starts here with the token in hand; failures surface in the commands
+    // and the client keeps reconnecting.
     client.connect().catch(() => undefined);
     this.renewOnReconnect(client, auth);
     return client;
   }
 
   /**
-   * Conecta con el primer comando, reintenta un comando una sola vez mientras
-   * reconecta (así una caída falla rápido y el breaker puede abrir) y acota cada comando.
+   * Connects on the first command, retries a command only once while
+   * reconnecting (so an outage fails fast and the breaker can open) and bounds each command.
    */
   private open(options: ValkeyConnectionOptions): Valkey {
     const common = {
@@ -75,8 +75,8 @@ export class ValkeyClientFactory {
   }
 
   /**
-   * Pone una contraseña nueva antes de cada reconexión: iovalkey vuelve a
-   * llamar a `connect()` tras una caída y lee `options.password` al enviar `AUTH`.
+   * Sets a new password before each reconnection: iovalkey calls
+   * `connect()` again after an outage and reads `options.password` when sending `AUTH`.
    */
   private renewOnReconnect(client: Valkey, auth: ValkeyTokenAuth): void {
     const connect = client.connect.bind(client);

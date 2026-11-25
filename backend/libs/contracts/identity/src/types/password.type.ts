@@ -1,18 +1,18 @@
 /**
- * Cambio de contraseña de una sesión abierta. La política de la contraseña
- * nueva la aplica el servidor, así que el contrato solo acota el largo.
+ * Password change from an open session. The policy for the new password
+ * is applied by the server, so the contract only bounds the length.
  */
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
 }
 
-/** Pedido de un correo para restablecer la contraseña. */
+/** Request for an email to reset the password. */
 export interface PasswordResetRequest {
   email: string;
 }
 
-/** Restablecimiento con el token del correo y la contraseña nueva. */
+/** Reset with the token from the email and the new password. */
 export interface PasswordResetConfirmRequest {
   token: string;
   newPassword: string;

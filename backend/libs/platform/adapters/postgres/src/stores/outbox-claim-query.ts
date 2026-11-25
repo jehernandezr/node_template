@@ -24,8 +24,8 @@ interface OutboxCandidate {
 }
 
 /**
- * Reclama los registros vencidos del outbox dentro de la transacción del manager que recibe: una sola consulta con
- * `FOR UPDATE ... SKIP LOCKED` que respeta el FIFO por grupo, y el lease con su token de fencing.
+ * Claims the due outbox records inside the transaction of the manager it receives: a single query with
+ * `FOR UPDATE ... SKIP LOCKED` that respects per-group FIFO, and the lease with its fencing token.
  */
 export class OutboxClaimQuery {
   private static readonly OPEN = EnumSql.list([
@@ -33,7 +33,7 @@ export class OutboxClaimQuery {
     OutboxStatus.Failed,
   ]);
 
-  // El QueryBuilder no expresa el DISTINCT ON del bloqueador ni FOR UPDATE OF con SKIP LOCKED sobre un join.
+  // The QueryBuilder cannot express the blocker's DISTINCT ON nor FOR UPDATE OF with SKIP LOCKED over a join.
   private static readonly PICK_SQL =
     'SELECT o.id, o.group_id, o.created_at, o.seq FROM outbox o ' +
     'LEFT JOIN (' +
@@ -50,7 +50,7 @@ export class OutboxClaimQuery {
 
   constructor(private readonly clock: Clock) {}
 
-  /** Hasta `request.limit` registros con el lease puesto, del `created_at` más viejo al más nuevo. */
+  /** Returns up to `request.limit` records with the lease set, from the oldest `created_at` to the newest. */
   async claim(
     manager: EntityManager,
     request: ClaimOutboxRequest,
@@ -95,9 +95,9 @@ export class OutboxClaimQuery {
   }
 
   /**
-   * Otro relay puede tener bloqueado (en su claim sin confirmar) un registro anterior del grupo: `SKIP LOCKED` lo
-   * salta y su sucesor parecería libre. Descarta los candidatos de un grupo que tenga un registro abierto anterior
-   * fuera del conjunto que esta transacción acaba de bloquear.
+   * Another relay may have locked (in its uncommitted claim) an earlier record of the group: `SKIP LOCKED`
+   * skips it and its successor would look free. Discards the candidates of a group that has an earlier open record
+   * outside the set this transaction just locked.
    */
   private async withoutSkippedPredecessors(
     manager: EntityManager,
@@ -113,7 +113,7 @@ export class OutboxClaimQuery {
     if (groups.length === 0) {
       return [...candidates];
     }
-    // Solo las columnas del orden: el envelope de cada fila abierta del grupo no hace falta aquí.
+    // Only the ordering columns: the envelope of each open row of the group is not needed here.
     const others = await manager
       .createQueryBuilder(OutboxEntity, 'o')
       .select(['o.id', 'o.groupId', 'o.createdAt', 'o.seq'])
@@ -138,7 +138,7 @@ export class OutboxClaimQuery {
     );
   }
 
-  /** `a` va antes que `b`: `created_at` y, en empate, `seq`. */
+  /** Whether `a` goes before `b`: by `created_at` and, on a tie, by `seq`. */
   private static isEarlier(
     a: { readonly createdAt: Date; readonly seq: number },
     b: { readonly createdAt: Date; readonly seq: number },

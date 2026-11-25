@@ -1,7 +1,7 @@
-/** Dónde queda un tenant en un servicio al trasladarlo a un grupo. */
+/** Where a tenant ends up in a service when moved to a group. */
 export interface TenantMoveTarget {
   readonly group: string;
   readonly region: string;
-  /** Shard lógico del servicio en ese grupo. */
+  /** Service logical shard in that group. */
   readonly shard: string;
 }

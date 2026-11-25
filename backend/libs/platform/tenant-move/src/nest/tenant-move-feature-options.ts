@@ -3,15 +3,15 @@ import type { TenantMoveOperations } from '@contracts/platform';
 import type { TenantMoveListener } from '../application/tenant-move-listener.js';
 import type { TenantMoveManifest } from '../manifest/tenant-move-manifest.js';
 
-/** Lo que cada servicio pasa a `TenantMoveModule.forFeature`. */
+/** What each service passes to `TenantMoveModule.forFeature`. */
 export interface TenantMoveFeatureOptions {
-  /** Las operaciones de traslado de su contrato, las de `defineTenantMoveOperations`. */
+  /** The move operations of its contract, those from `defineTenantMoveOperations`. */
   readonly operations: TenantMoveOperations;
-  /** Se instancia en el módulo: no recibe dependencias. */
+  /** Instantiated in the module: it receives no dependencies. */
   readonly manifest: Type<TenantMoveManifest>;
   /**
-   * Lo que el servicio hace además al cambiar de directorio o al cancelar. Se instancia en el módulo con lo que
-   * exportan los módulos globales del servicio.
+   * What the service also does when switching directory or canceling. Instantiated in the module with what
+   * the service global modules export.
    */
   readonly listener?: Type<TenantMoveListener>;
 }

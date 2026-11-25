@@ -5,11 +5,11 @@ import { CacheGuard } from './errors/cache-guard.js';
 import type { SingleFlightOptions } from './single-flight.options.js';
 
 /**
- * Une las ejecuciones concurrentes que comparten una llave: mientras una está en
- * vuelo, las demás reciben su misma promesa en vez de repetir el trabajo.
+ * Joins concurrent executions that share a key: while one is in
+ * flight, the others receive its same promise instead of repeating the work.
  */
 export class SingleFlight {
-  /** Largo máximo por defecto de una llave, en caracteres. */
+  /** Default maximum length of a key, in characters. */
   static readonly DEFAULT_MAX_KEY_LENGTH = 1_024;
 
   private readonly inFlight = new Map<string, Promise<unknown>>();
@@ -25,19 +25,19 @@ export class SingleFlight {
     );
   }
 
-  /** Ejecuciones en curso. */
+  /** Runs in progress. */
   get size(): number {
     return this.inFlight.size;
   }
 
   /**
-   * Ejecuta `fn` salvo que ya haya una en curso con la misma llave, en cuyo caso
-   * comparte su promesa. La llave se libera al terminar, con éxito o con error.
+   * Runs `fn` unless one is already running with the same key, in which case
+   * it shares its promise. The key is released when it finishes, with success or error.
    *
-   * `options` solo acota la espera de quien llama: si aborta o vence su plazo,
-   * ese llamador rechaza mientras la ejecución compartida sigue para los demás.
-   * Un llamador ya cancelado no arranca `fn`.
-   * @throws CacheKeyTooLongError cuando la llave supera `maxKeyLength`.
+   * `options` only bounds the caller's wait: if it aborts or its deadline expires,
+   * that caller rejects while the shared execution continues for the others.
+   * An already cancelled caller does not start `fn`.
+   * @throws CacheKeyTooLongError when the key exceeds `maxKeyLength`.
    */
   run<T>(
     key: string,

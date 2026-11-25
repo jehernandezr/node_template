@@ -2,9 +2,9 @@ import type { AppNotification } from '@contracts/notifications';
 import type { UserRef } from '@contracts/platform';
 import type { NotificationState } from '../domain/notification.js';
 
-/** Lo que los otros módulos piden de la bandeja. */
+/** What other modules ask of the inbox. */
 export abstract class InboxFacade {
-  /** Agrega la notificación en la transacción abierta; repetirla no la duplica. */
+  /** Adds the notification in the open transaction; repeating it does not duplicate it. */
   abstract add(
     user: UserRef,
     notification: NotificationState,

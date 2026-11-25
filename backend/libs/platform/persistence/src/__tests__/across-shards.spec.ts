@@ -19,7 +19,7 @@ const SHARDS: readonly ShardLocation[] = [
   { logicalShard: 'svc_shard_3', instance: 'instance-1' },
 ];
 
-/** Gestor de transacciones que solo informa si hay una abierta. */
+/** Transaction manager that only reports whether one is open. */
 class FakeTransactionManager extends TransactionManager {
   constructor(private readonly open: boolean) {
     super();
@@ -42,11 +42,11 @@ class FakeTransactionManager extends TransactionManager {
   }
 
   afterCommit(): void {
-    // No hay efectos que registrar en esta prueba.
+    // There are no effects to record in this test.
   }
 }
 
-/** Una vuelta por el planificador: deja correr a los demás trabajadores antes de seguir. */
+/** One turn through the scheduler: lets the other workers run before continuing. */
 function flush(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
 }

@@ -1,4 +1,4 @@
-/** La contraseña de un usuario: su hash PHC y cuándo cambió. */
+/** A user's password: its PHC hash and when it changed. */
 export interface PasswordCredential {
   readonly userId: string;
   readonly hash: string;

@@ -5,15 +5,15 @@ import type { ProbeDatabase } from './probe-database.js';
 import { ProvisionedService } from './provisioned-service.js';
 import { ServicePostgresServer } from './service-postgres-server.js';
 
-/** PostgreSQL y Valkey reales para las pruebas de integración de un servicio, con sus bases y su rol propio. */
+/** Real PostgreSQL and Valkey for a service's integration tests, with its databases and its own role. */
 export class ServiceTestServers {
   private readonly postgres: ServicePostgresServer;
   readonly valkey: ValkeyTestServer;
   private provisioned: ProvisionedService | undefined;
 
   /**
-   * @param shardExtensions Extensiones que el servicio espera en sus shards; las crea el superusuario, como
-   *   lo hace la provisión de las bases en los ambientes.
+   * @param shardExtensions Extensions the service expects in its shards; the superuser creates them, as
+   *   database provisioning does in the environments.
    */
   constructor(
     private readonly serviceName: string,
@@ -38,7 +38,7 @@ export class ServiceTestServers {
     );
   }
 
-  /** Las bases recién creadas, el rol del servicio y Valkey con el usuario de servicio. */
+  /** The freshly created databases, the service role and Valkey with the service user. */
   environment(): ConfigEnv {
     return {
       ...this.service().environment(),
@@ -46,17 +46,17 @@ export class ServiceTestServers {
     };
   }
 
-  /** Anota los dos shards en el directorio del catálogo; el catálogo debe estar migrado. */
+  /** Records the two shards in the catalog directory; the catalog must be migrated. */
   async registerShards(): Promise<void> {
     await this.service().registerShards();
   }
 
-  /** Ubica al tenant en uno de los dos shards, como lo haría identity al crearlo. */
+  /** Places the tenant in one of the two shards, as identity would when creating it. */
   async placeTenant(tenantId: string, shard: 0 | 1): Promise<void> {
     await this.service().placeTenant(tenantId, shard);
   }
 
-  /** Los dos shards, con la conexión de superusuario: para mirar dónde quedó cada fila. */
+  /** The two shards, with the superuser connection: to check where each row ended up. */
   shards(): readonly [ProbeDatabase, ProbeDatabase] {
     return this.service().shards();
   }
@@ -65,7 +65,7 @@ export class ServiceTestServers {
     return this.service().catalog();
   }
 
-  /** Cómo entra el servicio a sus bases: con su rol, sujeto al RLS. */
+  /** How the service connects to its databases: with its role, subject to RLS. */
   serviceConnection(): PostgresConnection {
     return this.service().serviceConnection();
   }

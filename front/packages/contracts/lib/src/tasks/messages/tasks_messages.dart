@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../platform/enums/platform_enums.dart';
 import '../../tasks/schemas/tasks_schemas.dart';
 import '../../tasks/types/tasks_types.dart';
 
-/// Eventos que publica el contrato `tasks`.
+/// Events published by the `tasks` contract.
 abstract final class TasksEvents {
-  /// Se creó una tarea en un tenant.
+  /// A task was created in a tenant.
   ///
   /// `tasks.task.created.v1`
   static const taskCreated = MessageDescriptor<TaskCreatedPayload>(
@@ -20,7 +20,7 @@ abstract final class TasksEvents {
     decodePayload: TaskCreatedPayload.fromJson,
   );
 
-  /// Se cambió una tarea: campos modificados, estado anterior y nuevo, quien la cambió y quien la creó.
+  /// A task was changed: modified fields, previous and new status, who changed it and who created it.
   ///
   /// `tasks.task.updated.v1`
   static const taskUpdated = MessageDescriptor<TaskUpdatedPayload>(
@@ -31,7 +31,7 @@ abstract final class TasksEvents {
     decodePayload: TaskUpdatedPayload.fromJson,
   );
 
-  /// Se borró una tarea (borrado lógico).
+  /// A task was deleted (soft delete).
   ///
   /// `tasks.task.deleted.v1`
   static const taskDeleted = MessageDescriptor<TaskDeletedPayload>(
@@ -42,14 +42,14 @@ abstract final class TasksEvents {
     decodePayload: TaskDeletedPayload.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[
     taskCreated,
     taskUpdated,
     taskDeleted,
   ];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;

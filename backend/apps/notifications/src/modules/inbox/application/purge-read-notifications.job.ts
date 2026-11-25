@@ -10,7 +10,7 @@ import type { NotificationsConfig } from '../../../config/notifications.config.j
 import { NotificationsJob } from '../../../shared/enums/notifications-job.enum.js';
 import { InboxMaintenance } from '../domain/inbox-maintenance.js';
 
-/** Borra las notificaciones leídas hace más de `NOTIFICATIONS_INBOX_RETENTION_DAYS`. */
+/** Deletes notifications read more than `NOTIFICATIONS_INBOX_RETENTION_DAYS` ago. */
 @Injectable()
 export class PurgeReadNotificationsJob extends ScheduledJob {
   private static readonly DAY_MS = 24 * 60 * 60_000;

@@ -5,7 +5,7 @@ import {
   type UnitOfWork,
 } from '@platform/kernel';
 
-/** Unidad de trabajo en memoria: guarda los efectos hasta el commit o el rollback. */
+/** In-memory unit of work: holds the effects until the commit or the rollback. */
 class InMemoryUnitOfWork implements UnitOfWork {
   readonly database = 'default';
   readonly commitHooks: TransactionHook[] = [];
@@ -21,8 +21,8 @@ class InMemoryUnitOfWork implements UnitOfWork {
 }
 
 /**
- * Transacciones en memoria con el contexto asíncrono real: una transacción
- * anidada se une a la abierta y los efectos corren solo tras commit o rollback.
+ * In-memory transactions with the real async context: a nested
+ * transaction joins the open one and effects run only after commit or rollback.
  */
 export class InMemoryTransactionManager extends TransactionManager {
   private readonly storage = new AsyncLocalStorage<InMemoryUnitOfWork>();

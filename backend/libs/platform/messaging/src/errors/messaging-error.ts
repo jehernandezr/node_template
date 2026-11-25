@@ -6,11 +6,11 @@ import {
 import { MessagingErrorCode } from './messaging-error-code.enum.js';
 
 /**
- * Error base de `@platform/messaging`, con un `code` estable. Un error de
- * mensajería es definitivo salvo que diga lo contrario: `failureKind` es
- * `Transient` solo si se declaró `retryable`, así el clasificador nunca lo
- * convierte en reintento por su `cause`. El mensaje no incluye valores crudos
- * de entrada.
+ * Base error of `@platform/messaging`, with a stable `code`. A messaging
+ * error is final unless it says otherwise: `failureKind` is
+ * `Transient` only if it was declared `retryable`, so the classifier never
+ * turns it into a retry because of its `cause`. The message does not include raw
+ * input values.
  */
 export class MessagingError extends PlatformError {
   override readonly code: MessagingErrorCode;

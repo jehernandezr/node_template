@@ -51,7 +51,7 @@ describe('ProblemDetailsMapper', () => {
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
       type: 'https://docs.test/errors/PLATFORM.RESOURCE.NOT_FOUND',
-      title: 'El recurso solicitado no existe.',
+      title: 'The requested resource does not exist.',
       status: 404,
       code: PlatformErrorCode.ResourceNotFound,
       instance: '/v1/items',

@@ -4,7 +4,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
 const BASE =
   '"id" uuid NOT NULL, "version" integer NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "tenant_id" uuid NOT NULL, "created_by" character varying(64), "updated_by" character varying(64)';
 
-/** `payment_attempts` con RLS por tenant. */
+/** `payment_attempts` with RLS per tenant. */
 export class CreatePaymentAttempts1796200500000 implements MigrationInterface {
   readonly name = 'CreatePaymentAttempts1796200500000';
 

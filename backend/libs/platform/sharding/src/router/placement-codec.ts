@@ -8,14 +8,14 @@ import type {
 } from './shared-record.js';
 
 /**
- * Serializa y valida lo que `ShardRouter` guarda en el caché compartido, y
- * calcula las versiones de caché. Es pura y sin estado.
+ * Serializes and validates what `ShardRouter` stores in the shared cache, and
+ * computes cache versions. It is pure and stateless.
  */
 export class PlacementCodec {
   /**
-   * Versión de caché de una lápida escrita sin conocer ninguna versión de
-   * placement. Queda por encima de toda versión de placement en la práctica
-   * (menores que 2^51), así rechaza toda escritura hasta expirar.
+   * Cache version of a tombstone written without knowing any placement
+   * version. In practice it is above every placement version
+   * (lower than 2^51), so it rejects every write until it expires.
    */
   static readonly UNVERSIONED_TOMBSTONE_VERSION = 2 ** 52;
 
@@ -24,18 +24,18 @@ export class PlacementCodec {
   );
 
   /**
-   * Versión de caché de un placement. Los placements toman números pares
-   * (`2 × versión`) para que una lápida quede estrictamente entre dos
-   * versiones: la lápida `2N − 1` rechaza toda versión menor que N y acepta N.
+   * Cache version of a placement. Placements take even numbers
+   * (`2 × version`) so that a tombstone falls strictly between two
+   * versions: tombstone `2N − 1` rejects every version lower than N and accepts N.
    */
   static cacheVersion(version: number): number {
     return version * 2;
   }
 
   /**
-   * Versión de caché de la lápida que reemplaza a un placement: por encima de
-   * toda versión que este router ve, y al menos `2N − 1` cuando quien llama da
-   * la versión confirmada N (rechaza por debajo de N, acepta N).
+   * Cache version of the tombstone that replaces a placement: above
+   * every version this router sees, and at least `2N − 1` when the caller gives
+   * the committed version N (rejects below N, accepts N).
    */
   static tombstoneVersion(
     local: TenantPlacement | undefined,
@@ -75,8 +75,8 @@ export class PlacementCodec {
   }
 
   /**
-   * Interpreta y valida lo que contiene una clave del caché compartido. Todo
-   * lo malformado devuelve `undefined`, así quien llama lo trata como un fallo (falla cerrado).
+   * Parses and validates the content of a shared cache key. Anything
+   * malformed returns `undefined`, so the caller treats it as a miss (fails closed).
    */
   static decode(raw: string | undefined): SharedRecord | undefined {
     if (raw === undefined) {

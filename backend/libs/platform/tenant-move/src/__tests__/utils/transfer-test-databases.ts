@@ -8,8 +8,8 @@ import { DataSource } from 'typeorm';
 import { LedgerSchema } from './ledger-schema.js';
 
 /**
- * Un PostgreSQL con `wal_level=logical` y dos bases, origen y destino, con las tablas de prueba. El servicio entra
- * con un rol propio sin privilegios, sujeto al RLS; la replicación lógica entra como superusuario.
+ * A PostgreSQL with `wal_level=logical` and two databases, source and target, with the test tables. The service connects
+ * with its own unprivileged role, subject to RLS; logical replication connects as superuser.
  */
 export class TransferTestDatabases {
   static readonly IMAGE = 'postgres:17-alpine';
@@ -31,7 +31,7 @@ export class TransferTestDatabases {
     );
   }
 
-  /** Un par nuevo de bases, origen y destino, con el esquema creado y su dueño el rol del servicio. */
+  /** A new pair of databases, source and target, with the schema created and owned by the service role. */
   async pair(): Promise<{
     readonly source: DataSource;
     readonly target: DataSource;

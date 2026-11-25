@@ -1,10 +1,10 @@
-/** Archivo generado: dónde va y el valor JSON que contiene. */
+/** Generated file: where it goes and the JSON value it contains. */
 export interface Artifact {
   readonly path: string;
   readonly value: unknown;
 }
 
-/** Resultado de procesar los artefactos: éxito y las líneas para el usuario. */
+/** Result of processing the artifacts: success and the lines for the user. */
 export interface ExportReport {
   readonly ok: boolean;
   readonly lines: readonly string[];

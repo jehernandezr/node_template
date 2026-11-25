@@ -13,7 +13,7 @@ import { GateDecisionKind, type GateDecision } from './gate-decision.js';
 import type { IdempotencyGateOptions } from './idempotency-gate.options.js';
 import type { ProcessedOperationStore } from './processed-operation-store.js';
 
-/** Claim, complete y release de la llave de idempotencia de una llamada sobre el `ProcessedOperationStore`. */
+/** Claim, complete and release of the idempotency key of a call on top of the `ProcessedOperationStore`. */
 export class IdempotencyGate {
   constructor(
     private readonly store: ProcessedOperationStore,
@@ -22,15 +22,15 @@ export class IdempotencyGate {
   ) {}
 
   /**
-   * Pide el claim de `key` con la huella `fingerprint`, del tenant de la llamada si la trae; el lease dura hasta
-   * `deadline` más el margen.
-   * - El almacén lanza: `Respond` con `outcomes.fromError(error)`.
-   * - La llave tiene la lápida de su compensación: `Respond` con el resultado de la lápida, sin correr el paso.
-   * - La huella guardada difiere: si el claim se adquirió se libera sin ruido, y `Respond`
-   *   con `protocol-violation` `idempotency-key-reuse`.
-   * - `Completed`: `Respond` con el resultado guardado.
-   * - `InProgress`: `Respond` con `transient-failure` `in-progress`.
-   * - `Acquired`: `Proceed` con la llave y su token.
+   * Requests the claim of `key` with the hash `fingerprint`, for the call's tenant if it has one; the lease lasts until
+   * `deadline` plus the margin.
+   * - The store throws: `Respond` with `outcomes.fromError(error)`.
+   * - The key has the tombstone of its compensation: `Respond` with the tombstone result, without running the step.
+   * - The stored hash differs: if the claim was acquired it is released quietly, and `Respond`
+   *   with `protocol-violation` `idempotency-key-reuse`.
+   * - `Completed`: `Respond` with the stored result.
+   * - `InProgress`: `Respond` with `transient-failure` `in-progress`.
+   * - `Acquired`: `Proceed` with the key and its token.
    */
   async claim(
     key: string,
@@ -65,7 +65,7 @@ export class IdempotencyGate {
       return { kind: GateDecisionKind.Respond, outcome: claim.result };
     }
     if (claim.fingerprint !== fingerprint) {
-      // Un claim adquirido con otra huella no lo usa nadie: se libera para que la llave quede libre.
+      // A claim acquired with a different hash is used by nobody: it is released so the key is free.
       if (claim.state === ClaimState.Acquired) {
         await this.release({ key, claimToken: claim.claimToken });
       }
@@ -95,8 +95,8 @@ export class IdempotencyGate {
   }
 
   /**
-   * Guarda el resultado final con el token. Propaga `StaleClaimError` si otro
-   * intento tomó la llave.
+   * Stores the final result with the token. Propagates `StaleClaimError` if another
+   * attempt took the key.
    */
   complete(
     claimed: ClaimedOperation,
@@ -106,14 +106,14 @@ export class IdempotencyGate {
   }
 
   /**
-   * Libera el claim. Un token viejo significa que otro intento es dueño de la
-   * llave: no lanza nunca, porque el resultado de esta llamada ya está decidido.
+   * Releases the claim. A stale token means another attempt owns the
+   * key: it never throws, because the result of this call is already decided.
    */
   async release(claimed: ClaimedOperation): Promise<void> {
     try {
       await this.store.release(claimed.key, claimed.claimToken);
     } catch {
-      // El lease vence solo: fallar aquí no cambia la respuesta que ya se decidió.
+      // The lease expires on its own: failing here does not change the response already decided.
     }
   }
 }

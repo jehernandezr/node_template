@@ -6,8 +6,8 @@ import { QuotaChecker } from '../quota-checker.js';
 import { QuotaGuard } from './quota.guard.js';
 
 /**
- * Cuotas contra billing para `@Quota` y para los casos de uso que comprueban un límite antes de escribir.
- * El servicio declara el contrato de billing entre sus pares y su URL en `INTERNAL_API_BASE_URLS`.
+ * Quotas against billing for `@Quota` and for the use cases that check a limit before writing.
+ * The service declares the billing contract among its peers and its URL in `INTERNAL_API_BASE_URLS`.
  */
 @Global()
 @Module({

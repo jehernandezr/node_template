@@ -20,7 +20,7 @@ import { TypeOrmDeviceRepository } from '../infrastructure/persistence/typeorm-d
 import { DevicesController } from './devices.controller.js';
 import { DevicesInternalOperations } from './devices.internal-operations.js';
 
-/** Dispositivos, su clave, sus aprobaciones y su push. Global solo para su fachada. */
+/** Devices, their key, their approvals and their push. Global only for its facade. */
 @Global()
 @Module({
   imports: [

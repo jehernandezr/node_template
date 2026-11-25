@@ -1,6 +1,6 @@
 import type { UsageMetric } from '@contracts/billing';
 
-/** Si un tenant puede consumir lo pedido de una métrica, con su límite y lo ya usado en el periodo. */
+/** Whether a tenant can consume the requested amount of a metric, with its limit and what was already used in the period. */
 export interface QuotaCheck {
   readonly metric: UsageMetric;
   readonly limit: number;

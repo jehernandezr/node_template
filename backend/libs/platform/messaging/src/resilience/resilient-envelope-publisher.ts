@@ -5,8 +5,8 @@ import type { OutboundTarget, PublishOutboxOptions } from '../outbox/outbox.js';
 import { MessagingPolicies } from './messaging-policies.js';
 
 /**
- * Decora un publicador con la política `Queue`: cada destino (tópico o cola)
- * tiene su propio circuit breaker, así uno caído no frena a los demás.
+ * Decorates a publisher with the `Queue` policy: each destination (topic or queue)
+ * has its own circuit breaker, so one that is down does not hold back the others.
  */
 export class ResilientEnvelopePublisher extends EnvelopePublisher {
   constructor(

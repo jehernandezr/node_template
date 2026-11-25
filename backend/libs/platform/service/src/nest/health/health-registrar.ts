@@ -3,7 +3,7 @@ import { HealthRegistry } from '@platform/observability';
 import { CatalogHealthCheck } from './catalog-health-check.js';
 import { ShardsHealthCheck } from './shards-health-check.js';
 
-/** Registra en `HealthRegistry` los checks de las bases al iniciar el módulo. */
+/** Registers the database checks in `HealthRegistry` when the module starts. */
 @Injectable()
 export class HealthRegistrar implements OnModuleInit {
   constructor(

@@ -18,8 +18,8 @@ import { ChallengeVerifier } from './challenge-verifier.js';
 import { StartPendingMfa } from './start-pending-mfa.use-case.js';
 
 /**
- * Paso adicional de una sesión abierta para las operaciones sensibles. Verificarlo sube el último MFA de
- * la sesión y emite un access token nuevo; el session token no cambia.
+ * Additional step of an open session for sensitive operations. Verifying it raises the session's last MFA
+ * and issues a new access token; the session token does not change.
  */
 @Injectable()
 export class StepUp {
@@ -62,7 +62,7 @@ export class StepUp {
     return this.complete(request.mfaToken, method);
   }
 
-  /** Consume el step-up pendiente y sube el último MFA de su sesión. */
+  /** Consumes the pending step-up and raises the last MFA of its session. */
   async complete(
     mfaToken: string,
     method: AuthMethodReference,

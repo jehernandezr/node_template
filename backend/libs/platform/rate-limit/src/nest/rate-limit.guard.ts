@@ -10,7 +10,7 @@ import { RateLimitKeyResolver } from './rate-limit-key-resolver.js';
 import type { RateLimitMetadata } from './rate-limit.metadata.js';
 import { RATE_LIMIT_METADATA } from './rate-limit-tokens.js';
 
-/** Aplica la regla de `@RateLimit` a la ruta. Las rutas sin regla pasan. */
+/** Applies the `@RateLimit` rule to the route. Routes without a rule pass. */
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   constructor(

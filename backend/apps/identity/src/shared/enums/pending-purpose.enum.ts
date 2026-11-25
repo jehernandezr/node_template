@@ -1,9 +1,9 @@
-/** Para qué se abrió una autenticación pendiente. */
+/** What a pending authentication was opened for. */
 export enum PendingPurpose {
-  /** Inicio de sesión que falta completar con un segundo factor. */
+  /** Sign-in that still needs to be completed with a second factor. */
   SignIn = 'sign_in',
-  /** Paso adicional de una sesión ya abierta. */
+  /** Additional step of an already open session. */
   StepUp = 'step_up',
-  /** Recuperación del segundo factor sin dispositivo. */
+  /** Second factor recovery without a device. */
   Recovery = 'recovery',
 }

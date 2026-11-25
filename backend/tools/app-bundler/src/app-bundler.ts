@@ -3,18 +3,18 @@ import { join } from 'node:path';
 import { build, type Plugin } from 'esbuild';
 
 export interface AppBundle {
-  /** Nombre del proyecto de Nx; da nombre a la carpeta de salida. */
+  /** Nx project name; names the output folder. */
   readonly projectName: string;
-  /** Carpeta del proyecto, relativa a la raíz del repositorio. */
+  /** Project folder, relative to the repository root. */
   readonly projectRoot: string;
   /** Entradas relativas a `projectRoot`. */
   readonly entryPoints: readonly string[];
 }
 
 /**
- * Empaqueta una app del backend en `backend/dist/<app>/`. Las librerías del repositorio
- * entran al paquete por sus alias de TypeScript; las dependencias de node_modules quedan
- * externas y se instalan en la imagen con el package.json del backend.
+ * Bundles a backend app into `backend/dist/<app>/`. The repository libraries
+ * enter the bundle through their TypeScript aliases; node_modules dependencies stay
+ * external and are installed in the image with the backend package.json.
  */
 export class AppBundler {
   constructor(

@@ -5,9 +5,9 @@ import {
 } from '@platform/kernel';
 
 /**
- * `TransactionManager` de pruebas que cuenta cuántas unidades de trabajo se
- * confirmaron y cuántas se deshicieron. Los contadores son públicos porque
- * ese conteo es lo que las pruebas verifican.
+ * Test `TransactionManager` that counts how many units of work were
+ * committed and how many were rolled back. The counters are public because
+ * that count is what the tests verify.
  */
 export class RecordingTransactionManager extends TransactionManager {
   commits = 0;

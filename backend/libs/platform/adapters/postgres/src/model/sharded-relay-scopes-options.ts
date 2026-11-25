@@ -1,7 +1,7 @@
-/** Opciones de `ShardedRelayScopes`. */
+/** Options of `ShardedRelayScopes`. */
 export interface ShardedRelayScopesOptions {
-  /** Shards que se publican a la vez. Por defecto `AcrossShards.DEFAULT_CONCURRENCY`. */
+  /** Shards published at the same time. Defaults to `AcrossShards.DEFAULT_CONCURRENCY`. */
   readonly concurrency?: number;
-  /** Tiempo máximo de una pasada en un shard, en milisegundos. Por defecto 30 000. */
+  /** Maximum time of one pass on a shard, in milliseconds. Defaults to 30 000. */
   readonly shardTimeoutMs?: number;
 }

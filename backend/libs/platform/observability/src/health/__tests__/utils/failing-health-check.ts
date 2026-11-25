@@ -1,6 +1,6 @@
 import { HealthCheckable, type HealthReport } from '@platform/kernel';
 
-/** Dependencia cuya consulta siempre lanza el error dado. */
+/** Dependency whose query always throws the given error. */
 export class FailingHealthCheck extends HealthCheckable {
   constructor(
     readonly name: string,

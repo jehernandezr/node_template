@@ -6,26 +6,26 @@ import type { TopicDefinition } from './define-messaging.js';
 import { defineTopic } from './define-messaging.js';
 
 export interface TopicReferenceSpec {
-  /** Nombre del tópico del servicio dueño. */
+  /** Name of the owning service's topic. */
   readonly name: string;
   readonly fifo?: boolean;
-  /** Tipos de los eventos del tópico que esta referencia nombra. */
+  /** Types of the topic events this reference names. */
   readonly events: readonly string[];
   readonly description: string;
 }
 
 export interface CommandReferenceSpec {
-  /** Tipo del comando que atiende el servicio dueño. */
+  /** Type of the command the owning service handles. */
   readonly type: string;
   readonly description: string;
 }
 
 /**
- * Apunta por nombre a un tópico de otro servicio. Sirve cuando el contrato no
- * puede importar al dueño porque éste ya lo importa (dos servicios que se
- * suscriben uno al otro). `contracts-export` comprueba contra el contrato del
- * dueño que el tópico y cada tipo existen. El payload es `unknown`: quien
- * consume el mensaje valida con el evento real del contrato del dueño.
+ * Points by name to a topic of another service. Useful when the contract cannot
+ * import the owner because the owner already imports it (two services that
+ * subscribe to each other). `contracts-export` checks against the owner's
+ * contract that the topic and each type exist. The payload is `unknown`: the
+ * message consumer validates with the real event from the owner's contract.
  */
 export function defineTopicReference(
   spec: TopicReferenceSpec,
@@ -37,7 +37,7 @@ export function defineTopicReference(
       defineEvent({
         type,
         payload: z.unknown(),
-        description: `Referencia al evento ${type} del tópico ${spec.name}.`,
+        description: `Reference to the ${type} event of the ${spec.name} topic.`,
       }),
     ),
     description: spec.description,
@@ -45,8 +45,8 @@ export function defineTopicReference(
 }
 
 /**
- * Apunta por tipo a un comando de otro servicio, con el mismo motivo y la misma
- * comprobación de `defineTopicReference`.
+ * Points by type to a command of another service, with the same reason and the same
+ * check as `defineTopicReference`.
  */
 export function defineCommandReference(
   spec: CommandReferenceSpec,

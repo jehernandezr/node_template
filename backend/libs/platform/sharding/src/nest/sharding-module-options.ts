@@ -7,40 +7,40 @@ import type { ShardRouterOptions } from '../router/shard-router-options.js';
 import type { TenantWriteGate } from '../ports/tenant-write-gate.js';
 import type { TenantWriteWaiterOptions } from '../write-gate/tenant-write-waiter-options.js';
 
-/** Ajustes de `ShardRouter` que el servicio puede cambiar; lo demás lo cablea el módulo. */
+/** `ShardRouter` settings the service can change; the module wires the rest. */
 export type ShardRouterTuning = Omit<
   ShardRouterOptions,
   'directory' | 'sharedCache' | 'changes' | 'clock'
 >;
 
 /**
- * Opciones de `ShardingModule` que pueden salir de la configuración, así que
- * `forRootAsync` las arma con una fábrica.
+ * `ShardingModule` options that can come from configuration, so
+ * `forRootAsync` builds them with a factory.
  */
 export interface ShardingModuleOptions {
-  /** Ajustes de TTL, límites, región y estrategia del router. */
+  /** Router TTL, limit, region and strategy settings. */
   readonly router?: ShardRouterTuning;
-  /** Espera de una escritura con la compuerta del tenant cerrada. Por defecto 5 s, mirando cada 100 ms. */
+  /** Wait for a write while the tenant gate is closed. Defaults to 5 s, checking every 100 ms. */
   readonly writeWait?: TenantWriteWaiterOptions;
 }
 
 /**
- * Adaptadores de `ShardingModule`. Se pasan como tipo, no como instancia, y se
- * fijan al componer el módulo: van igual en `forRoot` y en `forRootAsync`.
+ * `ShardingModule` adapters. They are passed as types, not instances, and are
+ * fixed when composing the module: they are the same in `forRoot` and `forRootAsync`.
  */
 export interface ShardingModuleExtras {
   /**
-   * Obligatorio: directorio de tenants y shards, por ejemplo `TypeOrmDirectoryStore`. Implementa también
-   * `DirectoryWriter`: la compuerta y los traslados escriben en él.
+   * Required: tenant and shard directory, for example `TypeOrmDirectoryStore`. It also implements
+   * `DirectoryWriter`: the gate and the moves write to it.
    */
   readonly directory?:
     | Type<DirectoryStore & DirectoryWriter>
     | Abstract<DirectoryStore & DirectoryWriter>;
-  /** Por defecto `DirectoryWriteGate`. Con Valkey, `ValkeyWriteGate`. */
+  /** Defaults to `DirectoryWriteGate`. With Valkey, `ValkeyWriteGate`. */
   readonly writeGate?: Type<TenantWriteGate> | Abstract<TenantWriteGate>;
-  /** Por defecto `NullRoutingCache`: sin caché compartido. Con Valkey, `ValkeyRoutingCache`. */
+  /** Defaults to `NullRoutingCache`: no shared cache. With Valkey, `ValkeyRoutingCache`. */
   readonly routingCache?: Type<RoutingCache> | Abstract<RoutingCache>;
-  /** Por defecto `InProcessDirectoryChannel`: una sola instancia. Con Valkey, `ValkeyShardDirectoryChannel`. */
+  /** Defaults to `InProcessDirectoryChannel`: a single instance. With Valkey, `ValkeyShardDirectoryChannel`. */
   readonly channel?:
     Type<ShardDirectoryChannel> | Abstract<ShardDirectoryChannel>;
 }

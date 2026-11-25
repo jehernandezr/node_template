@@ -8,10 +8,10 @@ import {
 } from '@platform/sharding';
 
 /**
- * Acepta el tenant de un sobre si el directorio de shards lo ubica en esta región. Un servicio con shards
- * procesa cada entrega en la base del tenant del sobre, así que un sobre sin tenant, con un tenant que no
- * existe o que vive en otra región no tiene dónde correr y va a la cola de errores. Cualquier otra falla
- * del directorio sale tal cual y el dispatcher la reintenta.
+ * Accepts the tenant of an envelope if the shard directory places it in this region. A sharded service
+ * processes each delivery in the database of the envelope's tenant, so an envelope without a tenant, with a tenant that does not
+ * exist or that lives in another region has nowhere to run and goes to the dead-letter queue. Any other directory failure
+ * propagates as is and the dispatcher retries it.
  */
 export class PlacedTenantVerifier extends TenantVerifier {
   private static readonly NOT_PLACED: ReadonlySet<string> = new Set([

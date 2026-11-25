@@ -1,7 +1,7 @@
 /**
- * Trama que el servidor entrega a un usuario conectado. Con `closesSession` la conexión de esa sesión la
- * entrega y se cierra, y con `RealtimeFrames.ALL_SESSIONS` todas las del usuario: así una revocación llega por
- * el mismo camino ordenado que el resto de las tramas.
+ * Frame that the server delivers to a connected user. With `closesSession` the connection of that session
+ * delivers it and closes, and with `RealtimeFrames.ALL_SESSIONS` all of the user's: this way a revocation arrives through
+ * the same ordered path as the rest of the frames.
  */
 export interface RealtimeFrame {
   readonly type: string;
@@ -9,13 +9,13 @@ export interface RealtimeFrame {
   readonly closesSession?: string;
 }
 
-/** Trama ya guardada en el stream del usuario, con el id que la ordena y permite reanudar después de ella. */
+/** Frame already stored in the user's stream, with the id that orders it and allows resuming after it. */
 export interface StoredFrame extends RealtimeFrame {
   readonly id: string;
 }
 
-/** Valores reservados de las tramas. */
+/** Reserved values of the frames. */
 export class RealtimeFrames {
-  /** `closesSession` que cierra todas las conexiones del usuario. */
+  /** `closesSession` that closes all of the user's connections. */
   static readonly ALL_SESSIONS = '*';
 }

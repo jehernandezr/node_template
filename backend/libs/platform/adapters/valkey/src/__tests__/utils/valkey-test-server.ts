@@ -8,15 +8,15 @@ import {
 } from 'testcontainers';
 
 /**
- * Valkey real con el módulo de bloom, levantado con Testcontainers. Las
- * conexiones del servicio entran como un usuario con la misma ACL que Terraform
- * da a cada servicio (`~<prefijo>:* &<prefijo>:*`), así una llave o un canal
- * fuera del espacio falla aquí como fallaría en AWS.
+ * Real Valkey with the bloom module, started with Testcontainers. The
+ * service connections log in as a user with the same ACL that Terraform
+ * gives each service (`~<prefix>:* &<prefix>:*`), so a key or a channel
+ * outside the namespace fails here as it would fail on AWS.
  */
 export class ValkeyTestServer {
   static readonly IMAGE = 'valkey/valkey-bundle:8.1';
 
-  /** Contraseña del usuario de servicio. Se genera en cada corrida y no se escribe en ningún lado. */
+  /** Password of the service user. It is generated on each run and is not written anywhere. */
   readonly password = randomUUID();
 
   private container: StartedTestContainer | undefined;
@@ -62,8 +62,8 @@ export class ValkeyTestServer {
   }
 
   /**
-   * Variables de entorno de un servicio que se conecta a este servidor, sin
-   * autenticación: el contenedor no habla TLS, que exigen los modos IAM.
+   * Returns the environment variables of a service that connects to this server, without
+   * authentication: the container does not speak TLS, which the IAM modes require.
    */
   environment(): Record<string, string> {
     return {
@@ -73,7 +73,7 @@ export class ValkeyTestServer {
     };
   }
 
-  /** Conexión nueva como el usuario del servicio, como la tendría otro proceso. */
+  /** Opens a new connection as the service user, as another process would have it. */
   connect(): Valkey {
     const client = new Valkey({
       host: this.host,
@@ -87,7 +87,7 @@ export class ValkeyTestServer {
     return client;
   }
 
-  /** Conexión administrativa, sin la ACL del servicio. */
+  /** Opens an administrative connection, without the service ACL. */
   get superuser(): Valkey {
     if (this.admin === undefined) {
       throw new Error('the server is not started');
@@ -103,7 +103,7 @@ export class ValkeyTestServer {
     return (await this.superuser.call('KEYS', pattern)) as string[];
   }
 
-  /** Cambia la contraseña del usuario del servicio y corta sus conexiones. */
+  /** Changes the password of the service user and cuts its connections. */
   async rotatePassword(next: string): Promise<void> {
     await this.superuser.call(
       'ACL',

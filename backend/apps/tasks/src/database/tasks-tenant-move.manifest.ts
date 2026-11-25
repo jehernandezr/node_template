@@ -4,7 +4,7 @@ import {
   type TenantMoveTable,
 } from '@platform/tenant-move';
 
-/** Las tablas de shard de tasks que viajan con un tenant: sus tareas y sus documentos de búsqueda. */
+/** The tasks shard tables that travel with a tenant: its tasks and its search documents. */
 export class TasksTenantMoveManifest extends TenantMoveManifest {
   private static readonly TABLES: readonly TenantMoveTable[] = [
     {

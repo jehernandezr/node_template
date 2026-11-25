@@ -19,8 +19,8 @@ import { SqsConsumerModuleOptions } from './sqs-consumer-module-options.js';
 import { SQS_CLIENT } from './aws.tokens.js';
 
 /**
- * Proveedores de `SqsConsumerModule` para una cola de la topología. Se arman
- * con `useFactory`, como los de `AwsProviders`.
+ * Providers of `SqsConsumerModule` for a topology queue. They are built
+ * with `useFactory`, like those of `AwsProviders`.
  */
 export class SqsConsumerProviders {
   static build(options: SqsConsumerModuleOptions): Provider[] {
@@ -128,7 +128,7 @@ export class SqsConsumerProviders {
     return providers;
   }
 
-  /** Lo que el servicio puede inyectar: el procesador y el handler de Lambda, y el poller salvo `poll: false`. */
+  /** What the service can inject: the processor and the Lambda handler, and the poller unless `poll: false`. */
   static exports(options: SqsConsumerModuleOptions): Array<Type<unknown>> {
     const exported: Array<Type<unknown>> = [
       SqsDeliveryProcessor,

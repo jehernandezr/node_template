@@ -9,9 +9,9 @@ import type { ServiceBaseUrls } from './service-base-urls.js';
 import { Transport } from './transport.js';
 
 /**
- * Transporte HTTP entre servicios. Hace un solo intento: reintentos, tiempos
- * y breaker son del `InternalClient` con el `ResilienceRegistry`, y duplicarlos
- * aquí multiplicaría los intentos.
+ * HTTP transport between services. It makes a single attempt: retries, timeouts
+ * and breaker belong to the `InternalClient` with the `ResilienceRegistry`, and duplicating them
+ * here would multiply the attempts.
  */
 export class HttpTransport extends Transport {
   private static readonly METHOD = 'POST';
@@ -27,16 +27,16 @@ export class HttpTransport extends Transport {
   }
 
   /**
-   * `POST {baseUrl}/internal/operations/{operationId}` (`InternalApiRoute.pathOf`) con cuerpo
-   * JSON `{ "input": input }` (`InternalRequest`) y estas cabeceras de `InternalHeader`:
-   * `content-type: application/json`; `traceparent`, `x-tenant-id` y `x-actor-id` solo si
-   * `meta` los trae; `x-idempotency-key`; `x-call-deadline` (`meta.deadline`);
-   * `x-call-timeout-ms` (`meta.timeoutMs`); y las que devuelve `signer.sign` sobre la
-   * `SignableRequest` con método `POST`, esa ruta, el cuerpo `{ input }` y esas mismas
-   * cabeceras. Envía con `fetcher` y `signal: meta.signal`, y entrega la respuesta a
-   * `outcomeReader.read`. Los errores de `fetch` (red caída, aborto) se propagan: los
-   * clasifica el registro de resiliencia.
-   * @throws InternalApiError `UnknownService` si no hay URL para el servicio de la operación.
+   * Sends `POST {baseUrl}/internal/operations/{operationId}` (`InternalApiRoute.pathOf`) with a
+   * JSON body `{ "input": input }` (`InternalRequest`) and these `InternalHeader` headers:
+   * `content-type: application/json`; `traceparent`, `x-tenant-id` and `x-actor-id` only if
+   * `meta` has them; `x-idempotency-key`; `x-call-deadline` (`meta.deadline`);
+   * `x-call-timeout-ms` (`meta.timeoutMs`); and those returned by `signer.sign` on the
+   * `SignableRequest` with method `POST`, that path, the body `{ input }` and those same
+   * headers. It sends with `fetcher` and `signal: meta.signal`, and hands the response to
+   * `outcomeReader.read`. `fetch` errors (network down, abort) propagate: the
+   * resilience registry classifies them.
+   * @throws InternalApiError `UnknownService` if there is no URL for the operation's service.
    */
   async invoke(
     operationId: string,

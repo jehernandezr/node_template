@@ -1,4 +1,4 @@
-/** Motivos que la API interna pone en los resultados que no son un éxito. */
+/** Reasons the internal API puts in results that are not a success. */
 export enum InternalApiReason {
   InvalidInput = 'invalid-input',
   InvalidOutput = 'invalid-output',
@@ -13,12 +13,12 @@ export enum InternalApiReason {
   Timeout = 'timeout',
   Cancelled = 'cancelled',
   StaleClaim = 'stale-claim',
-  /** La unidad de trabajo falló al confirmar: los efectos pueden o no estar guardados. */
+  /** The unit of work failed to commit: the effects may or may not be stored. */
   CommitFailed = 'commit-failed',
-  /** El servidor rechazó la firma de la llamada. */
+  /** The server rejected the call signature. */
   Unauthenticated = 'unauthenticated',
-  /** La respuesta HTTP no tiene la forma del protocolo. */
+  /** The HTTP response does not have the protocol shape. */
   InvalidResponse = 'invalid-response',
-  /** El servidor respondió con un estado HTTP que el protocolo no admite. */
+  /** The server responded with an HTTP status the protocol does not allow. */
   UnexpectedStatus = 'unexpected-status',
 }

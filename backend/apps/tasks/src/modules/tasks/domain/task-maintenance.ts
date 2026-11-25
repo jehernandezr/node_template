@@ -1,10 +1,10 @@
 import type { UserRef } from '@contracts/platform';
 
-/** Mantenimiento de las tareas de todos los tenants de todos los shards. */
+/** Maintenance of the tasks of all tenants of all shards. */
 export abstract class TaskMaintenance {
-  /** Elimina las tareas borradas antes de `cutoff` y devuelve cuántas. */
+  /** Removes the tasks deleted before `cutoff` and returns how many. */
   abstract purgeDeletedBefore(cutoff: Date): Promise<number>;
 
-  /** Reemplaza al usuario como autor o último editor por `replacement` y devuelve las tareas tocadas. */
+  /** Replaces the user as author or last editor with `replacement` and returns the affected tasks. */
   abstract replaceAuthor(userId: string, replacement: UserRef): Promise<number>;
 }

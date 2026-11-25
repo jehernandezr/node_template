@@ -5,8 +5,8 @@ import type { StreamPrincipal } from './stream-principal.js';
 import { StreamAuthenticator } from './stream-authenticator.js';
 
 /**
- * Base de los autenticadores que reciben un access token: lo verifica en local, sin llamar a identity, con
- * su JWKS y el estado de revocación compartido. Cada subclase sabe de dónde sacar el token.
+ * Base of the authenticators that receive an access token: verifies it locally, without calling identity, with
+ * its JWKS and the shared revocation state. Each subclass knows where to get the token from.
  */
 export abstract class AccessTokenStreamAuthenticator extends StreamAuthenticator {
   protected constructor(private readonly verifier: AccessTokenVerifier) {
@@ -26,6 +26,6 @@ export abstract class AccessTokenStreamAuthenticator extends StreamAuthenticator
     };
   }
 
-  /** @throws AuthenticationError si las credenciales no traen el token. */
+  /** @throws AuthenticationError if the credentials do not carry the token. */
   protected abstract tokenOf(credentials: StreamCredentials): string;
 }
