@@ -2,7 +2,7 @@ import type { OperationDefinition } from '@contracts/platform';
 import type { OperationDescriptor } from '../contract/operation-descriptor.js';
 import type { OperationHandler } from './operation-handler.js';
 
-/** Operación con su handler y los códigos de negocio que puede devolver. */
+/** Operation with its handler and the business codes it can return. */
 export class OperationRoute {
   constructor(
     readonly descriptor: OperationDescriptor,
@@ -10,12 +10,12 @@ export class OperationRoute {
     readonly allowedCodes: ReadonlySet<string>,
   ) {}
 
-  /** Une un descriptor ya resuelto con el handler que lo atiende. */
+  /** Binds an already resolved descriptor to the handler that serves it. */
   static bind<S extends OperationDefinition>(
     descriptor: OperationDescriptor,
     handler: OperationHandler<S>,
   ): OperationRoute {
-    // El router solo entrega al handler entrada parseada con `descriptor.input`, el esquema de `S`.
+    // The router only hands the handler input parsed with `descriptor.input`, the schema of `S`.
     return new OperationRoute(
       descriptor,
       handler as OperationHandler,

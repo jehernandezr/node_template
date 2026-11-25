@@ -12,10 +12,10 @@ import { ReportResultStore } from '../domain/report-result-store.js';
 import { ReportRunMaintenance } from '../domain/report-run-maintenance.js';
 
 /**
- * Marca vencidas las ejecuciones cuyo resultado pasó `REPORTS_RESULT_TTL_DAYS` y borra ese resultado. Corre a una hora
- * fija de cada hora en UTC, no cada tanto desde el arranque: con despliegues seguidos un intervalo de un día no llegaría
- * a cumplirse. Repetirlo no cambia nada de lo ya vencido. Uno que no se pudo borrar ya no se entrega (la ejecución está
- * vencida); se registra el fallo.
+ * Marks as expired the runs whose result passed `REPORTS_RESULT_TTL_DAYS` and deletes that result. It runs at a fixed
+ * minute of every hour in UTC, not periodically from startup: with frequent deployments a one-day interval would never
+ * elapse. Repeating it changes nothing already expired. One that could not be deleted is no longer delivered (the run is
+ * expired); the failure is logged.
  */
 @Injectable()
 export class ExpireRunsJob extends ScheduledJob {

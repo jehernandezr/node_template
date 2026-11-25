@@ -16,7 +16,7 @@ import { DeliveryRepository } from '../../domain/delivery.repository.js';
 import type { Recipient } from '../../domain/recipient.js';
 import { RecipientDirectory } from '../../domain/recipient-directory.js';
 
-/** Preferencias fijas por usuario; sin ellas, ningún tipo configurado y sin horario de silencio. */
+/** Fixed preferences per user; without them, no configured type and no quiet hours. */
 export class FixedPreferences extends PreferencesFacade {
   private readonly byUser = new Map<string, PreferencesView>();
 
@@ -40,7 +40,7 @@ export class FixedPreferences extends PreferencesFacade {
   }
 }
 
-/** Bandeja en memoria por usuario, idempotente por id como la real. */
+/** In-memory inbox per user, idempotent by id like the real one. */
 export class InMemoryInbox extends InboxFacade {
   readonly stored = new Map<string, NotificationState>();
 
@@ -74,7 +74,7 @@ export class InMemoryInbox extends InboxFacade {
   }
 }
 
-/** Tiempo real que guarda lo que se publica y dice que el usuario está conectado si se le pide. */
+/** Real time that stores what is published and says the user is connected if asked to. */
 export class RecordingRealtime extends RealtimeFacade {
   readonly frames: Array<{ userId: string; kind: string; data: unknown }> = [];
   online = false;
@@ -148,7 +148,7 @@ export class StaticRecipients extends RecipientDirectory {
   }
 }
 
-/** Correo que guarda los pedidos y puede fallar el próximo envío. */
+/** Email that stores the requests and can fail the next send. */
 export class RecordingEmail implements EmailFacade {
   readonly sent: EmailRequest[] = [];
   failures = 0;

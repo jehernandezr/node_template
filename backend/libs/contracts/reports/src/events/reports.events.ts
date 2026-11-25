@@ -6,5 +6,5 @@ export const RunCompletedEvent = defineEvent({
   type: ReportsEvent.RunCompleted,
   payload: RunCompletedPayloadSchema,
   description:
-    'Terminó una ejecución de reporte, lista o fallida. Notifications avisa a quien la pidió.',
+    'A report run finished, ready or failed. Notifications tells whoever requested it.',
 });

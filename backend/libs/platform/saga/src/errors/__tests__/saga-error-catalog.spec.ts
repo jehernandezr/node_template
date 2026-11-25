@@ -1,7 +1,7 @@
 import { SagaErrorCode } from '../saga-error-code.enum.js';
 import { sagaErrorCatalog } from '../saga-error-catalog.js';
 
-/** Texto estable de cada código, que el front y los clientes ya conocen. */
+/** Stable text of each code, which the front and clients already know. */
 const EXPECTED_CODES: Record<SagaErrorCode, string> = {
   [SagaErrorCode.NotFound]: 'PLATFORM.SAGA.NOT_FOUND',
   [SagaErrorCode.DuplicateSaga]: 'PLATFORM.SAGA.DUPLICATE_SAGA',

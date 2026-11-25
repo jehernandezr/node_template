@@ -1,9 +1,9 @@
 import { LruMap } from '../lru-map.js';
 
 /**
- * Última secuencia de invalidación por clave, acotada. Una clave olvidada
- * responde con la secuencia más alta expulsada, así la expulsión solo puede
- * hacer que una carga parezca más vieja de lo que es (y no se cachee), nunca más nueva.
+ * Latest invalidation sequence per key, bounded. A forgotten key
+ * answers with the highest evicted sequence, so eviction can only
+ * make a load look older than it is (and not be cached), never newer.
  */
 export class InvalidationLog {
   private readonly last: LruMap<string, number>;
@@ -16,24 +16,24 @@ export class InvalidationLog {
     });
   }
 
-  /** Secuencia actual: la de la última invalidación registrada en este log. */
+  /** Current sequence: that of the last invalidation logged in this log. */
   current(): number {
     return this.sequence;
   }
 
-  /** Registra una invalidación de `key` y devuelve su secuencia. */
+  /** Logs an invalidation of `key` and returns its sequence. */
   mark(key: string): number {
     this.sequence += 1;
     this.last.set(key, this.sequence);
     return this.sequence;
   }
 
-  /** Secuencia de la última invalidación de `key`, o una cota superior si se olvidó. */
+  /** Sequence of the last invalidation of `key`, or an upper bound if it was forgotten. */
   lastFor(key: string): number {
     return this.last.peek(key) ?? this.floor;
   }
 
-  /** `true` cuando no se registró ninguna invalidación de `key` después de `sequence`. */
+  /** `true` when no invalidation of `key` was logged after `sequence`. */
   isCurrent(key: string, sequence: number): boolean {
     return this.lastFor(key) <= sequence;
   }

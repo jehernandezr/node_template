@@ -4,7 +4,7 @@ import { HttpApplicationSetup } from '@platform/http/nest';
 import { LambdaBootstrap } from '@platform/service/nest';
 import { billingService } from './billing.service.js';
 
-/** API de billing en Lambda: `api.runtime = "lambda"` en los tfvars del servicio usa este handler. */
+/** Billing API on Lambda: `api.runtime = "lambda"` in the service tfvars uses this handler. */
 export const handler = LambdaBootstrap.http(billingService, {
   env: process.env,
   telemetry,

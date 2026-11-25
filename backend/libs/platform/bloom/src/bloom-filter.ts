@@ -14,19 +14,19 @@ import { CorruptedDataError } from './errors/corrupted-data.error.js';
 import { IncompatibleFiltersError } from './errors/incompatible-filters.error.js';
 
 /**
- * Conjunto probabilístico de poco espacio. `mightContain` responde "seguro que no"
- * o "quizás", sin falsos negativos.
+ * Space-efficient probabilistic set. `mightContain` answers "definitely not"
+ * or "maybe", with no false negatives.
  */
 export class BloomFilter {
-  /** Número de bits del filtro. */
+  /** Number of bits in the filter. */
   readonly bits: number;
-  /** Número de posiciones de hash por ítem. */
+  /** Number of hash positions per item. */
   readonly hashes: number;
   private readonly data: Uint8Array;
 
   /**
-   * @throws InvalidParametersError cuando `bits` o `hashes` están fuera de su rango.
-   * @throws CorruptedDataError cuando `data` tiene otro largo o activa bits sobrantes.
+   * @throws InvalidParametersError when `bits` or `hashes` are out of range.
+   * @throws CorruptedDataError when `data` has another length or sets leftover bits.
    */
   constructor(options: BloomFilterOptions) {
     this.bits = BloomGuard.instance.integerInRange(
@@ -56,7 +56,7 @@ export class BloomFilter {
     }
   }
 
-  /** Crea un filtro vacío dimensionado para `expectedItems` con la tasa dada. */
+  /** Creates an empty filter sized for `expectedItems` with the given rate. */
   static create(options: CreateBloomFilterOptions): BloomFilter {
     return new BloomFilter(
       BloomSizing.optimalParameters(
@@ -66,14 +66,14 @@ export class BloomFilter {
     );
   }
 
-  /** Inserta un ítem. */
+  /** Inserts an item. */
   add(item: string): void {
     for (const position of this.positions(item)) {
       this.data[Math.floor(position / 8)] |= 1 << (position % 8);
     }
   }
 
-  /** Devuelve false cuando el ítem seguro que no está; true cuando puede estar. */
+  /** Returns false when the item is definitely absent; true when it might be present. */
   mightContain(item: string): boolean {
     return this.positions(item).every(
       (position) =>
@@ -81,7 +81,7 @@ export class BloomFilter {
     );
   }
 
-  /** Estima cuántos ítems distintos se insertaron, a partir de los bits encendidos. */
+  /** Estimates how many distinct items were inserted, from the set bits. */
   approximateCount(): number {
     const setBits = this.countSetBits();
     if (setBits === this.bits) {
@@ -95,12 +95,12 @@ export class BloomFilter {
     );
   }
 
-  /** Estima la tasa de falsos positivos actual a partir del llenado: (bits encendidos / m)^k. */
+  /** Estimates the current false positive rate from the fill: (set bits / m)^k. */
   estimatedFalsePositiveRate(): number {
     return Math.pow(this.countSetBits() / this.bits, this.hashes);
   }
 
-  /** Codifica el filtro con su versión de formato, su esquema de hash y los bits en base64. */
+  /** Encodes the filter with its format version, its hash scheme and the bits in base64. */
   serialize(): SerializedBloomFilter {
     return {
       version: BLOOM_FORMAT_VERSION,
@@ -112,9 +112,9 @@ export class BloomFilter {
   }
 
   /**
-   * Restaura un filtro producido por `serialize`.
-   * @throws CorruptedDataError cuando la versión o el esquema no se conocen, el base64 no es canónico,
-   *   el largo no coincide con `bits` o hay bits sobrantes activos.
+   * Restores a filter produced by `serialize`.
+   * @throws CorruptedDataError when the version or scheme is unknown, the base64 is not canonical,
+   *   the length does not match `bits` or leftover bits are set.
    */
   static deserialize(serialized: SerializedBloomFilter): BloomFilter {
     if (serialized.version !== BLOOM_FORMAT_VERSION) {
@@ -135,8 +135,8 @@ export class BloomFilter {
   }
 
   /**
-   * Devuelve un filtro nuevo con los ítems de ambos. Ninguna entrada cambia.
-   * @throws IncompatibleFiltersError cuando los dos filtros tienen parámetros distintos.
+   * Returns a new filter with the items of both. Neither input changes.
+   * @throws IncompatibleFiltersError when the two filters have different parameters.
    */
   union(other: BloomFilter): BloomFilter {
     if (other.bits !== this.bits || other.hashes !== this.hashes) {
@@ -183,8 +183,8 @@ export class BloomFilter {
   }
 
   /**
-   * Decodifica base64 y exige que sea canónico (volver a codificar da el mismo texto).
-   * @throws CorruptedDataError en otro caso.
+   * Decodes base64 and requires it to be canonical (re-encoding yields the same text).
+   * @throws CorruptedDataError otherwise.
    */
   private static decodeCanonicalBase64(data: string): Uint8Array {
     if (typeof data !== 'string' || data.length % 4 !== 0) {

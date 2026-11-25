@@ -20,8 +20,8 @@ import type {
 import { MESSAGING_MODULE_OPTIONS } from './messaging.module-definition.js';
 
 /**
- * Proveedores del relay de `MessagingModule`: el publicador con la política
- * `Queue`, `OutboxRelay` y, con `relay: true`, los jobs de relay y de retención.
+ * Relay providers of `MessagingModule`: the publisher with the `Queue`
+ * policy, `OutboxRelay` and, with `relay: true`, the relay and retention jobs.
  */
 export class MessagingRelayProviders {
   static build(extras: MessagingModuleExtras): Provider[] {

@@ -22,25 +22,25 @@ import type { PolicyCall } from './policy-call.js';
 import type { ResilienceCallOptions } from './resilience-call.options.js';
 import { RetryAfterHint } from './retry-after-hint.js';
 
-/** Estado de una llamada mientras se ejecuta. */
+/** State of a call while it runs. */
 interface CallContext<T> {
   readonly call: PolicyCall<T>;
   readonly idempotent: boolean;
   readonly isTransient: (error: unknown) => boolean;
-  /** Se aborta con la señal del llamador o cuando vence el plazo de la llamada. */
+  /** Aborted with the caller's signal or when the call's deadline expires. */
   readonly signal: AbortSignal;
   readonly deadline?: Deadline;
 }
 
 /**
- * Ejecuta una llamada según su política. Orden de composición: plazo total →
- * bulkhead → reintentos (solo llamadas idempotentes) → circuit breaker →
- * tiempo del intento.
+ * Runs a call according to its policy. Composition order: total deadline →
+ * bulkhead → retries (idempotent calls only) → circuit breaker →
+ * attempt timeout.
  *
- * Regla de reintento: una llamada idempotente se repite cuando la falla es
- * transitoria o cuando su propio intento venció. La espera es el backoff de
- * `RetryPolicy`, al menos la pista `Retry-After` del servidor, y nunca se
- * empieza si no cabe antes del plazo; en ese caso se relanza el último error.
+ * Retry rule: an idempotent call is repeated when the failure is
+ * transient or when its own attempt timed out. The wait is the backoff of
+ * `RetryPolicy`, at least the server's `Retry-After` hint, and it is never
+ * started if it does not fit before the deadline; in that case the last error is rethrown.
  */
 export class PolicyExecutor {
   constructor(
@@ -105,7 +105,7 @@ export class PolicyExecutor {
     }
   }
 
-  /** El plazo más cercano entre el del llamador y el presupuesto total, si hay alguno. */
+  /** The nearest deadline between the caller's and the total budget, if any. */
   private callDeadline(
     config: ResiliencePolicyConfig,
     options: ResilienceCallOptions,
@@ -125,7 +125,7 @@ export class PolicyExecutor {
       return this.runAttempts(context);
     }
     return bulkhead.execute(() => {
-      // Una llamada en cola puede recibir su cupo después de que el llamador desistió.
+      // A queued call can receive its slot after the caller gave up.
       if (context.signal.aborted) {
         throw TimerScheduler.abortReason(context.signal);
       }
@@ -158,7 +158,7 @@ export class PolicyExecutor {
           context.deadline !== undefined &&
           delayMs >= context.deadline.remainingMs()
         ) {
-          // Esperar agotaría todo el presupuesto: se informa la falla real ahora.
+          // Waiting would exhaust the whole budget: the real failure is reported now.
           throw error;
         }
         this.emit(context.call, ResilienceEventKind.Retry, {
@@ -173,14 +173,14 @@ export class PolicyExecutor {
 
   private shouldRetry<T>(context: CallContext<T>, error: unknown): boolean {
     if (error instanceof CircuitOpenError) {
-      // El circuito queda abierto más tiempo que cualquier espera de reintento.
+      // The circuit stays open longer than any retry wait.
       return false;
     }
     if (
       error instanceof ResilienceTimeoutError &&
       error.scope === TimeoutScope.Attempt
     ) {
-      // El resultado es incierto, pero el llamador declaró la llamada idempotente.
+      // The result is uncertain, but the caller declared the call idempotent.
       return true;
     }
     return context.isTransient(error);
@@ -192,7 +192,7 @@ export class PolicyExecutor {
     error: unknown,
   ): number {
     const backoff = new Backoff(retry.policy, this.random).delay(attempt);
-    // La pista `Retry-After` es una espera mínima para el siguiente intento.
+    // The `Retry-After` hint is a minimum wait for the next attempt.
     const hint = this.retryAfter.hintMs(error, retry.maxRetryAfterMs);
     return Math.max(backoff, hint ?? 0);
   }
@@ -209,8 +209,8 @@ export class PolicyExecutor {
   }
 
   /**
-   * Corre un intento con su propio tiempo. El temporizador del intento solo se
-   * arma si termina antes del plazo de la llamada; si no, el plazo lo corta.
+   * Runs an attempt with its own timeout. The attempt timer is only
+   * armed if it ends before the call's deadline; otherwise, the deadline cuts it.
    */
   private async runTimedAttempt<T>(
     context: CallContext<T>,
@@ -260,7 +260,7 @@ export class PolicyExecutor {
       try {
         return await run();
       } catch (error) {
-        // Cooperativo: la operación respetó el aborto; se informa por qué se abortó.
+        // Cooperative: the operation honored the abort; the reason for the abort is reported.
         throw controller.signal.aborted
           ? TimerScheduler.abortReason(controller.signal)
           : error;

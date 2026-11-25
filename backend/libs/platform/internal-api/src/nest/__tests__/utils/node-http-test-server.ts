@@ -8,13 +8,13 @@ import { HttpException } from '@nestjs/common';
 import type { InternalApiController } from '../../internal-api.controller.js';
 import { InternalApiRoute } from '../../../transport/internal-api-route.js';
 
-/** Servidor `node:http` real que entrega las peticiones HTTP al controller de la API interna. */
+/** Real `node:http` server that delivers HTTP requests to the internal API controller. */
 export class NodeHttpTestServer {
   private server: Server | undefined;
 
   constructor(private readonly controller: InternalApiController) {}
 
-  /** Escucha en un puerto libre de `127.0.0.1` y resuelve la URL base. */
+  /** Listens on a free `127.0.0.1` port and resolves the base URL. */
   start(): Promise<string> {
     const server = createServer((request, response) => {
       void this.handle(request, response);
@@ -33,7 +33,7 @@ export class NodeHttpTestServer {
     });
   }
 
-  /** Corta las conexiones abiertas y cierra el servidor. */
+  /** Drops the open connections and closes the server. */
   stop(): Promise<void> {
     const server = this.server;
     if (server === undefined) {
@@ -90,7 +90,7 @@ export class NodeHttpTestServer {
     });
   }
 
-  /** Cuerpo JSON, o `undefined` si el texto no es JSON. */
+  /** JSON body, or `undefined` if the text is not JSON. */
   private static parse(text: string): unknown {
     try {
       return JSON.parse(text);

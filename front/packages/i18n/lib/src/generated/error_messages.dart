@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Mensajes de los códigos de error públicos de los contratos.
+/// Messages for the public error codes of the contracts.
 library;
 
 import 'app_localizations.dart';
 
-/// Mensaje localizado de un código de error público [code].
+/// Localized message for a public error code [code].
 ///
-/// Un código desconocido devuelve `errorFallback`.
+/// An unknown code returns `errorFallback`.
 String errorMessageFor(AppLocalizations l10n, String code) {
   return switch (code) {
     'PLATFORM.VALIDATION.INVALID_INPUT' =>

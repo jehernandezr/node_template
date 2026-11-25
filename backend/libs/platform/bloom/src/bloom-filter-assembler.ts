@@ -5,8 +5,8 @@ import { BloomSizing } from './bloom-sizing.js';
 import { PartitionedBloomFilter } from './partitioned-bloom-filter.js';
 
 /**
- * Arma el filtro de una definición: uno solo cuando cabe en `maxBitsPerPartition`, o un
- * `PartitionedBloomFilter` con las particiones necesarias.
+ * Builds the filter for a definition: a single one when it fits in `maxBitsPerPartition`, or a
+ * `PartitionedBloomFilter` with the needed partitions.
  */
 export class BloomFilterAssembler {
   constructor(

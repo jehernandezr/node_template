@@ -1,9 +1,9 @@
 import type { AccessGrant } from '../../access/access-grant.js';
 import { AccessGrantSource } from '../../access/access-grant-source.js';
 
-/** Fuente de grants de prueba: devuelve el grant fijado por usuario y cuenta las llamadas. */
+/** Test grant source: returns the grant set per user and counts the calls. */
 export class FakeAccessGrantSource extends AccessGrantSource {
-  /** Con valor, toda llamada falla con este error. */
+  /** When set, every call fails with this error. */
   failure: Error | undefined;
 
   private readonly grants = new Map<string, AccessGrant>();
@@ -21,12 +21,12 @@ export class FakeAccessGrantSource extends AccessGrantSource {
     return grant;
   }
 
-  /** Fija el grant que devuelve `fetch(tenantId, userId)`. */
+  /** Sets the grant returned by `fetch(tenantId, userId)`. */
   set(tenantId: string, userId: string, grant: AccessGrant): void {
     this.grants.set(`${tenantId}:${userId}`, grant);
   }
 
-  /** Veces que se llamó a `fetch`. */
+  /** Number of times `fetch` was called. */
   get fetchCount(): number {
     return this.fetched;
   }

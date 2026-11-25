@@ -1,17 +1,17 @@
 import type { FixedClock } from '@platform/kernel/test-utils';
 import type { RateLimitResult } from '../../rate-limit-result.js';
 
-/** Un paso de la secuencia: avanzar el reloj y pedir `cost` unidades. */
+/** A step of the sequence: advance the clock and request `cost` units. */
 export interface SlidingWindowStep {
   readonly advanceMs: number;
   readonly cost: number;
 }
 
-/** Secuencia fija de consumos con avances de reloj, reproducible en cualquier limitador. */
+/** Fixed sequence of consumptions with clock advances, reproducible on any limiter. */
 export class SlidingWindowScenario {
   constructor(private readonly steps: readonly SlidingWindowStep[]) {}
 
-  /** Ejecuta cada paso en orden y devuelve la respuesta de cada uno. */
+  /** Runs each step in order and returns the response of each one. */
   async run(
     consume: (cost: number) => Promise<RateLimitResult> | RateLimitResult,
     clock: FixedClock,

@@ -1,4 +1,4 @@
-/** Estado de una suscripción. */
+/** Status of a subscription. */
 export enum SubscriptionStatus {
   Trialing = 'trialing',
   Active = 'active',
@@ -7,7 +7,7 @@ export enum SubscriptionStatus {
   Canceled = 'canceled',
 }
 
-/** Estado de una factura. */
+/** Status of an invoice. */
 export enum InvoiceStatus {
   Draft = 'draft',
   Issued = 'issued',
@@ -16,35 +16,35 @@ export enum InvoiceStatus {
   Void = 'void',
 }
 
-/** Tipo de línea de una factura. */
+/** Line type of an invoice. */
 export enum InvoiceLineKind {
   FixedFee = 'fixed_fee',
   Usage = 'usage',
 }
 
-/** Periodicidad de cobro de un plan. */
+/** Billing frequency of a plan. */
 export enum PlanPeriodicity {
   Monthly = 'monthly',
   Annual = 'annual',
 }
 
-/** Monedas en que se factura. */
+/** Currencies in which billing happens. */
 export enum Currency {
   Cop = 'COP',
   Usd = 'USD',
 }
 
-/** Métricas de uso que tienen cuota. */
+/** Usage metrics that have a quota. */
 export enum UsageMetric {
   Users = 'users',
   ApiCalls = 'api_calls',
   StorageGb = 'storage_gb',
 }
 
-/** Cómo se reduce el uso de un periodo a una cifra. */
+/** How a period's usage is reduced to a figure. */
 export enum UsageAggregationKind {
-  /** El mayor valor registrado en el periodo. */
+  /** The highest value recorded in the period. */
   Max = 'max',
-  /** La suma de lo registrado en el periodo. */
+  /** The sum of what was recorded in the period. */
   Sum = 'sum',
 }

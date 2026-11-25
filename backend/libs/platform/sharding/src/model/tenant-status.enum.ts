@@ -1,4 +1,4 @@
-/** Estado del ciclo de vida del placement de un tenant. */
+/** Lifecycle status of a tenant placement. */
 export enum TenantStatus {
   Active = 'active',
   Migrating = 'migrating',

@@ -8,10 +8,10 @@ import type { SagaSettingsInput } from './saga-settings-input.js';
 const DAY_MS = 86_400_000;
 
 /**
- * Configuración del motor con sus valores por defecto. La espera entre
- * reintentos es exponencial con jitter parejo: tras una caída, las sagas
- * suspendidas a la vez no reintentan en los mismos instantes, y cada espera
- * conserva al menos la mitad de la exponencial.
+ * Engine configuration with its defaults. The wait between
+ * retries is exponential with equal jitter: after an outage, sagas
+ * suspended at the same time do not retry at the same instants, and each wait
+ * keeps at least half of the exponential.
  */
 export class SagaSettings {
   static readonly DEFAULT_LEASE_MS = 30_000;
@@ -38,8 +38,8 @@ export class SagaSettings {
   private readonly backoff: Backoff;
 
   /**
-   * @throws SagaError `InvalidConfiguration` si el lease no supera el tiempo
-   *   de un paso: otro nodo podría tomar la saga en medio de una llamada.
+   * @throws SagaError `InvalidConfiguration` if the lease does not exceed the time
+   *   of a step: another node could take the saga in the middle of a call.
    */
   constructor(input: SagaSettingsInput, random: RandomSource) {
     this.owner = input.owner;
@@ -62,7 +62,7 @@ export class SagaSettings {
     }
   }
 
-  /** Topes y espera de la suspensión de un paso. */
+  /** Caps and wait of a step's suspension. */
   suspendPolicy(): SuspendPolicy {
     return {
       maxSuspendAttempts: this.maxSuspendAttempts,

@@ -4,7 +4,7 @@ import {
   type TenantKind,
 } from '@contracts/identity';
 
-/** Estado completo de un tenant, tal como se guarda. */
+/** Full state of a tenant, as it is stored. */
 export interface TenantState {
   readonly id: string;
   readonly slug: string;
@@ -13,18 +13,18 @@ export interface TenantState {
   readonly kind: TenantKind;
   readonly status: TenantLifecycle;
   readonly pinnedApiVersion?: string;
-  /** Funcionalidades del plan vigente según billing; sin valor, las del tipo de tenant. */
+  /** Features of the current plan according to billing; when empty, those of the tenant type. */
   readonly planFeatures?: readonly PlanFeature[];
-  /** Cuándo decidió billing las funcionalidades guardadas: un cambio anterior que llega tarde no las pisa. */
+  /** When billing decided the stored features: an earlier change that arrives late does not overwrite them. */
   readonly planChangedAt?: Date;
   readonly version?: number;
 }
 
-/** Un tenant: la organización (o el espacio compartido) dueña de los datos de negocio. */
+/** A tenant: the organization (or the shared space) that owns the business data. */
 export class Tenant {
   private constructor(private state: TenantState) {}
 
-  /** Tenant recién creado, en aprovisionamiento hasta que lo activen. */
+  /** Newly created tenant, in provisioning until it is activated. */
   static provision(state: Omit<TenantState, 'status' | 'version'>): Tenant {
     return new Tenant({ ...state, status: TenantLifecycle.Provisioning });
   }
@@ -42,8 +42,8 @@ export class Tenant {
   }
 
   /**
-   * Guarda las funcionalidades que billing decidió en `changedAt`. Devuelve `false` si ya tiene una decisión
-   * posterior; repetir la misma decisión la aplica otra vez, para que quien la reintenta termine su efecto.
+   * Saves the features billing decided at `changedAt`. Returns `false` if it already has a later
+   * decision; repeating the same decision applies it again, so whoever retries it completes its effect.
    */
   applyPlan(features: readonly PlanFeature[], changedAt: Date): boolean {
     const current = this.state.planChangedAt;
@@ -62,22 +62,22 @@ export class Tenant {
     return this.state.status === TenantLifecycle.Active;
   }
 
-  /** Devuelve `false` si no estaba en aprovisionamiento. */
+  /** Returns `false` if it was not in provisioning. */
   activate(): boolean {
     return this.move(TenantLifecycle.Provisioning, TenantLifecycle.Active);
   }
 
-  /** Devuelve `false` si no estaba activo: la operación es idempotente. */
+  /** Returns `false` if it was not active: the operation is idempotent. */
   suspend(): boolean {
     return this.move(TenantLifecycle.Active, TenantLifecycle.Suspended);
   }
 
-  /** Devuelve `false` si no estaba suspendido. */
+  /** Returns `false` if it was not suspended. */
   reactivate(): boolean {
     return this.move(TenantLifecycle.Suspended, TenantLifecycle.Active);
   }
 
-  /** Solo un tenant en aprovisionamiento se puede descartar: no tiene datos de negocio. */
+  /** Only a tenant being provisioned can be discarded: it has no business data. */
   canBeDiscarded(): boolean {
     return this.state.status === TenantLifecycle.Provisioning;
   }

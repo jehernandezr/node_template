@@ -1,8 +1,8 @@
 import type { Delivery } from './delivery.js';
 
-/** Entregas de las notificaciones del usuario del `ShardScope` abierto. */
+/** Deliveries of the notifications of the user of the open `ShardScope`. */
 export abstract class DeliveryRepository {
-  /** Guarda o reemplaza la entrega por su id. */
+  /** Saves or replaces the delivery by its id. */
   abstract save(delivery: Delivery): Promise<void>;
 
   abstract ofNotification(notificationId: string): Promise<readonly Delivery[]>;

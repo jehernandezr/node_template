@@ -5,17 +5,17 @@ import type { OperationDescriptor } from './operation-descriptor.js';
 import { OperationMetadata } from './operation-metadata.js';
 
 /**
- * Resuelve las operaciones desde su descriptor de `defineOperation` y guarda el
- * resultado por descriptor. La caché vive en la instancia: dos resolvedores no
- * comparten estado.
+ * Resolves operations from their `defineOperation` descriptor and caches the
+ * result per descriptor. The cache lives in the instance: two resolvers do not
+ * share state.
  */
 export class OperationResolver {
   private readonly resolved = new WeakMap<object, OperationDescriptor>();
 
   /**
-   * @throws InternalApiError `InvalidOperation` si el valor no es un descriptor
-   *   de `defineOperation` (solo un llamador sin tipos puede pasarlo) y
-   *   `MissingCompensation` si usa `Compensation.None` sin motivo.
+   * @throws InternalApiError `InvalidOperation` if the value is not a `defineOperation`
+   *   descriptor (only an untyped caller can pass it) and
+   *   `MissingCompensation` if it uses `Compensation.None` without a reason.
    */
   resolve(definition: OperationDefinition): OperationDescriptor {
     const cached = this.resolved.get(definition);
@@ -33,7 +33,7 @@ export class OperationResolver {
     return descriptor;
   }
 
-  /** Indica si `value` tiene la forma de un descriptor de `defineOperation`. */
+  /** Whether `value` has the shape of a `defineOperation` descriptor. */
   static isDefinition(value: unknown): value is OperationDefinition {
     if (typeof value !== 'object' || value === null) {
       return false;

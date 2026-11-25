@@ -1,7 +1,7 @@
-/** Estado de una entrada de `identity_lookup`. */
+/** State of an `identity_lookup` entry. */
 export enum LookupStatus {
-  /** El email está tomado mientras se crea el usuario en su shard. */
+  /** The email is taken while the user is created in their shard. */
   Reserved = 'reserved',
-  /** El usuario existe. */
+  /** The user exists. */
   Active = 'active',
 }

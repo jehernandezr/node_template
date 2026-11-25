@@ -1,19 +1,19 @@
-/** Tipo de problema que se encuentra al validar las sagas al arrancar. */
+/** Kind of issue found when validating the sagas at startup. */
 export enum SagaDefinitionIssueCode {
-  /** Dos definiciones declaran el mismo `type`. */
+  /** Two definitions declare the same `type`. */
   TypeMismatch = 'type-mismatch',
-  /** La operación del paso no está en el registro de contratos. */
+  /** The step's operation is not in the contract registry. */
   UnregisteredOperation = 'unregistered-operation',
-  /** La operación de compensación no está en el registro de contratos. */
+  /** The compensation operation is not in the contract registry. */
   UnregisteredCompensation = 'unregistered-compensation',
-  /** La compensación del paso difiere del `compensatedBy` del contrato. */
+  /** The step's compensation differs from the contract's `compensatedBy`. */
   CompensationMismatch = 'compensation-mismatch',
-  /** Un paso anterior al pivote cambia datos y su contrato no declara compensación. */
+  /** A step before the pivot changes data and its contract declares no compensation. */
   MissingCompensation = 'missing-compensation',
-  /** Un paso posterior al pivote no es idempotente, así que no se puede reintentar hasta completarse. */
+  /** A step after the pivot is not idempotent, so it cannot be retried until it completes. */
   NotIdempotentAfterPivot = 'not-idempotent-after-pivot',
-  /** Una compensación no es idempotente, así que no se puede reintentar con la misma llave. */
+  /** A compensation is not idempotent, so it cannot be retried with the same key. */
   NotIdempotentCompensation = 'not-idempotent-compensation',
-  /** El presupuesto por defecto de una llamada (intentos y esperas) supera `maxStepDurationMs`. */
+  /** The default budget of a call (attempts and waits) exceeds `maxStepDurationMs`. */
   StepBudgetExceeded = 'step-budget-exceeded',
 }

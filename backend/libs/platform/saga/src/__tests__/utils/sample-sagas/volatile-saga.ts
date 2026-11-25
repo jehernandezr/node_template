@@ -4,9 +4,9 @@ import { STEP_A, STEP_B, STEP_C } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
 /**
- * Saga cuyas entradas se construyen con código contado y no repetible: si el
- * motor reconstruyera una entrada en lugar de reutilizar la guardada, el
- * contador lo delataría.
+ * Saga whose inputs are built with counted, non-repeatable code: if the
+ * engine rebuilt an input instead of reusing the stored one, the
+ * counter would reveal it.
  */
 export class VolatileSaga extends SagaDefinition<SampleState> {
   readonly type = 'volatile';

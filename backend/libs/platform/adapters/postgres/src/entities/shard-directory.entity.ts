@@ -4,8 +4,8 @@ import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
 import { BigintNumberTransformer } from './bigint-number.transformer.js';
 
 /**
- * Directorio del catálogo global: tenant a región y grupo de shards. Solo datos de enrutamiento, sin datos
- * personales. `version` sube en cada cambio de ubicación y el directorio solo escribe una versión mayor.
+ * Directory of the global catalog: tenant to region and shard group. Routing data only, no personal
+ * data. `version` increases on every placement change and the directory only writes a higher version.
  */
 @Entity({ name: 'shard_directory' })
 @Check('shard_directory_group_check', `"shard_group" <> '{}'`)

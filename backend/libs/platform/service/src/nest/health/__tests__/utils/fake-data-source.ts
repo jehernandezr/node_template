@@ -1,6 +1,6 @@
 import type { DataSource } from 'typeorm';
 
-/** `DataSource` de prueba: guarda las consultas que recibe y responde vacío o con el error indicado. */
+/** Test `DataSource`: keeps the queries it receives and responds empty or with the given error. */
 export class FakeDataSource {
   readonly queries: string[] = [];
 
@@ -17,7 +17,7 @@ export class FakeDataSource {
       : Promise.reject(this.failure);
   }
 
-  /** Expone el fake con la forma de `DataSource` que piden las clases reales. */
+  /** Exposes the fake with the `DataSource` shape that the real classes require. */
   asDataSource(): DataSource {
     return this as unknown as DataSource;
   }

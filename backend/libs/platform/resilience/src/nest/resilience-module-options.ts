@@ -4,21 +4,21 @@ import type { PolicyName } from '../policy/policy-name.js';
 import type { ResilienceOverrides } from '../policy/resilience-overrides.js';
 import type { ResiliencePolicyConfig } from '../policy/resilience-policy-config.js';
 
-/** Opciones de `ResilienceModule.forRoot`. */
+/** Options of `ResilienceModule.forRoot`. */
 export interface ResilienceModuleOptions {
-  /** Ajustes por nombre de política sobre las base. */
+  /** Overrides by policy name over the base ones. */
   readonly policies?: ResilienceOverrides;
 }
 
-/** Extras de `ResilienceModule.forRoot` que no son opciones del registro. */
+/** Extras of `ResilienceModule.forRoot` that are not registry options. */
 export interface ResilienceModuleExtras {
-  /** Por defecto, el módulo es global. */
+  /** The module is global by default. */
   isGlobal?: boolean;
-  /** Puerto de métricas. Su clase debe estar registrada por quien llama. */
+  /** Metrics port. Its class must be registered by the caller. */
   metrics?: Type<MetricsPort> | Abstract<MetricsPort>;
 }
 
-/** Opciones de `ResilienceModule.forFeature`. */
+/** Options of `ResilienceModule.forFeature`. */
 export interface ResilienceFeatureOptions {
   readonly name: PolicyName;
   readonly policy: ResiliencePolicyConfig;

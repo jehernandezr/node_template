@@ -7,7 +7,7 @@ import type {
   PublishOutboxOptions,
 } from '../../outbox/outbox.js';
 
-/** Una publicación aceptada por {@link RecordingEnvelopePublisher}. */
+/** A publication accepted by {@link RecordingEnvelopePublisher}. */
 export interface PublishedEnvelope {
   readonly envelope: MessageEnvelope;
   readonly target: OutboundTarget;
@@ -15,19 +15,19 @@ export interface PublishedEnvelope {
 }
 
 /**
- * Publicador de prueba que guarda lo publicado. Los sobres cuyo id está en
- * `failing` lanzan `error`, así una prueba decide qué falla sin espías.
+ * Test publisher that stores what was published. Envelopes whose id is in
+ * `failing` throw `error`, so a test decides what fails without spies.
  */
 export class RecordingEnvelopePublisher extends EnvelopePublisher {
   readonly published: PublishedEnvelope[] = [];
   readonly failing = new Set<string>();
-  /** Error que lanzan los sobres de `failing`. Es reintentable por defecto. */
+  /** Error thrown by the envelopes in `failing`. Retryable by default. */
   error: unknown = new MessagingError(
     MessagingErrorCode.TransportFailed,
     'transport down',
     { retryable: true },
   );
-  /** Intentos de publicación, sin importar si fallaron. */
+  /** Publication attempts, whether or not they failed. */
   attempts = 0;
 
   publish(

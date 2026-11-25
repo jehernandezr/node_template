@@ -18,7 +18,7 @@ const CREDENTIALS = {
   MIGRATION_DB_PASSWORD: 'migrator-secret',
 };
 
-/** Generador doble: registra cada petición y responde con el resultado dado. */
+/** Test double generator: records each request and responds with the given result. */
 class RecordingGenerator extends MigrationGenerator {
   readonly requests: MigrationGenerateRequest[] = [];
 

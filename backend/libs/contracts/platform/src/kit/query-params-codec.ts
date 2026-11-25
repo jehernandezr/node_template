@@ -2,10 +2,10 @@ import type { z } from 'zod';
 import { QueryValueKind } from '../enums/query-value-kind.enum.js';
 import type { QueryParam, RawQueryValue } from './query-params.js';
 
-/** Envoltorios de zod que no cambian el tipo del valor en la query. */
+/** zod wrappers that do not change the type of the value in the query. */
 const TRANSPARENT = new Set(['optional', 'default', 'prefault', 'readonly']);
 
-/** Número decimal en notación JSON. */
+/** Decimal number in JSON notation. */
 const NUMBER = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/;
 
 interface ZodDefLike {
@@ -17,14 +17,14 @@ interface ZodDefLike {
 }
 
 /**
- * Describe qué campos de una petición viajan en la query y los convierte del
- * texto que entrega el servidor HTTP al tipo que declara el contrato.
+ * Describes which fields of a request travel in the query and converts them from the
+ * text the HTTP server delivers to the type the contract declares.
  */
 export class QueryParamsCodec {
   /**
-   * Describe los campos de query de un esquema de petición. Cada campo debe ser
-   * un escalar (texto, número, booleano, enum o literal) o una lista de
-   * escalares; `fail` recibe el motivo cuando no lo es.
+   * Describes the query fields of a request schema. Each field must be
+   * a scalar (string, number, boolean, enum or literal) or a list of
+   * scalars; `fail` receives the reason when it is not.
    */
   describe(
     shape: Readonly<Record<string, z.ZodType>>,
@@ -36,7 +36,7 @@ export class QueryParamsCodec {
       if (!include(name)) continue;
       const outer = this.unwrap(field);
       if (typeof outer === 'string') {
-        fail(`el campo de query ${name}: ${outer}`);
+        fail(`query field ${name}: ${outer}`);
       }
       let target = outer as z.ZodType;
       let list = false;
@@ -44,16 +44,14 @@ export class QueryParamsCodec {
       if (def.type === 'array' && def.element) {
         const inner = this.unwrap(def.element);
         if (typeof inner === 'string') {
-          fail(`el campo de query ${name}: ${inner}`);
+          fail(`query field ${name}: ${inner}`);
         }
         target = inner as z.ZodType;
         list = true;
       }
       const kind = this.scalarKind(target);
       if (kind === null) {
-        fail(
-          `el campo de query ${name} debe ser un escalar o una lista de escalares`,
-        );
+        fail(`query field ${name} must be a scalar or a list of scalars`);
       }
       params.push(Object.freeze({ name, kind: kind as QueryValueKind, list }));
     }
@@ -61,16 +59,16 @@ export class QueryParamsCodec {
   }
 
   /**
-   * Convierte los textos de la query al tipo que declara el contrato, antes de
-   * validar con `validateContract(route.request, ...)`.
+   * Converts the query strings to the type the contract declares, before
+   * validating with `validateContract(route.request, ...)`.
    *
-   * Reglas: un número se acepta en notación JSON (`20`, `-1.5`); un booleano solo
-   * como `true` o `false`; una lista acepta el parámetro repetido o un solo valor.
-   * Lo que no se puede convertir se deja como texto, así la validación responde
-   * `PLATFORM.VALIDATION.INVALID_TYPE` con el mismo campo que vería el cliente.
-   * Los parámetros desconocidos se conservan para que un esquema estricto los
-   * rechace con `PLATFORM.VALIDATION.UNKNOWN_FIELD`. Los parámetros de ruta no
-   * pasan por aquí: llegan como texto y se validan como tal.
+   * Rules: a number is accepted in JSON notation (`20`, `-1.5`); a boolean only
+   * as `true` or `false`; a list accepts the repeated parameter or a single value.
+   * Whatever cannot be converted is left as text, so validation responds
+   * `PLATFORM.VALIDATION.INVALID_TYPE` with the same field the client would see.
+   * Unknown parameters are kept so a strict schema rejects them
+   * with `PLATFORM.VALIDATION.UNKNOWN_FIELD`. Path parameters do not
+   * go through here: they arrive as text and are validated as such.
    */
   decode(
     route: { readonly queryParams: readonly QueryParam[] },
@@ -108,7 +106,7 @@ export class QueryParamsCodec {
     for (;;) {
       const def = this.defOf(current);
       if (def.type === 'nullable') {
-        return 'la query no puede llevar null; usa optional';
+        return 'the query cannot carry null; use optional';
       }
       if (!TRANSPARENT.has(def.type) || !def.innerType) return current;
       current = def.innerType;
@@ -129,7 +127,7 @@ export class QueryParamsCodec {
     return null;
   }
 
-  /** Tipo escalar de un esquema, o null si no se puede enviar como texto. */
+  /** Scalar type of a schema, or null if it cannot be sent as text. */
   private scalarKind(schema: z.ZodType): QueryValueKind | null {
     const def = this.defOf(schema);
     switch (def.type) {

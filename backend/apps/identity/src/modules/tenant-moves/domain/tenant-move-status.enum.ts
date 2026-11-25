@@ -1,11 +1,11 @@
-/** Etapa de un traslado de tenant en `tenant_moves`. */
+/** Stage of a tenant move in `tenant_moves`. */
 export enum TenantMoveStatus {
-  /** La saga copia, congela o apunta los servicios al destino. */
+  /** The saga copies, freezes or points the services to the target. */
   Running = 'running',
-  /** Todos los servicios ya apuntan al destino; el origen espera la gracia antes de limpiarse. */
+  /** Every service already points to the target; the source waits for the grace period before being cleaned. */
   Switched = 'switched',
-  /** La saga se compensó: el tenant sigue en el origen. */
+  /** The saga was compensated: the tenant remains in the source. */
   Aborted = 'aborted',
-  /** Los datos que quedaron en el origen ya se borraron. */
+  /** The data left in the source has already been deleted. */
   CleanedUp = 'cleaned-up',
 }

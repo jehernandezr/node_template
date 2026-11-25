@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrivacyInternalOperations } from './privacy.internal-operations.js';
 
-/** Borrado de datos de usuario, cambios para proyecciones y, después, el traslado de tenants. */
+/** User data deletion, changes for projections and, later, tenant moves. */
 @Module({ providers: [PrivacyInternalOperations] })
 export class PrivacyModule {}

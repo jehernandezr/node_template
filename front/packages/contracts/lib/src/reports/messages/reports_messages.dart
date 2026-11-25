@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../platform/enums/platform_enums.dart';
 import '../../reports/schemas/reports_schemas.dart';
 import '../../reports/types/reports_types.dart';
 
-/// Eventos que publica el contrato `reports`.
+/// Events published by the `reports` contract.
 abstract final class ReportsEvents {
-  /// Terminó una ejecución de reporte, lista o fallida. Notifications avisa a quien la pidió.
+  /// A report run finished, ready or failed. Notifications tells whoever requested it.
   ///
   /// `reports.run.completed.v1`
   static const runCompleted = MessageDescriptor<RunCompletedPayload>(
@@ -20,10 +20,10 @@ abstract final class ReportsEvents {
     decodePayload: RunCompletedPayload.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[runCompleted];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;
@@ -32,9 +32,9 @@ abstract final class ReportsEvents {
   }
 }
 
-/// Comandos que atiende el contrato `reports`.
+/// Commands handled by the `reports` contract.
 abstract final class ReportsCommands {
-  /// Ejecuta una ejecución de reporte en un worker.
+  /// Executes a report run in a worker.
   ///
   /// `reports.run.execute.v1`
   static const executeRun = MessageDescriptor<ExecuteRunPayload>(
@@ -45,10 +45,10 @@ abstract final class ReportsCommands {
     decodePayload: ExecuteRunPayload.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[executeRun];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;

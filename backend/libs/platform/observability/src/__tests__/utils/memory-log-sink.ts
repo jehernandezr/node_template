@@ -1,6 +1,6 @@
 import { LogSink, type LogRecord } from '../../index.js';
 
-/** Guarda los logs en memoria, para pruebas. */
+/** Stores logs in memory, for tests. */
 export class MemoryLogSink extends LogSink {
   readonly records: LogRecord[] = [];
 

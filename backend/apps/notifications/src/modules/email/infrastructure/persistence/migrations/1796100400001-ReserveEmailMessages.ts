@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** `sending`: el correo se reserva antes de entregarlo al proveedor, así un reintento no lo envía dos veces. */
+/** `sending`: the email is reserved before handing it to the provider, so a retry does not send it twice. */
 export class ReserveEmailMessages1796100400001 implements MigrationInterface {
   readonly name = 'ReserveEmailMessages1796100400001';
 

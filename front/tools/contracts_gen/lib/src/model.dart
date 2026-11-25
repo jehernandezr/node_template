@@ -2,13 +2,13 @@ import 'dart:collection';
 
 import 'naming.dart';
 
-/// JSON tal como sale de `jsonDecode`.
+/// JSON as it comes out of `jsonDecode`.
 typedef Json = Map<String, dynamic>;
 
-/// Versión de `contract.json` que entiende este generador.
+/// Version of `contract.json` this generator understands.
 const supportedFormatVersion = 2;
 
-/// Error de generación: el contrato usa algo que el generador no soporta.
+/// Generation error: the contract uses something the generator does not support.
 class GeneratorException implements Exception {
   GeneratorException(this.message);
 
@@ -18,7 +18,7 @@ class GeneratorException implements Exception {
   String toString() => 'contracts_gen: $message';
 }
 
-/// Esquema con nombre dentro de un servicio.
+/// Named schema within a service.
 final class SchemaId {
   const SchemaId(this.service, this.name);
 
@@ -36,7 +36,7 @@ final class SchemaId {
   String toString() => '$service.$name';
 }
 
-/// Tipo Dart de un valor del contrato.
+/// Dart type of a contract value.
 sealed class DType {
   const DType();
 }
@@ -47,7 +47,7 @@ final class DPrimitive extends DType {
   final String dart;
 }
 
-/// Texto con formato `date-time`, representado como `DateTime`.
+/// Text with `date-time` format, represented as `DateTime`.
 final class DDateTime extends DType {
   const DDateTime();
 }
@@ -58,20 +58,20 @@ final class DEnum extends DType {
   final SchemaId id;
 }
 
-/// Clase generada o escrita a mano en `core`.
+/// Class generated or written by hand in `core`.
 final class DClass extends DType {
   const DClass(this.id, {this.core = false});
   final SchemaId id;
   final bool core;
 }
 
-/// Lista de otro tipo.
+/// List of another type.
 final class DList extends DType {
   const DList(this.item);
   final DType item;
 }
 
-/// Campo de una clase generada.
+/// Field of a generated class.
 final class FieldSpec {
   FieldSpec({
     required this.json,
@@ -91,11 +91,11 @@ final class FieldSpec {
   final bool nullable;
   final String? description;
 
-  /// El campo puede ser null en Dart: es opcional o acepta null.
+  /// The field can be null in Dart: it is optional or accepts null.
   bool get optional => !required || nullable;
 }
 
-/// Objeto del contrato que se genera como clase y como validador.
+/// Contract object generated as a class and as a validator.
 final class ClassSpec {
   ClassSpec({
     required this.id,
@@ -114,13 +114,13 @@ final class ClassSpec {
   String get name => id.name;
 }
 
-/// Clases de `core` escritas a mano: el generador no las vuelve a emitir.
+/// Hand-written `core` classes: the generator does not emit them again.
 final coreClasses = {
   SchemaId('platform', 'ProblemDetails'),
   SchemaId('platform', 'FieldError'),
 };
 
-/// Contratos cargados de `contract.json`, con resolución de referencias.
+/// Contracts loaded from `contract.json`, with reference resolution.
 final class ContractModel {
   ContractModel(Map<String, Json> docs)
     : docs = SplayTreeMap.of(docs, _serviceOrder) {
@@ -128,21 +128,23 @@ final class ContractModel {
       final version = entry.value['formatVersion'];
       if (version != supportedFormatVersion) {
         throw GeneratorException(
-          '${entry.key}: formatVersion $version no soportado '
-          '(se espera $supportedFormatVersion)',
+          '${entry.key}: unsupported formatVersion $version '
+          '(expected $supportedFormatVersion)',
         );
       }
       if (entry.value['service'] != entry.key) {
-        throw GeneratorException('${entry.key}: el campo service no coincide');
+        throw GeneratorException(
+          '${entry.key}: the service field does not match',
+        );
       }
       if (entry.key == 'core') {
-        throw GeneratorException('"core" es un nombre reservado del front');
+        throw GeneratorException('"core" is a reserved front name');
       }
     }
     _collect();
   }
 
-  /// `platform` primero; el resto en orden alfabético.
+  /// `platform` first; the rest in alphabetical order.
   static int _serviceOrder(String a, String b) {
     if (a == b) return 0;
     if (a == 'platform') return -1;
@@ -152,10 +154,10 @@ final class ContractModel {
 
   final SplayTreeMap<String, Json> docs;
 
-  /// Clases por servicio, en orden de aparición.
+  /// Classes per service, in order of appearance.
   final Map<String, List<ClassSpec>> classes = {};
 
-  /// Enums de esquema sin entrada en `enums`, por servicio.
+  /// Schema enums without an entry in `enums`, per service.
   final Map<String, Map<String, List<String>>> schemaEnums = {};
 
   final Map<Json, ClassSpec> _inline = LinkedHashMap.identity();
@@ -179,7 +181,7 @@ final class ContractModel {
   Json schema(SchemaId id) {
     final schema = schemasOf(id.service)[id.name];
     if (schema is! Map<String, dynamic>) {
-      throw GeneratorException('no existe el esquema $id');
+      throw GeneratorException('schema $id does not exist');
     }
     return schema;
   }
@@ -189,16 +191,16 @@ final class ContractModel {
     r'^\.\./\.\./([a-z][a-z0-9-]*)/export/contract\.json#/schemas/(\w+)$',
   );
 
-  /// Resuelve un `$ref` visto desde `from`.
+  /// Resolves a `$ref` seen from `from`.
   SchemaId resolve(String from, String ref) {
     final local = _localRef.firstMatch(ref);
     if (local != null) return SchemaId(from, local[1]!);
     final remote = _remoteRef.firstMatch(ref);
     if (remote != null) return SchemaId(remote[1]!, remote[2]!);
-    throw GeneratorException('$from: referencia no soportada $ref');
+    throw GeneratorException('$from: unsupported reference $ref');
   }
 
-  /// Separa `X | null` en (X, true).
+  /// Splits `X | null` into (X, true).
   static (Json, bool) unwrapNullable(Json node) {
     final anyOf = node['anyOf'];
     if (anyOf is List && anyOf.length == 2) {
@@ -213,9 +215,7 @@ final class ContractModel {
       return ({...node, 'type': type.firstWhere((t) => t != 'null')}, true);
     }
     if (anyOf != null || node['oneOf'] != null || node['allOf'] != null) {
-      throw GeneratorException(
-        'combinaciones de esquemas no soportadas: $node',
-      );
+      throw GeneratorException('unsupported schema combinators: $node');
     }
     return (node, false);
   }
@@ -225,7 +225,7 @@ final class ContractModel {
   static bool isStringEnum(Json node) =>
       node['type'] == 'string' && node['enum'] is List;
 
-  /// Clase asignada a un objeto anónimo dentro de otra clase.
+  /// Class assigned to an anonymous object inside another class.
   ClassSpec? inlineClass(Json node) => _inline[node];
 
   void _collect() {
@@ -256,13 +256,13 @@ final class ContractModel {
             ];
             if (declaredValues.join('|') != values.join('|')) {
               throw GeneratorException(
-                '$id: los valores del esquema no coinciden con el enum',
+                '$id: schema values do not match the enum',
               );
             }
           }
         }
       }
-      // Los objetos anónimos se agregan al final de la lista mientras se recorre.
+      // Anonymous objects are appended to the end of the list while it is traversed.
       for (var i = 0; i < list.length; i++) {
         _fields(list[i]);
       }
@@ -272,7 +272,7 @@ final class ContractModel {
       final previous = names[name];
       if (previous != null && previous != id) {
         throw GeneratorException(
-          'nombre Dart repetido $name en $previous y $id',
+          'duplicate Dart name $name in $previous and $id',
         );
       }
       names[name] = id;
@@ -310,13 +310,11 @@ final class ContractModel {
     };
     final extra = spec.node.keys.where((k) => !allowed.contains(k));
     if (extra.isNotEmpty) {
-      throw GeneratorException(
-        '${spec.id}: palabras clave no soportadas $extra',
-      );
+      throw GeneratorException('${spec.id}: unsupported keywords $extra');
     }
     final additional = spec.node['additionalProperties'];
     if (additional != null && additional != false) {
-      throw GeneratorException('${spec.id}: additionalProperties no soportado');
+      throw GeneratorException('${spec.id}: unsupported additionalProperties');
     }
     for (final entry in properties.entries) {
       final node = entry.value as Json;
@@ -339,7 +337,7 @@ final class ContractModel {
     }
   }
 
-  /// Tipo Dart de `node`, propiedad `prop` de `owner`. `node` ya no es nullable.
+  /// Dart type of `node`, property `prop` of `owner`. `node` is no longer nullable.
   DType typeOf(ClassSpec owner, String prop, Json node) {
     final ref = node[r'$ref'];
     if (ref is String) {
@@ -349,9 +347,7 @@ final class ContractModel {
       if (isStringEnum(target)) return DEnum(id);
       final (inner, nullable) = unwrapNullable(target);
       if (nullable) {
-        throw GeneratorException(
-          '$id: un esquema con nombre no puede ser nullable',
-        );
+        throw GeneratorException('$id: a named schema cannot be nullable');
       }
       return typeOf(
         ClassSpec(id: id, node: const {}, core: false),
@@ -373,12 +369,12 @@ final class ContractModel {
       case 'array':
         final items = node['items'];
         if (items is! Map<String, dynamic>) {
-          throw GeneratorException('${owner.id}.$prop: array sin items');
+          throw GeneratorException('${owner.id}.$prop: array without items');
         }
         final (inner, nullable) = unwrapNullable(items);
         if (nullable) {
           throw GeneratorException(
-            '${owner.id}.$prop: items nullable no soportado',
+            '${owner.id}.$prop: unsupported nullable items',
           );
         }
         return DList(typeOf(owner, '${prop}Item', inner));
@@ -393,7 +389,7 @@ final class ContractModel {
       case 'boolean':
         return const DPrimitive('bool');
       default:
-        throw GeneratorException('${owner.id}.$prop: tipo no soportado $node');
+        throw GeneratorException('${owner.id}.$prop: unsupported type $node');
     }
   }
 }

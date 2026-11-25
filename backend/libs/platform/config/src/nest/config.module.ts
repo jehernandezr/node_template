@@ -9,9 +9,9 @@ import type { ConfigModuleOptions } from './config-module-options.js';
 import { CONFIG_ENV } from './config.tokens.js';
 
 /**
- * Configuración. `forRoot` es global y provee `AppConfig`, `ConfigLoader` y
- * `ConfigRegistry`; `forFeature(section)` valida una sección al arrancar. La
- * clase no lleva `@Global()` para que cada `forFeature` no se vuelva global.
+ * Configuration. `forRoot` is global and provides `AppConfig`, `ConfigLoader` and
+ * `ConfigRegistry`; `forFeature(section)` validates a section at startup. The
+ * class has no `@Global()` so that each `forFeature` does not become global.
  */
 @Module({})
 export class ConfigModule {
@@ -44,7 +44,7 @@ export class ConfigModule {
     };
   }
 
-  /** Valida la sección al arrancar y la expone con su token propio. */
+  /** Validates the section at startup and exposes it with its own token. */
   static forFeature<T>(section: ConfigSection<T>): DynamicModule {
     return {
       module: ConfigModule,

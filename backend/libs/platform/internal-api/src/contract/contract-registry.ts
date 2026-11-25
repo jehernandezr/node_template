@@ -8,7 +8,7 @@ import type { RegisteredContract } from './registered-contract.js';
 import type { RegistryIssue } from './registry-issue.js';
 import { RegistryIssueCode } from './registry-issue-code.enum.js';
 
-/** Catálogo de las operaciones que un servicio publica. */
+/** Catalog of the operations a service publishes. */
 export class ContractRegistry {
   private static readonly DEFAULT_MAX_CALL_BUDGET_MS = 25_000;
 
@@ -26,10 +26,10 @@ export class ContractRegistry {
   }
 
   /**
-   * Registra operaciones desde su descriptor de `defineOperation`. Los
-   * duplicados se aceptan aquí y los informa `validate()`.
-   * @throws InternalApiError `InvalidOperation` para cualquier otro valor y
-   *   `NonJsonSafeSchema` para esquemas que no sobreviven al transporte JSON.
+   * Registers operations from their `defineOperation` descriptor.
+   * Duplicates are accepted here and reported by `validate()`.
+   * @throws InternalApiError `InvalidOperation` for any other value and
+   *   `NonJsonSafeSchema` for schemas that do not survive JSON transport.
    */
   register(...definitions: OperationDefinition[]): void {
     for (const definition of definitions) {
@@ -49,7 +49,7 @@ export class ContractRegistry {
     }
   }
 
-  /** Revisa ids, destinos de compensación y presupuestos. Devuelve un arreglo vacío si es válido. */
+  /** Checks ids, compensation targets and budgets. Returns an empty array if valid. */
   validate(): RegistryIssue[] {
     const issues: RegistryIssue[] = [];
     const seen = new Set<string>();
@@ -102,7 +102,7 @@ export class ContractRegistry {
     return issues;
   }
 
-  /** @throws InternalApiError con todos los problemas listados si el registro no es válido. */
+  /** @throws InternalApiError with every problem listed if the registry is not valid. */
   assertValid(): void {
     const issues = this.validate();
     if (issues.length === 0) {
@@ -114,17 +114,17 @@ export class ContractRegistry {
     );
   }
 
-  /** Primer contrato registrado con ese `id`. */
+  /** Returns the first contract registered with that `id`. */
   get(id: string): RegisteredContract | undefined {
     return this.byId.get(id);
   }
 
-  /** Una entrada por id de operación. */
+  /** Returns one entry per operation id. */
   operations(): RegisteredContract[] {
     return [...this.byId.values()];
   }
 
-  /** Código de `assertValid`: el del tipo de problema más grave. */
+  /** Returns the `assertValid` code: the one of the most severe problem type. */
   private static errorCodeOf(
     issues: readonly RegistryIssue[],
   ): InternalApiErrorCode {

@@ -2,7 +2,7 @@ import type { ApiKeySummary, ServiceAccountSummary } from '@contracts/identity';
 import type { ApiKey } from '../domain/api-key.js';
 import type { ServiceAccount } from '../domain/service-account.js';
 
-/** Lo que responde el contrato de cuentas de servicio y API keys. */
+/** What the service accounts and API keys contract responds. */
 export class ApiKeyViews {
   static account(account: ServiceAccount): ServiceAccountSummary {
     return {

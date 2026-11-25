@@ -3,7 +3,7 @@ import { UuidV7IdGenerator } from '@platform/kernel';
 import { ActorType } from '@platform/observability';
 import type { ServiceAccountActor, UserActor } from '../../actor/actor.js';
 
-/** Actores autenticados de un tenant para las pruebas de guards e interceptores, con ids nuevos. */
+/** Authenticated actors of a tenant for the guard and interceptor tests, with new ids. */
 export class TestActors {
   private static readonly ids = new UuidV7IdGenerator();
 

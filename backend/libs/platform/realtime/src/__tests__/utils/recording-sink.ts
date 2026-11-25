@@ -1,7 +1,7 @@
 import type { FrameSink } from '../../session/frame-sink.js';
 import type { StoredFrame } from '../../stream/realtime-frame.js';
 
-/** Sumidero que guarda lo entregado, para probar la sesión sin un transporte. */
+/** Sink that stores what is delivered, to test the session without a transport. */
 export class RecordingSink implements FrameSink {
   readonly sent: StoredFrame[] = [];
   keepAlives = 0;

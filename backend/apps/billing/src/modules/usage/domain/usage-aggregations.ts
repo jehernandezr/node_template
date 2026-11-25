@@ -4,7 +4,7 @@ import {
   UsageMetric,
 } from '@contracts/billing';
 
-/** Cómo se reduce cada métrica a la cifra de un periodo, por el valor del enum. Utilidad pura. */
+/** How each metric is reduced to a single figure for a period, by enum value. Pure utility. */
 export class UsageAggregations {
   private static readonly BY_METRIC: Readonly<
     Record<UsageMetric, UsageAggregationKind>

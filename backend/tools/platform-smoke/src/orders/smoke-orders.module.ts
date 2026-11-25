@@ -17,7 +17,7 @@ import { SmokeOrderRepository } from './smoke-order.repository.js';
 import { SmokeStockHandlers } from './smoke-stock-handlers.js';
 import { SmokeWelcomeSaga } from './smoke-welcome-saga.js';
 
-/** Módulo de negocio de la prueba: su tabla por tenant, su caché, su saga y sus piezas. */
+/** Business module of the test: its per-tenant table, its cache, its saga and its pieces. */
 @Module({
   imports: [
     PersistenceModule.forFeature({

@@ -14,9 +14,9 @@ import { ApiCallMeteringInterceptor } from './api-call-metering.interceptor.js';
 import type { MeteringModuleOptions } from './metering-module-options.js';
 
 /**
- * Medición del uso hacia billing: cuenta las llamadas de API de las service accounts, ofrece `UsageRecorder`
- * a los casos de uso y corre `UsageFlushJob`, que `SchedulingModule` descubre. El servicio declara el
- * contrato de billing entre sus pares para que la topología conozca la cola del comando.
+ * Usage metering toward billing: counts the API calls of service accounts, offers `UsageRecorder`
+ * to the use cases and runs `UsageFlushJob`, which `SchedulingModule` discovers. The service declares the
+ * billing contract among its peers so the topology knows the command queue.
  */
 @Module({})
 export class MeteringModule {

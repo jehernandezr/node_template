@@ -14,8 +14,8 @@ import { InvoiceRepository } from '../domain/invoice.repository.js';
 import { Invoice, type InvoiceState } from '../domain/invoice.js';
 
 /**
- * Cierra el periodo vencido de la suscripción y emite su factura con el siguiente consecutivo, todo en una
- * transacción con `billing.invoice.issued.v1`. Una prueba que termina no se factura.
+ * Closes the expired period of the subscription and issues its invoice with the next sequence number, all in one
+ * transaction with `billing.invoice.issued.v1`. An ending trial is not invoiced.
  */
 @Injectable()
 export class IssueInvoice {

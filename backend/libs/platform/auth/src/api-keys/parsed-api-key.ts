@@ -1,9 +1,9 @@
 import type { ApiKeyEnvironment } from './api-key-environment.enum.js';
 
-/** Una API key separada en sus partes. */
+/** An API key split into its parts. */
 export interface ParsedApiKey {
   readonly environment: ApiKeyEnvironment;
-  /** Identifica la key sin revelarla; es la llave de la caché `auth:apikey:{prefix}`. */
+  /** Identifies the key without revealing it; it is the key of the `auth:apikey:{prefix}` cache. */
   readonly prefix: string;
   readonly secret: string;
 }

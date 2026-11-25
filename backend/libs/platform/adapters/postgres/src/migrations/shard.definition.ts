@@ -4,7 +4,7 @@ import {
   platformShardMigrations,
 } from '../platform-database-sets.js';
 
-/** Definición que lee la CLI `migration-generate` para generar las migraciones de las tablas de shard de la plataforma. */
+/** Definition the `migration-generate` CLI reads to generate the migrations of the platform shard tables. */
 const definition: DatabaseSetDefinition = {
   entities: platformShardEntities,
   migrations: platformShardMigrations,

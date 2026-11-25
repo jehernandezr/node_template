@@ -4,7 +4,7 @@ import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { MemberRoster } from '../../domain/member-roster.js';
 import { BillingMemberEntity } from './entities/billing-member.entity.js';
 
-/** `MemberRoster` sobre `billing_members` del shard del tenant. Entrar y salir dos veces no cambia nada. */
+/** `MemberRoster` over `billing_members` of the tenant shard. Joining or leaving twice changes nothing. */
 @Injectable()
 export class TypeOrmMemberRoster
   extends TenantIsolatedRepository

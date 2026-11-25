@@ -8,8 +8,8 @@ import type { InstanceEndpoints } from './model/instance-endpoints.js';
 import { DataSourceFactory } from './ports/data-source-factory.js';
 
 /**
- * Crea el `DataSource` de PostgreSQL de una base lógica con réplicas de lectura. `synchronize`
- * va siempre apagado y las migraciones nunca corren solas: las aplica `ShardedMigrationRunner`.
+ * Creates the PostgreSQL `DataSource` of a logical database with read replicas. `synchronize`
+ * is always off and migrations never run on their own: `ShardedMigrationRunner` applies them.
  */
 export class PostgresDataSourceFactory extends DataSourceFactory {
   constructor(
@@ -45,7 +45,7 @@ export class PostgresDataSourceFactory extends DataSourceFactory {
       extra: {
         statement_timeout: this.settings.DB_STATEMENT_TIMEOUT_MS,
       },
-      // Un módulo puede declarar en `forFeature` una entidad que el servicio ya listó: TypeORM no admite duplicados.
+      // A module can declare in `forFeature` an entity that the service already listed: TypeORM does not allow duplicates.
       entities: [
         ...new Set([
           ...definition.entities,

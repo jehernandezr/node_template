@@ -1,6 +1,6 @@
 import type { TransactionHook, UnitOfWork } from '@platform/kernel';
 
-/** Unidad de trabajo de prueba: guarda sus hooks y los corre al cerrar la transacción. */
+/** Test unit of work: stores its hooks and runs them when the transaction closes. */
 export class FakeUnitOfWork implements UnitOfWork {
   readonly database = 'test';
   readonly hookErrors: unknown[] = [];
@@ -15,12 +15,12 @@ export class FakeUnitOfWork implements UnitOfWork {
     this.rollbackHooks.push(hook);
   }
 
-  /** Corre los hooks de commit en orden, esperando cada uno. Un hook que falla no detiene a los demás. */
+  /** Runs the commit hooks in order, awaiting each one. A failing hook does not stop the others. */
   async commit(): Promise<void> {
     await this.runAll(this.commitHooks);
   }
 
-  /** Corre los hooks de rollback en orden. */
+  /** Runs the rollback hooks in order. */
   async rollback(): Promise<void> {
     await this.runAll(this.rollbackHooks);
   }

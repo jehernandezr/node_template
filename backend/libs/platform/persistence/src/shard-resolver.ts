@@ -14,8 +14,8 @@ import type { ShardDataSources } from './shard-data-sources.js';
 import type { ShardScope } from './shard-scope.js';
 
 /**
- * Del contexto de la petición, o del `ShardScope` activo, y de la declaración del módulo saca la
- * llave de enrutamiento, llama a `ShardRouter` y devuelve el `DataSource` del shard.
+ * Gets the routing key from the request context, or from the active `ShardScope`, and from the module
+ * declaration, calls `ShardRouter` and returns the `DataSource` of the shard.
  */
 export class ShardResolver {
   constructor(
@@ -28,10 +28,10 @@ export class ShardResolver {
   ) {}
 
   /**
-   * @throws ShardingError `KeyMissing` sin tenant, sin la llave que declara el módulo o, con `requireScope`, sin scope.
-   * @throws ShardingError y `WrongRegionError` que lance `ShardRouter.resolve`.
-   * @throws ShardingError `TenantMigrating` si una escritura espera más de lo permitido a que su tenant termine de
-   *   trasladarse.
+   * @throws ShardingError `KeyMissing` without a tenant, without the key declared by the module or, with `requireScope`, without a scope.
+   * @throws ShardingError and `WrongRegionError` thrown by `ShardRouter.resolve`.
+   * @throws ShardingError `TenantMigrating` if a write waits longer than allowed for its tenant to finish
+   *   relocating.
    */
   async resolve(request: ShardRequest): Promise<ShardHandle> {
     const scope = this.scope.current();
@@ -40,7 +40,7 @@ export class ShardResolver {
     let keyValue: string | undefined;
 
     if (scope !== undefined) {
-      // El scope manda sobre la declaración del módulo: es la llave que pidió quien lo abrió.
+      // The scope takes precedence over the module declaration: it is the key requested by whoever opened it.
       tenantId = scope.tenantId;
       keyKind = scope.keyKind;
       keyValue = scope.keyValue;

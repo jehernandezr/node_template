@@ -1,20 +1,20 @@
 import type { PendingEmailProof } from './pending-email-proof.js';
 
-/** Para qué se envió un token por email. */
+/** What a token was sent by email for. */
 export enum EmailProofPurpose {
   Verification = 'verification',
   Change = 'change',
 }
 
-/** Tokens de un solo uso que prueban que el usuario controla un email. Viven 24 horas. */
+/** Single-use tokens that prove the user controls an email. They live 24 hours. */
 export abstract class EmailProofStore {
-  /** Guarda la prueba y devuelve el token que viaja en el correo. */
+  /** Saves the proof and returns the token that travels in the email. */
   abstract issue(
     purpose: EmailProofPurpose,
     proof: PendingEmailProof,
   ): Promise<string>;
 
-  /** Consume el token: una segunda vez devuelve `undefined`. */
+  /** Consumes the token: a second time returns `undefined`. */
   abstract consume(
     purpose: EmailProofPurpose,
     token: string,

@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** La bandeja, en el shard del usuario. */
+/** The inbox, in the user's shard. */
 export class CreateNotifications1796100200000 implements MigrationInterface {
   readonly name = 'CreateNotifications1796100200000';
 

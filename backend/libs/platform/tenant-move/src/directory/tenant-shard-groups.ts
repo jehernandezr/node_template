@@ -3,10 +3,10 @@ import { TenantMoveError } from '../errors/tenant-move.error.js';
 import type { TenantMoveTargets } from '../targets/tenant-move-targets.js';
 
 /**
- * Traduce entre los shards lógicos de este servicio y los grupos de shards que todos los servicios comparten. Un grupo
- * declarado en `TENANT_MOVE_TARGETS` manda; sin él, el grupo de un shard es su nombre sin el prefijo del servicio, así
- * `identity_shard_1` y `tasks_shard_1` caen en el grupo `shard_1` sin configurar nada en un despliegue de una región.
- * El prefijo usa guiones bajos, como las bases: el servicio `stock-items` tiene `stock_items_shard_0`.
+ * Translates between this service's logical shards and the shard groups all services share. A group
+ * declared in `TENANT_MOVE_TARGETS` wins; without it, a shard's group is its name without the service prefix, so
+ * `identity_shard_1` and `tasks_shard_1` fall in group `shard_1` with nothing configured in a single-region deployment.
+ * The prefix uses underscores, like the databases: the `stock-items` service has `stock_items_shard_0`.
  */
 export class TenantShardGroups {
   private readonly prefix: string;
@@ -18,7 +18,7 @@ export class TenantShardGroups {
     this.prefix = `${service.replaceAll('-', '_')}_`;
   }
 
-  /** Los grupos de los shards de un placement de este servicio, en el mismo orden. */
+  /** The groups of the shards of a placement of this service, in the same order. */
   groupsOf(region: string, shards: readonly string[]): string[] {
     return shards.map(
       (shard) => this.targets.groupOf(region, shard) ?? this.unprefixed(shard),
@@ -26,8 +26,8 @@ export class TenantShardGroups {
   }
 
   /**
-   * El shard lógico de este servicio en un grupo.
-   * @throws TenantMoveError `UnknownTarget` si el grupo está declarado para otra región.
+   * The logical shard of this service in a group.
+   * @throws TenantMoveError `UnknownTarget` if the group is declared for another region.
    */
   shardOf(region: string, group: string): string {
     const target = this.targets.find(group);

@@ -1,7 +1,7 @@
 import { PlatformError } from '@platform/kernel';
 import { SchedulingErrorCode } from './scheduling-error-code.enum.js';
 
-/** Se pidió correr un job que no está registrado. */
+/** A run was requested for a job that is not registered. */
 export class UnknownJobError extends PlatformError {
   override readonly code = SchedulingErrorCode.UnknownJob;
 

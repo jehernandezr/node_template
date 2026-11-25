@@ -1,13 +1,13 @@
 import { PlatformError } from '@platform/kernel';
 
-/** Descripción corta de un error lanzado por código de servicio, sin valores de entrada. */
+/** Short description of an error thrown by service code, without input values. */
 export class ErrorDetail {
-  /** Más largo que esto se trunca, para que un mensaje enorme no infle la instancia. */
+  /** Anything longer than this is truncated, so a huge message does not bloat the instance. */
   static readonly MAX_LENGTH = 300;
 
   /**
-   * Un error de plataforma da su código y mensaje, que por convención no
-   * llevan valores de entrada; cualquier otro error da su nombre y mensaje.
+   * A platform error gives its code and message, which by convention do not
+   * carry input values; any other error gives its name and message.
    */
   static of(error: unknown): string {
     let text: string;

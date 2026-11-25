@@ -12,7 +12,7 @@ import { tenantsShardMigrations } from '../modules/tenants/infrastructure/persis
 import { usersShardMigrations } from '../modules/users/infrastructure/persistence/migrations/index.js';
 // generated:modules:imports
 
-/** Migraciones de los shards de identity, en el orden de los módulos. */
+/** Identity shard migrations, in module order. */
 export const identityShardMigrations: readonly MigrationClass[] = [
   ...usersShardMigrations,
   ...passwordsShardMigrations,

@@ -3,24 +3,24 @@ import { SecretHasher } from '../../../security/secret-hasher.js';
 import { normalizeEmail } from '../../../shared/utils/email-normalization.js';
 
 /**
- * Llaves de los contadores de bloqueo. Son huellas: Valkey no guarda emails ni prefijos de API keys en
- * claro, y la misma cuenta da la misma llave en cualquier réplica.
+ * Keys of the lockout counters. They are fingerprints: Valkey does not store emails or API key prefixes in
+ * plain text, and the same account yields the same key on any replica.
  */
 @Injectable()
 export class LockoutKeys {
   constructor(private readonly hasher: SecretHasher) {}
 
-  /** La cuenta de un email, para el modo protegido. */
+  /** The account of an email, for protected mode. */
   account(email: string): string {
     return this.hasher.digest(`account:${normalizeEmail(email)}`);
   }
 
-  /** El origen de un intento: la cuenta, o la API key, desde una IP. */
+  /** The origin of an attempt: the account, or the API key, from an IP. */
   origin(subject: string, ip: string): string {
     return `${subject}:${ip}`;
   }
 
-  /** Una API key por su prefijo: sus fallos cuentan como los de una cuenta. */
+  /** An API key by its prefix: its failures count like those of an account. */
   apiKey(prefix: string): string {
     return this.hasher.digest(`api-key:${prefix}`);
   }

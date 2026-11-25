@@ -4,18 +4,18 @@ import { AppConfig } from '@platform/config';
 import { HttpConfig } from '../http.config.js';
 
 /**
- * Ajusta la aplicación Express antes de que escuche: `trust proxy` desde `TRUST_PROXY_HOPS`, sin
- * `x-powered-by`, CORS con `WEB_ORIGINS` y credenciales, y apaga los parsers de cuerpo que Nest
- * registra por defecto. El cuerpo lo lee `JsonBodyPolicyMiddleware` dentro del pipeline, después de
- * abrir el contexto de la petición: un parser de Express corre antes que los middlewares de Nest y
- * sus errores saldrían sin `x-trace-id` ni encabezados de seguridad. Lee la configuración del
- * contenedor de la aplicación (`AppConfig` con `HttpConfig`), así `main.ts` lo crea sin argumentos.
+ * Adjusts the Express application before it listens: `trust proxy` from `TRUST_PROXY_HOPS`, no
+ * `x-powered-by`, CORS with `WEB_ORIGINS` and credentials, and turns off the body parsers Nest
+ * registers by default. The body is read by `JsonBodyPolicyMiddleware` inside the pipeline, after
+ * opening the request context: an Express parser runs before the Nest middlewares and
+ * its errors would come out without `x-trace-id` or security headers. Reads the configuration from the
+ * application container (`AppConfig` with `HttpConfig`), so `main.ts` creates it without arguments.
  *
- * Es compatible de forma estructural con `HttpApplicationConfigurer` de `@platform/service/nest`;
- * no lo extiende para que `@platform/http` no dependa de `@platform/service`.
+ * It is structurally compatible with `HttpApplicationConfigurer` from `@platform/service/nest`;
+ * it does not extend it so that `@platform/http` does not depend on `@platform/service`.
  */
 export class HttpApplicationSetup {
-  /** Nest no registra su parser si ya hay uno con ese nombre; este nunca aplica a una petición. */
+  /** Nest does not register its parser if one with that name already exists; this one never applies to a request. */
   private static readonly NO_MEDIA_TYPE = (): boolean => false;
 
   configure(app: INestApplication): void {

@@ -1,9 +1,9 @@
 import type { SignableRequest } from './signable-request.js';
 
-/** Puerto que autentica una llamada entrante de otro servicio. */
+/** Port that authenticates an incoming call from another service. */
 export abstract class InternalCallAuthenticator {
   /**
-   * @throws InternalApiError `Unauthenticated` si la llamada no es válida.
+   * @throws InternalApiError `Unauthenticated` if the call is not valid.
    */
   abstract authenticate(request: SignableRequest): Promise<void>;
 }

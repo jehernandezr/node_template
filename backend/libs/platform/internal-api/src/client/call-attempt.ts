@@ -9,9 +9,9 @@ import type { ClientOutcomeChecker } from './client-outcome-checker.js';
 import { RetryableOutcomeError } from './retryable-outcome.error.js';
 
 /**
- * Un intento de una llamada: arma el `CallMeta` y lo envía por el transporte.
- * Se crea una vez por llamada y lo ejecuta `ResilienceRegistry.execute`, una
- * vez por intento.
+ * One attempt of a call: builds the `CallMeta` and sends it through the transport.
+ * It is created once per call and `ResilienceRegistry.execute` runs it once
+ * per attempt.
  */
 export class CallAttempt {
   private sent = false;
@@ -25,26 +25,26 @@ export class CallAttempt {
     private readonly options: CallOptions,
   ) {}
 
-  /** Indica si algún intento llegó a enviarse: antes de eso, parar no deja efectos inciertos. */
+  /** Whether any attempt was sent: before that, stopping leaves no uncertain effects. */
   get started(): boolean {
     return this.sent;
   }
 
   /**
-   * Marca `started` y envía el intento. `CallMeta`: la llave, `tenantId` y
-   * `actorId` de `options`, `traceparent` de `options` o `restorer.current()`,
-   * `deadline` y `timeoutMs` del plazo del intento (`attempt.deadline.atMs` y
-   * `attempt.deadline.remainingMs()`) y `signal`. El resultado pasa por
-   * `checker.settle`. Si es `transient-failure` o `uncertain`, lanza
-   * `RetryableOutcomeError` para que se reintente; si no, lo devuelve. Un error
-   * del transporte se propaga: lo clasifica el registro de resiliencia.
+   * Marks `started` and sends the attempt. `CallMeta`: the key, `tenantId` and
+   * `actorId` from `options`, `traceparent` from `options` or `restorer.current()`,
+   * `deadline` and `timeoutMs` from the attempt deadline (`attempt.deadline.atMs` and
+   * `attempt.deadline.remainingMs()`) and `signal`. The result goes through
+   * `checker.settle`. If it is `transient-failure` or `uncertain`, it throws
+   * `RetryableOutcomeError` so it is retried; otherwise, it returns it. A transport
+   * error propagates: the resilience registry classifies it.
    */
   async run(
     signal: AbortSignal,
     attempt: ResilienceAttempt,
   ): Promise<CallOutcome<unknown>> {
     this.sent = true;
-    // El plazo del intento ya es el hijo del plazo de la llamada que calculó el registro de resiliencia.
+    // The attempt deadline is already the child of the call deadline that the resilience registry computed.
     const traceparent = this.options.traceparent ?? this.restorer.current();
     const meta: CallMeta = {
       idempotencyKey: this.options.idempotencyKey,

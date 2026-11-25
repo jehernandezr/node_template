@@ -1,4 +1,4 @@
-/** Adaptador del correo transaccional de identity. `console` solo existe en desarrollo. */
+/** Identity transactional email adapter. `console` exists only in development. */
 export enum IdentityMailerKind {
   Memory = 'memory',
   Console = 'console',

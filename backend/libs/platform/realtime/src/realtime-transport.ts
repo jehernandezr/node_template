@@ -1,9 +1,9 @@
 import type { RealtimeHost } from './realtime-host.js';
 
-/** Un transporte de tiempo real montado en el servidor HTTP del proceso. */
+/** A realtime transport mounted on the process's HTTP server. */
 export abstract class RealtimeTransport {
   abstract attach(host: RealtimeHost): void;
 
-  /** Cierra las conexiones abiertas; el servidor HTTP lo cierra su dueño. */
+  /** Closes the open connections; the HTTP server is closed by its owner. */
   abstract close(): Promise<void>;
 }

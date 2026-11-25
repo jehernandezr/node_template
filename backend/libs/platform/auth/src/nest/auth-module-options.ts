@@ -5,28 +5,28 @@ import type { JwksKeySource } from '../jwks/jwks-key-source.js';
 import type { AuthRevocationFeed } from '../state/auth-revocation-feed.js';
 import type { AuthStateReader } from '../state/auth-state-reader.js';
 
-/** Opciones de `AuthModule`: lo que se afina sin cambiar de adaptador. */
+/** Options of `AuthModule`: what is tuned without changing adapters. */
 export interface AuthModuleOptions {
-  /** Vida en memoria de épocas, versiones y grants. Por defecto `AuthModuleRules.DEFAULT_CACHE_TTL_MS`. */
+  /** In-memory lifetime of epochs, versions and grants. Defaults to `AuthModuleRules.DEFAULT_CACHE_TTL_MS`. */
   readonly cacheTtlMs?: number;
-  /** Entradas máximas de cada caché local. Por defecto `AuthModuleRules.DEFAULT_CACHE_MAX_ENTRIES`. */
+  /** Maximum entries of each local cache. Defaults to `AuthModuleRules.DEFAULT_CACHE_MAX_ENTRIES`. */
   readonly cacheMaxEntries?: number;
 }
 
 /**
- * Adaptadores de `AuthModule`, que se pasan como tipo. El módulo nunca importa un
- * adaptador: el servicio nombra los suyos, por ejemplo `ValkeyAuthStateReader`.
- * Cada clase debe poder inyectarse desde un módulo global (`ValkeyModule` lo es).
+ * Adapters of `AuthModule`, passed as a type. The module never imports an
+ * adapter: the service names its own, for example `ValkeyAuthStateReader`.
+ * Each class must be injectable from a global module (`ValkeyModule` is one).
  */
 export interface AuthModuleExtras {
-  /** Lector del estado `auth:*`; el módulo lo envuelve con las cachés locales. */
+  /** Reader of the `auth:*` state; the module wraps it with the local caches. */
   readonly source: Type<AuthStateReader> | Abstract<AuthStateReader>;
-  /** Avisos de revocación. */
+  /** Revocation notices. */
   readonly feed: Type<AuthRevocationFeed> | Abstract<AuthRevocationFeed>;
-  /** Fuente de verdad del acceso de un usuario. */
+  /** Source of truth for a user's access. */
   readonly accessGrants: Type<AccessGrantSource> | Abstract<AccessGrantSource>;
-  /** Fuente de verdad de las API keys. Sin ella ninguna API key es válida. */
+  /** Source of truth for API keys. Without it no API key is valid. */
   readonly apiKeyResolver?: Type<ApiKeyResolver> | Abstract<ApiKeyResolver>;
-  /** Claves de verificación. Sin ella se descargan de `AUTH_JWKS_URL`. */
+  /** Verification keys. Without it they are downloaded from `AUTH_JWKS_URL`. */
   readonly jwks?: Type<JwksKeySource> | Abstract<JwksKeySource>;
 }

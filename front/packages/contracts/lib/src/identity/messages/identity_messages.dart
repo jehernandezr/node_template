@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../identity/schemas/identity_schemas.dart';
 import '../../identity/types/identity_types.dart';
 import '../../platform/enums/platform_enums.dart';
 
-/// Eventos que publica el contrato `identity`.
+/// Events published by the `identity` contract.
 abstract final class IdentityEvents {
-  /// Se revocó una sesión. El gateway de tiempo real cierra sus conexiones.
+  /// A session was revoked. The realtime gateway closes its connections.
   ///
   /// `identity.session.revoked.v1`
   static const sessionRevoked = MessageDescriptor<SessionRevokedPayload>(
@@ -20,7 +20,7 @@ abstract final class IdentityEvents {
     decodePayload: SessionRevokedPayload.fromJson,
   );
 
-  /// Se revocaron los tokens de una sesión, un usuario o un tenant. Cada servicio actualiza su caché.
+  /// The tokens of a session, a user or a tenant were revoked. Each service updates its cache.
   ///
   /// `identity.tokens.revoked.v1`
   static const tokensRevoked = MessageDescriptor<TokensRevokedPayload>(
@@ -31,7 +31,7 @@ abstract final class IdentityEvents {
     decodePayload: TokensRevokedPayload.fromJson,
   );
 
-  /// Se registró un usuario nuevo.
+  /// A new user was registered.
   ///
   /// `identity.user.registered.v1`
   static const userRegistered = MessageDescriptor<UserRegisteredPayload>(
@@ -42,7 +42,7 @@ abstract final class IdentityEvents {
     decodePayload: UserRegisteredPayload.fromJson,
   );
 
-  /// Se suspendió un usuario y se revocaron sus sesiones.
+  /// A user was suspended and their sessions were revoked.
   ///
   /// `identity.user.suspended.v1`
   static const userSuspended = MessageDescriptor<UserSuspendedPayload>(
@@ -53,7 +53,7 @@ abstract final class IdentityEvents {
     decodePayload: UserSuspendedPayload.fromJson,
   );
 
-  /// Se reactivó un usuario suspendido.
+  /// A suspended user was reactivated.
   ///
   /// `identity.user.reactivated.v1`
   static const userReactivated = MessageDescriptor<UserReactivatedPayload>(
@@ -64,7 +64,7 @@ abstract final class IdentityEvents {
     decodePayload: UserReactivatedPayload.fromJson,
   );
 
-  /// Cambió el email de un usuario. No incluye direcciones.
+  /// The email of a user changed. It does not include addresses.
   ///
   /// `identity.user.email-changed.v1`
   static const userEmailChanged = MessageDescriptor<UserEmailChangedPayload>(
@@ -75,7 +75,7 @@ abstract final class IdentityEvents {
     decodePayload: UserEmailChangedPayload.fromJson,
   );
 
-  /// Se registró un dispositivo que puede aprobar acciones sensibles.
+  /// A device that can approve sensitive actions was registered.
   ///
   /// `identity.device.registered.v1`
   static const deviceRegistered = MessageDescriptor<DeviceRegisteredPayload>(
@@ -86,7 +86,7 @@ abstract final class IdentityEvents {
     decodePayload: DeviceRegisteredPayload.fromJson,
   );
 
-  /// Se quitó un dispositivo de la cuenta.
+  /// A device was removed from the account.
   ///
   /// `identity.device.removed.v1`
   static const deviceRemoved = MessageDescriptor<DeviceRemovedPayload>(
@@ -97,7 +97,7 @@ abstract final class IdentityEvents {
     decodePayload: DeviceRemovedPayload.fromJson,
   );
 
-  /// Se creó un tenant.
+  /// A tenant was created.
   ///
   /// `identity.tenant.created.v1`
   static const tenantCreated = MessageDescriptor<TenantCreatedPayload>(
@@ -108,7 +108,7 @@ abstract final class IdentityEvents {
     decodePayload: TenantCreatedPayload.fromJson,
   );
 
-  /// Se suspendió un tenant y se revocaron sus tokens.
+  /// A tenant was suspended and its tokens were revoked.
   ///
   /// `identity.tenant.suspended.v1`
   static const tenantSuspended = MessageDescriptor<TenantSuspendedPayload>(
@@ -119,7 +119,7 @@ abstract final class IdentityEvents {
     decodePayload: TenantSuspendedPayload.fromJson,
   );
 
-  /// Se reactivó un tenant suspendido.
+  /// A suspended tenant was reactivated.
   ///
   /// `identity.tenant.reactivated.v1`
   static const tenantReactivated = MessageDescriptor<TenantReactivatedPayload>(
@@ -130,7 +130,7 @@ abstract final class IdentityEvents {
     decodePayload: TenantReactivatedPayload.fromJson,
   );
 
-  /// Cambió la membresía de un usuario en un tenant.
+  /// The membership of a user in a tenant changed.
   ///
   /// `identity.membership.changed.v1`
   static const membershipChanged = MessageDescriptor<MembershipChangedPayload>(
@@ -141,7 +141,7 @@ abstract final class IdentityEvents {
     decodePayload: MembershipChangedPayload.fromJson,
   );
 
-  /// Cambiaron los permisos de un usuario o de un tenant. Sin userId afecta a todo el tenant.
+  /// The permissions of a user or a tenant changed. Without userId it affects the whole tenant.
   ///
   /// `identity.permissions.changed.v1`
   static const permissionsChanged =
@@ -153,7 +153,7 @@ abstract final class IdentityEvents {
         decodePayload: PermissionsChangedPayload.fromJson,
       );
 
-  /// Se creó una API key. No incluye el secreto.
+  /// An API key was created. It does not include the secret.
   ///
   /// `identity.api-key.created.v1`
   static const apiKeyCreated = MessageDescriptor<ApiKeyCreatedPayload>(
@@ -164,7 +164,7 @@ abstract final class IdentityEvents {
     decodePayload: ApiKeyCreatedPayload.fromJson,
   );
 
-  /// Se revocó una API key.
+  /// An API key was revoked.
   ///
   /// `identity.api-key.revoked.v1`
   static const apiKeyRevoked = MessageDescriptor<ApiKeyRevokedPayload>(
@@ -175,7 +175,7 @@ abstract final class IdentityEvents {
     decodePayload: ApiKeyRevokedPayload.fromJson,
   );
 
-  /// Se levantó una alerta de seguridad sobre una cuenta. Notifica al usuario por su canal.
+  /// A security alert was raised on an account. Notifies the user through their channel.
   ///
   /// `identity.security-alert.raised.v1`
   static const securityAlertRaised =
@@ -187,7 +187,7 @@ abstract final class IdentityEvents {
         decodePayload: SecurityAlertRaisedPayload.fromJson,
       );
 
-  /// Se borraron los datos personales de un usuario. Los servicios que guardan su rastro lo borran o anonimizan.
+  /// The personal data of a user was erased. Services that keep a trace of the user delete or anonymize it.
   ///
   /// `identity.user.erased.v1`
   static const userErased = MessageDescriptor<UserErasedPayload>(
@@ -198,7 +198,7 @@ abstract final class IdentityEvents {
     decodePayload: UserErasedPayload.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[
     sessionRevoked,
     tokensRevoked,
@@ -219,7 +219,7 @@ abstract final class IdentityEvents {
     userErased,
   ];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;
@@ -228,7 +228,7 @@ abstract final class IdentityEvents {
   }
 }
 
-/// Comandos que atiende el contrato `identity`.
+/// Commands handled by the `identity` contract.
 abstract final class IdentityCommands {
   /// Looks up the account of the email and, if it can reset its password, sends it the reset email.
   ///
@@ -241,10 +241,10 @@ abstract final class IdentityCommands {
     decodePayload: PasswordResetRequest.fromJson,
   );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[sendPasswordReset];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;

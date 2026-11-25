@@ -11,7 +11,7 @@ const TABLES = [
   'proj_backfills',
 ] as const;
 
-/** Las proyecciones de tareas, facturas y entregas, y el avance del relleno, con RLS por tenant. */
+/** The task, invoice and delivery projections, and the backfill progress, with RLS per tenant. */
 export class CreateProjections1796300200000 implements MigrationInterface {
   readonly name = 'CreateProjections1796300200000';
 

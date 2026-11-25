@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `roles`: roles del tenant con sus permisos. */
+/** `roles`: tenant roles with their permissions. */
 @Entity({ name: 'roles' })
 @Index('roles_name_key', ['tenantId', 'name'], { unique: true })
 export class RoleEntity extends AuditedEntity {

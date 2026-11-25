@@ -1,6 +1,6 @@
 import { JobLock, type JobLease } from '@platform/kernel';
 
-/** Lock controlable para probar `JobExecution` sin reloj ni tiempos. */
+/** Controllable lock to test `JobExecution` without a clock or timings. */
 export class InMemoryTestLock extends JobLock {
   held = false;
   failRelease = false;

@@ -1,20 +1,20 @@
 import { SessionSetting } from '../enums.js';
 
 /**
- * RLS de las tablas de tenant: con `app.tenant_id` solo se ven y se escriben las filas de ese tenant. Es la
- * segunda barrera después del filtro por `tenant_id` de cada repositorio. `FORCE` la aplica también al
- * dueño de la tabla, que es el usuario del servicio. Falla cerrada: sin tenant en la sesión no se ve ni se
- * escribe ninguna fila. Por eso `TenantIsolatedRepository` fija el tenant en cada consulta, también en las
- * lecturas. Un mantenimiento que recorre todos los tenants de un shard (purgas, borrado de datos de un
- * usuario) abre su transacción con `app.maintenance = on` (`TenantMaintenanceSession`) y pasa por la política
- * de mantenimiento, que solo existe en las tablas que la piden.
+ * RLS of tenant tables: with `app.tenant_id` only the rows of that tenant are visible and writable. It is the
+ * second barrier after each repository's `tenant_id` filter. `FORCE` also applies it to the
+ * table owner, which is the service user. Fails closed: without a tenant in the session no row is
+ * visible or writable. That is why `TenantIsolatedRepository` sets the tenant on every query, reads
+ * included. A maintenance task that walks all tenants of a shard (purges, deletion of a
+ * user's data) opens its transaction with `app.maintenance = on` (`TenantMaintenanceSession`) and goes through the
+ * maintenance policy, which only exists on the tables that request it.
  */
 export class TenantIsolationSql {
   private static readonly IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 
   static enable(table: string): string[] {
     const name = TenantIsolationSql.identifier(table);
-    // `nullif` convierte el valor vacío (sin tenant) en NULL, y la comparación con NULL nunca es verdadera.
+    // `nullif` turns the empty value (no tenant) into NULL, and a comparison with NULL is never true.
     const condition = `"tenant_id"::text = nullif(current_setting('${SessionSetting.TenantId}', true), '')`;
     return [
       `ALTER TABLE "${name}" ENABLE ROW LEVEL SECURITY`,
@@ -23,7 +23,7 @@ export class TenantIsolationSql {
     ];
   }
 
-  /** Deja pasar la transacción de un mantenimiento entre tenants. */
+  /** Lets through the transaction of a cross-tenant maintenance task. */
   static allowMaintenance(table: string): string[] {
     const name = TenantIsolationSql.identifier(table);
     const condition = `current_setting('${SessionSetting.Maintenance}', true) = 'on'`;

@@ -1,4 +1,4 @@
-/** Tipo de problema que encuentra `ContractRegistry.validate()`. */
+/** Type of problem that `ContractRegistry.validate()` finds. */
 export enum RegistryIssueCode {
   DuplicateId = 'duplicate-id',
   MissingCompensation = 'missing-compensation',

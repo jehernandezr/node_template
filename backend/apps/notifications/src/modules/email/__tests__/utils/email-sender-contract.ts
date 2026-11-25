@@ -1,6 +1,6 @@
 import type { EmailSender } from '../../domain/email-sender.js';
 
-/** Un correo tal como lo recibe el destino, leído del lado del proveedor. */
+/** An email as the destination receives it, read from the provider's side. */
 export interface ReceivedEmail {
   readonly from: string;
   readonly to: string;
@@ -9,13 +9,13 @@ export interface ReceivedEmail {
   readonly html: string;
 }
 
-/** El adaptador bajo prueba y cómo leer lo que su proveedor recibió. */
+/** The adapter under test and how to read what its provider received. */
 export interface EmailSenderSubject {
   readonly sender: EmailSender;
   received(): Promise<readonly ReceivedEmail[]>;
 }
 
-/** Lo que todo `EmailSender` cumple: el destino recibe el correo entero, con acentos, y queda un id del envío. */
+/** What every `EmailSender` fulfills: the destination receives the whole email, with accents, and a send id remains. */
 export function runEmailSenderContract(
   name: string,
   subject: () => EmailSenderSubject,

@@ -1,9 +1,9 @@
-/** Cómo se autentica una conexión. */
+/** How a connection authenticates. */
 export enum ValkeyAuthMode {
-  /** Sin `AUTH`, como el servidor local de docker compose. */
+  /** No `AUTH`, like the local docker compose server. */
   None = 'none',
-  /** Token IAM de ElastiCache para un grupo de replicación. */
+  /** ElastiCache IAM token for a replication group. */
   Iam = 'iam',
-  /** Token IAM de ElastiCache para una caché serverless, la que crea Terraform. */
+  /** ElastiCache IAM token for a serverless cache, the one Terraform creates. */
   IamServerless = 'iam-serverless',
 }

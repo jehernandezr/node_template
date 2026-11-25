@@ -1,29 +1,29 @@
-// Verifica las fronteras de import de un microfrontend (ADR 0015 y 0018).
+// Checks the import boundaries of a microfrontend (ADR 0015 and 0018).
 //
-// - No depende de otro microfrontend: dependen solo de `front/packages`. Con
-//   pub workspaces un `import 'package:mf_x/...'` compila aunque no esté
-//   declarado, así que se revisa en el código y en el pubspec.
-// - El manifiesto (`lib/<nombre>.dart`) solo alcanza sin `deferred` las
-//   carpetas que pueden ir en el bundle inicial: `src/shared/constants`,
-//   `src/shared/enums` y `src/lifecycle`. Es la misma regla que comprueba
-//   `check_deferred_chunks.dart` sobre la compilación web, aquí sin compilar.
-// - Dentro de `src/shared`, cada carpeta importa solo las anteriores:
-//   `enums` ninguna, `constants` enums, `types` enums y constants, `utils`
-//   las tres.
+// - It does not depend on another microfrontend: they depend only on `front/packages`. With
+//   pub workspaces an `import 'package:mf_x/...'` compiles even if not
+//   declared, so it is checked in the code and in the pubspec.
+// - The manifest (`lib/<name>.dart`) only reaches without `deferred` the
+//   folders that can go in the initial bundle: `src/shared/constants`,
+//   `src/shared/enums` and `src/lifecycle`. It is the same rule that
+//   `check_deferred_chunks.dart` checks on the web build, here without building.
+// - Inside `src/shared`, each folder imports only the previous ones:
+//   `enums` none, `constants` enums, `types` enums and constants, `utils`
+//   all three.
 //
-// Se ejecuta desde la carpeta de un microfrontend (la tarea `analyze` de Nx de
-// los proyectos `type:front-microfrontends` lo hace):
+// Runs from a microfrontend folder (the Nx `analyze` task of
+// the `type:front-microfrontends` projects does it):
 //
 //   dart run ../../tools/check_microfrontend_boundaries.dart
 //
-// o para todos, desde `front/`:
+// or for all of them, from `front/`:
 //
 //   dart run tools/check_microfrontend_boundaries.dart --all
 //
-// Es un script independiente (sin pubspec): solo usa `dart:*`. Falla con código
-// 1 ante cualquier violación y termina con código 2 si no encuentra el
-// pubspec o la carpeta pedida. Un import condicional se sigue por su URI por
-// defecto, la que compila la web.
+// It is a standalone script (no pubspec): it only uses `dart:*`. Fails with code
+// 1 on any violation and exits with code 2 if it does not find the
+// pubspec or the requested folder. A conditional import is followed through its default
+// URI, the one the web compiles.
 
 import 'dart:io';
 
@@ -34,16 +34,16 @@ final _directive = RegExp(
 final _name = RegExp(r'^name:\s*([A-Za-z0-9_]+)\s*$', multiLine: true);
 final _dependency = RegExp(r'^ {2}(mf_[A-Za-z0-9_]+)\s*:', multiLine: true);
 
-/// `import` o `export` con su URI y lo que sigue hasta el `;`.
+/// `import` or `export` with its URI and what follows up to the `;`.
 final _edge = RegExp(
   r'''^\s*(?:import|export)\s+['"]([^'"]+)['"]([^;]*);''',
   multiLine: true,
 );
 
-/// Carpetas de `lib/src` que el manifiesto puede alcanzar sin `deferred`.
+/// Folders of `lib/src` the manifest can reach without `deferred`.
 const _eagerDirs = ['shared/constants/', 'shared/enums/', 'lifecycle/'];
 
-/// Carpetas de `src/shared` que puede importar cada una, además de sí misma.
+/// Folders of `src/shared` each one can import, besides itself.
 const _sharedRules = {
   'enums': <String>{},
   'constants': {'enums'},
@@ -77,7 +77,7 @@ void main(List<String> args) {
   exit(1);
 }
 
-/// Violaciones del microfrontend con raíz en [root].
+/// Violations of the microfrontend rooted at [root].
 List<String> checkMicrofrontend(Directory root) {
   final pubspec = File('${root.path}/pubspec.yaml');
   if (!pubspec.existsSync()) _fatal('No existe ${pubspec.path}.');
@@ -116,7 +116,7 @@ List<String> checkMicrofrontend(Directory root) {
   return violations;
 }
 
-/// Archivos de `lib/src` que el manifiesto alcanza sin `deferred` fuera de
+/// Files of `lib/src` the manifest reaches without `deferred` outside
 /// [_eagerDirs].
 List<String> _eagerViolations(Directory lib, String own) {
   final manifest = File('${lib.path}/$own.dart');
@@ -141,7 +141,7 @@ List<String> _eagerViolations(Directory lib, String own) {
   return violations;
 }
 
-/// Imports entre carpetas de `src/shared` que no siguen [_sharedRules].
+/// Imports between `src/shared` folders that do not follow [_sharedRules].
 List<String> _sharedViolations(Directory lib, String own) {
   final shared = Directory('${lib.path}/src/shared');
   if (!shared.existsSync()) return const [];
@@ -178,8 +178,8 @@ List<String> _sharedViolations(Directory lib, String own) {
   return violations;
 }
 
-/// Imports y exports de [path] hacia archivos de este paquete, con si son
-/// diferidos.
+/// Imports and exports of [path] to files of this package, with whether they are
+/// deferred.
 Iterable<(String, bool)> _localEdges(
   Directory lib,
   String own,
@@ -204,7 +204,7 @@ Iterable<(String, bool)> _localEdges(
   }
 }
 
-/// [path] relativo a [lib], con `/`.
+/// [path] relative to [lib], with `/`.
 String _libRelative(Directory lib, String path) {
   final base = Uri.directory(lib.absolute.path).normalizePath().toFilePath();
   final normalized = Uri.file(path).normalizePath().toFilePath();
@@ -213,8 +213,8 @@ String _libRelative(Directory lib, String path) {
       : normalized;
 }
 
-/// Texto de las secciones `dependencies`, `dev_dependencies` y
-/// `dependency_overrides` del pubspec.
+/// Text of the `dependencies`, `dev_dependencies` and
+/// `dependency_overrides` sections of the pubspec.
 String _dependencySections(String pubspec) {
   final buffer = StringBuffer();
   var inside = false;
@@ -233,8 +233,8 @@ String _dependencySections(String pubspec) {
   return buffer.toString();
 }
 
-/// Carpetas de `front/microfrontends/*`, buscando `front/` desde el directorio
-/// actual hacia arriba.
+/// Folders of `front/microfrontends/*`, looking for `front/` from the current
+/// directory upwards.
 List<Directory> _allMicrofrontends() {
   var dir = Directory.current.absolute;
   while (true) {

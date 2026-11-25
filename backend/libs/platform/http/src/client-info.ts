@@ -1,12 +1,12 @@
 import type { ClientChannel } from './client-channel.enum.js';
 
-/** Lo que el servidor sabe del cliente de una petición. */
+/** What the server knows about the client of a request. */
 export interface ClientInfo {
-  /** IP del cliente según `trust proxy`. Vacía si el servidor no la conoce. */
+  /** Client IP according to `trust proxy`. Empty if the server does not know it. */
   readonly ip: string;
   /** `User-Agent` recortado a `HttpLimits.MAX_USER_AGENT_LENGTH`. */
   readonly userAgent?: string;
-  /** Valor del header `Origin`, si vino. */
+  /** Value of the `Origin` header, if present. */
   readonly origin?: string;
   readonly channel: ClientChannel;
 }

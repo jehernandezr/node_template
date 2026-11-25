@@ -8,9 +8,9 @@ import { TenantSession } from '../transfer/batch/tenant-session.js';
 import { TenantDataPresence } from './tenant-data-presence.js';
 
 /**
- * Busca filas del tenant en las tablas del manifiesto del servicio, shard por shard de su placement. Solo las del
- * servicio: las de la plataforma (outbox, llaves de idempotencia, sagas) llevan filas del tenant desde su alta y no
- * son sus datos.
+ * Looks for tenant rows in the service manifest tables, shard by shard of its placement. Only the
+ * service ones: the platform ones (outbox, idempotency keys, sagas) hold tenant rows from its sign-up and are not
+ * its data.
  */
 export class ManifestTenantDataPresence extends TenantDataPresence {
   private readonly filter: TenantRowFilter;
@@ -25,7 +25,7 @@ export class ManifestTenantDataPresence extends TenantDataPresence {
     this.filter = new TenantRowFilter(manifest);
   }
 
-  /** Si alguna tabla del manifiesto tiene al menos una fila del tenant en algún shard de su placement. */
+  /** Whether any manifest table has at least one tenant row on any shard of its placement. */
   async holdsData(placement: TenantPlacement): Promise<boolean> {
     for (const shard of placement.shardGroup) {
       const instance = await this.directory.getInstance(shard);

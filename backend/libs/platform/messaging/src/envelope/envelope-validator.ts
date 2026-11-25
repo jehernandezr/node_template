@@ -4,21 +4,21 @@ import { EnvelopeLimits } from './envelope-limits.js';
 import type { MessageEnvelope } from './message-envelope.js';
 import { messageEnvelopeSchema } from './message-envelope.schema.js';
 
-/** Valida el sobre contra su esquema y sus límites de tamaño. */
+/** Validates the envelope against its schema and its size limits. */
 export class EnvelopeValidator {
   private readonly encoder = new TextEncoder();
 
-  /** Tamaño de `value` serializado como JSON, en bytes. */
+  /** Size of `value` serialized as JSON, in bytes. */
   sizeBytes(value: unknown): number {
     return this.encoder.encode(JSON.stringify(value)).byteLength;
   }
 
-  /** Tamaño en bytes de un texto ya serializado. */
+  /** Size in bytes of an already serialized text. */
   textBytes(text: string): number {
     return this.encoder.encode(text).byteLength;
   }
 
-  /** @throws MessagingError `PayloadTooLarge` si `size` supera el máximo; sin `size`, el mensaje no lo menciona. */
+  /** @throws MessagingError `PayloadTooLarge` if `size` exceeds the maximum; without `size`, the message does not mention it. */
   assertSize(size?: number): void {
     if (size !== undefined && size <= EnvelopeLimits.MAX_BYTES) {
       return;
@@ -32,8 +32,8 @@ export class EnvelopeValidator {
   }
 
   /**
-   * Comprueba los atributos del sobre contra el esquema. `data` queda para el
-   * contrato del mensaje.
+   * Checks the envelope attributes against the schema. `data` is left to the
+   * message contract.
    * @throws MessagingError `InvalidEnvelope`.
    */
   validate(candidate: unknown): MessageEnvelope {
@@ -41,14 +41,14 @@ export class EnvelopeValidator {
     if (!parsed.success) {
       throw this.invalid(parsed.error.message);
     }
-    // Zod infiere `data` como opcional; el contrato lo valida después.
+    // Zod infers `data` as optional; the contract validates it later.
     return parsed.data as MessageEnvelope;
   }
 
   /**
-   * Valida un sobre, lo pasa por JSON (el valor devuelto es exactamente lo que
-   * un transporte llevaría) y aplica los límites de tamaño y de atributos.
-   * @throws MessagingError `InvalidEnvelope` o `PayloadTooLarge`.
+   * Validates an envelope, round-trips it through JSON (the returned value is exactly what
+   * a transport would carry) and applies the size and attribute limits.
+   * @throws MessagingError `InvalidEnvelope` or `PayloadTooLarge`.
    */
   toWire<T>(envelope: MessageEnvelope<T>): MessageEnvelope<T> {
     const wire: unknown = JSON.parse(JSON.stringify(envelope));
@@ -60,7 +60,7 @@ export class EnvelopeValidator {
     return wire as MessageEnvelope<T>;
   }
 
-  /** Error `InvalidEnvelope` con el texto `invalid envelope: <motivo>`. */
+  /** `InvalidEnvelope` error with the text `invalid envelope: <reason>`. */
   invalid(reason: string): MessagingError {
     return new MessagingError(
       MessagingErrorCode.InvalidEnvelope,

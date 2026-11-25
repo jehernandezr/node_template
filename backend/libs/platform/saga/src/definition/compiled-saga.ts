@@ -1,9 +1,9 @@
 import type { CompiledStep } from './compiled-step.js';
 
-/** Definición de saga validada. */
+/** Validated saga definition. */
 export interface CompiledSaga<TState> {
   readonly type: string;
   readonly steps: readonly CompiledStep<TState>[];
-  /** Índice del primer paso después del pivote, o `steps.length` si no hay. */
+  /** Index of the first step after the pivot, or `steps.length` if there is none. */
   readonly pivotIndex: number;
 }

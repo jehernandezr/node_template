@@ -10,7 +10,7 @@ import { InMemoryDirectoryStore } from '@platform/sharding/test-utils';
 import { SagaInstanceBuilder } from '@platform/saga/test-utils';
 import { ShardedSagaScopes } from '../sharded-saga-scopes.js';
 
-/** Ámbito de shards sin base de datos: alcanza para ver qué llave fija el ámbito. */
+/** Shard scope without a database: enough to see which key the scope pins. */
 function scopeOf(): ShardScope {
   return new ShardScope(
     new ShardRouter({

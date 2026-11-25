@@ -19,7 +19,7 @@ export const TotpEnrollmentSchema = z
     otpauthUri: z.string().min(1).max(IdentityLimits.otpauthUriMaxLength),
   })
   .describe(
-    'Secreto TOTP y URI para la app autenticadora.',
+    'TOTP secret and URI for the authenticator app.',
   ) satisfies z.ZodType<TotpEnrollment>;
 
 export const TotpConfirmRequestSchema = z
@@ -31,7 +31,7 @@ export const TotpConfirmRequestSchema = z
       .regex(/^[0-9]+$/),
   })
   .describe(
-    'Primer código de la app autenticadora para confirmar el TOTP.',
+    'First code from the authenticator app to confirm the TOTP.',
   ) satisfies z.ZodType<TotpConfirmRequest>;
 
 export const RecoveryCodesSchema = z
@@ -46,18 +46,18 @@ export const RecoveryCodesSchema = z
       .max(IdentityLimits.recoveryCodesMax),
   })
   .describe(
-    'Códigos de recuperación, que se muestran una sola vez.',
+    'Recovery codes, shown only once.',
   ) satisfies z.ZodType<RecoveryCodes>;
 
 export const MfaRecoveryStartRequestSchema = z
   .strictObject({ mfaToken: MfaTokenFieldSchema })
   .describe(
-    'Inicio de la recuperación de una cuenta sin factores disponibles.',
+    'Start of the recovery of an account without available factors.',
   ) satisfies z.ZodType<MfaRecoveryStartRequest>;
 
 export const MfaRecoveryStartedSchema = z
   .object({ availableAt: TimestampSchema })
-  .describe('Recuperación iniciada.') satisfies z.ZodType<MfaRecoveryStarted>;
+  .describe('Recovery started.') satisfies z.ZodType<MfaRecoveryStarted>;
 
 export const MfaRecoveryConfirmRequestSchema = z
   .strictObject({
@@ -66,5 +66,5 @@ export const MfaRecoveryConfirmRequestSchema = z
     devicePublicKey: DevicePublicKeyFieldSchema.optional(),
   })
   .describe(
-    'Confirmación de la recuperación con el token enviado por email.',
+    'Confirmation of the recovery with the token sent by email.',
   ) satisfies z.ZodType<MfaRecoveryConfirmRequest>;

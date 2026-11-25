@@ -4,7 +4,7 @@ import {
   RecordingMetrics,
 } from '../../../__tests__/utils/index.js';
 
-/** Provee los dobles de logger y métricas que `SchedulingModule` inyecta. */
+/** Provides the logger and metrics doubles that `SchedulingModule` injects. */
 @Global()
 @Module({
   providers: [FakeLogger, RecordingMetrics],

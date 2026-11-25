@@ -37,7 +37,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
     const inB = <T>(body: () => Promise<T>): Promise<T> =>
       db.runAs(ShardedTestDatabase.TENANT_B, body);
 
-    /** Cuenta las filas de una saga en un shard, sin pasar por el almacén. */
+    /** Counts the rows of a saga on a shard, bypassing the store. */
     async function rowsOn(shard: string, id: string): Promise<number> {
       const source = await db.sources.get({
         logicalShard: shard,

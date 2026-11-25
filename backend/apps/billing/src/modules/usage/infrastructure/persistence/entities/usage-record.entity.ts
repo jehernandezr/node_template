@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `usage_records`: cada registro de uso recibido, único por tenant y llave de idempotencia. */
+/** `usage_records`: each usage record received, unique per tenant and idempotency key. */
 @Entity({ name: 'usage_records' })
 @Index('usage_records_tenant_key_key', ['tenantId', 'key'], { unique: true })
 export class UsageRecordEntity extends AuditedEntity {

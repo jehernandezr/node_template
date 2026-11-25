@@ -4,8 +4,8 @@ import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
 import { InvoiceNumbering } from '../../domain/invoice-numbering.js';
 
 /**
- * Consecutivo en `invoice_sequences` con un solo `INSERT ... ON CONFLICT ... RETURNING`: el bloqueo de la fila
- * ordena dos cierres simultáneos del mismo tenant y ninguno repite número.
+ * Sequence in `invoice_sequences` with a single `INSERT ... ON CONFLICT ... RETURNING`: the row lock
+ * orders two concurrent closings of the same tenant and neither repeats a number.
  */
 @Injectable()
 export class TypeOrmInvoiceNumbering

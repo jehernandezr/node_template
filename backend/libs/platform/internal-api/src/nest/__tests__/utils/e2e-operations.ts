@@ -1,7 +1,7 @@
 import { defineOperation } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Operaciones del flujo de extremo a extremo entre dos módulos de la API interna. */
+/** Operations of the end-to-end flow between two internal API modules. */
 export class E2eOperations {
   static readonly Greet = defineOperation({
     id: 'greeter.messages.greet.v1',

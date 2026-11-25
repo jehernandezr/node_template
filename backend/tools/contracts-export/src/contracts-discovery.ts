@@ -5,7 +5,7 @@ import type { ExportPaths } from './export-paths.js';
 import type { FileSystem } from './file-system.js';
 import type { ModuleLoader } from './module-loader.js';
 
-/** Claves que todo contrato debe traer como objeto, además de `service` y `description`. */
+/** Keys every contract must have as an object, besides `service` and `description`. */
 const CONTRACT_MAPS = [
   'enums',
   'constants',
@@ -20,8 +20,8 @@ const CONTRACT_MAPS = [
 ] as const;
 
 /**
- * Encuentra los contratos leyendo `libs/contracts/<servicio>/src/index.ts`:
- * agregar una carpeta basta para que se exporte, sin registro manual.
+ * Finds the contracts by reading `libs/contracts/<service>/src/index.ts`:
+ * adding a folder is enough for it to be exported, with no manual registration.
  */
 export class ContractsDiscovery extends ContractRegistry {
   constructor(
@@ -42,7 +42,7 @@ export class ContractsDiscovery extends ContractRegistry {
       if (!(await this.fileSystem.exists(index))) {
         throw ExportError.forService(
           name,
-          'falta src/index.ts en su carpeta de libs/contracts',
+          'src/index.ts is missing from its libs/contracts folder',
         );
       }
       const exported = await this.moduleLoader.load(index);
@@ -53,7 +53,7 @@ export class ContractsDiscovery extends ContractRegistry {
       if (found.length !== 1) {
         throw ExportError.forService(
           name,
-          'su src/index.ts debe exportar exactamente un contrato con service igual a la carpeta',
+          'its src/index.ts must export exactly one contract whose service matches the folder',
         );
       }
       contracts.push(found[0]);

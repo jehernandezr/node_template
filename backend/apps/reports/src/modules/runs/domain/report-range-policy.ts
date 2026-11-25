@@ -5,7 +5,7 @@ import {
 } from '@contracts/reports';
 import { ReportsError } from '../../../shared/errors/reports.error.js';
 
-/** El rango de un reporte va hacia delante y no pasa de `ReportsLimits.maxRangeDays`. Utilidad pura. */
+/** A report's range goes forward and does not exceed `ReportsLimits.maxRangeDays`. Pure utility. */
 export class ReportRangePolicy {
   private static readonly DAY_MS = 86_400_000;
 

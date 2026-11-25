@@ -1,5 +1,5 @@
-/** Opciones de `ShardDataSources`. */
+/** Options of `ShardDataSources`. */
 export interface ShardDataSourcesOptions {
-  /** Milisegundos sin uso tras los que un `DataSource` se cierra. */
+  /** Idle milliseconds after which a `DataSource` is closed. */
   readonly idleTtlMs: number;
 }

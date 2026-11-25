@@ -25,24 +25,24 @@ import type { TenantMoveActivity } from './tenant-move-activity.js';
 import type { TenantMoveListener } from './tenant-move-listener.js';
 import type { TenantMoveShards } from './tenant-move-shards.js';
 
-/** Un shard donde la barrera del tenant es la del traslado. */
+/** A shard where the tenant fence is the move's fence. */
 interface FencedShard {
   readonly logicalShard: string;
   readonly dataSource: DataSource;
 }
 
 /**
- * Los pasos de un traslado en un servicio, en el orden en que los llama la saga `MoveTenant`:
- * - `sync` copia mientras las escrituras siguen, hasta alcanzar al origen;
- * - `finalize` cierra la compuerta, levanta la barrera del shard de origen (que espera a las escrituras que ya
- *   entraron), copia la última ronda y verifica;
- * - `switch`, después del pivote, deja lista la copia (región y barreras), apunta el directorio al destino y abre la
- *   compuerta;
- * - `abort` descarta la copia y abre la compuerta, y `cleanup`, pasada la gracia, borra el origen y baja su barrera.
+ * The steps of a move in a service, in the order the `MoveTenant` saga calls them:
+ * - `sync` copies while writes continue, until it catches up with the source;
+ * - `finalize` closes the gate, raises the source shard fence (which waits for writes that already
+ *   got in), copies the last round and verifies;
+ * - `switch`, after the pivot, readies the copy (region and fences), points the directory to the target and opens the
+ *   gate;
+ * - `abort` discards the copy and opens the gate, and `cleanup`, after the grace period, deletes the source and lowers its fence.
  *
- * La barrera del origen queda levantada hasta `cleanup`: un proceso con el placement viejo en caché no puede escribir
- * ahí mientras tanto. Un tenant con sagas a medias en el origen no se congela: `sync` espera a que terminen y, si una
- * aparece justo antes de la barrera, `finalize` falla y la saga del traslado se compensa.
+ * The source fence stays raised until `cleanup`: a process with the old placement cached cannot write
+ * there in the meantime. A tenant with half-finished sagas on the source is not frozen: `sync` waits for them to finish and, if one
+ * appears right before the fence, `finalize` fails and the move saga compensates.
  */
 export class TenantMoves {
   constructor(
@@ -57,7 +57,7 @@ export class TenantMoves {
     private readonly listener?: TenantMoveListener,
   ) {}
 
-  /** @throws TenantMoveError `RoundPending` mientras la copia no alcanza al origen o el tenant tiene sagas a medias. */
+  /** @throws TenantMoveError `RoundPending` while the copy has not caught up with the source or the tenant has unfinished sagas. */
   async sync(move: TenantMoveRef): Promise<TenantMoveProgress> {
     const transfer = await this.transferOf(move);
     await this.assertNoOpenWork(
@@ -77,8 +77,8 @@ export class TenantMoves {
   }
 
   /**
-   * @throws TenantMoveError `TenantBusy` si con la barrera levantada el tenant tiene sagas a medias en el origen.
-   * @throws TenantMoveError `VerificationFailed` si el destino no quedó igual al origen.
+   * @throws TenantMoveError `TenantBusy` if, with the fence raised, the tenant has half-finished sagas on the source.
+   * @throws TenantMoveError `VerificationFailed` if the target did not end up equal to the source.
    */
   async finalize(move: TenantMoveRef): Promise<TenantMoveVerification> {
     const transfer = await this.transferOf(move);
@@ -105,8 +105,8 @@ export class TenantMoves {
   }
 
   /**
-   * Baja la barrera y abre la compuerta antes de descartar la copia: el tenant vuelve a escribir en el origen mientras
-   * se purga el destino, que nadie lee.
+   * Lowers the fence and opens the gate before discarding the copy: the tenant writes to the source again while
+   * the target, which no one reads, is purged.
    */
   async abort(move: TenantMoveRef): Promise<TenantMoveAck> {
     const transfer = await this.transferOf(move);
@@ -118,9 +118,9 @@ export class TenantMoves {
   }
 
   /**
-   * Antes de abrir las escrituras en el destino: anota la región de destino en la copia, baja la barrera que un
-   * traslado anterior pudo dejar en el destino (el tenant vuelve a un shard del que salió) y marca como pivotada la
-   * barrera del origen. Todo es idempotente porque la saga repite el paso hasta completarlo.
+   * Before opening writes on the target: records the target region in the copy, lowers the fence a
+   * previous move may have left on the target (the tenant returns to a shard it left) and marks the source
+   * fence as pivoted. Everything is idempotent because the saga repeats the step until it completes.
    */
   async switch(move: TenantMoveRef): Promise<TenantMoveAck> {
     const target = this.shards.targetOf(move);
@@ -154,13 +154,13 @@ export class TenantMoves {
   }
 
   /**
-   * Borra los datos del tenant en cada shard donde este traslado dejó su barrera, y después baja la barrera. Antes
-   * comprueba en el directorio del servicio que el tenant ya no vive en ninguno de esos shards: si el `switch` de
-   * este servicio no corrió, la barrera es lo único que frena sus escrituras y los datos del origen siguen vivos.
-   * Tampoco limpia mientras otro traslado del tenant tiene su barrera levantada sin pivotar: ese traslado puede volver
-   * a uno de estos shards, que entre su `finalize` y su `switch` ya guarda la copia buena.
-   * @throws TenantMoveError `NotSwitched` si el directorio del servicio todavía lleva al tenant a uno de esos shards.
-   * @throws TenantMoveError `MoveInProgress` si otro traslado del tenant está entre `finalize` y `switch`.
+   * Deletes the tenant data on each shard where this move left its fence, and then lowers the fence. First
+   * it checks in the service directory that the tenant no longer lives on any of those shards: if this
+   * service's `switch` did not run, the fence is the only thing stopping its writes and the source data is still live.
+   * It also does not clean up while another move of the tenant has its fence raised without pivoting: that move may return
+   * to one of these shards, which between its `finalize` and its `switch` already holds the good copy.
+   * @throws TenantMoveError `NotSwitched` if the service directory still routes the tenant to one of those shards.
+   * @throws TenantMoveError `MoveInProgress` if another move of the tenant is between `finalize` and `switch`.
    */
   async cleanup(move: TenantMoveRef): Promise<TenantMoveAck> {
     const fenced = await this.fencedSources(move);
@@ -186,7 +186,7 @@ export class TenantMoves {
     return { moveId: move.moveId };
   }
 
-  /** @throws TenantMoveError `MoveInProgress` si en algún shard otro traslado del tenant tiene la barrera sin pivotar. */
+  /** @throws TenantMoveError `MoveInProgress` if on any shard another move of the tenant has its fence unpivoted. */
   private async assertNoMoveInFlight(move: TenantMoveRef): Promise<void> {
     for (const location of await this.lister.list()) {
       const dataSource = await this.dataSources.get(location);
@@ -201,7 +201,7 @@ export class TenantMoves {
     }
   }
 
-  /** Los shards, salvo el destino, donde la barrera del tenant es la de este traslado. */
+  /** The shards, except the target, where the tenant fence is this move's fence. */
   private async fencedSources(move: TenantMoveRef): Promise<FencedShard[]> {
     const target = this.shards.targetOf(move);
     const fenced: FencedShard[] = [];
@@ -220,9 +220,9 @@ export class TenantMoves {
   }
 
   /**
-   * Corre una ronda de copia. Una llave foránea que falla en el destino es una fila hija escrita en el origen después de
-   * que la ronda copió su tabla padre: la ronda siguiente trae al padre, así que se responde `RoundPending`.
-   * @throws TenantMoveError `RoundPending` ante una violación de llave foránea.
+   * Runs a copy round. A foreign key that fails on the target is a child row written on the source after
+   * the round copied its parent table: the next round brings the parent, so it answers `RoundPending`.
+   * @throws TenantMoveError `RoundPending` on a foreign key violation.
    */
   private async round<T>(work: () => Promise<T>): Promise<T> {
     try {
@@ -243,7 +243,7 @@ export class TenantMoves {
     }
   }
 
-  /** @throws TenantMoveError con `code` si el tenant tiene trabajo abierto en el origen. */
+  /** @throws TenantMoveError with `code` if the tenant has open work on the source. */
   private async assertNoOpenWork(
     transfer: TenantTransfer,
     code: TenantMoveErrorCode,

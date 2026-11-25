@@ -4,7 +4,7 @@ import type { HandlerResult } from '../server/handler-result.js';
 import { OperationHandler } from '../server/operation-handler.js';
 import type { CallMeta } from '../transport/call-meta.js';
 
-/** Adapta un método decorado con `@InternalHandler` al puerto `OperationHandler`. */
+/** Adapts a method decorated with `@InternalHandler` to the `OperationHandler` port. */
 export class BoundMethodHandler extends OperationHandler {
   private readonly method: (
     input: unknown,
@@ -26,7 +26,7 @@ export class BoundMethodHandler extends OperationHandler {
     this.method = candidate as BoundMethodHandler['method'];
   }
 
-  /** Llama a `instance[methodName](input, context)` y devuelve lo que ese método devuelve. */
+  /** Calls `instance[methodName](input, context)` and returns what that method returns. */
   override handle(
     input: unknown,
     context: CallMeta,

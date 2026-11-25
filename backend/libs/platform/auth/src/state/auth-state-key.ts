@@ -1,19 +1,19 @@
 /**
- * Llaves y canal del estado compartido de autenticación en Valkey (ADR 0022).
- * Van sin el prefijo del servicio: identity escribe y todos leen. Utilidad
- * pura, sin estado.
+ * Keys and channel of the shared authentication state in Valkey (ADR 0022).
+ * They go without the service prefix: identity writes and everyone reads. Pure
+ * stateless utility.
  */
 export class AuthStateKey {
-  /** Primer segmento de toda llave y canal; la ACL de Valkey se define sobre `auth:*`. */
+  /** First segment of every key and channel; the Valkey ACL is defined over `auth:*`. */
   static readonly NAMESPACE = 'auth';
 
-  /** Zset de `sid` con su vencimiento como puntaje: fuente de la reconstrucción del Bloom local. */
+  /** Zset of `sid` with their expiry as score: source for rebuilding the local Bloom. */
   static readonly REVOKED_INDEX = 'auth:revoked-index';
 
-  /** Canal pub/sub con un aviso por cada sesión revocada; el mensaje es el `sid`. */
+  /** Pub/sub channel with one notice per revoked session; the message is the `sid`. */
   static readonly REVOCATIONS_CHANNEL = 'auth:revocations';
 
-  /** `auth:revoked:{sid}`: motivo de la revocación. */
+  /** `auth:revoked:{sid}`: reason for the revocation. */
   static revoked(sessionId: string): string {
     return `auth:revoked:${sessionId}`;
   }
@@ -43,7 +43,7 @@ export class AuthStateKey {
     return `auth:access:${tenantId}:${userId}`;
   }
 
-  /** `auth:apikey:{prefix}`: hash con un campo por `sha256(secreto)`. */
+  /** `auth:apikey:{prefix}`: hash with one field per `sha256(secret)`. */
   static apiKey(prefix: string): string {
     return `auth:apikey:${prefix}`;
   }

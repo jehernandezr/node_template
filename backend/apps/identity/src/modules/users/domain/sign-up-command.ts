@@ -1,4 +1,4 @@
-/** Registro desde la ruta pública, con el cliente que lo pide. */
+/** Registration from the public route, with the client that requests it. */
 export interface SignUpCommand {
   readonly email: string;
   readonly password: string;

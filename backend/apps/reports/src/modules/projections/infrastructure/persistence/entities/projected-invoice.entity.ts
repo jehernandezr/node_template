@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `proj_invoices`: cada factura del tenant según los eventos de billing. */
+/** `proj_invoices`: each invoice of the tenant according to billing events. */
 @Entity({ name: 'proj_invoices' })
 @Index('proj_invoices_tenant_invoice_key', ['tenantId', 'invoiceId'], {
   unique: true,

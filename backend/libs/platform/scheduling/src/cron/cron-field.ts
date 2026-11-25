@@ -2,7 +2,7 @@ import { InvalidCronExpressionError } from '../errors/invalid-cron-expression.er
 
 const DIGITS = /^\d+$/;
 
-/** Un campo de una expresión cron: el conjunto de valores que admite. */
+/** A field of a cron expression: the set of values it accepts. */
 export class CronField {
   private constructor(
     private readonly values: ReadonlySet<number>,
@@ -10,10 +10,10 @@ export class CronField {
   ) {}
 
   /**
-   * Parsea el texto de un campo: una lista de elementos separados por comas, cada
-   * uno un valor, un rango o un paso (sobre `*`, sobre un rango o desde un valor),
-   * con todos los valores dentro de `[min, max]`.
-   * @throws InvalidCronExpressionError si el texto no respeta la sintaxis o el rango.
+   * Parses the text of a field: a list of comma-separated elements, each
+   * one a value, a range or a step (over `*`, over a range or from a value),
+   * with all values within `[min, max]`.
+   * @throws InvalidCronExpressionError if the text does not follow the syntax or the range.
    */
   static parse(
     text: string,
@@ -34,7 +34,7 @@ export class CronField {
         values.add(value);
       }
     }
-    // Un campo que empieza por `*` no restringe el día; el resto sí.
+    // A field that starts with `*` does not restrict the day; anything else does.
     return new CronField(values, !text.startsWith('*'));
   }
 
@@ -42,7 +42,7 @@ export class CronField {
     return this.values.has(value);
   }
 
-  /** `true` cuando el campo no empieza por `*`. Lo usa la regla de día del mes y día de la semana. */
+  /** `true` when the field does not start with `*`. Used by the day-of-month and day-of-week rule. */
   get restricted(): boolean {
     return this.isRestricted;
   }

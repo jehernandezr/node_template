@@ -14,7 +14,7 @@ import { FakePaymentProvider } from '../infrastructure/fake-payment-provider.js'
 import { PaymentAttemptEntity } from '../infrastructure/persistence/entities/payment-attempt.entity.js';
 import { TypeOrmPaymentAttempts } from '../infrastructure/persistence/typeorm-payment-attempts.js';
 
-/** Cobro de facturas con el proveedor de `BILLING_PAYMENT_PROVIDER` y su bitácora. Global solo para su fachada. */
+/** Invoice charging with the `BILLING_PAYMENT_PROVIDER` provider and its log. Global only for its facade. */
 @Global()
 @Module({
   imports: [

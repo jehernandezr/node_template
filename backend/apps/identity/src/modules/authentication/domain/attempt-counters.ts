@@ -1,4 +1,4 @@
-/** Fallos recientes que dejó un intento, cada uno contado en su propia ventana. */
+/** Recent failures left by an attempt, each counted in its own window. */
 export interface AttemptCounts {
   readonly origin: number;
   readonly account: number;
@@ -6,8 +6,8 @@ export interface AttemptCounts {
 }
 
 /**
- * Cuenta los fallos de inicio de sesión por origen (cuenta más IP), por cuenta y por IP, cada uno en su
- * ventana deslizante. Solo cuenta: decidir un bloqueo es de `LockoutPolicy`.
+ * Counts sign-in failures by origin (account plus IP), by account and by IP, each in its own
+ * sliding window. It only counts: deciding a lockout belongs to `LockoutPolicy`.
  */
 export abstract class AttemptCounters {
   abstract recordFailure(
@@ -16,9 +16,9 @@ export abstract class AttemptCounters {
     ip: string,
   ): Promise<AttemptCounts>;
 
-  /** Olvida los fallos del origen: un inicio de sesión correcto o un bloqueo recién activado. */
+  /** Forgets the origin's failures: a successful sign-in or a newly activated lockout. */
   abstract clearOrigin(origin: string): Promise<void>;
 
-  /** Olvida los fallos de la cuenta desde cualquier origen. */
+  /** Forgets the account's failures from any origin. */
   abstract clearAccount(account: string): Promise<void>;
 }

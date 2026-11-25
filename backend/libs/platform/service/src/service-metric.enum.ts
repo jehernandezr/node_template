@@ -1,7 +1,7 @@
-/** Métricas que publica `UseCaseRunner`. */
+/** Metrics that `UseCaseRunner` publishes. */
 export enum ServiceMetric {
-  /** Histograma de la duración de un caso de uso, en milisegundos. */
+  /** Histogram of the duration of a use case, in milliseconds. */
   UseCaseDuration = 'service.use_case.duration',
-  /** Contador de casos de uso que terminaron con error. */
+  /** Counter of use cases that ended with an error. */
   UseCaseErrors = 'service.use_case.errors',
 }

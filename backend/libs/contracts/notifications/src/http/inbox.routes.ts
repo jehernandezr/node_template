@@ -17,7 +17,7 @@ import {
 
 const guard = SessionGuardErrors;
 
-/** `GET /v1/notifications`: bandeja del usuario, de la más nueva a la más antigua. */
+/** `GET /v1/notifications`: the user's inbox, from newest to oldest. */
 export const ListInboxRoute = defineRoute({
   id: NotificationsRoute.ListInbox,
   method: HttpMethod.Get,
@@ -26,10 +26,10 @@ export const ListInboxRoute = defineRoute({
   response: NotificationPageSchema,
   errors: guard,
   access: Access.authenticated(),
-  description: 'Lista las notificaciones de la bandeja del usuario.',
+  description: 'Lists the notifications in the user inbox.',
 });
 
-/** `GET /v1/notifications/unread-count`: notificaciones sin leer. */
+/** `GET /v1/notifications/unread-count`: unread notifications. */
 export const GetUnreadCountRoute = defineRoute({
   id: NotificationsRoute.GetUnreadCount,
   method: HttpMethod.Get,
@@ -37,10 +37,10 @@ export const GetUnreadCountRoute = defineRoute({
   response: UnreadCountSchema,
   errors: guard,
   access: Access.authenticated(),
-  description: 'Cuenta las notificaciones sin leer de la bandeja del usuario.',
+  description: 'Counts the unread notifications in the user inbox.',
 });
 
-/** `POST /v1/notifications/{notificationId}/read`: marca una notificación como leída. */
+/** `POST /v1/notifications/{notificationId}/read`: marks a notification as read. */
 export const MarkReadRoute = defineRoute({
   id: NotificationsRoute.MarkRead,
   method: HttpMethod.Post,
@@ -48,15 +48,15 @@ export const MarkReadRoute = defineRoute({
   request: MarkNotificationReadRequestSchema,
   errors: [...guard, NotificationsErrorCode.InboxNotFound],
   access: Access.authenticated(),
-  description: 'Marca como leída una notificación; repetirlo no falla.',
+  description: 'Marks a notification as read; repeating it does not fail.',
 });
 
-/** `POST /v1/notifications/read-all`: marca toda la bandeja como leída. */
+/** `POST /v1/notifications/read-all`: marks the whole inbox as read. */
 export const MarkAllReadRoute = defineRoute({
   id: NotificationsRoute.MarkAllRead,
   method: HttpMethod.Post,
   path: '/v1/notifications/read-all',
   errors: guard,
   access: Access.authenticated(),
-  description: 'Marca como leídas todas las notificaciones del usuario.',
+  description: 'Marks all notifications of the user as read.',
 });

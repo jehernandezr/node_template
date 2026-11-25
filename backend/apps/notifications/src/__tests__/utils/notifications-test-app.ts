@@ -19,8 +19,8 @@ import { notificationsService } from '../../notifications.service.js';
 import { EmailSenderKind } from '../../shared/enums/email-sender-kind.enum.js';
 
 /**
- * Notifications completo sobre PostgreSQL y Valkey reales, con Mailpit como servidor de correo y la API
- * interna de identity respondida por `IdentityStub`. Ubica un tenant en cada shard.
+ * Full notifications on real PostgreSQL and Valkey, with Mailpit as the mail server and identity's internal
+ * API answered by `IdentityStub`. Places a tenant in each shard.
  */
 export class NotificationsTestApp {
   static readonly TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
@@ -75,7 +75,7 @@ export class NotificationsTestApp {
     return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
   }
 
-  /** Registra al usuario en identity y devuelve su access token. */
+  /** Registers the user in identity and returns their access token. */
   tokenOf(member: StubMember): Promise<string> {
     return this.identity.tokenFor(member);
   }

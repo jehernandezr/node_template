@@ -2,7 +2,7 @@ import { TenantLifecycle } from '@contracts/identity';
 import { TenantsFacade } from '../../application/tenants.facade.js';
 import type { TenantSnapshot } from '../../domain/tenant-snapshot.js';
 
-/** Tenants en memoria. */
+/** In-memory tenants. */
 export class InMemoryTenantsFacade extends TenantsFacade {
   private readonly tenants = new Map<string, TenantSnapshot>();
 

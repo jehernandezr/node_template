@@ -3,41 +3,41 @@ locals {
 }
 
 output "topic_arns" {
-  description = "ARN de cada tópico SNS, por nombre declarado en la topología."
+  description = "ARN of each SNS topic, by the name declared in the topology."
   value       = module.messaging.topic_arns
 }
 
 output "queue_arns" {
-  description = "ARN de cada cola SQS, por nombre declarado. Incluye ses-events cuando hay SES."
+  description = "ARN of each SQS queue, by declared name. Includes ses-events when SES is enabled."
   value       = merge(module.messaging.queue_arns, { for k, q in local.ses_queue : k => q.arn })
 }
 
 output "queue_urls" {
-  description = "URL de cada cola SQS, por nombre declarado. Incluye ses-events cuando hay SES."
+  description = "URL of each SQS queue, by declared name. Includes ses-events when SES is enabled."
   value       = merge(module.messaging.queue_urls, { for k, q in local.ses_queue : k => q.url })
 }
 
 output "queue_names" {
-  description = "Nombre final de cada cola SQS, para métricas y escalado. Incluye ses-events cuando hay SES."
+  description = "Final name of each SQS queue, for metrics and scaling. Includes ses-events when SES is enabled."
   value       = merge(module.messaging.queue_names, { for k, q in local.ses_queue : k => q.name })
 }
 
 output "dlq_arns" {
-  description = "ARN de la DLQ de cada cola."
+  description = "ARN of the DLQ of each queue."
   value       = module.messaging.dlq_arns
 }
 
 output "service_access" {
-  description = "Por servicio, los tópicos donde publica y las colas donde envía o consume, según la topología."
+  description = "Per service, the topics it publishes to and the queues it sends to or consumes from, according to the topology."
   value       = module.messaging.service_access
 }
 
 output "kms_key_arn" {
-  description = "ARN de la clave KMS de tópicos y colas."
+  description = "ARN of the KMS key for topics and queues."
   value       = module.messaging.kms_key_arn
 }
 
 output "name_prefix" {
-  description = "Prefijo de los nombres de tópicos y colas, para los adaptadores de mensajería."
+  description = "Name prefix of topics and queues, for the messaging adapters."
   value       = var.name_prefix
 }

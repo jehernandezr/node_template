@@ -2,11 +2,11 @@ import { Backoff, TimerScheduler } from '@platform/primitives';
 import { ResilienceGuard } from '../errors/resilience-guard.js';
 import type { ResiliencePolicyConfig } from './resilience-policy-config.js';
 
-/** Reglas que debe cumplir una política antes de usarse. */
+/** Rules that a policy must meet before being used. */
 export class PolicyConfigValidator {
   /**
-   * Se valida al armar el registro, así que un ajuste malo falla al arrancar
-   * y no en el primer reintento.
+   * Validated when building the registry, so a bad override fails at startup
+   * and not on the first retry.
    * @throws InvalidPolicyError
    */
   static validate(config: ResiliencePolicyConfig): void {

@@ -1,8 +1,8 @@
 import type { LogLevel } from './log-level.enum.js';
 
 /**
- * Un log listo para escribir: el mensaje y los campos ya están redactados y
- * `fields` ya trae los campos de traza y contexto (`LogField`) del instante.
+ * A log ready to write: the message and the fields are already redacted and
+ * `fields` already carries the trace and context fields (`LogField`) of the moment.
  */
 export interface LogRecord {
   readonly level: LogLevel;

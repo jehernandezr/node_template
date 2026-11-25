@@ -10,13 +10,13 @@ import { UsersFacade } from '../../users/index.js';
 import { SessionRepository } from '../domain/session.repository.js';
 import { SessionTokenIssuer } from './session-token-issuer.js';
 
-/** Pedido de cambio de tenant de la sesión actual. */
+/** Request to change the tenant of the current session. */
 export interface SwitchTenantInput {
   readonly actor: UserActor;
   readonly tenantId: string;
 }
 
-/** Cambia el tenant activo de la sesión y emite un access token con el `tid` y el `pv` del tenant nuevo. */
+/** Changes the session's active tenant and issues an access token with the new tenant's `tid` and `pv`. */
 @Injectable()
 export class SwitchTenant implements UseCase<SwitchTenantInput, SessionTokens> {
   constructor(

@@ -1,9 +1,9 @@
-/** Ruta HTTP de las operaciones internas. */
+/** HTTP path of the internal operations. */
 export class InternalApiRoute {
-  /** Prefijo del controller, sin barra inicial. */
+  /** Controller prefix, without a leading slash. */
   static readonly BASE = 'internal/operations';
 
-  /** Ruta completa, con barra inicial, de una operación. Es lo que se firma. */
+  /** Returns the full path of an operation, with a leading slash. It is what gets signed. */
   static pathOf(operationId: string): string {
     return `/${InternalApiRoute.BASE}/${encodeURIComponent(operationId)}`;
   }

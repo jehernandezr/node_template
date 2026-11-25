@@ -8,15 +8,15 @@ import { ServiceBootstrap } from '../bootstrap/service-bootstrap.js';
 import type { ServiceBootstrapOptions } from '../bootstrap/service-bootstrap-options.js';
 
 /**
- * Arranque de un servicio como función Lambda. El servicio es el mismo proceso
- * HTTP de siempre, levantado una sola vez en loopback por contenedor caliente;
- * cada evento se reenvía a él. Sin temporizadores propios, porque Lambda
- * congela el contenedor entre invocaciones.
+ * Startup of a service as a Lambda function. The service is the same HTTP process
+ * as always, started only once on loopback per warm container;
+ * each event is forwarded to it. No timers of its own, because Lambda
+ * freezes the container between invocations.
  */
 export class LambdaBootstrap {
   /**
-   * Devuelve el `handler` de la función. El arranque se hace en la primera
-   * invocación y se reintenta si falla.
+   * Returns the function `handler`. The startup happens on the first
+   * invocation and is retried if it fails.
    */
   static http(
     definition: ServiceDefinition,

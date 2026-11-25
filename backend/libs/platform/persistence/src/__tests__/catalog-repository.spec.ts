@@ -15,7 +15,7 @@ import type { StubQueryRunner } from './utils/stub-query-runner.js';
 const ID = '0193f1c2-0000-7000-8000-0000000000c3';
 const OTHER_ID = '0193f1c2-0000-7000-8000-0000000000c4';
 
-/** Fila que devuelve un SELECT sobre `probes`, con las claves `<alias>_<columna>` de TypeORM. */
+/** Row returned by a SELECT on `probes`, with TypeORM `<alias>_<column>` keys. */
 function probeRow(
   id: string,
   name: string,
@@ -36,17 +36,17 @@ function probeRow(
   };
 }
 
-/** Resultado estructurado de un SELECT de TypeORM con las filas dadas. */
+/** Structured result of a TypeORM SELECT with the given rows. */
 function rowsResult(...rows: object[]) {
   return { records: rows, raw: rows, affected: rows.length };
 }
 
-/** Resultado estructurado de un INSERT o UPDATE de TypeORM. */
+/** Structured result of a TypeORM INSERT or UPDATE. */
 const WRITE_OK = { records: [], raw: [], affected: 1 };
 
 /**
- * `DataSource` de prueba en el que cada `QueryRunner` que abre el repositorio recibe la siguiente lista
- * de respuestas en el orden en que se pidieron con `script`.
+ * Test `DataSource` in which each `QueryRunner` opened by the repository receives the next list
+ * of responses in the order they were requested with `script`.
  */
 class ScriptedDataSource extends StubDataSource {
   readonly modes: ReplicationMode[] = [];
@@ -65,7 +65,7 @@ class ScriptedDataSource extends StubDataSource {
   }
 }
 
-/** Catálogo cuyo `DataSource` es un doble ya inicializado. */
+/** Catalog whose `DataSource` is an already initialized test double. */
 class StubCatalogDataSource extends CatalogDataSource {
   constructor(private readonly dataSource: ScriptedDataSource) {
     super(new FakeDataSourceFactory(), new FakeInstanceEndpointResolver(), {
@@ -83,7 +83,7 @@ class StubCatalogDataSource extends CatalogDataSource {
   }
 }
 
-/** Repositorio de catálogo sobre `ProbeEntity`, sin tenant. */
+/** Catalog repository over `ProbeEntity`, without a tenant. */
 class ProbeCatalogRepository extends CatalogRepository<Probe, ProbeEntity> {
   constructor(catalog: CatalogDataSource) {
     super(ProbeEntity, catalog, new ProbeMapper(), new OptimisticWriter());

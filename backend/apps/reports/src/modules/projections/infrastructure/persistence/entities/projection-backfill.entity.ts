@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `proj_backfills`: hasta dónde se rellenó cada proyección de cada tenant desde el servicio dueño de sus datos. */
+/** `proj_backfills`: how far each projection of each tenant has been backfilled from the service that owns its data. */
 @Entity({ name: 'proj_backfills' })
 @Index('proj_backfills_tenant_source_key', ['tenantId', 'source'], {
   unique: true,

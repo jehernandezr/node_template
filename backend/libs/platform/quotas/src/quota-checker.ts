@@ -2,16 +2,16 @@ import type { UsageMetric } from '@contracts/billing';
 import type { QuotaCheck } from './quota-check.js';
 import { QuotaExceededError } from './quota-exceeded.error.js';
 
-/** Consulta las cuotas del plan vigente de un tenant. */
+/** Queries the quotas of a tenant's current plan. */
 export abstract class QuotaChecker {
-  /** Si el tenant puede consumir `requested` (1 por defecto) más de la métrica. */
+  /** Whether the tenant can consume `requested` (1 by default) more of the metric. */
   abstract check(
     tenantId: string,
     metric: UsageMetric,
     requested?: number,
   ): Promise<QuotaCheck>;
 
-  /** @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` si lo pedido no cabe en la cuota. */
+  /** @throws QuotaExceededError `BILLING.QUOTA.EXCEEDED` if the request does not fit in the quota. */
   async enforce(
     tenantId: string,
     metric: UsageMetric,

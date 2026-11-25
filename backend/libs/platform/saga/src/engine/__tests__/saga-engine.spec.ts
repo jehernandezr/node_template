@@ -20,7 +20,7 @@ import { StepDirection } from '../../model/step-direction.enum.js';
 import { StepStatus } from '../../model/step-status.enum.js';
 import type { DispatchWrite } from '../../store/dispatch-write.js';
 
-/** Un almacén que muere una vez, justo tras despachar la compensación del paso que se elige. */
+/** A store that dies once, right after dispatching the compensation of the chosen step. */
 class CrashOnCompensation extends CrashingSagaStore {
   private armed = true;
 
@@ -33,7 +33,7 @@ class CrashOnCompensation extends CrashingSagaStore {
   }
 }
 
-/** Invocador que, una vez, deja que otra corrida termine la saga antes de su propia llamada. */
+/** Invoker that, once, lets another run finish the saga before its own call. */
 class StaleRunInvoker extends FakeParticipant {
   private armed = true;
 
@@ -58,7 +58,7 @@ class StaleRunInvoker extends FakeParticipant {
   }
 }
 
-/** Montaje común: un participante, un motor de sagas y los eventos que emite. */
+/** Common setup: a participant, a saga engine and the events it emits. */
 function setup(store?: InMemorySagaStore) {
   const participant = new FakeParticipant();
   const kit = new SagaEngineKit({
@@ -276,7 +276,7 @@ describe('SagaEngine', () => {
   });
 
   describe('aceptación: una caída a mitad de la compensación no cambia el resultado', () => {
-    /** Corre la saga de tres pasos que falla en el tercero, con o sin caída en la compensación. */
+    /** Runs the three-step saga that fails on the third, with or without a crash in the compensation. */
     async function runFailingSaga(crash: boolean) {
       const store = crash ? new CrashOnCompensation() : new CrashingSagaStore();
       const { kit, participant } = setup(store);

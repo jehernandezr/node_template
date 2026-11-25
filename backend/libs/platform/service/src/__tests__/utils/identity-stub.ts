@@ -31,7 +31,7 @@ import { InternalApiRoute } from '@platform/internal-api';
 import { SystemClock } from '@platform/kernel';
 import { CallOutcome } from '@platform/primitives';
 
-/** Un miembro de un tenant tal como lo vería identity: su acceso, su perfil y la sesión de su token. */
+/** A tenant member as identity would see it: their access, their profile and their token session. */
 export interface StubMember {
   readonly userId: string;
   readonly tenantId: string;
@@ -46,10 +46,10 @@ export interface StubMember {
 }
 
 /**
- * Identity de mentira para los servicios que dependen de ella: publica el JWKS, firma tokens con esa clave,
- * escribe el estado compartido en Valkey con la conexión administrativa (solo identity puede escribir
- * `auth:*`) y responde por HTTP las operaciones internas de lectura que los servicios le piden. No verifica
- * la firma de las llamadas: lo que se prueba es el servicio que llama.
+ * Fake identity for the services that depend on it: publishes the JWKS, signs tokens with that key,
+ * writes the shared state to Valkey with the admin connection (only identity can write
+ * `auth:*`) and answers over HTTP the internal read operations that the services request. It does not verify
+ * the signature of the calls: what is under test is the calling service.
  */
 export class IdentityStub {
   static readonly ISSUER = 'https://identity.test';
@@ -84,7 +84,7 @@ export class IdentityStub {
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
 
-  /** Variables de la verificación de tokens y de la API interna hacia identity. */
+  /** Variables for token verification and for the internal API to identity. */
   environment(): Record<string, string> {
     const base = this.baseUrl();
     return {
@@ -94,7 +94,7 @@ export class IdentityStub {
     };
   }
 
-  /** Registra al miembro, publica su acceso y devuelve un access token suyo. */
+  /** Registers the member, publishes their access and returns an access token for them. */
   async tokenFor(member: StubMember): Promise<string> {
     this.members.set(member.userId, member);
     const writer = this.started();

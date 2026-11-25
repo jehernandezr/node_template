@@ -24,8 +24,8 @@ import { HttpRequestKey } from './http-metadata-key.enum.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
 /**
- * Abre el `RequestContext` de la ruta con el tenant y el actor, aplica el tope de tiempo, escribe
- * `Api-Version` y las cabeceras de deprecación, y maneja la cookie de sesión del canal web.
+ * Opens the route's `RequestContext` with the tenant and the actor, applies the time cap, writes
+ * `Api-Version` and the deprecation headers, and handles the web channel session cookie.
  */
 @Injectable()
 export class EndpointContextInterceptor implements NestInterceptor {

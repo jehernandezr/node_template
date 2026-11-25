@@ -9,7 +9,7 @@ import { AuthStateLifecycle } from '../auth-state.lifecycle.js';
 
 const START = new Date('2026-01-15T12:00:00.000Z');
 
-/** Logger que guarda los avisos para comprobar que se emiten. */
+/** Logger that records the warnings to check that they are emitted. */
 class RecordingLogger extends LoggerPort {
   readonly warnings: string[] = [];
 
@@ -34,7 +34,7 @@ class RecordingLogger extends LoggerPort {
   }
 }
 
-/** Deja que las continuaciones pendientes de los avisos terminen. */
+/** Lets the pending continuations of the warnings finish. */
 const flush = (): Promise<void> =>
   new Promise<void>((resolve) => setImmediate(resolve));
 

@@ -3,7 +3,7 @@ import type { UsageMetric } from '@contracts/billing';
 import { QUOTA_METRIC } from './quota-metadata.js';
 import { QuotaGuard } from './quota.guard.js';
 
-/** Escribe los metadatos de `@Quota`. */
+/** Writes the `@Quota` metadata. */
 export class QuotaDecorator {
   static apply(metric: UsageMetric): MethodDecorator {
     return applyDecorators(
@@ -13,5 +13,5 @@ export class QuotaDecorator {
   }
 }
 
-/** `@Quota(UsageMetric.ApiCalls)`: la ruta consume la métrica y se rechaza cuando el plan la agotó. */
+/** `@Quota(UsageMetric.ApiCalls)`: the route consumes the metric and is rejected when the plan has exhausted it. */
 export const Quota = QuotaDecorator.apply;

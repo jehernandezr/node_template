@@ -10,8 +10,8 @@ import {
 import { UserReader } from './user-reader.js';
 
 /**
- * Envía a la dirección nueva un token para confirmar el cambio. Si la dirección ya es de otra cuenta,
- * no se envía nada y se responde igual, para no revelarla.
+ * Sends a token to the new address to confirm the change. If the address already belongs to another account,
+ * nothing is sent and the response is the same, so as not to reveal it.
  */
 @Injectable()
 export class RequestEmailChange {

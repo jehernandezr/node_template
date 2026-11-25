@@ -1,5 +1,5 @@
-// Arranque temprano del SDK de OpenTelemetry. Se importa solo en el punto de
-// entrada de cada servicio, porque carga exportadores e instrumentaciones.
+// Early startup of the OpenTelemetry SDK. It is imported only at the entry
+// point of each service, because it loads exporters and instrumentations.
 export * from './telemetry/external-trace-id-span-processor.js';
 export * from './telemetry/iovalkey-instrumentation.js';
 export * from './telemetry/otlp-path.enum.js';

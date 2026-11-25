@@ -12,13 +12,13 @@ import { NoopRateLimitDegradationReporter } from './noop-rate-limit-degradation-
 import { RateLimiter } from './rate-limiter.js';
 
 /**
- * {@link RateLimiter} que usa el limitador compartido y, si este falla, uno
- * local con el límite dividido por `localDivisor`. Un servicio sin Valkey
- * sigue limitando, más flojo, en lugar de rechazar todo o de no limitar.
+ * {@link RateLimiter} that uses the shared limiter and, if it fails, a
+ * local one with the limit divided by `localDivisor`. A service without Valkey
+ * keeps limiting, more loosely, instead of rejecting everything or not limiting.
  *
- * Cualquier falla del compartido degrada, porque los argumentos ya se
- * validaron antes de llamarlo. Para no esperar el tiempo agotado de cada
- * llamada mientras Valkey está caído, conviene que `primary` pase por un
+ * Any failure of the shared one degrades, because the arguments were already
+ * validated before calling it. To avoid waiting for the timeout of each
+ * call while Valkey is down, `primary` should go through a
  * circuit breaker.
  */
 export class DegradingRateLimiter extends RateLimiter {
@@ -28,7 +28,7 @@ export class DegradingRateLimiter extends RateLimiter {
   private readonly onDegraded: RateLimitDegradedListener | undefined;
   private readonly reporter: RateLimitDegradationReporter;
 
-  /** @throws InvalidArgumentError si `localDivisor` no es un entero positivo. */
+  /** @throws InvalidArgumentError if `localDivisor` is not a positive integer. */
   constructor(options: DegradingRateLimiterOptions) {
     super();
     this.localDivisor = PrimitivesGuard.instance.positiveInteger(
@@ -54,7 +54,7 @@ export class DegradingRateLimiter extends RateLimiter {
     } catch (error) {
       this.degraded(RateLimitOperation.Consume, rule, error);
       const local = this.localRule(rule);
-      // Un costo que el límite local no admite nunca cabría: se acota.
+      // A cost that the local limit does not admit would never fit: it is clamped.
       return this.fallback.consume(key, local, Math.min(cost, local.limit));
     }
   }
@@ -70,9 +70,9 @@ export class DegradingRateLimiter extends RateLimiter {
   }
 
   /**
-   * Borra en los dos limitadores. Si el compartido falla solo se avisa: quien
-   * resetea (por ejemplo, tras un inicio de sesión exitoso) no debe fallar
-   * por eso, y el contador viejo vence solo con su ventana.
+   * Deletes in both limiters. If the shared one fails it only warns: whoever
+   * resets (for example, after a successful login) must not fail
+   * because of it, and the old counter expires on its own with its window.
    */
   async reset(key: string, rule: RateLimitRule): Promise<void> {
     RateLimitCallValidator.validate(key, rule);
@@ -84,7 +84,7 @@ export class DegradingRateLimiter extends RateLimiter {
     }
   }
 
-  /** La regla que aplica el limitador local. Conserva nombre y ventana. */
+  /** The rule that the local limiter applies. Keeps name and window. */
   private localRule(rule: RateLimitRule): RateLimitRule {
     return {
       name: rule.name,
@@ -101,12 +101,12 @@ export class DegradingRateLimiter extends RateLimiter {
     try {
       this.onDegraded?.(operation, rule, error);
     } catch {
-      // El aviso es diagnóstico: no debe cambiar la respuesta del limitador.
+      // The warning is diagnostic: it must not change the limiter's response.
     }
     try {
       this.reporter.degraded(operation, rule, error);
     } catch {
-      // El reporte es diagnóstico: no debe cambiar la respuesta del limitador.
+      // The report is diagnostic: it must not change the limiter's response.
     }
   }
 }

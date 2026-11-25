@@ -1,5 +1,5 @@
-/** Cliente de comandos de iovalkey. Es `Symbol` porque el cliente no tiene una clase abstracta propia. */
+/** iovalkey command client. It is a `Symbol` because the client has no abstract class of its own. */
 export const VALKEY_CLIENT = Symbol('VALKEY_CLIENT');
 
-/** Opciones con las que se compuso `ValkeyModule`. */
+/** Options `ValkeyModule` was composed with. */
 export const VALKEY_MODULE_OPTIONS = Symbol('VALKEY_MODULE_OPTIONS');

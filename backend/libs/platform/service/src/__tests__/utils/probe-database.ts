@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import type { PostgresConnection } from './postgres-connection.js';
 
-/** Conexión de prueba a una base del contenedor. Abre y cierra su `DataSource` en cada consulta. */
+/** Test connection to a database in the container. Opens and closes its `DataSource` on each query. */
 export class ProbeDatabase {
   constructor(
     private readonly connection: PostgresConnection,

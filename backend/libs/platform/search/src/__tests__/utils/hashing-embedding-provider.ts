@@ -3,9 +3,9 @@ import { EmbeddingProvider } from '../../embedding-provider.js';
 import { SearchSchema } from '../../search-schema.js';
 
 /**
- * Embeddings deterministas sin modelo: cada palabra suma ±1 en una componente elegida por su hash y el
- * vector se normaliza. Textos que comparten palabras quedan cerca, así las pruebas del modo híbrido
- * verifican el orden sin depender de un servicio externo.
+ * Deterministic embeddings without a model: each word adds ±1 to a component chosen by its hash and the
+ * vector is normalized. Texts that share words end up close, so the hybrid mode tests
+ * verify the order without depending on an external service.
  */
 export class HashingEmbeddingProvider extends EmbeddingProvider {
   readonly dimensions = SearchSchema.EMBEDDING_DIMENSIONS;

@@ -2,7 +2,7 @@ import type { Page } from '@contracts/platform';
 import type { Permission } from '../enums/access.enum.js';
 import type { MembershipChangeKind, TenantRole } from '../enums/tenant.enum.js';
 
-/** Miembro del tenant con sus grupos. */
+/** Tenant member with its groups. */
 export interface MemberSummary {
   userId: string;
   email: string;
@@ -13,18 +13,18 @@ export interface MemberSummary {
 
 export type MemberPage = Page<MemberSummary>;
 
-/** Quitar a un usuario del tenant. */
+/** Removes a user from the tenant. */
 export interface RemoveMemberRequest {
   userId: string;
 }
 
-/** Reemplazo completo de los grupos de un miembro. */
+/** Full replacement of a member's groups. */
 export interface SetMemberGroupsRequest {
   userId: string;
   groupIds: string[];
 }
 
-/** Grupo del tenant. Los grupos de sistema no se pueden borrar. */
+/** Tenant group. System groups cannot be deleted. */
 export interface GroupSummary {
   id: string;
   name: string;
@@ -35,29 +35,29 @@ export interface GroupSummary {
 
 export type GroupPage = Page<GroupSummary>;
 
-/** Alta de un grupo. */
+/** Creation of a group. */
 export interface CreateGroupRequest {
   name: string;
 }
 
-/** Cambio de nombre de un grupo. */
+/** Renaming of a group. */
 export interface UpdateGroupRequest {
   groupId: string;
   name: string;
 }
 
-/** Borrado de un grupo. */
+/** Deletion of a group. */
 export interface DeleteGroupRequest {
   groupId: string;
 }
 
-/** Reemplazo completo de los roles de un grupo. */
+/** Full replacement of a group's roles. */
 export interface SetGroupRolesRequest {
   groupId: string;
   roleIds: string[];
 }
 
-/** Rol del tenant con sus permisos. Un rol de sistema lleva el rol fijo que representa. */
+/** Tenant role with its permissions. A system role carries the fixed role it represents. */
 export interface RoleSummary {
   id: string;
   name: string;
@@ -67,25 +67,25 @@ export interface RoleSummary {
 
 export type RolePage = Page<RoleSummary>;
 
-/** Alta de un rol personalizado. */
+/** Creation of a custom role. */
 export interface CreateRoleRequest {
   name: string;
   permissions: Permission[];
 }
 
-/** Cambios parciales de un rol. */
+/** Partial changes to a role. */
 export interface UpdateRoleRequest {
   roleId: string;
   name?: string;
   permissions?: Permission[];
 }
 
-/** Borrado de un rol. */
+/** Deletion of a role. */
 export interface DeleteRoleRequest {
   roleId: string;
 }
 
-/** Payload de `identity.membership.changed.v1`. */
+/** Payload of `identity.membership.changed.v1`. */
 export interface MembershipChangedPayload {
   tenantId: string;
   userId: string;
@@ -95,13 +95,13 @@ export interface MembershipChangedPayload {
 }
 
 /**
- * Payload de `identity.permissions.changed.v1`. Sin `userId` el cambio afecta
- * a todo el tenant y los consumidores invalidan su caché completa.
+ * Payload of `identity.permissions.changed.v1`. Without `userId` the change affects
+ * the whole tenant and consumers invalidate their entire cache.
  */
 export interface PermissionsChangedPayload {
   tenantId: string;
   userId?: string;
-  /** Versión `<tenant>.<usuario>`, igual que el claim `pv`. */
+  /** Version `<tenant>.<user>`, same as the `pv` claim. */
   permissionVersion: string;
   changedAt: string;
 }

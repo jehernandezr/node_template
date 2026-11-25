@@ -1,8 +1,8 @@
 import type { OperationDefinition } from '@contracts/platform';
 import type { z } from 'zod';
 
-/** Entrada que un paso construye para una operación: lo que el cliente acepta. */
+/** Input that a step builds for an operation: what the client accepts. */
 export type StepInputOf<D extends OperationDefinition> = z.input<D['input']>;
 
-/** Salida que un paso recibe de una operación: la salida ya parseada. */
+/** Output that a step receives from an operation: the already parsed output. */
 export type StepOutputOf<D extends OperationDefinition> = z.output<D['output']>;

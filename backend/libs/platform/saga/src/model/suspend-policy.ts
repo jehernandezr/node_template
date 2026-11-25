@@ -1,7 +1,7 @@
-/** Límites del ciclo de suspensión de un paso. */
+/** Limits of the suspension cycle of a step. */
 export interface SuspendPolicy {
   readonly maxSuspendAttempts: number;
   readonly maxSuspendAgeMs: number;
-  /** Espera antes de reintentar tras el intento fallido dado (desde 1). */
+  /** Wait before retrying after the given failed attempt (from 1). */
   readonly backoff: (attempt: number) => number;
 }

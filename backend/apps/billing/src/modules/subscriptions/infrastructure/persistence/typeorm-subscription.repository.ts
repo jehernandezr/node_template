@@ -5,7 +5,7 @@ import type { Subscription } from '../../domain/subscription.js';
 import { SubscriptionEntity } from './entities/subscription.entity.js';
 import { SubscriptionMapper } from './subscription.mapper.js';
 
-/** `SubscriptionRepository` sobre `subscriptions` del shard del tenant. */
+/** `SubscriptionRepository` over `subscriptions` of the tenant shard. */
 @Injectable()
 export class TypeOrmSubscriptionRepository
   extends TenantIsolatedRepository

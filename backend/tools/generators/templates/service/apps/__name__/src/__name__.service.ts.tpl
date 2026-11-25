@@ -14,7 +14,7 @@ import {
 import { __nameCamel__ShardMigrations } from './database/shard-migrations.js';
 import { __NAME___ERROR_CATALOGS } from './shared/constants/__name__-error-catalogs.constants.js';
 
-/** Definición de __name__ que consumen `ServiceBootstrap`, `ServiceMigrator` y las pruebas. */
+/** __name__ definition consumed by `ServiceBootstrap`, `ServiceMigrator` and the tests. */
 export const __nameCamel__Service: ServiceDefinition<__Name__Config> = {
   name: __nameCamel__Contract.service,
   configSchema: __nameCamel__ConfigSchema,

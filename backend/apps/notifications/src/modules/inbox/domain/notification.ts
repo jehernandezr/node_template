@@ -3,7 +3,7 @@ import type {
   NotificationType,
 } from '@contracts/notifications';
 
-/** Una notificación de la bandeja de un usuario. */
+/** A notification in a user's inbox. */
 export interface NotificationState {
   readonly id: string;
   readonly userId: string;
@@ -15,7 +15,7 @@ export interface NotificationState {
   readonly readAt?: Date;
 }
 
-/** Cómo sale una notificación de la bandeja por el contrato. Utilidad pura. */
+/** How an inbox notification goes out through the contract. Pure utility. */
 export class NotificationViews {
   static of(state: NotificationState): AppNotification {
     return {

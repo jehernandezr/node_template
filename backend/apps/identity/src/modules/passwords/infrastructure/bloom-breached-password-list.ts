@@ -6,9 +6,9 @@ import { BreachedPasswordList } from '../domain/breached-password-list.js';
 import { KnownBreachedPasswordsSource } from './known-breached-passwords-source.js';
 
 /**
- * Contraseñas filtradas en el Bloom `BloomFilterName.BreachedPasswords` (Valkey en los ambientes, memoria en
- * las pruebas). El job de la plataforma lo reconstruye con su cron; la primera consulta de cada proceso lo
- * carga por si todavía no corrió, y agregar lo que ya estaba no cambia un Bloom.
+ * Breached passwords in the Bloom `BloomFilterName.BreachedPasswords` (Valkey in the environments, memory in
+ * the tests). The platform job rebuilds it with its cron; the first query of each process
+ * loads it in case it has not run yet, and adding what was already there does not change a Bloom.
  */
 @Injectable()
 export class BloomBreachedPasswordList extends BreachedPasswordList {

@@ -4,10 +4,10 @@ import type { ShardScope } from '@platform/persistence';
 import { ShardKey } from '@platform/sharding';
 
 /**
- * Corre cada entrega en el shard del tenant del sobre y con ese tenant en el contexto. Con `requireScope`
- * el claim de `processed_messages` no tiene otra forma de saber a qué base ir, y las transacciones del
- * manejador fijan `app.tenant_id` desde el contexto. No abre transacción: el manejador puede tocar otros
- * shards (por ejemplo el del usuario), así que confirma sus efectos por su cuenta y debe ser idempotente.
+ * Runs each delivery in the shard of the envelope's tenant and with that tenant in the context. With `requireScope`
+ * the `processed_messages` claim has no other way of knowing which database to go to, and the handler
+ * transactions set `app.tenant_id` from the context. It does not open a transaction: the handler may touch other
+ * shards (for example the user's), so it commits its effects on its own and must be idempotent.
  */
 export class TenantShardDeliveryContext extends DeliveryContext {
   constructor(

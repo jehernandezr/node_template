@@ -2,19 +2,19 @@ import { Entity } from './entity.js';
 import type { DomainEvent } from './domain-event.js';
 import type { Id } from './ids/id.js';
 
-/** Raíz de agregado: acumula eventos de dominio hasta que se recogen. */
+/** Aggregate root: accumulates domain events until they are collected. */
 export abstract class AggregateRoot<
   TId extends Id = Id,
   TEvent extends DomainEvent = DomainEvent,
 > extends Entity<TId> {
   private domainEvents: TEvent[] = [];
 
-  /** Registra un evento de dominio producido por el agregado. */
+  /** Records a domain event produced by the aggregate. */
   protected addDomainEvent(event: TEvent): void {
     this.domainEvents.push(event);
   }
 
-  /** Devuelve los eventos pendientes y vacía la lista. */
+  /** Returns the pending events and empties the list. */
   pullDomainEvents(): TEvent[] {
     const events = this.domainEvents;
     this.domainEvents = [];

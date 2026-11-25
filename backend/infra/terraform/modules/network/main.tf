@@ -9,20 +9,20 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  # Dos zonas de disponibilidad. Con un /16, newbits 6 da subredes /22.
-  # Públicas en los índices 0 y 1, privadas (apps) en 2 y 3, datos en 4 y 5.
+  # Two availability zones. With a /16, newbits 6 gives /22 subnets.
+  # Public at indexes 0 and 1, private (apps) at 2 and 3, data at 4 and 5.
   azs           = slice(data.aws_availability_zones.available.names, 0, 2)
   public_cidrs  = [for i in range(2) : cidrsubnet(var.vpc_cidr, 6, i)]
   private_cidrs = [for i in range(2) : cidrsubnet(var.vpc_cidr, 6, i + 2)]
   data_cidrs    = [for i in range(2) : cidrsubnet(var.vpc_cidr, 6, i + 4)]
 
-  # Salida a Internet solo para las subredes privadas de aplicación (ADR 0016).
-  # none: sin NAT. single_nat: un NAT en la primera AZ. per_az_nat: un NAT por AZ.
+  # Internet egress only for the private application subnets (ADR 0016).
+  # none: no NAT. single_nat: one NAT in the first AZ. per_az_nat: one NAT per AZ.
   nat_count = { none = 0, single_nat = 1, per_az_nat = 2 }[var.egress]
 
   flow_log_group_name = "/aws/vpc/${var.name_prefix}-flow-logs"
 
-  # El tráfico a servicios AWS sale por endpoints de VPC, sin pasar por el NAT.
+  # Traffic to AWS services goes through VPC endpoints, bypassing the NAT.
   interface_endpoints = toset([
     "sqs", "sns", "secretsmanager", "ecr.api", "ecr.dkr", "logs", "sts", "kms", "monitoring",
   ])
@@ -104,7 +104,7 @@ moved {
   to   = aws_route_table.private[0]
 }
 
-# Una tabla privada por AZ para poder apuntar cada una a su NAT gateway.
+# One private table per AZ so each one can point to its own NAT gateway.
 resource "aws_route_table" "private" {
   count = 2
 
@@ -139,7 +139,7 @@ resource "aws_nat_gateway" "this" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-nat-${count.index}" })
 }
 
-# Ruta por defecto de las subredes privadas. Con single_nat todas usan el NAT 0.
+# Default route for the private subnets. With single_nat they all use NAT 0.
 resource "aws_route" "private_default" {
   count = local.nat_count == 0 ? 0 : 2
 
@@ -148,7 +148,7 @@ resource "aws_route" "private_default" {
   nat_gateway_id         = aws_nat_gateway.this[var.egress == "per_az_nat" ? count.index : 0].id
 }
 
-# Sin ruta por defecto: las subredes de datos nunca salen a Internet.
+# No default route: the data subnets never reach the Internet.
 resource "aws_route_table" "data" {
   vpc_id = aws_vpc.this.id
 
@@ -209,7 +209,7 @@ resource "aws_vpc_endpoint" "interface" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-${replace(each.value, ".", "-")}-endpoint" })
 }
 
-# Flow logs de toda la VPC hacia CloudWatch Logs, cifrados con una CMK.
+# Flow logs for the whole VPC to CloudWatch Logs, encrypted with a CMK.
 module "flow_logs_kms" {
   source = "../kms-key"
 

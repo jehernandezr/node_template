@@ -7,7 +7,7 @@ import type { UserTenant } from '../../domain/user-tenant.js';
 import { PlatformRoleAssignmentEntity } from './entities/platform-role-assignment.entity.js';
 import { UserTenantEntity } from './entities/user-tenant.entity.js';
 
-/** `UserAccessRepository` sobre `user_tenants` y `platform_role_assignments` del shard del usuario. */
+/** `UserAccessRepository` over `user_tenants` and `platform_role_assignments` of the user shard. */
 @Injectable()
 export class TypeOrmUserAccessRepository
   extends UserShardRepository

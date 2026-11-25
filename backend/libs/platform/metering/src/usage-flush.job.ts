@@ -18,9 +18,9 @@ import type { UsageCount, UsageWindow } from './usage-count.js';
 import type { UsageCounterStore } from './usage-counter-store.js';
 import { UsageWindowClock } from './usage-window-clock.js';
 
-/** Con qué se arma `UsageFlushJob`. */
+/** What `UsageFlushJob` is built with. */
 export interface UsageFlushJobCollaborators {
-  /** Nombre del servicio que mide: encabeza la llave de idempotencia de cada registro. */
+  /** Name of the metering service: it prefixes the idempotency key of each record. */
   readonly service: string;
   readonly counters: UsageCounterStore;
   readonly windows: UsageWindowClock;
@@ -32,10 +32,10 @@ export interface UsageFlushJobCollaborators {
 }
 
 /**
- * Cada minuto envía a billing, por el outbox del shard de cada tenant, un `billing.usage.record.v1` por
- * tenant y ventana cerrada, y olvida la ventana cuando todos sus tenants salieron. La llave de cada registro
- * es `<servicio>:<tenant>:<métrica>:<ventana>`: si el proceso cae antes de olvidarla, el reenvío no suma dos
- * veces en billing.
+ * Every minute sends to billing, through the outbox of each tenant's shard, one `billing.usage.record.v1` per
+ * tenant and closed window, and forgets the window once all its tenants went out. The key of each record
+ * is `<service>:<tenant>:<metric>:<window>`: if the process crashes before forgetting it, the resend does not count twice
+ * in billing.
  */
 export class UsageFlushJob extends ScheduledJob {
   readonly name = MeteringJob.FlushUsage;
@@ -58,7 +58,7 @@ export class UsageFlushJob extends ScheduledJob {
     }
   }
 
-  /** Devuelve `false` si algún tenant no salió: la ventana se reintenta en la siguiente corrida. */
+  /** Returns `false` if some tenant did not go out: the window is retried in the next run. */
   private async flush(window: UsageWindow): Promise<boolean> {
     let complete = true;
     for (const [tenantId, counts] of UsageFlushJob.byTenant(window.counts)) {
@@ -96,7 +96,7 @@ export class UsageFlushJob extends ScheduledJob {
     );
   }
 
-  /** @throws ZodError si la métrica no es del catálogo de billing: la ventana queda para revisarla. */
+  /** @throws ZodError if the metric is not in the billing catalog: the window is kept for review. */
   private recordOf(count: UsageCount, windowStart: Date): UsageRecord {
     const window = windowStart.toISOString();
     return {

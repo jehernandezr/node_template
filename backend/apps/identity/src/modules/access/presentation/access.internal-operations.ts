@@ -13,7 +13,7 @@ import {
 import { AccessResolver } from '../application/access-resolver.js';
 import { ListMembersByPermission } from '../application/list-members-by-permission.use-case.js';
 
-/** Operaciones internas de access. */
+/** Internal operations of access. */
 @Injectable()
 export class AccessInternalOperations {
   constructor(

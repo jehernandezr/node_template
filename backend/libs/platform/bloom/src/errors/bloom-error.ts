@@ -2,9 +2,9 @@ import { FailureKind, PlatformError } from '@platform/kernel';
 import type { BloomErrorCode } from './bloom-error-code.enum.js';
 
 /**
- * Base de los errores de `@platform/bloom`. Cada subclase elige su clase de
- * falla: un parámetro inválido es un error de programación, y los datos
- * corruptos no se arreglan reintentando.
+ * Base of the `@platform/bloom` errors. Each subclass picks its failure
+ * class: an invalid parameter is a programming error, and corrupted
+ * data is not fixed by retrying.
  */
 export class BloomError extends PlatformError {
   override readonly code: BloomErrorCode;

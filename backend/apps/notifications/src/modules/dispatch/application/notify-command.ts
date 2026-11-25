@@ -4,7 +4,7 @@ import type {
 } from '@contracts/notifications';
 import type { UserRef } from '@contracts/platform';
 
-/** Avisar a un usuario. `notificationId` hace idempotente el aviso: repetirlo no lo vuelve a entregar. */
+/** Notifies a user. `notificationId` makes the notice idempotent: repeating it does not deliver it again. */
 export interface NotifyCommand {
   readonly notificationId: string;
   readonly user: UserRef;

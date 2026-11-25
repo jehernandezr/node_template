@@ -15,7 +15,7 @@ import { SortDirection } from './sort-direction.enum.js';
 import { WhereClause, type FieldOf } from './where-clause.js';
 
 interface CriteriaState {
-  /** Términos del AND de nivel superior, en el orden en que se agregaron. */
+  /** Terms of the top-level AND, in the order they were added. */
   readonly conditions: readonly CriteriaNode[];
   readonly order: readonly OrderItem[];
   readonly limit?: number;
@@ -23,8 +23,8 @@ interface CriteriaState {
 }
 
 /**
- * Constructor inmutable y encadenable de un filtro, un orden y la paginación por keyset.
- * Cada método devuelve una instancia nueva y deja intacta la original.
+ * Immutable, chainable builder of a filter, a sort order and keyset pagination.
+ * Each method returns a new instance and leaves the original intact.
  */
 export class Criteria<Entity extends object = Record<string, unknown>> {
   private static readonly EMPTY_STATE: CriteriaState = {
@@ -32,7 +32,7 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
     order: [],
   };
 
-  /** Operadores que acotan un campo a un valor, usados por `constrains`. */
+  /** Operators that constrain a field to a value, used by `constrains`. */
   private static readonly CONSTRAINING: ReadonlySet<Operator> = new Set([
     Operator.Eq,
     Operator.In,
@@ -49,14 +49,14 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
     this.state = state;
   }
 
-  /** Crea un criterio vacío para `Entity`. */
+  /** Creates an empty criteria for `Entity`. */
   static for<
     Entity extends object = Record<string, unknown>,
   >(): Criteria<Entity> {
     return new Criteria<Entity>(Criteria.EMPTY_STATE);
   }
 
-  /** Inicia una condición sobre `field`. Las llamadas consecutivas a `where` se unen con AND. */
+  /** Starts a condition on `field`. Consecutive `where` calls are joined with AND. */
   where<K extends FieldOf<Entity>>(field: K): WhereClause<Entity, K> {
     return new WhereClause<Entity, K>(field, (node: ConditionNode) =>
       this.withState({ conditions: [...this.state.conditions, node] }),
@@ -64,10 +64,10 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
   }
 
   /**
-   * Agrega UN término a la lista AND: un grupo OR cuyas ramas son grupos AND.
-   * Ejemplo: `where('deletedAt').isNull().anyOf(c => c.where('status').eq('open'), c => c.where('status').eq('pending'))`
-   * produce `deleted IS NULL AND (open OR pending)`.
-   * @throws CriteriaError `InvalidValue` si no hay ramas, una rama está vacía o una rama define orden, límite o cursor.
+   * Adds ONE term to the AND list: an OR group whose branches are AND groups.
+   * Example: `where('deletedAt').isNull().anyOf(c => c.where('status').eq('open'), c => c.where('status').eq('pending'))`
+   * produces `deleted IS NULL AND (open OR pending)`.
+   * @throws CriteriaError `InvalidValue` if there are no branches, a branch is empty or a branch defines order, limit or cursor.
    */
   anyOf(
     ...branches: ((criteria: Criteria<Entity>) => Criteria<Entity>)[]
@@ -101,7 +101,7 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
     });
   }
 
-  /** Agrega un término de orden. Las llamadas sucesivas agregan órdenes secundarios. */
+  /** Adds a sort term. Successive calls add secondary orders. */
   orderBy<K extends FieldOf<Entity>>(
     field: K,
     direction: SortDirection = SortDirection.Asc,
@@ -115,8 +115,8 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
   }
 
   /**
-   * Fija el tamaño de página, de 1 a `MAX_LIMIT` (el `Pagination.maxLimit` del contrato).
-   * @throws CriteriaError `InvalidLimit` si está fuera de rango.
+   * Sets the page size, from 1 to `MAX_LIMIT` (the contract's `Pagination.maxLimit`).
+   * @throws CriteriaError `InvalidLimit` if out of range.
    */
   limit(count: number): Criteria<Entity> {
     CriteriaValidator.limit(count);
@@ -124,15 +124,15 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
   }
 
   /**
-   * Continúa después de la posición que codifica `token`. El `codec` lo inyecta quien arma el servicio, con el mismo
-   * secreto con el que se firmó el cursor.
-   * @throws CriteriaError `InvalidValue` si el token está mal formado o su firma no coincide.
+   * Continues after the position encoded by `token`. The `codec` is injected by whoever assembles the service, with the same
+   * secret the cursor was signed with.
+   * @throws CriteriaError `InvalidValue` if the token is malformed or its signature does not match.
    */
   after(token: string, codec: CursorCodec): Criteria<Entity> {
     return this.withState({ after: codec.decode(token) });
   }
 
-  /** Devuelve el AST neutral. Quien llama recibe copias y no puede cambiar el constructor. */
+  /** Returns the neutral AST. The caller receives copies and cannot change the builder. */
   toAst(): CriteriaAst {
     const { limit, after } = this.state;
     return {
@@ -144,17 +144,17 @@ export class Criteria<Entity extends object = Record<string, unknown>> {
   }
 
   /**
-   * Es verdadero si alguna condición usa `field` en cualquier parte del filtro, incluidos los grupos OR.
-   * Sirve para saber si el campo se filtra. Para saber si el filtro lo acota, usa `constrains`.
+   * Returns whether any condition uses `field` anywhere in the filter, including OR groups.
+   * Tells whether the field is filtered. To know whether the filter constrains it, use `constrains`.
    */
   references<K extends FieldOf<Entity>>(field: K): boolean {
     return Criteria.mentionsField(this.state.conditions, field);
   }
 
   /**
-   * Es verdadero si el filtro acota `field` con eq, in, gt, gte, lt, lte o between.
-   * Cuenta las condiciones del camino AND de nivel superior y los grupos OR en los que toda rama acota el campo.
-   * Sirve para exigir llaves de partición o alcances de tenant.
+   * Returns whether the filter constrains `field` with eq, in, gt, gte, lt, lte or between.
+   * Counts the conditions on the top-level AND path and the OR groups in which every branch constrains the field.
+   * Used to require partition keys or tenant scopes.
    */
   constrains<K extends FieldOf<Entity>>(field: K): boolean {
     return this.state.conditions.some((node) =>

@@ -1,7 +1,7 @@
-/** Límites de los montos. Los montos viajan en unidades menores (centavos) como enteros. */
+/** Amount limits. Amounts travel in minor units (cents) as integers. */
 export const MoneyLimits = {
-  /** Mayor monto absoluto representable sin pérdida en JavaScript y en Dart web. */
+  /** Largest absolute amount representable without loss in JavaScript and in Dart web. */
   maxAbsAmountMinor: 9007199254740991,
-  /** Expresión regular del código de moneda ISO 4217. */
+  /** Regular expression of the ISO 4217 currency code. */
   currencyPattern: '^[A-Z]{3}$',
 } as const;

@@ -6,14 +6,14 @@ import { ServiceDatabases } from './service-databases.js';
 import type { ServicePostgresServer } from './service-postgres-server.js';
 
 /**
- * El catálogo y los dos shards de un servicio en un servidor de pruebas, con un rol propio sin privilegios de
- * superusuario y dueño de sus bases, como en los ambientes: un superusuario se salta el RLS y las pruebas no lo
- * verían. Varios servicios pueden compartir el mismo servidor, cada uno con sus bases y su rol.
+ * The catalog and the two shards of a service on a test server, with its own role without superuser
+ * privileges that owns its databases, as in the environments: a superuser bypasses RLS and the tests would not
+ * see it. Several services can share the same server, each with its own databases and role.
  */
 export class ProvisionedService {
-  /** La región de las pruebas. */
+  /** The test region. */
   static readonly REGION = 'eu';
-  /** Los grupos de shards de todos los servicios: `group-0` lleva al primer shard de cada uno y `group-1` al segundo. */
+  /** The shard groups of all services: `group-0` leads to the first shard of each and `group-1` to the second. */
   static readonly GROUPS = ['group-0', 'group-1'] as const;
 
   private constructor(
@@ -23,8 +23,8 @@ export class ProvisionedService {
   ) {}
 
   /**
-   * @param shardExtensions Extensiones que el servicio espera en sus shards; las crea el superusuario, como lo
-   *   hace la provisión de las bases en los ambientes.
+   * @param shardExtensions Extensions the service expects in its shards; the superuser creates them, as
+   *   database provisioning does in the environments.
    */
   static async create(
     postgres: ServicePostgresServer,
@@ -50,7 +50,7 @@ export class ProvisionedService {
     return `${this.serviceName}_service`;
   }
 
-  /** Las bases del servicio con su rol y sus grupos de shards; sin Valkey. */
+  /** The service databases with their role and their shard groups; without Valkey. */
   environment(): ConfigEnv {
     return {
       ...this.databases.environment(this.serviceName),
@@ -70,12 +70,12 @@ export class ProvisionedService {
     };
   }
 
-  /** Anota los dos shards en el directorio del catálogo; el catálogo debe estar migrado. */
+  /** Records the two shards in the catalog directory; the catalog must be migrated. */
   async registerShards(): Promise<void> {
     await this.databases.registerShards();
   }
 
-  /** Ubica al tenant en uno de los dos shards, como lo haría identity al crearlo. */
+  /** Places the tenant in one of the two shards, as identity would when creating it. */
   async placeTenant(tenantId: string, shard: 0 | 1): Promise<void> {
     const name = this.shards()[shard].database;
     await this.catalog().query(
@@ -83,7 +83,7 @@ export class ProvisionedService {
     );
   }
 
-  /** Los dos shards, con la conexión de superusuario: para mirar dónde quedó cada fila. */
+  /** The two shards, with the superuser connection: to check where each row ended up. */
   shards(): readonly [ProbeDatabase, ProbeDatabase] {
     return this.databases.shards;
   }
@@ -92,7 +92,7 @@ export class ProvisionedService {
     return this.databases.catalog;
   }
 
-  /** Cómo entra el servicio a sus bases: con su rol, sujeto al RLS. */
+  /** How the service connects to its databases: with its role, subject to RLS. */
   serviceConnection(): PostgresConnection {
     const instances = JSON.parse(
       String(this.databases.environment(this.serviceName)['DB_INSTANCES']),

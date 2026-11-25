@@ -7,7 +7,7 @@ import { UsersFacade } from '../../application/users.facade.js';
 import type { RegisterUserInput } from '../../domain/register-user-input.js';
 import type { UserSnapshot } from '../../domain/user-snapshot.js';
 
-/** Usuarios en memoria. Guarda los emails normalizados, como el adaptador real. */
+/** In-memory users. Stores normalized emails, like the real adapter. */
 export class InMemoryUsersFacade extends UsersFacade {
   readonly registered: RegisterUserInput[] = [];
   private readonly users = new Map<string, UserSnapshot>();
@@ -77,7 +77,7 @@ export class InMemoryUsersFacade extends UsersFacade {
     this.regions.set(homeTenantId, region);
   }
 
-  /** La región a la que se apuntó el índice de los usuarios de un tenant de origen. */
+  /** The region the index of the users of a home tenant was pointed to. */
   regionOfHomeTenant(homeTenantId: string): string | undefined {
     return this.regions.get(homeTenantId);
   }

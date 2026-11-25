@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../notifications/schemas/notifications_schemas.dart';
@@ -9,9 +9,9 @@ import '../../platform/enums/platform_enums.dart';
 import '../../platform/schemas/platform_schemas.dart';
 import '../../platform/types/platform_types.dart';
 
-/// Rutas HTTP públicas del contrato `notifications`.
+/// Public HTTP routes of the `notifications` contract.
 abstract final class NotificationsRoutes {
-  /// Lista las notificaciones de la bandeja del usuario.
+  /// Lists the notifications in the user inbox.
   ///
   /// `GET /v1/notifications`
   static const listInbox = RouteDescriptor<PageQuery, NotificationPage>(
@@ -39,7 +39,7 @@ abstract final class NotificationsRoutes {
     decodeResponse: NotificationPage.fromJson,
   );
 
-  /// Cuenta las notificaciones sin leer de la bandeja del usuario.
+  /// Counts the unread notifications in the user inbox.
   ///
   /// `GET /v1/notifications/unread-count`
   static const getUnreadCount = RouteDescriptor<Empty, UnreadCount>(
@@ -67,7 +67,7 @@ abstract final class NotificationsRoutes {
     decodeResponse: UnreadCount.fromJson,
   );
 
-  /// Marca como leída una notificación; repetirlo no falla.
+  /// Marks a notification as read; repeating it does not fail.
   ///
   /// `POST /v1/notifications/{notificationId}/read`
   static const markRead = RouteDescriptor<MarkNotificationReadRequest, void>(
@@ -94,7 +94,7 @@ abstract final class NotificationsRoutes {
     validateRequest: MarkNotificationReadRequestSchema.validate,
   );
 
-  /// Marca como leídas todas las notificaciones del usuario.
+  /// Marks all notifications of the user as read.
   ///
   /// `POST /v1/notifications/read-all`
   static const markAllRead = RouteDescriptor<Empty, void>(
@@ -120,7 +120,7 @@ abstract final class NotificationsRoutes {
     validateRequest: EmptySchema.validate,
   );
 
-  /// Devuelve las preferencias de notificaciones del usuario.
+  /// Returns the notification preferences of the user.
   ///
   /// `GET /v1/notification-preferences`
   static const getPreferences = RouteDescriptor<Empty, NotificationPreferences>(
@@ -148,7 +148,7 @@ abstract final class NotificationsRoutes {
     decodeResponse: NotificationPreferences.fromJson,
   );
 
-  /// Guarda las preferencias de notificaciones del usuario.
+  /// Saves the notification preferences of the user.
   ///
   /// `PUT /v1/notification-preferences`
   static const savePreferences = RouteDescriptor<NotificationPreferences, void>(

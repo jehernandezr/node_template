@@ -6,8 +6,8 @@ import 'package:shell_core/shell_core.dart';
 import 'utils/manifest_app.dart';
 import 'utils/test_app.dart';
 
-/// Rutas completas de un árbol de [ScreenRoute], con los hijos relativos
-/// resueltos, y su regla de acceso propia.
+/// Full paths of a [ScreenRoute] tree, with relative children
+/// resolved, and their own access rule.
 Iterable<(String, AccessRule?)> _screens(
   List<ScreenRoute> routes, [
   String parent = '',

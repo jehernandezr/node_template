@@ -19,16 +19,16 @@ import { valkeyConfigSchema } from '../valkey.config.js';
 import { ValkeyExecutors, ValkeyTestServer } from './utils/index.js';
 
 /**
- * Pruebas del limitador contra un Valkey real. Sin Docker se saltan; con
- * `INTEGRATION_TESTS=require` la falta de Docker es un error.
+ * Limiter tests against a real Valkey. Without Docker they are skipped; with
+ * `INTEGRATION_TESTS=require` missing Docker is an error.
  */
 jest.setTimeout(60_000);
 
 const PREFIX = 'identity';
 const keyspace = new ValkeyKeyspace(PREFIX);
-// Lo bastante larga para que ninguna llave venza en el reloj del servidor mientras corre una prueba.
+// Long enough that no key expires on the server clock while a test runs.
 const RULE: RateLimitRule = { name: 'sign-in.ip', limit: 20, windowMs: 60_000 };
-// Un borde de ventana de la regla, para leer fácil el tiempo transcurrido.
+// One window edge of the rule, to make the elapsed time easy to read.
 const START = new Date('2026-01-01T00:00:00.000Z');
 
 const runtime = new ContainerRuntime(process.env);
@@ -92,8 +92,8 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
       expect(fromModel.some((result) => !result.allowed)).toBe(true);
     });
 
-    // Tres llamadas al inicio de la ventana y luego un `peek` en cada borde: los
-    // conteos de cada fila son los que el servidor debe tener en ese instante.
+    // Three calls at the start of the window and then a `peek` at each edge: the
+    // counts of each row are the ones the server must have at that instant.
     it.each([
       [0, 0, 3, false],
       [333, 0, 3, false],
@@ -158,7 +158,7 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
     const rate = limiter(clock);
     await rate.consume('k', RULE, 20);
     expect((await rate.consume('k', RULE)).allowed).toBe(false);
-    // Al 30 % de la ventana siguiente, los 20 anteriores pesan 14.
+    // At 30 % of the next window, the previous 20 weigh 14.
     clock.advance(78_000);
     expect(await rate.peek('k', RULE)).toEqual({
       allowed: true,
@@ -241,7 +241,7 @@ runtime.describeIfAvailable('ValkeyRateLimiter against a real server', () => {
         results.push(await degrading.consume('k', RULE));
       }
     } finally {
-      // `quit` esperaría una conexión que nunca llega; se corta el ciclo de reconexión.
+      // `quit` would wait for a connection that never arrives; the reconnection loop is cut.
       unreachable.disconnect();
     }
     expect(results.filter((r) => r.allowed)).toHaveLength(5);

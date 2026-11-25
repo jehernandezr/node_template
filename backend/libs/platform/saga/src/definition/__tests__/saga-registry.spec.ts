@@ -64,7 +64,7 @@ class Empty extends SagaDefinition<unknown> {
   readonly type = 'empty';
 
   protected define(): void {
-    // sin pasos
+    // no steps
   }
 }
 

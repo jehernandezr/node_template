@@ -16,13 +16,13 @@ export const ChangePasswordRequestSchema = z
     newPassword: PasswordFieldSchema,
   })
   .describe(
-    'Cambio de contraseña con la contraseña actual.',
+    'Password change with the current password.',
   ) satisfies z.ZodType<ChangePasswordRequest>;
 
 export const PasswordResetRequestSchema = z
   .strictObject({ email: EmailFieldSchema })
   .describe(
-    'Pedido de un correo para restablecer la contraseña.',
+    'Request for a password reset email.',
   ) satisfies z.ZodType<PasswordResetRequest>;
 
 export const PasswordResetConfirmRequestSchema = z
@@ -31,5 +31,5 @@ export const PasswordResetConfirmRequestSchema = z
     newPassword: PasswordFieldSchema,
   })
   .describe(
-    'Restablecimiento de la contraseña con el token del correo.',
+    'Password reset with the emailed token.',
   ) satisfies z.ZodType<PasswordResetConfirmRequest>;

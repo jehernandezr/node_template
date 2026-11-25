@@ -12,9 +12,9 @@ const id = (n: number): string =>
 const TOKEN = 'worker-a:1';
 
 /**
- * Pruebas de contrato de `SagaStore`: las mismas corren contra el almacén en
- * memoria y contra el de Postgres, así ninguno se desvía del otro.
- * `createHarness` se llama una vez por suite; `reset` antes de cada prueba.
+ * `SagaStore` contract tests: the same ones run against the in-memory
+ * store and against the Postgres one, so neither drifts from the other.
+ * `createHarness` is called once per suite; `reset` before each test.
  */
 export function runSagaStoreContract(
   name: string,
@@ -25,7 +25,7 @@ export function runSagaStoreContract(
     const inStore = <T>(body: () => Promise<T>): Promise<T> =>
       harness.within(body);
     const saga = (n: number) => SagaInstanceBuilder.aSaga().with({ id: id(n) });
-    /** Crea una instancia con el lease de `TOKEN` hasta `until`. */
+    /** Creates an instance with the `TOKEN` lease until `until`. */
     const createLeased = async (n: number, until = at(60_000)) => {
       await harness.store.create(saga(n).build());
       await harness.store.tryAcquireLease(id(n), TOKEN, until, NOW);
@@ -45,7 +45,7 @@ export function runSagaStoreContract(
             .with({
               idempotencyKey: 'key-1',
               state: { name: 'acme', nested: { list: [1, 2] } },
-              // Sin tenant: un almacén con shards exige que sea el del ámbito en curso.
+              // Without tenant: a sharded store requires it to be the one of the current scope.
               context: {
                 actorId: 'actor-1',
                 traceparent:

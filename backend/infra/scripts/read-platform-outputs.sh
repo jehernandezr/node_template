@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Lee las salidas github_oidc del stack platform y las deja como ARTIFACTS_BUCKET y ECR_PREFIX.
-# Uso: read-platform-outputs.sh <ambiente>
-# Escribe en $GITHUB_ENV si existe; fuera de Actions las imprime en stdout.
-# Falla si github_repository no está configurado en platform (la salida es null).
-# Variables: DRY_RUN=1 imprime los comandos y deja <dry-run> como valor.
+# Reads the github_oidc outputs of the platform stack and exposes them as ARTIFACTS_BUCKET and ECR_PREFIX.
+# Usage: read-platform-outputs.sh <environment>
+# Writes to $GITHUB_ENV if it exists; outside Actions it prints them on stdout.
+# Fails if github_repository is not configured in platform (the output is null).
+# Variables: DRY_RUN=1 prints the commands and leaves <dry-run> as the value.
 set -euo pipefail
 
 # shellcheck source=pipeline-common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pipeline-common.sh"
 
-ENVIRONMENT="${1:?uso: read-platform-outputs.sh <ambiente>}"
-require_identifier "ambiente" "$ENVIRONMENT"
+ENVIRONMENT="${1:?usage: read-platform-outputs.sh <environment>}"
+require_identifier "environment" "$ENVIRONMENT"
 cd "$REPO_ROOT"
 
 run terraform -chdir="$TF_ROOT/stacks/platform" init -input=false -reconfigure \
@@ -23,13 +23,13 @@ if is_dry; then
   prefix='<dry-run>'
 else
   if [[ -z "$oidc_json" || "$oidc_json" == "null" ]]; then
-    log "github_oidc es null: configura github_repository en environments/$ENVIRONMENT/platform/terraform.tfvars y aplica platform"
+    log "github_oidc is null: set github_repository in environments/$ENVIRONMENT/platform/terraform.tfvars and apply platform"
     exit 1
   fi
   bucket="$(json_get "$oidc_json" 'o.artifacts_bucket')"
   prefix="$(json_get "$oidc_json" 'o.ecr_repository_prefix')"
   if [[ -z "$bucket" || -z "$prefix" ]]; then
-    log "github_oidc no trae artifacts_bucket o ecr_repository_prefix"
+    log "github_oidc has no artifacts_bucket or ecr_repository_prefix"
     exit 1
   fi
 fi

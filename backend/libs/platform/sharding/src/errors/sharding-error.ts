@@ -2,10 +2,10 @@ import { FailureKind, PlatformError } from '@platform/kernel';
 import { ShardingErrorCode } from './sharding-error-code.enum.js';
 
 /**
- * Cómo falla cada código. Solo `TenantMigrating` es transitorio: la saga de
- * traslado termina y la misma petición funciona. Una clave ausente, una
- * transacción entre shards o una opción inválida son fallas del llamador, es
- * decir violaciones de protocolo.
+ * How each code fails. Only `TenantMigrating` is transient: the move saga
+ * finishes and the same request works. A missing key, a cross-shard
+ * transaction or an invalid option are caller faults, that is,
+ * protocol violations.
  */
 const FAILURE_KIND: Readonly<Record<ShardingErrorCode, FailureKind>> = {
   [ShardingErrorCode.KeyMissing]: FailureKind.ProtocolViolation,
@@ -20,17 +20,17 @@ const FAILURE_KIND: Readonly<Record<ShardingErrorCode, FailureKind>> = {
   [ShardingErrorCode.InvalidConfiguration]: FailureKind.ProtocolViolation,
 };
 
-/** Opciones de un {@link ShardingError}. `retryable` sale del código. */
+/** Options of a {@link ShardingError}. `retryable` comes from the code. */
 export interface ShardingErrorOptions {
-  /** Datos de diagnóstico. Nunca secretos ni valores crudos de la petición más allá de identificadores. */
+  /** Diagnostic data. Never secrets or raw request values beyond identifiers. */
   readonly details?: Readonly<Record<string, unknown>>;
   readonly cause?: unknown;
 }
 
 /**
- * Error de `@platform/sharding`, identificado por un {@link ShardingErrorCode}
- * estable. `retryable` y `failureKind` salen del código, así que
- * `FailureClassifier` de `@platform/primitives` los lee directamente.
+ * Error of `@platform/sharding`, identified by a stable {@link ShardingErrorCode}.
+ * `retryable` and `failureKind` come from the code, so
+ * `FailureClassifier` from `@platform/primitives` reads them directly.
  */
 export class ShardingError extends PlatformError {
   override readonly code: ShardingErrorCode;

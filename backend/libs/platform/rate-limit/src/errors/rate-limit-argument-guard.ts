@@ -1,7 +1,7 @@
 import { Guard } from '@platform/kernel';
 import { InvalidArgumentError } from '@platform/primitives';
 
-/** Validaciones de argumentos de `@platform/rate-limit`: toda violación sale como `InvalidArgumentError`. */
+/** Argument validations of `@platform/rate-limit`: every violation comes out as `InvalidArgumentError`. */
 export class RateLimitArgumentGuard {
   static readonly instance = new Guard(
     (_message, violation) =>

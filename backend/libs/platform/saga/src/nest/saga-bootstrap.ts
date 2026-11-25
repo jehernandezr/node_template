@@ -2,8 +2,8 @@ import { Injectable, type OnApplicationBootstrap } from '@nestjs/common';
 import { SagaRegistry } from '../definition/saga-registry.js';
 
 /**
- * Sella el registro al arrancar la aplicación. Así una definición inválida
- * tumba el arranque, y no la primera saga que la use.
+ * Seals the registry when the application starts. That way an invalid definition
+ * brings down the startup, and not the first saga that uses it.
  */
 @Injectable()
 export class SagaBootstrap implements OnApplicationBootstrap {

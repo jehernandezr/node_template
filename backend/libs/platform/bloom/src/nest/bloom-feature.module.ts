@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
 
-/** Módulo de característica de bloom: agrupa el filtro y el job de un nombre. */
+/** Bloom feature module: groups the filter and the job of one name. */
 @Module({})
 export class BloomFeatureModule {}

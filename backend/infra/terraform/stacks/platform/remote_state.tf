@@ -1,16 +1,16 @@
 variable "state_bucket" {
-  description = "Bucket S3 con los estados del ambiente. Las claves son <región>/<stack>/terraform.tfstate."
+  description = "S3 bucket with the environment states. Keys are <region>/<stack>/terraform.tfstate."
   type        = string
 }
 
 variable "state_region" {
-  description = "Región del bucket de estados. Null usa la región del stack."
+  description = "Region of the state bucket. Null uses the stack region."
   type        = string
   default     = null
 }
 
 locals {
-  # Contra LocalStack el backend S3 necesita el mismo endpoint y omitir las validaciones de AWS.
+  # Against LocalStack the S3 backend needs the same endpoint and must skip the AWS validations.
   remote_state_config = merge(
     { bucket = var.state_bucket, region = coalesce(var.state_region, var.region) },
     local.localstack ? {
@@ -24,7 +24,7 @@ locals {
   )
 }
 
-# Sin cómputo (ambiente local) no hay red que leer.
+# Without compute (local environment) there is no network to read.
 data "terraform_remote_state" "network" {
   count = var.compute_enabled ? 1 : 0
 

@@ -1,7 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { AuthErrorCode } from './auth-error-code.enum.js';
 
-/** No se pudo descargar o interpretar el JWKS del emisor. Es transitorio: el siguiente intento puede responder. */
+/** The issuer JWKS could not be downloaded or interpreted. It is transient: the next attempt may succeed. */
 export class JwksUnavailableError extends PlatformError {
   override readonly code = AuthErrorCode.JwksUnavailable;
 

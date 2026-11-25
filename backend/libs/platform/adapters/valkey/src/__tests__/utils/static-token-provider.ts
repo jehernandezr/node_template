@@ -1,6 +1,6 @@
 import { ValkeyAuthTokenProvider } from '../../valkey-auth-token-provider.js';
 
-/** Proveedor de token fijo, el papel de `ElastiCacheIamAuthTokenProvider` en las pruebas. */
+/** Fixed token provider, playing the role of `ElastiCacheIamAuthTokenProvider` in the tests. */
 export class StaticTokenProvider extends ValkeyAuthTokenProvider {
   static readonly TOKEN = 'test-token';
 

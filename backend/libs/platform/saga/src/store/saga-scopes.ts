@@ -1,11 +1,11 @@
 import type { SagaInstance } from '../model/saga-instance.js';
 
 /**
- * Corre el trabajo de una saga en el contexto de la partición donde vive. Con
- * shards, el adaptador de Postgres entrega una versión que fija el shard del
- * tenant de la saga; el job de recuperación la usa porque no hay petición que dé el tenant.
+ * Runs the work of a saga in the context of the partition where it lives. With
+ * shards, the Postgres adapter provides a version that pins the shard of the
+ * saga tenant; the recovery job uses it because there is no request that gives the tenant.
  */
 export abstract class SagaScopes {
-  /** Corre `body` en la partición de `instance`. */
+  /** Runs `body` in the partition of `instance`. */
   abstract run<T>(instance: SagaInstance, body: () => Promise<T>): Promise<T>;
 }

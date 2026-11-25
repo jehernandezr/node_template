@@ -25,8 +25,8 @@ import type {
 } from './cache-module-options.js';
 
 /**
- * Caché de la aplicación. `forRoot` registra el puerto y sus colaboradores
- * (global por defecto); `forFeature` entrega un `CacheAside` por espacio de nombres.
+ * Application cache. `forRoot` registers the port and its collaborators
+ * (global by default); `forFeature` provides one `CacheAside` per namespace.
  */
 @Module({})
 export class CacheModule extends CacheConfigurableModule {
@@ -36,7 +36,7 @@ export class CacheModule extends CacheConfigurableModule {
     return super.forRoot(options);
   }
 
-  /** `CacheAside` del espacio de nombres, con sus llaves versionadas bajo ese nombre. */
+  /** Returns the namespace's `CacheAside`, with its versioned keys under that name. */
   static forFeature(feature: CacheFeatureOptions): DynamicModule {
     const { namespace } = feature;
     return {

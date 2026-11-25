@@ -4,8 +4,8 @@ import { EntitlementsProvider } from '../domain/entitlements-provider.js';
 import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
 
 /**
- * Las funcionalidades del plan que billing informó para el tenant. Un tenant sin cuenta de facturación (los
- * que siembra la región, o uno que existía antes que billing) recibe las fijas de su tipo.
+ * The plan features billing reported for the tenant. A tenant without a billing account (those
+ * the region seeds, or one that existed before billing) receives the fixed ones of its type.
  */
 @Injectable()
 export class PlanEntitlementsProvider extends EntitlementsProvider {

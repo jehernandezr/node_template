@@ -1,13 +1,13 @@
-/** Una saga que el job no pudo retomar por un error. */
+/** A saga that the job could not resume because of an error. */
 export interface RecoveryFailure {
   readonly sagaId: string;
-  /** Código del `PlatformError`, o `PLATFORM.INTERNAL.UNEXPECTED` para cualquier otro error. */
+  /** Code of the `PlatformError`, or `PLATFORM.INTERNAL.UNEXPECTED` for any other error. */
   readonly errorCode: string;
-  /** Código, o nombre y mensaje, del error, sin valores de entrada. */
+  /** Code, or name and message, of the error, without input values. */
   readonly detail: string;
 }
 
-/** Resultado de una pasada del job de recuperación. */
+/** Result of one pass of the recovery job. */
 export interface RecoveryReport {
   readonly resumed: string[];
   readonly failed: RecoveryFailure[];

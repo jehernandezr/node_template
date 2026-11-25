@@ -1,6 +1,6 @@
 import { ProbeErrorName } from './probe-error-name.enum.js';
 
-/** Error de conexión simulado. Su mensaje lleva un dato de conexión, que nunca debe salir en el reporte de salud. */
+/** Simulated connection error. Its message carries connection data, which must never appear in the health report. */
 export class ConnectionFailedError extends Error {
   override readonly name = ProbeErrorName.Connection;
 

@@ -1,7 +1,7 @@
 import type { TransactionHook, UnitOfWork } from '@platform/kernel';
 import type { EntityManager, QueryRunner } from 'typeorm';
 
-/** Una transacción abierta sobre un shard: su `QueryRunner`, su `EntityManager` y los efectos pendientes. */
+/** A transaction open on a shard: its `QueryRunner`, its `EntityManager` and the pending effects. */
 export class TypeOrmUnitOfWork implements UnitOfWork {
   private readonly commitHooks: TransactionHook[] = [];
   private readonly rollbackHooks: TransactionHook[] = [];
@@ -20,12 +20,12 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
     this.rollbackHooks.push(hook);
   }
 
-  /** Entrega y vacía los efectos de después del commit, en orden de registro. */
+  /** Returns and clears the after-commit effects, in registration order. */
   takeCommitHooks(): readonly TransactionHook[] {
     return this.commitHooks.splice(0);
   }
 
-  /** Entrega y vacía los efectos de después del rollback, en orden de registro. */
+  /** Returns and clears the after-rollback effects, in registration order. */
   takeRollbackHooks(): readonly TransactionHook[] {
     return this.rollbackHooks.splice(0);
   }

@@ -1,10 +1,10 @@
 import type { FailureKind } from '@platform/kernel';
 
 /**
- * Regla que un adaptador registra para traducir los errores de su proveedor
- * (Postgres, AWS, Valkey) a una clase de falla.
+ * Rule that an adapter registers to translate its provider's errors
+ * (Postgres, AWS, Valkey) into a failure class.
  */
 export abstract class FailureRule {
-  /** Clase de la falla que `error` declara, o `undefined` si la regla no dice nada. */
+  /** Returns the failure class declared by `error`, or `undefined` if the rule says nothing. */
   abstract classify(error: object): FailureKind | undefined;
 }

@@ -9,14 +9,14 @@ import type { Tracing } from '../tracing/tracing.js';
 import { TraceContextCodec } from './trace-context-codec.js';
 
 /**
- * Continúa la traza de un `traceparent` de confianza (atributos de un mensaje
- * del bus, paso de saga, job) y entrega el `traceparent` del span activo para
- * propagarlo en mensajes y llamadas salientes.
+ * Continues the trace of a trusted `traceparent` (bus message attributes, saga
+ * step, job) and provides the `traceparent` of the active span to propagate it
+ * in outgoing messages and calls.
  */
 export class TraceContextRestorer {
   constructor(private readonly tracing: Tracing) {}
 
-  /** Contexto OTel que continúa `traceparent`; si no es válido devuelve `base` (por defecto el contexto raíz). */
+  /** Returns the OTel context that continues `traceparent`; if invalid, returns `base` (the root context by default). */
   contextFrom(
     traceparent: string | null | undefined,
     base: Context = ROOT_CONTEXT,
@@ -33,12 +33,12 @@ export class TraceContextRestorer {
     });
   }
 
-  /** Corre `fn` dentro del contexto de `contextFrom(traceparent)`. */
+  /** Runs `fn` inside the context of `contextFrom(traceparent)`. */
   run<T>(traceparent: string | null | undefined, fn: () => T): T {
     return otelContext.with(this.contextFrom(traceparent), fn);
   }
 
-  /** `traceparent` del span activo, o `undefined` si no hay span válido. */
+  /** Returns the `traceparent` of the active span, or `undefined` if there is no valid span. */
   current(): string | undefined {
     const ids = this.tracing.activeIds();
     return ids === undefined

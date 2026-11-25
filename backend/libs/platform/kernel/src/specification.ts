@@ -1,21 +1,21 @@
 /**
- * Regla de negocio que un candidato cumple o no. Darle nombre a la regla
- * permite reutilizarla en el dominio y combinarla sin repetir condiciones.
+ * Business rule that a candidate either satisfies or not. Naming the rule
+ * allows reusing it in the domain and combining it without repeating conditions.
  */
 export abstract class Specification<T> {
   abstract isSatisfiedBy(candidate: T): boolean;
 
-  /** Se cumple cuando se cumplen esta regla y `other`. */
+  /** Satisfied when both this rule and `other` are satisfied. */
   and(other: Specification<T>): Specification<T> {
     return new AllOfSpecification([this, other]);
   }
 
-  /** Se cumple cuando se cumple esta regla o `other`. */
+  /** Satisfied when this rule or `other` is satisfied. */
   or(other: Specification<T>): Specification<T> {
     return new AnyOfSpecification([this, other]);
   }
 
-  /** Se cumple cuando esta regla no se cumple. */
+  /** Satisfied when this rule is not satisfied. */
   not(): Specification<T> {
     return new NotSpecification(this);
   }

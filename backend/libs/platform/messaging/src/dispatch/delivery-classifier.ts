@@ -9,12 +9,12 @@ import type { DispatchResult } from './dispatch-result.js';
 import { DispatchOutcome } from './dispatch-outcome.enum.js';
 import { ErrorDisposition } from './error-disposition.enum.js';
 
-/** Decide si un error es permanente. */
+/** Decides whether an error is permanent. */
 export type PermanenceCheck = (error: unknown) => boolean;
 
 /**
- * Decide qué se hace con una entrega fallida: reintentarla con la espera de
- * la política de la cola o enviarla a la cola de errores.
+ * Decides what to do with a failed delivery: retry it with the wait of
+ * the queue policy or send it to the dead-letter queue.
  */
 export class DeliveryClassifier {
   constructor(
@@ -24,11 +24,11 @@ export class DeliveryClassifier {
   ) {}
 
   /**
-   * Disposición de una falla. Una regla propia del consumidor manda sobre el
-   * clasificador. Sin ella, `Transient`, `Timeout` y `Cancelled` se reintentan
-   * (una entrega repetida la protege el claim); `Permanent` y
-   * `ProtocolViolation` van a la cola de errores, donde se pueden inspeccionar
-   * y reenviar.
+   * Disposition of a failure. A consumer's own rule takes precedence over the
+   * classifier. Without one, `Transient`, `Timeout` and `Cancelled` are retried
+   * (the claim protects a repeated delivery); `Permanent` and
+   * `ProtocolViolation` go to the dead-letter queue, where they can be inspected
+   * and redriven.
    */
   disposition(error: unknown): ErrorDisposition {
     if (this.isPermanent !== undefined) {
@@ -48,14 +48,14 @@ export class DeliveryClassifier {
   }
 
   /**
-   * Resultado `RetryLater` o `DeadLetter` de un fallo. Una falla de
-   * infraestructura (`infrastructureFailure`: el claim o su cierre no llegaron a
-   * la base) siempre se reintenta y no cuenta contra `maxAttempts`: una caída
-   * corta de la base no manda a la cola de errores mensajes válidos; solo el
-   * `maxReceiveCount` de la cola, holgado, acota esos reintentos. Una falla del
-   * manejador va a la cola de errores cuando es permanente, cuando no hay
-   * política o cuando `receiveCount` alcanzó `maxAttempts`. La espera es
-   * `Backoff.delay(receiveCount)`, con el intento acotado a lo que acepta `Backoff`.
+   * `RetryLater` or `DeadLetter` result of a failure. An infrastructure
+   * failure (`infrastructureFailure`: the claim or its closing did not reach
+   * the database) is always retried and does not count against `maxAttempts`: a short
+   * database outage does not send valid messages to the dead-letter queue; only the
+   * generous queue `maxReceiveCount` bounds those retries. A
+   * handler failure goes to the dead-letter queue when it is permanent, when there is no
+   * policy or when `receiveCount` reached `maxAttempts`. The wait is
+   * `Backoff.delay(receiveCount)`, with the attempt capped to what `Backoff` accepts.
    */
   failure(
     id: string,

@@ -6,8 +6,8 @@ import {
 import { ShardingErrorCode } from './sharding-error-code.enum.js';
 
 /**
- * Catálogo de los códigos de `@platform/sharding`. Los públicos repiten los del
- * catálogo central, que solo guarda los transversales.
+ * Catalog of the `@platform/sharding` codes. The public ones repeat those of the
+ * central catalog, which only holds the cross-cutting ones.
  */
 export const shardingErrorCatalog = defineErrorCatalog(ShardingErrorCode, {
   [ShardingErrorCode.KeyMissing]: ErrorSpecs.pub(

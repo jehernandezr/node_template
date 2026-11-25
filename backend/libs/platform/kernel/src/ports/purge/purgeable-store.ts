@@ -1,5 +1,5 @@
-/** Almacén con registros terminados que una tarea de retención borra. */
+/** Store with finished records that a retention task deletes. */
 export abstract class PurgeableStore {
-  /** Borra lo terminado antes de `before`. Devuelve cuántos registros eliminó. */
+  /** Deletes what finished before `before`. Returns how many records it removed. */
   abstract purgeCompleted(before: Date): Promise<number>;
 }

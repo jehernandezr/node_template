@@ -1,7 +1,7 @@
 import { TenantIsolationSql } from '@platform/persistence';
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** RLS por `tenant_id` en las tablas de tenant del módulo. */
+/** RLS by `tenant_id` on the module's tenant tables. */
 export class EnableAccessTenantIsolation1795000900001 implements MigrationInterface {
   readonly name = 'EnableAccessTenantIsolation1795000900001';
 

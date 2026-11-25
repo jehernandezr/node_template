@@ -2,8 +2,8 @@ import type { ConfigEnv } from '@platform/config';
 import type { TelemetryHandle } from '@platform/observability';
 
 /**
- * Entrada del arranque: el entorno que valida la configuración y, si la hay, la telemetría que ya
- * arrancó `instrumentation.ts`. Sin telemetría, `ObservabilityModule` arranca la suya.
+ * Bootstrap input: the environment that validates the configuration and, if present, the telemetry that
+ * `instrumentation.ts` already started. Without telemetry, `ObservabilityModule` starts its own.
  */
 export interface SmokeEnvironment {
   readonly env: ConfigEnv;

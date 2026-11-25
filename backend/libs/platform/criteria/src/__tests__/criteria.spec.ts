@@ -485,7 +485,7 @@ describe('Criteria', () => {
     });
 
     it('rejects unknown fields, wrong value types and like on non-string fields at compile time', () => {
-      // No se ejecuta: las llamadas solo tienen que pasar el chequeo de tipos. Las líneas con @ts-expect-error fallan si dejan de fallar.
+      // Not executed: the calls only have to pass type checking. Lines with @ts-expect-error fail if they stop failing.
       const invalidCalls = (criteria: Criteria<Task>): void => {
         // @ts-expect-error unknown field
         criteria.where('nope');

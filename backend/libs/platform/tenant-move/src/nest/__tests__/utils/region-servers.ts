@@ -8,8 +8,8 @@ import {
 import { DataSource } from 'typeorm';
 
 /**
- * Lo que tiene una región: su PostgreSQL y su Valkey. Los dos servidores de PostgreSQL de la prueba comparten
- * usuario y contraseña, como los comparte un servicio en sus instancias.
+ * What a region has: its PostgreSQL and its Valkey. The two PostgreSQL servers of the test share
+ * user and password, as a service shares them across its instances.
  */
 export class RegionServers {
   private static readonly USER = 'ledger';
@@ -56,7 +56,7 @@ export class RegionServers {
     }
   }
 
-  /** Conexión del superusuario a una base, para mirar las filas sin el RLS. */
+  /** Superuser connection to a database, to inspect rows without RLS. */
   async connect(database: string): Promise<DataSource> {
     const source = new DataSource({
       type: 'postgres',
@@ -71,7 +71,7 @@ export class RegionServers {
     return source;
   }
 
-  /** La entrada de esta instancia en `DB_INSTANCES`. */
+  /** The entry of this instance in `DB_INSTANCES`. */
   endpoint(): { primary: { host: string; port: number } } {
     return {
       primary: {

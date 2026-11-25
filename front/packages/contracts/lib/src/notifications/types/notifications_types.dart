@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import 'package:meta/meta.dart';
 
@@ -8,7 +8,7 @@ import '../../core/core.dart';
 import '../../notifications/enums/notifications_enums.dart';
 import '../../platform/types/platform_types.dart';
 
-/// Se creó una notificación.
+/// A notification was created.
 @immutable
 final class NotificationCreatedPayload {
   const NotificationCreatedPayload({
@@ -19,7 +19,7 @@ final class NotificationCreatedPayload {
     required this.createdAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory NotificationCreatedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return NotificationCreatedPayload(
@@ -51,7 +51,7 @@ final class NotificationCreatedPayload {
 
   final DateTime createdAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'notificationId': notificationId,
     'tenantId': tenantId,
@@ -60,7 +60,7 @@ final class NotificationCreatedPayload {
     'createdAt': createdAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(NotificationCreatedPayload value) =>
       value.toJson();
 
@@ -79,7 +79,7 @@ final class NotificationCreatedPayload {
       contractHash([notificationId, tenantId, type, channels, createdAt]);
 }
 
-/// Notificación de la bandeja del usuario.
+/// Notification in the user inbox.
 @immutable
 final class AppNotification {
   const AppNotification({
@@ -91,7 +91,7 @@ final class AppNotification {
     required this.read,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     try {
       return AppNotification(
@@ -123,7 +123,7 @@ final class AppNotification {
 
   final bool read;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'type': type.wireCode,
@@ -133,7 +133,7 @@ final class AppNotification {
     'read': read,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(AppNotification value) => value.toJson();
 
   @override
@@ -151,12 +151,12 @@ final class AppNotification {
   int get hashCode => contractHash([id, type, title, body, createdAt, read]);
 }
 
-/// Página de la bandeja, de la más nueva a la más antigua.
+/// Page of the inbox, newest to oldest.
 @immutable
 final class NotificationPage {
   const NotificationPage({required this.items, required this.nextCursor});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory NotificationPage.fromJson(Map<String, dynamic> json) {
     try {
       return NotificationPage(
@@ -175,13 +175,13 @@ final class NotificationPage {
 
   final String? nextCursor;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
     'nextCursor': nextCursor,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(NotificationPage value) => value.toJson();
 
   @override
@@ -195,12 +195,12 @@ final class NotificationPage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Notificaciones sin leer de la bandeja.
+/// Unread notifications in the inbox.
 @immutable
 final class UnreadCount {
   const UnreadCount({required this.count});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory UnreadCount.fromJson(Map<String, dynamic> json) {
     try {
       return UnreadCount(count: (json['count'] as num).toInt());
@@ -211,10 +211,10 @@ final class UnreadCount {
 
   final int count;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'count': count};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(UnreadCount value) => value.toJson();
 
   @override
@@ -226,12 +226,12 @@ final class UnreadCount {
   int get hashCode => contractHash([count]);
 }
 
-/// Notificación a marcar como leída.
+/// Notification to mark as read.
 @immutable
 final class MarkNotificationReadRequest {
   const MarkNotificationReadRequest({required this.notificationId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory MarkNotificationReadRequest.fromJson(Map<String, dynamic> json) {
     try {
       return MarkNotificationReadRequest(
@@ -247,12 +247,12 @@ final class MarkNotificationReadRequest {
 
   final String notificationId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'notificationId': notificationId,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(MarkNotificationReadRequest value) =>
       value.toJson();
 
@@ -266,7 +266,7 @@ final class MarkNotificationReadRequest {
   int get hashCode => contractHash([notificationId]);
 }
 
-/// Canales por los que el usuario recibe un tipo de notificación.
+/// Channels through which the user receives a notification type.
 @immutable
 final class NotificationPreferenceEntry {
   const NotificationPreferenceEntry({
@@ -274,7 +274,7 @@ final class NotificationPreferenceEntry {
     required this.channels,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory NotificationPreferenceEntry.fromJson(Map<String, dynamic> json) {
     try {
       return NotificationPreferenceEntry(
@@ -300,13 +300,13 @@ final class NotificationPreferenceEntry {
 
   final List<NotificationChannel> channels;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'type': type.wireCode,
     'channels': [for (final e0 in channels) e0.wireCode],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(NotificationPreferenceEntry value) =>
       value.toJson();
 
@@ -321,7 +321,7 @@ final class NotificationPreferenceEntry {
   int get hashCode => contractHash([type, channels]);
 }
 
-/// Preferencias de notificaciones del usuario.
+/// Notification preferences of the user.
 @immutable
 final class NotificationPreferences {
   const NotificationPreferences({
@@ -331,7 +331,7 @@ final class NotificationPreferences {
     required this.timezone,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory NotificationPreferences.fromJson(Map<String, dynamic> json) {
     try {
       return NotificationPreferences(
@@ -356,7 +356,7 @@ final class NotificationPreferences {
 
   final String timezone;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'enabled': [for (final e0 in enabled) e0.toJson()],
     'quietStart': quietStart,
@@ -364,7 +364,7 @@ final class NotificationPreferences {
     'timezone': timezone,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(NotificationPreferences value) =>
       value.toJson();
 
@@ -381,12 +381,12 @@ final class NotificationPreferences {
   int get hashCode => contractHash([enabled, quietStart, quietEnd, timezone]);
 }
 
-/// Valor de un dato de plantilla.
+/// Value of a template field.
 @immutable
 final class TemplateParameterValue {
   const TemplateParameterValue({required this.name, required this.value});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TemplateParameterValue.fromJson(Map<String, dynamic> json) {
     try {
       return TemplateParameterValue(
@@ -406,13 +406,13 @@ final class TemplateParameterValue {
 
   final String value;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'name': name.wireCode,
     'value': value,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TemplateParameterValue value) =>
       value.toJson();
 
@@ -427,7 +427,7 @@ final class TemplateParameterValue {
   int get hashCode => contractHash([name, value]);
 }
 
-/// Correo transaccional a enviar, con sus datos de plantilla.
+/// Transactional email to send, with its template values.
 @immutable
 final class SendEmailInput {
   const SendEmailInput({
@@ -438,7 +438,7 @@ final class SendEmailInput {
     required this.parameters,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory SendEmailInput.fromJson(Map<String, dynamic> json) {
     try {
       return SendEmailInput(
@@ -470,7 +470,7 @@ final class SendEmailInput {
 
   final List<TemplateParameterValue> parameters;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'messageId': messageId,
     'template': template.wireCode,
@@ -479,7 +479,7 @@ final class SendEmailInput {
     'parameters': [for (final e0 in parameters) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(SendEmailInput value) => value.toJson();
 
   @override
@@ -497,12 +497,12 @@ final class SendEmailInput {
       contractHash([messageId, template, to, locale, parameters]);
 }
 
-/// Correo transaccional aceptado para envío.
+/// Transactional email accepted for sending.
 @immutable
 final class SendEmailResult {
   const SendEmailResult({required this.messageId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory SendEmailResult.fromJson(Map<String, dynamic> json) {
     try {
       return SendEmailResult(messageId: json['messageId'] as String);
@@ -513,10 +513,10 @@ final class SendEmailResult {
 
   final String messageId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'messageId': messageId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(SendEmailResult value) => value.toJson();
 
   @override
@@ -528,7 +528,7 @@ final class SendEmailResult {
   int get hashCode => contractHash([messageId]);
 }
 
-/// Notificación a entregar a un usuario por sus canales.
+/// Notification to deliver to a user through their channels.
 @immutable
 final class NotifyUserInput {
   const NotifyUserInput({
@@ -539,7 +539,7 @@ final class NotifyUserInput {
     required this.parameters,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory NotifyUserInput.fromJson(Map<String, dynamic> json) {
     try {
       return NotifyUserInput(
@@ -571,7 +571,7 @@ final class NotifyUserInput {
 
   final List<TemplateParameterValue> parameters;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'notificationId': notificationId,
     'user': user.toJson(),
@@ -580,7 +580,7 @@ final class NotifyUserInput {
     'parameters': [for (final e0 in parameters) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(NotifyUserInput value) => value.toJson();
 
   @override
@@ -598,7 +598,7 @@ final class NotifyUserInput {
       contractHash([notificationId, user, tenantId, type, parameters]);
 }
 
-/// Canales por los que salió una notificación.
+/// Channels through which a notification was sent.
 @immutable
 final class NotifyUserResult {
   const NotifyUserResult({
@@ -606,7 +606,7 @@ final class NotifyUserResult {
     required this.channels,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory NotifyUserResult.fromJson(Map<String, dynamic> json) {
     try {
       return NotifyUserResult(
@@ -625,13 +625,13 @@ final class NotifyUserResult {
 
   final List<NotificationChannel> channels;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'notificationId': notificationId,
     'channels': [for (final e0 in channels) e0.wireCode],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(NotifyUserResult value) => value.toJson();
 
   @override
@@ -645,12 +645,12 @@ final class NotifyUserResult {
   int get hashCode => contractHash([notificationId, channels]);
 }
 
-/// Usuario cuyos datos de notificaciones se borran.
+/// User whose notification data is deleted.
 @immutable
 final class EraseNotificationsUserInput {
   const EraseNotificationsUserInput({required this.user});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EraseNotificationsUserInput.fromJson(Map<String, dynamic> json) {
     try {
       return EraseNotificationsUserInput(
@@ -666,10 +666,10 @@ final class EraseNotificationsUserInput {
 
   final UserRef user;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'user': user.toJson()};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EraseNotificationsUserInput value) =>
       value.toJson();
 
@@ -682,7 +682,7 @@ final class EraseNotificationsUserInput {
   int get hashCode => contractHash([user]);
 }
 
-/// Filas de notificaciones borradas para un usuario.
+/// Notification rows deleted for a user.
 @immutable
 final class EraseNotificationsUserResult {
   const EraseNotificationsUserResult({
@@ -690,7 +690,7 @@ final class EraseNotificationsUserResult {
     required this.affectedRows,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EraseNotificationsUserResult.fromJson(Map<String, dynamic> json) {
     try {
       return EraseNotificationsUserResult(
@@ -709,13 +709,13 @@ final class EraseNotificationsUserResult {
 
   final int affectedRows;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'userId': userId,
     'affectedRows': affectedRows,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EraseNotificationsUserResult value) =>
       value.toJson();
 

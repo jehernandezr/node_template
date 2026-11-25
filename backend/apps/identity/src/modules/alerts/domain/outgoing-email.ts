@@ -1,8 +1,8 @@
 import type { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
 
 /**
- * Un correo transaccional de identity: plantilla, destinatario, idioma y variables del texto. Sin idioma, el
- * correo sale en el idioma por defecto: una invitación va a alguien que todavía no tiene cuenta.
+ * An identity transactional email: template, recipient, language and text variables. Without a language, the
+ * email goes out in the default language: an invitation goes to someone who does not have an account yet.
  */
 export interface OutgoingEmail {
   readonly template: IdentityEmailTemplate;

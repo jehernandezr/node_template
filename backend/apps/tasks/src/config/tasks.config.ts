@@ -3,10 +3,10 @@ import { envNumber, serviceConfigSchema } from '@platform/config';
 import { internalHttpConfigSchema } from '@platform/service';
 import { TasksDefaults } from '../shared/constants/tasks-defaults.constants.js';
 
-/** Configuración de tasks. Las librerías leen las suyas (base de datos, Valkey, auth, búsqueda) por su sección. */
+/** tasks configuration. The libraries read their own (database, Valkey, auth, search) by their section. */
 export const tasksConfigSchema = serviceConfigSchema.extend({
   ...internalHttpConfigSchema.shape,
-  /** Días que una tarea borrada sigue en la base antes de que el job la elimine. */
+  /** Days a deleted task stays in the database before the job removes it. */
   TASKS_DELETED_RETENTION_DAYS: envNumber({ min: 1 }).default(
     TasksDefaults.deletedRetentionDays,
   ),

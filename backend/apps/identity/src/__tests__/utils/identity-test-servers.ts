@@ -2,7 +2,7 @@ import type { ConfigEnv } from '@platform/config';
 import { ServiceTestServers } from '@platform/service/test-utils';
 import { IdentityTestEnvironment } from './identity-test-environment.js';
 
-/** PostgreSQL y Valkey reales para identity, con su configuración de prueba. */
+/** Real PostgreSQL and Valkey for identity, with their test configuration. */
 export class IdentityTestServers extends ServiceTestServers {
   constructor() {
     super('identity');

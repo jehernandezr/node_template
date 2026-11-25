@@ -1,7 +1,7 @@
-/** Adaptador de `SearchIndex` que elige `SEARCH_MODE`. */
+/** `SearchIndex` adapter that `SEARCH_MODE` selects. */
 export enum SearchMode {
-  /** Texto completo de PostgreSQL (`tsvector`). */
+  /** PostgreSQL full text (`tsvector`). */
   Text = 'text',
-  /** Texto completo combinado con vecinos semánticos de pgvector. */
+  /** Full text combined with pgvector semantic neighbors. */
   Hybrid = 'hybrid',
 }

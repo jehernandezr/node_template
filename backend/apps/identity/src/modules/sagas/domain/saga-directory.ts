@@ -1,15 +1,15 @@
 import type { IdentitySaga } from '@contracts/identity';
 
-/** Dónde vive una saga de identity y quién la pidió. */
+/** Where an identity saga lives and who requested it. */
 export interface SagaEntry {
   readonly sagaId: string;
   readonly saga: IdentitySaga;
-  /** Tenant en cuyo shard vive la bitácora de la saga. */
+  /** Tenant in whose shard the saga's log lives. */
   readonly tenantId: string;
   readonly requestedBy: string;
 }
 
-/** Directorio de sagas en el catálogo: encuentra el shard de una saga por su id sin recorrerlos todos. */
+/** Saga directory in the catalog: finds a saga's shard by its id without walking all of them. */
 export abstract class SagaDirectory {
   abstract record(entry: SagaEntry): Promise<void>;
   abstract find(sagaId: string): Promise<SagaEntry | undefined>;

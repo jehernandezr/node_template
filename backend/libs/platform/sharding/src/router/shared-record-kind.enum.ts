@@ -1,4 +1,4 @@
-/** Tipo de contenido de una clave del caché compartido. */
+/** Content type of a shared cache key. */
 export enum SharedRecordKind {
   Placement = 'placement',
   Tombstone = 'tombstone',

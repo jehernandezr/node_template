@@ -7,7 +7,7 @@ import { ShardedTestDatabase } from '@platform/persistence/test-utils';
 import { ShardKey } from '@platform/sharding';
 import { CreateSearchDocuments1794800000001 } from './create-search-documents.migration.js';
 
-/** Dos shards con pgvector y `search_documents`, y un ayudante para correr en el shard de un tenant. */
+/** Two shards with pgvector and `search_documents`, and a helper to run in a tenant's shard. */
 export class SearchTestDatabase {
   static readonly IMAGE = 'pgvector/pgvector:0.8.7-pg17';
   static readonly TENANT_A = ShardedTestDatabase.TENANT_A;

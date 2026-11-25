@@ -1,7 +1,7 @@
 import { ShardLister, type ShardLocation } from '@platform/persistence';
 import type { TypeOrmDirectoryStore } from '../stores/typeorm-directory-store.js';
 
-/** Lista los shards lógicos del servicio con su instancia desde el directorio del catálogo. */
+/** Lists the service's logical shards with their instance from the catalog directory. */
 export class DirectoryShardLister extends ShardLister {
   constructor(private readonly directory: TypeOrmDirectoryStore) {
     super();

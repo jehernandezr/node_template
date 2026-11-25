@@ -7,10 +7,10 @@ import type { CallMeta } from '../transport/call-meta.js';
 import type { HandlerResult } from './handler-result.js';
 
 /**
- * Handler de una operación. Devuelve un `HandlerResult` o lanza: un error
- * lanzado se clasifica con `FailureClassifier` (un `DomainError` es un error de
- * negocio, una caída de la base es transitoria y uno desconocido es una
- * violación de protocolo).
+ * Handler of an operation. It returns a `HandlerResult` or throws: a thrown
+ * error is classified with `FailureClassifier` (a `DomainError` is a business
+ * error, a database outage is transient and an unknown one is a
+ * protocol violation).
  */
 export abstract class OperationHandler<
   S extends OperationDefinition = OperationDefinition,

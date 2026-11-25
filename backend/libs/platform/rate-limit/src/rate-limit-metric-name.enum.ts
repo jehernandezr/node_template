@@ -1,4 +1,4 @@
-/** Nombres de las métricas del limitador. */
+/** Names of the limiter metrics. */
 export enum RateLimitMetricName {
   Degraded = 'platform.rate_limit.degraded',
 }

@@ -1,25 +1,25 @@
 interface ValkeyConnectionCommon {
-  /** Usuario de la ACL. Sin él la conexión se autentica como `default`. */
+  /** ACL user. Without it the connection authenticates as `default`. */
   readonly username?: string;
-  /** Tiempo para establecer una conexión. */
+  /** Time to establish a connection. */
   readonly connectTimeoutMs?: number;
-  /** Cota de un comando en el cliente. */
+  /** Client-side bound of a command. */
   readonly commandTimeoutMs?: number;
-  /** Nombre que muestra `CLIENT LIST`. */
+  /** Name shown by `CLIENT LIST`. */
   readonly connectionName?: string;
 }
 
-/** Datos de una conexión: una URL (local) o host, puerto y TLS (AWS). */
+/** Connection data: a URL (local) or host, port and TLS (AWS). */
 export type ValkeyConnectionOptions = ValkeyConnectionCommon &
   (
     | {
-        /** URL `redis://` o `rediss://` (TLS), por ejemplo `VALKEY_URL`. */
+        /** `redis://` or `rediss://` (TLS) URL, for example `VALKEY_URL`. */
         readonly url: string;
       }
     | {
         readonly host: string;
         readonly port: number;
-        /** ElastiCache serverless solo acepta TLS. */
+        /** ElastiCache serverless only accepts TLS. */
         readonly tls: boolean;
       }
   );

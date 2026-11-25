@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { LOOSE_A } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Un paso cuya entrada lanza al construirse. */
+/** A step whose input throws when built. */
 export class ThrowingInputSaga extends SagaDefinition<SampleState> {
   readonly type = 'input-throws';
 

@@ -1,13 +1,13 @@
 import type { INestApplicationContext } from '@nestjs/common';
 import { ServiceShutdownTimeoutError } from '../../errors/service-shutdown-timeout.error.js';
 
-/** Dirección en la que escucha un proceso HTTP. */
+/** Address an HTTP process listens on. */
 export interface ServiceAddress {
   readonly host: string;
   readonly port: number;
 }
 
-/** Un servicio arrancado. Su cierre es ordenado y está acotado por el plazo de gracia. */
+/** A started service. Its shutdown is orderly and bounded by the grace period. */
 export class RunningService {
   private stopping: Promise<void> | undefined;
 
@@ -19,9 +19,9 @@ export class RunningService {
   ) {}
 
   /**
-   * Cierra la aplicación: deja de aceptar, espera lo que está en curso, detiene jobs y consumidores
-   * y cierra persistencia, Valkey y telemetría. Llamarlo varias veces devuelve el mismo cierre.
-   * @throws ServiceShutdownTimeoutError si no termina dentro de `graceMs`.
+   * Closes the application: stops accepting, waits for what is in progress, stops jobs and consumers
+   * and closes persistence, Valkey and telemetry. Calling it several times returns the same shutdown.
+   * @throws ServiceShutdownTimeoutError if it does not finish within `graceMs`.
    */
   stop(): Promise<void> {
     if (this.stopping === undefined) {
@@ -40,7 +40,7 @@ export class RunningService {
     try {
       await Promise.race([this.app.close(), timeout]);
     } finally {
-      // Sin esto, un temporizador pendiente retendría el proceso después de cerrar.
+      // Without this, a pending timer would keep the process alive after closing.
       clearTimeout(timer);
     }
   }

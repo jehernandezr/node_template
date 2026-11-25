@@ -1,9 +1,9 @@
-/** Estado de un {@link ConsecutiveCircuitBreaker}. */
+/** State of a {@link ConsecutiveCircuitBreaker}. */
 export enum CircuitState {
-  /** Las llamadas corren; las fallas contadas se acumulan. */
+  /** Calls run; counted failures accumulate. */
   Closed = 'closed',
-  /** Las llamadas se rechazan sin correr hasta que pase `halfOpenAfterMs`. */
+  /** Calls are rejected without running until `halfOpenAfterMs` elapses. */
   Open = 'open',
-  /** Corre una llamada de prueba; las demás se rechazan hasta que termine. */
+  /** Runs a trial call; the others are rejected until it finishes. */
   HalfOpen = 'half-open',
 }

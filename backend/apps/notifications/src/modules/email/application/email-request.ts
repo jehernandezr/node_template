@@ -1,4 +1,4 @@
-/** Un correo a enviar con una plantilla. `messageId` hace idempotente el envío. */
+/** An email to send with a template. `messageId` makes the send idempotent. */
 export interface EmailRequest {
   readonly messageId: string;
   readonly template: string;

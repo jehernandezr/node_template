@@ -1,7 +1,7 @@
-/** Reglas comunes de la validación de contratos. */
+/** Common rules of contract validation. */
 export const ValidationRules = {
-  /** Separador entre los segmentos de la ruta de un campo, por ejemplo `items.0.name`. */
+  /** Separator between the segments of a field path, for example `items.0.name`. */
   fieldPathSeparator: '.',
-  /** Prefijo de las claves ARB de los mensajes de error. */
+  /** Prefix of the ARB keys of error messages. */
   messageKeyPrefix: 'error_',
 } as const;

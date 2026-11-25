@@ -5,9 +5,9 @@ import { MessageDispatcher } from '../dispatch/message-dispatcher.js';
 import { SubscribeMetadata } from './subscribe-metadata.js';
 
 /**
- * Descubre los métodos decorados con `@Subscribe` de todos los providers y los
- * registra en el `MessageDispatcher`, así un consumidor no llama a `register`
- * a mano. Corre en `onApplicationBootstrap`, cuando todos los módulos ya iniciaron.
+ * Discovers the methods decorated with `@Subscribe` across all providers and
+ * registers them in the `MessageDispatcher`, so a consumer does not call `register`
+ * by hand. Runs in `onApplicationBootstrap`, when all modules have already started.
  */
 @Injectable()
 export class MessagingExplorer implements OnApplicationBootstrap {
@@ -18,7 +18,7 @@ export class MessagingExplorer implements OnApplicationBootstrap {
   ) {}
 
   onApplicationBootstrap(): void {
-    // Un mismo provider puede aparecer bajo varios tokens (`useExisting`): se registra una vez.
+    // The same provider can appear under several tokens (`useExisting`): it is registered once.
     const seen = new Set<object>();
     for (const wrapper of this.discovery.getProviders()) {
       const instance: unknown = wrapper.instance;
@@ -34,7 +34,7 @@ export class MessagingExplorer implements OnApplicationBootstrap {
     }
   }
 
-  /** Registra cada método decorado de `instance` con `this` ligado a la instancia. */
+  /** Registers each decorated method of `instance` with `this` bound to the instance. */
   private registerMethods(instance: object): void {
     const prototype: object | null = Object.getPrototypeOf(instance);
     if (prototype === null) {

@@ -1,4 +1,4 @@
-/** Ajustes de `BatchTenantDataTransfer`, de la configuración `TENANT_MOVE_*`. */
+/** `BatchTenantDataTransfer` settings, from the `TENANT_MOVE_*` configuration. */
 export interface BatchTransferOptions {
   readonly batchSize: number;
   readonly callBudgetMs: number;

@@ -12,7 +12,7 @@ import { Plan, type PlanState } from '../../domain/plan.js';
 import { PlanQuotaEntity } from './entities/plan-quota.entity.js';
 import { PlanEntity } from './entities/plan.entity.js';
 
-/** `PlanCatalog` sobre `billing_plans` y `billing_plan_quotas` del catálogo, siempre en el primario. */
+/** `PlanCatalog` over `billing_plans` and `billing_plan_quotas` in the catalog, always on the primary. */
 @Injectable()
 export class TypeOrmPlanCatalog extends PlanCatalog {
   constructor(private readonly catalog: CatalogDataSource) {

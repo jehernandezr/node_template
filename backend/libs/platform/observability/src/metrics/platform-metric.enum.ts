@@ -1,5 +1,5 @@
-/** Métricas que publica observability. Cada librería declara las suyas. */
+/** Metrics published by observability. Each library declares its own. */
 export enum PlatformMetric {
-  /** Contador de errores por código `SERVICIO.SUBMÓDULO.ERROR`. */
+  /** Error counter by `SERVICE.SUBMODULE.ERROR` code. */
   Errors = 'platform.errors',
 }

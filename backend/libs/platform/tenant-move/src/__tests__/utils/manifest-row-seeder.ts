@@ -12,24 +12,24 @@ interface ColumnInfo {
   readonly maxLength: number | null;
 }
 
-/** Lo que una columna fija recibe para calcular su valor. */
+/** What a fixed column receives to compute its value. */
 export interface SeedRow {
   readonly tenantId: string;
-  /** Número de la fila dentro de la tabla para este tenant, desde 0. */
+  /** Row number within the table for this tenant, from 0. */
   readonly index: number;
-  /** El valor que ya tiene otra columna de la fila sembrada en una tabla anterior. */
+  /** The value another column of the row seeded in an earlier table already has. */
   readonly valueOf: (table: string, column: string) => unknown;
 }
 
-/** Valores fijos por tabla y columna, para las columnas cuyo formato no se deduce del esquema. */
+/** Fixed values per table and column, for columns whose format cannot be inferred from the schema. */
 export type FixedColumns = Readonly<
   Record<string, Readonly<Record<string, (row: SeedRow) => unknown>>>
 >;
 
 /**
- * Siembra filas de un tenant en cada tabla de un manifiesto, leyendo el esquema que dejaron las migraciones reales:
- * pone el tenant en su columna, enlaza cada hija con su padre y cada llave foránea con la fila sembrada a la que
- * apunta, toma el primer valor de los CHECK de una columna y de los enums, y llena el resto según el tipo.
+ * Seeds a tenant's rows in each table of a manifest, reading the schema left by the real migrations:
+ * puts the tenant in its column, links each child to its parent and each foreign key to the seeded row it
+ * points to, takes the first value of a column's CHECK constraints and of enums, and fills the rest by type.
  */
 export class ManifestRowSeeder {
   private readonly ids = new UuidV7IdGenerator();
@@ -40,7 +40,7 @@ export class ManifestRowSeeder {
     private readonly fixed: FixedColumns = {},
   ) {}
 
-  /** Siembra `rowsPerTable` filas del tenant en cada tabla, en el orden del manifiesto. */
+  /** Seeds `rowsPerTable` tenant rows in each table, in manifest order. */
   async seed(
     dataSource: DataSource,
     tenantId: string,
@@ -101,7 +101,7 @@ export class ManifestRowSeeder {
     );
   }
 
-  /** `[tabla, esquema]` de un nombre del manifiesto; sin esquema, el de la sesión. */
+  /** `[table, schema]` of a manifest name; without a schema, the session one. */
   private static nameOf(table: string): [string, string | null] {
     const [first, second] = table.split('.');
     return second === undefined ? [table, null] : [second, first ?? null];
@@ -181,7 +181,7 @@ export class ManifestRowSeeder {
     }));
   }
 
-  /** Llaves foráneas de la tabla: cada columna con la tabla y la columna a las que apunta. */
+  /** Foreign keys of the table: each column with the table and column it points to. */
   private async references(
     dataSource: DataSource,
     table: string,
@@ -207,7 +207,7 @@ export class ManifestRowSeeder {
     );
   }
 
-  /** Un valor válido para las columnas de un CHECK de una sola columna con literales, y para las de tipo enum. */
+  /** A valid value for the columns of a single-column CHECK with literals, and for enum columns. */
   private async choices(
     dataSource: DataSource,
     table: string,

@@ -1,6 +1,6 @@
 import type { Id } from './id.js';
 
-/** Puerto para generar identificadores. */
+/** Port for generating identifiers. */
 export abstract class IdGenerator {
   abstract next(): Id;
 }

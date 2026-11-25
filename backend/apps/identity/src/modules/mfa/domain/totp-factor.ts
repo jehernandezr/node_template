@@ -1,9 +1,9 @@
-/** El TOTP de un usuario: secreto cifrado y si ya lo confirmó. */
+/** A user's TOTP: encrypted secret and whether it has been confirmed. */
 export interface TotpFactor {
   readonly userId: string;
   readonly encryptedSecret: string;
   readonly confirmedAt?: Date;
-  /** Último paso de 30 s aceptado: un código no se usa dos veces. */
+  /** Last accepted 30 s step: a code is not used twice. */
   readonly lastUsedStep: number;
   readonly version?: number;
 }

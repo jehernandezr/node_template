@@ -4,7 +4,7 @@ import type { InvitationPreview } from '../domain/invitation-preview.js';
 import { AcceptInvitation } from './accept-invitation.use-case.js';
 import { InvitationsFacade } from './invitations.facade.js';
 
-/** `InvitationsFacade` dentro del proceso. */
+/** In-process `InvitationsFacade`. */
 @Injectable()
 export class LocalInvitationsFacade extends InvitationsFacade {
   constructor(private readonly accept: AcceptInvitation) {

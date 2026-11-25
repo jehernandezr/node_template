@@ -1,18 +1,18 @@
-# Módulo http-api
+# http-api module
 
-API Gateway HTTP compartida por todos los servicios. CloudFront con WAF va delante (stack edge) y cada servicio agrega sus rutas desde su stack con el módulo `api-routes`.
+API Gateway HTTP shared by all services. CloudFront with WAF sits in front (edge stack) and each service adds its routes from its own stack with the `api-routes` module.
 
-## Qué crea
+## What it creates
 
-- API HTTP con stage `$default`, despliegue automático, límites de tasa y access logs en JSON (log group con retención y CMK).
-- Verificación de origen: un secreto en Secrets Manager con el valor de `X-Origin-Verify` (contraseña efímera escrita con un atributo de solo escritura, fuera del estado de platform; el de edge sí la guarda porque CloudFront la envía como encabezado) y un autorizador Lambda REQUEST con caché por valor que acepta `AWSCURRENT` y `AWSPREVIOUS` y recarga el secreto cada 5 minutos. Sin el encabezado, API Gateway responde 401 sin invocar la función.
-- Opcional (`vpc_link`): VPC link con su security group, para las APIs que corren en Fargate detrás de un ALB interno. La salida hacia el ALB la declara quien lo conoce (stack platform).
+- HTTP API with the `$default` stage, automatic deployment, rate limits and JSON access logs (log group with retention and CMK).
+- Origin verification: a Secrets Manager secret with the `X-Origin-Verify` value (an ephemeral password written with a write-only attribute, outside the platform state; the edge state does store it because CloudFront sends it as a header) and a REQUEST Lambda authorizer with per-value caching that accepts `AWSCURRENT` and `AWSPREVIOUS` and reloads the secret every 5 minutes. Without the header, API Gateway responds 401 without invoking the function.
+- Optional (`vpc_link`): VPC link with its security group, for APIs that run on Fargate behind an internal ALB. The egress toward the ALB is declared by whoever knows it (platform stack).
 
-## Salidas
+## Outputs
 
-`api_id`, `execution_arn`, `endpoint_host` (origen de CloudFront), `vpc_link_id`, `vpc_link_security_group_id`, `authorizer_id`, `origin_verify_secret_arn`, `kms_key_arn`.
+`api_id`, `execution_arn`, `endpoint_host` (CloudFront origin), `vpc_link_id`, `vpc_link_security_group_id`, `authorizer_id`, `origin_verify_secret_arn`, `kms_key_arn`.
 
-## Notas
+## Notes
 
-- Para rotar el secreto de origen sube `origin_verify_secret_version`, aplica platform, espera al menos 5 minutos (la recarga del autorizador) y aplica edge. Mientras tanto CloudFront sigue enviando el valor anterior, que el autorizador acepta como `AWSPREVIOUS`. No rotes dos veces sin aplicar edge entre una y otra.
-- El tiempo máximo de una integración de API Gateway HTTP es 30 segundos. Las conexiones largas (Socket.IO y SSE) van por el ALB de tiempo real.
+- To rotate the origin secret, bump `origin_verify_secret_version`, apply platform, wait at least 5 minutes (the authorizer reload) and apply edge. In the meantime CloudFront keeps sending the previous value, which the authorizer accepts as `AWSPREVIOUS`. Do not rotate twice without applying edge in between.
+- The maximum time of an API Gateway HTTP integration is 30 seconds. Long connections (Socket.IO and SSE) go through the realtime ALB.

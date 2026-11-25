@@ -98,23 +98,23 @@ import type {
 } from './platform-runtime-options.js';
 import { RuntimeAdapterSelector } from './runtime-adapter-selector.js';
 
-/** Variables de entorno que el runtime lee además de las del esquema del servicio. */
+/** Environment variables the runtime reads in addition to those of the service schema. */
 enum RuntimeVariable {
   ValkeyAuth = 'VALKEY_AUTH',
 }
 
 /**
- * Composición de los módulos de librería de la plataforma para un servicio: configuración,
- * observabilidad, resiliencia, adaptadores, persistencia, sharding, caché, límite de tasa,
- * Bloom, mensajería, API interna, sagas, jobs y salud.
+ * Composition of the platform library modules for a service: configuration,
+ * observability, resilience, adapters, persistence, sharding, cache, rate limiting,
+ * Bloom, messaging, internal API, sagas, jobs and health.
  *
- * El orden de `imports` fija el apagado. Nest destruye los módulos en orden inverso, así que lo que
- * cierra recursos (AWS, Valkey, persistencia) va antes y lo que genera trabajo (relay, jobs,
- * sagas, API interna) va después.
+ * The order of `imports` sets the shutdown. Nest destroys modules in reverse order, so what
+ * closes resources (AWS, Valkey, persistence) goes first and what generates work (relay, jobs,
+ * sagas, internal API) goes after.
  */
 @Module({})
 export class PlatformRuntimeModule {
-  /** Cada cuánto vuelve a mirar la compuerta una escritura que espera. */
+  /** How often a waiting write checks the gate again. */
   private static readonly WRITE_GATE_POLL_MS = 100;
 
   static forService(
@@ -227,9 +227,9 @@ export class PlatformRuntimeModule {
   }
 
   /**
-   * El router rechaza los tenants de otra región con la URL de su API (`REGIONS` y `SERVICE_REGION`), y la compuerta
-   * de escritura de los traslados se cierra en el directorio o, con `TENANT_WRITE_GATE=valkey`, en Valkey.
-   * @throws InvalidServiceDefinitionError si `TENANT_WRITE_GATE` no es un valor conocido o pide Valkey sin Valkey.
+   * The router rejects tenants of another region with the URL of their API (`REGIONS` and `SERVICE_REGION`), and the
+   * write gate for moves is closed in the directory or, with `TENANT_WRITE_GATE=valkey`, in Valkey.
+   * @throws InvalidServiceDefinitionError if `TENANT_WRITE_GATE` is not a known value or asks for Valkey without Valkey.
    */
   private static shardingModule(
     serviceName: string,
@@ -267,8 +267,8 @@ export class PlatformRuntimeModule {
   }
 
   /**
-   * La compuerta se elige al componer los módulos, antes de que exista el contexto de configuración, así que su
-   * sección se valida aquí con el mismo esquema que después la inyecta.
+   * The gate is chosen when composing the modules, before the configuration context exists, so its
+   * section is validated here with the same schema that later injects it.
    */
   private static writeGateOf(
     serviceName: string,
@@ -323,9 +323,9 @@ export class PlatformRuntimeModule {
   }
 
   /**
-   * `MessagingModule` inyecta el publicador por su tipo, así que uno propio se registra aquí. El de
-   * AWS lo registra `AwsModule`. Con `requireScope` cada entrega corre en el shard del tenant de su sobre
-   * (el claim de `processed_messages` vive ahí) y solo se aceptan tenants que el directorio ubica.
+   * `MessagingModule` injects the publisher by its type, so a custom one is registered here. The
+   * AWS one is registered by `AwsModule`. With `requireScope` each delivery runs in the shard of its envelope's tenant
+   * (the `processed_messages` claim lives there) and only tenants that the directory places are accepted.
    */
   private static messagingModule(
     definition: ServiceDefinition,
@@ -398,9 +398,9 @@ export class PlatformRuntimeModule {
   }
 
   /**
-   * Con `requireScope` el shard de una operación interna lo decide su handler con la entrada (por ejemplo
-   * el usuario y su tenant de origen), así que la llave de idempotencia no puede vivir en un shard que aún no
-   * se conoce: va al catálogo y el handler abre sus propias transacciones dentro de su `ShardScope`.
+   * With `requireScope` the shard of an internal operation is decided by its handler from the input (for example
+   * the user and their home tenant), so the idempotency key cannot live in a shard that is not yet
+   * known: it goes to the catalog and the handler opens its own transactions within its `ShardScope`.
    */
   private static idempotencyFor(definition: ServiceDefinition): {
     processedStore: typeof TypeOrmIdempotencyStore;
@@ -421,7 +421,7 @@ export class PlatformRuntimeModule {
     };
   }
 
-  /** El verificador de tenants y el contexto de entrega de un servicio con shards, armados con fábricas. */
+  /** The tenant verifier and the delivery context of a sharded service, built with factories. */
   private static tenantDeliveryProviders(): Array<
     Provider & { provide: Type<unknown> }
   > {
@@ -440,7 +440,7 @@ export class PlatformRuntimeModule {
     ];
   }
 
-  /** El clasificador con las reglas de Postgres, AWS y Valkey, para la API interna, los consumidores y las sagas. */
+  /** The classifier with the Postgres, AWS and Valkey rules, for the internal API, the consumers and the sagas. */
   private static failureClassifierProvider(): Provider {
     return {
       provide: FailureClassifier,
@@ -448,7 +448,7 @@ export class PlatformRuntimeModule {
     };
   }
 
-  /** `UseCaseRunner` no lleva decoradores para que el núcleo no importe NestJS; por eso se arma con una fábrica. */
+  /** `UseCaseRunner` has no decorators so the core does not import NestJS; that is why it is built with a factory. */
   private static useCaseRunnerProvider(): Provider {
     return {
       provide: UseCaseRunner,
@@ -462,7 +462,7 @@ export class PlatformRuntimeModule {
     };
   }
 
-  /** Los publicadores que no son el de AWS se registran aquí; el de AWS ya lo registra `AwsModule`. */
+  /** Publishers other than the AWS one are registered here; `AwsModule` already registers the AWS one. */
   private static ownPublishers(
     publisher: Type<EnvelopePublisher> | undefined,
   ): Type<EnvelopePublisher>[] {

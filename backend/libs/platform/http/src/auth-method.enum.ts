@@ -1,7 +1,7 @@
-/** Cómo se autentica una petición a una ruta. */
+/** How a request to a route is authenticated. */
 export enum AuthMethod {
-  /** Access token JWT en `Authorization: Bearer`. */
+  /** JWT access token in `Authorization: Bearer`. */
   Jwt = 'jwt',
-  /** API key (`sk_live_...` o `sk_test_...`) en `Authorization: Bearer`. */
+  /** API key (`sk_live_...` or `sk_test_...`) in `Authorization: Bearer`. */
   ApiKey = 'api-key',
 }

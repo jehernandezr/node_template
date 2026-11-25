@@ -1,9 +1,9 @@
-/** El acceso al disco de los generadores, para probarlos sin tocarlo. */
+/** The generators' disk access, to test them without touching it. */
 export abstract class FileSystem {
   abstract exists(path: string): Promise<boolean>;
   abstract read(path: string): Promise<string>;
-  /** Escribe el archivo y crea las carpetas que falten. */
+  /** Writes the file and creates any missing folders. */
   abstract write(path: string, content: string): Promise<void>;
-  /** Rutas de todos los archivos bajo `root`, relativas a él y con `/`, en orden alfabético. */
+  /** Paths of all files under `root`, relative to it and with `/`, in alphabetical order. */
   abstract listFiles(root: string): Promise<string[]>;
 }

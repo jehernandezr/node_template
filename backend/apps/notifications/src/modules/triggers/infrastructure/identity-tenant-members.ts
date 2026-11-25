@@ -10,7 +10,7 @@ import { CallOutcomeKind } from '@platform/primitives';
 import { IdentityUnavailableError } from '../../../shared/errors/identity-unavailable.error.js';
 import { TenantMembers } from '../application/tenant-members.js';
 
-/** Miembros por la operación paginada `identity.members.list-by-permission.v1`. */
+/** Members through the paginated `identity.members.list-by-permission.v1` operation. */
 @Injectable()
 export class IdentityTenantMembers extends TenantMembers {
   constructor(
@@ -20,7 +20,7 @@ export class IdentityTenantMembers extends TenantMembers {
     super();
   }
 
-  /** @throws IdentityUnavailableError si identity no responde una página. */
+  /** @throws IdentityUnavailableError if identity does not respond for a page. */
   async withPermission(
     tenantId: string,
     permission: Permission,

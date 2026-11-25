@@ -10,7 +10,7 @@ const PATH = '/internal/operations/billing.invoices.create.v1';
 const BODY = { input: { amount: 1 } };
 const START = new Date('2026-01-01T00:00:00.000Z');
 
-/** Petición firmada por un firmador con el reloj dado, como la envía el transporte. */
+/** Request signed by a signer with the given clock, as the transport sends it. */
 async function signed(
   clock: FixedClock,
   overrides: { secret?: string; body?: unknown; path?: string } = {},

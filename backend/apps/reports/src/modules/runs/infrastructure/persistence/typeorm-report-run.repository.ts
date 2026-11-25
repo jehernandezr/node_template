@@ -12,7 +12,7 @@ import type { ReportRun } from '../../domain/report-run.js';
 import { ReportRunEntity } from './entities/report-run.entity.js';
 import { ReportRunMapper } from './report-run.mapper.js';
 
-/** `ReportRunRepository` sobre `report_runs` del shard del tenant. */
+/** `ReportRunRepository` over `report_runs` in the tenant's shard. */
 @Injectable()
 export class TypeOrmReportRunRepository
   extends TenantIsolatedRepository

@@ -1,25 +1,25 @@
 import { TenantId } from '@platform/kernel';
 import { CanonicalJson, ClaimRules } from '@platform/primitives';
 
-/** Segmentos que acotan una llave de idempotencia en el servidor. */
+/** Segments that scope an idempotency key on the server. */
 export interface IdempotencyKeySegments {
   readonly tenantId?: string;
   readonly operationId: string;
   readonly idempotencyKey: string;
 }
 
-/** Reglas de la llave de idempotencia de una llamada y de su forma en el almacén. */
+/** Rules for the idempotency key of a call and its shape in the store. */
 export class IdempotencyKeyPolicy {
-  /** Llave más larga que quien llama puede enviar. */
+  /** Longest key a caller can send. */
   static readonly MAX_CALL_KEY_LENGTH = 256;
 
-  /** Tenant más largo aceptado como segmento de la llave: el mismo de toda la plataforma. */
+  /** Longest tenant accepted as a key segment: the same as the whole platform's. */
   static readonly MAX_TENANT_ID_LENGTH = TenantId.MAX_LENGTH;
 
   /**
-   * Llave del almacén: el arreglo JSON canónico `[tenantId, operationId, key]`
-   * (un tenant ausente es `null`). El JSON escapa cada segmento, así que
-   * ningún valor choca con otra partición, a diferencia de un texto unido con `|`.
+   * Returns the store key: the canonical JSON array `[tenantId, operationId, key]`
+   * (a missing tenant is `null`). JSON escapes each segment, so
+   * no value collides with another partition, unlike text joined with `|`.
    */
   static storeKey(segments: IdempotencyKeySegments): string {
     return CanonicalJson.stringify([
@@ -29,7 +29,7 @@ export class IdempotencyKeyPolicy {
     ]);
   }
 
-  /** Indica si la llave y el tenant que envía quien llama están dentro de los límites. */
+  /** Whether the key and the tenant the caller sends are within the limits. */
   static isValid(idempotencyKey: unknown, tenantId: unknown): boolean {
     if (
       typeof idempotencyKey !== 'string' ||
@@ -46,7 +46,7 @@ export class IdempotencyKeyPolicy {
     );
   }
 
-  /** Indica si la llave del almacén cabe en el almacén de idempotencia. */
+  /** Whether the store key fits in the idempotency store. */
   static fitsStore(storeKey: string): boolean {
     return storeKey.length <= ClaimRules.MAX_KEY_LENGTH;
   }

@@ -1,7 +1,7 @@
 import type { AwsCredentials } from '../../aws-credentials.js';
 import { AwsCredentialsProvider } from '../../aws-credentials-provider.js';
 
-/** Entrega siempre las mismas credenciales, sin consultar la cadena del SDK. */
+/** Always returns the same credentials, without querying the SDK chain. */
 export class StaticCredentialsProvider extends AwsCredentialsProvider {
   constructor(private readonly credentials: AwsCredentials) {
     super();

@@ -17,17 +17,17 @@ export const TenantDirectoryEntrySchema = z
     dedicated: z.boolean(),
   })
   .describe(
-    'Ubicación de un tenant que cada servicio anota en su directorio de shards.',
+    'Location of a tenant that each service records in its shard directory.',
   ) satisfies z.ZodType<TenantDirectoryEntry>;
 
 export const TenantDirectoryRefSchema = z
   .strictObject({ tenantId: IdSchema })
   .describe(
-    'Tenant cuya fila se retira del directorio de un servicio.',
+    'Tenant whose row is removed from the directory of a service.',
   ) satisfies z.ZodType<TenantDirectoryRef>;
 
 export const TenantDirectoryAckSchema = z
   .object({ tenantId: IdSchema })
   .describe(
-    'Acuse de la ubicación o del retiro de un tenant en el directorio de un servicio.',
+    'Acknowledgement of the placement or removal of a tenant in the directory of a service.',
   ) satisfies z.ZodType<TenantDirectoryAck>;

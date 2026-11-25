@@ -4,17 +4,17 @@
   "info": {
     "title": "billing",
     "version": "2",
-    "description": "Facturación: planes, suscripción del tenant, medición de uso, entitlements, cuotas, facturas y morosidad."
+    "description": "Billing: plans, tenant subscription, usage metering, entitlements, quotas, invoices and delinquency."
   },
   "paths": {
     "/v1/billing/subscription": {
       "get": {
         "operationId": "billing.subscription.get",
-        "description": "Consulta la suscripción del tenant con su plan.",
+        "description": "Gets the tenant subscription with its plan.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Subscription" }
@@ -22,7 +22,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.SUBSCRIPTION.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.SUBSCRIPTION.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -48,11 +48,11 @@
     "/v1/billing/usage": {
       "get": {
         "operationId": "billing.usage.get",
-        "description": "Consulta el uso del periodo vigente de cada métrica con cuota.",
+        "description": "Gets the current period usage of each metric with a quota.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UsageOverview" }
@@ -60,7 +60,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.SUBSCRIPTION.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.SUBSCRIPTION.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -86,11 +86,11 @@
     "/v1/billing/plans": {
       "get": {
         "operationId": "billing.plan.list",
-        "description": "Lista los planes del catálogo con su precio y sus límites.",
+        "description": "Lists the catalog plans with their price and limits.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PlanCatalog" }
@@ -98,7 +98,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -123,11 +123,11 @@
     "/v1/billing/subscription/plan": {
       "put": {
         "operationId": "billing.subscription.change-plan",
-        "description": "Cambia el plan de la suscripción del tenant.",
+        "description": "Changes the plan of the tenant subscription.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Subscription" }
@@ -135,7 +135,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT, BILLING.SUBSCRIPTION.NOT_FOUND, BILLING.SUBSCRIPTION.NOT_CHANGEABLE, BILLING.PLAN.NOT_AVAILABLE, BILLING.PLAN.USAGE_EXCEEDS_LIMIT.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT, BILLING.SUBSCRIPTION.NOT_FOUND, BILLING.SUBSCRIPTION.NOT_CHANGEABLE, BILLING.PLAN.NOT_AVAILABLE, BILLING.PLAN.USAGE_EXCEEDS_LIMIT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -173,7 +173,7 @@
     "/v1/billing/invoices": {
       "get": {
         "operationId": "billing.invoice.list",
-        "description": "Lista las facturas del tenant, con filtro y paginación.",
+        "description": "Lists the tenant invoices, with filter and pagination.",
         "parameters": [
           {
             "name": "status",
@@ -196,7 +196,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/InvoicePage" }
@@ -204,7 +204,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.VALIDATION.INVALID_INPUT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -230,7 +230,7 @@
     "/v1/billing/invoices/{invoiceId}": {
       "get": {
         "operationId": "billing.invoice.get",
-        "description": "Consulta una factura con sus líneas.",
+        "description": "Gets an invoice with its lines.",
         "parameters": [
           {
             "name": "invoiceId",
@@ -241,7 +241,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Invoice" }
@@ -249,7 +249,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.INVOICE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, BILLING.INVOICE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -278,32 +278,32 @@
       "UsageMetric": {
         "type": "string",
         "enum": ["users", "api_calls", "storage_gb"],
-        "description": "Métrica de uso que tiene cuota."
+        "description": "Usage metric that has a quota."
       },
       "SubscriptionStatus": {
         "type": "string",
         "enum": ["trialing", "active", "past_due", "suspended", "canceled"],
-        "description": "Estado de una suscripción."
+        "description": "Status of a subscription."
       },
       "InvoiceStatus": {
         "type": "string",
         "enum": ["draft", "issued", "paid", "failed", "void"],
-        "description": "Estado de una factura."
+        "description": "Status of an invoice."
       },
       "InvoiceLineKind": {
         "type": "string",
         "enum": ["fixed_fee", "usage"],
-        "description": "Tipo de línea de una factura."
+        "description": "Type of an invoice line."
       },
       "PlanPeriodicity": {
         "type": "string",
         "enum": ["monthly", "annual"],
-        "description": "Periodicidad de cobro de un plan."
+        "description": "Billing interval of a plan."
       },
       "Currency": {
         "type": "string",
         "enum": ["COP", "USD"],
-        "description": "Moneda en que se factura."
+        "description": "Currency of the invoice."
       },
       "BillingPeriod": {
         "type": "object",
@@ -316,7 +316,7 @@
           }
         },
         "required": ["start", "end"],
-        "description": "Periodo de facturación con fechas de calendario."
+        "description": "Billing period with calendar dates."
       },
       "QuotaLimit": {
         "type": "object",
@@ -329,7 +329,7 @@
           }
         },
         "required": ["metric", "limit"],
-        "description": "Límite de una métrica en un plan."
+        "description": "Limit of a metric in a plan."
       },
       "UsageRecord": {
         "type": "object",
@@ -347,7 +347,7 @@
         },
         "required": ["metric", "quantity", "windowStart", "key"],
         "additionalProperties": false,
-        "description": "Uso de una métrica en una ventana, con su llave de idempotencia."
+        "description": "Usage of a metric in a window, with its idempotency key."
       },
       "RecordUsagePayload": {
         "type": "object",
@@ -364,7 +364,7 @@
         },
         "required": ["tenantId", "records"],
         "additionalProperties": false,
-        "description": "Lote de registros de uso de un tenant."
+        "description": "Batch of usage records of a tenant."
       },
       "SubscriptionChangedPayload": {
         "type": "object",
@@ -397,7 +397,7 @@
           "planId",
           "changedAt"
         ],
-        "description": "Cambió el plan de una suscripción."
+        "description": "The plan of a subscription changed."
       },
       "SubscriptionSuspendedPayload": {
         "type": "object",
@@ -413,7 +413,7 @@
           }
         },
         "required": ["tenantId", "subscriptionId", "suspendedAt"],
-        "description": "Se suspendió una suscripción por falta de pago."
+        "description": "A subscription was suspended for non-payment."
       },
       "SubscriptionReactivatedPayload": {
         "type": "object",
@@ -429,7 +429,7 @@
           }
         },
         "required": ["tenantId", "subscriptionId", "reactivatedAt"],
-        "description": "Se reactivó una suscripción suspendida."
+        "description": "A suspended subscription was reactivated."
       },
       "EntitlementsChangedPayload": {
         "type": "object",
@@ -454,7 +454,7 @@
           }
         },
         "required": ["tenantId", "features", "quotas", "changedAt"],
-        "description": "Cambiaron las funcionalidades o cuotas vigentes de un tenant."
+        "description": "The active features or quotas of a tenant changed."
       },
       "InvoiceIssuedPayload": {
         "type": "object",
@@ -482,7 +482,7 @@
           "total",
           "issuedAt"
         ],
-        "description": "Se emitió una factura."
+        "description": "An invoice was issued."
       },
       "InvoicePaidPayload": {
         "type": "object",
@@ -502,7 +502,7 @@
           }
         },
         "required": ["tenantId", "invoiceId", "number", "total", "paidAt"],
-        "description": "Se pagó una factura."
+        "description": "An invoice was paid."
       },
       "InvoiceFailedPayload": {
         "type": "object",
@@ -534,7 +534,7 @@
           "attempts",
           "failedAt"
         ],
-        "description": "Falló el cobro de una factura."
+        "description": "Charging an invoice failed."
       },
       "Plan": {
         "type": "object",
@@ -568,7 +568,7 @@
           "quotas",
           "features"
         ],
-        "description": "Plan del catálogo con su precio y sus límites."
+        "description": "Catalog plan with its price and limits."
       },
       "PlanCatalog": {
         "type": "object",
@@ -580,7 +580,7 @@
           }
         },
         "required": ["items"],
-        "description": "Catálogo de planes disponibles."
+        "description": "Catalog of available plans."
       },
       "Subscription": {
         "type": "object",
@@ -593,7 +593,7 @@
           "period": { "$ref": "#/components/schemas/BillingPeriod" }
         },
         "required": ["id", "plan", "status", "period"],
-        "description": "Suscripción del tenant con su plan y el periodo vigente."
+        "description": "Tenant subscription with its plan and current period."
       },
       "QuotaUsage": {
         "type": "object",
@@ -611,7 +611,7 @@
           }
         },
         "required": ["metric", "limit", "used"],
-        "description": "Uso de una métrica frente a su límite."
+        "description": "Usage of a metric against its limit."
       },
       "UsageOverview": {
         "type": "object",
@@ -623,7 +623,7 @@
           }
         },
         "required": ["items"],
-        "description": "Uso del periodo vigente de cada métrica con cuota."
+        "description": "Current period usage of each metric with a quota."
       },
       "InvoiceLine": {
         "type": "object",
@@ -635,7 +635,7 @@
           }
         },
         "required": ["kind", "description", "amount"],
-        "description": "Línea de una factura."
+        "description": "Invoice line."
       },
       "Invoice": {
         "type": "object",
@@ -665,7 +665,7 @@
           "lines",
           "total"
         ],
-        "description": "Factura completa con sus líneas."
+        "description": "Full invoice with its lines."
       },
       "InvoiceSummary": {
         "type": "object",
@@ -682,7 +682,7 @@
           }
         },
         "required": ["id", "number", "period", "status", "currency", "total"],
-        "description": "Factura sin líneas, para listados."
+        "description": "Invoice without lines, for listings."
       },
       "InvoicePage": {
         "type": "object",
@@ -702,7 +702,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de facturas, más nuevas primero."
+        "description": "Page of invoices, newest first."
       },
       "ChangePlanRequest": {
         "type": "object",
@@ -713,7 +713,7 @@
         },
         "required": ["planId"],
         "additionalProperties": false,
-        "description": "Plan al que cambia la suscripción."
+        "description": "Plan the subscription changes to."
       },
       "ListInvoicesRequest": {
         "type": "object",
@@ -727,7 +727,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Filtros y paginación del listado de facturas."
+        "description": "Filters and pagination of the invoice listing."
       },
       "GetInvoiceRequest": {
         "type": "object",
@@ -738,7 +738,7 @@
         },
         "required": ["invoiceId"],
         "additionalProperties": false,
-        "description": "Factura a consultar."
+        "description": "Invoice to query."
       },
       "OpenBillingAccountInput": {
         "type": "object",
@@ -752,7 +752,7 @@
         },
         "required": ["tenantId", "ownerUserId"],
         "additionalProperties": false,
-        "description": "Abre la cuenta de facturación de un tenant nuevo."
+        "description": "Opens the billing account of a new tenant."
       },
       "BillingAccountResult": {
         "type": "object",
@@ -766,7 +766,7 @@
           "status": { "$ref": "#/components/schemas/SubscriptionStatus" }
         },
         "required": ["tenantId", "subscriptionId", "status"],
-        "description": "Cuenta de facturación abierta con su suscripción."
+        "description": "Billing account opened with its subscription."
       },
       "CloseBillingAccountInput": {
         "type": "object",
@@ -777,7 +777,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Cierra la cuenta de facturación de un tenant."
+        "description": "Closes the billing account of a tenant."
       },
       "BillingAccountClosed": {
         "type": "object",
@@ -787,7 +787,7 @@
           }
         },
         "required": ["tenantId"],
-        "description": "Cuenta de facturación cerrada."
+        "description": "Billing account closed."
       },
       "GetEntitlementsInput": {
         "type": "object",
@@ -798,7 +798,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Tenant cuyas funcionalidades y cuotas se consultan."
+        "description": "Tenant whose features and quotas are queried."
       },
       "Entitlements": {
         "type": "object",
@@ -821,7 +821,7 @@
           }
         },
         "required": ["tenantId", "status", "features", "quotas"],
-        "description": "Funcionalidades y cuotas vigentes de un tenant."
+        "description": "Active features and quotas of a tenant."
       },
       "CheckQuotaInput": {
         "type": "object",
@@ -838,7 +838,7 @@
         },
         "required": ["tenantId", "metric"],
         "additionalProperties": false,
-        "description": "Consulta si un tenant puede consumir una cantidad de una métrica."
+        "description": "Checks whether a tenant can consume an amount of a metric."
       },
       "QuotaCheck": {
         "type": "object",
@@ -857,7 +857,7 @@
           "allowed": { "type": "boolean" }
         },
         "required": ["metric", "limit", "used", "allowed"],
-        "description": "Resultado de consultar una cuota."
+        "description": "Result of a quota check."
       },
       "MarkInvoicePaidInput": {
         "type": "object",
@@ -881,7 +881,7 @@
         },
         "required": ["tenantId", "invoiceId", "paidAt", "reference", "amount"],
         "additionalProperties": false,
-        "description": "Marca una factura como pagada con la referencia del proveedor."
+        "description": "Marks an invoice as paid with the provider reference."
       },
       "MarkInvoiceFailedInput": {
         "type": "object",
@@ -902,7 +902,7 @@
         },
         "required": ["tenantId", "invoiceId", "failedAt"],
         "additionalProperties": false,
-        "description": "Marca una factura como fallida después de un cobro rechazado."
+        "description": "Marks an invoice as failed after a declined charge."
       },
       "InvoiceStateResult": {
         "type": "object",
@@ -913,7 +913,7 @@
           "status": { "$ref": "#/components/schemas/InvoiceStatus" }
         },
         "required": ["invoiceId", "status"],
-        "description": "Estado de una factura después de la operación."
+        "description": "Invoice status after the operation."
       },
       "InvoiceChange": {
         "type": "object",
@@ -950,7 +950,7 @@
           "issuedAt",
           "paidAt"
         ],
-        "description": "Factura con sus fechas de emisión y de pago, para sincronizar otro servicio."
+        "description": "Invoice with its issue and payment dates, to sync another service."
       },
       "InvoiceChangePage": {
         "type": "object",
@@ -970,7 +970,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de facturas de un tenant, más nuevas primero."
+        "description": "Page of a tenant invoices, newest first."
       },
       "ListInvoiceChangesInput": {
         "type": "object",
@@ -987,7 +987,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Entrada para paginar las facturas de un tenant."
+        "description": "Input to page the invoices of a tenant."
       }
     },
     "securitySchemes": {

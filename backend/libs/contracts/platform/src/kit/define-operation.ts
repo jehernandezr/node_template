@@ -3,7 +3,7 @@ import { Compensation } from '../enums/compensation.enum.js';
 import { ContractDefinitionError } from './contract-definition-error.js';
 import { ERROR_CODE_PATTERN } from './error-catalog.js';
 
-/** Política de reintentos de una operación idempotente. */
+/** Retry policy of an idempotent operation. */
 export interface OperationRetryPolicy {
   readonly maxAttempts: number;
   readonly baseMs: number;
@@ -11,7 +11,7 @@ export interface OperationRetryPolicy {
 }
 
 interface OperationSpecBase<I extends z.ZodType, O extends z.ZodType> {
-  /** Identificador estable y versionado, por ejemplo `identity.sessions.revoke-for-user.v1`. */
+  /** Stable, versioned identifier, for example `identity.sessions.revoke-for-user.v1`. */
   readonly id: string;
   readonly input: I;
   readonly output: O;
@@ -22,21 +22,21 @@ interface OperationSpecBase<I extends z.ZodType, O extends z.ZodType> {
   readonly description: string;
 }
 
-/** Operación que modifica datos y declara qué operación la revierte. */
+/** Operation that modifies data and declares which operation reverts it. */
 interface CompensatedSpec {
   readonly mutating?: true;
   readonly compensatedBy: string;
   readonly compensationReason?: undefined;
 }
 
-/** Operación que modifica datos sin compensación: el motivo es obligatorio. */
+/** Operation that modifies data without compensation: the reason is required. */
 interface UncompensatedSpec {
   readonly mutating?: true;
   readonly compensatedBy: Compensation.None;
   readonly compensationReason: string;
 }
 
-/** Operación de solo lectura. */
+/** Read-only operation. */
 interface ReadOnlySpec {
   readonly mutating: false;
   readonly compensatedBy?: undefined;
@@ -50,16 +50,16 @@ export type OperationSpec<
   (CompensatedSpec | UncompensatedSpec | ReadOnlySpec);
 
 /**
- * Operación interna entre servicios. `@platform/internal-api` la registra en el
- * router y la llama desde el cliente tal como se declara aquí.
+ * Internal operation between services. `@platform/internal-api` registers it in the
+ * router and calls it from the client exactly as declared here.
  */
 export interface OperationDefinition<
   I extends z.ZodType = z.ZodType,
   O extends z.ZodType = z.ZodType,
 > {
-  /** `servicio.entidad.operación.vN`. Un cambio incompatible crea un id `.vN+1`. */
+  /** `service.entity.operation.vN`. An incompatible change creates a `.vN+1` id. */
   readonly id: string;
-  /** Versión tomada del sufijo `.vN` del id. */
+  /** Version taken from the `.vN` suffix of the id. */
   readonly version: number;
   readonly input: I;
   readonly output: O;
@@ -74,47 +74,47 @@ export interface OperationDefinition<
 }
 
 /**
- * `servicio.entidad.operación.vN`. El id queda guardado en la bitácora de sagas y
- * en las llaves de idempotencia, por eso la versión va en el id desde el inicio.
+ * `service.entity.operation.vN`. The id is stored in the saga log and
+ * in the idempotency keys, which is why the version is in the id from the start.
  */
 const OPERATION_ID = /^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+\.v([1-9][0-9]*)$/;
 
 /**
- * Declara una operación interna. Una operación que modifica datos declara
- * `compensatedBy`, o `Compensation.None` con un motivo no vacío.
+ * Declares an internal operation. An operation that modifies data declares
+ * `compensatedBy`, or `Compensation.None` with a non-empty reason.
  */
 export function defineOperation<I extends z.ZodType, O extends z.ZodType>(
   spec: OperationSpec<I, O>,
 ): OperationDefinition<I, O> {
   const fail = (reason: string): never => {
-    throw new ContractDefinitionError(`Operación ${spec.id}: ${reason}`);
+    throw new ContractDefinitionError(`Operation ${spec.id}: ${reason}`);
   };
   const match = OPERATION_ID.exec(spec.id);
-  if (!match) fail('id inválido: se espera servicio.entidad.operación.vN');
-  if (!spec.description.trim()) fail('falta la descripción');
+  if (!match) fail('invalid id: expected service.entity.operation.vN');
+  if (!spec.description.trim()) fail('missing description');
   const mutating = spec.mutating ?? true;
   if (mutating) {
     if (!spec.compensatedBy?.trim()) {
-      fail('una operación que modifica datos declara compensatedBy');
+      fail('an operation that modifies data declares compensatedBy');
     }
     if (
       spec.compensatedBy === Compensation.None &&
       !spec.compensationReason?.trim()
     ) {
-      fail('Compensation.None exige compensationReason');
+      fail('Compensation.None requires compensationReason');
     }
-    if (spec.compensatedBy === spec.id) fail('no puede compensarse a sí misma');
+    if (spec.compensatedBy === spec.id) fail('it cannot compensate itself');
   } else if (spec.compensatedBy !== undefined) {
-    fail('una operación de solo lectura no declara compensación');
+    fail('a read-only operation does not declare a compensation');
   }
   if (spec.timeoutMs !== undefined && !(spec.timeoutMs > 0)) {
-    fail('timeoutMs debe ser positivo');
+    fail('timeoutMs must be positive');
   }
   const errors = [...(spec.errors ?? [])];
   for (const code of errors) {
-    if (!ERROR_CODE_PATTERN.test(code)) fail(`código inválido ${code}`);
+    if (!ERROR_CODE_PATTERN.test(code)) fail(`invalid code ${code}`);
   }
-  if (new Set(errors).size !== errors.length) fail('códigos repetidos');
+  if (new Set(errors).size !== errors.length) fail('duplicate codes');
 
   const definition: {
     -readonly [K in keyof OperationDefinition<I, O>]: OperationDefinition<
@@ -142,10 +142,10 @@ export function defineOperation<I extends z.ZodType, O extends z.ZodType>(
   return Object.freeze(definition);
 }
 
-/** Tipo de la entrada de una operación. */
+/** Input type of an operation. */
 export type OperationInput<O extends OperationDefinition> = z.input<O['input']>;
 
-/** Tipo de la salida de una operación. */
+/** Output type of an operation. */
 export type OperationOutput<O extends OperationDefinition> = z.output<
   O['output']
 >;

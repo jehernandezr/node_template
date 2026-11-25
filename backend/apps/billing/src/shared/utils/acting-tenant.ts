@@ -1,8 +1,8 @@
 import { ActorGuards, AuthenticationError, type Actor } from '@platform/auth';
 
-/** El tenant sobre el que actúa quien llama: el activo de la sesión o el de la API key. */
+/** The tenant the caller acts on: the session's active one or the API key's. */
 export class ActingTenant {
-  /** @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` si el actor no es un usuario ni una service account. */
+  /** @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is neither a user nor a service account. */
   static of(actor: Actor | undefined): string {
     if (
       actor !== undefined &&

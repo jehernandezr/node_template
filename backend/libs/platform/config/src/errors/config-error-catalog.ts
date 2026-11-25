@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { ConfigErrorCode } from './config-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/config`; ninguno llega al cliente. */
+/** Catalog of the `@platform/config` codes; none reaches the client. */
 export const configErrorCatalog = defineErrorCatalog(ConfigErrorCode, {
   [ConfigErrorCode.Invalid]: ErrorSpecs.internal(
     500,

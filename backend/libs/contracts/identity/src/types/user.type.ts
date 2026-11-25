@@ -1,98 +1,98 @@
 import type { UserStatus } from '../enums/user.enum.js';
 
-/** Alta de un usuario. El idioma viaja como etiqueta BCP 47. */
+/** Creation of a user. The language travels as a BCP 47 tag. */
 export interface SignUpRequest {
   email: string;
   password: string;
   displayName: string;
   locale: string;
-  /** Token de la invitación que el usuario acepta al registrarse. */
+  /** Token of the invitation the user accepts when signing up. */
   invitationToken?: string;
 }
 
-/** Pedido de un nuevo email de verificación. */
+/** Request for a new verification email. */
 export interface EmailVerificationRequest {
   email: string;
 }
 
-/** Confirmación de la verificación con el token que llegó por email. */
+/** Confirmation of the verification with the token that arrived by email. */
 export interface EmailVerificationConfirmRequest {
   token: string;
 }
 
-/** Perfil del usuario autenticado. */
+/** Profile of the authenticated user. */
 export interface UserProfile {
   id: string;
   email: string;
-  /** Instante ISO 8601 de la verificación, o null mientras no está verificado. */
+  /** ISO 8601 instant of the verification, or null while not verified. */
   emailVerifiedAt: string | null;
   displayName: string;
   locale: string;
   status: UserStatus;
   homeTenantId: string;
-  /** Último tenant en el que el usuario abrió sesión, o null si nunca. */
+  /** Last tenant where the user opened a session, or null if never. */
   lastTenantId: string | null;
 }
 
-/** Cambios parciales del perfil. Los campos ausentes no cambian. */
+/** Partial changes to the profile. Absent fields do not change. */
 export interface UpdateProfileRequest {
   displayName?: string;
   locale?: string;
 }
 
-/** Pedido de cambio de email hacia una dirección nueva. */
+/** Request to change the email to a new address. */
 export interface EmailChangeRequest {
   newEmail: string;
 }
 
-/** Confirmación del cambio de email con el token enviado a la dirección nueva. */
+/** Confirmation of the email change with the token sent to the new address. */
 export interface EmailChangeConfirmRequest {
   token: string;
 }
 
-/** Entrada de la operación interna que suspende a un usuario. */
+/** Input of the internal operation that suspends a user. */
 export interface SuspendUserInput {
   userId: string;
   reason?: string;
 }
 
-/** Entrada de la operación interna que reactiva a un usuario. */
+/** Input of the internal operation that reactivates a user. */
 export interface ReactivateUserInput {
   userId: string;
 }
 
-/** Resultado de suspender o reactivar a un usuario. */
+/** Result of suspending or reactivating a user. */
 export interface UserOperationResult {
   userId: string;
   status: UserStatus;
 }
 
-/** Entrada de la operación interna que lee el perfil de un usuario. */
+/** Input of the internal operation that reads a user's profile. */
 export interface GetUserProfileInput {
   userId: string;
 }
 
-/** Payload de `identity.user.registered.v1`. */
+/** Payload of `identity.user.registered.v1`. */
 export interface UserRegisteredPayload {
   userId: string;
   homeTenantId: string;
   registeredAt: string;
 }
 
-/** Payload de `identity.user.suspended.v1`. */
+/** Payload of `identity.user.suspended.v1`. */
 export interface UserSuspendedPayload {
   userId: string;
   reason?: string;
   suspendedAt: string;
 }
 
-/** Payload de `identity.user.reactivated.v1`. */
+/** Payload of `identity.user.reactivated.v1`. */
 export interface UserReactivatedPayload {
   userId: string;
   reactivatedAt: string;
 }
 
-/** Payload de `identity.user.email-changed.v1`. */
+/** Payload of `identity.user.email-changed.v1`. */
 export interface UserEmailChangedPayload {
   userId: string;
   changedAt: string;

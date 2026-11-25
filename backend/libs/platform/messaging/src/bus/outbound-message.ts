@@ -30,39 +30,39 @@ import {
 } from './message-bus.js';
 import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 
-/** Longitud máxima de `groupId` que aceptan SNS y SQS FIFO. */
+/** Maximum `groupId` length accepted by SNS and SQS FIFO. */
 export const MAX_GROUP_ID_LENGTH = 128;
 
-/** `MessageGroupId` de SNS y SQS: de 1 a 128 caracteres ASCII imprimibles, sin espacios. */
+/** SNS and SQS `MessageGroupId`: 1 to 128 printable ASCII characters, no spaces. */
 const GROUP_ID = /^[\x21-\x7E]+$/;
 
-/** Mensaje validado, listo para un transporte o para el outbox. */
+/** Validated message, ready for a transport or for the outbox. */
 export interface OutboundMessage<T = unknown> {
   readonly envelope: MessageEnvelope<T>;
   readonly route: RouteDef;
   readonly target: OutboundTarget;
   readonly groupId?: string;
-  /** Solo en comandos. */
+  /** Commands only. */
   readonly delayMs?: number;
 }
 
-/** Opciones de {@link OutboundMessageFactory}. */
+/** Options of {@link OutboundMessageFactory}. */
 export interface OutboundMessageFactoryOptions {
-  /** Valor del atributo `source` del sobre. */
+  /** Value of the envelope `source` attribute. */
   readonly source: string;
-  /** Reloj de los tiempos del sobre. Por defecto, el del sistema. */
+  /** Clock for the envelope times. Defaults to the system clock. */
   readonly clock?: Clock;
-  /** Generador de ids de los sobres. Por defecto, UUIDv7. */
+  /** Envelope id generator. Defaults to UUIDv7. */
   readonly ids?: IdGenerator;
-  /** Fuente del `traceparent` por defecto. Por defecto, el del span activo. */
+  /** Source of the default `traceparent`. Defaults to the one of the active span. */
   readonly traceparent?: () => string | undefined;
 }
 
 /**
- * Arma el sobre de un evento o comando después de revisar todo lo que un
- * transporte rechazaría más tarde: la ruta y su tipo, el payload contra el
- * contrato, el id de grupo FIFO, la espera y el límite de tamaño. Lo comparten
- * todos los adaptadores de `MessageBus` (memoria, outbox, SNS y SQS).
+ * Builds the envelope of an event or command after checking everything a
+ * transport would reject later: the route and its type, the payload against the
+ * contract, the FIFO group id, the delay and the size limit. Shared by
+ * all `MessageBus` adapters (memory, outbox, SNS and SQS).
  */
 export class OutboundMessageFactory {
   private readonly topology: Topology;
@@ -83,7 +83,7 @@ export class OutboundMessageFactory {
     this.envelopes = new EnvelopeFactory(this.clock, this.ids);
   }
 
-  /** Valida y arma un evento. */
+  /** Validates and builds an event. */
   event<M extends EventDefinition>(
     event: M,
     data: MessageInput<M>,
@@ -92,7 +92,7 @@ export class OutboundMessageFactory {
     return this.build(event, data, options, undefined);
   }
 
-  /** Valida y arma un comando. */
+  /** Validates and builds a command. */
   command<M extends CommandDefinition>(
     command: M,
     data: MessageInput<M>,

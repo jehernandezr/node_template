@@ -129,7 +129,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
   depends_on = [aws_s3_bucket_versioning.this]
 }
 
-# Las URLs prefirmadas las usa el navegador: PUT para subir, GET y HEAD para descargar.
+# The browser uses the presigned URLs: PUT to upload, GET and HEAD to download.
 resource "aws_s3_bucket_cors_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 

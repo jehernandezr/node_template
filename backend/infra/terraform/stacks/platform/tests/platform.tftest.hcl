@@ -1,5 +1,5 @@
-# Pruebas del stack platform con proveedores simulados: no tocan AWS ni el backend.
-# Ejecuta: terraform init -backend=false && terraform test
+# Tests for the platform stack with mocked providers: they touch neither AWS nor the backend.
+# Run: terraform init -backend=false && terraform test
 
 mock_provider "aws" {
   mock_data "aws_region" {
@@ -46,17 +46,17 @@ run "local_without_compute" {
 
   assert {
     condition     = length(data.terraform_remote_state.network) == 0 && length(module.http_api) == 0 && length(module.ecs_cluster) == 0
-    error_message = "Sin cómputo no se lee la red ni se crean ECS ni la API."
+    error_message = "Without compute the network is not read and neither ECS nor the API is created."
   }
 
   assert {
     condition     = length(module.compute_logs_kms) == 0 && output.compute_logs_kms_key_arn == null
-    error_message = "Sin cómputo no hay CMK de logs de los servicios."
+    error_message = "Without compute there is no CMK for the service logs."
   }
 
   assert {
     condition     = length(module.files_bucket) == 1
-    error_message = "El bucket de archivos existe también en local, sin cómputo."
+    error_message = "The files bucket also exists locally, without compute."
   }
 }
 
@@ -72,17 +72,17 @@ run "dev_with_fargate_api" {
 
   assert {
     condition     = length(module.api_alb) == 1 && length(aws_vpc_security_group_egress_rule.vpc_link_to_api_alb) == 1
-    error_message = "Las APIs en Fargate tienen ALB interno y VPC link."
+    error_message = "Fargate APIs have an internal ALB and a VPC link."
   }
 
   assert {
     condition     = length(module.budget) == 1
-    error_message = "monthly_budget crea el presupuesto."
+    error_message = "monthly_budget creates the budget."
   }
 
   assert {
     condition     = length(module.compute_logs_kms) == 1
-    error_message = "Con cómputo hay una CMK de logs por ambiente para todos los servicios."
+    error_message = "With compute there is one logs CMK per environment for all services."
   }
 }
 
@@ -117,12 +117,12 @@ run "oidc_off_by_default" {
 
   assert {
     condition     = length(module.oidc_github) == 0
-    error_message = "Sin github_repository no se crean roles de OIDC."
+    error_message = "Without github_repository no OIDC roles are created."
   }
 
   assert {
     condition     = output.github_oidc == null
-    error_message = "Sin OIDC la salida github_oidc es null."
+    error_message = "Without OIDC the github_oidc output is null."
   }
 }
 
@@ -137,17 +137,17 @@ run "oidc_creates_provider_and_roles" {
 
   assert {
     condition     = length(module.oidc_github) == 1
-    error_message = "Con github_repository se crea el módulo de OIDC."
+    error_message = "With github_repository the OIDC module is created."
   }
 
   assert {
     condition     = module.oidc_github[0].ecr_repository_prefix == var.name_prefix
-    error_message = "El prefijo de ECR sale del prefijo de nombres del ambiente."
+    error_message = "The ECR prefix comes from the environment name prefix."
   }
 
   assert {
     condition     = output.github_oidc != null
-    error_message = "La salida github_oidc trae los datos del pipeline."
+    error_message = "The github_oidc output carries the pipeline data."
   }
 }
 
@@ -164,6 +164,6 @@ run "oidc_reuses_existing_provider" {
 
   assert {
     condition     = module.oidc_github[0].provider_arn == var.oidc_existing_provider_arn
-    error_message = "Con oidc_create_provider = false se reutiliza el proveedor indicado."
+    error_message = "With oidc_create_provider = false the given provider is reused."
   }
 }

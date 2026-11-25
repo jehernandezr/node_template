@@ -1,6 +1,6 @@
 import { NotificationType, TemplateParameter } from '@contracts/notifications';
 
-/** Título y texto de una notificación en el idioma del usuario. */
+/** Title and text of a notification in the user's language. */
 export interface NotificationText {
   readonly title: string;
   readonly body: string;
@@ -9,8 +9,8 @@ export interface NotificationText {
 type Copy = Readonly<Record<NotificationType, NotificationText>>;
 
 /**
- * Los textos de cada tipo de notificación por idioma, con `{reference}` reemplazado por el dato que manda el
- * evento (el número de la factura, el tipo de alerta). Un idioma sin textos usa el español.
+ * The texts of each notification type by language, with `{reference}` replaced by the value the
+ * event sends (the invoice number, the alert type). A language without texts uses Spanish.
  */
 export class NotificationTexts {
   private static readonly FALLBACK = 'es';

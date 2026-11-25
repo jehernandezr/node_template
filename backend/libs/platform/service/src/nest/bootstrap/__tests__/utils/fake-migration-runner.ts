@@ -1,15 +1,15 @@
 import type { MigrationReport, ShardLocation } from '@platform/persistence';
 import { MigrationRunnerCall } from './migration-runner-call.enum.js';
 
-/** Llamada que recibió `FakeMigrationRunner`, con el shard cuando la hay. */
+/** Call that `FakeMigrationRunner` received, with the shard when there is one. */
 export interface RecordedMigrationCall {
   readonly method: MigrationRunnerCall;
   readonly location?: ShardLocation;
 }
 
 /**
- * Runner de migraciones de prueba: devuelve reportes fijos y anota cada llamada en orden. Con
- * `failWith`, toda llamada rechaza con ese error.
+ * Test migration runner: returns fixed reports and records each call in order. With
+ * `failWith`, every call rejects with that error.
  */
 export class FakeMigrationRunner {
   readonly calls: RecordedMigrationCall[] = [];

@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { ObservabilityErrorCode } from './observability-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/observability`; ninguno llega al cliente. */
+/** Catalog of the `@platform/observability` codes; none reaches the client. */
 export const observabilityErrorCatalog = defineErrorCatalog(
   ObservabilityErrorCode,
   {

@@ -8,11 +8,11 @@ import {
 export const ApiKeyCreatedEvent = defineEvent({
   type: IdentityEvent.ApiKeyCreated,
   payload: ApiKeyCreatedPayloadSchema,
-  description: 'Se creó una API key. No incluye el secreto.',
+  description: 'An API key was created. It does not include the secret.',
 });
 
 export const ApiKeyRevokedEvent = defineEvent({
   type: IdentityEvent.ApiKeyRevoked,
   payload: ApiKeyRevokedPayloadSchema,
-  description: 'Se revocó una API key.',
+  description: 'An API key was revoked.',
 });

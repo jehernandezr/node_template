@@ -1,6 +1,6 @@
 /**
- * Códigos de error del kernel. El catálogo con su estado HTTP vive en
- * `@platform/primitives`, porque el kernel no depende de los contratos.
+ * Kernel error codes. The catalog with their HTTP status lives in
+ * `@platform/primitives`, because the kernel does not depend on the contracts.
  */
 export enum KernelErrorCode {
   InvalidId = 'PLATFORM.KERNEL.INVALID_ID',

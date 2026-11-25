@@ -1,21 +1,21 @@
-/** Métricas que publica el `JobRunner`. */
+/** Metrics that the `JobRunner` publishes. */
 export enum SchedulingMetric {
-  /** Contador de corridas por job y resultado. */
+  /** Counter of runs per job and result. */
   Runs = 'platform.scheduling.runs',
-  /** Histograma de la duración de cada corrida, en milisegundos. */
+  /** Histogram of the duration of each run, in milliseconds. */
   RunDuration = 'platform.scheduling.run.duration',
 }
 
-/** Atributos de las métricas del `JobRunner`. */
+/** Attributes of the `JobRunner` metrics. */
 export enum SchedulingMetricAttribute {
   Job = 'job',
   Result = 'result',
 }
 
-/** Resultado de una corrida. */
+/** Result of a run. */
 export enum JobRunResult {
   Succeeded = 'succeeded',
   Failed = 'failed',
-  /** Un job exclusivo no corrió porque otro proceso tiene el lock. */
+  /** An exclusive job did not run because another process holds the lock. */
   Skipped = 'skipped',
 }

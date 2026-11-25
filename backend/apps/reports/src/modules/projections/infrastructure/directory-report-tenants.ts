@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CatalogDataSource } from '@platform/persistence';
 import { ReportTenants } from '../domain/report-tenants.js';
 
-/** Los tenants activos del directorio de shards del catálogo del servicio. */
+/** The active tenants in the shard directory of the service catalog. */
 @Injectable()
 export class DirectoryReportTenants extends ReportTenants {
   constructor(private readonly catalog: CatalogDataSource) {

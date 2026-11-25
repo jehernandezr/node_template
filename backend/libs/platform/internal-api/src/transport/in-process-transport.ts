@@ -3,7 +3,7 @@ import type { InternalRouter } from '../server/internal-router.js';
 import type { CallMeta } from './call-meta.js';
 import { Transport } from './transport.js';
 
-/** Transporte que llama a un `InternalRouter` del mismo proceso. */
+/** Transport that calls an `InternalRouter` in the same process. */
 export class InProcessTransport extends Transport {
   constructor(private readonly router: InternalRouter) {
     super();

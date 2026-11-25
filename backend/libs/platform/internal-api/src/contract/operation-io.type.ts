@@ -1,15 +1,15 @@
 import type { OperationDefinition } from '@contracts/platform';
 import type { z } from 'zod';
 
-/** Lo que quien llama pasa como entrada, antes de parsearla. */
+/** What the caller passes as input, before it is parsed. */
 export type CallInputOf<S extends OperationDefinition> = z.input<S['input']>;
 
-/** Lo que recibe un handler: la entrada ya parseada. */
+/** What a handler receives: the already parsed input. */
 export type HandlerInputOf<S extends OperationDefinition> = z.output<
   S['input']
 >;
 
-/** Salida de una operación, tal como la devuelve un handler y la entrega el cliente. */
+/** Output of an operation, as a handler returns it and the client delivers it. */
 export type OperationOutputOf<S extends OperationDefinition> = z.output<
   S['output']
 >;

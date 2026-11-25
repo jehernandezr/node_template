@@ -5,7 +5,7 @@ import { ShardingErrorCode } from '../errors/sharding-error-code.enum.js';
 import type { TenantWriteGate } from '../ports/tenant-write-gate.js';
 import type { TenantWriteWaiterOptions } from './tenant-write-waiter-options.js';
 
-/** Hace esperar una escritura mientras la compuerta de su tenant está cerrada, con un tope. */
+/** Makes a write wait while its tenant gate is closed, with a cap. */
 export class TenantWriteWaiter {
   private static readonly MS_PER_SECOND = 1_000;
 
@@ -16,8 +16,8 @@ export class TenantWriteWaiter {
   ) {}
 
   /**
-   * Vuelve en cuanto la compuerta está abierta.
-   * @throws ShardingError `TenantMigrating`, con `retryAfterSeconds`, si sigue cerrada al vencer la espera.
+   * Returns as soon as the gate is open.
+   * @throws ShardingError `TenantMigrating`, with `retryAfterSeconds`, if it is still closed when the wait expires.
    */
   async awaitOpen(tenantId: string): Promise<void> {
     const giveUpAt = this.clock.now().getTime() + this.options.maxWaitMs;

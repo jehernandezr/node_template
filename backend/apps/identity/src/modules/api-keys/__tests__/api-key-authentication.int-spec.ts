@@ -55,7 +55,7 @@ runtime.describeIfAvailable(
       await app.stop();
     });
 
-    /** Una organización nueva con su dueño, y el cliente del dueño con la sesión en ella. */
+    /** A new organization with its owner, and the owner's client with the session in it. */
     const organizationOf = async (
       user: PlacedUser,
     ): Promise<{ tenantId: string; client: HttpTestClient }> => {

@@ -3,7 +3,7 @@ import { Column, Entity, Index } from 'typeorm';
 
 const timestamp = new TimestampTransformer();
 
-/** `mfa_recoveries`: recuperaciones del segundo factor del usuario. */
+/** `mfa_recoveries`: the user's second factor recoveries. */
 @Entity({ name: 'mfa_recoveries' })
 @Index('mfa_recoveries_user_idx', ['userId', 'requestedAt'])
 export class MfaRecoveryEntity extends VersionedEntity {

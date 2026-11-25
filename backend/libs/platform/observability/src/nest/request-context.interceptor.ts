@@ -10,9 +10,9 @@ import { DebugSampler } from '../logging/debug-sampler.js';
 import { TraceContextCodec } from '../propagation/trace-context-codec.js';
 
 /**
- * Garantiza un `RequestContext` en handlers que no pasan por el middleware
- * (mensajes, RPC, jobs). Si ya hay uno vigente lo deja intacto; si no, abre uno
- * nuevo con `traceId` propio y la muestra de debug, y corre el handler dentro.
+ * Guarantees a `RequestContext` in handlers that do not go through the middleware
+ * (messages, RPC, jobs). If one is already current it leaves it intact; otherwise it opens a
+ * new one with its own `traceId` and the debug sample, and runs the handler inside it.
  */
 @Injectable()
 export class RequestContextInterceptor implements NestInterceptor {

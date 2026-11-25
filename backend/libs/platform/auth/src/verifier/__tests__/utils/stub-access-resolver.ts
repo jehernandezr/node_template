@@ -1,7 +1,7 @@
 import type { AccessGrant } from '../../../access/access-grant.js';
 import { AccessResolver } from '../../../access/access-resolver.js';
 
-/** Resolutor de grants de prueba: devuelve `grant` o lanza `failure` si está fijado. */
+/** Test grant resolver: returns `grant` or throws `failure` if set. */
 export class StubAccessResolver extends AccessResolver {
   grant: AccessGrant | undefined;
   failure: Error | undefined;

@@ -1,7 +1,7 @@
 import type { KeyObject } from 'node:crypto';
 import { JwksKeySource } from './jwks-key-source.js';
 
-/** Claves fijas en memoria. Identity las usa con sus propias claves; las pruebas, con un par generado. */
+/** Fixed in-memory keys. Identity uses them with its own keys; the tests, with a generated pair. */
 export class StaticJwksKeySource extends JwksKeySource {
   constructor(private readonly keys: ReadonlyMap<string, KeyObject>) {
     super();

@@ -47,7 +47,7 @@ describe('SchemaOwnership', () => {
       const attempt = () => new SchemaOwnership().of([identity, platform]);
 
       expect(attempt).toThrow(ExportError);
-      expect(attempt).toThrow('ya está registrado como');
+      expect(attempt).toThrow('is already registered as');
     });
   });
 });

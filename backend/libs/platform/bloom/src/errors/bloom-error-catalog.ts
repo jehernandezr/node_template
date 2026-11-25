@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { BloomErrorCode } from './bloom-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/bloom`; ninguno llega al cliente. */
+/** Catalog of the `@platform/bloom` codes; none reaches the client. */
 export const bloomErrorCatalog = defineErrorCatalog(BloomErrorCode, {
   [BloomErrorCode.InvalidParameters]: ErrorSpecs.internal(
     500,

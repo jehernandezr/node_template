@@ -1,6 +1,6 @@
-/** Quién pregunta, tal como lo conoce el contexto de la petición. */
+/** Who is asking, as the request context knows it. */
 export interface ShardKeyContext {
   readonly tenantId: string;
-  /** Lo exige `ShardKey.User`. */
+  /** Required by `ShardKey.User`. */
   readonly userId?: string;
 }

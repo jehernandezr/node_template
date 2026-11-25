@@ -1,4 +1,4 @@
-/** Comando como lo recibe el cliente de Valkey. */
+/** Command as the Valkey client receives it. */
 export interface FakeValkeyCommand {
   readonly name: string;
   readonly args: unknown[];
@@ -6,12 +6,12 @@ export interface FakeValkeyCommand {
   readonly reject: (error: Error) => void;
 }
 
-/** Cliente de Valkey de prueba con la forma interna que envuelve la instrumentación. */
+/** Test Valkey client with the internal shape that the instrumentation wraps. */
 export class FakeValkey {
   readonly options = { host: 'cache.local', port: 6379 };
 
   sendCommand(command: FakeValkeyCommand): void {
-    // Como el cliente real, la respuesta llega después de que sendCommand retorna.
+    // Like the real client, the response arrives after sendCommand returns.
     queueMicrotask(() => command.resolve('OK'));
   }
 

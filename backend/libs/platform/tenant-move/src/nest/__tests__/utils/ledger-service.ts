@@ -29,7 +29,7 @@ export const LedgerTenantMoveOperations = defineTenantMoveOperations('ledger');
 export const LedgerTenantDirectoryOperations =
   defineTenantDirectoryOperations('ledger');
 
-/** Abre un ledger con un id nuevo en cada ejecución: repetirla sin idempotencia dejaría dos filas. */
+/** Opens a ledger with a new id on each run: repeating it without idempotency would leave two rows. */
 export const OpenLedgerOperation = defineOperation({
   id: 'ledger.ledgers.open.v1',
   input: z.object({ name: z.string().min(1) }),
@@ -41,7 +41,7 @@ export const OpenLedgerOperation = defineOperation({
   description: 'Abre un ledger del tenant de la llamada.',
 });
 
-/** Suma al total de un ledger: procesarlo dos veces dejaría el total con el doble. */
+/** Adds to a ledger total: processing it twice would leave the total doubled. */
 export const LedgerCredited = defineEvent({
   type: 'ledger.ledgers.credited.v1',
   payload: z.object({
@@ -61,16 +61,16 @@ export const ledgerContract = defineServiceContract({
   },
 });
 
-/** Cómo despliega la prueba el servicio. */
+/** How the test deploys the service. */
 export interface LedgerServiceOptions {
   /**
-   * Con `true`, como los servicios, la llave de idempotencia de la API interna vive en el catálogo; sin él vive en
-   * el shard del tenant.
+   * With `true`, as in the services, the internal API idempotency key lives in the catalog; without it, it lives on
+   * the tenant shard.
    */
   readonly requireScope: boolean;
 }
 
-/** El handler de la operación que abre ledgers, en la transacción que abre la API interna para la llamada. */
+/** The handler of the operation that opens ledgers, in the transaction the internal API opens for the call. */
 @Injectable()
 export class LedgerOpenings {
   constructor(
@@ -93,7 +93,7 @@ export class LedgerOpenings {
   }
 }
 
-/** El consumidor de los abonos, en el shard del tenant del mensaje. */
+/** The credits consumer, on the shard of the message tenant. */
 @Injectable()
 export class LedgerCredits {
   constructor(
@@ -115,8 +115,8 @@ export class LedgerCredits {
 }
 
 /**
- * El negocio del servicio de prueba: sus operaciones de traslado y de directorio, la que abre ledgers y el consumidor
- * de abonos.
+ * The business of the test service: its move and directory operations, the one that opens ledgers and the credits
+ * consumer.
  */
 @Module({
   imports: [
@@ -134,7 +134,7 @@ export class LedgerCredits {
 })
 export class LedgerRootModule {}
 
-/** La definición del servicio de prueba, con sus tablas en los shards. */
+/** The test service definition, with its tables on the shards. */
 export class LedgerService {
   static definition(
     options: LedgerServiceOptions = { requireScope: true },

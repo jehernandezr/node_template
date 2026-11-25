@@ -1,14 +1,14 @@
 import type { HttpTestRequest } from './http-test-request.js';
 import type { HttpTestResponse } from './http-test-response.js';
 
-/** Cliente de pruebas sobre `fetch` nativo: sin supertest, contra una app que escucha en un puerto libre. */
+/** Test client over native `fetch`: no supertest, against an app listening on a free port. */
 export class HttpTestClient {
   constructor(
     private readonly baseUrl: string,
     private readonly defaultHeaders: Readonly<Record<string, string>> = {},
   ) {}
 
-  /** Otro cliente con headers fijos adicionales (`Authorization`, `Origin`, `Cookie`). */
+  /** Returns another client with additional fixed headers (`Authorization`, `Origin`, `Cookie`). */
   withHeaders(headers: Readonly<Record<string, string>>): HttpTestClient {
     return new HttpTestClient(this.baseUrl, {
       ...this.defaultHeaders,

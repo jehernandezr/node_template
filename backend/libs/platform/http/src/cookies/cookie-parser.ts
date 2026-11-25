@@ -1,6 +1,6 @@
-/** Lee el header `Cookie` según RFC 6265: solo pares `nombre=valor`, separados por `;`. */
+/** Reads the `Cookie` header per RFC 6265: only `name=value` pairs, separated by `;`. */
 export class CookieParser {
-  /** La primera aparición de cada nombre gana. Los pares sin `=` o con nombre vacío se ignoran. */
+  /** The first occurrence of each name wins. Pairs without `=` or with an empty name are ignored. */
   static parse(header: string | undefined): ReadonlyMap<string, string> {
     const cookies = new Map<string, string>();
     if (header === undefined) {
@@ -20,7 +20,7 @@ export class CookieParser {
     return cookies;
   }
 
-  /** Un valor mal codificado se deja tal cual: no es un error de la petición. */
+  /** A badly encoded value is left as is: it is not a request error. */
   private static decode(raw: string): string {
     try {
       return decodeURIComponent(raw);

@@ -4,7 +4,7 @@ import { AppConfig } from '@platform/config';
 import type { NotificationsConfig } from '../../../config/notifications.config.js';
 import { RecipientFingerprint } from '../domain/recipient-fingerprint.js';
 
-/** HMAC-SHA256 de la dirección normalizada con el pepper del servicio, en hexadecimal. */
+/** HMAC-SHA256 of the normalized address with the service's pepper, in hexadecimal. */
 @Injectable()
 export class HmacRecipientFingerprint extends RecipientFingerprint {
   private readonly pepper: string;

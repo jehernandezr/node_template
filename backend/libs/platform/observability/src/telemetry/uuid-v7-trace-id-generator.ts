@@ -2,8 +2,8 @@ import type { IdGenerator as OtelIdGenerator } from '@opentelemetry/sdk-trace';
 import type { TraceContextCodec } from '../propagation/trace-context-codec.js';
 
 /**
- * Generador de ids de OpenTelemetry que usa UUIDv7 para el trace id (ADR 0003):
- * la traza que abre la plataforma tiene el mismo `traceId` que devuelve `x-trace-id`.
+ * OpenTelemetry id generator that uses UUIDv7 for the trace id (ADR 0003):
+ * the trace opened by the platform has the same `traceId` that `x-trace-id` returns.
  */
 export class UuidV7TraceIdGenerator implements OtelIdGenerator {
   constructor(private readonly codec: TraceContextCodec) {}

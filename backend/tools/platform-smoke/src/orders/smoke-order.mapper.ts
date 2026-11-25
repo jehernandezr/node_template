@@ -4,7 +4,7 @@ import { SmokeOrder } from './smoke-order.js';
 import { SmokeOrderEntity } from './smoke-order.entity.js';
 import { SmokeOrderStatus } from './smoke-order-status.enum.js';
 
-/** Traduce entre el agregado y la fila. Una versión sin valor inserta; con valor, actualiza. */
+/** Translates between the aggregate and the row. A version without a value inserts; with a value, it updates. */
 @Injectable()
 export class SmokeOrderMapper implements EntityMapper<
   SmokeOrder,

@@ -23,7 +23,7 @@ import { SagaSettings } from '../saga-settings.js';
 import { FixedRandomSource } from '@platform/kernel/test-utils';
 import { FailureKind, PlatformError } from '@platform/kernel';
 
-/** Error de red que el clasificador toma como transitorio. */
+/** Network error that the classifier treats as transient. */
 class NetworkError extends PlatformError {
   override readonly code = 'NET.RESET';
 

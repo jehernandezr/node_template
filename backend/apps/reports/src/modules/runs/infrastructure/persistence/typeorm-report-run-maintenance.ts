@@ -14,8 +14,8 @@ import {
 import { ReportRunEntity } from './entities/report-run.entity.js';
 
 /**
- * Mantenimiento de `report_runs` en todos los shards, cada uno en una transacción de mantenimiento, sin las filas de
- * los tenants que ya se trasladaron a otro shard.
+ * Maintenance of `report_runs` in all shards, each in a maintenance transaction, without the rows of
+ * tenants that have already moved to another shard.
  */
 @Injectable()
 export class TypeOrmReportRunMaintenance extends ReportRunMaintenance {

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
 
-/** Módulo sin providers para arrancar aplicaciones de prueba sin el runtime real. */
+/** Module without providers to start test applications without the real runtime. */
 @Module({})
 export class EmptyHostModule {}

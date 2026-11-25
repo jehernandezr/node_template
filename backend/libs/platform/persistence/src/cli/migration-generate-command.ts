@@ -2,14 +2,14 @@ import { resolve } from 'node:path';
 import type { DatabaseSetDefinition } from '../model/database-set-definition.js';
 import type { MigrationGenerator } from '../migration-generator.js';
 
-/** Opciones que acepta el comando, con el nombre con que se escriben en la línea de comandos. */
+/** Options accepted by the command, with the name used to write them on the command line. */
 enum CliOption {
   Name = 'name',
   Definition = 'definition',
   Out = 'out',
 }
 
-/** Variables de entorno con la conexión al servidor donde se crea la base temporal. */
+/** Environment variables with the connection to the server where the temporary database is created. */
 enum CliEnv {
   Host = 'MIGRATION_DB_HOST',
   Port = 'MIGRATION_DB_PORT',
@@ -24,14 +24,14 @@ const EXIT_OK = 0;
 const EXIT_ERROR = 1;
 const EXIT_USAGE = 2;
 
-/** Argumentos ya validados de la línea de comandos. */
+/** Already validated command-line arguments. */
 interface CliArguments {
   readonly name: string;
   readonly definition: string;
   readonly out: string;
 }
 
-/** Comando de la CLI `migration-generate`: lee los argumentos, carga la definición y llama al generador. */
+/** `migration-generate` CLI command: reads the arguments, loads the definition and calls the generator. */
 export class MigrationGenerateCommand {
   constructor(
     private readonly generator: MigrationGenerator,
@@ -39,7 +39,7 @@ export class MigrationGenerateCommand {
     private readonly write: (text: string) => void,
   ) {}
 
-  /** @returns el código de salida: 0 con éxito o sin cambios, 1 con un error, 2 con un uso incorrecto. */
+  /** @returns the exit code: 0 on success or no changes, 1 on an error, 2 on incorrect usage. */
   async run(argv: readonly string[]): Promise<number> {
     const options = this.parse(argv);
     const user = this.env[CliEnv.User];
@@ -82,7 +82,7 @@ export class MigrationGenerateCommand {
     }
   }
 
-  /** Los argumentos son `--clave=valor`, exactamente una vez cada uno; cualquier otro dato es un error de uso. */
+  /** The arguments are `--key=value`, exactly once each; any other input is a usage error. */
   private parse(argv: readonly string[]): CliArguments | undefined {
     const values = new Map<string, string>();
     for (const arg of argv) {
@@ -101,7 +101,7 @@ export class MigrationGenerateCommand {
     return { name, definition, out };
   }
 
-  /** Toma el `default` del módulo, o `undefined` si no tiene la forma de un `DatabaseSetDefinition`. */
+  /** Takes the module `default`, or `undefined` if it does not have the shape of a `DatabaseSetDefinition`. */
   private async loadDefinition(
     path: string,
   ): Promise<DatabaseSetDefinition | undefined> {

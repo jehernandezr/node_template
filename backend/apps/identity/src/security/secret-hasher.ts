@@ -1,11 +1,11 @@
 /**
- * Huella de un secreto de un solo uso (códigos, tokens opacos). Se guarda la huella, nunca el secreto: una
- * copia de la base no permite usar los tokens que contiene.
+ * Hash of a single-use secret (codes, opaque tokens). The hash is stored, never the secret: a
+ * copy of the database does not allow using the tokens it contains.
  */
 export abstract class SecretHasher {
-  /** Huella en base64url. Dos llamadas con el mismo valor dan la misma huella. */
+  /** Hash in base64url. Two calls with the same value give the same hash. */
   abstract digest(value: string | Uint8Array): string;
 
-  /** Compara un valor con una huella guardada sin revelar dónde difieren. */
+  /** Compares a value with a stored hash without revealing where they differ. */
   abstract matches(value: string | Uint8Array, digest: string): boolean;
 }

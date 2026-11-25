@@ -1,11 +1,11 @@
 import { createHash, createHmac, type Hash, type Hmac } from 'node:crypto';
 
-/** Datos que `@smithy/signature-v4` entrega al hash. */
+/** Data that `@smithy/signature-v4` passes to the hash. */
 export type SourceData = string | ArrayBuffer | ArrayBufferView;
 
 /**
- * SHA-256 (o HMAC-SHA-256 si recibe un secreto) con la forma que pide
- * `@smithy/signature-v4`. Usa `node:crypto`, así no se suma otro paquete.
+ * SHA-256 (or HMAC-SHA-256 if it receives a secret) with the shape
+ * `@smithy/signature-v4` requires. Uses `node:crypto`, so no other package is added.
  */
 export class NodeSha256 {
   private digester: Hash | Hmac;

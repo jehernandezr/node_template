@@ -10,7 +10,7 @@ import {
 import type { Clock } from '@platform/kernel';
 import { HttpProblemError } from './http-problem.error.js';
 
-/** Aplica el requisito de acceso de la ruta al actor, con el grant que corresponde a su tipo. */
+/** Applies the route's access requirement to the actor, with the grant matching its type. */
 export class EndpointAuthorizer {
   constructor(
     private readonly resolver: AccessResolver,
@@ -48,8 +48,8 @@ export class EndpointAuthorizer {
   }
 
   /**
-   * Un usuario trae el grant de su tenant solo si la ruta pide permisos, roles, funcionalidades o flags. Una
-   * service account no tiene grant propio de plan ni flags, así que no cumple rutas que los exigen.
+   * A user brings their tenant's grant only if the route requires permissions, roles, features or flags. A
+   * service account has no grant of its own for plan or flags, so it does not satisfy routes that require them.
    */
   private async grantFor(
     route: RouteDefinition,

@@ -4,7 +4,7 @@ import {
   type HealthReport,
 } from '@platform/kernel';
 
-/** Dependencia que guarda la señal recibida, para comprobar que la propagan. */
+/** Dependency that stores the received signal, to check that it is propagated. */
 export class SignalRecordingHealthCheck extends HealthCheckable {
   received?: AbortSignal;
 

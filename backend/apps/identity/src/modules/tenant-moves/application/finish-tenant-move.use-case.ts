@@ -4,8 +4,8 @@ import { Clock } from '@platform/kernel';
 import { TenantMoveLog } from '../domain/tenant-move-log.js';
 
 /**
- * Anota el traslado como cambiado cuando cada servicio ya apunta al destino. Desde ese instante corre la gracia que
- * espera `TenantMoveCleanupJob` para borrar el origen; repetirlo conserva el primer instante.
+ * Records the move as switched when every service already points to the target. From that moment runs the grace period that
+ * `TenantMoveCleanupJob` waits before deleting the source; repeating it keeps the first moment.
  */
 @Injectable()
 export class FinishTenantMove {

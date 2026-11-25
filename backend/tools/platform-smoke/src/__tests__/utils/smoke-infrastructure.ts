@@ -9,8 +9,8 @@ import {
 import { DataSource } from 'typeorm';
 
 /**
- * Infraestructura real de la prueba de humo: un PostgreSQL con el catálogo y dos shards, y un Valkey
- * con la ACL del servicio. La app se conecta a ambos por variables de entorno, como en un despliegue.
+ * Real smoke test infrastructure: a PostgreSQL with the catalog and two shards, and a Valkey
+ * with the service ACL. The app connects to both through environment variables, as in a deployment.
  */
 export class SmokeInfrastructure {
   static readonly INSTANCE = 'smoke-instance';
@@ -41,7 +41,7 @@ export class SmokeInfrastructure {
     await this.container?.stop();
   }
 
-  /** Variables que la app recibe: lo que pondría el despliegue en el entorno del proceso. */
+  /** Variables the app receives: what the deployment would put in the process environment. */
   environment(): SmokeEnvironment {
     const container = this.started;
     return {
@@ -67,7 +67,7 @@ export class SmokeInfrastructure {
     };
   }
 
-  /** Lee filas de una base directamente, por fuera de la app. */
+  /** Reads rows from a database directly, outside the app. */
   async rows(
     database: string,
     sql: string,

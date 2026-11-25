@@ -11,7 +11,7 @@ import { SessionRef } from '../domain/session-ref.js';
 import { SessionRepository } from '../domain/session.repository.js';
 import { SessionTokenIssuer } from './session-token-issuer.js';
 
-/** Sube el último MFA de la sesión (step-up) y emite un access token nuevo; el session token no cambia. */
+/** Raises the session's last MFA (step-up) and issues a new access token; the session token does not change. */
 @Injectable()
 export class MarkMfaVerified {
   constructor(

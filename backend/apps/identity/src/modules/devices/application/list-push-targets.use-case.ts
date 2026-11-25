@@ -6,8 +6,8 @@ import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { DeviceRepository } from '../domain/device.repository.js';
 
 /**
- * Dispositivos a los que se puede enviar un push: vigentes, con confianza y con token. Un dispositivo sin
- * confianza ya no aprueba inicios de sesión, así que tampoco recibe avisos de la cuenta.
+ * Devices a push can be sent to: current, trusted and with a token. An untrusted device
+ * no longer approves sign-ins, so it does not receive account alerts either.
  */
 @Injectable()
 export class ListPushTargets {

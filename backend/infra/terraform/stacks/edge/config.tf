@@ -8,7 +8,7 @@ terraform {
     }
   }
 
-  # bucket, key y region llegan de environments/<ambiente>/edge/backend.tfvars.
+  # bucket, key and region come from environments/<environment>/edge/backend.tfvars.
   backend "s3" {}
 }
 
@@ -20,7 +20,7 @@ provider "aws" {
   }
 }
 
-# CloudFront, su WAF y su certificado ACM solo existen en us-east-1.
+# CloudFront, its WAF and its ACM certificate only exist in us-east-1.
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
@@ -34,7 +34,7 @@ resource "terraform_data" "aws_only" {
   lifecycle {
     precondition {
       condition     = !local.localstack
-      error_message = "El stack edge solo se despliega en AWS: LocalStack no emula CloudFront ni WAF en su plan gratuito."
+      error_message = "The edge stack is deployed only on AWS: LocalStack does not emulate CloudFront or WAF in its free plan."
     }
   }
 }

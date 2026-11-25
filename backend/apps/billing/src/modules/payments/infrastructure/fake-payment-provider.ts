@@ -7,9 +7,9 @@ import {
 import { PaymentStatus } from '../domain/payment-status.enum.js';
 
 /**
- * Proveedor de cobro de la plantilla: responde siempre lo que dice `BILLING_FAKE_PAYMENT_OUTCOME` y, como uno real,
- * recuerda cada intento por su llave de idempotencia, así repetir el pedido devuelve la primera respuesta sin cobrar
- * otra vez. Lo recordado vive en el proceso.
+ * Template charge provider: always responds with what `BILLING_FAKE_PAYMENT_OUTCOME` says and, like a real one,
+ * remembers each attempt by its idempotency key, so repeating the request returns the first response without charging
+ * again. What it remembers lives in the process.
  */
 export class FakePaymentProvider extends PaymentProvider {
   private readonly answered = new Map<string, PaymentResult>();

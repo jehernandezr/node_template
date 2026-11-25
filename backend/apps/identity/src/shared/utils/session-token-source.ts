@@ -1,8 +1,8 @@
 import { BearerTokenReader } from '@platform/http';
 
 /**
- * El session token de una petición: el del cuerpo (o la cookie, que el pipe ya copió ahí) o, en la app
- * nativa, el que viaja en `Authorization: Bearer st1_...`.
+ * The session token of a request: the one in the body (or the cookie, which the pipe already copied there) or, in the native
+ * app, the one that travels in `Authorization: Bearer st1_...`.
  */
 export function sessionTokenFrom(
   body: string | undefined,

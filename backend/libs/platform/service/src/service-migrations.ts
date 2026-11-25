@@ -1,9 +1,9 @@
 import type { DatabaseSetDefinition } from '@platform/persistence';
 
 /**
- * Entidades y migraciones propias del servicio, una por clase de base. Son las
- * definiciones de referencia con las que se crean los `DataSource` de TypeORM;
- * la plataforma suma las suyas (`ServiceDatabaseSets`).
+ * The service's own entities and migrations, one per database class. They are the
+ * reference definitions with which the TypeORM `DataSource`s are created;
+ * the platform adds its own (`ServiceDatabaseSets`).
  */
 export interface ServiceMigrations {
   readonly catalog: DatabaseSetDefinition;

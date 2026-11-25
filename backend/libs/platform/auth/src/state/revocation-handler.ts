@@ -1,2 +1,2 @@
-/** Recibe el `sid` de una sesión recién revocada. */
+/** Receives the `sid` of a newly revoked session. */
 export type RevocationHandler = (sessionId: string) => void;

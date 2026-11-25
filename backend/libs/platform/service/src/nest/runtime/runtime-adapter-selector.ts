@@ -1,7 +1,7 @@
 import type { ConfigEnv } from '@platform/config';
 import type { RuntimeAdapters } from './platform-runtime-options.js';
 
-/** Variables de entorno que deciden qué adaptadores de infraestructura se registran. */
+/** Environment variables that decide which infrastructure adapters are registered. */
 enum RuntimeAdapterVariable {
   ValkeyUrl = 'VALKEY_URL',
   ValkeyHost = 'VALKEY_HOST',
@@ -9,9 +9,9 @@ enum RuntimeAdapterVariable {
 }
 
 /**
- * Deduce de las variables de entorno qué adaptadores activar. Un valor en blanco cuenta como
- * ausente, porque un despliegue puede dejar la variable definida sin contenido. Las opciones
- * explícitas del servicio ganan sobre lo que deduce el entorno.
+ * Infers from the environment variables which adapters to enable. A blank value counts as
+ * absent, because a deployment may leave the variable defined with no content. The service's explicit
+ * options win over what the environment infers.
  */
 export class RuntimeAdapterSelector {
   select(

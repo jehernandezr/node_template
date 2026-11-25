@@ -1,4 +1,4 @@
-/** Si el plan del tenant incluye los reportes avanzados (exportar a CSV) para quien los pide. */
+/** Whether the tenant's plan includes advanced reports (CSV export) for the requester. */
 export abstract class ReportEntitlements {
   abstract allowsAdvancedReports(
     tenantId: string,

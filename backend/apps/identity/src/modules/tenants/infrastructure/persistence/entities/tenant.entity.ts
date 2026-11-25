@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity } from 'typeorm';
 
-/** `tenants`, en el shard del tenant. `tenant_id` es el propio id. */
+/** `tenants`, in the tenant's shard. `tenant_id` is its own id. */
 @Entity({ name: 'tenants' })
 export class TenantEntity extends AuditedEntity {
   @Column({ type: 'varchar', length: 63, name: 'slug', nullable: false })

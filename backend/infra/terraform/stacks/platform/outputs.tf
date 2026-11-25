@@ -1,10 +1,10 @@
 output "alarm_topic_arn" {
-  description = "Tópico SNS de alarmas y avisos de costo. Null si no hay."
+  description = "SNS topic for alarms and cost notices. Null if there is none."
   value       = local.alarm_topic_arn
 }
 
 output "ecs_cluster" {
-  description = "Clúster ECS: arn, name y kms_key_arn (ECS Exec). Null sin cómputo."
+  description = "ECS cluster: arn, name and kms_key_arn (ECS Exec). Null without compute."
   value = var.compute_enabled ? {
     arn         = module.ecs_cluster[0].cluster_arn
     name        = module.ecs_cluster[0].cluster_name
@@ -13,12 +13,12 @@ output "ecs_cluster" {
 }
 
 output "compute_logs_kms_key_arn" {
-  description = "CMK de los logs, variables de entorno y DLQ asíncronas de los servicios (Fargate y Lambda). Null sin cómputo."
+  description = "CMK for the logs, environment variables and async DLQs of the services (Fargate and Lambda). Null without compute."
   value       = var.compute_enabled ? module.compute_logs_kms[0].arn : null
 }
 
 output "observability" {
-  description = "OpenObserve: endpoint OTLP, secreto de autorización, CMK y security group del ALB interno. Null sin observabilidad."
+  description = "OpenObserve: OTLP endpoint, authorization secret, CMK and security group of the internal ALB. Null without observability."
   value = length(module.observability) == 0 ? null : {
     otlp_endpoint                 = module.observability[0].otlp_http_endpoint
     otlp_authorization_value_from = module.observability[0].otlp_authorization_value_from
@@ -30,7 +30,7 @@ output "observability" {
 }
 
 output "http_api" {
-  description = "API HTTP compartida: id, execution_arn, endpoint_host (origen de CloudFront), authorizer_id, origin_verify_secret_arn y vpc_link_id. Null sin cómputo."
+  description = "Shared HTTP API: id, execution_arn, endpoint_host (CloudFront origin), authorizer_id, origin_verify_secret_arn and vpc_link_id. Null without compute."
   value = var.compute_enabled ? {
     id                       = module.http_api[0].api_id
     execution_arn            = module.http_api[0].execution_arn
@@ -43,7 +43,7 @@ output "http_api" {
 }
 
 output "api_alb" {
-  description = "ALB interno de las APIs en Fargate: listener_arn y security_group_id. Null si fargate_api_enabled es false."
+  description = "Internal ALB for the Fargate APIs: listener_arn and security_group_id. Null if fargate_api_enabled is false."
   value = local.api_alb_enabled ? {
     listener_arn      = module.api_alb[0].listener_arn
     security_group_id = module.api_alb[0].security_group_id
@@ -51,7 +51,7 @@ output "api_alb" {
 }
 
 output "realtime_alb" {
-  description = "ALB público de tiempo real: listener_arn, security_group_id, dns_name y zone_id. Null sin certificado."
+  description = "Public realtime ALB: listener_arn, security_group_id, dns_name and zone_id. Null without a certificate."
   value = local.realtime_alb_enabled ? {
     listener_arn      = module.realtime_alb[0].listener_arn
     security_group_id = module.realtime_alb[0].security_group_id
@@ -61,7 +61,7 @@ output "realtime_alb" {
 }
 
 output "files_bucket" {
-  description = "Bucket de archivos de usuarios: name, arn, kms_key_arn y read_write_policy_json. Null si no se creó."
+  description = "User files bucket: name, arn, kms_key_arn and read_write_policy_json. Null if it was not created."
   value = length(module.files_bucket) == 0 ? null : {
     name                   = module.files_bucket[0].bucket_id
     arn                    = module.files_bucket[0].bucket_arn
@@ -71,7 +71,7 @@ output "files_bucket" {
 }
 
 output "ses" {
-  description = "SES: events_topic_arn, events_kms_key_arn, send_policy_json y configuration_set_names. Null sin ses_domain."
+  description = "SES: events_topic_arn, events_kms_key_arn, send_policy_json and configuration_set_names. Null without ses_domain."
   value = length(module.ses) == 0 ? null : {
     events_topic_arn        = module.ses[0].events_topic_arn
     events_kms_key_arn      = module.ses[0].events_kms_key_arn
@@ -81,12 +81,12 @@ output "ses" {
 }
 
 output "ses_dns_records" {
-  description = "Registros DNS de SES que debes publicar si no usas route53_zone_id."
+  description = "SES DNS records you must publish if you do not use route53_zone_id."
   value       = try(module.ses[0].dns_records, null)
 }
 
 output "github_oidc" {
-  description = "Acceso de GitHub Actions por OIDC: provider_arn, deploy_role_arn, publish_role_arn, web_role_arn, artifacts_bucket y ecr_repository_prefix. Null sin github_repository."
+  description = "GitHub Actions access through OIDC: provider_arn, deploy_role_arn, publish_role_arn, web_role_arn, artifacts_bucket and ecr_repository_prefix. Null without github_repository."
   value = length(module.oidc_github) == 0 ? null : {
     provider_arn          = module.oidc_github[0].provider_arn
     deploy_role_arn       = module.oidc_github[0].deploy_role_arn

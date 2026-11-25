@@ -4,7 +4,7 @@ import { PlatformPersistenceMigrations } from '../migrations/platform-persistenc
 import { PlatformSchemaSql } from '../migrations/platform-schema-sql.js';
 import { StubDataSource } from './utils/stub-data-source.js';
 
-/** Sentencias como las registra `StubQueryRunner.calls`, sin parámetros. */
+/** Statements as recorded by `StubQueryRunner.calls`, without parameters. */
 function recorded(statements: readonly string[]): string[] {
   return statements.map((statement) => `query ${statement} []`);
 }

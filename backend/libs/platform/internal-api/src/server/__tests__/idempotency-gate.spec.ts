@@ -28,7 +28,7 @@ function setup(options: { leaseMarginMs?: number; minLeaseMs?: number } = {}) {
   return { clock, store, outcomes, gate };
 }
 
-/** Obtiene el claim de una decisión `Proceed`; falla la prueba si la decisión no es esa. */
+/** Gets the claim of a `Proceed` decision; fails the test if the decision is not that one. */
 function claimedOf(decision: GateDecision) {
   if (decision.kind !== GateDecisionKind.Proceed) {
     throw new Error('expected Proceed');

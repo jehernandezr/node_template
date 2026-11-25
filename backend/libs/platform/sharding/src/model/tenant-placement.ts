@@ -1,18 +1,18 @@
 import type { TenantStatus } from './tenant-status.enum.js';
 
-/** Dónde vive un tenant: su región y los shards lógicos que tiene asignados. */
+/** Where a tenant lives: its region and the logical shards assigned to it. */
 export interface TenantPlacement {
   readonly tenantId: string;
   readonly region: string;
   /**
-   * Lista no vacía de shards lógicos. Agregar un shard a un grupo solo es
-   * válido con una saga de traslado y el tenant en `Migrating`, para que las
-   * escrituras sigan bloqueadas mientras cambia el grupo.
+   * Non-empty list of logical shards. Adding a shard to a group is only
+   * valid with a move saga and the tenant in `Migrating`, so that
+   * writes stay blocked while the group changes.
    */
   readonly shardGroup: readonly string[];
   readonly status: TenantStatus;
-  /** Aumenta con cada cambio del placement. Los cachés conservan la versión más alta. */
+  /** Increases with each placement change. Caches keep the highest version. */
   readonly version: number;
-  /** `true` cuando el tenant es dueño exclusivo de su shard. */
+  /** `true` when the tenant is the exclusive owner of its shard. */
   readonly dedicated: boolean;
 }

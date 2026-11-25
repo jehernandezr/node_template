@@ -1,8 +1,8 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 
 /**
- * Transacción corta en un shard con el tenant en la sesión, para pasar el RLS de sus tablas. Libera la conexión
- * en todos los caminos.
+ * Short transaction on a shard with the tenant in the session, to pass the RLS of its tables. Releases the connection
+ * on every path.
  */
 export class TenantSession {
   private static readonly TENANT_SETTING = 'app.tenant_id';

@@ -105,7 +105,7 @@ describe('GlobalUniquenessChecker', () => {
         const attempt = () =>
           new GlobalUniquenessChecker().check([first, second]);
 
-        expect(attempt).toThrow(/ya está declarado en/);
+        expect(attempt).toThrow(/is already declared in/);
       },
     );
 

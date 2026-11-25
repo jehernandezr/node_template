@@ -1,6 +1,6 @@
-/** Posesión vigente de un `JobLock`. */
+/** Current ownership of a `JobLock`. */
 export interface JobLease {
   readonly name: string;
-  /** Token de fencing: solo quien lo tiene puede liberar. */
+  /** Fencing token: only its holder can release. */
   readonly token: string;
 }

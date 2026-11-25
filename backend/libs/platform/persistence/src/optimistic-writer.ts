@@ -9,13 +9,13 @@ import { OptimisticLockError } from './errors/optimistic-lock.error.js';
 import type { VersionedEntity } from './entities/versioned-entity.js';
 
 /**
- * Actualiza una fila solo si su versión sigue siendo la que se leyó. Lo comparten
- * `ShardedRepository` y `CatalogRepository`.
+ * Updates a row only if its version is still the one that was read. Shared by
+ * `ShardedRepository` and `CatalogRepository`.
  */
 export class OptimisticWriter {
   /**
-   * `UPDATE ... WHERE id = :id AND version = :version` más las condiciones de `scope`, que sube la versión en uno.
-   * @throws OptimisticLockError si ninguna fila cumple (otra escritura ya cambió la versión, o la fila no existe).
+   * `UPDATE ... WHERE id = :id AND version = :version` plus the `scope` conditions, which increments the version by one.
+   * @throws OptimisticLockError if no row matches (another write already changed the version, or the row does not exist).
    */
   async update<TEntity extends VersionedEntity>(
     manager: EntityManager,
@@ -30,8 +30,8 @@ export class OptimisticWriter {
         values[column.propertyName] = column.getEntityValue(entity);
       }
     }
-    // La versión y las fechas de auditoría las pone la base: TypeORM suma la versión y
-    // actualiza `updated_at` en cada UPDATE, y `created_*` nunca cambia.
+    // The version and audit dates are set by the database: TypeORM increments the version and
+    // updates `updated_at` on each UPDATE, and `created_*` never changes.
     const result = await manager
       .createQueryBuilder()
       .update(target)
@@ -48,7 +48,7 @@ export class OptimisticWriter {
     }
   }
 
-  /** Columnas que el UPDATE escribe: no la clave, la versión, las fechas de TypeORM, el borrado ni el tenant y el autor de creación. */
+  /** Columns written by the UPDATE: not the key, the version, the TypeORM dates, the deletion, or the creation tenant and author. */
   private static isWritable(
     column: EntityMetadata['columns'][number],
   ): boolean {

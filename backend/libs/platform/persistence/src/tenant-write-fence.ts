@@ -2,37 +2,37 @@ import { ShardingError, ShardingErrorCode } from '@platform/sharding';
 import type { DataSource, EntityManager, QueryRunner } from 'typeorm';
 
 /**
- * Barrera de escritura de un tenant dentro de su shard, la que garantiza que ninguna escritura llegue al origen
- * después de la última ronda de un traslado. Cada transacción de escritura toma un candado consultivo compartido
- * por tenant antes de abrirse y mira si el tenant tiene fila en `tenant_write_fences`; el traslado escribe esa fila
- * y luego toma el candado exclusivo, que espera a que terminen las transacciones que ya entraron.
+ * Write barrier of a tenant inside its shard, which guarantees that no write reaches the source
+ * after the last round of a relocation. Each write transaction takes a shared advisory lock
+ * per tenant before opening and checks whether the tenant has a row in `tenant_write_fences`; the relocation writes that row
+ * and then takes the exclusive lock, which waits for the transactions that already entered to finish.
  *
- * El candado es de sesión y se toma antes de `BEGIN`, y la revisión corre fuera de la transacción: así la revisión
- * siempre ve una fila escrita antes de que el candado se concediera, con cualquier nivel de aislamiento.
+ * The lock is session-level and is taken before `BEGIN`, and the check runs outside the transaction: so the check
+ * always sees a row written before the lock was granted, with any isolation level.
  *
- * Los mantenimientos que recorren todos los tenants de un shard toman otro candado compartido, uno solo por shard,
- * que el traslado también espera: un mantenimiento no corre en un shard con un traslado sin pivotar, y deja fuera las
- * filas de los tenants que ya se fueron.
+ * Maintenance tasks that walk all tenants of a shard take another shared lock, a single one per shard,
+ * which the relocation also waits for: a maintenance task does not run on a shard with an unpivoted relocation, and it leaves out the
+ * rows of the tenants that already left.
  */
 export class TenantWriteFence {
-  /** Espacio de los candados consultivos por tenant, para no chocar con otros candados de dos enteros. */
+  /** Space of the per-tenant advisory locks, to avoid colliding with other two-integer locks. */
   private static readonly LOCK_SPACE = 0x5446;
   private static readonly LOCK_KEY = `${TenantWriteFence.LOCK_SPACE}, hashtext($1)`;
   private static readonly MAINTENANCE_LOCK_KEY = `${TenantWriteFence.LOCK_SPACE + 1}, 0`;
   private static readonly RETRY_AFTER_SECONDS = 1;
 
   /**
-   * Condición SQL que deja fuera las filas de los tenants con barrera en este shard, para los mantenimientos.
-   * @param tenantExpression expresión SQL con el id del tenant de la fila, calificada con su tabla o alias (por
-   *   ejemplo `"tasks"."tenant_id"`): sin calificar, `tenant_id` sería la columna de la barrera.
+   * SQL condition that leaves out the rows of the tenants with a barrier on this shard, for maintenance tasks.
+   * @param tenantExpression SQL expression with the tenant id of the row, qualified with its table or alias (for
+   *   example `"tasks"."tenant_id"`): unqualified, `tenant_id` would be the barrier column.
    */
   static unfenced(tenantExpression: string): string {
     return `NOT EXISTS (SELECT 1 FROM tenant_write_fences twf WHERE twf.tenant_id = (${tenantExpression})::text)`;
   }
 
   /**
-   * Toma el candado compartido del tenant en la sesión y comprueba que el tenant no tenga barrera.
-   * @throws ShardingError `TenantMigrating` si la tiene; en ese caso ya soltó el candado.
+   * Takes the tenant's shared lock in the session and checks that the tenant has no barrier.
+   * @throws ShardingError `TenantMigrating` if it has one; in that case it has already released the lock.
    */
   async admit(runner: QueryRunner, tenantId: string): Promise<void> {
     await runner.query(
@@ -52,7 +52,7 @@ export class TenantWriteFence {
     }
   }
 
-  /** Suelta el candado compartido que tomó `admit` en la misma sesión. */
+  /** Releases the shared lock that `admit` took in the same session. */
   async leave(runner: QueryRunner, tenantId: string): Promise<void> {
     await runner.query(
       `SELECT pg_advisory_unlock_shared(${TenantWriteFence.LOCK_KEY})`,
@@ -61,10 +61,10 @@ export class TenantWriteFence {
   }
 
   /**
-   * Dentro de la transacción de un mantenimiento: toma el candado de mantenimiento del shard hasta el final de la
-   * transacción y comprueba que ningún traslado esté a medio camino en él.
-   * @throws ShardingError `TenantMigrating` si algún tenant tiene barrera sin pivotar; el mantenimiento se repite en
-   *   la corrida siguiente.
+   * Inside a maintenance transaction: takes the shard maintenance lock until the end of the
+   * transaction and checks that no relocation is halfway through on it.
+   * @throws ShardingError `TenantMigrating` if some tenant has an unpivoted barrier; the maintenance is repeated in
+   *   the next run.
    */
   async enterMaintenance(manager: EntityManager): Promise<void> {
     await manager.query(
@@ -80,9 +80,9 @@ export class TenantWriteFence {
   }
 
   /**
-   * Levanta la barrera del tenant para el traslado y espera a que terminen las transacciones de escritura y los
-   * mantenimientos que ya habían entrado. Al volver, ninguna escritura del tenant puede llegar a este shard.
-   * Idempotente; si el tenant tenía la barrera de un traslado anterior, pasa a ser la de este.
+   * Raises the tenant barrier for the relocation and waits for the write transactions and the
+   * maintenance tasks that had already entered to finish. On return, no write of the tenant can reach this shard.
+   * Idempotent; if the tenant had the barrier of a previous relocation, it becomes this one's.
    */
   async raise(
     dataSource: DataSource,
@@ -110,7 +110,7 @@ export class TenantWriteFence {
     }
   }
 
-  /** Anota que el traslado ya pivotó: el tenant vive en otro shard y sus filas de aquí solo esperan la limpieza. */
+  /** Records that the relocation already pivoted: the tenant lives on another shard and its rows here only await cleanup. */
   async markSwitched(
     dataSource: DataSource,
     tenantId: string,
@@ -122,7 +122,7 @@ export class TenantWriteFence {
     );
   }
 
-  /** El traslado que levantó la barrera del tenant en este shard, o `undefined` si no hay barrera. */
+  /** Returns the relocation that raised the tenant barrier on this shard, or `undefined` if there is no barrier. */
   async raisedBy(
     dataSource: DataSource,
     tenantId: string,
@@ -134,7 +134,7 @@ export class TenantWriteFence {
     return rows[0]?.move_id;
   }
 
-  /** El traslado que levantó aquí una barrera y todavía no pivotó, o `undefined` si no hay ninguno en vuelo. */
+  /** Returns the relocation that raised a barrier here and has not pivoted yet, or `undefined` if none is in flight. */
   async unswitchedBy(
     dataSource: DataSource,
     tenantId: string,
@@ -146,7 +146,7 @@ export class TenantWriteFence {
     return rows[0]?.move_id;
   }
 
-  /** Baja la barrera que levantó ese traslado, por ejemplo al cancelarlo o al limpiar el origen. Idempotente. */
+  /** Lowers the barrier raised by that relocation, for example when canceling it or cleaning up the source. Idempotent. */
   async lower(
     dataSource: DataSource,
     tenantId: string,
@@ -158,7 +158,7 @@ export class TenantWriteFence {
     );
   }
 
-  /** Baja cualquier barrera del tenant, la de un traslado anterior que lo sacó de este shard al que ahora vuelve. */
+  /** Lowers any barrier of the tenant, the one from a previous relocation that moved it off this shard to which it now returns. */
   async lowerAny(dataSource: DataSource, tenantId: string): Promise<void> {
     await dataSource.query(
       'DELETE FROM tenant_write_fences WHERE tenant_id = $1',
@@ -177,7 +177,7 @@ export class TenantWriteFence {
     return rows[0]?.fenced === true;
   }
 
-  /** Toma el candado exclusivo y lo suelta: vuelve cuando ya no queda nadie con el compartido. */
+  /** Takes the exclusive lock and releases it: returns when nobody holds the shared one anymore. */
   private static async waitFor(
     runner: QueryRunner,
     key: string,

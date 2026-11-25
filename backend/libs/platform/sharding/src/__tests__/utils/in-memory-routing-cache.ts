@@ -7,12 +7,12 @@ interface StoredValue {
   readonly expiresAt: number;
 }
 
-/** {@link RoutingCache} en memoria con TTL. Sirve para pruebas y para configuraciones de un solo proceso. */
+/** In-memory {@link RoutingCache} with TTL. Useful for tests and single-process setups. */
 export class InMemoryRoutingCache implements RoutingCache {
   private readonly entries = new Map<string, StoredValue>();
   private readonly clock: Clock;
 
-  /** @param clock Fuente de tiempo. Por defecto, el reloj del sistema. */
+  /** @param clock Time source. By default, the system clock. */
   constructor(clock: Clock = new SystemClock()) {
     this.clock = clock;
   }

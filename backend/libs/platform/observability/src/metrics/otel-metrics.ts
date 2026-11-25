@@ -8,11 +8,11 @@ import type { MetricAttributes } from './metric-attributes.js';
 import { MetricsPort } from './metrics.port.js';
 
 /**
- * Adaptador de `MetricsPort` sobre la API de métricas de OpenTelemetry. Crea
- * cada instrumento una sola vez. Sin SDK registrado, la API es un no-op.
+ * `MetricsPort` adapter on the OpenTelemetry metrics API. Creates
+ * each instrument only once. Without a registered SDK, the API is a no-op.
  */
 export class OtelMetrics extends MetricsPort {
-  /** Nombre del instrumentation scope de las métricas de la plataforma. */
+  /** Name of the instrumentation scope of the platform metrics. */
   static readonly SCOPE = '@platform/observability';
 
   private readonly counters = new Map<string, Counter>();

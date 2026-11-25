@@ -8,17 +8,17 @@ import type { CallMeta } from '../transport/call-meta.js';
 import type { ProcessedOperationStore } from './processed-operation-store.js';
 
 /**
- * Antes de correr una compensación de saga deja una lápida en la llave del paso que deshace. Si ese paso nunca llegó,
- * la lápida lo deja completado como compensado y un envío tardío ya no aplica su efecto, que nadie desharía. Si el
- * paso sigue en curso, la compensación espera: responde `in-progress` y la saga la repite cuando el paso terminó. Si
- * el paso ya terminó, la compensación corre como siempre.
+ * Before running a saga compensation it lays a tombstone on the key of the step it undoes. If that step never arrived,
+ * the tombstone leaves it completed as compensated and a late send no longer applies its effect, which nobody would undo. If the
+ * step is still in progress, the compensation waits: it responds `in-progress` and the saga repeats it once the step finished. If
+ * the step already finished, the compensation runs as usual.
  */
 export class CompensationTombstones {
   constructor(private readonly store: ProcessedOperationStore) {}
 
   /**
-   * Pone la lápida en la llave de cada operación de `forwards` que la compensación de `meta` deshace. Devuelve el
-   * resultado con el que responder si la compensación tiene que esperar, o `undefined` si puede correr.
+   * Lays the tombstone on the key of each `forwards` operation that the compensation of `meta` undoes. Returns the
+   * result to respond with if the compensation has to wait, or `undefined` if it can run.
    */
   async lay(
     forwards: readonly string[],

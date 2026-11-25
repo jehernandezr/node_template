@@ -1,14 +1,14 @@
 import type { Topology } from '@platform/messaging';
 import type { SqsConsumerSettings } from '../sqs-consumer-config.js';
 
-/** Opciones de `SqsConsumerModule`: la cola que consume el servicio. */
+/** Options of `SqsConsumerModule`: the queue the service consumes. */
 export interface SqsConsumerModuleOptions {
-  /** Topología del servicio, la misma que recibe `MessagingModule`. */
+  /** Topology of the service, the same one `MessagingModule` receives. */
   readonly topology: Topology;
-  /** Nombre lógico de la cola, declarada en la topología. */
+  /** Logical name of the queue, declared in the topology. */
   readonly queue: string;
-  /** Ajustes del long polling. */
+  /** Long polling settings. */
   readonly consumer?: SqsConsumerSettings;
-  /** `false` en Lambda, donde el servicio usa `SqsLambdaHandler`. Por defecto `true`. */
+  /** `false` in Lambda, where the service uses `SqsLambdaHandler`. Defaults to `true`. */
   readonly poll?: boolean;
 }

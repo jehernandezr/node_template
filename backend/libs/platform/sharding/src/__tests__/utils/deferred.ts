@@ -1,4 +1,4 @@
-/** Promesa que se resuelve o rechaza desde afuera, para controlar el orden de las operaciones en una prueba. */
+/** Promise that is resolved or rejected from outside, to control the order of operations in a test. */
 export class Deferred<T> {
   readonly promise: Promise<T>;
   private resolver!: (value: T) => void;

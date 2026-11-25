@@ -2,8 +2,8 @@ import { DatabaseKind } from './model/database-kind.enum.js';
 import type { EntityClass } from './metadata/entity-metadata.js';
 
 /**
- * Entidades que los módulos declaran en `PersistenceModule.forFeature`. Se leen al crear cada
- * `DataSource`, que ocurre en el primer uso, cuando todos los módulos ya se instanciaron.
+ * Entities that modules declare in `PersistenceModule.forFeature`. They are read when each
+ * `DataSource` is created, which happens on first use, when all modules have already been instantiated.
  */
 export class EntityRegistry {
   private readonly byKind: Readonly<Record<DatabaseKind, Set<EntityClass>>> = {

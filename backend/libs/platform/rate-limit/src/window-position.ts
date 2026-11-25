@@ -1,7 +1,7 @@
-/** Ventana fija en la que cae un instante. */
+/** Fixed window that an instant falls in. */
 export interface WindowPosition {
-  /** Número de la ventana fija: `floor(ahora / W)`. */
+  /** Number of the fixed window: `floor(now / W)`. */
   readonly index: number;
-  /** Milisegundos transcurridos desde el inicio de la ventana, en `[0, W)`. */
+  /** Milliseconds elapsed since the start of the window, in `[0, W)`. */
   readonly elapsedMs: number;
 }

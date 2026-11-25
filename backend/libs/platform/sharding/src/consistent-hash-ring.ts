@@ -3,8 +3,8 @@ import { ShardingError } from './errors/sharding-error.js';
 import { ShardingErrorCode } from './errors/sharding-error-code.enum.js';
 
 /**
- * Posición en el anillo. FNV-1a sola agrupa los sufijos secuenciales (`nodo#0`, `nodo#1`, ...),
- * así que su salida pasa por el finalizador de murmur3 para repartir los puntos de forma pareja.
+ * Position on the ring. FNV-1a alone clusters sequential suffixes (`nodo#0`, `nodo#1`, ...),
+ * so its output goes through the murmur3 finalizer to spread the points evenly.
  */
 function ringPosition(input: string): number {
   let hash = Hashes.fnv1a32(input);
@@ -28,15 +28,15 @@ function comparePoints(a: RingPoint, b: RingPoint): number {
   return a.node < b.node ? -1 : a.node > b.node ? 1 : 0;
 }
 
-/** Anillo de hash consistente con nodos virtuales. Una clave pertenece al primer punto en sentido horario desde su hash. */
+/** Consistent hash ring with virtual nodes. A key belongs to the first point clockwise from its hash. */
 export class ConsistentHashRing {
   private readonly virtualNodes: number;
   private readonly members = new Set<string>();
   private points: RingPoint[] = [];
 
   /**
-   * @param virtualNodes Puntos por nodo en el anillo. Por defecto 128.
-   * @throws ShardingError `InvalidConfiguration` cuando `virtualNodes` no es un entero positivo.
+   * @param virtualNodes Points per node on the ring. Defaults to 128.
+   * @throws ShardingError `InvalidConfiguration` when `virtualNodes` is not a positive integer.
    */
   constructor(virtualNodes = 128) {
     if (!Number.isInteger(virtualNodes) || virtualNodes < 1) {
@@ -48,7 +48,7 @@ export class ConsistentHashRing {
     this.virtualNodes = virtualNodes;
   }
 
-  /** Agrega un nodo. Agregar uno que ya existe no hace nada. */
+  /** Adds a node. Adding one that already exists does nothing. */
   add(node: string): void {
     if (this.members.has(node)) {
       return;
@@ -60,7 +60,7 @@ export class ConsistentHashRing {
     this.points.sort(comparePoints);
   }
 
-  /** Quita un nodo. Quitar uno desconocido no hace nada. */
+  /** Removes a node. Removing an unknown one does nothing. */
   remove(node: string): void {
     if (!this.members.delete(node)) {
       return;
@@ -68,7 +68,7 @@ export class ConsistentHashRing {
     this.points = this.points.filter((point) => point.node !== node);
   }
 
-  /** Devuelve el nodo responsable de `key`, o undefined si el anillo está vacío. */
+  /** Returns the node responsible for `key`, or undefined if the ring is empty. */
   locate(key: string): string | undefined {
     if (this.points.length === 0) {
       return undefined;
@@ -88,7 +88,7 @@ export class ConsistentHashRing {
     return this.points[index].node;
   }
 
-  /** Devuelve los nodos actuales, ordenados. */
+  /** Returns the current nodes, sorted. */
   nodes(): string[] {
     return [...this.members].sort();
   }

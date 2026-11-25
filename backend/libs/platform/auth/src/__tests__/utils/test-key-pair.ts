@@ -4,7 +4,7 @@ import { JwkCodec } from '../../jwks/jwk-codec.js';
 import type { PublicJwk } from '../../jwks/public-jwk.js';
 import { StaticJwksKeySource } from '../../jwks/static-jwks-key-source.js';
 
-/** Par de claves EC P-256 generado para una prueba, con su `kid`. */
+/** EC P-256 key pair generated for a test, with its `kid`. */
 export class TestKeyPair {
   private constructor(
     readonly kid: string,
@@ -12,7 +12,7 @@ export class TestKeyPair {
     readonly publicKey: KeyObject,
   ) {}
 
-  /** Genera un par nuevo con `generateKeyPairSync('ec', { namedCurve: 'P-256' })`. */
+  /** Generates a new pair with `generateKeyPairSync('ec', { namedCurve: 'P-256' })`. */
   static generate(kid: string): TestKeyPair {
     const { privateKey, publicKey } = generateKeyPairSync('ec', {
       namedCurve: 'P-256',
@@ -20,12 +20,12 @@ export class TestKeyPair {
     return new TestKeyPair(kid, privateKey, publicKey);
   }
 
-  /** JWK público de la clave, como lo publicaría identity. */
+  /** Returns the public JWK of the key, as identity would publish it. */
   jwk(): PublicJwk {
     return JwkCodec.toPublicJwk(this.publicKey, this.kid);
   }
 
-  /** Fuente estática que solo conoce esta clave bajo su `kid`. */
+  /** Returns a static source that only knows this key under its `kid`. */
   keySource(): StaticJwksKeySource {
     return new StaticJwksKeySource(new Map([[this.kid, this.publicKey]]));
   }

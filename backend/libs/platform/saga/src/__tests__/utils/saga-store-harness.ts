@@ -1,13 +1,13 @@
 import type { SagaStore } from '../../store/saga-store.js';
 
-/** Lo que `runSagaStoreContract` necesita para probar un almacén. */
+/** What `runSagaStoreContract` needs to test a store. */
 export interface SagaStoreHarness {
   readonly store: SagaStore;
   /**
-   * Corre `body` en el contexto que el almacén exige (por ejemplo, el tenant
-   * de un shard). El de memoria lo corre tal cual.
+   * Runs `body` in the context the store requires (for example, the tenant
+   * of a shard). The in-memory one runs it as is.
    */
   within<T>(body: () => Promise<T>): Promise<T>;
-  /** Deja el almacén vacío, para que cada prueba parta de cero. */
+  /** Empties the store, so each test starts from zero. */
   reset(): Promise<void>;
 }

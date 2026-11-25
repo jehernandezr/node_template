@@ -13,17 +13,17 @@ import { JobSchedulePlanner } from './job-schedule-planner.js';
 
 interface JobEntry {
   readonly job: ScheduledJob;
-  /** Cancela el temporizador pendiente; `undefined` si no hay ninguno. */
+  /** Cancels the pending timer; `undefined` if there is none. */
   cancelTimer?: () => void;
-  /** Corrida en curso, para no solapar dos del mismo job en este proceso. */
+  /** Run in progress, so two runs of the same job do not overlap in this process. */
   running?: Promise<void>;
 }
 
 /**
- * Corre los `ScheduledJob` registrados. En modo local arma un temporizador por
- * job; en modo externo no se llama a `start` y alguien más invoca `runNow`. Una
- * corrida nunca se solapa con otra del mismo job en este proceso, y la
- * siguiente se programa cuando la anterior termina.
+ * Runs the registered `ScheduledJob`s. In local mode it sets up a timer per
+ * job; in external mode `start` is not called and something else invokes `runNow`. A
+ * run never overlaps another run of the same job in this process, and the
+ * next one is scheduled when the previous one ends.
  */
 export class JobRunner {
   private readonly entries = new Map<string, JobEntry>();
@@ -44,8 +44,8 @@ export class JobRunner {
   }
 
   /**
-   * @throws DuplicateJobError si el nombre ya está registrado.
-   * @throws InvalidJobScheduleError o InvalidCronExpressionError si el calendario no es válido.
+   * @throws DuplicateJobError if the name is already registered.
+   * @throws InvalidJobScheduleError or InvalidCronExpressionError if the schedule is not valid.
    */
   register(job: ScheduledJob): void {
     if (this.entries.has(job.name)) {
@@ -59,7 +59,7 @@ export class JobRunner {
     }
   }
 
-  /** Arma los temporizadores de todos los jobs. No hace nada si ya está iniciado. */
+  /** Sets up the timers of all jobs. Does nothing if it is already started. */
   start(): void {
     if (this.started) {
       return;
@@ -72,8 +72,8 @@ export class JobRunner {
   }
 
   /**
-   * Deja de programar corridas y espera las que están en curso hasta `graceMs`.
-   * Si vencen, aborta su `signal` y espera a que terminen.
+   * Stops scheduling runs and waits for the ones in progress up to `graceMs`.
+   * If they time out, aborts their `signal` and waits for them to finish.
    */
   async stop(graceMs: number): Promise<void> {
     this.started = false;
@@ -105,18 +105,18 @@ export class JobRunner {
   }
 
   /**
-   * Corre el job ya y espera el resultado; si ya hay una corrida en curso, espera esa.
-   * @throws UnknownJobError si no está registrado.
-   * @throws El error del job si la corrida falla.
+   * Runs the job now and waits for the result; if a run is already in progress, waits for that one.
+   * @throws UnknownJobError if it is not registered.
+   * @throws The job error if the run fails.
    */
   async runNow(name: string): Promise<void> {
     return this.run(this.entryFor(name));
   }
 
   /**
-   * Pide una corrida pronto. No hace nada si el runner no está iniciado o si el
-   * job ya está corriendo.
-   * @throws UnknownJobError si no está registrado.
+   * Requests a run soon. Does nothing if the runner is not started or if the
+   * job is already running.
+   * @throws UnknownJobError if it is not registered.
    */
   trigger(name: string): void {
     const entry = this.entryFor(name);
@@ -136,7 +136,7 @@ export class JobRunner {
 
   private arm(entry: JobEntry, delayMs: number): void {
     entry.cancelTimer?.();
-    // Mantiene vivo el proceso: un worker que solo corre jobs no tiene otra cosa que lo sostenga.
+    // Keeps the process alive: a worker that only runs jobs has nothing else holding it up.
     entry.cancelTimer = TimerScheduler.arm(delayMs, () => {
       entry.cancelTimer = undefined;
       void this.tick(entry);
@@ -150,7 +150,7 @@ export class JobRunner {
     try {
       await this.run(entry);
     } catch {
-      // La falla ya quedó en el log y en las métricas; el siguiente ciclo sigue.
+      // The failure is already in the log and the metrics; the next cycle continues.
     }
     if (this.started && entry.cancelTimer === undefined) {
       this.arm(entry, this.planner.delayMs(entry.job));

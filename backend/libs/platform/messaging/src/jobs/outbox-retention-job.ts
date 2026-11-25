@@ -7,7 +7,7 @@ import {
 import { OutboxStore } from '../outbox/outbox-store.js';
 import { MessagingJob } from './messaging-job.enum.js';
 
-/** Borra del outbox los registros publicados hace más de `retentionMs`. Corre cada hora. */
+/** Deletes from the outbox the records published more than `retentionMs` ago. Runs every hour. */
 export class OutboxRetentionJob extends ScheduledJob {
   readonly name = MessagingJob.OutboxRetention;
   readonly schedule: JobSchedule = {

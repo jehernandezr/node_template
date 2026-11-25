@@ -1,16 +1,16 @@
 import type { UserRef } from '@contracts/platform';
 
-/** Una ejecución de algún tenant, para los jobs que recorren todos los shards. */
+/** A run of some tenant, for the jobs that walk all shards. */
 export interface TenantRun {
   readonly tenantId: string;
   readonly runId: string;
 }
 
-/** Mantenimiento de las ejecuciones de todos los tenants, en todos los shards. */
+/** Maintenance of the runs of all tenants, in all shards. */
 export abstract class ReportRunMaintenance {
-  /** Marca vencidas las ejecuciones listas cuyo resultado venció antes de `now` y las devuelve. */
+  /** Marks as expired the ready runs whose result expired before `now` and returns them. */
   abstract expireBefore(now: Date): Promise<readonly TenantRun[]>;
-  /** Pone a `replacement` como solicitante de las ejecuciones que pidió el usuario. */
+  /** Sets `replacement` as the requester of the runs the user requested. */
   abstract replaceRequester(
     userId: string,
     replacement: UserRef,

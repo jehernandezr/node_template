@@ -31,9 +31,9 @@ import type { MessageHandler } from './message-handler.js';
 import { TenantGate } from './tenant-gate.js';
 
 /**
- * Valida y despacha las entregas crudas a sus manejadores: tamaño y sobre,
- * tenant, payload, claim de idempotencia y ejecución. Cada paso que falla
- * decide si la entrega va a la cola de errores, se ignora o se reintenta.
+ * Validates and dispatches raw deliveries to their handlers: size and envelope,
+ * tenant, payload, idempotency claim and execution. Each step that fails
+ * decides whether the delivery goes to the dead-letter queue, is ignored or is retried.
  */
 export class MessageDispatcher {
   private readonly registry = new HandlerRegistry();
@@ -97,8 +97,8 @@ export class MessageDispatcher {
   }
 
   /**
-   * Registra el manejador de un evento o comando del kit de contratos
-   * (`defineEvent`, `defineCommand`). Un manejador por tipo.
+   * Registers the handler of an event or command from the contracts kit
+   * (`defineEvent`, `defineCommand`). One handler per type.
    */
   register<M extends MessageDefinition>(
     contract: M,
@@ -109,9 +109,9 @@ export class MessageDispatcher {
   }
 
   /**
-   * Procesa una entrega cruda (un JSON como texto o un valor decodificado) e
-   * informa qué debe hacer el transporte con ella. El manejador corre en un
-   * span de consumidor que continúa el `traceparent` del sobre.
+   * Processes a raw delivery (JSON as text or a decoded value) and
+   * reports what the transport must do with it. The handler runs in a
+   * consumer span that continues the envelope `traceparent`.
    */
   async dispatch(
     raw: unknown,
@@ -168,7 +168,7 @@ export class MessageDispatcher {
     return this.execution.execute(envelope, delivery, fingerprint, options);
   }
 
-  /** Entrega a la cola de errores por un error de la plataforma; sin `id` si el sobre no se pudo leer. */
+  /** Sends to the dead-letter queue because of a platform error; without `id` if the envelope could not be read. */
   private rejected(failure: MessagingError, id?: string): DispatchResult {
     return {
       outcome: DispatchOutcome.DeadLetter,
@@ -178,7 +178,7 @@ export class MessageDispatcher {
     };
   }
 
-  /** Un tipo sin manejador: un evento se ignora; un comando va a la cola de errores. */
+  /** A type without a handler: an event is ignored; a command goes to the dead-letter queue. */
   private unhandled(envelope: MessageEnvelope): DispatchResult {
     const kind = this.options.topology?.routeFor(envelope.type)?.kind;
     if (kind === MessageKind.Event) {

@@ -15,10 +15,10 @@ const OPEN = `"status" IN (${EnumSql.list([OutboxStatus.Pending, OutboxStatus.Fa
 const CLOSED = `"status" IN (${EnumSql.list([OutboxStatus.Published, OutboxStatus.Dead])})`;
 
 /**
- * Mensajes por publicar, escritos en la transacción del cambio de negocio. `seq` desempata el orden de
- * `created_at` dentro de un grupo. Los índices parciales cubren solo las filas abiertas, que son pocas: uno para
- * recorrerlas en orden, otro para encontrar las vencidas cuando hay muchas programadas para después (un destino
- * caído) y otro para buscar los anteriores abiertos de un grupo. El de retención cubre las cerradas.
+ * Messages to publish, written in the transaction of the business change. `seq` breaks ties in the order of
+ * `created_at` within a group. The partial indexes cover only the open rows, which are few: one to
+ * go through them in order, another to find the due ones when many are scheduled for later (a destination
+ * down) and another to look up the earlier open ones of a group. The retention one covers the closed ones.
  */
 @Entity({ name: 'outbox' })
 @Check('outbox_status_check', `"status" IN (${EnumSql.of(OutboxStatus)})`)

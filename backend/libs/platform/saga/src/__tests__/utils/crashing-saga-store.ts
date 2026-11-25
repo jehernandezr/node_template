@@ -3,7 +3,7 @@ import type { DispatchWrite } from '../../store/dispatch-write.js';
 import type { FencedWrite } from '../../store/fenced-write.js';
 import { InMemorySagaStore } from './in-memory-saga-store.js';
 
-/** Error que lanza un almacén que se cae en lugar del proceso que murió. */
+/** Error thrown by a store that crashes in place of the process that died. */
 export class ProcessDied extends Error {
   constructor(where: string) {
     super(`process died ${where}`);
@@ -12,23 +12,23 @@ export class ProcessDied extends Error {
 }
 
 /**
- * Almacén en memoria que emula la muerte del proceso que corre una saga en un
- * punto elegido. La corrida que "muere" recibe un `ProcessDied` y, como un
- * proceso muerto, nunca suelta su lease: otro nodo toma la saga solo cuando el lease vence.
+ * In-memory store that emulates the death of the process running a saga at a
+ * chosen point. The run that "dies" receives a `ProcessDied` and, like a
+ * dead process, never releases its lease: another node takes the saga only when the lease expires.
  */
 export class CrashingSagaStore extends InMemorySagaStore {
   private afterDispatchOf: number | 'any' | undefined;
   private beforeOutcomeOf: number | undefined;
   private readonly deadTokens = new Set<string>();
 
-  /** El siguiente despacho del paso `index` (cualquiera por defecto) se escribe y luego el proceso muere. */
+  /** The next dispatch of step `index` (any by default) is written and then the process dies. */
   crashAfterDispatch(index: number | 'any' = 'any'): void {
     this.afterDispatchOf = index;
   }
 
   /**
-   * El proceso muere justo antes de escribir el resultado del paso `index`: la
-   * llamada ya aplicó su efecto, pero la bitácora aún dice `dispatched`.
+   * The process dies just before writing the result of step `index`: the
+   * call already applied its effect, but the log still says `dispatched`.
    */
   crashBeforeOutcome(index: number): void {
     this.beforeOutcomeOf = index;

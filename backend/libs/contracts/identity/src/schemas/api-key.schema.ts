@@ -32,16 +32,18 @@ import { PermissionSchema } from './session.schema.js';
 
 export const ApiKeyEnvironmentSchema = z
   .enum(ApiKeyEnvironment)
-  .describe('Entorno de una API key.') satisfies z.ZodType<ApiKeyEnvironment>;
+  .describe(
+    'Environment of an API key.',
+  ) satisfies z.ZodType<ApiKeyEnvironment>;
 
 export const ApiKeyStatusSchema = z
   .enum(ApiKeyStatus)
-  .describe('Estado de una API key.') satisfies z.ZodType<ApiKeyStatus>;
+  .describe('Status of an API key.') satisfies z.ZodType<ApiKeyStatus>;
 
 export const ServiceAccountStatusSchema = z
   .enum(ServiceAccountStatus)
   .describe(
-    'Estado de una service account.',
+    'Status of a service account.',
   ) satisfies z.ZodType<ServiceAccountStatus>;
 
 const ServiceAccountNameFieldSchema = z
@@ -75,12 +77,12 @@ export const ServiceAccountSummarySchema = z
     createdAt: TimestampSchema,
   })
   .describe(
-    'Identidad no humana del tenant que usa API keys.',
+    'Non-human tenant identity that uses API keys.',
   ) satisfies z.ZodType<ServiceAccountSummary>;
 
 export const ServiceAccountPageSchema = pageOf(
   ServiceAccountSummarySchema,
-  'Página de service accounts.',
+  'Page of service accounts.',
 ) satisfies z.ZodType<ServiceAccountPage>;
 
 export const CreateServiceAccountRequestSchema = z
@@ -92,7 +94,7 @@ export const CreateServiceAccountRequestSchema = z
     pinnedApiVersion: PinnedApiVersionFieldSchema.optional(),
   })
   .describe(
-    'Alta de una service account.',
+    'Service account creation.',
   ) satisfies z.ZodType<CreateServiceAccountRequest>;
 
 export const UpdateServiceAccountRequestSchema = z
@@ -105,13 +107,13 @@ export const UpdateServiceAccountRequestSchema = z
       .optional(),
   })
   .describe(
-    'Cambios parciales de una service account.',
+    'Partial changes of a service account.',
   ) satisfies z.ZodType<UpdateServiceAccountRequest>;
 
 export const DeleteServiceAccountRequestSchema = z
   .strictObject({ serviceAccountId: IdSchema })
   .describe(
-    'Borrado de una service account con sus API keys.',
+    'Deletion of a service account with its API keys.',
   ) satisfies z.ZodType<DeleteServiceAccountRequest>;
 
 export const ApiKeySummarySchema = z
@@ -131,11 +133,11 @@ export const ApiKeySummarySchema = z
     lastUsedAt: TimestampSchema.nullable(),
     createdAt: TimestampSchema,
   })
-  .describe('API key sin secreto.') satisfies z.ZodType<ApiKeySummary>;
+  .describe('API key without its secret.') satisfies z.ZodType<ApiKeySummary>;
 
 export const ApiKeyPageSchema = pageOf(
   ApiKeySummarySchema,
-  'Página de API keys.',
+  'Page of API keys.',
 ) satisfies z.ZodType<ApiKeyPage>;
 
 export const ListApiKeysRequestSchema = z
@@ -145,7 +147,7 @@ export const ListApiKeysRequestSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Listado de las API keys de una service account.',
+    'Listing of the API keys of a service account.',
   ) satisfies z.ZodType<ListApiKeysRequest>;
 
 export const CreateApiKeyRequestSchema = z
@@ -155,7 +157,7 @@ export const CreateApiKeyRequestSchema = z
     expiresAt: TimestampSchema.optional(),
     allowedCidrs: AllowedCidrsSchema.optional(),
   })
-  .describe('Alta de una API key.') satisfies z.ZodType<CreateApiKeyRequest>;
+  .describe('API key creation.') satisfies z.ZodType<CreateApiKeyRequest>;
 
 export const CreatedApiKeySchema = z
   .object({
@@ -163,19 +165,17 @@ export const CreatedApiKeySchema = z
     secret: z.string().min(1).max(IdentityLimits.apiKeySecretMaxLength),
   })
   .describe(
-    'API key creada. El secreto aparece solo en esta respuesta.',
+    'API key created. The secret appears only in this response.',
   ) satisfies z.ZodType<CreatedApiKey>;
 
 export const RotateApiKeyRequestSchema = z
   .strictObject({ apiKeyId: IdSchema })
-  .describe(
-    'Rotación de una API key.',
-  ) satisfies z.ZodType<RotateApiKeyRequest>;
+  .describe('Rotation of an API key.') satisfies z.ZodType<RotateApiKeyRequest>;
 
 export const RevokeApiKeyRequestSchema = z
   .strictObject({ apiKeyId: IdSchema })
   .describe(
-    'Revocación inmediata de una API key.',
+    'Immediate revocation of an API key.',
   ) satisfies z.ZodType<RevokeApiKeyRequest>;
 
 export const AuthenticateApiKeyInputSchema = z
@@ -188,7 +188,7 @@ export const AuthenticateApiKeyInputSchema = z
       .optional(),
   })
   .describe(
-    'Valida una API key presentada por un cliente.',
+    'Validates an API key presented by a client.',
   ) satisfies z.ZodType<AuthenticateApiKeyInput>;
 
 export const ApiKeyPrincipalSchema = z
@@ -204,5 +204,5 @@ export const ApiKeyPrincipalSchema = z
     pinnedApiVersion: PinnedApiVersionFieldSchema.nullable(),
   })
   .describe(
-    'Principal que resulta de validar una API key.',
+    'Principal resulting from validating an API key.',
   ) satisfies z.ZodType<ApiKeyPrincipal>;

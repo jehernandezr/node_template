@@ -1,4 +1,4 @@
-/** Comandos que envían los adaptadores. */
+/** Commands the adapters send. */
 export enum ValkeyCommand {
   Get = 'GET',
   Set = 'SET',

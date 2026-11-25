@@ -7,8 +7,8 @@ data "aws_region" "current" {}
 locals {
   account_id = data.aws_caller_identity.current.account_id
 
-  # La cuenta administra la clave con IAM; los servicios de AWS solo cifran y descifran
-  # para recursos de esta cuenta.
+  # The account manages the key through IAM; AWS services only encrypt and decrypt
+  # for resources in this account.
   statements = concat(
     [{
       Sid       = "EnableIamPolicies"

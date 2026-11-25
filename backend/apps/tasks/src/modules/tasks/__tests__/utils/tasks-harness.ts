@@ -22,7 +22,7 @@ import { UpdateTask } from '../../application/update-task.use-case.js';
 import { InMemoryTaskRepository } from './in-memory-task.repository.js';
 import { InMemoryTaskSearch } from './in-memory-task-search.js';
 
-/** Los casos de uso de tareas armados sobre fakes en memoria, con reloj e ids deterministas. */
+/** The task use cases built over in-memory fakes, with a deterministic clock and ids. */
 export class TasksHarness {
   static readonly TENANT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
   static readonly OTHER_TENANT = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
@@ -78,7 +78,7 @@ export class TasksHarness {
   readonly list = new ListTasks(this.tasks, this.search, this.shard);
   readonly changes = new ListTaskChanges(this.tasks, this.shard);
 
-  /** Crea una tarea de Ana en el tenant principal. */
+  /** Creates a task by Ana in the main tenant. */
   aTask(title = 'Preparar la reunión', description = 'Con el cliente') {
     return this.create.execute({
       tenantId: TasksHarness.TENANT,

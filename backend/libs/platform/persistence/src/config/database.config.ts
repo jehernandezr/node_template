@@ -11,7 +11,7 @@ const instanceSchema = z.object({
   replicas: z.array(endpointSchema).default([]),
 });
 
-/** `{"<instancia>": { primary: {host, port}, replicas: [...] }}` como JSON en una variable. */
+/** `{"<instance>": { primary: {host, port}, replicas: [...] }}` as JSON in a variable. */
 const instancesSchema = z
   .string()
   .default('{}')
@@ -34,9 +34,9 @@ export const databaseConfigSchema = z.object({
   DB_SSL: envBoolean().default(false),
   DB_POOL_MAX: envNumber({ min: 1, max: 200 }).default(10),
   DB_STATEMENT_TIMEOUT_MS: envNumber({ min: 0 }).default(30_000),
-  /** Nombre de la base del catálogo. */
+  /** Name of the catalog database. */
   DB_CATALOG_NAME: z.string().trim().min(1).default('catalog'),
-  /** Instancia física del catálogo, una clave de `DB_INSTANCES`. */
+  /** Physical instance of the catalog, a key of `DB_INSTANCES`. */
   DB_CATALOG_INSTANCE: z.string().trim().min(1).default('catalog'),
   DB_INSTANCES: instancesSchema,
 });

@@ -4,7 +4,7 @@ import {
   type HealthState,
 } from '@platform/kernel';
 
-/** Dependencia de salud con un resultado fijo o con un error, sin red. */
+/** Health dependency with a fixed result or with an error, without network. */
 export class StubHealthCheck extends HealthCheckable {
   constructor(
     readonly name: string,

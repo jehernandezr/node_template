@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity } from 'typeorm';
 
-/** `service_accounts`, en el shard del tenant. */
+/** `service_accounts`, in the tenant shard. */
 @Entity({ name: 'service_accounts' })
 export class ServiceAccountEntity extends AuditedEntity {
   @Column({ type: 'varchar', length: 120, name: 'name', nullable: false })

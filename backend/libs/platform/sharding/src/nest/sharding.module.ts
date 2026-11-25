@@ -27,9 +27,9 @@ import type {
 } from './sharding-module-options.js';
 
 /**
- * Conecta el canal de cambios, el router y el directorio. Provee `ShardRouter` y
- * `DirectoryChangeSubscription`; suscribe el canal al iniciar y lo cierra al destruirse.
- * Es global porque lo usan la persistencia y otros módulos sin importarlo.
+ * Connects the change channel, the router and the directory. Provides `ShardRouter` and
+ * `DirectoryChangeSubscription`; subscribes the channel on startup and closes it on destroy.
+ * It is global because persistence and other modules use it without importing it.
  */
 @Module({})
 export class ShardingModule
@@ -65,7 +65,7 @@ export class ShardingModule
     return this.subscription.stop();
   }
 
-  /** @throws ShardingError `InvalidConfiguration` cuando falta `directory`. */
+  /** @throws ShardingError `InvalidConfiguration` when `directory` is missing. */
   private static complete(
     base: DynamicModule,
     extras: ShardingModuleExtras,

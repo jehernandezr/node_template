@@ -3,8 +3,8 @@ import { TimestampTransformer } from '@platform/persistence';
 import { Column, PrimaryColumn } from 'typeorm';
 
 /**
- * Columnas de una tabla de claims de tres fases. `IdempotencyKeyEntity` y `ProcessedMessageEntity` la extienden
- * y solo se distinguen por tabla, índice y `CHECK`. Los instantes son `timestamptz` con el valor del `Clock` de la app.
+ * Columns of a three-phase claims table. `IdempotencyKeyEntity` and `ProcessedMessageEntity` extend it
+ * and differ only by table, index and `CHECK`. Instants are `timestamptz` with the value of the app `Clock`.
  */
 export abstract class ClaimRecordEntity {
   @PrimaryColumn({ type: 'text', name: 'key' })

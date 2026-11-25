@@ -1,9 +1,9 @@
 import type { ShardKey } from '@platform/sharding';
 
-/** Llave explícita de un `ShardScope`: el tenant dueño de los datos y cómo se elige el shard. */
+/** Explicit key of a `ShardScope`: the tenant that owns the data and how the shard is chosen. */
 export interface ShardScopeInit {
   readonly tenantId: string;
   readonly keyKind: ShardKey;
-  /** Obligatoria salvo con `ShardKey.Tenant`. */
+  /** Required except with `ShardKey.Tenant`. */
   readonly keyValue?: string;
 }

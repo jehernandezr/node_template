@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { CacheErrorCode } from './cache-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/cache`; ninguno llega al cliente. */
+/** Catalog of the `@platform/cache` codes; none reaches the client. */
 export const cacheErrorCatalog = defineErrorCatalog(CacheErrorCode, {
   [CacheErrorCode.InvalidArgument]: ErrorSpecs.internal(
     500,

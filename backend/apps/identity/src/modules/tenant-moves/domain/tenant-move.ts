@@ -1,6 +1,6 @@
 import type { TenantMoveStatus } from './tenant-move-status.enum.js';
 
-/** Un traslado de tenant tal como lo anota identity en el catálogo. */
+/** A tenant move as identity records it in the catalog. */
 export interface TenantMove {
   readonly moveId: string;
   readonly tenantId: string;
@@ -9,8 +9,8 @@ export interface TenantMove {
   readonly sagaId: string;
   readonly status: TenantMoveStatus;
   readonly startedAt: Date;
-  /** Cuándo el último servicio pasó al destino; desde ahí corre la gracia del origen. */
+  /** When the last service switched to the target; from then the source's grace period runs. */
   readonly switchedAt?: Date;
-  /** La última vez que se intentó limpiar el origen. */
+  /** The last time cleaning the source was attempted. */
   readonly cleanupAttemptedAt?: Date;
 }

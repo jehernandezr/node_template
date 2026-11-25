@@ -1,6 +1,6 @@
-/** Monto en unidades menores de la moneda (por ejemplo centavos), siempre entero. */
+/** Amount in minor units of the currency (for example cents), always an integer. */
 export interface MoneyAmount {
   amountMinor: number;
-  /** Código ISO 4217 en mayúsculas, por ejemplo `COP`. */
+  /** Uppercase ISO 4217 code, for example `COP`. */
   currency: string;
 }

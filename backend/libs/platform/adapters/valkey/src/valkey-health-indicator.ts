@@ -6,7 +6,7 @@ import {
 import { ValkeyCommand } from './valkey-command.enum.js';
 import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 
-/** Salud de la conexión a Valkey: `PING` dentro del plazo de la señal. */
+/** Health of the Valkey connection: `PING` within the signal deadline. */
 export class ValkeyHealthIndicator extends HealthCheckable {
   readonly name = 'valkey';
 
@@ -16,7 +16,7 @@ export class ValkeyHealthIndicator extends HealthCheckable {
     super();
   }
 
-  /** `Up` si responde `PONG`; `Down` con el nombre del error si falla o la señal se aborta. */
+  /** `Up` if it answers `PONG`; `Down` with the error name if it fails or the signal is aborted. */
   async check(signal?: AbortSignal): Promise<HealthReport> {
     try {
       signal?.throwIfAborted();
@@ -36,9 +36,9 @@ export class ValkeyHealthIndicator extends HealthCheckable {
   }
 
   /**
-   * Solo el nombre, nunca el mensaje. Se lee la propiedad porque `instanceof
-   * Error` falla con errores de otro contexto de ejecución, como el
-   * `DOMException` de `AbortSignal` dentro de Jest.
+   * Only the name, never the message. The property is read because `instanceof
+   * Error` fails with errors from another execution context, such as the
+   * `DOMException` of `AbortSignal` inside Jest.
    */
   private static nameOf(error: unknown): string {
     const name =

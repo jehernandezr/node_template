@@ -3,16 +3,16 @@ import type { SearchHit } from './search-hit.js';
 import type { SearchQuery } from './search-query.js';
 
 /**
- * Índice de búsqueda de los documentos de un tenant. Escribe en la transacción abierta, así que el índice
- * cambia junto con el dato que describe.
+ * Search index of a tenant's documents. Writes in the open transaction, so the index
+ * changes together with the data it describes.
  */
 export abstract class SearchIndex {
-  /** Agrega el documento o reemplaza su texto si ya estaba. */
+  /** Adds the document or replaces its text if it was already there. */
   abstract index(document: SearchDocument): Promise<void>;
 
-  /** Quita el documento; no falla si no estaba. */
+  /** Removes the document; does not fail if it was not there. */
   abstract remove(collection: string, id: string): Promise<void>;
 
-  /** Los documentos más relevantes primero; empate por id para que la paginación sea estable. */
+  /** Most relevant documents first; ties broken by id so pagination is stable. */
   abstract search(query: SearchQuery): Promise<readonly SearchHit[]>;
 }

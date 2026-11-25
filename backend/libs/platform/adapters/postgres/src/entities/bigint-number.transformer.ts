@@ -1,6 +1,6 @@
 import type { ValueTransformer } from 'typeorm';
 
-/** Columna `bigint` que en el código es un `number`: el driver la entrega como texto. */
+/** `bigint` column that is a `number` in the code: the driver delivers it as text. */
 export class BigintNumberTransformer implements ValueTransformer {
   to(value: number | null | undefined): number | null | undefined {
     return value;

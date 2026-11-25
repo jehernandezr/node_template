@@ -1,6 +1,6 @@
 import { FailureKind } from '@platform/kernel';
 
-/** Errores de una dependencia remota con la forma que reconoce el clasificador. */
+/** Errors of a remote dependency with the shape the classifier recognizes. */
 export class UpstreamErrors {
   /** Respuesta 503: transitoria. */
   static unavailable(): Error {
@@ -12,7 +12,7 @@ export class UpstreamErrors {
     return Object.assign(new Error(message, { cause }), { status: 404 });
   }
 
-  /** Error que declara su clase de falla como transitoria. */
+  /** Error that declares its failure class as transient. */
   static declaredTransient(): Error {
     return Object.assign(new Error('declared transient'), {
       failureKind: FailureKind.Transient,

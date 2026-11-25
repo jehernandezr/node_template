@@ -10,7 +10,7 @@ import { IdentityUnavailableError } from '../../../shared/errors/identity-unavai
 import type { Recipient } from '../domain/recipient.js';
 import { RecipientDirectory } from '../domain/recipient-directory.js';
 
-/** Datos de contacto por la operación `identity.users.get-profile.v1`. */
+/** Contact data through the `identity.users.get-profile.v1` operation. */
 @Injectable()
 export class IdentityRecipientDirectory extends RecipientDirectory {
   constructor(
@@ -20,7 +20,7 @@ export class IdentityRecipientDirectory extends RecipientDirectory {
     super();
   }
 
-  /** @throws IdentityUnavailableError si identity no responde. */
+  /** @throws IdentityUnavailableError if identity does not respond. */
   async find(userId: string): Promise<Recipient | undefined> {
     const outcome = await this.client.call(
       GetUserProfileOperation,

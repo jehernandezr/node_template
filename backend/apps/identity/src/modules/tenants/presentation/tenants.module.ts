@@ -39,8 +39,8 @@ import { TenantsController } from './tenants.controller.js';
 import { TenantsInternalOperations } from './tenants.internal-operations.js';
 
 /**
- * Tenants, slug, ubicación en shards (la de identity y la que anota en los demás servicios), alta por saga y
- * suspensión. Global solo para su fachada.
+ * Tenants, slug, shard placement (identity's and the one it records in the other services), saga-based creation and
+ * suspension. Global only for its facade.
  */
 @Global()
 @Module({

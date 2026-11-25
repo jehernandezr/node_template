@@ -5,7 +5,7 @@ import { Invitation } from '../../domain/invitation.js';
 import { InvitationRepository } from '../../domain/invitation.repository.js';
 import { InvitationEntity } from './entities/invitation.entity.js';
 
-/** `InvitationRepository` sobre `invitations` del shard del tenant. */
+/** `InvitationRepository` over `invitations` in the tenant's shard. */
 @Injectable()
 export class TypeOrmInvitationRepository
   extends TenantIsolatedRepository

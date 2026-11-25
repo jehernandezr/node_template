@@ -17,9 +17,9 @@ import { ReportRunRepository } from '../domain/report-run.repository.js';
 import type { ReportRun } from '../domain/report-run.js';
 
 /**
- * Calcula una ejecución en el worker y guarda el resultado en `ReportResultStore`, o la marca fallida si
- * supera el tamaño máximo, y publica `reports.run.completed.v1` en la misma transacción. Una ejecución que ya
- * terminó no se repite.
+ * Computes a run in the worker and stores the result in `ReportResultStore`, or marks it failed if it
+ * exceeds the maximum size, and publishes `reports.run.completed.v1` in the same transaction. A run that has already
+ * finished is not repeated.
  */
 @Injectable()
 export class ExecuteRun {

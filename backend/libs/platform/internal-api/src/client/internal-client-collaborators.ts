@@ -9,7 +9,7 @@ import type { CallErrorTranslator } from './call-error-translator.js';
 import type { ClientOutcomeChecker } from './client-outcome-checker.js';
 import type { OperationPolicyResolver } from './operation-policy-resolver.js';
 
-/** Colaboradores del `InternalClient`. */
+/** Collaborators of the `InternalClient`. */
 export interface InternalClientCollaborators {
   readonly transport: Transport;
   readonly resilience: ResilienceRegistry;
@@ -21,8 +21,8 @@ export interface InternalClientCollaborators {
   readonly clock: Clock;
   readonly payload: PayloadLimit;
   /**
-   * Catálogo de las operaciones que este cliente puede llamar. Si se da, la
-   * operación debe estar registrada; `callById` lo exige.
+   * Catalog of the operations this client can call. If given, the
+   * operation must be registered; `callById` requires it.
    */
   readonly registry?: ContractRegistry;
 }

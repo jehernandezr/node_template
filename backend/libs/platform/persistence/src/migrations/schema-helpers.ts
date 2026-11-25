@@ -5,14 +5,14 @@ import {
   type EntityClass,
 } from '../metadata/entity-metadata.js';
 
-/** Cómo se particiona una tabla. */
+/** How a table is partitioned. */
 export interface PartitionedOptions {
   readonly by: PartitionBy;
-  /** Columna de partición. Para `Range` sobre UUIDv7 es el propio `id`. */
+  /** Partition column. For `Range` over UUIDv7 it is the `id` itself. */
   readonly column: string;
-  /** Intervalo de cada partición por rango. Por defecto un mes. */
+  /** Interval of each range partition. One month by default. */
   readonly interval?: PartitionInterval;
-  /** Particiones vencidas que se archivan, en meses o días según el intervalo. */
+  /** Expired partitions that are archived, in months or days depending on the interval. */
   readonly retention?: number;
 }
 
@@ -29,19 +29,19 @@ function literal(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-/** Opciones de {@link auditTriggerSql}. */
+/** Options of {@link auditTriggerSql}. */
 export interface AuditTriggerOptions {
-  /** Columna de la llave primaria. Por defecto `id`. */
+  /** Primary key column. `id` by default. */
   readonly idColumn?: string;
-  /** Columnas que no se copian a `audit_log`. */
+  /** Columns that are not copied to `audit_log`. */
   readonly exclude?: readonly string[];
 }
 
 /**
- * Sentencias que crean el trigger de auditoría de una tabla. Cada INSERT,
- * UPDATE (solo campos cambiados) y DELETE escribe en `audit_log` con el actor,
- * el tenant y el `traceId` que la capa fija con `set_config` al abrir la
- * transacción. Requiere la migración `PlatformFunctions`.
+ * Statements that create the audit trigger of a table. Each INSERT,
+ * UPDATE (changed fields only) and DELETE writes to `audit_log` with the actor,
+ * the tenant and the `traceId` that the layer sets with `set_config` when opening the
+ * transaction. Requires the `PlatformFunctions` migration.
  */
 export function auditTriggerSql(
   table: string,
@@ -62,15 +62,15 @@ export function auditTriggerSql(
   ];
 }
 
-/** Sentencia que quita el trigger de auditoría (para el `down` de la migración). */
+/** Statement that drops the audit trigger (for the migration `down`). */
 export function dropAuditTriggerSql(table: string): string {
   const name = identifier(table, 'audit table');
   return `DROP TRIGGER IF EXISTS ${name}_audit ON "${name}"`;
 }
 
 /**
- * Trigger de auditoría según `@Audited` de la entidad.
- * @throws PersistenceError `INVALID_CONFIG` si la entidad no lleva `@Audited`.
+ * Audit trigger according to the entity's `@Audited`.
+ * @throws PersistenceError `INVALID_CONFIG` if the entity does not have `@Audited`.
  */
 export function auditTriggerSqlFor(
   entity: EntityClass,
@@ -87,7 +87,7 @@ export function auditTriggerSqlFor(
   return auditTriggerSql(table, { idColumn, exclude: audited.exclude });
 }
 
-/** Cláusula `PARTITION BY …` para el `CREATE TABLE`. */
+/** `PARTITION BY …` clause for the `CREATE TABLE`. */
 export function partitionClause(options: PartitionedOptions): string {
   const column = identifier(options.column, 'partition column');
   switch (options.by) {
@@ -106,10 +106,10 @@ export function partitionClause(options: PartitionedOptions): string {
 }
 
 /**
- * Sentencias para crear una tabla particionada: la tabla con su cláusula y,
- * en `Range`, una partición `DEFAULT` y las particiones del intervalo actual y
- * los `ahead` siguientes. `columnsSql` es el cuerpo del `CREATE TABLE`.
- * La llave primaria debe incluir la columna de partición (con UUIDv7, el `id`).
+ * Statements to create a partitioned table: the table with its clause and,
+ * in `Range`, a `DEFAULT` partition and the partitions of the current interval and
+ * the next `ahead` ones. `columnsSql` is the body of the `CREATE TABLE`.
+ * The primary key must include the partition column (with UUIDv7, the `id`).
  */
 export function createPartitionedTableSql(
   table: string,
@@ -135,9 +135,9 @@ export function createPartitionedTableSql(
 }
 
 /**
- * Sentencia que asegura las particiones por rango del intervalo actual y los
- * `ahead` siguientes. La migración la corre una vez; un job programado la
- * repite para crear las futuras.
+ * Statement that ensures the range partitions of the current interval and the
+ * next `ahead` ones. The migration runs it once; a scheduled job
+ * repeats it to create future ones.
  */
 export function createRangePartitionsSql(
   table: string,
@@ -163,8 +163,8 @@ export function createRangePartitionsSql(
 }
 
 /**
- * Menor UUIDv7 de un instante: los 48 bits de milisegundos y el resto en cero.
- * Es el límite de una partición por rango sobre `id`.
+ * Smallest UUIDv7 of an instant: the 48 millisecond bits and the rest set to zero.
+ * It is the bound of a range partition on `id`.
  */
 export function uuidV7LowerBound(at: Date): string {
   const ms = at.getTime();

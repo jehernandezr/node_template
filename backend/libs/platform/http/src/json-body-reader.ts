@@ -1,14 +1,14 @@
 import { HttpLimits } from './http-limits.js';
 import { HttpProblemError } from './http-problem.error.js';
 
-/** Lee un cuerpo JSON con tope de tamaño. Cualquier fallo sale como error de la petición. */
+/** Reads a JSON body with a size cap. Any failure comes out as a request error. */
 export class JsonBodyReader {
   constructor(private readonly maxBytes: number = HttpLimits.MAX_BODY_BYTES) {}
 
   /**
-   * Un cuerpo vacío es `undefined`. Al pasar el tope deja de leer: el resto lo descarta Node al
-   * terminar la respuesta.
-   * @throws HttpProblemError (`PLATFORM.HTTP.PAYLOAD_TOO_LARGE` o `PLATFORM.HTTP.MALFORMED_BODY`).
+   * An empty body is `undefined`. When the cap is exceeded it stops reading: Node discards the rest when
+   * the response finishes.
+   * @throws HttpProblemError (`PLATFORM.HTTP.PAYLOAD_TOO_LARGE` or `PLATFORM.HTTP.MALFORMED_BODY`).
    */
   async read(chunks: AsyncIterable<Uint8Array | string>): Promise<unknown> {
     const parts: Buffer[] = [];

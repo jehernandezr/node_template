@@ -15,10 +15,10 @@ import { InvoiceRepository } from '../domain/invoice.repository.js';
 import type { Invoice, InvoiceState } from '../domain/invoice.js';
 
 /**
- * Aplica el resultado de un cobro a la factura y a la suscripción: un pago la salda y reactiva a una morosa que ya no
- * debe otra factura fallida; un rechazo programa el reintento y deja morosa a la suscripción. Cada cambio toma antes la
- * suscripción con `FOR UPDATE`: dos pagos simultáneos de facturas distintas se ven uno al otro y el segundo reactiva.
- * Repetir el mismo resultado no publica de nuevo.
+ * Applies the result of a charge to the invoice and the subscription: a payment settles it and reactivates a past-due
+ * subscription that no longer owes another failed invoice; a rejection schedules the retry and leaves the subscription
+ * past due. Each change first takes the subscription with `FOR UPDATE`: two concurrent payments of different invoices
+ * see each other and the second one reactivates. Repeating the same result does not publish again.
  */
 @Injectable()
 export class SettleInvoice {
@@ -60,8 +60,8 @@ export class SettleInvoice {
   }
 
   /**
-   * Anota el rechazo del intento `attempt`.
-   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` o `BILLING.INVOICE.INVALID_STATE`.
+   * Records the rejection of attempt `attempt`.
+   * @throws BillingError `BILLING.INVOICE.NOT_FOUND` or `BILLING.INVOICE.INVALID_STATE`.
    */
   failed(
     tenantId: string,

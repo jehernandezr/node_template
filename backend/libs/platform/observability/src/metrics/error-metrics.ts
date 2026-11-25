@@ -2,7 +2,7 @@ import { PlatformMetric } from './platform-metric.enum.js';
 import { ErrorMetricAttributes } from './error-metric-attributes.js';
 import type { MetricsPort } from './metrics.port.js';
 
-/** Cuenta un error por su código, para alertar por código y no solo por tasa. */
+/** Counts an error by its code, to alert by code and not only by rate. */
 export class ErrorMetrics {
   constructor(private readonly port: MetricsPort) {}
 

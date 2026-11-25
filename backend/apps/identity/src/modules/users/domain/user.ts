@@ -1,6 +1,6 @@
 import { UserStatus } from '@contracts/identity';
 
-/** Estado completo de un usuario, tal como se guarda. */
+/** Full state of a user, as it is stored. */
 export interface UserState {
   readonly id: string;
   readonly homeTenantId: string;
@@ -15,14 +15,14 @@ export interface UserState {
   readonly version?: number;
 }
 
-/** Un usuario de la plataforma. Vive en el shard de su tenant de origen. */
+/** A platform user. Lives in the shard of their home tenant. */
 export class User {
   private static readonly ERASED_EMAIL_DOMAIN = '@erased.invalid';
   private static readonly ERASED_NAME = '-';
 
   private constructor(private state: UserState) {}
 
-  /** Usuario recién registrado: espera la verificación de su email. */
+  /** Newly registered user: waits for their email verification. */
   static register(
     state: Omit<UserState, 'status' | 'emailVerifiedAt' | 'version'>,
   ): User {
@@ -41,7 +41,7 @@ export class User {
     return this.state;
   }
 
-  /** Verifica el email y activa la cuenta si esperaba la verificación. Devuelve `false` si ya estaba verificado. */
+  /** Verifies the email and activates the account if it was waiting for verification. Returns `false` if it was already verified. */
   verifyEmail(now: Date): boolean {
     if (this.state.emailVerifiedAt !== undefined) {
       return false;
@@ -57,7 +57,7 @@ export class User {
     return true;
   }
 
-  /** Devuelve `false` si ya estaba suspendido: la operación es idempotente. */
+  /** Returns `false` if it was already suspended: the operation is idempotent. */
   suspend(): boolean {
     if (this.state.status === UserStatus.Suspended) {
       return false;
@@ -66,7 +66,7 @@ export class User {
     return true;
   }
 
-  /** Vuelve a activo, o a pendiente si nunca verificó el email. Devuelve `false` si no estaba suspendido. */
+  /** Returns to active, or to pending if the email was never verified. Returns `false` if it was not suspended. */
   reactivate(): boolean {
     if (this.state.status !== UserStatus.Suspended) {
       return false;
@@ -91,7 +91,7 @@ export class User {
     };
   }
 
-  /** El email nuevo llega ya verificado: el usuario confirmó con el token que se le envió. */
+  /** The new email arrives already verified: the user confirmed with the token sent to them. */
   changeEmail(email: string, fingerprint: Buffer, now: Date): void {
     this.state = {
       ...this.state,
@@ -106,8 +106,8 @@ export class User {
   }
 
   /**
-   * Borra los datos personales: queda una fila `Deleted` sin email ni nombre reales, para que lo que la
-   * referencia en otros tenants no apunte a la nada. Devuelve `false` si ya estaba borrado.
+   * Deletes the personal data: a `Deleted` row remains without real email or name, so that what
+   * references it in other tenants does not point to nothing. Returns `false` if it was already deleted.
    */
   erase(): boolean {
     if (this.state.status === UserStatus.Deleted) {

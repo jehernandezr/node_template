@@ -1,11 +1,11 @@
 import type { PendingAuthentication } from '../../../shared/types/pending-authentication.type.js';
 
-/** Autenticaciones que esperan un segundo factor. Viven diez minutos y se leen con el `mfaToken`. */
+/** Authentications waiting for a second factor. They live ten minutes and are read with the `mfaToken`. */
 export abstract class PendingAuthenticationStore {
-  /** Guarda y devuelve el `mfaToken` que viaja al cliente. */
+  /** Saves and returns the `mfaToken` that travels to the client. */
   abstract save(pending: PendingAuthentication): Promise<string>;
   abstract find(mfaToken: string): Promise<PendingAuthentication | undefined>;
-  /** Consume el token: una segunda verificación con el mismo token falla. */
+  /** Consumes the token: a second verification with the same token fails. */
   abstract consume(
     mfaToken: string,
   ): Promise<PendingAuthentication | undefined>;

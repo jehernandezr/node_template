@@ -3,7 +3,7 @@ import {
   parseOpaqueToken,
 } from '../../../shared/utils/opaque-token.js';
 
-/** Token `iv1_<tenant>_<secreto>`: la ruta lleva al shard del tenant sin consultar el catálogo. */
+/** Token `iv1_<tenant>_<secret>`: the route leads to the tenant's shard without querying the catalog. */
 export class InvitationToken {
   static readonly PREFIX = 'iv1';
 

@@ -3,40 +3,40 @@ import type { MessageKind } from '../enums/message-kind.enum.js';
 import { ContractDefinitionError } from './contract-definition-error.js';
 
 /**
- * Mensaje asíncrono declarado en un contrato: evento o comando.
+ * Asynchronous message declared in a contract: event or command.
  *
- * Tiene la forma que usa `@platform/messaging` (`type`, `kind` y `schema`), así
- * `MessageBus.publish`, `MessageBus.send`, `MessageDispatcher.register` y
- * `Route.event`/`Route.command` pueden recibir el descriptor tal cual.
+ * It has the shape `@platform/messaging` uses (`type`, `kind` and `schema`), so
+ * `MessageBus.publish`, `MessageBus.send`, `MessageDispatcher.register` and
+ * `Route.event`/`Route.command` can take the descriptor as is.
  */
 export interface MessageDefinition<
   K extends MessageKind = MessageKind,
   P extends z.ZodType = z.ZodType,
 > {
-  /** Tipo CloudEvents con la versión al final, por ejemplo `identity.session.revoked.v1`. */
+  /** CloudEvents type with the version at the end, for example `identity.session.revoked.v1`. */
   readonly type: string;
   readonly kind: K;
-  /** Versión del payload, tomada del sufijo `.vN` de `type`. */
+  /** Payload version, taken from the `.vN` suffix of `type`. */
   readonly version: number;
-  /** Esquema del campo `data` del sobre CloudEvents. */
+  /** Schema of the `data` field of the CloudEvents envelope. */
   readonly payload: P;
-  /** El mismo esquema que `payload`, con el nombre que espera `@platform/messaging`. */
+  /** The same schema as `payload`, with the name `@platform/messaging` expects. */
   readonly schema: P;
   readonly description: string;
 }
 
-/** Datos que se escriben al declarar un mensaje. */
+/** Data written when declaring a message. */
 export interface MessageSpec<P extends z.ZodType> {
   readonly type: string;
   readonly payload: P;
   readonly description: string;
 }
 
-/** `servicio.entidad.acción.vN`: al menos tres segmentos y la versión. */
+/** `service.entity.action.vN`: at least three segments and the version. */
 const MESSAGE_TYPE =
   /^[a-z][a-z0-9-]*(\.[a-z][a-z0-9_-]*){2,}\.v([1-9][0-9]*)$/;
 
-/** Construye el descriptor congelado de un mensaje después de validar su tipo. */
+/** Builds the frozen descriptor of a message after validating its type. */
 export function defineMessage<K extends MessageKind, P extends z.ZodType>(
   kind: K,
   label: string,
@@ -46,12 +46,12 @@ export function defineMessage<K extends MessageKind, P extends z.ZodType>(
   const match = MESSAGE_TYPE.exec(spec.type);
   if (!match) {
     throw new ContractDefinitionError(
-      `${label} ${spec.type}: el tipo debe tener la forma ${shape}`,
+      `${label} ${spec.type}: the type must have the shape ${shape}`,
     );
   }
   if (!spec.description.trim()) {
     throw new ContractDefinitionError(
-      `${label} ${spec.type}: falta la descripción`,
+      `${label} ${spec.type}: missing description`,
     );
   }
   return Object.freeze({
@@ -64,7 +64,7 @@ export function defineMessage<K extends MessageKind, P extends z.ZodType>(
   });
 }
 
-/** Servicio dueño de un mensaje u operación: el primer segmento del id. */
+/** Owning service of a message or operation: the first segment of the id. */
 export function serviceOfId(id: string): string {
   return id.slice(0, id.indexOf('.'));
 }

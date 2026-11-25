@@ -5,9 +5,9 @@ import type { Epoch } from '../../../state/epoch.js';
 import type { PermissionVersion } from '../../../state/permission-version.js';
 import type { InMemoryAuthState } from '../../../__tests__/utils/in-memory-auth-state.js';
 
-/** Lector que falla en una operación elegida y delega el resto en un estado en memoria. */
+/** Reader that fails on a chosen operation and delegates the rest to an in-memory state. */
 export class FailingAuthStateReader extends AuthStateReader {
-  /** Operación que lanza `Error('down')`; `undefined` deja todas funcionando. */
+  /** Operation that throws `Error('down')`; `undefined` leaves all of them working. */
   failOn: keyof AuthStateReader | undefined;
 
   constructor(private readonly inner: InMemoryAuthState) {

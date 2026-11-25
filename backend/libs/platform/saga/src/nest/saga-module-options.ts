@@ -1,10 +1,10 @@
 import type { SagaSettingsInput } from '../engine/saga-settings-input.js';
 
 /**
- * Opciones de `SagaModule` que pueden salir de la configuración. Todas son
- * opcionales: el dueño por defecto es un id nuevo y el resto toma los valores de `SagaSettings`.
+ * `SagaModule` options that can come from configuration. All of them are
+ * optional: the default owner is a new id and the rest take the values of `SagaSettings`.
  */
 export type SagaModuleOptions = Omit<SagaSettingsInput, 'owner'> & {
-  /** Identidad de este proceso. Por defecto, un UUIDv7 nuevo al arrancar. */
+  /** Identity of this process. By default, a new UUIDv7 at startup. */
   readonly owner?: string;
 };

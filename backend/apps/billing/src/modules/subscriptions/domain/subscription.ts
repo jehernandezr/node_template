@@ -4,7 +4,7 @@ import { BillingError } from '../../../shared/errors/billing.error.js';
 import { BillingPeriod } from './billing-period.js';
 import { ProrationCalculator } from './proration-calculator.js';
 
-/** Lo que la suscripción necesita de un plan: su precio por periodo y cómo se cobra. */
+/** What the subscription needs from a plan: its price per period and how it is charged. */
 export interface SubscribedPlan {
   readonly id: string;
   readonly priceMinor: number;
@@ -12,21 +12,21 @@ export interface SubscribedPlan {
   readonly periodicity: PlanPeriodicity;
 }
 
-/** Estado completo de la suscripción de un tenant, tal como se guarda. */
+/** Full state of a tenant's subscription, as stored. */
 export interface SubscriptionState {
   readonly id: string;
   readonly planId: string;
-  /** El plan vigente al abrir el periodo: fija el cargo de su factura; los cambios posteriores van en el ajuste. */
+  /** The current plan when the period opened: sets its invoice charge; later changes go into the adjustment. */
   readonly periodPlanId: string;
   readonly status: SubscriptionStatus;
   readonly period: BillingPeriod;
-  /** Ajustes de cambios de plan del periodo, que se cobran o acreditan en su factura. */
+  /** Plan change adjustments of the period, charged or credited on its invoice. */
   readonly prorationMinor: number;
   readonly pastDueSince?: Date;
   readonly version?: number;
 }
 
-/** El periodo que se cerró, el plan de su cargo fijo y el ajuste de los cambios de plan. */
+/** The period that was closed, the plan of its fixed charge and the plan change adjustment. */
 export interface ClosedPeriod {
   readonly period: BillingPeriod;
   readonly planId: string;
@@ -34,8 +34,8 @@ export interface ClosedPeriod {
 }
 
 /**
- * La suscripción de un tenant: prueba, activa, morosa o suspendida. Cada transición devuelve `false` cuando
- * no cambia nada, para que repetirla no publique dos veces.
+ * A tenant's subscription: trialing, active, past due or suspended. Each transition returns `false` when
+ * nothing changes, so that repeating it does not publish twice.
  */
 export class Subscription {
   private static readonly CHANGEABLE: ReadonlySet<SubscriptionStatus> = new Set(
@@ -48,7 +48,7 @@ export class Subscription {
 
   private constructor(private state: SubscriptionState) {}
 
-  /** Abre la cuenta en prueba por `trialDays`; sin días de prueba, ya activa con su primer periodo, que se cobra al cerrar. */
+  /** Opens the account on trial for `trialDays`; without trial days, already active with its first period, charged at closing. */
   static open(input: {
     readonly id: string;
     readonly plan: SubscribedPlan;
@@ -76,18 +76,18 @@ export class Subscription {
     return this.state;
   }
 
-  /** Suspendida o cancelada: sin funcionalidades del plan. */
+  /** Suspended or canceled: no plan features. */
   isBlocked(): boolean {
     return !Subscription.CHANGEABLE.has(this.state.status);
   }
 
   /**
-   * Cambia de plan. En prueba no hay nada que prorratear. Con un plan de la misma moneda y periodicidad se
-   * acumula el ajuste del resto del periodo. Con otra, el periodo en curso termina ayer con un crédito por los
-   * días que quedaban, así su factura cobra en su moneda solo lo usado, y el siguiente empieza hoy con el plan
-   * nuevo; si el periodo empezó hoy, no se usó nada y vuelve a empezar con el plan nuevo. Un periodo que ya
-   * terminó y espera su cierre no se ajusta: el plan nuevo rige desde el periodo siguiente.
-   * @throws BillingError `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` si está suspendida o cancelada.
+   * Changes the plan. On trial there is nothing to prorate. With a plan of the same currency and billing interval the
+   * adjustment for the rest of the period accumulates. With a different one, the current period ends yesterday with a credit for the
+   * remaining days, so its invoice charges only what was used in its currency, and the next one starts today with the new
+   * plan; if the period started today, nothing was used and it starts again with the new plan. A period that already
+   * ended and awaits its closing is not adjusted: the new plan applies from the next period.
+   * @throws BillingError `BILLING.SUBSCRIPTION.NOT_CHANGEABLE` if it is suspended or canceled.
    */
   changePlan(from: SubscribedPlan, to: SubscribedPlan, today: string): boolean {
     if (this.isBlocked()) {
@@ -143,8 +143,8 @@ export class Subscription {
   }
 
   /**
-   * Pasa al periodo siguiente. La prueba que termina activa la suscripción sin factura (`undefined`); un
-   * periodo pagado devuelve lo que su factura cobra.
+   * Moves to the next period. An ending trial activates the subscription without an invoice (`undefined`); a
+   * paid period returns what its invoice charges.
    */
   closePeriod(plan: SubscribedPlan): ClosedPeriod | undefined {
     const closing = this.state;
@@ -179,7 +179,7 @@ export class Subscription {
     return true;
   }
 
-  /** Suspende una morosa cuya gracia terminó en `now`. */
+  /** Suspends a past-due subscription whose grace period ended at `now`. */
   suspendIfOverdue(now: Date, graceDays: number): boolean {
     const since = this.state.pastDueSince;
     if (
@@ -194,9 +194,9 @@ export class Subscription {
   }
 
   /**
-   * Vuelve a activa tras un pago. Devuelve el estado del que salió, o `undefined` si ya estaba al día. Una morosa
-   * conserva su periodo, porque siguió usando el plan. Una suspendida empieza hoy un periodo nuevo con el plan
-   * vigente: los meses de suspensión no se usaron y no se cobran, y el periodo que la suspensión dejó abierto tampoco.
+   * Returns to active after a payment. Returns the state it left, or `undefined` if it was already current. A past-due
+   * subscription keeps its period, because it kept using the plan. A suspended one starts a new period today with the current
+   * plan: the months of suspension were not used and are not charged, and neither is the period the suspension left open.
    */
   settle(plan: SubscribedPlan, today: string): SubscriptionStatus | undefined {
     const previous = this.state.status;

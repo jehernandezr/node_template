@@ -6,7 +6,7 @@ import type {
 } from '../domain/projection-points.js';
 import type { BucketedRange, ReportRange } from '../domain/report-range.js';
 
-/** Lo que `projections` ofrece a los reportes: agregados sobre las proyecciones del shard del tenant. */
+/** What `projections` offers the reports: aggregates over the projections of the tenant's shard. */
 export abstract class ProjectionsFacade {
   abstract taskStatusCounts(
     tenantId: string,

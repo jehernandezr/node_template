@@ -13,8 +13,8 @@ interface StoredLease {
 }
 
 /**
- * Lock en memoria: exclusión entre los runners de un mismo proceso. Sirve para
- * el modo local y las pruebas; entre procesos hace falta `ValkeyJobLock`.
+ * In-memory lock: mutual exclusion between the runners of the same process. Useful for
+ * local mode and tests; across processes `ValkeyJobLock` is needed.
  */
 export class InProcessJobLock extends JobLock {
   private readonly leases = new Map<string, StoredLease>();
@@ -33,7 +33,7 @@ export class InProcessJobLock extends JobLock {
     if (current !== undefined && current.expiresAt > now) {
       return undefined;
     }
-    // El contador evita que dos leases con los mismos bytes compartan token.
+    // The counter prevents two leases with the same bytes from sharing a token.
     this.sequence += 1;
     const random = Buffer.from(this.random.bytes(8)).toString('hex');
     const token = `${random}-${this.sequence}`;
@@ -42,7 +42,7 @@ export class InProcessJobLock extends JobLock {
   }
 
   async release(lease: JobLease): Promise<void> {
-    // Solo el dueño actual libera: un lease vencido no quita el lock de quien lo tomó después.
+    // Only the current owner releases: an expired lease does not remove the lock from whoever took it later.
     if (this.leases.get(lease.name)?.token === lease.token) {
       this.leases.delete(lease.name);
     }

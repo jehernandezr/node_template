@@ -1,5 +1,5 @@
 name: utils
-description: "Funciones puras del front que usan los tipos de contracts: montos, fechas e identificadores."
+description: "Pure front functions that use the contracts types: amounts, dates and identifiers."
 publish_to: none
 version: 0.0.1
 

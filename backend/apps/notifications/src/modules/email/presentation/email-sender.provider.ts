@@ -14,12 +14,12 @@ import { InMemoryEmailSender } from '../infrastructure/senders/in-memory-email-s
 import { SesEmailSender } from '../infrastructure/senders/ses-email-sender.js';
 import { SmtpEmailSender } from '../infrastructure/senders/smtp-email-sender.js';
 
-/** Puerto de SMTP cuando `SMTP_URL` no lo trae. */
+/** SMTP port when `SMTP_URL` does not include one. */
 const SMTP_DEFAULT_PORT = 25;
 
 /**
- * El `EmailSender` de `NOTIFICATIONS_EMAIL_SENDER`. La sección de AWS solo se valida con SES, así un ambiente
- * local sin AWS arranca con memoria o con Mailpit.
+ * The `EmailSender` from `NOTIFICATIONS_EMAIL_SENDER`. The AWS section is only validated with SES, so a local
+ * environment without AWS starts with memory or with Mailpit.
  */
 export const EmailSenderProvider: Provider = {
   provide: EmailSender,

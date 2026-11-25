@@ -8,25 +8,25 @@ import type {
 } from '../../valkey-subscriber-connection.js';
 
 /**
- * Servidor de pub/sub falso: un `PUBLISH` del publicador emite `message` en el
- * suscriptor, si está suscrito al canal. Cuenta las conexiones que abre y cierra.
+ * Fake pub/sub server: a `PUBLISH` from the publisher emits `message` on the
+ * subscriber, if it is subscribed to the channel. Counts the connections it opens and closes.
  */
 export class FakePubSubBroker {
   readonly subscribed = new Set<string>();
   opened = 0;
   quits = 0;
   disconnects = 0;
-  /** Si es `true`, `quit` falla, como un servidor que no responde. */
+  /** Whether `quit` fails, like a server that does not respond. */
   quitFails = false;
-  /** Falla que lanza `subscribe` una vez. */
+  /** Failure that `subscribe` throws once. */
   subscribeFailure: Error | undefined;
 
   private readonly emitter = new EventEmitter();
 
-  /** @param log Bitácora compartida con otros dobles, para comprobar el orden de los cierres. */
+  /** @param log Log shared with other doubles, to check the order of the closes. */
   constructor(private readonly log: string[] = []) {}
 
-  /** Cliente que publica: cada comando `PUBLISH` llega a los suscriptores. */
+  /** Publishing client: each `PUBLISH` command reaches the subscribers. */
   readonly publisher: ValkeyCommandRunner = {
     call: async (_command: string, args: ValkeyArgument[]) => {
       const [channel, message] = args.map(String);
@@ -37,7 +37,7 @@ export class FakePubSubBroker {
     },
   };
 
-  /** Quien abre las conexiones suscriptoras. */
+  /** Opener of the subscriber connections. */
   readonly opener: ValkeyConnectionOpener = {
     create: async () => {
       this.opened += 1;
@@ -45,7 +45,7 @@ export class FakePubSubBroker {
     },
   };
 
-  /** Emite un mensaje como si el servidor lo hubiera entregado, sin pasar por el suscriptor. */
+  /** Emits a message as if the server had delivered it, bypassing the subscriber. */
   emit(channel: string, message: string): void {
     this.emitter.emit('message', channel, message);
   }

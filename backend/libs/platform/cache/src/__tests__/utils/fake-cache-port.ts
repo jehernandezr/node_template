@@ -7,9 +7,9 @@ interface Stored {
 }
 
 /**
- * `CachePort` de prueba con reloj fijo para los vencimientos. Cuenta las
- * operaciones en contadores públicos y puede caer con `fail` para simular
- * una caché inalcanzable.
+ * Test `CachePort` with a fixed clock for expirations. Counts the
+ * operations in public counters and can go down with `fail` to simulate
+ * an unreachable cache.
  */
 export class FakeCachePort extends CachePort {
   gets = 0;
@@ -22,7 +22,7 @@ export class FakeCachePort extends CachePort {
     super();
   }
 
-  /** Hace que toda operación rechace con `error` hasta `recover`. */
+  /** Makes every operation reject with `error` until `recover`. */
   fail(error: Error = new Error('cache down')): void {
     this.failure = error;
   }

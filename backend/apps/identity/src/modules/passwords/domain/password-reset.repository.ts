@@ -1,18 +1,18 @@
 import type { PasswordReset } from './password-reset.js';
 
-/** Recuperaciones de contraseña de un usuario, en su shard. El caso de uso abre el `ShardScope`. */
+/** A user's password recoveries, in their shard. The use case opens the `ShardScope`. */
 export abstract class PasswordResetRepository {
   abstract insert(reset: PasswordReset): Promise<void>;
 
   /**
-   * La recuperación bloqueada hasta el fin de la transacción abierta, o `undefined` si no existe o es de
-   * otro usuario: dos confirmaciones simultáneas del mismo token no pueden usarlo las dos.
+   * The recovery locked until the end of the open transaction, or `undefined` if it does not exist or belongs to
+   * another user: two simultaneous confirmations of the same token cannot both use it.
    */
   abstract findForUpdate(
     userId: string,
     resetId: string,
   ): Promise<PasswordReset | undefined>;
 
-  /** @throws OptimisticLockError si otra escritura cambió la recuperación. */
+  /** @throws OptimisticLockError if another write changed the recovery. */
   abstract update(reset: PasswordReset): Promise<void>;
 }

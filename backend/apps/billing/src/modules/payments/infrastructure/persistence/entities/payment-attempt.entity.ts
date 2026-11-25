@@ -2,8 +2,8 @@ import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
 /**
- * `payment_attempts`: cada intento de cobro de una factura, anotado antes de pedirlo, y lo que respondió el proveedor.
- * La llave única por número de intento es la reserva: dos corridas no pueden pedir el mismo cobro.
+ * `payment_attempts`: each charge attempt of an invoice, recorded before requesting it, and what the provider answered.
+ * The unique key per attempt number is the reservation: two runs cannot request the same charge.
  */
 @Entity({ name: 'payment_attempts' })
 @Index(

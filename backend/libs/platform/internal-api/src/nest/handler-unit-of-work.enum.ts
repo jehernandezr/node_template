@@ -1,13 +1,13 @@
-/** Dónde corre el handler de una operación interna respecto de su llave de idempotencia. */
+/** Where the handler of an internal operation runs relative to its idempotency key. */
 export enum HandlerUnitOfWork {
   /**
-   * El handler y el guardado del resultado comparten una transacción del `TransactionManager`: el
-   * resultado queda guardado si y solo si los efectos se confirmaron.
+   * The handler and the result save share a `TransactionManager` transaction: the
+   * result is stored if and only if the effects were committed.
    */
   Shared = 'shared',
   /**
-   * El handler abre sus propias transacciones, en el shard que elige con su entrada, y el resultado se
-   * guarda aparte. Lo necesita un servicio con `requireScope`, cuyo shard no se conoce antes del handler.
+   * The handler opens its own transactions, on the shard it picks from its input, and the result is
+   * stored separately. A service with `requireScope` needs it, since its shard is not known before the handler.
    */
   Handler = 'handler',
 }

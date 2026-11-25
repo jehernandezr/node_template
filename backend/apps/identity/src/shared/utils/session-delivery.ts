@@ -4,9 +4,9 @@ import { ClientChannel, type HttpExchange } from '@platform/http';
 import { IdentitySettings } from '../../config/identity-settings.js';
 
 /**
- * Entrega el session token de una respuesta de inicio de sesión según el canal: en la web va solo en la
- * cookie `__Host-session`, que dura lo que la inactividad de la sesión, y nunca en el cuerpo; en la app
- * nativa, en el cuerpo.
+ * Delivers the session token of a sign-in response according to the channel: on the web it goes only in the
+ * `__Host-session` cookie, which lasts as long as the session's inactivity, and never in the body; in the native
+ * app, in the body.
  */
 @Injectable()
 export class SessionDelivery {

@@ -1,61 +1,61 @@
 # auth
 
-Sesión del front contra el servicio `identity`. Usa los tipos y códigos
-generados de `package:contracts` (`SignInRequest`, `SignInResponse`,
+Front session against the `identity` service. It uses the types and codes
+generated in `package:contracts` (`SignInRequest`, `SignInResponse`,
 `PendingMfa`, `MfaFactor`, `MfaChallenge`, `MfaVerifyRequest`,
 `SessionTokens`, `SessionTokenRequest`, `StepUpVerifyRequest`, `StepUpResult`,
-`SessionAccess`, `IdentityErrorCode`, `MfaRules`); no define
-modelos propios. Los adaptadores de almacenamiento seguro y de claves de
-hardware (Keychain/Keystore, Secure Enclave, WebCrypto) se agregan después.
+`SessionAccess`, `IdentityErrorCode`, `MfaRules`); it defines no
+models of its own. The secure storage and hardware key adapters
+(Keychain/Keystore, Secure Enclave, WebCrypto) are added later.
 
-## API pública (`package:auth/auth.dart`)
+## Public API (`package:auth/auth.dart`)
 
-- **Puertos**: `AuthRepository` (`signIn`, `requestMfaChallenge`, `verifyMfa`,
+- **Ports**: `AuthRepository` (`signIn`, `requestMfaChallenge`, `verifyMfa`,
   `refresh`, `logout`, `startStepUp`, `requestStepUpChallenge`,
-  `verifyStepUp`), `TokenStore` (`CookieTokenStore` en web),
+  `verifyStepUp`), `TokenStore` (`CookieTokenStore` on web),
   `DeviceKeyPort`.
-- **Repositorio real**: `ApiAuthRepository` sobre `ApiClient`, que valida cada
-  petición contra el contrato antes de llamar. El refresh
-  (`POST /v1/auth/refresh`) y el cierre (`POST /v1/auth/sign-out`) son
-  públicos y llevan el session token en el cuerpo; en web va vacío y viaja la
-  cookie httpOnly. El paso adicional (`/v1/me/step-up`) va por un
-  `sessionClient` con el access token.
-- **Gestor**: `SessionManager` con `restore`, `signIn`, `requestMfaChallenge`,
+- **Real repository**: `ApiAuthRepository` on top of `ApiClient`, which validates each
+  request against the contract before calling. Refresh
+  (`POST /v1/auth/refresh`) and sign-out (`POST /v1/auth/sign-out`) are
+  public and carry the session token in the body; on web the body is empty and the
+  httpOnly cookie travels instead. The additional step (`/v1/me/step-up`) goes through a
+  `sessionClient` with the access token.
+- **Manager**: `SessionManager` with `restore`, `signIn`, `requestMfaChallenge`,
   `verifyMfa`, `startStepUp`, `requestStepUpChallenge`, `verifyStepUp`,
-  `accessToken`, `refresh`, `logout`, `handleRejectedToken`, `state` y
+  `accessToken`, `refresh`, `logout`, `handleRejectedToken`, `state` and
   `states` (`AuthState`: `signedOut`, `signedIn`, `refreshing`).
-  - Refresca el access token `refreshLead` antes de que venza.
-  - Un solo refresh en vuelo para las llamadas concurrentes.
-  - Cierra la sesión en logout o cuando el servidor la invalida con un código
-    de `invalidationCodes` (por defecto `defaultInvalidationCodes`: sesión
-    revocada, vencida o reutilizada, token revocado, usuario o tenant
-    suspendido), sea en el refresh o en cualquier ruta autenticada. Un
-    refresh con `PLATFORM.AUTH.UNAUTHENTICATED` también la cierra.
-  - `verifyStepUp` adopta el access token nuevo, con el segundo factor al día.
-  - `accessToken` devuelve null sin sesión: es el `accessToken` de
+  - Refreshes the access token `refreshLead` before it expires.
+  - A single refresh in flight for concurrent calls.
+  - Closes the session on logout or when the server invalidates it with a code
+    from `invalidationCodes` (by default `defaultInvalidationCodes`: session
+    revoked, expired or reused, token revoked, user or tenant
+    suspended), whether in the refresh or in any authenticated route. A
+    refresh with `PLATFORM.AUTH.UNAUTHENTICATED` also closes it.
+  - `verifyStepUp` adopts the new access token, with an up-to-date second factor.
+  - `accessToken` returns null without a session: it is the `accessToken` of
     `ApiClient`.
-- **Conexión**: `IdentityConnection` reúne el `SessionManager`, el `ApiClient`
-  con la sesión y el acceso de `GET /v1/me/access` (`access`), que se recarga
-  tras cada refresh y vuelve a null al cerrar la sesión. Ante un código de
-  `refreshCodes` el cliente refresca y reintenta una vez. La conexión es
-  dueña del transporte y lo cierra en `dispose`. Su transporte
-  (`SessionInvalidationTransport`) avisa al gestor cuando una ruta
-  autenticada rechaza el token con un código de invalidación, y
-  `markMfaVerified` publica el `mfaVerifiedAt` de un paso adicional.
-- **Flujos**: `SignInFlow` (credenciales, método y código del segundo
-  factor) y `StepUpFlow` (paso adicional de una sesión abierta) son
-  `ChangeNotifier` con el estado de cada paso y la regla de qué se reinicia
-  ante cada error. Los formularios de `shell_host` solo los dibujan.
-- **Almacén temporal**: `InMemoryTokenStore` guarda el session token en
-  memoria hasta que exista el adaptador de Keychain/Keystore.
-- **Errores**: los del servidor son `ApiErrorException` con el código del
-  contrato; `SignedOutException` indica que no hay sesión o que un logout
-  anuló la operación. Un fallo de red llega como `TransportException`.
-- **Dobles de prueba**: `FakeAuthRepository`, `FakeTokenStore` y
-  `FakeDeviceKeyPort` viven en el paquete `test_utils`, que solo se usa en
+- **Connection**: `IdentityConnection` brings together the `SessionManager`, the `ApiClient`
+  with the session and the access from `GET /v1/me/access` (`access`), which is reloaded
+  after every refresh and goes back to null when the session closes. On a code from
+  `refreshCodes` the client refreshes and retries once. The connection
+  owns the transport and closes it in `dispose`. Its transport
+  (`SessionInvalidationTransport`) notifies the manager when an authenticated
+  route rejects the token with an invalidation code, and
+  `markMfaVerified` publishes the `mfaVerifiedAt` of an additional step.
+- **Flows**: `SignInFlow` (credentials, method and second factor
+  code) and `StepUpFlow` (additional step of an open session) are
+  `ChangeNotifier`s with the state of each step and the rule of what resets
+  on each error. The `shell_host` forms only draw them.
+- **Temporary store**: `InMemoryTokenStore` keeps the session token in
+  memory until the Keychain/Keystore adapter exists.
+- **Errors**: server errors are `ApiErrorException` with the contract
+  code; `SignedOutException` means there is no session or that a logout
+  cancelled the operation. A network failure arrives as `TransportException`.
+- **Test doubles**: `FakeAuthRepository`, `FakeTokenStore` and
+  `FakeDeviceKeyPort` live in the `test_utils` package, which is only used in
   `dev_dependencies`.
 
-## Uso
+## Usage
 
 ```dart
 final connection = IdentityConnection(
@@ -85,7 +85,7 @@ if (pending != null) {
 await connection.reloadAccess();
 ```
 
-## Pruebas
+## Tests
 
 ```sh
 flutter analyze && flutter test

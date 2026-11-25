@@ -10,8 +10,8 @@ import { IdentityJob } from '../../../shared/enums/identity-job.enum.js';
 import { LoginAttemptRetention } from '../domain/login-attempt-retention.js';
 
 /**
- * Crea las particiones mensuales de `login_attempts` antes de que se necesiten y borra las de más de 12
- * meses. Corre a diario: las particiones se crean con meses de adelanto, así que un día perdido no importa.
+ * Creates the monthly partitions of `login_attempts` before they are needed and drops those older than 12
+ * months. Runs daily: partitions are created months in advance, so a missed day does not matter.
  */
 @Injectable()
 export class RotateLoginAttemptPartitionsJob extends ScheduledJob {
@@ -30,8 +30,8 @@ export class RotateLoginAttemptPartitionsJob extends ScheduledJob {
   }
 
   /**
-   * @throws PersistenceError `QueryFailed` si algún shard falló, para que la corrida quede como fallida y se
-   *   vea en las métricas del job.
+   * @throws PersistenceError `QueryFailed` if any shard failed, so that the run is marked as failed and
+   *   shows in the job metrics.
    */
   async run(): Promise<void> {
     const report = await this.retention.maintain(this.clock.now());

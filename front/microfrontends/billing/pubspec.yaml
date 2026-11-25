@@ -1,5 +1,5 @@
 name: mf_billing
-description: "Microfrontend de facturación."
+description: "Billing microfrontend."
 publish_to: none
 version: 0.0.1
 

@@ -1,9 +1,9 @@
-/** Atributos de las métricas de `UseCaseRunner`; todos de cardinalidad baja. */
+/** Attributes of the `UseCaseRunner` metrics; all of low cardinality. */
 export enum ServiceMetricAttribute {
-  /** Nombre de la clase del caso de uso. */
+  /** Class name of the use case. */
   UseCase = 'use_case',
-  /** Un valor de `UseCaseOutcome`. */
+  /** A value of `UseCaseOutcome`. */
   Outcome = 'outcome',
-  /** Código del error, o su nombre si no tiene código. */
+  /** Error code, or its name if it has no code. */
   ErrorType = 'error_type',
 }

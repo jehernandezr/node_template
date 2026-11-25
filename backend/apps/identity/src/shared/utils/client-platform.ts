@@ -8,7 +8,7 @@ const PATTERNS: ReadonlyArray<readonly [RegExp, ClientPlatform]> = [
   [/linux/i, ClientPlatform.Linux],
 ];
 
-/** Plataforma aproximada a partir del `User-Agent`. Sin pistas, la web. */
+/** Approximate platform from the `User-Agent`. Without hints, web. */
 export function platformFromUserAgent(userAgent?: string): ClientPlatform {
   if (userAgent === undefined) {
     return ClientPlatform.Web;
@@ -19,7 +19,7 @@ export function platformFromUserAgent(userAgent?: string): ClientPlatform {
   );
 }
 
-/** Nombre legible del dispositivo para la lista de sesiones: el `User-Agent` recortado o la plataforma. */
+/** Readable device name for the session list: the trimmed `User-Agent` or the platform. */
 export function deviceNameFrom(userAgent?: string): string {
   const trimmed = userAgent?.trim().slice(0, 120);
   return trimmed === undefined || trimmed === ''

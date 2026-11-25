@@ -23,7 +23,7 @@ runtime.describeIfAvailable('shard routing over PostgreSQL', () => {
   let db: ShardedTestDatabase;
   let repo: ProbeRepository;
 
-  /** Cuenta las filas de la tabla `probes` con ese id en un shard, leyendo la base directamente. */
+  /** Counts the rows of the `probes` table with that id in a shard, reading the database directly. */
   async function countIn(shard: string, id: string): Promise<number> {
     const dataSource = await db.sources.get({
       logicalShard: shard,

@@ -3,9 +3,9 @@ import { PlatformPersistenceMigrations } from '../../migrations/platform-persist
 import { CreateProbes1794700000001 } from './create-probes.migration.js';
 import { ProbeEntity } from './probe.entity.js';
 
-/** Conjuntos de entidades y migraciones listos para `ShardedTestDatabase`. */
+/** Sets of entities and migrations ready for `ShardedTestDatabase`. */
 export class ProbeDatabaseSets {
-  /** Los shards llevan las funciones y `audit_log` de la plataforma más la tabla `probes`. */
+  /** The shards carry the platform functions and `audit_log` plus the `probes` table. */
   static readonly shard: DatabaseSetDefinition = {
     entities: [ProbeEntity],
     migrations: [
@@ -14,7 +14,7 @@ export class ProbeDatabaseSets {
     ],
   };
 
-  /** El catálogo no lleva tablas de prueba. */
+  /** The catalog has no test tables. */
   static readonly catalog: DatabaseSetDefinition = {
     entities: [],
     migrations: [],

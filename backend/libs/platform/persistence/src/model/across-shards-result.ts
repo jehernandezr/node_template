@@ -1,9 +1,9 @@
 import type { ShardFailure } from './shard-failure.js';
 
-/** Resultado de recorrer varios shards. */
+/** Result of traversing several shards. */
 export interface AcrossShardsResult<T> {
   readonly results: readonly { readonly shard: string; readonly value: T }[];
   readonly failures: readonly ShardFailure[];
-  /** `true` si algún shard falló: el resultado no incluye sus filas. */
+  /** `true` if some shard failed: the result does not include its rows. */
   readonly partial: boolean;
 }

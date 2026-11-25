@@ -5,7 +5,7 @@ import { SmokeCacheNamespace } from './smoke-cache-namespace.enum.js';
 import { SmokeOrderRepository } from './smoke-order.repository.js';
 import type { SmokeOrderView } from './smoke-order-view.js';
 
-/** Lectura de pedidos con caché: las llaves van bajo el tenant, así invalidar uno no toca a otro. */
+/** Cached order reads: keys go under the tenant, so invalidating one does not touch another. */
 @Injectable()
 export class SmokeOrderCache {
   private static readonly TTL_MS = 60_000;

@@ -11,8 +11,8 @@ import type { ProblemResponse } from './problem-response.js';
 import type { ErrorCatalogRegistry } from './error-catalog-registry.js';
 
 /**
- * Convierte cualquier error de la petición en Problem Details. Solo sale el título del catálogo: nunca
- * el `message` ni el `detail` del error, y de sus datos solo los que el código declara públicos. Lo que no está en el catálogo es `PLATFORM.INTERNAL.UNEXPECTED`.
+ * Converts any request error into Problem Details. Only the catalog title comes out: never
+ * the error's `message` or `detail`, and of its data only what the code declares public. Anything not in the catalog is `PLATFORM.INTERNAL.UNEXPECTED`.
  */
 export class ProblemDetailsMapper {
   constructor(
@@ -57,7 +57,7 @@ export class ProblemDetailsMapper {
     );
   }
 
-  /** Segundos enteros ≥ 1, desde la fuente que tenga valor; solo para códigos públicos. */
+  /** Whole seconds ≥ 1, from whichever source has a value; only for public codes. */
   private retryAfter(
     error: unknown,
     entry: ErrorCatalogEntry,

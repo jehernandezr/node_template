@@ -5,7 +5,7 @@ const ALL_TENANT_PERMISSIONS: readonly Permission[] = Object.values(
 ).filter((permission) => permission !== Permission.BackofficeAccess);
 
 /**
- * Permisos fijos de los roles de sistema de un tenant. Un rol de sistema no se edita ni se borra
+ * Fixed permissions of a tenant's system roles. A system role cannot be edited or deleted
  * (`IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE`).
  */
 export const SystemRolePermissions: Readonly<
@@ -28,8 +28,8 @@ export const SystemRolePermissions: Readonly<
 };
 
 /**
- * Permisos que hacen administrador a quien los tiene, venga de un grupo de sistema o de uno propio del
- * tenant: con cualquiera de ellos el inicio de sesión pide segundo factor siempre.
+ * Permissions that make whoever has them an administrator, whether from a system group or one of the
+ * tenant's own: with any of them sign-in always requires a second factor.
  */
 export const AdministrativePermissions: readonly Permission[] = [
   Permission.IdentityTenantManage,

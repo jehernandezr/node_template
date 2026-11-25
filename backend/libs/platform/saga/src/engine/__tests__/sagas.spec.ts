@@ -10,7 +10,7 @@ class NotRegisteredSaga extends SagaDefinition<object> {
   readonly type = 'not-registered';
 
   protected define(): void {
-    // Sin pasos: nunca se registra en el kit.
+    // No steps: it is never registered in the kit.
   }
 }
 

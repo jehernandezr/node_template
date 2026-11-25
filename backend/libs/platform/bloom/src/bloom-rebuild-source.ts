@@ -1,6 +1,6 @@
-/** Lotes de ítems que leen de la fuente de verdad de un filtro, para reconstruirlo. */
+/** Batches of items read from a filter's source of truth, to rebuild it. */
 export type BloomRebuildSource =
   AsyncIterable<readonly string[]> | Iterable<readonly string[]>;
 
-/** Crea una fuente nueva en cada llamada: cada reconstrucción la lee desde el principio. */
+/** Creates a new source on each call: each rebuild reads it from the start. */
 export type BloomRebuildSourceFactory = () => BloomRebuildSource;

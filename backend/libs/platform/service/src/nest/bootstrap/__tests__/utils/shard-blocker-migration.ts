@@ -1,8 +1,8 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Migración que falla cuando la tabla ya existe: sin `IF NOT EXISTS` a propósito, para forzar un fallo
- * parcial en la migración de un shard.
+ * Migration that fails when the table already exists: deliberately without `IF NOT EXISTS`, to force a partial
+ * failure in the migration of a shard.
  */
 export class ShardBlockerMigration1900000000003 implements MigrationInterface {
   readonly name = 'ShardBlockerMigration1900000000003';

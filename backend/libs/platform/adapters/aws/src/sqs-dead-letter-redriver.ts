@@ -10,8 +10,8 @@ import { SqsConsumerConfig } from './sqs-consumer-config.js';
 import type { SqsDelivery } from './sqs-delivery.js';
 
 /**
- * Copia a la DLQ de la cola un mensaje que el despachador declaró perdido
- * (error permanente, contrato roto, tenant inválido), con el motivo en atributos.
+ * Copies to the queue's DLQ a message the dispatcher declared lost
+ * (permanent error, broken contract, invalid tenant), with the reason in attributes.
  */
 export class SqsDeadLetterRedriver {
   constructor(
@@ -22,7 +22,7 @@ export class SqsDeadLetterRedriver {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
-  /** `true` si el mensaje quedó en la DLQ; `false` si la copia falló y la entrega debe repetirse. */
+  /** `true` if the message ended up in the DLQ; `false` if the copy failed and the delivery must be retried. */
   async copy(
     delivery: SqsDelivery,
     result: DeadLetterResult,
@@ -37,8 +37,8 @@ export class SqsDeadLetterRedriver {
           QueueUrl: queueUrl,
           MessageBody: delivery.body,
           MessageAttributes: this.attributes(result),
-          // La DLQ FIFO exige grupo y deduplicación; el id del mensaje sirve de
-          // grupo cuando el original no lo tenía.
+          // The FIFO DLQ requires a group and deduplication; the message id serves as
+          // the group when the original did not have one.
           ...(fifo
             ? {
                 MessageGroupId: delivery.groupId ?? delivery.messageId,

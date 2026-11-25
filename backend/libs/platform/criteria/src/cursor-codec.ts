@@ -10,9 +10,9 @@ import {
 } from './cursor.js';
 
 /**
- * Codifica y decodifica los cursores de paginación como un token opaco base64url. Se construye una vez con el
- * secreto de firma (HMAC-SHA256, desde `AppConfig`) y se inyecta; sin secreto los tokens no van firmados. La firma
- * va anexada al payload antes de codificar, así el token conserva el alfabeto del contrato.
+ * Encodes and decodes pagination cursors as an opaque base64url token. Built once with the
+ * signing secret (HMAC-SHA256, from `AppConfig`) and injected; without a secret tokens are unsigned. The signature
+ * is appended to the payload before encoding, so the token keeps the contract's alphabet.
  */
 export class CursorCodec {
   private static readonly TOKEN = new RegExp(Pagination.cursorPattern);
@@ -21,7 +21,7 @@ export class CursorCodec {
   constructor(private readonly secret?: string | Uint8Array) {}
 
   /**
-   * @throws CriteriaError `InvalidValue` si el id o los valores no son válidos o el token superaría `MAX_CURSOR_LENGTH`.
+   * @throws CriteriaError `InvalidValue` if the id or the values are invalid or the token would exceed `MAX_CURSOR_LENGTH`.
    */
   encode(cursor: Cursor): string {
     if (!CursorCodec.isValidId(cursor.id)) {
@@ -52,9 +52,9 @@ export class CursorCodec {
   }
 
   /**
-   * Valida un token producido por `encode`: rechaza tokens grandes, no canónicos, con claves de más y, si hay
-   * secreto, sin firma o con firma que no coincide.
-   * @throws CriteriaError `InvalidValue` si el token está mal formado o alterado.
+   * Validates a token produced by `encode`: rejects tokens that are large, non-canonical, with extra keys and, if there is
+   * a secret, unsigned or with a signature that does not match.
+   * @throws CriteriaError `InvalidValue` if the token is malformed or tampered with.
    */
   decode(token: string): Cursor {
     if (
@@ -75,7 +75,7 @@ export class CursorCodec {
         bytes.length - CursorCodec.SIGNATURE_BYTES,
       );
       const actual = bytes.subarray(bytes.length - CursorCodec.SIGNATURE_BYTES);
-      // Comparación en tiempo constante para que el tiempo de respuesta no revele la firma.
+      // Constant-time comparison so the response time does not reveal the signature.
       if (
         !timingSafeEqual(CursorCodec.sign(payloadBytes, this.secret), actual)
       ) {
@@ -100,7 +100,7 @@ export class CursorCodec {
     ) {
       throw CriteriaValidator.invalid('malformed cursor');
     }
-    // Forma canónica: volver a codificar debe dar el mismo payload, así un token tiene una sola representación.
+    // Canonical form: re-encoding must yield the same payload, so a token has a single representation.
     const canonical = Buffer.from(JSON.stringify({ v, i }), 'utf8');
     if (
       !canonical.equals(payloadBytes) ||

@@ -1,15 +1,15 @@
-/** Estado de una recuperación de contraseña, tal como se guarda. */
+/** State of a password recovery, as stored. */
 export interface PasswordResetState {
   readonly id: string;
   readonly userId: string;
-  /** Huella del secreto del token; el secreto nunca se guarda. */
+  /** Hash of the token's secret; the secret is never stored. */
   readonly tokenHash: string;
   readonly expiresAt: Date;
   readonly usedAt?: Date;
   readonly version?: number;
 }
 
-/** Una recuperación de contraseña: un token de un solo uso que vence. */
+/** A password recovery: a single-use token that expires. */
 export class PasswordReset {
   private constructor(private state: PasswordResetState) {}
 
@@ -32,9 +32,9 @@ export class PasswordReset {
   }
 
   /**
-   * Marca la recuperación como usada si todavía sirve. `secretMatches` compara el secreto presentado con la
-   * huella en tiempo constante. Devuelve `false`, sin cambiar nada, si ya se usó, venció o el secreto no
-   * coincide: las tres responden igual para no revelar cuál fue.
+   * Marks the recovery as used if it is still valid. `secretMatches` compares the presented secret with the
+   * hash in constant time. Returns `false`, without changing anything, if it was already used, expired or the secret does not
+   * match: all three respond the same so as not to reveal which one it was.
    */
   redeem(secretMatches: (tokenHash: string) => boolean, now: Date): boolean {
     if (

@@ -41,11 +41,11 @@ export const TaskSchema = z
     updatedAt: TimestampSchema,
     createdBy: UserRefSchema,
   })
-  .describe('Una tarea de la organización.') satisfies z.ZodType<Task>;
+  .describe('A task of the organization.') satisfies z.ZodType<Task>;
 
 export const TaskPageSchema = pageOf(
   TaskSchema,
-  'Página de tareas del tenant.',
+  'Page of tenant tasks.',
 ) satisfies z.ZodType<TaskPage>;
 
 export const ListTasksRequestSchema = z
@@ -56,19 +56,19 @@ export const ListTasksRequestSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Listado o búsqueda de tareas, con filtro de estado opcional.',
+    'Listing or search of tasks, with an optional status filter.',
   ) satisfies z.ZodType<ListTasksRequest>;
 
 export const GetTaskRequestSchema = z
   .strictObject({ taskId: IdSchema })
-  .describe('Tarea a consultar.') satisfies z.ZodType<GetTaskRequest>;
+  .describe('Task to query.') satisfies z.ZodType<GetTaskRequest>;
 
 export const CreateTaskRequestSchema = z
   .strictObject({
     title: TitleSchema,
     description: DescriptionSchema.optional(),
   })
-  .describe('Alta de una tarea.') satisfies z.ZodType<CreateTaskRequest>;
+  .describe('Task creation.') satisfies z.ZodType<CreateTaskRequest>;
 
 export const UpdateTaskRequestSchema = z
   .strictObject({
@@ -79,22 +79,22 @@ export const UpdateTaskRequestSchema = z
     expectedVersion: VersionSchema.optional(),
   })
   .describe(
-    'Cambios parciales de una tarea, con versión esperada opcional.',
+    'Partial changes of a task, with an optional expected version.',
   ) satisfies z.ZodType<UpdateTaskRequest>;
 
 export const DeleteTaskRequestSchema = z
   .strictObject({ taskId: IdSchema })
-  .describe('Tarea a borrar.') satisfies z.ZodType<DeleteTaskRequest>;
+  .describe('Task to delete.') satisfies z.ZodType<DeleteTaskRequest>;
 
 export const TaskChangeSchema = TaskSchema.extend({
   deletedAt: TimestampSchema.nullable(),
 }).describe(
-  'Tarea con la fecha de borrado lógico, si la hubo.',
+  'Task with the soft delete date, if any.',
 ) satisfies z.ZodType<TaskChange>;
 
 export const TaskChangePageSchema = pageOf(
   TaskChangeSchema,
-  'Página de cambios de tareas.',
+  'Page of task changes.',
 ) satisfies z.ZodType<TaskChangePage>;
 
 export const ListTaskChangesInputSchema = z
@@ -105,17 +105,17 @@ export const ListTaskChangesInputSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Entrada para paginar los cambios de tareas de un tenant.',
+    'Input to page the task changes of a tenant.',
   ) satisfies z.ZodType<ListTaskChangesInput>;
 
 export const EraseTasksUserInputSchema = z
   .strictObject({ user: UserRefSchema })
   .describe(
-    'Usuario cuyos datos se anonimizan en las tareas.',
+    'User whose data is anonymized in the tasks.',
   ) satisfies z.ZodType<EraseTasksUserInput>;
 
 export const EraseTasksUserResultSchema = z
   .object({ userId: IdSchema, affectedRows: z.int().min(0) })
   .describe(
-    'Filas de tareas anonimizadas para un usuario.',
+    'Task rows anonymized for a user.',
   ) satisfies z.ZodType<EraseTasksUserResult>;

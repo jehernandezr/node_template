@@ -9,15 +9,15 @@ import { AccessTokenVerifier } from '../../access-token-verifier.js';
 import { FailingAuthStateReader } from './failing-auth-state-reader.js';
 import { StubAccessResolver } from './stub-access-resolver.js';
 
-/** Opciones de `VerifierHarness.create`. */
+/** Options of `VerifierHarness.create`. */
 export interface VerifierHarnessOptions {
-  /** Si `false`, el estado no tiene versiones de permisos y el verificador usa el grant. */
+  /** If `false`, the state has no permission versions and the verifier uses the grant. */
   readonly withVersions?: boolean;
-  /** Fuente de claves distinta de la del par de prueba. */
+  /** Key source different from that of the test key pair. */
   readonly keys?: JwksKeySource;
 }
 
-/** Verificador armado con un reloj fijo, un par de claves y estado en memoria para las pruebas. */
+/** Verifier built with a fixed clock, a key pair and in-memory state for tests. */
 export class VerifierHarness {
   static readonly ISSUER = 'https://identity.test';
   static readonly USER_ID = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f01';
@@ -70,7 +70,7 @@ export class VerifierHarness {
     return Math.floor(this.clock.now().getTime() / 1000);
   }
 
-  /** Token firmado con la clave del harness. */
+  /** Token signed with the harness key. */
   token(
     builder: AccessTokenBuilder = AccessTokenBuilder.aToken(this.nowSeconds),
   ): string {

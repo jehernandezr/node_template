@@ -1,20 +1,20 @@
 import type { DispatchResult } from './dispatch-result.js';
 
-/** Cómo terminó el intento de tomar un mensaje. */
+/** How the attempt to take a message ended. */
 export enum ClaimOutcomeKind {
-  /** El claim es nuestro: hay que correr el manejador. */
+  /** The claim is ours: the handler must run. */
   Acquired = 'acquired',
-  /** El claim decidió el resultado sin correr el manejador. */
+  /** The claim decided the result without running the handler. */
   Settled = 'settled',
 }
 
-/** Claim vigente de un mensaje, con lo necesario para completarlo o liberarlo. */
+/** Current claim of a message, with what is needed to complete or release it. */
 export interface AcquiredMessageClaim {
   readonly key: string;
   readonly token: string;
 }
 
-/** Resultado de `ClaimGuard.claim`. */
+/** Result of `ClaimGuard.claim`. */
 export type ClaimOutcome =
   | {
       readonly kind: ClaimOutcomeKind.Acquired;

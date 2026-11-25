@@ -10,8 +10,8 @@ import { DeviceApprovalStore } from '../domain/device-approval-store.js';
 const ApprovalsSchema = z.array(DeviceApprovalSchema);
 
 /**
- * Aprobaciones de cada dispositivo como una lista JSON en Valkey. Un usuario tiene pocos inicios de sesión
- * a la vez, así que leer y reescribir la lista alcanza; los nonces usan `SET NX`.
+ * Approvals of each device as a JSON list in Valkey. A user has few sign-ins at a
+ * time, so reading and rewriting the list is enough; nonces use `SET NX`.
  */
 @Injectable()
 export class EphemeralDeviceApprovalStore extends DeviceApprovalStore {

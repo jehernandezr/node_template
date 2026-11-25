@@ -1,14 +1,14 @@
 import type { LoggerPort } from '@platform/observability';
 import { RecordedLogLevel } from './recorded-log-level.enum.js';
 
-/** Un registro recibido por {@link RecordingLogger}. */
+/** A log entry received by {@link RecordingLogger}. */
 export interface RecordedLogEntry {
   readonly level: RecordedLogLevel;
   readonly message: string;
   readonly fields?: Record<string, unknown>;
 }
 
-/** Logger que guarda los registros, para pruebas. */
+/** Logger that stores the log entries, for tests. */
 export class RecordingLogger implements LoggerPort {
   readonly entries: RecordedLogEntry[] = [];
 
@@ -28,7 +28,7 @@ export class RecordingLogger implements LoggerPort {
     this.entries.push({ level: RecordedLogLevel.Error, message, fields });
   }
 
-  /** Un hijo comparte los registros del padre. */
+  /** A child shares the parent's log entries. */
   child(): LoggerPort {
     return this;
   }

@@ -9,7 +9,7 @@ import { TaskStatus } from '@contracts/tasks';
 import { ProjectionsFacade } from '../../../projections/index.js';
 import { ReportDefinition } from '../report-definition.js';
 
-/** Las tareas creadas en el rango que siguen vigentes, por estado. Los estados sin tareas cuentan cero. */
+/** The tasks created in the range that are still current, by status. Statuses with no tasks count zero. */
 @Injectable()
 export class TasksByStatusReport extends ReportDefinition {
   readonly type = ReportType.TasksByStatus;

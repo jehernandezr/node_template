@@ -4,25 +4,25 @@ import type { BloomFilterFactory } from '../bloom-filter-factory.js';
 import type { BloomRebuildSourceProvider } from '../bloom-rebuild-source-provider.js';
 import type { Abstract } from '@nestjs/common';
 
-/** Opciones de `BloomModule.forRoot`. */
+/** Options of `BloomModule.forRoot`. */
 export interface BloomModuleOptions {
-  /** Bits máximos por partición. Un filtro más grande se reparte en particiones. Por defecto `BloomSizing.MAX_BITS`. */
+  /** Maximum bits per partition. A larger filter is split into partitions. Defaults to `BloomSizing.MAX_BITS`. */
   readonly maxPartitionBits?: number;
 }
 
-/** Extras de `BloomModule.forRoot`: se resuelven por inyección, no son opciones planas. */
+/** Extras of `BloomModule.forRoot`: resolved by injection, they are not plain options. */
 export interface BloomModuleExtras {
-  /** `false` para importar el módulo en cada módulo que lo use. Por defecto, global. */
+  /** `false` to import the module in each module that uses it. Global by default. */
   isGlobal?: boolean;
-  /** Fábrica de filtros. Por defecto, la que crea filtros en memoria. */
+  /** Filter factory. Defaults to the one that creates in-memory filters. */
   factory?: Type<BloomFilterFactory> | Abstract<BloomFilterFactory>;
 }
 
-/** Opciones de `BloomModule.forFeature`: la definición de un filtro y su fuente de verdad. */
+/** Options of `BloomModule.forFeature`: a filter's definition and its source of truth. */
 export interface BloomFeatureOptions {
   readonly definition: BloomFilterDefinition;
-  /** Clase concreta que entrega la fuente de verdad. El propio `forFeature` la registra. */
+  /** Concrete class that provides the source of truth. `forFeature` itself registers it. */
   readonly source: Type<BloomRebuildSourceProvider>;
-  /** Módulos que aporten las dependencias de `source`. */
+  /** Modules that provide the dependencies of `source`. */
   readonly imports?: ModuleMetadata['imports'];
 }

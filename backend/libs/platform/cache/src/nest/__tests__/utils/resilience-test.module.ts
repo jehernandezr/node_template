@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ResilienceRegistry } from '@platform/resilience';
 
-/** Registro de resiliencia real, disponible de forma global para las pruebas del módulo. */
+/** Real resilience registry, available globally for the module tests. */
 @Global()
 @Module({
   providers: [

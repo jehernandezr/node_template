@@ -26,7 +26,7 @@ import { rateLimitErrorCatalog } from '@platform/rate-limit';
 import { valkeyErrorCatalog } from '@platform/adapters-valkey';
 import { PreviousErrorCodes } from './utils/previous-error-codes.js';
 
-/** Catálogos de las librerías que el servicio compone, además del central. */
+/** Catalogs of the libraries the service composes, besides the central one. */
 const LIBRARY_CATALOGS: readonly (readonly ErrorCatalogEntry[])[] = [
   kernelErrorCatalog,
   primitivesErrorCatalog,

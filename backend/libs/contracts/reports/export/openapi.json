@@ -4,17 +4,17 @@
   "info": {
     "title": "reports",
     "version": "2",
-    "description": "Reportes sobre los datos del tenant: catálogo, ejecuciones calculadas en segundo plano y resultado guardado."
+    "description": "Reports on tenant data: catalog, runs computed in the background and stored result."
   },
   "paths": {
     "/v1/reports": {
       "get": {
         "operationId": "reports.catalog.list",
-        "description": "Lista los tipos de reporte, con sus formatos y granularidades.",
+        "description": "Lists the report types, with their formats and granularities.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportCatalog" }
@@ -22,7 +22,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -48,11 +48,11 @@
     "/v1/reports/runs": {
       "post": {
         "operationId": "reports.run.create",
-        "description": "Crea una ejecución de reporte. Responde 202 con su id.",
+        "description": "Creates a report run. Responds 202 with its id.",
         "parameters": [],
         "responses": {
           "202": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportRunCreated" }
@@ -60,7 +60,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, PLATFORM.VALIDATION.INVALID_INPUT, PLATFORM.ACCESS.FEATURE_NOT_INCLUDED, REPORTS.TYPE.UNKNOWN, REPORTS.PARAMS.INVALID_RANGE.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, PLATFORM.VALIDATION.INVALID_INPUT, PLATFORM.ACCESS.FEATURE_NOT_INCLUDED, REPORTS.TYPE.UNKNOWN, REPORTS.PARAMS.INVALID_RANGE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -98,7 +98,7 @@
       },
       "get": {
         "operationId": "reports.run.list",
-        "description": "Lista las ejecuciones de reporte, con filtros y paginación.",
+        "description": "Lists the report runs, with filters and pagination.",
         "parameters": [
           {
             "name": "type",
@@ -127,7 +127,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportRunPage" }
@@ -135,7 +135,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, PLATFORM.VALIDATION.INVALID_INPUT.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, PLATFORM.VALIDATION.INVALID_INPUT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -162,7 +162,7 @@
     "/v1/reports/runs/{runId}": {
       "get": {
         "operationId": "reports.run.get",
-        "description": "Consulta una ejecución de reporte y su resultado.",
+        "description": "Gets a report run and its result.",
         "parameters": [
           {
             "name": "runId",
@@ -173,7 +173,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportRunDetail" }
@@ -181,7 +181,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, REPORTS.RUN.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, REPORTS.RUN.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -208,7 +208,7 @@
     "/v1/reports/runs/{runId}/download": {
       "get": {
         "operationId": "reports.run.download",
-        "description": "Descarga el resultado de una ejecución lista en su formato.",
+        "description": "Downloads the result of a ready run in its format.",
         "parameters": [
           {
             "name": "runId",
@@ -219,7 +219,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportDownload" }
@@ -227,7 +227,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, REPORTS.RUN.NOT_FOUND, REPORTS.RUN.NOT_READY, REPORTS.RUN.EXPIRED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.ACCESS.FLAG_DISABLED, REPORTS.RUN.NOT_FOUND, REPORTS.RUN.NOT_READY, REPORTS.RUN.EXPIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -264,22 +264,22 @@
           "invoices_summary",
           "notifications_delivery"
         ],
-        "description": "Tipo de reporte."
+        "description": "Report type."
       },
       "ReportRunStatus": {
         "type": "string",
         "enum": ["queued", "running", "ready", "failed", "expired"],
-        "description": "Estado de una ejecución de reporte."
+        "description": "Status of a report run."
       },
       "ReportFormat": {
         "type": "string",
         "enum": ["json", "csv"],
-        "description": "Formato de un reporte."
+        "description": "Format of a report."
       },
       "ReportGranularity": {
         "type": "string",
         "enum": ["day", "week", "month"],
-        "description": "Granularidad temporal de un reporte."
+        "description": "Time granularity of a report."
       },
       "RunCompletedPayload": {
         "type": "object",
@@ -307,7 +307,7 @@
           "requestedBy",
           "completedAt"
         ],
-        "description": "Terminó una ejecución de reporte."
+        "description": "A report run finished."
       },
       "ExecuteRunPayload": {
         "type": "object",
@@ -321,12 +321,12 @@
         },
         "required": ["tenantId", "runId"],
         "additionalProperties": false,
-        "description": "Retoma una ejecución de reporte en un worker."
+        "description": "Resumes a report run in a worker."
       },
       "ReportColumnKind": {
         "type": "string",
         "enum": ["text", "integer", "date"],
-        "description": "Tipo de dato de una columna del resultado."
+        "description": "Data type of a result column."
       },
       "ReportParams": {
         "type": "object",
@@ -341,7 +341,7 @@
         },
         "required": ["from", "to", "granularity"],
         "additionalProperties": false,
-        "description": "Rango de fechas y granularidad de un reporte."
+        "description": "Date range and granularity of a report."
       },
       "ReportColumn": {
         "type": "object",
@@ -351,7 +351,7 @@
           "kind": { "$ref": "#/components/schemas/ReportColumnKind" }
         },
         "required": ["key", "header", "kind"],
-        "description": "Columna del resultado de un reporte."
+        "description": "Column of a report result."
       },
       "ReportRow": {
         "type": "object",
@@ -363,7 +363,7 @@
           }
         },
         "required": ["cells"],
-        "description": "Fila del resultado de un reporte."
+        "description": "Row of a report result."
       },
       "ReportResult": {
         "type": "object",
@@ -380,7 +380,7 @@
           }
         },
         "required": ["columns", "rows"],
-        "description": "Resultado tabular de una ejecución terminada."
+        "description": "Tabular result of a finished run."
       },
       "ReportCatalogEntry": {
         "type": "object",
@@ -400,7 +400,7 @@
           }
         },
         "required": ["type", "formats", "granularities"],
-        "description": "Tipo de reporte disponible, con sus formatos y granularidades."
+        "description": "Available report type, with its formats and granularities."
       },
       "ReportCatalog": {
         "type": "object",
@@ -412,7 +412,7 @@
           }
         },
         "required": ["items"],
-        "description": "Catálogo de reportes que puede pedir el tenant."
+        "description": "Catalog of reports the tenant can request."
       },
       "CreateReportRunRequest": {
         "type": "object",
@@ -423,7 +423,7 @@
         },
         "required": ["type", "format", "params"],
         "additionalProperties": false,
-        "description": "Petición de una ejecución de reporte."
+        "description": "Request for a report run."
       },
       "ReportRunCreated": {
         "type": "object",
@@ -433,7 +433,7 @@
           }
         },
         "required": ["runId"],
-        "description": "Ejecución aceptada; su resultado se consulta por el id."
+        "description": "Run accepted; its result is queried by id."
       },
       "ReportRunSummary": {
         "type": "object",
@@ -479,7 +479,7 @@
           "completedAt",
           "expiresAt"
         ],
-        "description": "Ejecución de reporte sin su resultado."
+        "description": "Report run without its result."
       },
       "ReportRunPage": {
         "type": "object",
@@ -499,7 +499,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de ejecuciones de reporte."
+        "description": "Page of report runs."
       },
       "ListReportRunsRequest": {
         "type": "object",
@@ -514,7 +514,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Filtros y paginación del listado de ejecuciones."
+        "description": "Filters and pagination of the run listing."
       },
       "GetReportRunRequest": {
         "type": "object",
@@ -525,7 +525,7 @@
         },
         "required": ["runId"],
         "additionalProperties": false,
-        "description": "Ejecución de reporte a consultar."
+        "description": "Report run to query."
       },
       "ReportRunDetail": {
         "type": "object",
@@ -578,7 +578,7 @@
           "expiresAt",
           "result"
         ],
-        "description": "Ejecución de reporte con su resultado, nulo mientras no esté lista."
+        "description": "Report run with its result, null until it is ready."
       },
       "DownloadReportRunRequest": {
         "type": "object",
@@ -589,7 +589,7 @@
         },
         "required": ["runId"],
         "additionalProperties": false,
-        "description": "Ejecución de reporte cuyo resultado se descarga."
+        "description": "Report run whose result is downloaded."
       },
       "ReportDownload": {
         "type": "object",
@@ -599,7 +599,7 @@
           "content": { "type": "string", "maxLength": 8000000 }
         },
         "required": ["fileName", "contentType", "content"],
-        "description": "Contenido de un reporte listo para descargar."
+        "description": "Content of a report ready to download."
       },
       "EraseReportsUserInput": {
         "type": "object",
@@ -610,7 +610,7 @@
         },
         "required": ["user"],
         "additionalProperties": false,
-        "description": "Usuario cuyos datos se borran de reports."
+        "description": "User whose data is deleted from reports."
       },
       "EraseReportsUserResult": {
         "type": "object",
@@ -625,7 +625,7 @@
           }
         },
         "required": ["userId", "affectedRows"],
-        "description": "Filas de reports que dejaron de guardar al usuario."
+        "description": "Reports rows that stopped storing the user."
       }
     },
     "securitySchemes": {

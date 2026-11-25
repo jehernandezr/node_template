@@ -1,44 +1,44 @@
 output "endpoint" {
-  description = "Host de la caché Valkey serverless."
+  description = "Host of the serverless Valkey cache."
   value       = aws_elasticache_serverless_cache.this.endpoint[0].address
 }
 
 output "cache_name" {
-  description = "Nombre de la caché serverless. Es el host que firma el token IAM de los clientes."
+  description = "Name of the serverless cache. It is the host that the clients sign the IAM token for."
   value       = aws_elasticache_serverless_cache.this.name
 }
 
 output "port" {
-  description = "Puerto de la caché Valkey serverless."
+  description = "Port of the serverless Valkey cache."
   value       = aws_elasticache_serverless_cache.this.endpoint[0].port
 }
 
 output "security_group_id" {
-  description = "Security group de la caché."
+  description = "Security group of the cache."
   value       = aws_security_group.this.id
 }
 
 output "tls" {
-  description = "La caché serverless exige TLS en todas las conexiones. Los clientes usan rediss://."
+  description = "The serverless cache requires TLS on all connections. Clients use rediss://."
   value       = true
 }
 
 output "kms_key_arn" {
-  description = "ARN de la clave KMS que cifra la caché en reposo."
+  description = "ARN of the KMS key that encrypts the cache at rest."
   value       = module.kms.arn
 }
 
 output "cache_arn" {
-  description = "ARN de la caché serverless."
+  description = "ARN of the serverless cache."
   value       = aws_elasticache_serverless_cache.this.arn
 }
 
 output "iam_user_names" {
-  description = "Nombre de usuario Valkey de cada servicio, por clave de var.users. Es el usuario con el que el cliente firma el token IAM."
+  description = "Valkey user name of each service, by var.users key. It is the user the client signs the IAM token with."
   value       = { for name, u in aws_elasticache_user.app : name => u.user_name }
 }
 
 output "connect_resource_arns" {
-  description = "Por servicio, los ARN que su rol IAM necesita en elasticache:Connect: la caché y su usuario."
+  description = "Per service, the ARNs its IAM role needs in elasticache:Connect: the cache and its user."
   value       = { for name, arn in local.user_arns : name => [local.cache_arn, arn] }
 }

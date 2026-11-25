@@ -7,7 +7,7 @@ import type {
 } from '@platform/service/test-utils';
 import type { PlatformService } from './platform-service.enum.js';
 
-/** Uno de los cinco servicios en marcha, con sus bases y su URL. */
+/** One of the five running services, with its databases and its URL. */
 export class PlatformNode {
   constructor(
     readonly service: PlatformService,
@@ -19,7 +19,7 @@ export class PlatformNode {
     return `http://127.0.0.1:${this.running.address?.port ?? 0}`;
   }
 
-  /** Cliente con el access token de un usuario, como lo llama la app. */
+  /** Client with a user's access token, as the app calls it. */
   clientOf(accessToken: string): HttpTestClient {
     return new HttpTestClient(this.baseUrl(), {
       Authorization: `Bearer ${accessToken}`,
@@ -30,7 +30,7 @@ export class PlatformNode {
     return this.running.app.get(token, { strict: false });
   }
 
-  /** Una pasada del relay por cada shard; devuelve cuántos registros del outbox tomó. */
+  /** One relay pass per shard; returns how many outbox records it took. */
   async relayOutbox(): Promise<number> {
     const relay = this.get(OutboxRelay);
     let claimed = 0;
@@ -40,12 +40,12 @@ export class PlatformNode {
     return claimed;
   }
 
-  /** Corre una consulta en el shard donde el directorio de este servicio tiene hoy al tenant. */
+  /** Runs a query in the shard where this service's directory currently places the tenant. */
   async rowsOf<T>(tenantId: string, sql: string): Promise<readonly T[]> {
     return (await this.shardOf(tenantId)).rows<T>(sql);
   }
 
-  /** El shard del tenant según el directorio de este servicio. */
+  /** The tenant's shard according to this service's directory. */
   async shardOf(tenantId: string): Promise<ProbeDatabase> {
     const [placement] = await this.databases.catalog().rows<{
       shard_group: readonly string[];

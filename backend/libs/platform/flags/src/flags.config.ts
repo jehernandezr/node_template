@@ -33,7 +33,7 @@ const FlagRulesSchema = z
     { message: 'FEATURE_FLAGS repite un flag' },
   );
 
-/** `FEATURE_FLAGS` es una lista JSON de reglas; sin ella no hay ningún flag encendido. */
+/** `FEATURE_FLAGS` is a JSON list of rules; without it no flag is on. */
 export const flagsConfigSchema = z.object({
   FLAGS_STORE: z.enum(FlagStoreKind).default(FlagStoreKind.Config),
   FEATURE_FLAGS: FlagRulesSchema.default([]),

@@ -1,9 +1,9 @@
-/** Lo mínimo que el middleware lee de una petición HTTP, sin depender de Express ni Fastify. */
+/** The minimum the middleware reads from an HTTP request, without depending on Express or Fastify. */
 export interface RequestContextHttpRequest {
   readonly headers: Readonly<Record<string, string | string[] | undefined>>;
 }
 
-/** Lo mínimo que el middleware escribe en la respuesta. */
+/** The minimum the middleware writes to the response. */
 export interface RequestContextHttpResponse {
   setHeader(name: string, value: string): unknown;
 }

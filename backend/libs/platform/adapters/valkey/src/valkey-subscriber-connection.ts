@@ -1,9 +1,9 @@
-/** Oyente de una conexión suscriptora: canal y mensaje. */
+/** Listener of a subscriber connection: channel and message. */
 export type ValkeyMessageListener = (channel: string, message: string) => void;
 
 /**
- * Lo que el canal de cambios usa de una conexión dedicada en modo suscriptor.
- * Un cliente de iovalkey en ese modo la cumple.
+ * What the change channel uses from a dedicated connection in subscriber mode.
+ * An iovalkey client in that mode satisfies it.
  */
 export interface ValkeySubscriberConnection {
   subscribe(...channels: string[]): Promise<unknown>;
@@ -12,13 +12,13 @@ export interface ValkeySubscriberConnection {
   off(event: 'message', listener: ValkeyMessageListener): unknown;
 }
 
-/** Conexión suscriptora que además se puede cerrar con `quit`. */
+/** Subscriber connection that can also be closed with `quit`. */
 export interface ValkeySubscriberClient extends ValkeySubscriberConnection {
   quit(): Promise<unknown>;
   disconnect(): void;
 }
 
-/** Abre conexiones nuevas. `ValkeyClientFactory` la cumple. */
+/** Opens new connections. `ValkeyClientFactory` implements it. */
 export interface ValkeyConnectionOpener {
   create(): Promise<ValkeySubscriberClient>;
 }

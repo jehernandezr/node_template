@@ -1,31 +1,31 @@
 import type { Page } from '@contracts/platform';
 import type { InvitationStatus } from '../enums/tenant.enum.js';
 
-/** Invitación pendiente, aceptada, revocada o vencida. */
+/** Pending, accepted, revoked or expired invitation. */
 export interface InvitationSummary {
   id: string;
   email: string;
   groupIds: string[];
   status: InvitationStatus;
-  /** Instante ISO 8601 en que vence la invitación. */
+  /** ISO 8601 instant at which the invitation expires. */
   expiresAt: string;
   invitedBy: string;
 }
 
 export type InvitationPage = Page<InvitationSummary>;
 
-/** Invitación de un email a los grupos indicados. */
+/** Invitation of an email to the given groups. */
 export interface InviteUserRequest {
   email: string;
   groupIds: string[];
 }
 
-/** Revocación de una invitación pendiente. */
+/** Revocation of a pending invitation. */
 export interface RevokeInvitationRequest {
   invitationId: string;
 }
 
-/** Aceptación de la invitación con el token enviado por email. */
+/** Acceptance of the invitation with the token sent by email. */
 export interface AcceptInvitationRequest {
   token: string;
 }

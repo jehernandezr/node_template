@@ -26,8 +26,8 @@ import { ApiKeysController } from './api-keys.controller.js';
 import { ApiKeysInternalOperations } from './api-keys.internal-operations.js';
 
 /**
- * Cuentas de servicio y API keys. Es global para exportar `IdentityApiKeyResolver`, con el que la
- * verificación de identity valida las keys dentro del proceso, y su fachada.
+ * Service accounts and API keys. It is global to export `IdentityApiKeyResolver`, which identity's
+ * verification uses to validate keys in process, and its facade.
  */
 @Global()
 @Module({

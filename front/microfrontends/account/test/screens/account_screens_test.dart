@@ -23,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Safari en iPhone'), findsNothing);
 
-    // Un scope nuevo tiene su propio repositorio con los datos de ejemplo.
+    // A new scope has its own repository with the sample data.
     await tester.pumpWidget(const SizedBox());
     final scopeB = testScope();
     await tester.pumpWidget(testApp(AccountScreens.sessions(scopeB)));

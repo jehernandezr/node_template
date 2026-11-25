@@ -16,8 +16,8 @@ import { ClientIpMiddleware } from './client-ip.middleware.js';
 import { IdentityAuthSupportModule } from './identity-auth-support.module.js';
 
 /**
- * Verificación de tokens y actor de identity. Identity verifica sus propios tokens con sus claves de firma,
- * sin descargar su JWKS, y resuelve las API keys con `api-keys` dentro del proceso.
+ * Token verification and the identity actor. Identity verifies its own tokens with its signing keys,
+ * without downloading its JWKS, and resolves API keys with `api-keys` in process.
  */
 @Module({
   imports: [

@@ -1,7 +1,7 @@
 import type { Delivery } from './delivery.js';
 
-/** Las entregas pendientes o fallidas de todos los shards. */
+/** The pending or failed deliveries of all shards. */
 export abstract class FailedDeliveries {
-  /** Las que ya pueden reintentarse en `now`, las más atrasadas primero, hasta `limit`. */
+  /** Those that can already be retried at `now`, the most overdue first, up to `limit`. */
   abstract due(now: Date, limit: number): Promise<readonly Delivery[]>;
 }

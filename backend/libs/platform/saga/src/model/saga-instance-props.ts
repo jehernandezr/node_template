@@ -2,40 +2,40 @@ import type { SagaCallContext } from './saga-call-context.js';
 import type { SagaStatus } from './saga-status.enum.js';
 import type { StepDirection } from './step-direction.enum.js';
 
-/** Campos persistentes de una instancia de saga: lo que guarda y devuelve el `SagaStore`. */
+/** Persistent fields of a saga instance: what the `SagaStore` saves and returns. */
 export interface SagaInstanceProps {
   readonly id: string;
   readonly type: string;
   readonly idempotencyKey: string | null;
   readonly status: SagaStatus;
   readonly state: unknown;
-  /** Índice del paso que se ejecuta (hacia delante) o se compensa. */
+  /** Index of the step being executed (forward) or compensated. */
   readonly currentStep: number;
   readonly direction: StepDirection;
-  /** Versión de concurrencia optimista; el almacén la sube en cada escritura protegida. */
+  /** Optimistic concurrency version; the store bumps it on every guarded write. */
   readonly version: number;
-  /** Token de la corrida que tiene el lease, o `null`. */
+  /** Token of the run that holds the lease, or `null`. */
   readonly leaseToken: string | null;
   readonly leaseUntil: Date | null;
   readonly nextAttemptAt: Date | null;
-  /** Intentos fallidos consecutivos del paso actual. */
+  /** Consecutive failed attempts of the current step. */
   readonly attempts: number;
-  /** Cuándo empezó el período de suspensión actual. */
+  /** When the current suspension period started. */
   readonly suspendedSince: Date | null;
   readonly deadlineAt: Date | null;
   readonly lastErrorCode: string | null;
   /**
-   * Qué falló además del código, para quien atiende una intervención: el
-   * motivo del resultado de la llamada, o el nombre y mensaje del error que
-   * lanzó un constructor de paso. Nunca la entrada ni el estado. Se limpia
-   * cuando un paso tiene éxito.
+   * What failed besides the code, for whoever handles an intervention: the
+   * reason of the call result, or the name and message of the error that
+   * a step builder threw. Never the input or the state. It is cleared
+   * when a step succeeds.
    */
   readonly lastErrorDetail: string | null;
-  /** Contexto de las llamadas (tenant, actor, traceparent), o `null` si no se dio ninguno. */
+  /** Context of the calls (tenant, actor, traceparent), or `null` if none was given. */
   readonly context: SagaCallContext | null;
   /**
-   * Huella (`SagaPayload.digest`) del estado inicial. Un arranque idempotente
-   * con la misma llave y otra entrada se rechaza.
+   * Fingerprint (`SagaPayload.digest`) of the initial state. An idempotent start
+   * with the same key and different input is rejected.
    */
   readonly inputDigest: string;
   readonly createdAt: Date;

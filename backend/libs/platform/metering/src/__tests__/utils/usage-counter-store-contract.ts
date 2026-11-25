@@ -5,8 +5,8 @@ const TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
 const TENANT_B = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
 
 /**
- * Lo que todo `UsageCounterStore` cumple. Cada prueba usa ventanas propias, así la fábrica puede compartir
- * estado entre pruebas.
+ * What every `UsageCounterStore` satisfies. Each test uses its own windows, so the factory can share
+ * state between tests.
  */
 export function runUsageCounterStoreContract(
   name: string,

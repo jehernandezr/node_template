@@ -33,11 +33,11 @@ import {
 
 const runtime = new ContainerRuntime(process.env);
 /**
- * Las cuotas que identity consultó a billing valen 10 s en su caché: el reintento se repite hasta que vencen, con
- * este plazo máximo para no colgar la prueba si nunca pasa.
+ * The quotas identity requested from billing are valid for 10 s in its cache: the retry repeats until they expire, with
+ * this maximum timeout so the test does not hang if it never happens.
  */
 const RETRY_DEADLINE_MS = 30_000;
-/** Pausa entre reintentos del registro, para no llegar al límite de tasa de las rutas de autenticación. */
+/** Pause between signup retries, to avoid hitting the rate limit of the authentication routes. */
 const RETRY_PAUSE_MS = 1_500;
 
 interface Named {
@@ -564,7 +564,7 @@ runtime.describeIfAvailable('tenant administration end to end', () => {
     const suspended = await app
       .internal()
       .invoke(SuspendTenantOperation, { tenantId });
-    // Cada réplica guarda las épocas unos segundos en memoria: la suspensión se ve al vencer esa caché.
+    // Each replica keeps the epochs in memory for a few seconds: the suspension shows once that cache expires.
     await new Promise((resolve) =>
       setTimeout(resolve, AuthModuleRules.DEFAULT_CACHE_TTL_MS + 500),
     );

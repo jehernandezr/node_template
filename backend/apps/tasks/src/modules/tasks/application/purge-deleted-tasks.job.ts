@@ -10,7 +10,7 @@ import type { TasksConfig } from '../../../config/tasks.config.js';
 import { TasksJob } from '../../../shared/enums/tasks-job.enum.js';
 import { TaskMaintenance } from '../domain/task-maintenance.js';
 
-/** Elimina de verdad las tareas borradas hace más de `TASKS_DELETED_RETENTION_DAYS`. */
+/** Permanently removes the tasks deleted more than `TASKS_DELETED_RETENTION_DAYS` ago. */
 @Injectable()
 export class PurgeDeletedTasksJob extends ScheduledJob {
   private static readonly DAY_MS = 24 * 60 * 60_000;

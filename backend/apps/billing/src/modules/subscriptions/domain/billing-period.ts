@@ -1,10 +1,10 @@
 import { PlanPeriodicity } from '@contracts/billing';
 
 /**
- * Periodo de facturación en fechas de calendario (`AAAA-MM-DD`), con el inicio y el fin incluidos. Un periodo
- * mensual termina el día anterior al mismo día del mes siguiente; si ese mes no tiene el día (un inicio el 31
- * antes de febrero), el siguiente empieza el último día de ese mes y los periodos quedan anclados desde
- * entonces a ese día, sin volver al 31.
+ * Billing period in calendar dates (`YYYY-MM-DD`), with start and end inclusive. A monthly
+ * period ends the day before the same day of the next month; if that month does not have the day (a start on the 31st
+ * before February), the next one starts on the last day of that month and the periods stay anchored from
+ * then on to that day, without returning to the 31st.
  */
 export class BillingPeriod {
   private static readonly DAY_MS = 86_400_000;
@@ -18,7 +18,7 @@ export class BillingPeriod {
     return new BillingPeriod(start, end);
   }
 
-  /** El periodo de `days` días que empieza en `start`. */
+  /** The `days`-day period that starts on `start`. */
   static ofDays(start: string, days: number): BillingPeriod {
     return new BillingPeriod(start, BillingPeriod.plusDays(start, days - 1));
   }
@@ -35,7 +35,7 @@ export class BillingPeriod {
     return new BillingPeriod(start, BillingPeriod.plusDays(next, -1));
   }
 
-  /** La fecha de calendario UTC de un instante. */
+  /** Returns the UTC calendar date of an instant. */
   static dateOf(instant: Date): string {
     return BillingPeriod.format(instant);
   }
@@ -47,7 +47,7 @@ export class BillingPeriod {
     );
   }
 
-  /** El mismo periodo terminado el día anterior a `day`, que debe caer después del inicio. */
+  /** The same period ended the day before `day`, which must fall after the start. */
   endingBefore(day: string): BillingPeriod {
     return new BillingPeriod(this.start, BillingPeriod.plusDays(day, -1));
   }
@@ -56,7 +56,7 @@ export class BillingPeriod {
     return BillingPeriod.daysBetween(this.start, this.end) + 1;
   }
 
-  /** Días que quedan desde `today` hasta el fin, ambos incluidos; cero si ya terminó. */
+  /** Days remaining from `today` to the end, both inclusive; zero if it already ended. */
   remainingFrom(today: string): number {
     return Math.max(0, BillingPeriod.daysBetween(today, this.end) + 1);
   }

@@ -5,7 +5,7 @@ import { PushSender } from '../domain/push-sender.js';
 import { PushTargetDirectory } from '../domain/push-target-directory.js';
 import { PushFacade } from './push.facade.js';
 
-/** Envía el push a todos los dispositivos registrados del usuario. */
+/** Sends the push to all of the user's registered devices. */
 @Injectable()
 export class DeliverPush extends PushFacade {
   constructor(

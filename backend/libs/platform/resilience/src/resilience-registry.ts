@@ -15,10 +15,10 @@ import type { ResiliencePolicyConfig } from './policy/resilience-policy-config.j
 import type { ResilienceRegistryOptions } from './resilience-registry.options.js';
 
 /**
- * Ejecuta las llamadas salientes bajo la política declarada para cada una y
- * publica lo que las políticas hacen como eventos.
+ * Runs outgoing calls under the policy declared for each one and
+ * publishes what the policies do as events.
  *
- * Los breakers y los bulkheads son por (política, dependencyKey).
+ * Breakers and bulkheads are per (policy, dependencyKey).
  */
 export class ResilienceRegistry {
   private readonly events: ResilienceEventBus;
@@ -26,11 +26,11 @@ export class ResilienceRegistry {
   private readonly executor: PolicyExecutor;
 
   /**
-   * Los valores por defecto permiten usar la librería sin NestJS; el módulo
-   * pasa todos los colaboradores.
-   * @param overrides Ajustes por nombre sobre las políticas base.
-   * @param options Colaboradores opcionales.
-   * @throws InvalidPolicyError si una política mezclada no es válida.
+   * The defaults allow using the library without NestJS; the module
+   * passes all the collaborators.
+   * @param overrides Overrides by name over the base policies.
+   * @param options Optional collaborators.
+   * @throws InvalidPolicyError if a merged policy is not valid.
    */
   constructor(
     overrides: ResilienceOverrides = {},
@@ -54,12 +54,12 @@ export class ResilienceRegistry {
   }
 
   /**
-   * Ejecuta `fn` bajo la política `name`.
-   * @param fn Operación; recibe la señal de aborto del intento y el intento con su plazo hijo.
-   * @throws CircuitOpenError, ResilienceTimeoutError o BulkheadFullError (todas
-   *   `ResilienceError`), o `UnknownPolicyError` si la política no existe. Un
-   *   aborto del llamador rechaza con el motivo de su señal; otros errores se
-   *   relanzan tal cual.
+   * Runs `fn` under the `name` policy.
+   * @param fn Operation; receives the attempt's abort signal and the attempt with its child deadline.
+   * @throws CircuitOpenError, ResilienceTimeoutError or BulkheadFullError (all
+   *   `ResilienceError`), or `UnknownPolicyError` if the policy does not exist. A
+   *   caller abort rejects with its signal's reason; other errors are
+   *   rethrown as is.
    */
   async execute<T>(
     name: PolicyName,
@@ -80,16 +80,16 @@ export class ResilienceRegistry {
   }
 
   /**
-   * Registra la política de un servicio.
-   * @throws InvalidPolicyError si el nombre ya tiene otra configuración.
+   * Registers a service's policy.
+   * @throws InvalidPolicyError if the name already has another configuration.
    */
   register(name: PolicyName, config: ResiliencePolicyConfig): void {
     this.policies.register(name, config);
   }
 
   /**
-   * Suscribe a los eventos de las políticas.
-   * @returns función que quita al suscriptor.
+   * Subscribes to the policies' events.
+   * @returns function that removes the subscriber.
    */
   subscribe(listener: ResilienceEventListener): () => void {
     return this.events.subscribe(listener);

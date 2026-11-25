@@ -1,7 +1,7 @@
 import type { AppNotification } from '@contracts/notifications';
 import type { UserRef } from '@contracts/platform';
 
-/** Lo que notifications entrega por tiempo real, sin saber qué transporte ni qué proceso atiende. */
+/** What notifications delivers over real time, without knowing which transport or which process serves it. */
 export abstract class RealtimeFacade {
   abstract notification(
     user: UserRef,
@@ -10,10 +10,10 @@ export abstract class RealtimeFacade {
 
   abstract unreadCount(user: UserRef, count: number): Promise<void>;
 
-  /** Cierra las conexiones de esa sesión del usuario. */
+  /** Closes the connections of that user session. */
   abstract closeSession(userId: string, sessionId: string): Promise<void>;
 
-  /** Cierra todas las conexiones del usuario. */
+  /** Closes all of the user's connections. */
   abstract closeAllSessions(userId: string): Promise<void>;
 
   abstract isOnline(user: UserRef): Promise<boolean>;

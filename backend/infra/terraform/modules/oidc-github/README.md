@@ -1,36 +1,36 @@
-# Módulo oidc-github
+# oidc-github module
 
-Acceso de GitHub Actions a la cuenta AWS por OIDC, sin claves de larga vida. Crea los tres roles que usa el pipeline de despliegue y el bucket de artefactos.
+GitHub Actions access to the AWS account through OIDC, without long-lived keys. It creates the three roles the deployment pipeline uses and the artifacts bucket.
 
-## Qué crea
+## What it creates
 
-- Proveedor OIDC de `token.actions.githubusercontent.com`, o reutiliza uno existente con `existing_provider_arn`.
-- Bucket `<name_prefix>-artifacts-<cuenta>` para los bundles de Lambda y los compilados móviles: versionado, cifrado SSE y acceso solo por TLS.
-- Tres roles, cada uno con confianza solo en `repo:<github_repository>:environment:<github_environment>`, sin comodines:
-  - `<name_prefix>-github-deploy`: estado de Terraform en `state_bucket`, lectura del bucket de artefactos y las políticas de `deploy_policy_arns`.
-  - `<name_prefix>-github-publish`: empuje a ECR bajo `<name_prefix>/*`, con permiso para crear repositorios, y escritura en el bucket de artefactos.
-  - `<name_prefix>-github-web`: bucket `<name_prefix>-web-<cuenta>`, permiso KMS solo a través de S3, listado de distribuciones e invalidaciones de CloudFront.
+- OIDC provider for `token.actions.githubusercontent.com`, or reuses an existing one with `existing_provider_arn`.
+- Bucket `<name_prefix>-artifacts-<account>` for the Lambda bundles and the mobile builds: versioned, SSE-encrypted and TLS-only access.
+- Three roles, each trusting only `repo:<github_repository>:environment:<github_environment>`, without wildcards:
+  - `<name_prefix>-github-deploy`: Terraform state in `state_bucket`, read access to the artifacts bucket and the policies in `deploy_policy_arns`.
+  - `<name_prefix>-github-publish`: push to ECR under `<name_prefix>/*`, with permission to create repositories, and write access to the artifacts bucket.
+  - `<name_prefix>-github-web`: bucket `<name_prefix>-web-<account>`, KMS permission only through S3, listing of distributions and CloudFront invalidations.
 
-## Entradas principales
+## Main inputs
 
-| Variable                  | Descripción                                                                 |
-| ------------------------- | --------------------------------------------------------------------------- |
-| `name_prefix`             | Prefijo de roles, bucket y repositorios, por ejemplo `node-template-dev`.   |
-| `github_repository`       | Repositorio con forma `dueño/nombre`.                                       |
-| `github_environment`      | Environment de GitHub que puede asumir los roles.                           |
-| `create_provider`         | `true` crea el proveedor OIDC; `false` exige `existing_provider_arn`.       |
-| `existing_provider_arn`   | ARN del proveedor que ya existe en la cuenta.                               |
-| `state_bucket`            | Bucket de los estados del ambiente, que el rol de despliegue lee y escribe. |
-| `deploy_policy_arns`      | Políticas administradas que se suman al rol de despliegue.                  |
-| `artifacts_force_destroy` | Permite borrar el bucket de artefactos con contenido. Solo en desechables.  |
+| Variable                  | Description                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| `name_prefix`             | Prefix of roles, bucket and repositories, for example `node-template-dev`.          |
+| `github_repository`       | Repository in the form `owner/name`.                                                |
+| `github_environment`      | GitHub environment that can assume the roles.                                       |
+| `create_provider`         | `true` creates the OIDC provider; `false` requires `existing_provider_arn`.         |
+| `existing_provider_arn`   | ARN of the provider that already exists in the account.                             |
+| `state_bucket`            | Bucket of the environment's states, which the deployment role reads and writes.     |
+| `deploy_policy_arns`      | Managed policies added to the deployment role.                                      |
+| `artifacts_force_destroy` | Allows deleting the artifacts bucket with content. Only in disposable environments. |
 
-## Salidas
+## Outputs
 
-`provider_arn`, `deploy_role_arn`, `publish_role_arn`, `web_role_arn`, `artifacts_bucket` y `ecr_repository_prefix`. El stack `platform` las expone en `github_oidc`.
+`provider_arn`, `deploy_role_arn`, `publish_role_arn`, `web_role_arn`, `artifacts_bucket` and `ecr_repository_prefix`. The `platform` stack exposes them in `github_oidc`.
 
-## Notas
+## Notes
 
-- El proveedor OIDC es uno por cuenta. En el segundo ambiente o región de la misma cuenta, usa `create_provider = false` y pasa el ARN del primero.
-- La confianza es por repositorio y environment de GitHub, sin comodines. El environment con el mismo nombre que el ambiente es el que acepta la política; en prod ponle revisores requeridos.
-- `deploy_policy_arns` lo elige quien despliega. La plantilla no asume un alcance: sin esas políticas, el rol de despliegue solo llega al estado y a los artefactos.
-- El módulo no concede permisos de la aplicación a ningún servicio.
+- There is one OIDC provider per account. In the second environment or region of the same account, use `create_provider = false` and pass the ARN of the first.
+- Trust is per repository and GitHub environment, without wildcards. The GitHub environment named like the environment is the one the policy accepts; in prod give it required reviewers.
+- `deploy_policy_arns` is chosen by whoever deploys. The template assumes no scope: without those policies, the deployment role only reaches the state and the artifacts.
+- The module grants no application permissions to any service.

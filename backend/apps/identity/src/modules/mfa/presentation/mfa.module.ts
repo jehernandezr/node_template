@@ -24,7 +24,7 @@ import { TotpFactorEntity } from '../infrastructure/persistence/entities/totp-fa
 import { TypeOrmMfaFactorRepository } from '../infrastructure/persistence/typeorm-mfa-factor.repository.js';
 import { MfaController } from './mfa.controller.js';
 
-/** Desafíos, TOTP, códigos de recuperación, step-up y recuperación sin dispositivo. Global solo para su fachada. */
+/** Challenges, TOTP, recovery codes, step-up and recovery without a device. Global only for its facade. */
 @Global()
 @Module({
   imports: [

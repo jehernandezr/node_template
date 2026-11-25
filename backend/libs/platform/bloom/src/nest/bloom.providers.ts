@@ -8,7 +8,7 @@ import type {
   BloomModuleOptions,
 } from './bloom-module-options.js';
 
-/** Providers del módulo raíz de bloom y los que exporta. */
+/** Providers of the bloom root module and those it exports. */
 export class BloomProviders {
   static build(extras: BloomModuleExtras): Provider[] {
     return [

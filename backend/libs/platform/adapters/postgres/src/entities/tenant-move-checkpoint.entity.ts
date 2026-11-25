@@ -2,8 +2,8 @@ import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 /**
- * Hasta dónde llegó la verificación de una tabla en el shard de destino de un traslado, para que cada llamada siga
- * donde quedó la anterior. La escribe y la lee la copia por lotes de `@platform/tenant-move`.
+ * How far the verification of a table got in the destination shard of a move, so each call continues
+ * where the previous one left off. Written and read by the batched copy of `@platform/tenant-move`.
  */
 @Entity({ name: 'tenant_move_checkpoints' })
 export class TenantMoveCheckpointEntity {
@@ -13,7 +13,7 @@ export class TenantMoveCheckpointEntity {
   @PrimaryColumn({ type: 'text', name: 'table_name' })
   tableName!: string;
 
-  /** Llave de la última fila reconciliada, como texto por columna. */
+  /** Key of the last reconciled row, as text per column. */
   @Column({ type: 'jsonb', name: 'reconciled_key', nullable: true })
   reconciledKey!: string[] | null;
 

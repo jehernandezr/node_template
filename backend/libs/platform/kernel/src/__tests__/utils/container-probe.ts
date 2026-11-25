@@ -1,4 +1,4 @@
-/** Averigua si hay un runtime de contenedores listo para Testcontainers. */
+/** Finds out whether a container runtime is ready for Testcontainers. */
 export abstract class ContainerProbe {
   abstract isRunning(): boolean;
 }

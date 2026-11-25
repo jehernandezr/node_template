@@ -1,6 +1,6 @@
 import type { RandomSource } from '@platform/kernel';
 
-/** Decide si una petición emite logs de debug. `rate` es una probabilidad entre 0 y 1. */
+/** Decides whether a request emits debug logs. `rate` is a probability between 0 and 1. */
 export class DebugSampler {
   constructor(
     private readonly rate: number,

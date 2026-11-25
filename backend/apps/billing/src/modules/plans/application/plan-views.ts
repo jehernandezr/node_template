@@ -1,7 +1,7 @@
 import type { Plan as PlanView } from '@contracts/billing';
 import type { Plan } from '../domain/plan.js';
 
-/** El plan como lo publica el contrato. Utilidad pura. */
+/** The plan as the contract publishes it. Pure utility. */
 export class PlanViews {
   static of(plan: Plan): PlanView {
     const state = plan.snapshot();

@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { SigV4Service } from './sigv4-service.enum.js';
 
 /**
- * Variables de la firma SigV4 de las llamadas internas. La región es la de
- * `AWS_REGION` y las credenciales salen de la cadena por defecto del SDK, así
- * que aquí solo se elige a qué servicio de AWS se firma.
+ * Variables of the SigV4 signature of internal calls. The region is the one in
+ * `AWS_REGION` and the credentials come from the SDK default chain, so
+ * here only the AWS service to sign for is chosen.
  */
 export const sigV4ConfigSchema = z.object({
   INTERNAL_API_SIGV4_SERVICE: z
@@ -13,10 +13,10 @@ export const sigV4ConfigSchema = z.object({
     .default(SigV4Service.ExecuteApi),
 });
 
-/** Configuración validada de la firma SigV4. */
+/** Validated configuration of the SigV4 signature. */
 export type SigV4Settings = z.infer<typeof sigV4ConfigSchema>;
 
-/** Sección de configuración de la firma SigV4. */
+/** Configuration section of the SigV4 signature. */
 export const SigV4Config = new ConfigSection<SigV4Settings>(
   'sigv4',
   sigV4ConfigSchema,

@@ -38,13 +38,13 @@ import type { SagaModuleOptions } from './saga-module-options.js';
 import { SAGA_MODULE_OPTIONS } from './saga.module-definition.js';
 
 /**
- * Proveedores de `SagaModule`. Las dependencias opcionales se piden con
- * `{ token, optional: true }` y, si faltan, no se pasan (nunca `undefined`
- * explícito, porque los campos opcionales no lo admiten).
+ * Providers of `SagaModule`. Optional dependencies are requested with
+ * `{ token, optional: true }` and, if missing, are not passed (never an explicit
+ * `undefined`, because optional fields do not accept it).
  */
 export class SagaProviders {
   static build(extras: SagaModuleExtras): Provider[] {
-    // `SagaModule` ya comprobó que el almacén existe.
+    // `SagaModule` already checked that the store exists.
     const { store } = extras as Required<Pick<SagaModuleExtras, 'store'>>;
     return [
       { provide: Clock, useFactory: () => new SystemClock() },
@@ -89,7 +89,7 @@ export class SagaProviders {
       : { provide: RandomSource, useExisting: extras.random };
   }
 
-  /** Dueño por defecto: un id nuevo. Lo demás toma los valores de `SagaSettings`. */
+  /** Default owner: a new id. The rest takes the values of `SagaSettings`. */
   private static settings(): Provider {
     return {
       provide: SagaSettings,
@@ -115,7 +115,7 @@ export class SagaProviders {
       : [{ provide: SagaScopes, useExisting: extras.scopes }];
   }
 
-  /** Por defecto, el invocador sobre el `InternalClient` de `InternalApiModule`. */
+  /** By default, the invoker on the `InternalClient` of `InternalApiModule`. */
   private static invoker(extras: SagaModuleExtras): Provider {
     if (extras.invoker !== undefined) {
       return { provide: OperationInvoker, useExisting: extras.invoker };

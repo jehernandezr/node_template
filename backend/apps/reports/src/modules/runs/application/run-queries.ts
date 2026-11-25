@@ -18,7 +18,7 @@ import type { ReportRun } from '../domain/report-run.js';
 import { ReportFiles } from './report-files.js';
 import { RunViews } from './run-views.js';
 
-/** Lecturas de las ejecuciones de un tenant: la lista, el detalle con su resultado y la descarga. */
+/** Reads of a tenant's runs: the list, the detail with its result and the download. */
 @Injectable()
 export class RunQueries {
   private readonly cursors = new IdCursors();
@@ -72,7 +72,7 @@ export class RunQueries {
     });
   }
 
-  /** @throws ReportsError `REPORTS.RUN.NOT_READY` si la ejecución está lista pero su resultado ya no está. */
+  /** @throws ReportsError `REPORTS.RUN.NOT_READY` if the run is ready but its result is gone. */
   private async stored(run: ReportRun): Promise<ReportResult> {
     const state = run.snapshot();
     const result = await this.results.load(state.id);

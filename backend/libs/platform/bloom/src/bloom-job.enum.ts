@@ -1,4 +1,4 @@
-/** Nombres de los jobs de `@platform/bloom`. */
+/** Names of the `@platform/bloom` jobs. */
 export enum BloomJob {
   Rebuild = 'bloom.rebuild',
 }

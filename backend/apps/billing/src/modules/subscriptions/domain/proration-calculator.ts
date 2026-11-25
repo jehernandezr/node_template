@@ -1,9 +1,9 @@
 import type { BillingPeriod } from './billing-period.js';
 
 /**
- * Ajuste de un cambio de plan a mitad de periodo: la diferencia de precio por la fracción del periodo que
- * queda desde hoy, en enteros de la unidad menor y redondeada al alza. Un cambio a un plan más barato da un
- * crédito (negativo).
+ * Adjustment for a plan change in the middle of a period: the price difference for the fraction of the period that
+ * remains from today, in integer minor units and rounded up. A change to a cheaper plan gives a
+ * credit (negative).
  */
 export class ProrationCalculator {
   static adjustment(

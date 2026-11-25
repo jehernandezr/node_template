@@ -1,6 +1,6 @@
 import { Formatter } from '../../formatter.js';
 
-/** Deja el texto como sale de la plantilla: las plantillas ya tienen el formato del repositorio. */
+/** Leaves the text as it comes out of the template: the templates already have the repository formatting. */
 export class UnchangedFormatter extends Formatter {
   async format(_path: string, content: string): Promise<string> {
     return content;

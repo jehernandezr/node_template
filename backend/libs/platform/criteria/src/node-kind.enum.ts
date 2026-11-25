@@ -1,4 +1,4 @@
-/** Discriminador de los nodos del AST del filtro. */
+/** Discriminator of the filter AST nodes. */
 export enum NodeKind {
   Condition = 'condition',
   Group = 'group',

@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** El tenant de origen del dueño de las preferencias: el traslado de un tenant elige las filas por él. */
+/** The home tenant of the preferences owner: moving a tenant selects the rows by it. */
 export class AddPreferencesHomeTenant1796100100001 implements MigrationInterface {
   readonly name = 'AddPreferencesHomeTenant1796100100001';
 

@@ -11,58 +11,58 @@ import type {
   RevocationScope,
 } from '../enums/auth.enum.js';
 
-/** Sesión activa del usuario en un dispositivo. */
+/** Active user session on a device. */
 export interface SessionSummary {
   id: string;
   deviceName: string;
   platform: ClientPlatform;
   lastSeenAt: string;
-  /** Verdadero para la sesión que hace la petición. */
+  /** True for the session making the request. */
   current: boolean;
 }
 
-/** Dispositivo con confianza vigente. */
+/** Device with current trust. */
 export interface DeviceSummary {
   id: string;
   name: string;
   platform: ClientPlatform;
   lastSeenAt: string;
   trustedUntil?: string;
-  /** Verdadero para el dispositivo registrado que aprueba acciones sensibles. */
+  /** True for the registered device that approves sensitive actions. */
   verifier: boolean;
 }
 
 export type SessionPage = Page<SessionSummary>;
 export type DevicePage = Page<DeviceSummary>;
 
-/** Petición que identifica una sesión. */
+/** Request that identifies a session. */
 export interface RevokeSessionRequest {
   sessionId: string;
 }
 
-/** Cantidad de sesiones cerradas. */
+/** Number of closed sessions. */
 export interface RevokedSessions {
   revoked: number;
 }
 
-/** Entrada de la operación interna que revoca las sesiones de un usuario. */
+/** Input of the internal operation that revokes a user's sessions. */
 export interface RevokeUserSessionsInput {
   userId: string;
   reason: RevocationReason;
 }
 
-/** Entrada de la operación interna que lee el acceso de un usuario. */
+/** Input of the internal operation that reads a user's access. */
 export interface GetUserAccessInput {
   userId: string;
   tenantId: string;
 }
 
-/** Acceso efectivo de un usuario en un tenant. */
+/** Effective access of a user in a tenant. */
 export interface UserAccess {
   permissions: Permission[];
-  /** Nombres de los roles del usuario en el tenant. */
+  /** Names of the user's roles in the tenant. */
   roles: string[];
-  /** Versión de permisos `<versión del tenant>.<versión del usuario>`: el claim `pv`. */
+  /** Permissions version `<tenant version>.<user version>`: the `pv` claim. */
   permissionVersion: string;
   platformRoles: PlatformRole[];
   features: PlanFeature[];
@@ -70,18 +70,18 @@ export interface UserAccess {
 }
 
 /**
- * Acceso de la sesión actual: de aquí se llena la sesión del front
- * (usuario, tenant, roles, permisos, plan, flags y último MFA).
+ * Access of the current session: the front session is filled from here
+ * (user, tenant, roles, permissions, plan, flags and last MFA).
  */
 export interface SessionAccess extends UserAccess {
   userId: string;
   tenantId: string;
   sessionId: string;
-  /** Instante ISO 8601 del último segundo factor de la sesión, o null si nunca. */
+  /** ISO 8601 instant of the session's last second factor, or null if never. */
   mfaVerifiedAt: string | null;
 }
 
-/** Payload de `identity.session.revoked.v1`. */
+/** Payload of `identity.session.revoked.v1`. */
 export interface SessionRevokedPayload {
   sessionId: string;
   userId: string;
@@ -90,11 +90,11 @@ export interface SessionRevokedPayload {
   revokedAt: string;
 }
 
-/** Payload de `identity.tokens.revoked.v1`. */
+/** Payload of `identity.tokens.revoked.v1`. */
 export interface TokensRevokedPayload {
   scope: RevocationScope;
-  /** Sesión, usuario o tenant según `scope`. */
+  /** Session, user or tenant depending on `scope`. */
   subjectId: string;
-  /** Se rechaza todo token emitido antes de este instante. */
+  /** Every token issued before this instant is rejected. */
   revokedBefore: string;
 }

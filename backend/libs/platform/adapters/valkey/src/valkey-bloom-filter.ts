@@ -11,14 +11,14 @@ import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 import type { ValkeyBloomFilterOptions } from './valkey-bloom-filter.options.js';
 
 /**
- * Filtro de Bloom que guarda el módulo de bloom de Valkey (`valkey-bloom`,
- * comandos `BF.*`). El filtro se crea en la primera inserción con la capacidad
- * y la tasa declaradas, así todos los procesos coinciden en su forma.
+ * Bloom filter stored by the Valkey bloom module (`valkey-bloom`,
+ * `BF.*` commands). The filter is created on the first insert with the declared capacity
+ * and rate, so all processes agree on its shape.
  *
- * Necesita un servidor con el módulo (la imagen `valkey/valkey-bundle` o
- * ElastiCache para Valkey 8.1 o posterior; Terraform fija la versión mayor 8).
- * El módulo acota la memoria de cada filtro (`bf.bloom-memory-usage-limit`, 128 MiB
- * por defecto): un conjunto muy grande se reparte con `PartitionedBloomFilter`.
+ * It needs a server with the module (the `valkey/valkey-bundle` image or
+ * ElastiCache for Valkey 8.1 or later; Terraform pins major version 8).
+ * The module bounds the memory of each filter (`bf.bloom-memory-usage-limit`, 128 MiB
+ * by default): a very large set is split with `PartitionedBloomFilter`.
  */
 export class ValkeyBloomFilter implements RebuildableBloomFilter {
   readonly key: string;
@@ -27,7 +27,7 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
   private readonly nonScaling: boolean;
   private readonly ids: IdGenerator;
 
-  /** @throws InvalidParametersError (`@platform/bloom`) con un nombre, un tamaño o una tasa inválidos. */
+  /** @throws InvalidParametersError (`@platform/bloom`) with an invalid name, size or rate. */
   constructor(
     private readonly executor: ValkeyCommandExecutor,
     options: ValkeyBloomFilterOptions,
@@ -36,7 +36,7 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
     this.capacity = options.expectedItems;
     this.rate =
       options.falsePositiveRate ?? BloomSizing.DEFAULT_FALSE_POSITIVE_RATE;
-    // La misma validación que el dimensionado en memoria.
+    // The same validation as the in-memory sizing.
     BloomSizing.requiredBits(this.capacity, this.rate);
     this.nonScaling = options.nonScaling ?? false;
     this.ids = options.ids;
@@ -66,8 +66,8 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
   }
 
   /**
-   * Llena un filtro nuevo bajo una llave temporal y lo intercambia con un
-   * renombrado atómico. Si el job muere, la llave temporal vence a las
+   * Fills a new filter under a temporary key and swaps it in with an
+   * atomic rename. If the job dies, the temporary key expires after
    * `BloomKeys.REBUILD_KEY_TTL_MS`.
    */
   async rebuild(source: BloomRebuildSource): Promise<void> {
@@ -84,7 +84,7 @@ export class ValkeyBloomFilter implements RebuildableBloomFilter {
       ]);
       for await (const chunk of source) {
         for (const batch of BloomKeys.batches(chunk)) {
-          // NOCREATE: si el filtro temporal venció, falla en vez de armar uno parcial.
+          // NOCREATE: if the temporary filter expired, it fails instead of building a partial one.
           await this.executor.run(ValkeyCommand.BloomInsert, [
             temporary,
             'NOCREATE',

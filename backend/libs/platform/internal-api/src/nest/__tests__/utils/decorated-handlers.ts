@@ -5,7 +5,7 @@ import type { HandlerInputOf } from '../../../contract/operation-io.type.js';
 import type { HandlerResult } from '../../../server/handler-result.js';
 import { ExplorerOperations } from './explorer-operations.js';
 
-/** Provider con métodos decorados que cuentan sus llamadas. */
+/** Provider with decorated methods that count their calls. */
 @Injectable()
 export class DecoratedHandlers {
   countCalls = 0;

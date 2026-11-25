@@ -2,7 +2,7 @@ import { BloomFilter } from './bloom-filter.js';
 import type { BloomRebuildSource } from './bloom-rebuild-source.js';
 import { RebuildableBloomFilter } from './rebuildable-bloom-filter.js';
 
-/** `AsyncBloomFilter` respaldado por un `BloomFilter` local. */
+/** `AsyncBloomFilter` backed by a local `BloomFilter`. */
 export class InMemoryAsyncBloomFilter extends RebuildableBloomFilter {
   private filter: BloomFilter;
 
@@ -25,7 +25,7 @@ export class InMemoryAsyncBloomFilter extends RebuildableBloomFilter {
     return this.filter.mightContain(item);
   }
 
-  /** Reconstruye con el mismo tamaño y número de funciones de hash. */
+  /** Rebuilds with the same size and number of hash functions. */
   async rebuild(source: BloomRebuildSource): Promise<void> {
     const fresh = new BloomFilter({
       bits: this.filter.bits,

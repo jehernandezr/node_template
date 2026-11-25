@@ -1,8 +1,8 @@
 import type { HealthReport } from './health-report.js';
 
-/** Dependencia cuyo estado se puede consultar, como un cliente de base o de caché. */
+/** Dependency whose state can be queried, such as a database or cache client. */
 export abstract class HealthCheckable {
-  /** Nombre estable de la dependencia en los reportes de salud. */
+  /** Stable name of the dependency in health reports. */
   abstract readonly name: string;
 
   abstract check(signal?: AbortSignal): Promise<HealthReport>;

@@ -1,4 +1,4 @@
-/** Registro de las entidades de un módulo que usa el catálogo; no se inyecta, solo se instancia al arrancar. */
+/** Registration of the entities of a module that uses the catalog; it is not injected, only instantiated at startup. */
 export const PERSISTENCE_CATALOG_FEATURE = Symbol(
   'PERSISTENCE_CATALOG_FEATURE',
 );

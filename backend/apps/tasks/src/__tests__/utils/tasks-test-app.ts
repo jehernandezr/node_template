@@ -19,15 +19,15 @@ import {
 import { tasksService } from '../../tasks.service.js';
 
 /**
- * Tasks completo sobre PostgreSQL con pgvector y Valkey reales: migra el catálogo y los dos shards, ubica un
- * tenant en cada shard y sirve HTTP en un puerto libre. Los tokens los firma `IdentityStub`.
+ * Full tasks over real PostgreSQL with pgvector and Valkey: migrates the catalog and both shards, places a
+ * tenant in each shard and serves HTTP on a free port. Tokens are signed by `IdentityStub`.
  */
 export class TasksTestApp {
-  /** Tenant ubicado en el primer shard. */
+  /** Tenant located on the first shard. */
   static readonly TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
-  /** Tenant ubicado en el segundo shard. */
+  /** Tenant located on the second shard. */
   static readonly TENANT_B = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
-  /** Billing solo responde cuotas de service accounts, y las pruebas llaman como personas: nadie la consulta. */
+  /** Billing only answers service account quotas, and the tests call as people: nobody queries it. */
   private static readonly BILLING_URL = 'http://billing.test';
 
   readonly servers = new ServiceTestServers(
@@ -88,7 +88,7 @@ export class TasksTestApp {
     return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
   }
 
-  /** Cliente de un miembro con permisos de lectura y escritura de tareas, salvo que se pidan otros. */
+  /** Client of a member with task read and write permissions, unless others are requested. */
   async clientOf(
     member: Partial<StubMember> & { userId: string; tenantId: string },
   ): Promise<HttpTestClient> {

@@ -1,11 +1,11 @@
 import { LockoutRules } from '../../../shared/constants/lockout.constants.js';
 
 /**
- * Reglas de bloqueo por intentos fallidos: espera exponencial por origen (cuenta e IP), modo protegido por
- * cuenta y bloqueo de la IP. Es cálculo puro sobre los contadores.
+ * Lockout rules for failed attempts: exponential backoff per origin (account and IP), protected mode per
+ * account and IP lockout. It is pure computation over the counters.
  */
 export class LockoutPolicy {
-  /** El bloqueo número `level` (desde 1) dura 15, 30, 60 minutos... hasta 24 horas. */
+  /** Lockout number `level` (from 1) lasts 15, 30, 60 minutes... up to 24 hours. */
   originLockMs(level: number): number {
     return Math.min(
       LockoutRules.origin.baseLockMs * 2 ** Math.max(0, level - 1),
@@ -17,7 +17,7 @@ export class LockoutPolicy {
     return failures >= LockoutRules.origin.maxFailures;
   }
 
-  /** Desde el umbral la cuenta pasa a modo protegido; el almacén avisa solo la primera vez. */
+  /** From the threshold on the account enters protected mode; the store reports it only the first time. */
   enablesProtectedMode(failures: number): boolean {
     return failures >= LockoutRules.protectedMode.maxFailures;
   }

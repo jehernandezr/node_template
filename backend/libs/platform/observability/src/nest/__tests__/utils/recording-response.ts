@@ -1,6 +1,6 @@
 import type { RequestContextHttpResponse } from '../../request-context.http.js';
 
-/** Respuesta HTTP que guarda los headers escritos, para pruebas. */
+/** HTTP response that stores the written headers, for tests. */
 export class RecordingResponse implements RequestContextHttpResponse {
   readonly headers = new Map<string, string>();
 

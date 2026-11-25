@@ -6,9 +6,9 @@ import type { ClaimKeeperOptions } from './claim-keeper.options.js';
 import type { ProcessedOperationStore } from './processed-operation-store.js';
 
 /**
- * Mantiene viva la llave de idempotencia mientras corre su handler: renueva el lease cada `renewEveryMs`. Así otro
- * intento con la misma llave solo la toma si el proceso dueño dejó de renovarla, es decir, si cayó; un handler lento
- * nunca corre en paralelo con un reintento.
+ * Keeps the idempotency key alive while its handler runs: renews the lease every `renewEveryMs`. This way another
+ * attempt with the same key only takes it if the owning process stopped renewing it, that is, if it crashed; a slow handler
+ * never runs in parallel with a retry.
  */
 export class ClaimKeeper {
   static readonly DEFAULT_RENEW_EVERY_MS = 2_000;
@@ -30,8 +30,8 @@ export class ClaimKeeper {
   }
 
   /**
-   * Corre `work` renovando el lease de `claimed` hasta que termina. Al terminar deja de renovar y espera la renovación
-   * en vuelo, así ninguna queda suelta. Una renovación que falla no corta el trabajo: la siguiente lo vuelve a intentar.
+   * Runs `work` renewing the lease of `claimed` until it finishes. When done it stops renewing and waits for the renewal
+   * in flight, so none is left dangling. A failed renewal does not stop the work: the next one tries again.
    */
   async during<T>(
     claimed: ClaimedOperation,

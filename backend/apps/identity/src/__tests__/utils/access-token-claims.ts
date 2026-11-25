@@ -1,4 +1,4 @@
-/** Lee los claims de un access token sin verificarlo, como hace la app para conocer su sesión. */
+/** Reads the claims of an access token without verifying it, as the app does to learn its session. */
 export class AccessTokenClaimsReader {
   static read(token: string): Record<string, unknown> {
     const payload = token.split('.')[1] ?? '';

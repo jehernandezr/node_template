@@ -2,8 +2,8 @@ import { FixedClock } from '@platform/kernel/test-utils';
 import type { CachePortHarness } from './cache-port-harness.js';
 
 /**
- * Prueba de contrato de `CachePort`: la corren el doble en memoria y el
- * adaptador real con la misma batería, para que no diverjan.
+ * `CachePort` contract test: the in-memory double and the real
+ * adapter run the same suite, so they do not diverge.
  */
 export function runCachePortContract(
   name: string,

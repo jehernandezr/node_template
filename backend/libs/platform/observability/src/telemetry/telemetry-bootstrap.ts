@@ -37,15 +37,15 @@ import type { TelemetryOptions } from './telemetry-options.js';
 import { UuidV7TraceIdGenerator } from './uuid-v7-trace-id-generator.js';
 
 /**
- * Arranca OpenTelemetry (ADR 0004): trazas, métricas y logs por OTLP HTTP
- * hacia el Collector, que los reenvía a OpenObserve. Se arranca temprano, fuera
- * de Nest, antes de importar los módulos instrumentados; `ObservabilityModule`
- * solo lo apaga al cerrar la aplicación.
+ * Starts OpenTelemetry (ADR 0004): traces, metrics and logs over OTLP HTTP
+ * to the Collector, which forwards them to OpenObserve. It starts early, outside
+ * Nest, before importing the instrumented modules; `ObservabilityModule`
+ * only shuts it down when the application closes.
  *
- * - Trace ids UUIDv7 (`UuidV7TraceIdGenerator`).
- * - Muestreo `ParentBased(AlwaysOn)`: el Collector decide con tail sampling.
- * - `traceparent` entrante: `ExternalTraceparentPropagator`.
- * - Instrumentación automática de HTTP, `fetch`, `pg`, Valkey, AWS SDK y NestJS.
+ * - UUIDv7 trace ids (`UuidV7TraceIdGenerator`).
+ * - `ParentBased(AlwaysOn)` sampling: the Collector decides with tail sampling.
+ * - Incoming `traceparent`: `ExternalTraceparentPropagator`.
+ * - Automatic instrumentation of HTTP, `fetch`, `pg`, Valkey, AWS SDK and NestJS.
  */
 export class TelemetryBootstrap extends TelemetryHandle {
   static readonly ATTR_DEPLOYMENT_ENVIRONMENT_NAME =
@@ -60,7 +60,7 @@ export class TelemetryBootstrap extends TelemetryHandle {
     super();
   }
 
-  /** Lee el entorno (`ServiceConfig` y `TelemetryConfig`) y arranca. `overrides` gana sobre lo leído. */
+  /** Reads the environment (`ServiceConfig` and `TelemetryConfig`) and starts. `overrides` wins over what was read. */
   static start(
     env: Readonly<Record<string, string | undefined>>,
     overrides: Partial<TelemetryOptions> = {},
@@ -71,7 +71,7 @@ export class TelemetryBootstrap extends TelemetryHandle {
     });
   }
 
-  /** Arranca con opciones ya armadas. */
+  /** Starts with already built options. */
   static startWith(options: TelemetryOptions): TelemetryBootstrap {
     if (options.disabled === true) {
       return new TelemetryBootstrap(
@@ -151,14 +151,14 @@ export class TelemetryBootstrap extends TelemetryHandle {
   }
 
   /**
-   * Exporta spans, logs y métricas pendientes sin apagar el SDK. En Lambda se
-   * llama al final de cada invocación, antes de que el entorno se congele.
+   * Exports pending spans, logs and metrics without shutting down the SDK. In Lambda it is
+   * called at the end of each invocation, before the environment freezes.
    */
   forceFlush(): Promise<void> {
     return this.flush();
   }
 
-  /** Exporta lo pendiente y apaga el SDK. */
+  /** Exports what is pending and shuts down the SDK. */
   shutdown(): Promise<void> {
     return this.stop();
   }

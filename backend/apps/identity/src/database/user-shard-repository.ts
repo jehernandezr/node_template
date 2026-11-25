@@ -6,13 +6,13 @@ import {
 import type { EntityManager, EntityTarget } from 'typeorm';
 
 /**
- * Base de los repositorios de datos de usuario: no llevan columna de tenant, así que no usan
- * `ShardedRepository`. El shard sale del `ShardScope` que abre el caso de uso con `inUserShard`.
+ * Base for user data repositories: they have no tenant column, so they do not use
+ * `ShardedRepository`. The shard comes from the `ShardScope` the use case opens with `inUserShard`.
  */
 export abstract class UserShardRepository {
   protected constructor(protected readonly kit: RepositoryKit) {}
 
-  /** Lee del primario: los flujos de autenticación leen lo que acaban de escribir. */
+  /** Reads from the primary: the authentication flows read what they just wrote. */
   protected read<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
     return this.kit.provider.run(
       { feature: this.kit.feature, intent: ManagerIntent.ReadPrimary },
@@ -20,7 +20,7 @@ export abstract class UserShardRepository {
     );
   }
 
-  /** Escribe en la transacción abierta o en una propia. */
+  /** Writes in the open transaction or in its own. */
   protected write<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
     return this.kit.provider.run(
       { feature: this.kit.feature, intent: ManagerIntent.Write },
@@ -28,7 +28,7 @@ export abstract class UserShardRepository {
     );
   }
 
-  /** @throws OptimisticLockError si la fila cambió desde que se leyó. */
+  /** @throws OptimisticLockError if the row changed since it was read. */
   protected updateVersioned<T extends VersionedEntity>(
     target: EntityTarget<T>,
     entity: T,

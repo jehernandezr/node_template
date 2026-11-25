@@ -13,7 +13,7 @@ import { DeviceRepository } from '../domain/device.repository.js';
 import type { Device } from '../domain/device.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 
-/** Los dispositivos del usuario: listar, quitar, quitar la confianza y guardar el token de push. */
+/** The user's devices: list, remove, untrust and store the push token. */
 @Injectable()
 export class ManageMyDevices {
   constructor(
@@ -48,7 +48,7 @@ export class ManageMyDevices {
     };
   }
 
-  /** Quita el dispositivo y cierra sus sesiones. */
+  /** Removes the device and closes its sessions. */
   async remove(ref: UserRef, deviceId: string): Promise<void> {
     const now = this.clock.now();
     await this.change(ref, deviceId, async (device) => {

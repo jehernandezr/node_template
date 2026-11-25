@@ -1,6 +1,6 @@
 import { FileSystem } from '../../file-system.js';
 
-/** Disco en memoria: lo que escriben los generadores queda aquí para revisarlo. */
+/** In-memory disk: what the generators write stays here to be inspected. */
 export class InMemoryFileSystem extends FileSystem {
   private readonly contents = new Map<string, string>();
 
@@ -31,7 +31,7 @@ export class InMemoryFileSystem extends FileSystem {
       .sort();
   }
 
-  /** Las rutas escritas, en orden alfabético. */
+  /** The written paths, in alphabetical order. */
   paths(): string[] {
     return [...this.contents.keys()].sort();
   }

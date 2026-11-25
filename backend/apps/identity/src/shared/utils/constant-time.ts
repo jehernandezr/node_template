@@ -1,8 +1,8 @@
 import { timingSafeEqual } from 'node:crypto';
 
 /**
- * Compara dos valores sin revelar en cuánto tiempo se diferencian. Largos distintos devuelven `false`
- * sin lanzar: `timingSafeEqual` exige el mismo largo y el largo, por sí solo, no es secreto aquí.
+ * Compares two values without revealing how quickly they differ. Different lengths return `false`
+ * without throwing: `timingSafeEqual` requires the same length, and the length alone is not secret here.
  */
 export function constantTimeEquals(
   a: Uint8Array | string,

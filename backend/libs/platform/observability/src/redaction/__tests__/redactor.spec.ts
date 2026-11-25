@@ -162,7 +162,7 @@ describe('Redactor', () => {
       expect(redactor.redactString('header Bearer abc.def-123')).toBe(
         `header Bearer ${R}`,
       );
-      // Se arma en tiempo de ejecución para que el escáner de secretos no vea un JWT literal.
+      // Built at runtime so the secret scanner does not see a literal JWT.
       const jwt = [
         'eyJhbGciOiJIUzI1NiJ9',
         'eyJzdWIiOiIxMjM0NTY3ODkwIn0',

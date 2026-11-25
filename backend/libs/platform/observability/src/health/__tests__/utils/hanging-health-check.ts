@@ -1,6 +1,6 @@
 import { HealthCheckable, type HealthReport } from '@platform/kernel';
 
-/** Dependencia que nunca responde, para probar el tiempo máximo. */
+/** Dependency that never responds, to test the timeout. */
 export class HangingHealthCheck extends HealthCheckable {
   constructor(readonly name: string) {
     super();

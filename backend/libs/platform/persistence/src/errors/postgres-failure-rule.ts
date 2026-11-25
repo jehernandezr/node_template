@@ -3,15 +3,15 @@ import { FailureRule } from '@platform/primitives';
 import { PostgresFailureClassifier } from './postgres-failure-classifier.js';
 
 /**
- * Regla de `FailureClassifier` para los errores del driver de Postgres: un SQLSTATE pasajero (serialización, deadlock,
- * reinicio o conexión caída) se reintenta. Sin ella un `QueryFailedError` es permanente y una conmutación de la base
- * manda a la cola de errores lo que se podía reintentar.
+ * `FailureClassifier` rule for Postgres driver errors: a transient SQLSTATE (serialization, deadlock,
+ * restart or dropped connection) is retried. Without it a `QueryFailedError` is permanent and a database failover
+ * sends to the error queue what could have been retried.
  */
 export class PostgresFailureRule extends FailureRule {
   /**
-   * Clasifica un error del driver por su SQLSTATE.
-   * @param error Error a clasificar.
-   * @returns El tipo de falla pasajera, o `undefined` para que decidan las demás reglas.
+   * Classifies a driver error by its SQLSTATE.
+   * @param error Error to classify.
+   * @returns The transient failure kind, or `undefined` so the other rules decide.
    */
   classify(error: object): FailureKind | undefined {
     return PostgresFailureClassifier.transientKindOf(error);

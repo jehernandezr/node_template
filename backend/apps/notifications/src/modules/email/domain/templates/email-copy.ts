@@ -1,7 +1,7 @@
-/** Textos de un correo en un idioma. `{nombre}` se reemplaza por el dato de plantilla con ese nombre. */
+/** Texts of an email in a language. `{name}` is replaced by the template value with that name. */
 export interface EmailCopy {
   readonly subject: string;
   readonly lines: readonly string[];
-  /** Texto del enlace, si el correo lleva `link`. */
+  /** Link text, if the email has a `link`. */
   readonly action?: string;
 }

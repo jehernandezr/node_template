@@ -2,30 +2,30 @@ import { BloomGuard } from './errors/bloom-guard.js';
 import { InvalidParametersError } from './errors/invalid-parameters.error.js';
 import type { BloomParameters } from './bloom-parameters.js';
 
-/** Dimensionado de filtros: bits, funciones de hash y particiones para una tasa de falsos positivos. */
+/** Filter sizing: bits, hash functions and partitions for a false positive rate. */
 export class BloomSizing {
-  /** Mínimo de bits permitido. */
+  /** Minimum number of bits allowed. */
   static readonly MIN_BITS = 1;
   /**
-   * Mayor tamaño de arreglo permitido (2^32 bits, 512 MiB), igual que la cadena más grande de Valkey.
-   * A la tasa por defecto de 1 % cabe cerca de 448 millones de ítems: un conjunto mayor, como la lista
-   * de contraseñas de Have I Been Pwned (más de mil millones de hashes), se reparte entre varios filtros
-   * con `PartitionedBloomFilter`.
+   * Largest array size allowed (2^32 bits, 512 MiB), same as the largest Valkey string.
+   * At the default 1 % rate it fits about 448 million items: a larger set, such as the
+   * Have I Been Pwned password list (over a billion hashes), is split across several filters
+   * with `PartitionedBloomFilter`.
    */
   static readonly MAX_BITS = 2 ** 32;
-  /** Mínimo de funciones de hash. */
+  /** Minimum number of hash functions. */
   static readonly MIN_HASHES = 1;
-  /** Máximo de funciones de hash. */
+  /** Maximum number of hash functions. */
   static readonly MAX_HASHES = 32;
-  /** Máximo de particiones de un filtro partido. */
+  /** Maximum number of partitions of a partitioned filter. */
   static readonly MAX_PARTITIONS = 4_096;
-  /** Tasa de falsos positivos de un filtro que no declara una (1 %). */
+  /** False positive rate of a filter that does not declare one (1 %). */
   static readonly DEFAULT_FALSE_POSITIVE_RATE = 0.01;
 
   /**
-   * Bits que necesita un filtro óptimo, sin el tope de `MAX_BITS`: m = ceil(-n * ln p / (ln 2)^2).
-   * Sirve para dimensionar particiones cuando un solo filtro no alcanza (ver `partitionCount`).
-   * @throws InvalidParametersError cuando un argumento está fuera de rango.
+   * Returns the bits an optimal filter needs, without the `MAX_BITS` cap: m = ceil(-n * ln p / (ln 2)^2).
+   * Used to size partitions when a single filter is not enough (see `partitionCount`).
+   * @throws InvalidParametersError when an argument is out of range.
    */
   static requiredBits(
     expectedItems: number,
@@ -40,10 +40,10 @@ export class BloomSizing {
   }
 
   /**
-   * Tamaño del arreglo y número de funciones de hash para una tasa objetivo.
+   * Returns the array size and number of hash functions for a target rate.
    * m = ceil(-n * ln p / (ln 2)^2), k = max(1, round(m / n * ln 2)).
-   * @throws InvalidParametersError cuando un argumento está fuera de rango o el
-   *   resultado excede los límites (bits en [1, 2^32], funciones de hash en [1, 32]).
+   * @throws InvalidParametersError when an argument is out of range or the
+   *   result exceeds the limits (bits in [1, 2^32], hash functions in [1, 32]).
    */
   static optimalParameters(
     expectedItems: number,
@@ -67,10 +67,10 @@ export class BloomSizing {
   }
 
   /**
-   * Particiones necesarias para que cada una quepa en `maxBitsPerPartition` con la tasa objetivo.
-   * Por ejemplo, 1 500 millones de ítems al 1 % necesitan unos 14 400 millones de bits: 4 particiones
-   * de como mucho 2^32 bits.
-   * @throws InvalidParametersError para argumentos fuera de rango, o cuando hacen falta más de `MAX_PARTITIONS`.
+   * Returns the partitions needed so each one fits in `maxBitsPerPartition` at the target rate.
+   * For example, 1.5 billion items at 1 % need about 14.4 billion bits: 4 partitions
+   * of at most 2^32 bits.
+   * @throws InvalidParametersError for out-of-range arguments, or when more than `MAX_PARTITIONS` are needed.
    */
   static partitionCount(
     expectedItems: number,

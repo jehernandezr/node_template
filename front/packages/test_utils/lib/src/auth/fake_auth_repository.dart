@@ -3,36 +3,36 @@ import 'dart:async';
 import 'package:auth/auth.dart';
 import 'package:contracts/contracts.dart';
 
-/// Repositorio en memoria. Cada prueba configura los resultados y lee las
-/// peticiones recibidas.
+/// In-memory repository. Each test configures the results and reads the
+/// received requests.
 class FakeAuthRepository implements AuthRepository {
-  /// Resultado de [signIn]. Si no hay, lanza `IDENTITY.AUTH.INVALID_CREDENTIALS`.
+  /// Result of [signIn]. If there is none, throws `IDENTITY.AUTH.INVALID_CREDENTIALS`.
   SignInResponse? signInResult;
 
-  /// Resultado de [requestMfaChallenge]. Si no hay, lanza
+  /// Result of [requestMfaChallenge]. If there is none, throws
   /// `IDENTITY.MFA.TOKEN_INVALID`.
   MfaChallenge? challengeResult;
 
-  /// Resultado de [verifyMfa]. Si no hay, lanza `IDENTITY.MFA.CODE_INVALID`.
+  /// Result of [verifyMfa]. If there is none, throws `IDENTITY.MFA.CODE_INVALID`.
   SignInResponse? verifyResult;
 
-  /// Si no es null, [verifyMfa] lanza este error.
+  /// If not null, [verifyMfa] throws this error.
   Object? verifyError;
 
-  /// Tokens que devuelve [refresh].
+  /// Tokens that [refresh] returns.
   SessionTokens? refreshResult;
 
-  /// Si no es null, [refresh] lanza este error.
+  /// If not null, [refresh] throws this error.
   Object? refreshError;
 
-  /// Si no es null, [refresh] espera a que se complete antes de responder.
+  /// If not null, [refresh] waits for it to complete before responding.
   Completer<void>? refreshGate;
 
   int signInCount = 0;
   int refreshCount = 0;
   int logoutCount = 0;
 
-  /// Session token recibido en el último [refresh].
+  /// Session token received in the last [refresh].
   String? lastRefreshSessionToken;
   SignInRequest? lastSignIn;
   MfaChallengeRequest? lastChallengeRequest;
@@ -82,15 +82,15 @@ class FakeAuthRepository implements AuthRepository {
     lastLogoutSessionToken = sessionToken;
   }
 
-  /// Resultado de [startStepUp]. Si no hay, lanza
+  /// Result of [startStepUp]. If there is none, throws
   /// `IDENTITY.SESSION.REVOKED`.
   PendingMfa? stepUpResult;
 
-  /// Resultado de [requestStepUpChallenge]. Si no hay, lanza
+  /// Result of [requestStepUpChallenge]. If there is none, throws
   /// `IDENTITY.MFA.METHOD_UNAVAILABLE`.
   MfaChallenge? stepUpChallengeResult;
 
-  /// Resultado de [verifyStepUp]. Si no hay, lanza
+  /// Result of [verifyStepUp]. If there is none, throws
   /// `IDENTITY.MFA.CODE_INVALID`.
   StepUpResult? stepUpVerifyResult;
 
@@ -98,7 +98,7 @@ class FakeAuthRepository implements AuthRepository {
   MfaChallengeRequest? lastStepUpChallengeRequest;
   StepUpVerifyRequest? lastStepUpVerify;
 
-  /// Session token recibido en el último [logout].
+  /// Session token received in the last [logout].
   String? lastLogoutSessionToken;
 
   @override
@@ -123,7 +123,7 @@ class FakeAuthRepository implements AuthRepository {
         (throw apiError(IdentityErrorCode.mfaCodeInvalid));
   }
 
-  /// Error de la API con [code], como lo lanzaría `ApiClient`.
+  /// API error with [code], as `ApiClient` would throw it.
   static ApiErrorException apiError(IdentityErrorCode code) =>
       ApiErrorException(
         ProblemDetails(

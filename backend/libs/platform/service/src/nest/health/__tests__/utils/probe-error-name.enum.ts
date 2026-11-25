@@ -1,6 +1,6 @@
-/** Nombres de error que simulan o esperan las pruebas de salud. */
+/** Error names that the health tests simulate or expect. */
 export enum ProbeErrorName {
   Connection = 'ConnectionError',
-  /** El que lanza `AbortSignal.throwIfAborted()` con una señal ya abortada. */
+  /** The one `AbortSignal.throwIfAborted()` throws with an already aborted signal. */
   Abort = 'AbortError',
 }

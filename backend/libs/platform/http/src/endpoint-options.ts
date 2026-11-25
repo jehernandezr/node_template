@@ -2,25 +2,25 @@ import type { AuthMethod } from './auth-method.enum.js';
 import type { RateLimitTier } from './rate-limit-tier.enum.js';
 import type { SessionCookieMode } from './session-cookie-mode.enum.js';
 
-/** Opciones de `@Endpoint`. Todo lo demás (método, path, esquemas, acceso) sale del contrato. */
+/** Options of `@Endpoint`. Everything else (method, path, schemas, access) comes from the contract. */
 export interface EndpointOptions {
   /**
-   * Cómo se autentica la ruta. Por defecto `[AuthMethod.Jwt]` si la ruta del contrato es
-   * autenticada. Declararlo en una ruta pública es un error al arrancar.
+   * How the route is authenticated. Defaults to `[AuthMethod.Jwt]` if the contract route is
+   * authenticated. Declaring it on a public route is a startup error.
    */
   readonly auth?: readonly AuthMethod[];
-  /** Por defecto `RateLimitTier.Auth` en rutas públicas y `RateLimitTier.Standard` en las demás. */
+  /** Defaults to `RateLimitTier.Auth` on public routes and `RateLimitTier.Standard` on the others. */
   readonly rateLimit?: RateLimitTier;
-  /** Tiempo máximo del handler. Sin valor no hay tope propio. */
+  /** Maximum handler time. Without a value there is no route-specific cap. */
   readonly timeoutMs?: number;
-  /** Por defecto `SessionCookieMode.None`. */
+  /** Defaults to `SessionCookieMode.None`. */
   readonly sessionCookie?: SessionCookieMode;
-  /** Versiones de la API que acepta la ruta. Sin valor, todas las soportadas. */
+  /** API versions the route accepts. Without a value, all supported ones. */
   readonly versions?: readonly string[];
 }
 
-/** Opciones de `@Resource`. */
+/** Options of `@Resource`. */
 export interface ResourceOptions {
-  /** Exige que el actor traiga tenant activo en todas las rutas del controller. */
+  /** Requires the actor to have an active tenant on all the controller's routes. */
   readonly tenantScoped?: boolean;
 }

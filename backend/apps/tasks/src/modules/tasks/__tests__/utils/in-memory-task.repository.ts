@@ -5,7 +5,7 @@ import { TaskRepository } from '../../domain/task.repository.js';
 import { Task } from '../../domain/task.js';
 import type { TaskState } from '../../domain/task-state.js';
 
-/** Tareas en memoria separadas por el tenant del `ShardScope`, con versión optimista como la base. */
+/** In-memory tasks separated by the `ShardScope` tenant, with optimistic versioning like the database. */
 export class InMemoryTaskRepository extends TaskRepository {
   private readonly rows = new Map<string, TaskState & { tenantId: string }>();
 

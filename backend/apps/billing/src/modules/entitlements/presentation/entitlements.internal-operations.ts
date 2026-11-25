@@ -12,7 +12,7 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { EntitlementQueries } from '../application/entitlement-queries.js';
 
-/** Lecturas de entitlements y cuotas que piden identity y los servicios que aplican cuotas. */
+/** Entitlement and quota reads requested by identity and the services that enforce quotas. */
 @Injectable()
 export class EntitlementsInternalOperations {
   constructor(private readonly queries: EntitlementQueries) {}

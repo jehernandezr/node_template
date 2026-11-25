@@ -3,15 +3,15 @@ import { SNSClient } from '@aws-sdk/client-sns';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import type { AwsSettings } from './aws.config.js';
 
-/** Lo que la fábrica necesita para apuntar a AWS o a LocalStack. */
+/** What the factory needs to point to AWS or to LocalStack. */
 export type AwsClientSettings = Pick<
   AwsSettings,
   'AWS_REGION' | 'AWS_ENDPOINT_URL'
 >;
 
 /**
- * Crea los clientes del SDK con la región y, en local, el endpoint de
- * LocalStack. Quien los crea los cierra con `destroy()`.
+ * Creates the SDK clients with the region and, locally, the LocalStack
+ * endpoint. Whoever creates them closes them with `destroy()`.
  */
 export class AwsClientFactory {
   sns(settings: AwsClientSettings): SNSClient {

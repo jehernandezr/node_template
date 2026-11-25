@@ -214,7 +214,7 @@ describe('InMemoryBus', () => {
     });
     expect(bus.pendingCount('notifications')).toBe(1);
 
-    // Todavía no vence: el reintento espera su backoff de 1 s.
+    // Not due yet: the retry waits for its 1 s backoff.
     setClock(500);
     expect(await bus.drain('notifications', dispatcher)).toEqual({
       processed: 0,

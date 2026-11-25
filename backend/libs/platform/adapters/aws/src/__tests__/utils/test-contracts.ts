@@ -7,7 +7,7 @@ import {
 } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Contratos de prueba: un servicio de tareas, uno de reportes y uno de libro mayor. */
+/** Test contracts: a tasks service, a reports service and a ledger service. */
 export const TaskClosed = defineEvent({
   type: 'tasks.task.closed.v1',
   payload: z.object({ taskId: z.string() }),

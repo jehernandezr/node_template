@@ -12,8 +12,8 @@ import {
 } from '../schemas/tenant.schema.js';
 
 /**
- * Crea un tenant en aprovisionamiento. Su reversa lo descarta, así que la
- * saga no deja tenants a medias si falla después.
+ * Creates a tenant in provisioning. Its reversal discards it, so the
+ * saga does not leave half-made tenants if it fails later.
  */
 export const CreateTenantOperation = defineOperation({
   id: IdentityOperation.CreateTenant,
@@ -23,12 +23,12 @@ export const CreateTenantOperation = defineOperation({
   compensatedBy: IdentityOperation.DiscardTenant,
   errors: [IdentityErrorCode.TenantSlugTaken],
   timeoutMs: 3000,
-  description: 'Crea un tenant en aprovisionamiento con su dueño.',
+  description: 'Creates a tenant being provisioned with its owner.',
 });
 
 /**
- * Descarta un tenant que nunca quedó activo. No se revierte: el tenant nunca
- * tuvo datos de negocio que recuperar.
+ * Discards a tenant that never became active. It is not reverted: the tenant never
+ * had business data to recover.
  */
 export const DiscardTenantOperation = defineOperation({
   id: IdentityOperation.DiscardTenant,
@@ -37,13 +37,13 @@ export const DiscardTenantOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Solo borra un tenant en aprovisionamiento, que no tiene datos de negocio que restaurar.',
+    'Only deletes a tenant being provisioned, which has no business data to restore.',
   errors: [IdentityErrorCode.TenantNotFound],
   timeoutMs: 3000,
-  description: 'Descarta un tenant en aprovisionamiento.',
+  description: 'Discards a tenant being provisioned.',
 });
 
-/** Suspende un tenant. Su reversa lo reactiva. */
+/** Suspends a tenant. Its reversal reactivates it. */
 export const SuspendTenantOperation = defineOperation({
   id: IdentityOperation.SuspendTenant,
   input: SuspendTenantInputSchema,
@@ -52,10 +52,10 @@ export const SuspendTenantOperation = defineOperation({
   compensatedBy: IdentityOperation.ReactivateTenant,
   errors: [IdentityErrorCode.TenantNotFound],
   timeoutMs: 3000,
-  description: 'Suspende un tenant y revoca sus tokens.',
+  description: 'Suspends a tenant and revokes its tokens.',
 });
 
-/** Reactiva un tenant suspendido. Su reversa lo vuelve a suspender. */
+/** Reactivates a suspended tenant. Its reversal suspends it again. */
 export const ReactivateTenantOperation = defineOperation({
   id: IdentityOperation.ReactivateTenant,
   input: TenantRefInputSchema,
@@ -64,5 +64,5 @@ export const ReactivateTenantOperation = defineOperation({
   compensatedBy: IdentityOperation.SuspendTenant,
   errors: [IdentityErrorCode.TenantNotFound],
   timeoutMs: 3000,
-  description: 'Reactiva un tenant suspendido.',
+  description: 'Reactivates a suspended tenant.',
 });

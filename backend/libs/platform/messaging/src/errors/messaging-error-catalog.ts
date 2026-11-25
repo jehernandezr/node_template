@@ -2,8 +2,8 @@ import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { MessagingErrorCode } from './messaging-error-code.enum.js';
 
 /**
- * Catálogo de los códigos de `@platform/messaging`. Los códigos son internos: el
- * catálogo central no los declara.
+ * Catalog of the `@platform/messaging` codes. The codes are internal: the
+ * central catalog does not declare them.
  */
 export const messagingErrorCatalog = defineErrorCatalog(MessagingErrorCode, {
   [MessagingErrorCode.InvalidEnvelope]: ErrorSpecs.internal(

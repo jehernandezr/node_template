@@ -1,23 +1,23 @@
 import type { SagaCallContext } from '../model/saga-call-context.js';
 
-/** Opciones de `SagaEngine.start` y de `Sagas.start`. */
+/** Options of `SagaEngine.start` and `Sagas.start`. */
 export interface StartOptions {
-  /** Id de la instancia, un UUID: el almacén de Postgres lo guarda como `uuid`. Por defecto, un UUIDv7 nuevo. */
+  /** Instance id, a UUID: the Postgres store saves it as `uuid`. Defaults to a new UUIDv7. */
   readonly sagaId?: string;
-  /** Presupuesto desde el arranque. Pasado, los pasos anteriores al pivote no se despachan y se compensa. */
+  /** Budget from the start. Once exceeded, the steps before the pivot are not dispatched and it compensates. */
   readonly deadlineMs?: number;
   /**
-   * Si ya existe una instancia con esta llave, se devuelve en lugar de
-   * arrancar otra, siempre que tenga el mismo tipo y el mismo estado inicial
-   * (comparado con `SagaPayload.digest`); si no, `IdempotencyKeyConflict`.
+   * If an instance with this key already exists, it is returned instead of
+   * starting another, as long as it has the same type and the same initial state
+   * (compared with `SagaPayload.digest`); otherwise, `IdempotencyKeyConflict`.
    */
   readonly idempotencyKey?: string;
   /**
-   * Tenant, actor y traceparent que se envían con cada paso. Se guardan con la
-   * instancia, así un paso recuperado envía exactamente los mismos valores y
-   * el participante construye la misma llave de idempotencia. Lo que falta
-   * sale de la petición en curso (tenant y actor) y del span activo
-   * (traceparent), así la saga continúa a quien la arrancó.
+   * Tenant, actor and traceparent sent with each step. They are stored with the
+   * instance, so a recovered step sends exactly the same values and
+   * the participant builds the same idempotency key. Whatever is missing
+   * comes from the current request (tenant and actor) and from the active span
+   * (traceparent), so the saga continues on behalf of whoever started it.
    */
   readonly context?: SagaCallContext;
 }

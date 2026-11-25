@@ -4,8 +4,8 @@ import { LoggerPort } from './logger.port.js';
 import type { StructuredLoggerOptions } from './structured-logger.options.js';
 
 /**
- * Arma cada log con redacción automática y contexto de traza y petición, y lo
- * entrega al `LogSink`. No sabe a dónde va: el destino es una estrategia.
+ * Builds each log with automatic redaction and trace and request context, and
+ * hands it to the `LogSink`. It does not know where it goes: the destination is a strategy.
  */
 export class StructuredLogger extends LoggerPort {
   private static readonly LEVEL_RANK: Record<LogLevel, number> = {
@@ -69,7 +69,7 @@ export class StructuredLogger extends LoggerPort {
       ),
     );
     const ctx = this.options.contextStore.current();
-    // Un log dentro de un span sin contexto abierto (un job, una librería) también se enlaza a la traza.
+    // A log inside a span without an open context (a job, a library) is also linked to the trace.
     const span =
       ctx === undefined ? this.options.tracing.activeIds() : undefined;
     const traceId = ctx?.traceId ?? span?.traceId;

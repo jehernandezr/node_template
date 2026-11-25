@@ -1,6 +1,6 @@
 import { SagaDirectory, type SagaEntry } from '../../domain/saga-directory.js';
 
-/** Directorio de sagas en memoria: anotar dos veces la misma saga no cambia nada, como en el catálogo. */
+/** In-memory saga directory: registering the same saga twice changes nothing, as in the catalog. */
 export class InMemorySagaDirectory extends SagaDirectory {
   private readonly entries = new Map<string, SagaEntry>();
 

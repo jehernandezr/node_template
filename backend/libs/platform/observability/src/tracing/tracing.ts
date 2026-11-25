@@ -13,9 +13,9 @@ import type { Redactor } from '../redaction/redactor.js';
 import { SpanAttribute } from './span-attribute.enum.js';
 import type { WithSpanOptions } from './with-span-options.js';
 
-/** Spans propios de la plataforma sobre un `Tracer` inyectable. Sin SDK registrado es un no-op. */
+/** Platform's own spans over an injectable `Tracer`. A no-op without a registered SDK. */
 export class Tracing {
-  /** Nombre del instrumentation scope de los spans propios. */
+  /** Instrumentation scope name of the platform's own spans. */
   static readonly SCOPE = '@platform/observability';
 
   constructor(
@@ -24,8 +24,8 @@ export class Tracing {
   ) {}
 
   /**
-   * Ejecuta `fn` dentro de un span activo y lo cierra al terminar. Si `fn`
-   * lanza o su promesa se rechaza, marca el span con el error y lo relanza.
+   * Runs `fn` inside an active span and closes it when done. If `fn`
+   * throws or its promise rejects, marks the span with the error and rethrows it.
    */
   withSpan<T>(
     name: string,
@@ -52,9 +52,9 @@ export class Tracing {
   }
 
   /**
-   * Marca el span con el error: estado `ERROR`, `error.type`, `error.code` y un
-   * evento de excepción con mensaje y stack redactados. El mensaje de estado es
-   * el código o el nombre, nunca el texto del error.
+   * Marks the span with the error: `ERROR` status, `error.type`, `error.code` and an
+   * exception event with redacted message and stack. The status message is
+   * the code or the name, never the error text.
    */
   recordError(span: Span, error: unknown): void {
     const description = ErrorDescriptor.describe(error);
@@ -74,7 +74,7 @@ export class Tracing {
     span.setStatus({ code: SpanStatusCode.ERROR, message: type });
   }
 
-  /** Ids del span activo, o `undefined` si no hay span válido. */
+  /** Ids of the active span, or `undefined` if there is no valid span. */
   activeIds(): ActiveSpanIds | undefined {
     const spanContext = trace.getActiveSpan()?.spanContext();
     if (spanContext === undefined || !isSpanContextValid(spanContext)) {

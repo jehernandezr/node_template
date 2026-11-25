@@ -1,16 +1,16 @@
 import { Hashes } from '@platform/primitives';
 
-/** Funciones de hash y de posiciones del filtro. Cambiarlas cambia el formato serializado. */
+/** Hash and position functions of the filter. Changing them changes the serialized format. */
 export class BloomMath {
-  /** Semilla del hash que elige la partición. Es distinta de las que eligen posiciones de bit. */
+  /** Seed of the hash that picks the partition. It differs from those that pick bit positions. */
   static readonly PARTITION_HASH_SEED = 0x5bd1e995;
 
   private static readonly ENCODER = new TextEncoder();
 
   /**
-   * MurmurHash3 (x86, 32 bits) sobre los bytes UTF-8 de `input`.
-   * @param seed semilla opcional sin signo de 32 bits; por defecto 0.
-   * @returns un entero sin signo de 32 bits.
+   * MurmurHash3 (x86, 32 bits) over the UTF-8 bytes of `input`.
+   * @param seed optional unsigned 32-bit seed; defaults to 0.
+   * @returns an unsigned 32-bit integer.
    */
   static murmur3(input: string, seed = 0): number {
     const bytes = BloomMath.ENCODER.encode(input);
@@ -62,10 +62,10 @@ export class BloomMath {
   }
 
   /**
-   * Posiciones de un ítem con doble hash mejorado:
-   * a = h1 mod m, b = h2 mod m, luego para i en 0..k-1: pos = a; a = (a + b) mod m; b = (b + i) mod m.
-   * h1 es FNV-1a de 32 bits y h2 es MurmurHash3 de 32 bits (semilla 0) sobre los bytes UTF-8.
-   * @returns `hashes` posiciones, cada una en `[0, bits)`.
+   * Returns the positions of an item with enhanced double hashing:
+   * a = h1 mod m, b = h2 mod m, then for i in 0..k-1: pos = a; a = (a + b) mod m; b = (b + i) mod m.
+   * h1 is 32-bit FNV-1a and h2 is 32-bit MurmurHash3 (seed 0) over the UTF-8 bytes.
+   * @returns `hashes` positions, each in `[0, bits)`.
    */
   static positions(item: string, bits: number, hashes: number): number[] {
     let a = Hashes.fnv1a32(item) % bits;
@@ -79,7 +79,7 @@ export class BloomMath {
     return positions;
   }
 
-  /** Partición de un ítem entre `partitions`: MurmurHash3 con `PARTITION_HASH_SEED`, módulo el número de particiones. */
+  /** Returns the partition of an item among `partitions`: MurmurHash3 with `PARTITION_HASH_SEED`, modulo the number of partitions. */
   static partitionOf(item: string, partitions: number): number {
     return BloomMath.murmur3(item, BloomMath.PARTITION_HASH_SEED) % partitions;
   }

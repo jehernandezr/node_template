@@ -15,9 +15,9 @@ import { DeviceApprovalStore } from '../domain/device-approval-store.js';
 import { SignedDeviceRequest } from './signed-device-request.js';
 
 /**
- * Aprobaciones del dispositivo verificador. La app las pide con una petición firmada, que prueba que tiene
- * la clave; "No fui yo" cancela el desafío, levanta una alerta y cuenta como un fallo de inicio de sesión
- * desde el origen del intento.
+ * Approvals of the verifier device. The app requests them with a signed request, which proves it has
+ * the key; "No fui yo" cancels the challenge, raises an alert and counts as a sign-in failure
+ * from the attempt's origin.
  */
 @Injectable()
 export class DeviceApprovalsUseCase {
@@ -50,7 +50,7 @@ export class DeviceApprovalsUseCase {
       request,
       [request.challengeId],
     );
-    // Solo un desafío que este dispositivo tenía pendiente: un dispositivo no cancela los de otro.
+    // Only a challenge this device had pending: one device does not cancel another's.
     const denied = await this.approvals.remove(
       route.deviceId,
       request.challengeId,

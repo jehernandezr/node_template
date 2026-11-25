@@ -1,13 +1,13 @@
 import { FailureKind } from '@platform/kernel';
 import { FailureRule } from '@platform/primitives';
 
-/** Regla de prueba con la forma de la de Postgres: un SQLSTATE de conexión perdida es pasajero. */
+/** Test rule shaped like the Postgres one: a lost-connection SQLSTATE is transient. */
 export class SqlStateFailureRule extends FailureRule {
   constructor(private readonly transient: ReadonlySet<string>) {
     super();
   }
 
-  /** `Transient` para un error con uno de los SQLSTATE dados. */
+  /** Returns `Transient` for an error with one of the given SQLSTATEs. */
   classify(error: object): FailureKind | undefined {
     const code = (error as { code?: unknown }).code;
     return typeof code === 'string' && this.transient.has(code)

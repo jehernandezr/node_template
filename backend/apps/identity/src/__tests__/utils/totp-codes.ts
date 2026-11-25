@@ -1,6 +1,6 @@
 import { TotpAlgorithm } from '../../modules/mfa/domain/totp-algorithm.js';
 
-/** La app de autenticación de la prueba: calcula el código TOTP actual a partir del secreto en base32. */
+/** The test authenticator app: computes the current TOTP code from the base32 secret. */
 export class TotpCodes {
   private static readonly ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   private readonly algorithm = new TotpAlgorithm();
@@ -12,7 +12,7 @@ export class TotpCodes {
     );
   }
 
-  /** El código del paso siguiente: uno distinto del actual que sigue dentro de la ventana. */
+  /** The code of the next step: one different from the current one that is still within the window. */
   next(base32Secret: string, atMs = Date.now()): string {
     return this.algorithm.code(
       TotpCodes.decode(base32Secret),

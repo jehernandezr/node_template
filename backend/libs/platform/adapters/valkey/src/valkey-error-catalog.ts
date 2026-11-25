@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { ValkeyErrorCode } from './valkey-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/adapters-valkey`; ninguno llega al cliente. */
+/** Catalog of the `@platform/adapters-valkey` codes; none reaches the client. */
 export const valkeyErrorCatalog = defineErrorCatalog(ValkeyErrorCode, {
   [ValkeyErrorCode.CommandFailed]: ErrorSpecs.internal(
     503,

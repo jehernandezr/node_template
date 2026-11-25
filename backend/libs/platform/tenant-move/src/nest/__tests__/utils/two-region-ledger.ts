@@ -10,15 +10,15 @@ import { LedgerService, type LedgerServiceOptions } from './ledger-service.js';
 import type { RegionServers } from './region-servers.js';
 import type { AckedLedger } from './service-ledger-writer.js';
 
-/** Los grupos de destino que conoce el servicio de prueba. */
+/** The target groups the test service knows. */
 export enum LedgerGroup {
   A1 = 'group-a1',
   B0 = 'group-b0',
 }
 
 /**
- * El servicio de prueba desplegado en dos regiones sobre bases nuevas: el catálogo y los shards `a0` y `a1` en la
- * región A, el shard `b0` en la B, y un proceso por región. Los tenants pedidos empiezan en `a0`.
+ * The test service deployed in two regions on new databases: the catalog and shards `a0` and `a1` in
+ * region A, shard `b0` in B, and one process per region. The requested tenants start on `a0`.
  */
 export class TwoRegionLedger {
   private static deployments = 0;
@@ -47,7 +47,7 @@ export class TwoRegionLedger {
     };
   }
 
-  /** Crea las bases, migra, ubica los tenants y arranca un proceso en cada región. */
+  /** Creates the databases, migrates, places the tenants and starts a process in each region. */
   async deploy(tenants: readonly string[]): Promise<{
     readonly inA: INestApplicationContext;
     readonly inB: INestApplicationContext;
@@ -78,7 +78,7 @@ export class TwoRegionLedger {
     return { inA, inB: await this.start(this.regionB) };
   }
 
-  /** Los ledgers de un tenant en un shard, leídos como superusuario. */
+  /** The ledgers of a tenant on a shard, read as superuser. */
   async rowsOf(
     region: RegionServers,
     shard: string,
@@ -90,7 +90,7 @@ export class TwoRegionLedger {
     );
   }
 
-  /** Las filas de un tenant en el directorio del catálogo, leídas como superusuario. */
+  /** The rows of a tenant in the catalog directory, read as superuser. */
   async placementRows(tenant: string): Promise<{ shard_group: string[] }[]> {
     return (await this.regionA.connect(this.catalog)).query(
       'SELECT shard_group FROM shard_directory WHERE tenant_id = $1',

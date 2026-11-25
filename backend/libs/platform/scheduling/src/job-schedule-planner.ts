@@ -7,16 +7,16 @@ import {
 import { CronExpression } from './cron/cron-expression.js';
 import { InvalidJobScheduleError } from './errors/invalid-job-schedule.error.js';
 
-/** Decide cuánto falta para la próxima corrida de un job según su calendario. */
+/** Decides how long until the next run of a job according to its schedule. */
 export class JobSchedulePlanner {
   constructor(
     private readonly clock: Clock,
     private readonly random: RandomSource,
   ) {}
 
-  /** @throws InvalidJobScheduleError o InvalidCronExpressionError cuando el calendario o el `timeoutMs` no son válidos. */
+  /** @throws InvalidJobScheduleError or InvalidCronExpressionError when the schedule or the `timeoutMs` is not valid. */
   validate(job: ScheduledJob): void {
-    // Un plazo inválido haría fallar cada corrida; se rechaza al registrar el job.
+    // An invalid deadline would make every run fail; it is rejected when the job is registered.
     if (!Number.isFinite(job.timeoutMs) || job.timeoutMs <= 0) {
       throw new InvalidJobScheduleError(
         job.name,
@@ -43,7 +43,7 @@ export class JobSchedulePlanner {
     }
   }
 
-  /** Milisegundos hasta la próxima corrida, nunca negativos. */
+  /** Milliseconds until the next run, never negative. */
   delayMs(job: ScheduledJob): number {
     const { schedule } = job;
     if (schedule.kind === JobScheduleKind.Cron) {

@@ -3,7 +3,7 @@ import { OperationInvoker } from '../../invoker/operation-invoker.js';
 import type { InvokeOptions } from '../../invoker/invoke-options.js';
 import type { SagaCallContext } from '../../model/saga-call-context.js';
 
-/** Una llamada recibida por el participante falso. */
+/** A call received by the fake participant. */
 export interface RecordedCall {
   readonly operationId: string;
   readonly idempotencyKey: string;
@@ -11,21 +11,21 @@ export interface RecordedCall {
   readonly context: SagaCallContext | undefined;
 }
 
-/** Con qué se arma el participante. Todo es opcional. */
+/** What the participant is built with. Everything is optional. */
 export interface FakeParticipantOptions {
-  /** Fecha fija de las salidas, para que las pruebas comparen valores exactos. */
+  /** Fixed date of the outputs, so the tests compare exact values. */
   readonly createdAt?: Date;
 }
 
 /**
- * Participante falso. Las operaciones de creación crean un recurso y las de
- * borrado lo quitan. Un éxito se guarda por llave de idempotencia, así una
- * llamada repetida devuelve el resultado guardado sin un segundo efecto. Los
- * resultados de creación llevan una fecha para ejercitar la normalización de salidas.
+ * Fake participant. Create operations create a resource and delete
+ * operations remove it. A success is stored by idempotency key, so a
+ * repeated call returns the stored result without a second effect. Create
+ * results carry a date to exercise output normalization.
  */
 export class FakeParticipant extends OperationInvoker {
   readonly calls: RecordedCall[] = [];
-  /** Cuántas veces se aplicó el efecto de cada operación de creación. */
+  /** How many times the effect of each create operation was applied. */
   readonly effects = new Map<string, number>();
   private readonly live = new Set<string>();
   private readonly results = new Map<string, CallOutcome<unknown>>();
@@ -41,7 +41,7 @@ export class FakeParticipant extends OperationInvoker {
     this.createdAt = options.createdAt ?? new Date(0);
   }
 
-  /** Encola resultados para las siguientes llamadas de `operationId`. Un `Error` se lanza. */
+  /** Queues results for the next calls of `operationId`. An `Error` is thrown. */
   script(
     operationId: string,
     ...outcomes: (CallOutcome<unknown> | Error)[]
@@ -66,14 +66,14 @@ export class FakeParticipant extends OperationInvoker {
     );
   }
 
-  /** Llaves de idempotencia con las que se llamó a `operationId`, en orden de llegada. */
+  /** Idempotency keys `operationId` was called with, in order of arrival. */
   keysOf(operationId: string): string[] {
     return this.calls
       .filter((call) => call.operationId === operationId)
       .map((call) => call.idempotencyKey);
   }
 
-  /** Llamadas recibidas con esta llave de idempotencia. */
+  /** Calls received with this idempotency key. */
   callsWithKey(key: string): RecordedCall[] {
     return this.calls.filter((call) => call.idempotencyKey === key);
   }

@@ -3,16 +3,16 @@ import { CallOutcome, type BusinessErrorOutcome } from '@platform/primitives';
 import { OperationMetadata } from './operation-metadata.js';
 
 /**
- * Entrada que rompe el contrato: error de negocio
- * `PLATFORM.VALIDATION.INVALID_INPUT` con `details.fieldErrors`. El cliente lo
- * devuelve antes de cualquier llamada de red y el router devuelve el mismo
- * resultado, así quien llama maneja el caso de una sola forma. Nunca se guarda.
+ * Input that breaks the contract: business error
+ * `PLATFORM.VALIDATION.INVALID_INPUT` with `details.fieldErrors`. The client
+ * returns it before any network call and the router returns the same
+ * result, so the caller handles the case in a single way. It is never stored.
  */
 export interface InputViolationOutcome extends BusinessErrorOutcome {
   readonly details: { readonly fieldErrors: readonly FieldError[] };
 }
 
-/** Construye el resultado de una entrada que rompe el contrato, igual en los dos lados de la llamada. */
+/** Builds the result of an input that breaks the contract, the same on both sides of the call. */
 export class InputViolation {
   static outcome(
     operationId: string,

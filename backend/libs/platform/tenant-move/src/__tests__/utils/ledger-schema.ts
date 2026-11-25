@@ -1,6 +1,6 @@
-/** Esquema de las tablas de prueba, con RLS por tenant como las tablas de un servicio. */
+/** Schema of the test tables, with per-tenant RLS like a service's tables. */
 export class LedgerSchema {
-  /** La barrera de escritura y el avance de la verificación, que en un servicio crean las migraciones de la plataforma. */
+  /** The write fence and the verification progress, which the platform migrations create in a service. */
   static readonly PLATFORM: readonly string[] = [
     'CREATE TABLE tenant_write_fences (tenant_id text PRIMARY KEY, move_id text NOT NULL, created_at timestamptz NOT NULL, switched_at timestamptz)',
     `CREATE TABLE tenant_move_checkpoints (

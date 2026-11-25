@@ -4,7 +4,7 @@ import type {
   TenantLifecycle,
 } from '@contracts/identity';
 
-/** Vista de solo lectura de un tenant. */
+/** Read-only view of a tenant. */
 export interface TenantSnapshot {
   readonly id: string;
   readonly slug: string;

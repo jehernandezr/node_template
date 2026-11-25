@@ -17,13 +17,13 @@ import { CollectInvoice } from './collect-invoice.use-case.js';
 import { IssueInvoice } from './issue-invoice.use-case.js';
 
 /**
- * Cierra los periodos vencidos (la prueba que termina se activa sin factura) y después cobra cada factura a la que le
- * toca cobro: las recién emitidas, las que una corrida anterior no alcanzó y los reintentos de las rechazadas. Corre a
- * una hora fija de cada hora en UTC y no cada tanto desde el arranque: con despliegues seguidos un intervalo de un día
- * no llegaría a cumplirse nunca. Cerrar y cobrar son idempotentes, así que repetirlo en el día no factura dos veces.
- * El cobro va fuera de la transacción de la factura porque es una llamada externa. Entre factura y factura respeta la
- * señal del job: pasado su plazo suelta el lock y otra réplica puede empezar. Un tenant que falla no detiene a los
- * demás: la siguiente corrida lo retoma.
+ * Closes expired periods (an ending trial is activated without an invoice) and then charges every invoice that is due
+ * for collection: newly issued ones, the ones a previous run did not reach and the retries of rejected ones. Runs at
+ * a fixed minute of every hour in UTC rather than periodically from startup: with frequent deployments a one-day
+ * interval would never elapse. Closing and charging are idempotent, so repeating it within the day does not invoice twice.
+ * The charge happens outside the invoice transaction because it is an external call. Between invoices it honors the
+ * job signal: once its deadline passes it releases the lock and another replica can start. A failing tenant does not
+ * stop the others: the next run picks it up.
  */
 @Injectable()
 export class CloseInvoicePeriodsJob extends ScheduledJob {
@@ -47,9 +47,9 @@ export class CloseInvoicePeriodsJob extends ScheduledJob {
   }
 
   /**
-   * Cierra los periodos vencidos y cobra las facturas a las que les toca, revisando la señal entre tenant y tenant.
-   * @param context Contexto de la corrida, con su señal de aborto.
-   * @throws AbortError si la señal se dispara a mitad de la corrida.
+   * Closes expired periods and charges the due invoices, checking the signal between tenants.
+   * @param context Run context, with its abort signal.
+   * @throws AbortError if the signal fires in the middle of the run.
    */
   async run(context: JobContext): Promise<void> {
     await this.closeDuePeriods(context.signal);

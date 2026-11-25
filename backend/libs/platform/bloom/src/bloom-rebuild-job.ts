@@ -13,11 +13,11 @@ import { PartitionedBloomFilter } from './partitioned-bloom-filter.js';
 import { RebuildableBloomFilter } from './rebuildable-bloom-filter.js';
 
 /**
- * Job que reconstruye un filtro desde su fuente de verdad. Es exclusivo: un solo proceso del clúster
- * lo corre a la vez. El `JobRunner` de scheduling lo descubre por `instanceof ScheduledJob`.
+ * Job that rebuilds a filter from its source of truth. It is exclusive: only one process in the cluster
+ * runs it at a time. The scheduling `JobRunner` discovers it through `instanceof ScheduledJob`.
  */
 export class BloomRebuildJob extends ScheduledJob {
-  /** Tiempo máximo de una corrida. Una reconstrucción lee toda la fuente, así que dura bastante más que un job típico. */
+  /** Maximum duration of a run. A rebuild reads the whole source, so it takes much longer than a typical job. */
   static readonly TIMEOUT_MS = 30 * 60 * 1000;
 
   override readonly name: string;
@@ -39,8 +39,8 @@ export class BloomRebuildJob extends ScheduledJob {
   }
 
   /**
-   * Reconstruye el filtro. Si la fuente falla, el filtro viejo se conserva y el error se propaga.
-   * @throws InvalidParametersError cuando el filtro no se puede reconstruir.
+   * Rebuilds the filter. If the source fails, the old filter is kept and the error propagates.
+   * @throws InvalidParametersError when the filter cannot be rebuilt.
    */
   async run(context: JobContext): Promise<void> {
     if (this.filter instanceof PartitionedBloomFilter) {

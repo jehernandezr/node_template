@@ -1,18 +1,18 @@
 import { ResilienceGuard } from '../errors/resilience-guard.js';
 
 /**
- * Nombre de una política de resiliencia. Un valor de objeto en lugar de un
- * enum cerrado: la librería trae `Cache` y `Database`, y cada servicio crea las
- * suyas con `PolicyName.of` sin editar la librería.
+ * Name of a resilience policy. A value object instead of a
+ * closed enum: the library ships `Cache` and `Database`, and each service creates its
+ * own with `PolicyName.of` without editing the library.
  */
 export class PolicyName {
-  /** Forma de un nombre: minúsculas, dígitos, punto, guion y guion bajo. */
+  /** Shape of a name: lowercase letters, digits, dot, hyphen and underscore. */
   static readonly PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
   static readonly Cache = new PolicyName('cache');
   static readonly Database = new PolicyName('database');
 
-  /** Política propia del servicio. Dos nombres con el mismo `value` son la misma política. */
+  /** The service's own policy. Two names with the same `value` are the same policy. */
   static of(value: string): PolicyName {
     return new PolicyName(
       ResilienceGuard.instance.matches('name', value, PolicyName.PATTERN),

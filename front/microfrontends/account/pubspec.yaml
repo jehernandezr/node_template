@@ -1,5 +1,5 @@
 name: mf_account
-description: "Microfrontend de la cuenta: sesiones, dispositivos, seguridad y acuerdos."
+description: "Account microfrontend: sessions, devices, security and agreements."
 publish_to: none
 version: 0.0.1
 

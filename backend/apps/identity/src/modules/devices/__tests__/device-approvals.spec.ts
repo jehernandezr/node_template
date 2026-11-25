@@ -18,7 +18,7 @@ import { NodeDeviceSignatureVerifier } from '../infrastructure/node-device-signa
 import { DeviceApprovalsUseCase } from '../application/device-approvals.use-case.js';
 import { SignedDeviceRequest } from '../application/signed-device-request.js';
 
-/** Dispositivos en memoria, sin separar por usuario más que por la llave. */
+/** In-memory devices, separated by user only through the key. */
 class InMemoryDeviceRepository extends DeviceRepository {
   private readonly devices = new Map<string, Device>();
 
@@ -146,7 +146,7 @@ describe('DeviceApprovalsUseCase deny', () => {
     expect(alerts.raised).toEqual([
       expect.objectContaining({ type: SecurityAlertType.DeviceApprovalDenied }),
     ]);
-    // El fallo cuenta como uno de inicio de sesión: los que faltan para el bloqueo bajan en uno.
+    // The failure counts as a sign-in failure: the remaining attempts before lockout drop by one.
     for (let i = 0; i < 3; i += 1) {
       await lockout.recordFailure(account, ATTEMPT_IP);
     }

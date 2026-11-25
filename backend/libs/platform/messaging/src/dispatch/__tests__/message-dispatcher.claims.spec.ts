@@ -38,13 +38,13 @@ function envelopeFor(data: unknown, id = 'msg-1'): unknown {
   });
 }
 
-/** Deja correr las callbacks de promesas pendientes. */
+/** Lets pending promise callbacks run. */
 const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-/** Promesa que nunca se resuelve: un manejador que se queda corriendo. */
+/** Promise that never resolves: a handler that keeps running. */
 const neverSettles = () => new Promise<void>(() => undefined);
 
-/** Promesa que el test resuelve a mano, para mantener un manejador en curso. */
+/** Promise the test resolves by hand, to keep a handler in progress. */
 function gate(): { promise: Promise<void>; open: () => void } {
   let open = (): void => undefined;
   const promise = new Promise<void>((resolve) => {
@@ -80,7 +80,7 @@ describe('MessageDispatcher three-state claims', () => {
       receiveCount: 1,
       retryPolicy: policy,
     });
-    // Deja que la primera entrega tome el claim y entre al manejador.
+    // Lets the first delivery take the claim and enter the handler.
     await flush();
 
     const redelivery = await dispatcher.dispatch(raw, {
@@ -167,7 +167,7 @@ describe('MessageDispatcher three-state claims', () => {
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), { receiveCount: 1 });
     expect(store.claims[0]).toMatchObject({ minLeaseMs: 120_000 });
 
-    // La entrega reporta un visibility timeout extendido más largo.
+    // The delivery reports a longer extended visibility timeout.
     await dispatcher.dispatch(envelopeFor({ id: 't1' }), {
       receiveCount: 1,
       visibilityTimeoutMs: 600_000,
@@ -206,7 +206,7 @@ describe('MessageDispatcher three-state claims', () => {
     dispatcher.register(TaskUpdated, handler.handle);
     const raw = envelopeFor({ id: 't1' });
 
-    // Un consumidor tomó el claim con el mismo contenido y murió sin completarlo.
+    // A consumer took the claim with the same content and died without completing it.
     const crashed = new MessageDispatcher({
       consumer: 'notifications',
       processed: store,
@@ -234,7 +234,7 @@ describe('MessageDispatcher three-state claims', () => {
   it('completes with the claim token: a handler that outlived its lease cannot complete', async () => {
     const { dispatcher, clock } = setup(1_000);
     const slow = gate();
-    // La primera llamada espera a `slow`; la segunda termina de inmediato.
+    // The first call waits for `slow`; the second finishes immediately.
     dispatcher.register(
       TaskUpdated,
       new RecordingMessageHandler({ gates: [slow.promise] }).handle,
@@ -247,7 +247,7 @@ describe('MessageDispatcher three-state claims', () => {
     });
     await flush();
 
-    // Vence el lease; una reentrega toma el claim y termina primero.
+    // The lease expires; a redelivery takes the claim and finishes first.
     clock.advance(10_000);
     expect(
       (await dispatcher.dispatch(raw, { receiveCount: 2, retryPolicy: policy }))
@@ -255,8 +255,8 @@ describe('MessageDispatcher three-state claims', () => {
     ).toBe(DispatchOutcome.Processed);
 
     slow.open();
-    // La completión vencida se rechaza y se informa para reentrega, que
-    // entonces ve el claim completado.
+    // The expired completion is rejected and reported for redelivery, which
+    // then sees the completed claim.
     expect(await first).toMatchObject({
       outcome: DispatchOutcome.RetryLater,
       code: 'PLATFORM.PRIMITIVES.STALE_CLAIM',

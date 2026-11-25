@@ -1,12 +1,12 @@
 import type { z } from 'zod';
 
 /**
- * Grupo de variables de entorno con nombre y esquema. Cada librería declara la
- * suya y el servicio la lee con `AppConfig.get(section)`; así un servicio no
- * recibe variables que no usa.
+ * Named group of environment variables with a schema. Each library declares
+ * its own and the service reads it with `AppConfig.get(section)`; this way a service does not
+ * receive variables it does not use.
  */
 export class ConfigSection<T> {
-  /** Token propio de la sección, para que el cableado no use cadenas sueltas. */
+  /** The section's own token, so the wiring does not use loose strings. */
   readonly token: symbol;
 
   constructor(

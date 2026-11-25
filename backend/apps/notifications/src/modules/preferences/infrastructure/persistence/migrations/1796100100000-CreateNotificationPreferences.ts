@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** Una fila de preferencias por usuario, en su shard. */
+/** One preferences row per user, in their shard. */
 export class CreateNotificationPreferences1796100100000 implements MigrationInterface {
   readonly name = 'CreateNotificationPreferences1796100100000';
 

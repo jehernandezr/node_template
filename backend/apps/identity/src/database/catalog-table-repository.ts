@@ -2,13 +2,13 @@ import type { CatalogDataSource } from '@platform/persistence';
 import type { EntityManager } from 'typeorm';
 
 /**
- * Base de los repositorios de los índices de identity en el catálogo global (emails, credenciales,
- * slugs, prefijos). Son tablas sin id propio ni versión, así que no usan `CatalogRepository`.
+ * Base for the repositories of identity's indexes in the global catalog (emails, credentials,
+ * slugs, prefixes). They are tables without their own id or version, so they do not use `CatalogRepository`.
  */
 export abstract class CatalogTableRepository {
   protected constructor(private readonly catalog: CatalogDataSource) {}
 
-  /** Lee del primario: un índice se consulta justo después de escribirse. */
+  /** Reads from the primary: an index is queried right after it is written. */
   protected async read<T>(
     fn: (manager: EntityManager) => Promise<T>,
   ): Promise<T> {

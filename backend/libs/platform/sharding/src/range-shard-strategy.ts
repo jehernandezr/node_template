@@ -3,20 +3,20 @@ import { ShardingErrorCode } from './errors/sharding-error-code.enum.js';
 import type { ShardingStrategy } from './sharding-strategy.js';
 import { ShardStrategy } from './model/shard-strategy.enum.js';
 
-/** Cota superior (inclusiva) de un rango de claves y el shard que lo sirve. */
+/** Upper bound (inclusive) of a key range and the shard that serves it. */
 export interface RangeBoundary {
   readonly upTo: string;
   readonly shard: string;
 }
 
-/** Orden total sobre las claves. Por defecto compara unidades de código UTF-16. */
+/** Total order over keys. Defaults to comparing UTF-16 code units. */
 export type KeyComparator = (a: string, b: string) => number;
 
 const compareCodeUnits: KeyComparator = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
- * Asigna claves a shards por rangos ordenados.
- * Una clave va al primer límite con `key <= upTo`; las claves por encima de todos los límites van al último shard.
+ * Assigns keys to shards by ordered ranges.
+ * A key goes to the first bound with `key <= upTo`; keys above every bound go to the last shard.
  */
 export class RangeShardStrategy implements ShardingStrategy {
   readonly kind = ShardStrategy.Range;
@@ -25,8 +25,8 @@ export class RangeShardStrategy implements ShardingStrategy {
   private readonly compare: KeyComparator;
 
   /**
-   * @param compare Orden de los límites y de las claves, por ejemplo un comparador numérico para claves numéricas.
-   * @throws ShardingError `InvalidConfiguration` por ids de shard vacíos o límites repetidos.
+   * @param compare Order of the bounds and keys, for example a numeric comparator for numeric keys.
+   * @throws ShardingError `InvalidConfiguration` for empty shard ids or repeated bounds.
    */
   constructor(
     boundaries: readonly RangeBoundary[],
@@ -61,7 +61,7 @@ export class RangeShardStrategy implements ShardingStrategy {
     this.compare = compare;
   }
 
-  /** @throws ShardingError `UnknownShard` cuando el shard del rango no forma parte del grupo. */
+  /** @throws ShardingError `UnknownShard` when the range shard is not part of the group. */
   locate(key: string, group: readonly string[]): string {
     const shard =
       this.boundaries.find((boundary) => this.compare(key, boundary.upTo) <= 0)

@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { STEP_A, STEP_B, STEP_C } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Tres pasos que crean recursos y se deshacen en orden inverso. */
+/** Three steps that create resources and are undone in reverse order. */
 export class ThreeStepSaga extends SagaDefinition<SampleState> {
   readonly type = 'three-step';
 

@@ -10,9 +10,9 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { AuthenticateApiKey } from '../application/authenticate-api-key.use-case.js';
 
 /**
- * Resuelve las API keys que llegan a las rutas de identity sin pasar por la API interna, con la IP del
- * cliente de la petición. Una key que no vale es `undefined`: el autenticador de la plataforma responde por
- * ella.
+ * Resolves the API keys that reach identity's routes without going through the internal API, with the client IP
+ * of the request. An invalid key is `undefined`: the platform authenticator responds for
+ * it.
  */
 @Injectable()
 export class IdentityApiKeyResolver extends ApiKeyResolver {

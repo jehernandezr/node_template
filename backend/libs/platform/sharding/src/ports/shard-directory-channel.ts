@@ -4,9 +4,9 @@ import type {
 } from '../model/shard-directory-changed.js';
 
 /**
- * Canal de cambios del directorio: publica y suscribe. Es el token con el que
- * `ShardingModule` recibe el canal del adaptador (`ValkeyShardDirectoryChannel`)
- * o el local (`InProcessDirectoryChannel`).
+ * Directory change channel: publishes and subscribes. It is the token through which
+ * `ShardingModule` receives the adapter channel (`ValkeyShardDirectoryChannel`)
+ * or the local one (`InProcessDirectoryChannel`).
  */
 export abstract class ShardDirectoryChannel {
   abstract publish(event: ShardDirectoryChanged): Promise<void>;

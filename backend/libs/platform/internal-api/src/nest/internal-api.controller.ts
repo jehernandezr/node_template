@@ -26,8 +26,8 @@ import type { InternalRequest } from '../transport/internal-request.js';
 import type { InternalResponse } from '../transport/internal-response.js';
 
 /**
- * Borde HTTP de las llamadas entre servicios. No pasa por los guards de
- * autenticación de usuarios: la llamada se autentica con la firma de servicio.
+ * HTTP edge of service-to-service calls. It does not go through the user
+ * authentication guards: the call is authenticated with the service signature.
  */
 @Controller(InternalApiRoute.BASE)
 export class InternalApiController {
@@ -40,16 +40,16 @@ export class InternalApiController {
   ) {}
 
   /**
-   * Responde siempre 200 con `{ outcome }`: el protocolo lleva el resultado en el cuerpo.
-   * 1. Normaliza las cabeceras con `metaReader.normalize`.
-   * 2. Autentica una `SignableRequest` con método `POST`, ruta `InternalApiRoute.pathOf(operationId)`,
-   *    el cuerpo recibido y las cabeceras normalizadas. Una `InternalApiError` `Unauthenticated`
-   *    sale como `UnauthorizedException` (401), sin más detalle.
-   * 3. El cuerpo debe ser un objeto (`InternalRequest`); la entrada es `body.input`. Si no,
-   *    `BadRequestException` (400). Lo mismo si `metaReader.read` lanza `InvalidRequest`.
-   * 4. Entrega `router.handle(operationId, input, meta)` y devuelve `{ outcome }` sin el
-   *    campo `cause` de un `transient-failure` o un `uncertain`: es un error interno del
-   *    servidor y no sale del proceso.
+   * Always responds 200 with `{ outcome }`: the protocol carries the result in the body.
+   * 1. Normalizes the headers with `metaReader.normalize`.
+   * 2. Authenticates a `SignableRequest` with method `POST`, path `InternalApiRoute.pathOf(operationId)`,
+   *    the received body and the normalized headers. An `InternalApiError` `Unauthenticated`
+   *    goes out as `UnauthorizedException` (401), with no further detail.
+   * 3. The body must be an object (`InternalRequest`); the input is `body.input`. Otherwise,
+   *    `BadRequestException` (400). The same if `metaReader.read` throws `InvalidRequest`.
+   * 4. Delivers `router.handle(operationId, input, meta)` and returns `{ outcome }` without the
+   *    `cause` field of a `transient-failure` or an `uncertain`: it is an internal server error
+   *    and does not leave the process.
    */
   @Post(':operationId')
   @HttpCode(HttpStatus.OK)
@@ -102,7 +102,7 @@ export class InternalApiController {
     }
   }
 
-  /** `cause` es un error interno y no sale del proceso: el cliente recibe solo el motivo. */
+  /** `cause` is an internal error and does not leave the process: the client receives only the reason. */
   private static withoutCause(outcome: Outcome<unknown>): Outcome<unknown> {
     switch (outcome.kind) {
       case CallOutcomeKind.TransientFailure:

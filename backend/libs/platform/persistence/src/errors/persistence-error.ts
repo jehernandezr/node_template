@@ -4,8 +4,8 @@ import type { PersistenceErrorOptions } from './persistence-error-options.js';
 import { PostgresFailureClassifier } from './postgres-failure-classifier.js';
 
 /**
- * Error de la capa de persistencia. `failureKind` y `retryable` salen del código,
- * salvo en `QueryFailed`, donde salen de la causa (SQLSTATE o código de red).
+ * Persistence layer error. `failureKind` and `retryable` come from the code,
+ * except in `QueryFailed`, where they come from the cause (SQLSTATE or network code).
  */
 export class PersistenceError extends PlatformError {
   private static readonly FAILURE_KIND: Readonly<
@@ -45,7 +45,7 @@ export class PersistenceError extends PlatformError {
     this.failureKind = failureKind;
   }
 
-  /** Error de configuración, con la opción que falló y lo que se esperaba. */
+  /** Configuration error, with the option that failed and what was expected. */
   static invalidConfiguration(
     option: string,
     expectation: string,

@@ -1,7 +1,7 @@
 import { RateLimitRule } from '@platform/rate-limit';
 import { RateLimitTier } from './rate-limit-tier.enum.js';
 
-/** Traduce cada `RateLimitTier` a su regla de ventana deslizante. */
+/** Translates each `RateLimitTier` into its sliding window rule. */
 export class RateLimitTierRules {
   private static readonly WINDOW_MS = 60_000;
 

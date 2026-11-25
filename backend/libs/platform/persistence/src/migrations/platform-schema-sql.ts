@@ -1,25 +1,25 @@
 /**
- * Sentencias SQL de las funciones y de la tabla de auditoría de la plataforma. Las usan las
- * migraciones de TypeORM y el runner antiguo, cada sentencia por separado.
+ * SQL statements of the platform functions and audit table. Used by the
+ * TypeORM migrations and the old runner, each statement separately.
  */
 export class PlatformSchemaSql {
   static readonly functionsName = 'PlatformFunctions1794600000001';
   static readonly auditLogName = 'PlatformAuditLog1794600000002';
 
   /**
-   * Funciones de la plataforma en cada shard:
-   * - `platform_uuid_v7()`: UUIDv7 generado en la base, solo para filas que crea
-   *   un trigger (auditoría). Todo lo demás usa el puerto `IdGenerator`.
-   * - `platform_uuid_v7_lower_bound(ts)`: menor UUIDv7 de un instante, para los
-   *   límites de las particiones por rango sobre `id`.
-   * - `platform_ensure_partitions(tabla, intervalo, adelante)`: crea las
-   *   particiones del intervalo actual y de los siguientes. Lo llama un job.
-   * - `platform_detach_partitions_before(tabla, intervalo, corte)`: separa las
-   *   particiones vencidas para archivarlas (retención).
-   * - `platform_reject_mutation(nombre)`: trigger que deja una tabla solo para
-   *   inserciones. El argumento nombra la tabla en el error (en una tabla
-   *   particionada, `TG_TABLE_NAME` sería la partición).
-   * - `platform_audit_row()`: trigger de auditoría (ver `auditTriggerSql`).
+   * Platform functions on each shard:
+   * - `platform_uuid_v7()`: UUIDv7 generated in the database, only for rows created by
+   *   a trigger (audit). Everything else uses the `IdGenerator` port.
+   * - `platform_uuid_v7_lower_bound(ts)`: smallest UUIDv7 of an instant, for the
+   *   bounds of range partitions on `id`.
+   * - `platform_ensure_partitions(table, interval, ahead)`: creates the
+   *   partitions of the current interval and the following ones. Called by a job.
+   * - `platform_detach_partitions_before(table, interval, cutoff)`: detaches the
+   *   expired partitions to archive them (retention).
+   * - `platform_reject_mutation(name)`: trigger that makes a table insert-only.
+   *   The argument names the table in the error (in a partitioned
+   *   table, `TG_TABLE_NAME` would be the partition).
+   * - `platform_audit_row()`: audit trigger (see `auditTriggerSql`).
    */
   static readonly functionsUp: readonly string[] = [
     `CREATE OR REPLACE FUNCTION platform_uuid_v7() RETURNS uuid
@@ -146,9 +146,9 @@ $fn$`,
   ];
 
   /**
-   * `audit_log`: particionada por mes sobre `id` (UUIDv7), solo inserciones, con
-   * una partición `DEFAULT` para que un mes sin partición nunca pierda registros.
-   * La retención se aplica separando particiones, nunca con `DELETE`.
+   * `audit_log`: partitioned by month on `id` (UUIDv7), inserts only, with
+   * a `DEFAULT` partition so that a month without a partition never loses records.
+   * Retention is applied by detaching partitions, never with `DELETE`.
    */
   static readonly auditLogUp: readonly string[] = [
     `CREATE TABLE audit_log (

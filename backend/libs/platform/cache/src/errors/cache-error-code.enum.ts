@@ -1,4 +1,4 @@
-/** Códigos de error estables de `@platform/cache`. */
+/** Stable error codes of `@platform/cache`. */
 export enum CacheErrorCode {
   InvalidArgument = 'PLATFORM.CACHE.INVALID_ARGUMENT',
   KeyTooLong = 'PLATFORM.CACHE.KEY_TOO_LONG',

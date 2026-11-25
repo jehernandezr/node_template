@@ -1,9 +1,9 @@
 import type { ResiliencePolicyConfig } from './resilience-policy-config.js';
 
 /**
- * Ajustes por nombre de política, mezclados sobre las políticas base. Una
- * clave sin base y con `timeoutMs` define una política completa; sin
- * `timeoutMs`, espera a que un `register` la complete.
+ * Overrides by policy name, merged over the base policies. A
+ * key without a base and with `timeoutMs` defines a complete policy; without
+ * `timeoutMs`, it waits for a `register` to complete it.
  */
 export type ResilienceOverrides = Readonly<
   Record<string, Partial<ResiliencePolicyConfig>>

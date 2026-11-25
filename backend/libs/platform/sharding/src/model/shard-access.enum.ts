@@ -1,4 +1,4 @@
-/** Intención de una petición. Leer siempre se permite; escribir exige un tenant `Active`. */
+/** Intent of a request. Reading is always allowed; writing requires an `Active` tenant. */
 export enum ShardAccess {
   Read = 'read',
   Write = 'write',

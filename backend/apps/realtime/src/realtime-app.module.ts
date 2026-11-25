@@ -25,7 +25,7 @@ import { realtimeAppConfigSchema } from './config/realtime-app.config.js';
 })
 class RealtimeAuthSourceModule {}
 
-/** El proceso de `apps/realtime`: verifica tokens, lee el stream de cada usuario y atiende SSE y Socket.IO. */
+/** The `apps/realtime` process: verifies tokens, reads each user's stream and serves SSE and Socket.IO. */
 @Module({})
 export class RealtimeAppModule {
   static forEnv(env: ConfigEnv): DynamicModule {

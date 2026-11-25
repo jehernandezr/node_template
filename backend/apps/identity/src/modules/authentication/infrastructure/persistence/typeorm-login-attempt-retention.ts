@@ -6,7 +6,7 @@ import {
 } from '../../domain/login-attempt-retention.js';
 import { LoginAttemptPartitions } from './login-attempt-partitions.js';
 
-/** Recorre los shards del servicio y mantiene en cada uno las particiones de `login_attempts`. */
+/** Walks the service shards and maintains the `login_attempts` partitions on each one. */
 @Injectable()
 export class TypeOrmLoginAttemptRetention extends LoginAttemptRetention {
   private readonly partitions = new LoginAttemptPartitions();

@@ -1,10 +1,10 @@
 variable "state_bucket" {
-  description = "Bucket S3 con los estados del ambiente. Las claves son <región>/<stack>/terraform.tfstate."
+  description = "S3 bucket with the environment states. Keys are <region>/<stack>/terraform.tfstate."
   type        = string
 }
 
 variable "state_region" {
-  description = "Región del bucket de estados. Null usa la región del stack."
+  description = "Region of the state bucket. Null uses the stack region."
   type        = string
   default     = null
 }
@@ -26,7 +26,7 @@ locals {
   remote_state_config = { bucket = var.state_bucket, region = coalesce(var.state_region, var.region) }
 
   network = data.terraform_remote_state.network.outputs
-  # Terraform no guarda en el estado las salidas nulas: se completan con null.
+  # Terraform does not store null outputs in the state: they are filled in with null.
   platform  = merge(local.platform_defaults, data.terraform_remote_state.platform.outputs)
   data      = data.terraform_remote_state.data.outputs
   messaging = data.terraform_remote_state.messaging.outputs

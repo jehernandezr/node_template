@@ -27,7 +27,7 @@ const ROUTES: readonly RouteDefinition[] = Object.values(
 );
 const UNKNOWN_NOTIFICATION = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9d99';
 
-/** Un cuerpo válido por ruta, así la respuesta depende solo del acceso. */
+/** One valid body per route, so the response depends only on access. */
 const BODIES: Partial<Record<string, unknown>> = {
   [NotificationsRoute.SavePreferences]: {
     enabled: [],

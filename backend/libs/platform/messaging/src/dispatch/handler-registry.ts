@@ -8,24 +8,24 @@ import { MessagingError } from '../errors/messaging-error.js';
 import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 import type { MessageHandler } from './message-handler.js';
 
-/** Entrega cuyo payload pasó el contrato, lista para correr su manejador. */
+/** Delivery whose payload passed the contract, ready to run its handler. */
 export interface PreparedDelivery {
   readonly envelope: MessageEnvelope;
   readonly run: () => void | Promise<void>;
 }
 
-/** Manejador registrado, atado al esquema de su contrato. */
+/** Registered handler, bound to the schema of its contract. */
 export interface Registration {
-  /** Valida `data` con el contrato; un `string` es el mensaje del error de validación. */
+  /** Validates `data` with the contract; a `string` is the validation error message. */
   prepare(envelope: MessageEnvelope): PreparedDelivery | string;
 }
 
-/** Manejadores por tipo de mensaje. Un manejador por tipo. */
+/** Handlers by message type. One handler per type. */
 export class HandlerRegistry {
   private readonly registrations = new Map<string, Registration>();
 
   /**
-   * @throws MessagingError `DuplicateHandler` si el tipo ya tiene manejador.
+   * @throws MessagingError `DuplicateHandler` if the type already has a handler.
    */
   register<M extends MessageDefinition>(
     contract: M,
@@ -43,12 +43,12 @@ export class HandlerRegistry {
     );
   }
 
-  /** Registro del tipo, o `undefined` si nadie lo atiende. */
+  /** Registration of the type, or `undefined` if nobody handles it. */
   find(type: string): Registration | undefined {
     return this.registrations.get(type);
   }
 
-  /** Ata el esquema del contrato al manejador: el payload llega ya parseado. */
+  /** Binds the contract schema to the handler: the payload arrives already parsed. */
   private bind<S extends z.ZodType>(
     schema: S,
     handler: MessageHandler<z.output<S>>,

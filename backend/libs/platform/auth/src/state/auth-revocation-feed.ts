@@ -1,7 +1,7 @@
 import type { RevocationHandler } from './revocation-handler.js';
 
-/** Avisos inmediatos de cada sesión revocada (canal `auth:revocations`). La entrega es como máximo una vez: el índice cubre lo que se pierda. */
+/** Immediate notices of each revoked session (`auth:revocations` channel). Delivery is at most once: the index covers what is lost. */
 export abstract class AuthRevocationFeed {
-  /** Devuelve la función que da de baja el handler. */
+  /** Returns the function that unsubscribes the handler. */
   abstract subscribe(handler: RevocationHandler): Promise<() => Promise<void>>;
 }

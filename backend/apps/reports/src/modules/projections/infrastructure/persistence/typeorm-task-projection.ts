@@ -13,8 +13,8 @@ import {
 } from '../../domain/task-projection.js';
 
 /**
- * `TaskProjection` sobre `proj_tasks`. Cada columna se decide por la versión: el estado y la fecha de cierre
- * los pone el cambio más nuevo, y las fechas de creación y de borrado se conservan una vez conocidas.
+ * `TaskProjection` over `proj_tasks`. Each column is decided by the version: the status and the completion date
+ * are set by the newest change, and the creation and deletion dates are kept once known.
  */
 @Injectable()
 export class TypeOrmTaskProjection

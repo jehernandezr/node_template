@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { InternalApiErrorCode } from './internal-api-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/internal-api`; ninguno llega al cliente. */
+/** Catalog of the `@platform/internal-api` codes; none of them reaches the client. */
 export const internalApiErrorCatalog = defineErrorCatalog(
   InternalApiErrorCode,
   {

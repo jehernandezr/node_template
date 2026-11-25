@@ -5,8 +5,8 @@ import {
 import { BillingReference } from '../enums/identifiers.enum.js';
 
 /**
- * Tópico de billing con los eventos que identity consume. Se apunta por nombre
- * porque billing importa a identity (ver `BillingReference`).
+ * Billing topic with the events identity consumes. It is referenced by name
+ * because billing imports identity (see `BillingReference`).
  */
 export const BillingEventsReference = defineTopicReference({
   name: BillingReference.Topic,
@@ -15,11 +15,11 @@ export const BillingEventsReference = defineTopicReference({
     BillingReference.SubscriptionReactivated,
     BillingReference.EntitlementsChanged,
   ],
-  description: 'Eventos de billing que cambian el acceso de un tenant.',
+  description: 'Billing events that change the access of a tenant.',
 });
 
-/** Comando de billing con el que identity reporta su uso de API. */
+/** Billing command with which identity reports its API usage. */
 export const RecordUsageReference = defineCommandReference({
   type: BillingReference.RecordUsage,
-  description: 'Registra el uso de un tenant medido por identity.',
+  description: 'Records the usage of a tenant metered by identity.',
 });

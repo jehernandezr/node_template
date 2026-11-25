@@ -6,20 +6,20 @@ import {
 } from './sdk-responder-table.js';
 
 /**
- * `SQSClient` falso: responde con lo registrado por clase de comando y cuenta
- * los cierres. Un comando sin respuesta devuelve `{}`, salvo `ReceiveMessage`,
- * que imita el long polling: espera hasta que el llamador aborta.
+ * Fake `SQSClient`: responds with what was registered per command class and counts
+ * the closes. A command without a response returns `{}`, except `ReceiveMessage`,
+ * which mimics long polling: it waits until the caller aborts.
  */
 export class FakeSqsClient extends SQSClient {
-  /** Veces que se llamó `destroy()`. */
+  /** Times `destroy()` was called. */
   closes = 0;
-  /** `ReceiveMessage` que siguen esperando (long polling sin cerrar). */
+  /** `ReceiveMessage` calls still waiting (unclosed long polling). */
   pendingReceives = 0;
-  /** `pendingReceives` en el momento de `destroy()`, o `undefined` si no se cerró. */
+  /** `pendingReceives` at the moment of `destroy()`, or `undefined` if it was not closed. */
   pendingReceivesAtClose: number | undefined;
   private readonly table = new SdkResponderTable();
 
-  /** Credenciales fijas: así nada consulta la cadena por defecto del SDK. */
+  /** Fixed credentials: so nothing queries the SDK's default chain. */
   static readonly CREDENTIALS = {
     accessKeyId: 'AKIDFAKE',
     secretAccessKey: 'fake-secret',
@@ -41,7 +41,7 @@ export class FakeSqsClient extends SQSClient {
     return this;
   }
 
-  /** Respuesta de un solo uso; después vuelve a la de `on` o a la de por defecto. */
+  /** One-time response; afterwards it goes back to the `on` one or the default. */
   once<I extends object>(
     command: SdkCommandClass<I>,
     responder: (input: I) => unknown,
@@ -54,8 +54,8 @@ export class FakeSqsClient extends SQSClient {
     return this.table.sentOf(command);
   }
 
-  // El SDK declara `send` con sobrecargas genéricas que una clase derivada no
-  // puede reescribir; este es el único cast, y fija el tipo al del original.
+  // The SDK declares `send` with generic overloads that a derived class cannot
+  // override; this is the only cast, and it pins the type to the original's.
   override send = (async (
     command: SdkCommand,
     options?: { abortSignal?: AbortSignal },

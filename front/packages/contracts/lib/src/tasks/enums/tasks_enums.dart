@@ -1,11 +1,11 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Estado de una tarea.
+/// Status of a task.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TaskStatus {
   open('open'),
   inProgress('in_progress'),
@@ -13,10 +13,10 @@ enum TaskStatus {
 
   const TaskStatus(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TaskStatus? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -25,10 +25,10 @@ enum TaskStatus {
   }
 }
 
-/// Campo de una tarea que un cambio puede modificar.
+/// Task field that a change can modify.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TaskField {
   title('title'),
   description('description'),
@@ -36,10 +36,10 @@ enum TaskField {
 
   const TaskField(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TaskField? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -48,12 +48,12 @@ enum TaskField {
   }
 }
 
-/// Códigos de error públicos del contrato `tasks`.
+/// Public error codes of the `tasks` contract.
 ///
-/// Solo incluye los códigos con audiencia `public`: los internos nunca
-/// llegan al cliente. [messageKey] es la clave del mensaje en el ARB.
+/// Only includes codes with `public` audience: internal ones never
+/// reach the client. [messageKey] is the message key in the ARB.
 enum TasksErrorCode {
-  /// La tarea no existe en el tenant activo.
+  /// The task does not exist in the active tenant.
   taskNotFound(
     'TASKS.TASK.NOT_FOUND',
     httpStatus: 404,
@@ -61,7 +61,7 @@ enum TasksErrorCode {
     messageKey: 'error_tasks_task_not_found',
   ),
 
-  /// La tarea cambió desde que se leyó: la versión esperada ya no es la actual.
+  /// The task changed since it was read: the expected version is no longer the current one.
   taskVersionConflict(
     'TASKS.TASK.VERSION_CONFLICT',
     httpStatus: 409,
@@ -69,7 +69,7 @@ enum TasksErrorCode {
     messageKey: 'error_tasks_task_version_conflict',
   ),
 
-  /// El texto de búsqueda es más corto que el mínimo permitido.
+  /// The search text is shorter than the allowed minimum.
   searchQueryTooShort(
     'TASKS.SEARCH.QUERY_TOO_SHORT',
     httpStatus: 400,
@@ -84,22 +84,22 @@ enum TasksErrorCode {
     required this.messageKey,
   });
 
-  /// Código exacto que envía el backend, por ejemplo `TASKS.TASK.NOT_FOUND`.
+  /// Exact code sent by the backend, for example `TASKS.TASK.NOT_FOUND`.
   final String code;
 
-  /// Estado HTTP con el que responde el backend.
+  /// HTTP status the backend responds with.
   final int httpStatus;
 
-  /// Si el cliente puede reintentar la misma petición.
+  /// Whether the client may retry the same request.
   final bool retryable;
 
-  /// Clave ARB del mensaje para personas.
+  /// ARB key of the human-readable message.
   final String messageKey;
 
-  /// Igual a [code].
+  /// Same as [code].
   String get wireCode => code;
 
-  /// Valor con [code], o null si este cliente no lo conoce.
+  /// Value with [code], or null if this client does not know it.
   static TasksErrorCode? fromCode(String code) {
     for (final value in values) {
       if (value.code == code) return value;
@@ -107,14 +107,14 @@ enum TasksErrorCode {
     return null;
   }
 
-  /// Igual a [fromCode].
+  /// Same as [fromCode].
   static TasksErrorCode? tryParse(String code) => fromCode(code);
 }
 
-/// Enum `TasksRoute` del contrato `tasks`.
+/// Enum `TasksRoute` of the `tasks` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TasksRoute {
   listTasks('tasks.task.list'),
   getTask('tasks.task.get'),
@@ -124,10 +124,10 @@ enum TasksRoute {
 
   const TasksRoute(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TasksRoute? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -136,10 +136,10 @@ enum TasksRoute {
   }
 }
 
-/// Enum `TasksOperation` del contrato `tasks`.
+/// Enum `TasksOperation` of the `tasks` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TasksOperation {
   listChanges('tasks.tasks.list-changes.v1'),
   eraseUserData('tasks.user-data.erase.v1'),
@@ -153,10 +153,10 @@ enum TasksOperation {
 
   const TasksOperation(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TasksOperation? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -165,10 +165,10 @@ enum TasksOperation {
   }
 }
 
-/// Enum `TasksEvent` del contrato `tasks`.
+/// Enum `TasksEvent` of the `tasks` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TasksEvent {
   taskCreated('tasks.task.created.v1'),
   taskUpdated('tasks.task.updated.v1'),
@@ -176,10 +176,10 @@ enum TasksEvent {
 
   const TasksEvent(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TasksEvent? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;
@@ -188,19 +188,19 @@ enum TasksEvent {
   }
 }
 
-/// Enum `TasksTopic` del contrato `tasks`.
+/// Enum `TasksTopic` of the `tasks` contract.
 ///
-/// [tryParse] devuelve null para valores que este cliente no conoce,
-/// así un valor nuevo del backend se ignora sin romper.
+/// [tryParse] returns null for values this client does not know,
+/// so a new backend value is ignored instead of breaking.
 enum TasksTopic {
   events('tasks-events');
 
   const TasksTopic(this.wireCode);
 
-  /// Valor que usa el backend.
+  /// Value used by the backend.
   final String wireCode;
 
-  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  /// Value whose `wireCode` is [code], or null if unknown.
   static TasksTopic? tryParse(String code) {
     for (final value in values) {
       if (value.wireCode == code) return value;

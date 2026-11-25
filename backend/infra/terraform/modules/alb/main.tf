@@ -6,7 +6,7 @@ locals {
   base_name        = "${var.name_prefix}-${var.name}"
   logs_bucket_name = "${local.base_name}-logs-${data.aws_caller_identity.current.account_id}"
   tls              = var.certificate_arn != null
-  # Puerto de entrada: 443 con certificado; 80 solo en un ALB interno sin certificado.
+  # Listener port: 443 with a certificate; 80 only on an internal ALB without a certificate.
   listener_port = local.tls ? 443 : 80
 }
 
@@ -16,12 +16,12 @@ resource "terraform_data" "input_check" {
   lifecycle {
     precondition {
       condition     = var.internal || local.tls
-      error_message = "Un ALB internet-facing requiere certificate_arn: solo un ALB interno puede escuchar en HTTP."
+      error_message = "An internet-facing ALB requires certificate_arn: only an internal ALB can listen on HTTP."
     }
   }
 }
 
-# Los access logs del ALB solo admiten cifrado SSE-S3; ELB no puede usar una CMK de KMS.
+# ALB access logs only support SSE-S3 encryption; ELB cannot use a KMS CMK.
 resource "aws_s3_bucket" "logs" {
   bucket        = local.logs_bucket_name
   force_destroy = var.access_logs_force_destroy
@@ -46,7 +46,7 @@ resource "aws_s3_bucket_ownership_controls" "logs" {
   }
 }
 
-# Los access logs del ALB solo admiten SSE-S3, no KMS.
+# ALB access logs only support SSE-S3, not KMS.
 # trivy:ignore:AVD-AWS-0132
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
   bucket = aws_s3_bucket.logs.id
@@ -112,7 +112,7 @@ resource "aws_security_group" "this" {
   tags = merge(var.tags, { Name = local.base_name })
 }
 
-# La salida hacia cada servicio la declara service-fargate al conectar su target group.
+# Egress to each service is declared by service-fargate when it attaches its target group.
 resource "aws_vpc_security_group_ingress_rule" "https_ipv4" {
   for_each = toset(var.ingress_cidr_blocks)
 
@@ -168,7 +168,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_prefix_list" {
   description       = "Entrada desde una prefix list"
 }
 
-# Entrada desde otros security groups, por ejemplo el VPC link de API Gateway hacia un ALB interno.
+# Ingress from other security groups, for example the API Gateway VPC link to an internal ALB.
 resource "aws_vpc_security_group_ingress_rule" "from_security_group" {
   count = length(var.ingress_security_group_ids)
 
@@ -180,8 +180,8 @@ resource "aws_vpc_security_group_ingress_rule" "from_security_group" {
   description                  = "Entrada desde un security group autorizado"
 }
 
-# El ALB público es la entrada del tiempo real (Socket.IO y SSE). El interno solo es
-# alcanzable dentro de la VPC (VPC link de API Gateway).
+# The public ALB is the entry point for real-time traffic (Socket.IO and SSE). The internal one is only
+# reachable inside the VPC (API Gateway VPC link).
 # trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "this" {
   name               = local.base_name
@@ -220,7 +220,7 @@ resource "aws_lb_target_group" "this" {
 
   load_balancing_cross_zone_enabled = each.value.load_balancing_cross_zone
 
-  # Sin sesiones pegajosas: Socket.IO usa solo WebSocket y Valkey comparte el estado.
+  # No sticky sessions: Socket.IO uses only WebSocket and Valkey shares the state.
   stickiness {
     type    = "lb_cookie"
     enabled = false
@@ -238,9 +238,9 @@ resource "aws_lb_target_group" "this" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-${each.key}" })
 }
 
-# Con certificado, el listener HTTP solo redirige a HTTPS. Sin certificado (ALB interno detrás
-# del VPC link de API Gateway) atiende en HTTP dentro de la VPC; el TLS termina en CloudFront
-# y en API Gateway.
+# With a certificate, the HTTP listener only redirects to HTTPS. Without a certificate (internal ALB
+# behind the API Gateway VPC link) it serves HTTP inside the VPC; TLS terminates at CloudFront
+# and at API Gateway.
 # trivy:ignore:AVD-AWS-0054
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn

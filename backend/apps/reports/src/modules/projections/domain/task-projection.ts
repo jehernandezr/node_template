@@ -3,30 +3,30 @@ import type { ActivityPoint, StatusCount } from './projection-points.js';
 import type { BucketedRange, ReportRange } from './report-range.js';
 
 /**
- * Un cambio de una tarea con la versión que la produjo. Los campos que el mensaje no trae quedan sin valor y
- * no borran lo que ya se sabía.
+ * A change to a task with the version that produced it. Fields the message does not carry stay without a value and
+ * do not erase what was already known.
  */
 export interface TaskProjectionChange {
   readonly taskId: string;
   readonly version: number;
   readonly status: TaskStatus;
-  /** Si el estado cuenta como completada: solo entonces la tarea conserva su fecha de cierre. */
+  /** Whether the status counts as completed: only then does the task keep its closing date. */
   readonly done: boolean;
   readonly createdAt?: Date;
   readonly doneAt?: Date;
   readonly removedAt?: Date;
 }
 
-/** Qué estado cuenta como una tarea completada en los reportes. Utilidad pura. */
+/** Which status counts as a completed task in the reports. Pure utility. */
 export class TaskCompletion {
   static isDone(status: TaskStatus): boolean {
     return status === TaskStatus.Done;
   }
 }
 
-/** Proyección de las tareas del tenant del `ShardScope` abierto. */
+/** Projection of the tasks of the tenant of the open `ShardScope`. */
 export abstract class TaskProjection {
-  /** Aplica el cambio sin retroceder: un mensaje viejo que llega tarde no pisa una versión más nueva. */
+  /** Applies the change without going backwards: an old message that arrives late does not overwrite a newer version. */
   abstract apply(change: TaskProjectionChange): Promise<void>;
   abstract statusCounts(range: ReportRange): Promise<readonly StatusCount[]>;
   abstract activity(range: BucketedRange): Promise<readonly ActivityPoint[]>;

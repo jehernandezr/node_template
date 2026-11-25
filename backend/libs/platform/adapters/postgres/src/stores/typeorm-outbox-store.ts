@@ -22,15 +22,15 @@ interface OutboxChange {
 }
 
 /**
- * Adaptador TypeORM de `OutboxStore` y `OutboxWriter` de `@platform/messaging`, sobre la tabla `outbox` del shard.
+ * TypeORM adapter of `OutboxStore` and `OutboxWriter` of `@platform/messaging`, on the shard `outbox` table.
  *
- * - `append` inserta en la transacción abierta, así el registro se confirma o se deshace con el cambio de negocio. Es
- *   idempotente por id del envelope.
- * - `claimPending` corre en una transacción corta: elige en una sola consulta las filas vencidas, con un solo `LIMIT`
- *   y `FOR UPDATE SKIP LOCKED` (varios relays no se pisan), y les pone el lease con su token de fencing. Respeta FIFO
- *   por `groupId`.
- * - Las marcas solo aplican mientras la fila conserve el lease dado; si no, devuelven `false`.
- * - El orden es `created_at` y luego `seq`.
+ * - `append` inserts in the open transaction, so the record commits or rolls back with the business change. It is
+ *   idempotent by envelope id.
+ * - `claimPending` runs in a short transaction: it picks the due rows in a single query, with a single `LIMIT`
+ *   and `FOR UPDATE SKIP LOCKED` (several relays do not step on each other), and sets the lease with its fencing token. It respects FIFO
+ *   by `groupId`.
+ * - The marks only apply while the row keeps the given lease; otherwise they return `false`.
+ * - The order is `created_at` and then `seq`.
  */
 export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
   constructor(
@@ -47,7 +47,7 @@ export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
         .into(OutboxEntity)
         .values({
           id: record.envelope.id,
-          // TypeORM tipa el JSON de forma profunda y no admite `unknown`; el valor se guarda tal cual en `jsonb`.
+          // TypeORM types JSON deeply and does not accept `unknown`; the value is stored as is in `jsonb`.
           envelope: record.envelope as never,
           status: OutboxStatus.Pending,
           attempts: 0,
@@ -110,7 +110,7 @@ export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
     });
   }
 
-  /** Estado actual de un registro, si existe. Para diagnóstico y pruebas. */
+  /** Returns the current state of a record, if it exists. For diagnostics and tests. */
   async get(id: string): Promise<OutboxRecord | undefined> {
     const entity = await this.managers.run(
       ManagerIntent.ReadPrimary,
@@ -119,7 +119,7 @@ export class TypeOrmOutboxStore implements OutboxStore, OutboxWriter {
     return entity === null ? undefined : OutboxRecordMapper.toRecord(entity);
   }
 
-  /** Retención de publicados (y de muertos con `includeDead`); recorre todos los shards si no hay uno fijo. */
+  /** Retention of published records (and of dead ones with `includeDead`); visits all shards if none is pinned. */
   purge(options: PurgeOutboxOptions): Promise<number> {
     const statuses =
       options.includeDead === true

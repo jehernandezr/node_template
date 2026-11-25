@@ -1,6 +1,6 @@
 import { JwksFetcher } from '../../jwks-fetcher.js';
 
-/** Descargas guionadas: cada `fetch` saca la siguiente respuesta de la cola; un `Error` se lanza. */
+/** Scripted downloads: each `fetch` takes the next reply from the queue; an `Error` is thrown. */
 export class ScriptedJwksFetcher extends JwksFetcher {
   private readonly queue: unknown[];
   private fetched = 0;
@@ -12,19 +12,19 @@ export class ScriptedJwksFetcher extends JwksFetcher {
     this.queue = answers;
   }
 
-  /** Veces que se llamó a `fetch`, sin importar el resultado. */
+  /** Number of times `fetch` was called, regardless of the result. */
   get fetchCount(): number {
     return this.fetched;
   }
 
-  /** Las llamadas siguientes esperan hasta `release()` antes de responder. */
+  /** Makes the following calls wait until `release()` before answering. */
   hold(): void {
     this.gate = new Promise<void>((resolve) => {
       this.openGate = resolve;
     });
   }
 
-  /** Libera las llamadas detenidas por `hold()`. */
+  /** Releases the calls held by `hold()`. */
   release(): void {
     this.openGate?.();
     this.gate = undefined;

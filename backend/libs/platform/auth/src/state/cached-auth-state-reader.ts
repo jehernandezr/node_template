@@ -10,15 +10,15 @@ import type { RevokedSessionRegistry } from './revoked-session-registry.js';
 import { TtlLruCache } from './ttl-lru-cache.js';
 
 /**
- * `AuthStateReader` que usan los verificadores. Envuelve al lector de Valkey
- * (`source`) con:
- * - el Bloom local de sesiones revocadas, que evita ir a Valkey por casi toda petición;
- * - una caché de `options.ttlMs` para épocas y versiones de permisos, que sirve el último valor
- *   conocido, aunque haya vencido, cuando Valkey no responde.
- * Si Valkey falla y no hay ningún valor, lanza `AuthenticationError.stateUnavailable`:
- * nunca se acepta un token sin poder revisar la revocación.
- * `accessGrant`, `apiKey` y `revokedSessionIds` pasan directo: sus resolutores
- * tienen su propia caché y la reconstrucción del Bloom no se cachea.
+ * `AuthStateReader` used by the verifiers. Wraps the Valkey reader
+ * (`source`) with:
+ * - the local Bloom of revoked sessions, which avoids going to Valkey on almost every request;
+ * - an `options.ttlMs` cache for epochs and permission versions, which serves the last known
+ *   value, even if expired, when Valkey does not respond.
+ * If Valkey fails and there is no value at all, throws `AuthenticationError.stateUnavailable`:
+ * a token is never accepted without being able to check revocation.
+ * `accessGrant`, `apiKey` and `revokedSessionIds` pass straight through: their resolvers
+ * have their own cache and the Bloom rebuild is not cached.
  */
 export class CachedAuthStateReader extends AuthStateReader {
   private readonly userEpochs: TtlLruCache<Epoch | undefined>;
@@ -91,9 +91,9 @@ export class CachedAuthStateReader extends AuthStateReader {
   }
 
   /**
-   * Sirve lo guardado si está fresco; si no, lo pide a `load`. Cuando `load` falla
-   * se devuelve el último valor conocido aunque haya vencido, porque una época
-   * vencida casi nunca cambió; sin ningún valor previo, se rechaza.
+   * Serves the stored value if fresh; otherwise requests it from `load`. When `load` fails
+   * the last known value is returned even if expired, because an expired epoch
+   * has almost never changed; with no previous value, it rejects.
    */
   private async cached<V>(
     cache: TtlLruCache<V>,

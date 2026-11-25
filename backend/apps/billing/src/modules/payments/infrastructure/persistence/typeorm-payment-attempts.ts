@@ -10,7 +10,7 @@ import type { PaymentResult } from '../../domain/payment-provider.js';
 import { PaymentStatus } from '../../domain/payment-status.enum.js';
 import { PaymentAttemptEntity } from './entities/payment-attempt.entity.js';
 
-/** `PaymentAttempts` sobre `payment_attempts` del shard del tenant. */
+/** `PaymentAttempts` over `payment_attempts` of the tenant shard. */
 @Injectable()
 export class TypeOrmPaymentAttempts
   extends TenantIsolatedRepository
@@ -21,9 +21,9 @@ export class TypeOrmPaymentAttempts
   }
 
   /**
-   * Inserta el intento con `ON CONFLICT DO NOTHING`: un duplicado no aborta la transacción de quien llama.
-   * @param attempt Intento a anotar.
-   * @returns `false` si ese número de intento ya estaba anotado.
+   * Inserts the attempt with `ON CONFLICT DO NOTHING`: a duplicate does not abort the caller's transaction.
+   * @param attempt Attempt to record.
+   * @returns `false` if that attempt number was already recorded.
    */
   async reserve(attempt: PaymentAttempt): Promise<boolean> {
     const actorId = this.kit.context.current().actorId ?? null;
@@ -53,10 +53,10 @@ export class TypeOrmPaymentAttempts
   }
 
   /**
-   * Lee el intento de la factura con ese número, en la primaria.
-   * @param invoiceId Factura del intento.
-   * @param attempt Número del intento.
-   * @returns El intento, o `undefined` si no está anotado.
+   * Reads the invoice attempt with that number, on the primary.
+   * @param invoiceId Invoice of the attempt.
+   * @param attempt Attempt number.
+   * @returns The attempt, or `undefined` if it is not recorded.
    */
   async find(
     invoiceId: string,
@@ -70,10 +70,10 @@ export class TypeOrmPaymentAttempts
   }
 
   /**
-   * Lee el intento con ese id si es de la factura, en la primaria.
-   * @param invoiceId Factura a la que debe pertenecer.
-   * @param id Id del intento.
-   * @returns El intento, o `undefined` si no existe o es de otra factura.
+   * Reads the attempt with that id if it belongs to the invoice, on the primary.
+   * @param invoiceId Invoice it must belong to.
+   * @param id Attempt id.
+   * @returns The attempt, or `undefined` if it does not exist or belongs to another invoice.
    */
   async findById(
     invoiceId: string,
@@ -87,9 +87,9 @@ export class TypeOrmPaymentAttempts
   }
 
   /**
-   * Lee el intento de número más alto de la factura, en la primaria.
-   * @param invoiceId Factura de los intentos.
-   * @returns El último intento, o `undefined` si no tiene ninguno.
+   * Reads the invoice attempt with the highest number, on the primary.
+   * @param invoiceId Invoice of the attempts.
+   * @returns The last attempt, or `undefined` if it has none.
    */
   async latest(invoiceId: string): Promise<PaymentAttempt | undefined> {
     const tenantId = this.tenantId();
@@ -103,9 +103,9 @@ export class TypeOrmPaymentAttempts
   }
 
   /**
-   * Guarda la respuesta solo si el intento sigue abierto: un `UPDATE` condicionado al estado.
-   * @param id Id del intento.
-   * @param result Respuesta del proveedor.
+   * Stores the response only if the attempt is still open: an `UPDATE` conditioned on the state.
+   * @param id Attempt id.
+   * @param result Provider response.
    */
   async resolve(id: string, result: PaymentResult): Promise<void> {
     const tenantId = this.tenantId();

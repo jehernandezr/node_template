@@ -3,7 +3,7 @@ import { EntitlementQueries } from '../application/entitlement-queries.js';
 import { EntitlementsInternalOperations } from './entitlements.internal-operations.js';
 import { UsageController } from './usage.controller.js';
 
-/** Entitlements, cuotas y el uso del periodo frente a los límites del plan. */
+/** Entitlements, quotas and period usage against the plan limits. */
 @Module({
   controllers: [UsageController],
   providers: [EntitlementQueries, EntitlementsInternalOperations],

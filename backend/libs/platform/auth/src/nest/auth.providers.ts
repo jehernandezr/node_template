@@ -30,13 +30,13 @@ import { AuthStateLifecycle } from './auth-state.lifecycle.js';
 import { AUTH_OPTIONS, AUTH_STATE_SOURCE } from './auth.tokens.js';
 
 /**
- * Proveedores de `AuthModule`. Todos se arman con `useFactory` porque el núcleo de
- * la librería no lleva decoradores; solo `AuthStateLifecycle` es una clase de Nest.
+ * Providers of `AuthModule`. All are built with `useFactory` because the library
+ * core has no decorators; only `AuthStateLifecycle` is a Nest class.
  */
 export class AuthProviders {
   /**
-   * @throws ConfigValidationError si falta `source`, `feed` o `accessGrants`: el tipo de
-   *   `forRoot` los marca opcionales porque el constructor de módulos de Nest así lo exige.
+   * @throws ConfigValidationError if `source`, `feed` or `accessGrants` is missing: the
+   *   `forRoot` type marks them optional because the Nest module builder requires it.
    */
   static build(extras: Partial<AuthModuleExtras>): Provider[] {
     const source = AuthProviders.required(extras.source, 'source');
@@ -153,7 +153,7 @@ export class AuthProviders {
     ];
   }
 
-  /** Lo que otros módulos reciben. */
+  /** What other modules receive. */
   static exports(): Array<symbol | Type<unknown> | Abstract<unknown>> {
     return [
       AuthStateReader,
@@ -179,7 +179,7 @@ export class AuthProviders {
     return value;
   }
 
-  /** Claves del servicio si pasó la suya; si no, las que descarga de `AUTH_JWKS_URL`. */
+  /** Returns the service keys if it passed its own; otherwise, the ones downloaded from `AUTH_JWKS_URL`. */
   private static jwks(custom: AuthModuleExtras['jwks']): Provider[] {
     if (custom !== undefined) {
       return [{ provide: JwksKeySource, useExisting: custom }];

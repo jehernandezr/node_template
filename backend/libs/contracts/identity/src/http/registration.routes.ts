@@ -15,7 +15,7 @@ import {
   SignUpRequestSchema,
 } from '../schemas/user.schema.js';
 
-/** `POST /v1/auth/sign-up`: alta de usuario. La respuesta no revela si el email ya existe. */
+/** `POST /v1/auth/sign-up`: user registration. The response does not reveal whether the email already exists. */
 export const SignUpRoute = defineRoute({
   id: IdentityRoute.SignUp,
   method: HttpMethod.Post,
@@ -31,10 +31,10 @@ export const SignUpRoute = defineRoute({
   ],
   access: Access.public(),
   description:
-    'Registra un usuario y envía el email de verificación. Responde aceptado sin revelar si el email ya existe.',
+    'Registers a user and sends the verification email. Responds accepted without revealing whether the email already exists.',
 });
 
-/** `POST /v1/auth/email-verifications`: pide otro email de verificación. */
+/** `POST /v1/auth/email-verifications`: requests another verification email. */
 export const ResendEmailVerificationRoute = defineRoute({
   id: IdentityRoute.ResendEmailVerification,
   method: HttpMethod.Post,
@@ -44,10 +44,10 @@ export const ResendEmailVerificationRoute = defineRoute({
   errors: [PlatformErrorCode.RateLimitExceeded],
   access: Access.public(),
   description:
-    'Envía un nuevo email de verificación. Responde aceptado aunque el email no exista.',
+    'Sends a new verification email. Responds accepted even if the email does not exist.',
 });
 
-/** `POST /v1/auth/email-verifications/confirm`: verifica el email con el token recibido. */
+/** `POST /v1/auth/email-verifications/confirm`: verifies the email with the received token. */
 export const ConfirmEmailVerificationRoute = defineRoute({
   id: IdentityRoute.ConfirmEmailVerification,
   method: HttpMethod.Post,
@@ -58,6 +58,5 @@ export const ConfirmEmailVerificationRoute = defineRoute({
     PlatformErrorCode.RateLimitExceeded,
   ],
   access: Access.public(),
-  description:
-    'Marca el email del usuario como verificado con el token recibido.',
+  description: 'Marks the user email as verified with the received token.',
 });

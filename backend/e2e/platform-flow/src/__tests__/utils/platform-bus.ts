@@ -8,15 +8,15 @@ import {
   type DeadLetterEntry,
 } from '@platform/messaging/test-utils';
 
-/** Una cola de la topología y el servicio que la consume. */
+/** A queue of the topology and the service that consumes it. */
 interface ConsumedQueue {
   readonly queue: string;
   readonly consumer: string;
 }
 
 /**
- * El bus en memoria que une a los cinco servicios en lugar de SNS y SQS: los relays de sus outbox publican en él y
- * cada cola se entrega al despachador del servicio que la declara en su contrato.
+ * The in-memory bus that joins the five services instead of SNS and SQS: the relays of their outboxes publish to it and
+ * each queue is delivered to the dispatcher of the service that declares it in its contract.
  */
 export class PlatformBus {
   readonly bus: InMemoryBus;
@@ -35,12 +35,12 @@ export class PlatformBus {
     );
   }
 
-  /** El despachador de un servicio recibe todas las colas que su contrato declara. */
+  /** A service's dispatcher receives all the queues its contract declares. */
   attach(service: string, dispatcher: MessageDispatcher): void {
     this.dispatchers.set(service, dispatcher);
   }
 
-  /** Entrega una vez lo que está vencido en cada cola y devuelve cuántas entregas hizo. */
+  /** Delivers once what is due in each queue and returns how many deliveries it made. */
   async deliverDue(): Promise<number> {
     let delivered = 0;
     for (const { queue, consumer } of this.queues) {
@@ -56,7 +56,7 @@ export class PlatformBus {
     return delivered;
   }
 
-  /** Sin mensajes en espera, incluidos los que esperan un reintento. */
+  /** No messages waiting, including those waiting for a retry. */
   isIdle(): boolean {
     return this.queues.every(({ queue }) => this.bus.pendingCount(queue) === 0);
   }

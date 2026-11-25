@@ -4,7 +4,7 @@ import { Subscribe } from '@platform/messaging/nest';
 import { SmokeOrderCreated } from './smoke-order-events.js';
 import { SmokeOrderLedger } from './smoke-order-ledger.js';
 
-/** Consume los pedidos creados y los registra en el libro de entregas. */
+/** Consumes the created orders and records them in the delivery ledger. */
 @Injectable()
 export class SmokeOrderConsumer {
   constructor(private readonly ledger: SmokeOrderLedger) {}

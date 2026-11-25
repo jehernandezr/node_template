@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
 
-/** Módulo de negocio vacío: la prueba ejercita la composición de la plataforma, no casos de uso. */
+/** Empty business module: the test exercises the platform composition, not use cases. */
 @Module({})
 export class RuntimeProbeRootModule {}

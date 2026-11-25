@@ -1,6 +1,6 @@
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
-/** Base32 de RFC 4648 sin relleno, como lo leen las apps de autenticación en un `otpauth://`. */
+/** RFC 4648 Base32 without padding, as authenticator apps read it in an `otpauth://`. */
 export function encodeBase32(bytes: Uint8Array): string {
   let bits = 0;
   let value = 0;

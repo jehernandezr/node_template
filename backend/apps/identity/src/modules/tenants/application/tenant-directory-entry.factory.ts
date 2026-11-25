@@ -3,7 +3,7 @@ import type { TenantDirectoryEntry } from '@contracts/platform';
 import { TenantShardGroups } from '@platform/tenant-move';
 import type { PlacedTenant } from '../domain/placed-tenant.js';
 
-/** Lo que los demás servicios anotan de un tenant: su región y los grupos de los shards que identity eligió. */
+/** What the other services record about a tenant: its region and the shard groups identity chose. */
 @Injectable()
 export class TenantDirectoryEntryFactory {
   constructor(private readonly groups: TenantShardGroups) {}

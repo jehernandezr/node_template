@@ -10,7 +10,7 @@ import type { StartSagaInstance } from './start-saga-instance.js';
 import type { StepLog } from './step-log.js';
 import type { SuspendPolicy } from './suspend-policy.js';
 
-/** Estados que terminan la saga: ninguna corrida la retoma. */
+/** States that end the saga: no run resumes it. */
 const FINISHED: ReadonlySet<SagaStatus> = new Set([
   SagaStatus.Completed,
   SagaStatus.Compensated,
@@ -19,19 +19,19 @@ const FINISHED: ReadonlySet<SagaStatus> = new Set([
 ]);
 
 /**
- * Agregado de la saga. Inmutable: cada transición es un método puro que
- * devuelve una instancia nueva, sin E/S. El motor decide cuándo aplicarlas y
- * el `SagaStore` las persiste.
+ * Saga aggregate. Immutable: each transition is a pure method that
+ * returns a new instance, with no I/O. The engine decides when to apply them and
+ * the `SagaStore` persists them.
  */
 export class SagaInstance {
   private constructor(private readonly data: SagaInstanceProps) {}
 
-  /** Reconstruye la instancia con lo que guardó el almacén. */
+  /** Rebuilds the instance from what the store saved. */
   static rehydrate(props: SagaInstanceProps): SagaInstance {
     return new SagaInstance(props);
   }
 
-  /** Instancia nueva en `Running`, en el paso 0 hacia delante, versión 0 y con el lease de la corrida que arranca. */
+  /** New instance in `Running`, at step 0 forward, version 0 and with the lease of the starting run. */
   static start(input: StartSagaInstance): SagaInstance {
     return new SagaInstance({
       id: input.id,
@@ -57,7 +57,7 @@ export class SagaInstance {
     });
   }
 
-  /** Solo los campos presentes: así el almacén no guarda claves `undefined` y una saga sin contexto queda en `null`. */
+  /** Only the present fields: so the store does not save `undefined` keys and a saga without context ends up as `null`. */
   private static normalizeContext(
     context: SagaCallContext | undefined,
   ): SagaCallContext | null {
@@ -75,7 +75,7 @@ export class SagaInstance {
     return Object.keys(kept).length === 0 ? null : kept;
   }
 
-  /** Los campos persistentes, para el almacén. */
+  /** The persistent fields, for the store. */
   toProps(): SagaInstanceProps {
     return this.data;
   }
@@ -141,7 +141,7 @@ export class SagaInstance {
     return this.data.updatedAt;
   }
 
-  /** Tenant dueño de la saga (el de su contexto), o `null`. */
+  /** Tenant that owns the saga (the one in its context), or `null`. */
   get tenantId(): string | null {
     return this.data.context?.tenantId ?? null;
   }
@@ -150,7 +150,7 @@ export class SagaInstance {
     return FINISHED.has(this.data.status);
   }
 
-  /** Si el plazo de la saga ya pasó en `now`. */
+  /** Whether the saga deadline already passed at `now`. */
   deadlinePassed(now: Date): boolean {
     return (
       this.data.deadlineAt !== null &&
@@ -159,9 +159,9 @@ export class SagaInstance {
   }
 
   /**
-   * Esta instancia, hallada por su llave de idempotencia, como resultado de un
-   * arranque repetido: solo si es del mismo tipo y con el mismo estado inicial.
-   * @throws SagaError `IdempotencyKeyConflict` si la llave ya la usa otra saga u otra entrada.
+   * This instance, found by its idempotency key, as the result of a
+   * repeated start: only if it is of the same type and has the same initial state.
+   * @throws SagaError `IdempotencyKeyConflict` if the key is already used by another saga or another input.
    */
   reusableFor(type: string, inputDigest: string): SagaInstance {
     if (this.data.type !== type) {
@@ -180,17 +180,17 @@ export class SagaInstance {
     return this;
   }
 
-  /** La misma instancia con otra versión; lo usa el almacén al guardar. */
+  /** The same instance with another version; the store uses it when saving. */
   withVersion(version: number): SagaInstance {
     return new SagaInstance({ ...this.data, version });
   }
 
-  /** La misma instancia con otro lease; lo usa el almacén al tomarlo, renovarlo o soltarlo. */
+  /** The same instance with another lease; the store uses it when taking, renewing or releasing it. */
   withLease(leaseToken: string | null, leaseUntil: Date | null): SagaInstance {
     return new SagaInstance({ ...this.data, leaseToken, leaseUntil });
   }
 
-  /** Marca el despacho de un intento: `Running` hacia delante, `Compensating` al deshacer. */
+  /** Marks the dispatch of an attempt: `Running` going forward, `Compensating` when undoing. */
   recordDispatch(direction: StepDirection, now: Date): SagaInstance {
     return this.next(
       {
@@ -204,7 +204,7 @@ export class SagaInstance {
     );
   }
 
-  /** Paso `index` completado: aplica `state`, avanza o termina en `Completed` y limpia el error de intentos previos. */
+  /** Step `index` completed: applies `state`, advances or ends in `Completed` and clears the error from previous attempts. */
   completeStep(
     compiled: CompiledSaga<unknown>,
     index: number,
@@ -229,8 +229,8 @@ export class SagaInstance {
   }
 
   /**
-   * Empieza a compensar desde `from` (inclusive) hacia abajo. Termina en
-   * `Compensated` de una vez si nada necesita deshacerse.
+   * Starts compensating from `from` (inclusive) downward. Ends in
+   * `Compensated` at once if nothing needs to be undone.
    */
   startCompensation(
     compiled: CompiledSaga<unknown>,
@@ -257,7 +257,7 @@ export class SagaInstance {
     );
   }
 
-  /** Pasa al siguiente paso por deshacer bajo `from`, conservando el error que inició la compensación. */
+  /** Moves to the next step to undo below `from`, keeping the error that started the compensation. */
   completeCompensation(
     compiled: CompiledSaga<unknown>,
     steps: StepLog,
@@ -278,7 +278,7 @@ export class SagaInstance {
     );
   }
 
-  /** Pausa para reintentar, o exige intervención cuando se superan los topes de suspensión. */
+  /** Pauses to retry, or requires intervention when the suspension limits are exceeded. */
   suspend(
     code: string,
     detail: string | null,
@@ -286,8 +286,8 @@ export class SagaInstance {
     policy: SuspendPolicy,
   ): SagaInstance {
     const attempts = this.data.attempts + 1;
-    // El inicio de la suspensión se conserva aunque se rinda, para que la
-    // instancia muestre cuánto tiempo llevaba fallando el paso.
+    // The start of the suspension is kept even when giving up, so the
+    // instance shows how long the step had been failing.
     const since = this.data.suspendedSince ?? now;
     const exhausted =
       attempts > policy.maxSuspendAttempts ||
@@ -310,8 +310,8 @@ export class SagaInstance {
   }
 
   /**
-   * Pausa corta tras una llamada en la que el participante avanzó: vuelve a intentar con la primera espera de
-   * `policy` y sin gastar suspensiones, que se cuentan de nuevo desde cero.
+   * Short pause after a call in which the participant made progress: tries again with the first wait of
+   * `policy` and without spending suspensions, which are counted again from zero.
    */
   continueAfterProgress(
     code: string,
@@ -332,7 +332,7 @@ export class SagaInstance {
     );
   }
 
-  /** Detiene la saga hasta que decida una persona: `RequiresIntervention` o `CompensationFailed`. */
+  /** Stops the saga until a person decides: `RequiresIntervention` or `CompensationFailed`. */
   finish(
     status: SagaStatus.RequiresIntervention | SagaStatus.CompensationFailed,
     code: string,
@@ -351,14 +351,14 @@ export class SagaInstance {
     );
   }
 
-  /** Copia con `patch` aplicado y la fecha de la última escritura en `now`. */
+  /** Copy with `patch` applied and the last write date set to `now`. */
   private next(patch: Partial<SagaInstanceProps>, now: Date): SagaInstance {
     return new SagaInstance({ ...this.data, ...patch, updatedAt: now });
   }
 
   /**
-   * Primer paso por deshacer en `from` o por debajo, o `null` si nada necesita
-   * deshacerse. Los pasos de solo lectura no tienen compensación y se saltan.
+   * First step to undo at `from` or below, or `null` if nothing needs
+   * to be undone. Read-only steps have no compensation and are skipped.
    */
   private compensableFrom(
     compiled: CompiledSaga<unknown>,

@@ -5,10 +5,10 @@ const TRACEPARENT_PATTERN =
   /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/;
 
 /**
- * Esquema zod del sobre CloudEvents. Cada atributo de texto tiene su largo
- * máximo. Los atributos desconocidos (extensiones) pasan; el tamaño total lo
- * comprueba `EnvelopeValidator` antes de correr este esquema. `data` no se
- * inspecciona aquí: cada contrato valida el suyo.
+ * Zod schema of the CloudEvents envelope. Each text attribute has its maximum
+ * length. Unknown attributes (extensions) pass; the total size is
+ * checked by `EnvelopeValidator` before this schema runs. `data` is not
+ * inspected here: each contract validates its own.
  */
 export const messageEnvelopeSchema = z.looseObject({
   specversion: z.literal('1.0'),

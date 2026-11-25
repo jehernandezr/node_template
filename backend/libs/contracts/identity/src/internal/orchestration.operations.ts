@@ -21,7 +21,7 @@ import {
   TenantRefInputSchema,
 } from '../schemas/tenant.schema.js';
 
-/** Activa un tenant que terminó de aprovisionarse. Va después del pivote de la saga: es idempotente y no se revierte. */
+/** Activates a tenant that finished provisioning. It comes after the saga pivot: it is idempotent and is not reverted. */
 export const ActivateTenantOperation = defineOperation({
   id: IdentityOperation.ActivateTenant,
   input: TenantRefInputSchema,
@@ -29,13 +29,13 @@ export const ActivateTenantOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Corre después del pivote de la saga: se repite hasta completarse y no se revierte.',
+    'Runs after the saga pivot: it is retried until completed and is not reverted.',
   errors: [IdentityErrorCode.TenantNotFound],
   timeoutMs: 3000,
-  description: 'Activa un tenant en aprovisionamiento.',
+  description: 'Activates a tenant being provisioned.',
 });
 
-/** Borra los datos personales de un usuario. Es posterior al pivote de `DeleteAccount`. */
+/** Deletes a user's personal data. It comes after the `DeleteAccount` pivot. */
 export const EraseUserOperation = defineOperation({
   id: IdentityOperation.EraseUser,
   input: EraseUserInputSchema,
@@ -43,13 +43,13 @@ export const EraseUserOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'El borrado de datos personales es irreversible y corre después del pivote de la saga.',
+    'Erasing personal data is irreversible and runs after the saga pivot.',
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 6_000,
-  description: 'Borra los datos personales de un usuario.',
+  description: 'Erases the personal data of a user.',
 });
 
-/** Lista los dispositivos con push de un usuario. Lo usa notifications para el canal push. */
+/** Lists a user's push-enabled devices. Used by notifications for the push channel. */
 export const ListPushTargetsOperation = defineOperation({
   id: IdentityOperation.ListPushTargets,
   input: ListPushTargetsInputSchema,
@@ -58,10 +58,10 @@ export const ListPushTargetsOperation = defineOperation({
   mutating: false,
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 3000,
-  description: 'Devuelve los dispositivos con token de push de un usuario.',
+  description: 'Returns the devices of a user with a push token.',
 });
 
-/** Lista los miembros de un tenant que tienen un permiso. Lo usa notifications para elegir destinatarios. */
+/** Lists the members of a tenant that have a permission. Used by notifications to choose recipients. */
 export const ListMembersByPermissionOperation = defineOperation({
   id: IdentityOperation.ListMembersByPermission,
   input: ListMembersByPermissionInputSchema,
@@ -70,12 +70,12 @@ export const ListMembersByPermissionOperation = defineOperation({
   mutating: false,
   errors: [IdentityErrorCode.TenantNotFound],
   timeoutMs: 3000,
-  description: 'Pagina los miembros de un tenant que tienen un permiso.',
+  description: 'Pages the members of a tenant that have a permission.',
 });
 
 /**
- * Cierra un traslado de tenant cuando cada servicio ya apunta al destino. Es el último paso de `MoveTenant`: desde
- * ahí corre la gracia antes de limpiar el origen.
+ * Closes a tenant move when every service already points to the target. It is the last step of `MoveTenant`: from
+ * there the grace period runs before cleaning up the source.
  */
 export const FinishTenantMoveOperation = defineOperation({
   id: IdentityOperation.FinishTenantMove,
@@ -84,8 +84,7 @@ export const FinishTenantMoveOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Corre después del pivote de la saga: se repite hasta completarse y no se revierte.',
+    'Runs after the saga pivot: it is retried until completed and is not reverted.',
   timeoutMs: 3000,
-  description:
-    'Marca un traslado de tenant como cambiado en todos los servicios.',
+  description: 'Marks a tenant move as switched in all services.',
 });

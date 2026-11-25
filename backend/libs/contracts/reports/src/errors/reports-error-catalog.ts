@@ -3,28 +3,28 @@ import { ReportsErrorCode as C } from '../enums/identifiers.enum.js';
 
 const pub = ErrorSpecs.pub;
 
-/** Catálogo de los códigos de reports. */
+/** Catalog of the reports codes. */
 export const reportsErrorCatalog = defineErrorCatalog(C, {
-  [C.RunNotFound]: pub(404, false, 'La ejecución del reporte no existe.'),
+  [C.RunNotFound]: pub(404, false, 'The report run does not exist.'),
   [C.RunNotReady]: pub(
     409,
     false,
-    'La ejecución todavía no termina: el resultado no está listo.',
+    'The run has not finished yet: the result is not ready.',
   ),
   [C.RunExpired]: pub(
     410,
     false,
-    'El resultado de la ejecución venció y ya no se guarda. Genera el reporte de nuevo.',
+    'The run result expired and is no longer stored. Generate the report again.',
   ),
-  [C.TypeUnknown]: pub(400, false, 'El tipo de reporte no existe.'),
+  [C.TypeUnknown]: pub(400, false, 'The report type does not exist.'),
   [C.ParamsInvalidRange]: pub(
     400,
     false,
-    'El rango de fechas es inválido: el fin es anterior al inicio o supera el máximo.',
+    'The date range is invalid: the end is before the start or exceeds the maximum.',
   ),
   [C.ResultTooLarge]: pub(
     422,
     false,
-    'El resultado supera el tamaño máximo. Acota el rango de fechas.',
+    'The result exceeds the maximum size. Narrow the date range.',
   ),
 });

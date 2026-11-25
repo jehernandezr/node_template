@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { PlatformSchemaSql } from './platform-schema-sql.js';
 
-/** Funciones de la plataforma en cada shard (UUIDv7, particiones, auditoría). Ver `PlatformSchemaSql`. */
+/** Platform functions on each shard (UUIDv7, partitions, audit). See `PlatformSchemaSql`. */
 export class PlatformFunctions1794600000001 implements MigrationInterface {
   readonly name = PlatformSchemaSql.functionsName;
 

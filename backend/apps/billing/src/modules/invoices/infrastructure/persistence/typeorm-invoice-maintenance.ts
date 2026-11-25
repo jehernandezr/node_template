@@ -12,8 +12,8 @@ import {
 import { InvoiceEntity } from './entities/invoice.entity.js';
 
 /**
- * Consultas de `invoices` en todos los shards, en transacciones de mantenimiento entre tenants, sin los tenants que
- * ya se trasladaron a otro shard.
+ * `invoices` queries across all shards, in cross-tenant maintenance transactions, excluding tenants that
+ * have already moved to another shard.
  */
 @Injectable()
 export class TypeOrmInvoiceMaintenance extends InvoiceMaintenance {
@@ -22,9 +22,9 @@ export class TypeOrmInvoiceMaintenance extends InvoiceMaintenance {
   }
 
   /**
-   * Busca en cada shard las facturas `Issued` o `Failed` con `next_collection_at` vencido, sin los tenants cercados.
-   * @param now Momento de referencia.
-   * @returns Las facturas de todos los shards, ordenadas por id dentro de cada uno.
+   * Finds in each shard the `Issued` or `Failed` invoices with an overdue `next_collection_at`, excluding fenced tenants.
+   * @param now Reference instant.
+   * @returns The invoices of all shards, ordered by id within each one.
    */
   async dueForCollection(now: Date): Promise<readonly TenantInvoice[]> {
     const outcome = await this.shards.run((connection) =>

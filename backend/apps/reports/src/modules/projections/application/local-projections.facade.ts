@@ -11,7 +11,7 @@ import type { BucketedRange, ReportRange } from '../domain/report-range.js';
 import { TaskProjection } from '../domain/task-projection.js';
 import { ProjectionsFacade } from './projections.facade.js';
 
-/** `ProjectionsFacade` dentro del proceso. */
+/** In-process `ProjectionsFacade`. */
 @Injectable()
 export class LocalProjectionsFacade extends ProjectionsFacade {
   constructor(

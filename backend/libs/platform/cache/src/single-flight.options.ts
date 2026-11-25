@@ -1,5 +1,5 @@
-/** Opciones de `SingleFlight`. */
+/** Options of `SingleFlight`. */
 export interface SingleFlightOptions {
-  /** Largo máximo de una llave, en caracteres. Por defecto `SingleFlight.DEFAULT_MAX_KEY_LENGTH`. */
+  /** Maximum length of a key, in characters. Defaults to `SingleFlight.DEFAULT_MAX_KEY_LENGTH`. */
   readonly maxKeyLength?: number;
 }

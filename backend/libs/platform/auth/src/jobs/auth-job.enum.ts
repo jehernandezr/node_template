@@ -1,4 +1,4 @@
-/** Nombres de los jobs programados de auth. */
+/** Names of the scheduled auth jobs. */
 export enum AuthJob {
   RevokedSessionsRebuild = 'auth.revoked-sessions-rebuild',
 }

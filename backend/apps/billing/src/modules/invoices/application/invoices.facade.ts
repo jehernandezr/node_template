@@ -1,5 +1,5 @@
-/** Lo que `invoices` ofrece a los otros módulos. */
+/** What `invoices` offers to the other modules. */
 export abstract class InvoicesFacade {
-  /** Si el tenant tiene alguna factura emitida: entonces su cuenta ya no se cierra borrándola. */
+  /** Whether the tenant has any issued invoice: if so, its account can no longer be closed by deleting it. */
   abstract hasInvoices(tenantId: string): Promise<boolean>;
 }

@@ -10,7 +10,7 @@ import { TestPolicies, UpstreamErrors } from './utils/index.js';
 
 const API = TestPolicies.API;
 
-/** Esperas de los eventos de reintento, en orden. */
+/** Waits of the retry events, in order. */
 function retryDelays(
   events: readonly ResilienceEvent[],
 ): (number | undefined)[] {
@@ -201,7 +201,7 @@ describe('ResilienceRegistry deadlines', () => {
       )
       .catch((error: unknown) => error);
     await jest.advanceTimersByTimeAsync(150);
-    // El segundo intento falla a los 100 ms y otra espera de 100 ms ya no cabe.
+    // The second attempt fails at 100 ms and another 100 ms wait no longer fits.
     expect(await outcome).toMatchObject({ status: 503 });
     expect(attempts).toBe(2);
   });

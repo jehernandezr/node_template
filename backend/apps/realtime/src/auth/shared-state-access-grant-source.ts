@@ -5,9 +5,9 @@ import {
 } from '@platform/auth';
 
 /**
- * `apps/realtime` no llama a identity: un token se verifica con su JWKS y el estado compartido, y las
- * versiones de permisos que identity escribe en Valkey bastan para aceptarlo. Si ese estado falta, la conexión
- * se rechaza y el cliente reintenta, en vez de abrir una dependencia con identity por cada conexión.
+ * `apps/realtime` does not call identity: a token is verified with its JWKS and the shared state, and the
+ * permission versions identity writes to Valkey are enough to accept it. If that state is missing, the connection
+ * is rejected and the client retries, instead of opening a dependency on identity for each connection.
  */
 export class SharedStateAccessGrantSource extends AccessGrantSource {
   async fetch(): Promise<AccessGrant> {

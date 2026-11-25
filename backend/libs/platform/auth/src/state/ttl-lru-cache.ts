@@ -1,20 +1,20 @@
-/** Una entrada con el instante en que se leyó. */
+/** An entry with the instant it was read. */
 export interface TtlEntry<V> {
   readonly value: V;
   readonly storedAtMs: number;
 }
 
 /**
- * Caché en memoria acotada: sale la entrada menos usada al pasarse de
- * `maxEntries`. No borra lo vencido: quien lee decide si una entrada vencida
- * sirve, por ejemplo cuando Valkey no responde.
+ * Bounded in-memory cache: the least used entry is evicted when exceeding
+ * `maxEntries`. It does not delete expired entries: the reader decides whether an expired entry
+ * is usable, for example when Valkey does not respond.
  */
 export class TtlLruCache<V> {
   private readonly entries = new Map<string, TtlEntry<V>>();
 
   constructor(private readonly maxEntries: number) {}
 
-  /** La entrada, vencida o no, y la marca como la más reciente. */
+  /** Returns the entry, expired or not, and marks it as the most recent. */
   get(key: string): TtlEntry<V> | undefined {
     const entry = this.entries.get(key);
     if (entry === undefined) {
@@ -37,7 +37,7 @@ export class TtlLruCache<V> {
     }
   }
 
-  /** `true` si la entrada se guardó hace menos de `ttlMs`. */
+  /** `true` if the entry was stored less than `ttlMs` ago. */
   isFresh(entry: TtlEntry<V>, nowMs: number, ttlMs: number): boolean {
     return nowMs - entry.storedAtMs < ttlMs;
   }

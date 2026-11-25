@@ -1,7 +1,7 @@
 import { RoutingCache } from '../../ports/routing-cache.js';
 import { InMemoryRoutingCache } from './in-memory-routing-cache.js';
 
-/** Caché compartido que delega en uno en memoria y puede fallar a voluntad, para probar la degradación al directorio. */
+/** Shared cache that delegates to an in-memory one and can fail at will, to test the fallback to the directory. */
 export class FailingRoutingCache extends RoutingCache {
   failReads = false;
   failWrites = false;

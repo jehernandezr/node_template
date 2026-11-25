@@ -1,11 +1,11 @@
 import { TimerScheduler } from '@platform/primitives';
 
-/** Esperas que se cortan cuando una señal de aborto se dispara. */
+/** Waits that are cut short when an abort signal fires. */
 export class AbortableWait {
   /**
-   * Corre `work` hasta que termine o hasta que `signal` aborte, lo que pase
-   * primero. Si aborta, rechaza con el motivo aunque `work` siga corriendo; su
-   * rechazo tardío se descarta. Si la señal ya está abortada, no corre `work`.
+   * Runs `work` until it finishes or until `signal` aborts, whichever happens
+   * first. If it aborts, rejects with the reason even if `work` keeps running; its
+   * late rejection is discarded. If the signal is already aborted, it does not run `work`.
    */
   static until<T>(work: () => Promise<T>, signal: AbortSignal): Promise<T> {
     if (signal.aborted) {
@@ -26,8 +26,8 @@ export class AbortableWait {
   }
 
   /**
-   * Espera `ms` milisegundos. Si la señal aborta antes, cancela el temporizador
-   * y rechaza con el motivo de la señal.
+   * Waits `ms` milliseconds. If the signal aborts first, cancels the timer
+   * and rejects with the signal's reason.
    */
   static sleep(ms: number, signal: AbortSignal): Promise<void> {
     if (signal.aborted) {

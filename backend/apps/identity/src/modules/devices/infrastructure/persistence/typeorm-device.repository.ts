@@ -7,7 +7,7 @@ import { Device } from '../../domain/device.js';
 import { DeviceRepository } from '../../domain/device.repository.js';
 import { DeviceEntity } from './entities/device.entity.js';
 
-/** `DeviceRepository` sobre `devices` del shard del usuario. */
+/** `DeviceRepository` over `devices` in the user's shard. */
 @Injectable()
 export class TypeOrmDeviceRepository
   extends UserShardRepository

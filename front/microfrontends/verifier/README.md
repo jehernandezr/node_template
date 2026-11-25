@@ -1,39 +1,39 @@
 # mf_verifier
 
-Microfrontend del verificador de dispositivo. Un dispositivo registrado muestra
-el código de 8 dígitos de un intento de login desde un dispositivo nuevo, con
-su contexto, una cuenta regresiva y la acción "No fui yo".
+Device verifier microfrontend. A registered device shows
+the 8-digit code of a sign-in attempt from a new device, with
+its context, a countdown and the "No fui yo" action.
 
-- Manifest: `verifierManifest` (`lib/mf_verifier.dart`), rutas bajo `/verifier`, solo móvil.
-  La ruta carga la pantalla con `deferred` y recibe el scope de la identidad.
-- Entrada: `VerifierScreens.main(scope)` (`lib/src/screens/verifier_screens.dart`). Obtiene el
-  repositorio con `scope.repository(VerifierData.repository)`: un repositorio por usuario y
-  tenant, que el scope cierra al terminar.
-- Datos: `VerifierData` (`lib/src/data/verifier_data.dart`) entrega `VerifierRepository`. Hoy
-  solo existe `FakeVerifierRepository`, que solo sirve en modo demo; el adaptador real de la
-  API llega después.
-- Controlador: `VerifierController` (`lib/src/screens/verifier_controller.dart`) sigue el reto
-  pendiente, deniega y expone un estado sellado `VerifierState`
-  (`lib/src/screens/verifier_state.dart`): cargando, sin reto, reto, denegando, bloqueado o
-  fallido. La pantalla solo dibuja ese estado.
-- Cuenta regresiva: los segundos salen de la hora de expiración del reto, leída del `Clock`
-  del `ShellAccessScope`, no de un contador. Un salto del reloj se ve en el siguiente tick.
-- Accesibilidad: el código se lee dígito a dígito (`spokenCode`). `VerifierAnnouncer` anuncia
-  dos veces por reto: a los 10 segundos y al caducar. La cuenta regresiva no se anuncia cada
-  segundo.
-- Textos: `lib/src/l10n/app_es.arb` (plantilla) y `app_en.arb`, generados en
-  `lib/src/l10n/generated/` (clase `VerifierLocalizations`). Las palabras compartidas
-  (p. ej. `actionCancel`) salen de `AppLocalizations` del paquete `i18n`.
-  Para regenerar: `flutter gen-l10n`.
+- Manifest: `verifierManifest` (`lib/mf_verifier.dart`), routes under `/verifier`, mobile only.
+  The route loads the screen with `deferred` and receives the identity's scope.
+- Entry: `VerifierScreens.main(scope)` (`lib/src/screens/verifier_screens.dart`). It gets the
+  repository with `scope.repository(VerifierData.repository)`: one repository per user and
+  tenant, which the scope closes when it ends.
+- Data: `VerifierData` (`lib/src/data/verifier_data.dart`) provides `VerifierRepository`. Today
+  only `FakeVerifierRepository` exists, which only works in demo mode; the real API
+  adapter comes later.
+- Controller: `VerifierController` (`lib/src/screens/verifier_controller.dart`) follows the pending
+  challenge, denies it and exposes a sealed state `VerifierState`
+  (`lib/src/screens/verifier_state.dart`): loading, no challenge, challenge, denying, blocked or
+  failed. The screen only draws that state.
+- Countdown: the seconds come from the challenge's expiration time, read from the `Clock`
+  of the `ShellAccessScope`, not from a counter. A clock jump shows on the next tick.
+- Accessibility: the code is read digit by digit (`spokenCode`). `VerifierAnnouncer` announces
+  twice per challenge: at 10 seconds and on expiry. The countdown is not announced every
+  second.
+- Texts: `lib/src/l10n/app_es.arb` (template) and `app_en.arb`, generated into
+  `lib/src/l10n/generated/` (class `VerifierLocalizations`). Shared words
+  (e.g. `actionCancel`) come from `AppLocalizations` in the `i18n` package.
+  To regenerate: `flutter gen-l10n`.
 
-## Clave del dispositivo
+## Device key
 
-La clave del dispositivo es el puerto `DeviceKeyPort` de `auth`. El verificador solo sirve el
-modo demo (`modes: {ShellMode.demo}`): los desafíos de login aún no tienen contrato, así que el
-repositorio en memoria firma con `DemoDeviceKey`, que nunca llega a un servidor real. Cuando haya
-contrato, el repositorio real recibirá el adaptador del shell (Secure Enclave, Keystore o
-WebCrypto) y el manifiesto declarará también `ShellMode.live`.
+The device key is the `DeviceKeyPort` port from `auth`. The verifier only serves
+demo mode (`modes: {ShellMode.demo}`): sign-in challenges have no contract yet, so the
+in-memory repository signs with `DemoDeviceKey`, which never reaches a real server. When there is
+a contract, the real repository will receive the shell's adapter (Secure Enclave, Keystore or
+WebCrypto) and the manifest will also declare `ShellMode.live`.
 
-El manifiesto acepta el enlace `verifier?challenge=<id>` (`deepLinks`).
+The manifest accepts the `verifier?challenge=<id>` link (`deepLinks`).
 
-Comprobaciones: `flutter gen-l10n && flutter analyze && flutter test`.
+Checks: `flutter gen-l10n && flutter analyze && flutter test`.

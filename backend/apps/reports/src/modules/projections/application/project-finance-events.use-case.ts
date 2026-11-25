@@ -15,7 +15,7 @@ import {
   type InvoiceProjectionChange,
 } from '../domain/finance-projection.js';
 
-/** Lleva los eventos de billing y notifications a las proyecciones del shard de su tenant. */
+/** Brings billing and notifications events into the projections of their tenant's shard. */
 @Injectable()
 export class ProjectFinanceEvents {
   constructor(

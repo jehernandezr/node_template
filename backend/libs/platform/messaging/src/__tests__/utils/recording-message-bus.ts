@@ -11,7 +11,7 @@ import type { MessageEnvelope } from '../../envelope/message-envelope.js';
 import { MessagingError } from '../../errors/messaging-error.js';
 import { MessagingErrorCode } from '../../errors/messaging-error-code.enum.js';
 
-/** Un mensaje que el caso de uso dejó en el outbox. */
+/** A message the use case left in the outbox. */
 export interface RecordedMessage {
   readonly type: string;
   readonly data: unknown;
@@ -19,9 +19,9 @@ export interface RecordedMessage {
 }
 
 /**
- * Bus que guarda lo publicado y, como el outbox real, exige una transacción abierta y valida el payload
- * contra el contrato: un caso de uso que publica fuera de ella o con datos inválidos falla igual que en
- * producción.
+ * Bus that stores what was published and, like the real outbox, requires an open transaction and validates the payload
+ * against the contract: a use case that publishes outside one or with invalid data fails just as in
+ * production.
  */
 export class RecordingMessageBus extends MessageBus {
   readonly messages: RecordedMessage[] = [];

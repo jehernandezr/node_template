@@ -2,7 +2,7 @@ import type { ShardDataSources, ShardLocation } from '@platform/persistence';
 import type { DataSource } from 'typeorm';
 import type { FakeDataSource } from './fake-data-source.js';
 
-/** Fuente de shards de prueba: elige el `DataSource` de prueba de cada ubicación y registra las que se piden. */
+/** Test shard source: picks the test `DataSource` of each location and records the ones requested. */
 export class FakeShardDataSources {
   readonly requested: ShardLocation[] = [];
 
@@ -15,7 +15,7 @@ export class FakeShardDataSources {
     return Promise.resolve(this.dataSourceFor(location).asDataSource());
   }
 
-  /** Expone el fake con la forma de `ShardDataSources` que pide `ShardsHealthCheck`. */
+  /** Exposes the fake with the `ShardDataSources` shape that `ShardsHealthCheck` requires. */
   asShardDataSources(): ShardDataSources {
     return this as unknown as ShardDataSources;
   }

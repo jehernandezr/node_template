@@ -1,6 +1,6 @@
 import type { AwsCredentials } from './aws-credentials.js';
 
-/** Entrega credenciales vigentes. Se pide en cada firma, porque las temporales rotan. */
+/** Returns current credentials. Requested on every signature, because temporary ones rotate. */
 export abstract class AwsCredentialsProvider {
   abstract resolve(): Promise<AwsCredentials>;
 }

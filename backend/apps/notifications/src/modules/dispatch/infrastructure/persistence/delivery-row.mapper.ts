@@ -2,7 +2,7 @@ import type { NotificationChannel } from '@contracts/notifications';
 import type { Delivery, DeliveryStatus } from '../../domain/delivery.js';
 import type { DeliveryEntity } from './entities/delivery.entity.js';
 
-/** Fila de `notification_deliveries` a entrega. Utilidad pura. */
+/** Maps a `notification_deliveries` row to a `Delivery`. Pure utility. */
 export class DeliveryRowMapper {
   static toDomain(row: DeliveryEntity): Delivery {
     return {

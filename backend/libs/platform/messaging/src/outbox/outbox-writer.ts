@@ -1,10 +1,10 @@
 import type { OutboxAppend } from './outbox.js';
 
 /**
- * Lado de escritura del outbox. `append` guarda el registro en la transacción
- * abierta en el contexto asíncrono actual, así se confirma o se deshace con el
- * cambio de negocio. El adaptador encuentra esa transacción con su propio
- * `TransactionManager`. Se usa a través de `OutboxMessageBus`.
+ * Write side of the outbox. `append` saves the record in the transaction
+ * open in the current async context, so it is committed or rolled back with the
+ * business change. The adapter finds that transaction with its own
+ * `TransactionManager`. Used through `OutboxMessageBus`.
  */
 export abstract class OutboxWriter {
   abstract append(record: OutboxAppend): Promise<void>;

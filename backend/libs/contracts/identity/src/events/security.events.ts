@@ -6,5 +6,5 @@ export const SecurityAlertRaisedEvent = defineEvent({
   type: IdentityEvent.SecurityAlertRaised,
   payload: SecurityAlertRaisedPayloadSchema,
   description:
-    'Se levantó una alerta de seguridad sobre una cuenta. Notifica al usuario por su canal.',
+    'A security alert was raised on an account. Notifies the user through their channel.',
 });

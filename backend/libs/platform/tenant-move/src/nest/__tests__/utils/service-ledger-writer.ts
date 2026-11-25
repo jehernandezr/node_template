@@ -9,16 +9,16 @@ import {
   WrongRegionError,
 } from '@platform/sharding';
 
-/** Una fila que el servicio confirmó: su id y el total con que quedó. */
+/** A row the service committed: its id and its resulting total. */
 export interface AckedLedger {
   readonly id: string;
   readonly total: string;
 }
 
 /**
- * Escribe ledgers de un tenant por la persistencia de un proceso del servicio, como lo haría un caso de uso. Inserta
- * filas nuevas y cambia las suyas, y lleva cuenta de lo confirmado: una escritura que el traslado rechaza no cuenta.
- * Cuando el proceso responde que el tenant vive en otra región, sigue a la URL que le dan, como el SDK del front.
+ * Writes ledgers of a tenant through the persistence of a service process, as a use case would. It inserts
+ * new rows and changes its own, and tracks what was committed: a write the move rejects does not count.
+ * When the process answers that the tenant lives in another region, it follows the URL it is given, like the front SDK.
  */
 export class ServiceLedgerWriter {
   private readonly acked = new Map<string, string>();
@@ -54,7 +54,7 @@ export class ServiceLedgerWriter {
       .sort((a, b) => a.id.localeCompare(b.id));
   }
 
-  /** Las URLs a las que lo mandaron las respuestas de región equivocada. */
+  /** The URLs the wrong-region responses sent it to. */
   redirectedTo(): readonly string[] {
     return this.redirects;
   }

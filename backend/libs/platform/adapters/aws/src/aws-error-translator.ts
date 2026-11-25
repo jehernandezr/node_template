@@ -3,7 +3,7 @@ import { MessagingError, MessagingErrorCode } from '@platform/messaging';
 import { FailureRule } from '@platform/primitives';
 import type { AwsOperation } from './aws-operation.enum.js';
 
-/** Forma de un error del SDK de AWS que el traductor sabe leer. */
+/** Shape of an AWS SDK error that the translator can read. */
 interface SdkErrorShape {
   readonly name?: unknown;
   readonly $fault?: unknown;
@@ -12,14 +12,14 @@ interface SdkErrorShape {
 }
 
 /**
- * Traduce los errores del SDK de AWS. Como `FailureRule` le dice al
- * `FailureClassifier` si un error del SDK es pasajero o permanente; como
- * traductor convierte el error de una operación en
- * `PLATFORM.MESSAGING.TRANSPORT_FAILED`, con la operación y el nombre del
- * error en el mensaje y nunca el cuerpo enviado.
+ * Translates AWS SDK errors. As a `FailureRule` it tells the
+ * `FailureClassifier` whether an SDK error is transient or permanent; as a
+ * translator it turns an operation's error into
+ * `PLATFORM.MESSAGING.TRANSPORT_FAILED`, with the operation and the error
+ * name in the message and never the sent body.
  */
 export class AwsErrorTranslator extends FailureRule {
-  /** Pasajero o permanente para un error del SDK; `undefined` para cualquier otro. */
+  /** Transient or permanent for an SDK error; `undefined` for anything else. */
   classify(error: object): FailureKind | undefined {
     if (!AwsErrorTranslator.isSdkError(error)) {
       return undefined;
@@ -30,9 +30,9 @@ export class AwsErrorTranslator extends FailureRule {
   }
 
   /**
-   * Si reintentar puede servir: fallas del servidor, throttling y errores de
-   * red (sin `$fault`). Un error de cliente (permiso, recurso inexistente,
-   * parámetro inválido) no cambia al repetir.
+   * Whether retrying can help: server faults, throttling and network
+   * errors (without `$fault`). A client error (permission, nonexistent resource,
+   * invalid parameter) does not change on retry.
    */
   isRetryable(error: unknown): boolean {
     const shape = (error ?? {}) as SdkErrorShape;
@@ -42,7 +42,7 @@ export class AwsErrorTranslator extends FailureRule {
     return shape.$fault !== 'client';
   }
 
-  /** Un `MessagingError` ya traducido pasa sin cambios. */
+  /** An already translated `MessagingError` passes through unchanged. */
   translate(
     operation: AwsOperation,
     error: unknown,

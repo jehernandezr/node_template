@@ -15,7 +15,7 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
-  // NestJS 12 se publica solo como ESM; Jest corre en CommonJS, así que se transpila.
+  // NestJS 12 is published only as ESM; Jest runs in CommonJS, so it is transpiled.
   transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?@nestjs[+/])'],
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',

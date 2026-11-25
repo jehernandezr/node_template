@@ -8,7 +8,7 @@ import type { InvalidationLog } from './invalidation-log.js';
 import type { PlacementCache } from './placement-cache.js';
 import type { RoutingKeyNormalizer } from './routing-key-normalizer.js';
 
-/** Aplica en este proceso un cambio del directorio publicado por otro. */
+/** Applies in this process a directory change published by another one. */
 export class DirectoryChangeApplier {
   constructor(
     private readonly cache: PlacementCache,
@@ -19,12 +19,12 @@ export class DirectoryChangeApplier {
   ) {}
 
   /**
-   * Solo cambia el estado en proceso: quien publicó ya dejó la lápida en el caché compartido.
-   * - Placement con `version`: descarta el placement cacheado salvo que ya esté en esa versión o
-   *   una mayor, y desde entonces ignora los más viejos.
-   * - Placement sin `version`: descarta el placement cacheado.
-   * - Instancia de un shard: descarta la instancia cacheada.
-   * Nunca lanza por un evento malo: lo informa a `onError` y lo ignora.
+   * Only changes in-process state: the publisher already left the tombstone in the shared cache.
+   * - Placement with `version`: discards the cached placement unless it is already at that version or
+   *   a higher one, and from then on ignores older ones.
+   * - Placement without `version`: discards the cached placement.
+   * - Shard instance: discards the cached instance.
+   * Never throws on a bad event: reports it to `onError` and ignores it.
    */
   apply(event: ShardDirectoryChanged): void {
     try {

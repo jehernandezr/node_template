@@ -1,17 +1,17 @@
 /**
- * Evento de una API HTTP de API Gateway con formato de carga 2.0 (el que usa
- * `api-routes` para las funciones). Solo los campos que lee el adaptador; se
- * declara aquí para no depender de `@types/aws-lambda`.
+ * Event of an API Gateway HTTP API with payload format 2.0 (the one
+ * `api-routes` uses for the functions). Only the fields the adapter reads; it is
+ * declared here to avoid depending on `@types/aws-lambda`.
  */
 export interface ApiGatewayHttpEvent {
   readonly version: string;
-  /** Ruta tal como llegó, sin la consulta y con el escape original. */
+  /** Path as it arrived, without the query and with the original escaping. */
   readonly rawPath: string;
-  /** Consulta sin el `?` inicial; vacía si no hay. */
+  /** Query without the leading `?`; empty if there is none. */
   readonly rawQueryString: string;
-  /** Cabeceras con el nombre en minúscula; los valores repetidos van unidos con coma. */
+  /** Headers with lowercase names; repeated values are joined with a comma. */
   readonly headers?: Readonly<Record<string, string | undefined>>;
-  /** Cookies de la petición, una por elemento (`nombre=valor`). */
+  /** Request cookies, one per element (`name=value`). */
   readonly cookies?: readonly string[];
   readonly requestContext: {
     readonly requestId?: string;

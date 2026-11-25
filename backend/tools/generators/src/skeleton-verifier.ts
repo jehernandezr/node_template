@@ -4,8 +4,8 @@ import { ServiceGenerator } from './service-generator.js';
 import type { TemplateSource } from './template-source.js';
 
 /**
- * Comprueba que la plantilla de servicio no se aparte del servicio de referencia: la genera con el nombre de tasks y
- * compara byte a byte los archivos de arranque y configuración, que no tienen dominio.
+ * Checks that the service template does not drift from the reference service: it generates it with the tasks name and
+ * compares byte for byte the bootstrap and configuration files, which have no domain.
  */
 export class SkeletonVerifier {
   static readonly REFERENCE = 'tasks';
@@ -30,7 +30,7 @@ export class SkeletonVerifier {
     private readonly writer: GeneratedFileWriter,
   ) {}
 
-  /** Las rutas que la plantilla no reproduce igual, o que no genera. Vacío si todo coincide. */
+  /** The paths the template does not reproduce identically, or does not generate. Empty if everything matches. */
   async differences(): Promise<string[]> {
     const rendered = new Map(
       this.generator

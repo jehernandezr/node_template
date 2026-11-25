@@ -6,16 +6,16 @@ import {
 import { ShardKey } from '@platform/sharding';
 import { SagaScopes, type SagaInstance } from '@platform/saga';
 
-/** Corre el trabajo de una saga en el shard de su tenant con un `ShardScope` de `ShardKey.Tenant`. */
+/** Runs the work of a saga on its tenant shard with a `ShardScope` of `ShardKey.Tenant`. */
 export class ShardedSagaScopes extends SagaScopes {
   constructor(private readonly scope: ShardScope) {
     super();
   }
 
   /**
-   * Fija el shard del tenant de la instancia mientras corre `body`. Así una
-   * recuperación, que no tiene petición, llega al mismo shard donde vive la saga.
-   * @throws PersistenceError `PersistenceTenantRequired` si la instancia no tiene tenant.
+   * Pins the shard of the instance tenant while `body` runs. This way a
+   * recovery, which has no request, reaches the same shard where the saga lives.
+   * @throws PersistenceError `PersistenceTenantRequired` if the instance has no tenant.
    */
   async run<T>(instance: SagaInstance, body: () => Promise<T>): Promise<T> {
     const tenantId = instance.tenantId;

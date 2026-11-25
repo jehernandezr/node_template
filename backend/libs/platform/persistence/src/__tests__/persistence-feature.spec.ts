@@ -11,7 +11,7 @@ const RESOLVER: ShardKeyResolver = {
   resolve: () => 'account-1',
 };
 
-/** Construye la declaración dentro de la promesa para leer su rechazo con `rejects`. */
+/** Builds the declaration inside the promise so its rejection can be read with `rejects`. */
 function featureOf(
   init: ConstructorParameters<typeof PersistenceFeature>[0],
 ): Promise<PersistenceFeature> {

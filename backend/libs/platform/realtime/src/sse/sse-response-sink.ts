@@ -3,7 +3,7 @@ import type { FrameSink } from '../session/frame-sink.js';
 import type { StoredFrame } from '../stream/realtime-frame.js';
 import { SseFrameEncoder } from './sse-frame-encoder.js';
 
-/** Escribe las tramas en la respuesta SSE. La respuesta empieza cuando la conexión ya escucha el stream. */
+/** Writes the frames to the SSE response. The response starts once the connection is already listening to the stream. */
 export class SseResponseSink implements FrameSink {
   private static readonly OK = 200;
 

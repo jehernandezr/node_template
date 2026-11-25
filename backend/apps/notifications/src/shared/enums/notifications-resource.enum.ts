@@ -1,4 +1,4 @@
-/** Recursos HTTP de notifications, para la etiqueta de las rutas. */
+/** notifications HTTP resources, for the route tag. */
 export enum NotificationsResource {
   Inbox = 'inbox',
   Preferences = 'preferences',

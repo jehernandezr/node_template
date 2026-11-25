@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../platform/enums/platform_enums.dart';
 import '../../tasks/schemas/tasks_schemas.dart';
 import '../../tasks/types/tasks_types.dart';
 
-/// Rutas HTTP públicas del contrato `tasks`.
+/// Public HTTP routes of the `tasks` contract.
 abstract final class TasksRoutes {
-  /// Lista las tareas del tenant activo o las busca por texto.
+  /// Lists the tasks of the active tenant or searches them by text.
   ///
   /// `GET /v1/tasks`
   static const listTasks = RouteDescriptor<ListTasksRequest, TaskPage>(
@@ -40,7 +40,7 @@ abstract final class TasksRoutes {
     decodeResponse: TaskPage.fromJson,
   );
 
-  /// Devuelve una tarea del tenant activo.
+  /// Returns a task of the active tenant.
   ///
   /// `GET /v1/tasks/{taskId}`
   static const getTask = RouteDescriptor<GetTaskRequest, Task>(
@@ -70,7 +70,7 @@ abstract final class TasksRoutes {
     decodeResponse: Task.fromJson,
   );
 
-  /// Crea una tarea en el tenant activo.
+  /// Creates a task in the active tenant.
   ///
   /// `POST /v1/tasks`
   static const createTask = RouteDescriptor<CreateTaskRequest, Task>(
@@ -100,7 +100,7 @@ abstract final class TasksRoutes {
     decodeResponse: Task.fromJson,
   );
 
-  /// Cambia campos de una tarea. Con expectedVersion, rechaza el cambio si la tarea se modificó antes.
+  /// Changes fields of a task. With expectedVersion, rejects the change if the task was modified before.
   ///
   /// `PATCH /v1/tasks/{taskId}`
   static const updateTask = RouteDescriptor<UpdateTaskRequest, Task>(
@@ -132,7 +132,7 @@ abstract final class TasksRoutes {
     decodeResponse: Task.fromJson,
   );
 
-  /// Borra una tarea de forma lógica.
+  /// Soft deletes a task.
   ///
   /// `DELETE /v1/tasks/{taskId}`
   static const deleteTask = RouteDescriptor<DeleteTaskRequest, void>(

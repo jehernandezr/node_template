@@ -6,10 +6,10 @@ import type {
 import type { ClaimTable } from './claim-table.js';
 
 /**
- * Adaptador TypeORM del puerto `ProcessedMessageStore` de `@platform/messaging` sobre `processed_messages`. Tiene la
- * misma semántica que `InMemoryProcessedMessageStore`: claims con dueño (token y lease), `in-progress` mientras otro
- * handler corre, `complete` y `release` solo con el token vigente. Dentro de una transacción abierta `complete` se
- * guarda junto a los efectos. La lógica vive en `ClaimTable`, que se inyecta ya armada con `ProcessedMessageEntity`.
+ * TypeORM adapter of the `ProcessedMessageStore` port of `@platform/messaging` on `processed_messages`. It has the
+ * same semantics as `InMemoryProcessedMessageStore`: owned claims (token and lease), `in-progress` while another
+ * handler runs, `complete` and `release` only with the current token. Inside an open transaction `complete` is
+ * saved together with the effects. The logic lives in `ClaimTable`, which is injected already built with `ProcessedMessageEntity`.
  */
 export class TypeOrmProcessedMessageStore implements ProcessedMessageStore {
   constructor(private readonly table: ClaimTable<ProcessedMessage>) {}

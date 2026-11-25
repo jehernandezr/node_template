@@ -5,7 +5,7 @@ import { HmacSecretHasher } from './hmac-secret-hasher.js';
 import { SecretGenerator } from './secret-generator.js';
 import { SecretHasher } from './secret-hasher.js';
 
-/** Huellas y secretos aleatorios que comparten los módulos de identity. */
+/** Hashes and random secrets shared by identity's modules. */
 @Global()
 @Module({
   providers: [

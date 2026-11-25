@@ -6,7 +6,7 @@ import { ServiceHostModule } from '../runtime/service-host.module.js';
 import { RunningService, type ServiceAddress } from './running-service.js';
 import type { ServiceBootstrapOptions } from './service-bootstrap-options.js';
 
-/** Arranque de un proceso de servicio. `main.ts` llama a `http`; `worker.ts`, a `worker`. */
+/** Startup of a service process. `main.ts` calls `http`; `worker.ts` calls `worker`. */
 export class ServiceBootstrap {
   private static readonly DEFAULT_PORT = 3000;
   private static readonly DEFAULT_HOST = '0.0.0.0';
@@ -16,7 +16,7 @@ export class ServiceBootstrap {
     logger: ['error', 'warn'],
   };
 
-  /** Proceso con servidor HTTP: crea la aplicación con `ServiceHostModule`, activa los hooks de cierre y escucha. */
+  /** Process with an HTTP server: creates the application with `ServiceHostModule`, enables the shutdown hooks and listens. */
   static async http(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
@@ -32,7 +32,7 @@ export class ServiceBootstrap {
             ServiceBootstrap.NEST_OPTIONS,
           );
     await options.http?.configurer?.configure(app);
-    // Con los hooks, SIGTERM llama a app.close(), que deja de aceptar y espera; no hace falta un manejador propio.
+    // With the hooks, SIGTERM calls app.close(), which stops accepting and waits; no custom handler is needed.
     app.enableShutdownHooks();
     await app.listen(
       options.http?.port ?? ServiceBootstrap.DEFAULT_PORT,
@@ -46,7 +46,7 @@ export class ServiceBootstrap {
     );
   }
 
-  /** Proceso sin servidor HTTP: jobs y consumidores. */
+  /** Process without an HTTP server: jobs and consumers. */
   static async worker(
     definition: ServiceDefinition,
     options: ServiceBootstrapOptions = {},
@@ -55,7 +55,7 @@ export class ServiceBootstrap {
       ServiceBootstrap.host(definition, options),
       ServiceBootstrap.NEST_OPTIONS,
     );
-    // Igual que en HTTP, los hooks de cierre bastan para SIGTERM.
+    // As with HTTP, the shutdown hooks are enough for SIGTERM.
     app.enableShutdownHooks();
     return new RunningService(
       definition.name,

@@ -12,14 +12,14 @@ import type { ExternalTraceparentPropagatorOptions } from './external-traceparen
 import { TraceContextCodec } from './trace-context-codec.js';
 
 /**
- * Propagador W3C que no adopta la traza de un cliente externo. Con la política
- * `External`, un `traceparent` válido de un portador no confiable no se
- * continúa: la petición abre una traza nueva (con el trace id UUIDv7 del
- * generador de la plataforma) y el trace id recibido queda en el contexto bajo
- * `EXTERNAL_TRACE_ID_KEY`. La inyección (llamadas salientes) es la de W3C sin cambios.
+ * W3C propagator that does not adopt the trace of an external client. With the
+ * `External` policy, a valid `traceparent` from an untrusted carrier is not
+ * continued: the request opens a new trace (with the UUIDv7 trace id of the
+ * platform generator) and the received trace id stays in the context under
+ * `EXTERNAL_TRACE_ID_KEY`. Injection (outgoing calls) is unchanged W3C.
  */
 export class ExternalTraceparentPropagator implements TextMapPropagator {
-  /** Llave del contexto OTel donde queda el trace id externo. */
+  /** OTel context key that holds the external trace id. */
   static readonly EXTERNAL_TRACE_ID_KEY = createContextKey(
     'platform.external_trace_id',
   );
@@ -36,7 +36,7 @@ export class ExternalTraceparentPropagator implements TextMapPropagator {
     this.isTrusted = options.isTrusted ?? (() => false);
   }
 
-  /** Trace id externo guardado en `context` (por defecto el activo), si lo hay. */
+  /** External trace id stored in `context` (the active one by default), if any. */
   static externalTraceIdFrom(
     context: Context = otelContext.active(),
   ): string | undefined {

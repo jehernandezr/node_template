@@ -5,18 +5,18 @@ import type { ResiliencePolicyConfig } from '../../policy/resilience-policy-conf
 import { ResilienceRegistry } from '../../resilience-registry.js';
 import type { ResilienceRegistryOptions } from '../../resilience-registry.options.js';
 
-/** Políticas y registros que usan las pruebas. */
+/** Policies and registries that the tests use. */
 export class TestPolicies {
   static readonly API = PolicyName.of('test-api');
 
-  /** Reintentos sin espera, para que las pruebas no dependan del reloj. */
+  /** Retries without a wait, so the tests do not depend on the clock. */
   static readonly NO_WAIT = new RetryPolicy(3, 0, 0, BackoffStrategy.None);
 
-  /** Operación que nunca termina: solo la cortan el plazo, el tiempo o la señal. */
+  /** Operation that never ends: only the deadline, the timeout or the signal cut it. */
   static readonly NEVER = (): Promise<never> =>
     new Promise<never>(() => undefined);
 
-  /** Política de prueba sobre la que se mezclan los ajustes de cada caso. */
+  /** Test policy onto which each case's settings are merged. */
   static config(
     overrides: Partial<ResiliencePolicyConfig> = {},
   ): ResiliencePolicyConfig {
@@ -28,7 +28,7 @@ export class TestPolicies {
     };
   }
 
-  /** Registro con la política `API`; el jitter siempre toma 0.5. */
+  /** Registry with the `API` policy; the jitter always takes 0.5. */
   static registry(
     overrides: Partial<ResiliencePolicyConfig> = {},
     options: ResilienceRegistryOptions = {},

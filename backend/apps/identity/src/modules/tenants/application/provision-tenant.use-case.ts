@@ -19,7 +19,7 @@ import { TenantRepository } from '../domain/tenant.repository.js';
 import { Tenant } from '../domain/tenant.js';
 import { TenantSummaryView } from './tenant-summary-view.js';
 
-/** Alta de un tenant: el dueño es opcional solo para los tenants que siembra la región. */
+/** Tenant creation: the owner is optional only for the tenants the region seeds. */
 export interface ProvisionTenantInput extends Omit<
   CreateTenantInput,
   'ownerUserId'
@@ -28,9 +28,9 @@ export interface ProvisionTenantInput extends Omit<
 }
 
 /**
- * Crea un tenant en aprovisionamiento: reserva el slug, lo ubica en los shards de su región y crea en su
- * shard la fila, los roles y grupos de sistema y la membresía de su dueño. Es idempotente por `tenantId`,
- * porque la saga de alta puede repetirla.
+ * Creates a tenant in provisioning: reserves the slug, places it in its region's shards and creates in its
+ * shard the row, the system roles and groups and its owner's membership. It is idempotent by `tenantId`,
+ * because the creation saga may repeat it.
  */
 @Injectable()
 export class ProvisionTenant {

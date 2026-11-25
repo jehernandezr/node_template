@@ -9,7 +9,7 @@ describe('ServiceDefinitionValidator', () => {
   const validator = new ServiceDefinitionValidator();
   const base = ServiceDefinitionBuilder.aDefinition('identity').build();
 
-  /** El contrato valida su nombre al crearse; para un nombre inválido se copia el contrato sin pasar por él. */
+  /** The contract validates its name on creation; for an invalid name the contract is copied without going through it. */
   const withName = (name: string): ServiceDefinition => ({
     ...base,
     name,

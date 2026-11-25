@@ -1,6 +1,6 @@
 import type { UseCase } from '@platform/kernel';
 
-/** Caso de uso que siempre lanza el error con el que se construyó. */
+/** Use case that always throws the error it was built with. */
 export class FailingUseCase implements UseCase<string, never> {
   constructor(private readonly failure: Error) {}
 

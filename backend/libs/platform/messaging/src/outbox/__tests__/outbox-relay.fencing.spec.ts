@@ -43,7 +43,7 @@ function testTopology(): Topology {
 const t0 = new Date('2026-01-01T00:00:00.000Z');
 const at = (ms: number) => new Date(t0.getTime() + ms);
 
-/** Deja correr las promesas pendientes. */
+/** Lets pending promises run. */
 const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 function envelope(id: string): MessageEnvelope {
@@ -55,7 +55,7 @@ function envelope(id: string): MessageEnvelope {
   });
 }
 
-/** Publicador que avanza el reloj al publicar el primer sobre, como si fuera lento. */
+/** Publisher that advances the clock when publishing the first envelope, as if it were slow. */
 class SlowFirstPublisher extends RecordingEnvelopePublisher {
   constructor(private readonly clock: FixedClock) {
     super();
@@ -129,7 +129,7 @@ describe('OutboxRelay fencing', () => {
     const { clock, store, publisher, relay } = setup();
     store.add(envelope('m1'));
 
-    // El relay A toma m1 y se queda en publish más allá de su lease.
+    // Relay A takes m1 and stays in publish beyond its lease.
     let release = (): void => undefined;
     const stalled = new Promise<void>((resolve) => {
       release = resolve;
@@ -158,7 +158,7 @@ describe('OutboxRelay fencing', () => {
     const { clock, store, relay } = setup();
     store.add(envelope('m1'));
     store.add(envelope('m2'));
-    // La primera publicación tarda más que el lease del segundo registro.
+    // The first publication takes longer than the lease of the second record.
     const slowFirst = new SlowFirstPublisher(clock);
 
     const report = await relay({
@@ -212,7 +212,7 @@ describe('OutboxRelay FIFO per groupId', () => {
       leaseOwner: undefined,
     });
 
-    // a2 vence, pero a1 no: el grupo espera.
+    // a2 expires, but a1 does not: the group waits.
     clock.advance(500);
     expect(await instance.relayOnce()).toMatchObject({
       claimed: 0,

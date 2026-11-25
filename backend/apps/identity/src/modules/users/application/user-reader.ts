@@ -11,7 +11,7 @@ import type { UserSnapshot } from '../domain/user-snapshot.js';
 import type { UserState } from '../domain/user.js';
 import { UserRepository } from '../domain/user.repository.js';
 
-/** Lecturas de usuarios: por email desde el catálogo y por referencia desde su shard. */
+/** User reads: by email from the catalog and by reference from their shard. */
 @Injectable()
 export class UserReader {
   constructor(
@@ -31,7 +31,7 @@ export class UserReader {
     return this.find(lookup);
   }
 
-  /** @throws IdentityError `IDENTITY.USER.NOT_FOUND` si no existe. */
+  /** @throws IdentityError `IDENTITY.USER.NOT_FOUND` if it does not exist. */
   async getByRef(ref: UserRef): Promise<UserSnapshot> {
     const user = await this.find(ref);
     if (user === undefined) {
@@ -47,7 +47,7 @@ export class UserReader {
       : { userId: lookup.userId, homeTenantId: lookup.homeTenantId };
   }
 
-  /** @throws IdentityError `IDENTITY.USER.NOT_FOUND` si el usuario no existe. */
+  /** @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the user does not exist. */
   async requireRef(userId: string): Promise<UserRef> {
     const ref = await this.refOf(userId);
     if (ref === undefined) {

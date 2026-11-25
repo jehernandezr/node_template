@@ -42,7 +42,7 @@ function startInput(
   };
 }
 
-/** Error que lanza `reusableFor` o `null` si no lanza, para inspeccionar sus campos. */
+/** Error thrown by `reusableFor`, or `null` if it does not throw, to inspect its fields. */
 function thrownBy(action: () => unknown): SagaError | null {
   try {
     action();

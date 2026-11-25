@@ -1,7 +1,7 @@
 import type { RouteDefinition } from '@contracts/platform';
 import type { EndpointOptions, ResourceOptions } from './endpoint-options.js';
 
-/** Una ruta del contrato atendida por un handler de un controller. */
+/** A contract route served by a controller handler. */
 export interface RegisteredEndpoint {
   readonly route: RouteDefinition;
   readonly options: EndpointOptions;

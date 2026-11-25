@@ -17,51 +17,51 @@ import { EnvelopeLimits } from '../envelope/envelope-limits.js';
 import { type EnvelopePublisher } from './envelope-publisher.js';
 import { type OutboxStore } from './outbox-store.js';
 
-/** Dependencias y ajustes del relay. */
+/** Dependencies and settings of the relay. */
 export interface OutboxRelayOptions {
   readonly store: OutboxStore;
   readonly publisher: EnvelopePublisher;
   readonly topology: Topology;
   /**
-   * Espera entre intentos fallidos, con tope en `maxMs`. Una falla de transporte
-   * nunca agota los intentos: el registro se reintenta hasta que el destino
-   * vuelva.
+   * Wait between failed attempts, capped at `maxMs`. A transport failure
+   * never exhausts the attempts: the record is retried until the destination
+   * comes back.
    */
   readonly retryPolicy: RetryPolicy;
-  /** Registros tomados con lease por pasada. Por defecto, 100. */
+  /** Records taken with a lease per pass. Defaults to 100. */
   readonly batchSize?: number;
   /**
-   * Etiqueta del dueño del lease. Cada instancia del relay agrega su propio id
-   * tomado de `ids`, así las réplicas nunca comparten dueño. Por defecto,
+   * Label of the lease owner. Each relay instance appends its own id
+   * taken from `ids`, so replicas never share an owner. Defaults to
    * `outbox-relay`.
    */
   readonly owner?: string;
-  /** Duración del lease en milisegundos. Por defecto, 30 segundos. */
+  /** Lease duration in milliseconds. Defaults to 30 seconds. */
   readonly leaseMs?: number;
-  /** Fuente del tiempo. Por defecto, el reloj del sistema. */
+  /** Time source. Defaults to the system clock. */
   readonly clock?: Clock;
-  /** Fuente del id de la instancia y de los tokens de lease de cada pasada. Por defecto, UUIDv7. */
+  /** Source of the instance id and of the lease tokens of each pass. Defaults to UUIDv7. */
   readonly ids?: IdGenerator;
-  /** Fuente del jitter de la espera entre intentos. Por defecto, la aleatoria del sistema. */
+  /** Source of the jitter of the wait between attempts. Defaults to the system randomness. */
   readonly random?: RandomSource;
 }
 
-/** Conteos de una pasada de {@link OutboxRelay.relayOnce}. */
+/** Counts of one pass of {@link OutboxRelay.relayOnce}. */
 export interface RelayReport {
   readonly claimed: number;
   readonly published: number;
-  /** Intentos fallidos que se reprogramaron. */
+  /** Failed attempts that were rescheduled. */
   readonly failed: number;
-  /** Registros que nunca se podrán entregar (sin ruta, demasiado grandes o fuera de contrato), dados por muertos. */
+  /** Records that can never be delivered (no route, too large or out of contract), declared dead. */
   readonly dead: number;
   /**
-   * Registros que no se publicaron porque un registro anterior de su grupo
-   * falló o se perdió en esta pasada. Se libera su lease y se conserva el orden.
+   * Records not published because an earlier record of their group
+   * failed or was lost in this pass. Their lease is released and the order is kept.
    */
   readonly deferred: number;
   /**
-   * Registros cuyo lease se perdió (venció antes de publicar, o una marca se
-   * rechazó porque otro relay tomó el registro).
+   * Records whose lease was lost (it expired before publishing, or a mark was
+   * rejected because another relay took the record).
    */
   readonly stale: number;
 }
@@ -71,29 +71,29 @@ const DEFAULT_OWNER = 'outbox-relay';
 const DEFAULT_LEASE_MS = 30_000;
 
 /**
- * Publica los registros del outbox que ya están vencidos, uno a uno y en orden
- * de `createdAt`. Cada registro se marca justo después de su publicación. La
- * entrega es al menos una vez: una caída entre la publicación y la marca puede
- * duplicar un mensaje, que los consumidores idempotentes absorben.
+ * Publishes the outbox records that are already due, one by one and in
+ * `createdAt` order. Each record is marked right after its publication. Delivery
+ * is at least once: a crash between the publication and the mark can
+ * duplicate a message, which idempotent consumers absorb.
  *
- * Fencing: cada instancia del relay tiene su propio id de dueño, y cada pasada
- * toma sus registros con un token nuevo. Las marcas solo se aplican mientras ese
- * lease sigue vigente, y un registro cuyo lease ya venció no se publica.
+ * Fencing: each relay instance has its own owner id, and each pass
+ * takes its records with a new token. Marks only apply while that
+ * lease is still valid, and a record whose lease already expired is not published.
  *
- * FIFO por `groupId`: cuando un registro de un grupo falla (o se pierde su
- * lease), los registros posteriores de ese grupo no se publican en esa pasada;
- * su lease se libera para que conserven su lugar detrás del fallido.
+ * FIFO per `groupId`: when a record of a group fails (or its lease is
+ * lost), the later records of that group are not published in that pass;
+ * their lease is released so they keep their place behind the failed one.
  *
- * `Dead` queda para lo que nunca se podrá entregar. Una falla de transporte se
- * reintenta sin límite con la espera de `retryPolicy`, y el rechazo de un
- * circuit breaker abierto ni siquiera cuenta como intento: el registro suelta su
- * lease y espera a la pasada siguiente. Un registro `Dead` no bloquea a su
- * grupo: no se va a entregar nunca y frenaría para siempre a los que siguen. Un
- * registro cuyo lease venció no se publica, porque otro relay puede tenerlo y
- * publicarlo desordenaría el grupo.
+ * `Dead` is reserved for what can never be delivered. A transport failure is
+ * retried without limit with the `retryPolicy` wait, and the rejection of an
+ * open circuit breaker does not even count as an attempt: the record releases its
+ * lease and waits for the next pass. A `Dead` record does not block its
+ * group: it will never be delivered and would stall the ones behind it forever. A
+ * record whose lease expired is not published, because another relay may hold it and
+ * publishing it would put the group out of order.
  */
 export class OutboxRelay {
-  /** Dueño del lease de esta instancia del relay: `<etiqueta>:<id de instancia>`. */
+  /** Lease owner of this relay instance: `<label>:<instance id>`. */
   readonly ownerId: string;
 
   private readonly options: OutboxRelayOptions;
@@ -121,7 +121,7 @@ export class OutboxRelay {
     this.ownerId = `${options.owner ?? DEFAULT_OWNER}:${this.ids.next().toString()}`;
   }
 
-  /** Corre una pasada sobre los registros vencidos a esta hora. */
+  /** Runs one pass over the records due at this time. */
   async relayOnce(): Promise<RelayReport> {
     const { store, publisher } = this.options;
     const passStart = this.clock.now().getTime();
@@ -218,17 +218,17 @@ export class OutboxRelay {
     };
   }
 
-  /** Lo que resta de la espera de un comando, contada desde la creación del registro. */
+  /** What remains of a command's delay, counted from the record creation. */
   private remainingDelay(record: OutboxRecord, now: number): number {
     if (!record.delayMs) return 0;
     return Math.max(0, record.createdAt.getTime() + record.delayMs - now);
   }
 
   /**
-   * Resuelve el destino, o devuelve el motivo por el que el registro no se puede
-   * entregar nunca: no hay ruta, el sobre supera el límite de tamaño, el payload
-   * rompe el contrato de la ruta (moriría en la DLQ de todos los consumidores) o
-   * el destino es FIFO y el registro no tiene id de grupo.
+   * Resolves the destination, or returns the reason why the record can never
+   * be delivered: there is no route, the envelope exceeds the size limit, the payload
+   * breaks the route contract (it would die in the DLQ of every consumer) or
+   * the destination is FIFO and the record has no group id.
    */
   private targetFor(record: OutboxRecord): OutboundTarget | string {
     const { type } = record.envelope;

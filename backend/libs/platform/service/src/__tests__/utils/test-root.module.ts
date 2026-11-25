@@ -1,2 +1,2 @@
-/** Módulo raíz vacío para las definiciones de prueba. */
+/** Empty root module for the test definitions. */
 export class TestRootModule {}

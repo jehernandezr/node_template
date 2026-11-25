@@ -1,12 +1,12 @@
 import type { ValkeyArgument } from '../../valkey-argument.js';
 import type { ValkeyCommandRunner } from '../../valkey-command-runner.js';
 
-/** Un comando enviado: nombre y argumentos. */
+/** A sent command: name and arguments. */
 export type RecordedCommand = readonly [string, ValkeyArgument[]];
 
 /**
- * Cliente de prueba que guarda cada comando y responde, en orden, con lo que
- * se le dio: una respuesta o un `Error` que lanza.
+ * Test client that records each command and answers, in order, with what
+ * it was given: a reply or an `Error` that it throws.
  */
 export class ScriptedValkeyRunner implements ValkeyCommandRunner {
   readonly calls: RecordedCommand[] = [];
@@ -25,7 +25,7 @@ export class ScriptedValkeyRunner implements ValkeyCommandRunner {
     return answer;
   }
 
-  /** Nombres de los comandos enviados, en orden. */
+  /** Names of the commands sent, in order. */
   get commands(): string[] {
     return this.calls.map(([command]) => command);
   }

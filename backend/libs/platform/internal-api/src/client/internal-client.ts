@@ -17,33 +17,33 @@ import type { CallOptions } from './call-options.js';
 import type { InternalClientCollaborators } from './internal-client-collaborators.js';
 
 /**
- * Cliente tipado de las operaciones internas. Valida antes de enviar y deja
- * los reintentos, los tiempos y el breaker al `ResilienceRegistry`. Nunca lanza
- * por problemas de contrato: todo resultado es un `CallOutcome`.
- * - Entrada inválida: error de negocio `PLATFORM.VALIDATION.INVALID_INPUT` con
- *   `details.fieldErrors` (`InputViolationOutcome`), sin llamar al transporte. El
- *   router responde la misma entrada con el mismo resultado.
- * - Salida inválida o demasiado grande, o un código de negocio no declarado: `protocol-violation`.
- * - Error de negocio declarado: `business-error`, nunca se reintenta.
- * - Excepciones del transporte: se clasifican con `FailureClassifier`.
- * - Intento vencido o cancelado: `uncertain`.
- * Una operación idempotente reintenta `transient-failure` y `uncertain` dentro
- * del plazo; el servidor deduplica por llave de idempotencia.
+ * Typed client for internal operations. It validates before sending and leaves
+ * retries, timeouts and the breaker to the `ResilienceRegistry`. It never throws
+ * for contract problems: every result is a `CallOutcome`.
+ * - Invalid input: business error `PLATFORM.VALIDATION.INVALID_INPUT` with
+ *   `details.fieldErrors` (`InputViolationOutcome`), without calling the transport. The
+ *   router answers the same input with the same result.
+ * - Invalid or too large output, or an undeclared business code: `protocol-violation`.
+ * - Declared business error: `business-error`, never retried.
+ * - Transport exceptions: classified with `FailureClassifier`.
+ * - Expired or cancelled attempt: `uncertain`.
+ * An idempotent operation retries `transient-failure` and `uncertain` within
+ * the deadline; the server deduplicates by idempotency key.
  */
 export class InternalClient {
   constructor(private readonly collaborators: InternalClientCollaborators) {}
 
-  /** Catálogo de las operaciones que este cliente puede llamar, si se le dio uno. */
+  /** Catalog of the operations this client can call, if it was given one. */
   get contracts(): ContractRegistry | undefined {
     return this.collaborators.registry;
   }
 
   /**
-   * Llama a una operación declarada con `defineOperation`. Una operación que
-   * no se resuelve (`InvalidOperation`) o que no está en el catálogo
-   * (`UnknownOperation`) no lanza: el `InternalApiError` pasa por
-   * `translator.translate(error, { started: false })`, que lo convierte en
-   * `protocol-violation` con su código.
+   * Calls an operation declared with `defineOperation`. An operation that
+   * does not resolve (`InvalidOperation`) or is not in the catalog
+   * (`UnknownOperation`) does not throw: the `InternalApiError` goes through
+   * `translator.translate(error, { started: false })`, which converts it into
+   * `protocol-violation` with its code.
    */
   async call<S extends OperationDefinition>(
     operation: S,
@@ -54,12 +54,12 @@ export class InternalClient {
     try {
       descriptor = this.descriptorFor(operation);
     } catch (error) {
-      // El traductor convierte el error de contrato en su resultado; su salida no tiene el tipo de la operación.
+      // The translator converts the contract error into its result; its output does not have the operation type.
       return this.collaborators.translator.translate(error, {
         started: false,
       }) as CallOutcome<OperationOutputOf<S>>;
     }
-    // La salida ya pasó por `descriptor.output`, así que su forma coincide con la de la operación.
+    // The output already went through `descriptor.output`, so its shape matches the operation's.
     return (await this.callDescriptor(
       descriptor,
       input,
@@ -67,7 +67,7 @@ export class InternalClient {
     )) as CallOutcome<OperationOutputOf<S>>;
   }
 
-  /** Llama a una operación registrada por su id. Lo usan llamadores genéricos como el motor de sagas. */
+  /** Calls a registered operation by its id. Used by generic callers such as the saga engine. */
   callById(
     operationId: string,
     input: unknown,
@@ -150,7 +150,7 @@ export class InternalClient {
         policies.resolve(metadata),
         (signal, current) => attempt.run(signal, current),
         {
-          // El breaker es por servicio dueño de la operación; el reintento lo decide el registro con `idempotent`.
+          // The breaker is per service that owns the operation; the registry decides the retry with `idempotent`.
           idempotent: metadata.idempotent,
           deadline,
           dependencyKey: metadata.service(),

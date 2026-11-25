@@ -13,7 +13,7 @@ import type { Task } from '../domain/task.js';
 import { TaskCursors } from './task-cursors.js';
 import { TaskViews } from './task-view.js';
 
-/** Lista las tareas del tenant, de la más nueva a la más antigua, o las busca por texto si llega `q`. */
+/** Lists the tenant's tasks, from newest to oldest, or searches them by text if `q` is present. */
 @Injectable()
 export class ListTasks {
   private readonly cursors = new TaskCursors();
@@ -24,7 +24,7 @@ export class ListTasks {
     private readonly shard: TenantShard,
   ) {}
 
-  /** @throws TasksError `TASKS.SEARCH.QUERY_TOO_SHORT` si `q` no llega al mínimo. */
+  /** @throws TasksError `TASKS.SEARCH.QUERY_TOO_SHORT` if `q` does not reach the minimum. */
   execute(tenantId: string, request: ListTasksRequest): Promise<TaskPage> {
     const limit = request.limit ?? TasksDefaults.pageSize;
     return this.shard.run(tenantId, () =>
@@ -69,7 +69,7 @@ export class ListTasks {
     };
   }
 
-  /** Se pide una tarea de más: si llega, hay página siguiente. */
+  /** One extra task is requested: if it arrives, there is a next page. */
   private pageOf(tasks: readonly Task[], limit: number): TaskPage {
     const items = tasks.slice(0, limit);
     const last = items.at(-1);

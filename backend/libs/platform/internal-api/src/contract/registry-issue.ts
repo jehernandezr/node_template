@@ -1,6 +1,6 @@
 import type { RegistryIssueCode } from './registry-issue-code.enum.js';
 
-/** Problema que encuentra `ContractRegistry.validate()`. */
+/** Problem that `ContractRegistry.validate()` finds. */
 export interface RegistryIssue {
   readonly code: RegistryIssueCode;
   readonly operationId: string;

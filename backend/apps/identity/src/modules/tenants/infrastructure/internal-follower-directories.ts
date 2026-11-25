@@ -7,7 +7,7 @@ import { FollowerDirectoryUnavailableError } from '../../../shared/errors/follow
 import { TenantDirectoryFollowers } from '../application/tenant-directory-followers.js';
 import { FollowerDirectories } from '../domain/follower-directories.js';
 
-/** Ubica el tenant en el directorio de cada servicio por su operación interna, uno tras otro. */
+/** Places the tenant in each service's directory through its internal operation, one after another. */
 @Injectable()
 export class InternalFollowerDirectories extends FollowerDirectories {
   constructor(

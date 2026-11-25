@@ -7,28 +7,28 @@ import type { TenantTransfer } from './tenant-transfer.js';
 import type { TransferBudget } from './transfer-budget.js';
 
 /**
- * Copia los datos de un tenant de su shard de origen al de destino, según el manifiesto del servicio. Cada método
- * trabaja dentro del plazo de una llamada y es idempotente: repetirlo continúa donde quedó.
+ * Copies a tenant's data from its source shard to the target one, according to the service manifest. Each method
+ * works within one call's budget and is idempotent: repeating it continues where it left off.
  */
 export abstract class TenantDataTransfer {
   /**
-   * Una ronda de copia mientras las escrituras siguen.
-   * @throws TenantMoveError `RoundPending` si la ronda no terminó en el plazo.
+   * Runs one copy round while writes continue.
+   * @throws TenantMoveError `RoundPending` if the round did not finish within the budget.
    */
   abstract sync(transfer: TenantTransfer): Promise<TenantMoveProgress>;
 
   /**
-   * La última ronda y la verificación, con el tenant ya congelado en el origen.
-   * @throws TenantMoveError `RoundPending` si no terminó en el plazo; la llamada siguiente sigue donde quedó.
+   * Runs the last round and the verification, with the tenant already frozen on the source.
+   * @throws TenantMoveError `RoundPending` if it did not finish within the budget; the next call continues where it left off.
    */
   abstract verify(transfer: TenantTransfer): Promise<TenantMoveVerification>;
 
-  /** Descarta lo copiado al destino. */
+  /** Discards what was copied to the target. */
   abstract abort(transfer: TenantTransfer): Promise<void>;
 
   /**
-   * Borra los datos del tenant que quedaron en el origen después del traslado, dentro de `budget` si se da.
-   * @throws TenantMoveError `RoundPending` si no terminó en el plazo; la llamada siguiente sigue donde quedó.
+   * Deletes the tenant data left on the source after the move, within `budget` if given.
+   * @throws TenantMoveError `RoundPending` if it did not finish within the budget; the next call continues where it left off.
    */
   abstract cleanup(
     tenantId: string,
@@ -36,7 +36,7 @@ export abstract class TenantDataTransfer {
     budget?: TransferBudget,
   ): Promise<void>;
 
-  /** Cambia a `region` las columnas de región que declara el manifiesto, en las filas del tenant en `target`. */
+  /** Sets to `region` the region columns the manifest declares, in the tenant rows on `target`. */
   abstract assignRegion(
     tenantId: string,
     target: DataSource,

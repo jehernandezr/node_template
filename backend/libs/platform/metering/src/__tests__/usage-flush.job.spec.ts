@@ -24,7 +24,7 @@ const TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
 const TENANT_B = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
 const MINUTE = 60_000;
 
-/** Bus que se cae para un tenant, como un shard que no responde. */
+/** Bus that goes down for one tenant, like a shard that does not respond. */
 class FailingFor extends RecordingMessageBus {
   constructor(
     transactions: InMemoryTransactionManager,

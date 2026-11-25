@@ -1,7 +1,7 @@
-/** Cómo llega una llamada al servicio dueño de la operación. */
+/** How a call reaches the service that owns the operation. */
 export enum InternalTransportKind {
-  /** Por HTTP firmado hacia otro proceso. */
+  /** Over signed HTTP to another process. */
   Http = 'http',
-  /** Directo al router del mismo proceso; es el modo local y el de las pruebas. */
+  /** Directly to the router of the same process; it is the local mode and the test mode. */
   InProcess = 'in-process',
 }

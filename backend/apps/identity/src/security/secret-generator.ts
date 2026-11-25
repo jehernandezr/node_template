@@ -1,6 +1,6 @@
 import type { RandomSource } from '@platform/kernel';
 
-/** Secretos aleatorios de identity: tokens opacos y códigos numéricos, a partir de una `RandomSource`. */
+/** Identity's random secrets: opaque tokens and numeric codes, from a `RandomSource`. */
 export class SecretGenerator {
   private static readonly DIGITS = '0123456789';
   private static readonly BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -13,12 +13,12 @@ export class SecretGenerator {
     return Buffer.from(this.random.bytes(length));
   }
 
-  /** Código numérico de `length` dígitos, uniforme (sin sesgo de módulo). */
+  /** Numeric code of `length` digits, uniform (without modulo bias). */
   digits(length: number): string {
     return this.fromAlphabet(SecretGenerator.DIGITS, length);
   }
 
-  /** Texto en base32 (RFC 4648, mayúsculas), como el prefijo de una API key. */
+  /** Base32 text (RFC 4648, uppercase), like an API key prefix. */
   base32(length: number): string {
     return this.fromAlphabet(SecretGenerator.BASE32, length);
   }
@@ -27,7 +27,7 @@ export class SecretGenerator {
     return this.fromAlphabet(SecretGenerator.ALPHANUMERIC, length);
   }
 
-  /** Cada símbolo sale de un byte; se descartan los bytes que darían más peso a los primeros símbolos. */
+  /** Each symbol comes from one byte; bytes that would give more weight to the first symbols are discarded. */
   private fromAlphabet(alphabet: string, length: number): string {
     const limit = 256 - (256 % alphabet.length);
     let result = '';

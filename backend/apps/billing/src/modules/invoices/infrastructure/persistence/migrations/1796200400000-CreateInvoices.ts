@@ -11,8 +11,8 @@ const BASE =
 const TABLES = ['invoices', 'invoice_lines', 'invoice_sequences'] as const;
 
 /**
- * Facturas (auditadas), sus líneas y el consecutivo por serie, con RLS por tenant. `invoices` admite además
- * la sesión de mantenimiento del job que retoma los cobros pendientes de todos los tenants.
+ * Invoices (audited), their lines and the sequence per series, with RLS per tenant. `invoices` also allows
+ * the maintenance session of the job that resumes the pending charges of all tenants.
  */
 export class CreateInvoices1796200400000 implements MigrationInterface {
   readonly name = 'CreateInvoices1796200400000';

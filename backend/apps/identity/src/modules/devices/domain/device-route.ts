@@ -1,9 +1,9 @@
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 
 /**
- * Id público de un dispositivo, `dv1_<usuario>_<tenant de origen>_<dispositivo>`: con él una petición sin
- * sesión llega al shard del usuario. La app lo arma con los claims `sub`, `htid` y `did` de su access token;
- * la prueba de que es el dispositivo es la firma ES256 con su clave, no el id.
+ * Public id of a device, `dv1_<user>_<home tenant>_<device>`: with it a request without a
+ * session reaches the user's shard. The app builds it from the `sub`, `htid` and `did` claims of its access token;
+ * the proof that it is the device is the ES256 signature with its key, not the id.
  */
 export class DeviceRoute {
   static readonly PREFIX = 'dv1';

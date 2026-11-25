@@ -5,12 +5,12 @@ import type {
   PlatformRole,
 } from '@contracts/identity';
 
-/** Acceso efectivo de un usuario en un tenant, con la versión de permisos con que se calculó. */
+/** Effective access of a user in a tenant, with the permissions version it was computed with. */
 export interface AccessGrant {
   readonly permissions: readonly Permission[];
   readonly platformRoles: readonly PlatformRole[];
   readonly features: readonly PlanFeature[];
   readonly flags: readonly FeatureFlag[];
-  /** `<versión del tenant>.<versión del usuario>`, el mismo formato del claim `pv`. */
+  /** `<tenant version>.<user version>`, the same format as the `pv` claim. */
   readonly permissionVersion: string;
 }

@@ -14,8 +14,8 @@ import type { TenantWriteFence } from './tenant-write-fence.js';
 import { TypeOrmUnitOfWork } from './typeorm-unit-of-work.js';
 
 /**
- * Implementa el puerto `TransactionManager` del kernel con un `QueryRunner` del shard resuelto.
- * Una transacción vive en un solo shard: cada una abre su `TransactionShardGuard` de `@platform/sharding`.
+ * Implements the kernel `TransactionManager` port with a `QueryRunner` of the resolved shard.
+ * A transaction lives on a single shard: each one opens its `TransactionShardGuard` from `@platform/sharding`.
  */
 export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfWork> {
   private static readonly COMMIT_HOOK_FAILED =
@@ -28,8 +28,8 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
   private readonly storage = new AsyncLocalStorage<TypeOrmUnitOfWork>();
 
   /**
-   * @param fence Barrera de traslado de tenants. Sin ella las escrituras no la consultan, como en las bases que no
-   *   tienen `tenant_write_fences`.
+   * @param fence Tenant relocation barrier. Without it writes do not check it, as in databases that do not
+   *   have `tenant_write_fences`.
    */
   constructor(
     private readonly resolver: ShardResolver,
@@ -53,7 +53,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     const shard = handle.resolved.logicalShard;
     const existing = this.current();
     if (existing !== undefined) {
-      // Se une a la transacción abierta: las opciones de la externa mandan.
+      // Joins the open transaction: the outer one's options take precedence.
       TransactionShardGuard.current()?.touch(shard);
       return fn(existing);
     }
@@ -74,7 +74,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
       uow.afterCommit(hook);
       return;
     }
-    // Sin transacción no hay nada que esperar: el efecto corre de inmediato y sin bloquear.
+    // Without a transaction there is nothing to wait for: the effect runs immediately and without blocking.
     try {
       void Promise.resolve(hook()).catch((error: unknown) => {
         this.logHookFailure(
@@ -132,7 +132,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
         try {
           await qr.rollbackTransaction();
         } catch {
-          // El error original es el que importa al llamador.
+          // The original error is the one that matters to the caller.
         }
         hooks = uow?.takeRollbackHooks() ?? [];
       }
@@ -149,10 +149,10 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
   }
 
   /**
-   * Suelta el candado de la barrera y devuelve la conexión al pool. Si el candado no se suelta, cierra la conexión
-   * antes de devolverla, así el pool la descarta y Postgres suelta el candado al cerrar la sesión: si volviera al
-   * pool con el candado tomado, el traslado del tenant esperaría para siempre. El resultado de la transacción no
-   * cambia.
+   * Releases the barrier lock and returns the connection to the pool. If the lock is not released, closes the connection
+   * before returning it, so the pool discards it and Postgres releases the lock when the session closes: if it went back to the
+   * pool with the lock held, the tenant relocation would wait forever. The transaction result does not
+   * change.
    */
   private async release(
     qr: QueryRunner,
@@ -171,7 +171,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     await qr.release();
   }
 
-  /** Cierra la sesión de la conexión; una conexión ya cortada no tiene nada que cerrar. */
+  /** Closes the connection session; an already dropped connection has nothing to close. */
   private async close(qr: QueryRunner): Promise<void> {
     const connection: { end(): Promise<void> } = await qr.connect();
     try {
@@ -207,7 +207,7 @@ export class TypeOrmTransactionManager extends TransactionManager<TypeOrmUnitOfW
     }
   }
 
-  /** Corre los efectos en orden. Un efecto que falla se reporta y no cambia el resultado. */
+  /** Runs the effects in order. A failing effect is reported and does not change the result. */
   private async runHooks(
     hooks: readonly TransactionHook[],
     message: string,

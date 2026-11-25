@@ -1,7 +1,7 @@
 /**
- * Códigos de error transversales a toda la plataforma.
- * Formato: SERVICIO.SUBMÓDULO.ERROR. Los códigos de cada servicio viven en su propio contrato.
- * Cada valor tiene una entrada en `platformErrorCatalog`.
+ * Error codes that cut across the whole platform.
+ * Format: SERVICE.SUBMODULE.ERROR. Each service's codes live in its own contract.
+ * Each value has an entry in `platformErrorCatalog`.
  */
 export enum PlatformErrorCode {
   ValidationInvalidInput = 'PLATFORM.VALIDATION.INVALID_INPUT',

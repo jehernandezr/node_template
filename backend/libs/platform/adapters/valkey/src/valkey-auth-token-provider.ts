@@ -1,11 +1,11 @@
 import type { ValkeyAuthRequest } from './valkey-auth-request.js';
 
 /**
- * Entrega la contraseña de cada conexión nueva, por ejemplo el token IAM de
- * ElastiCache. Es un puerto de este adaptador: `ElastiCacheIamAuthTokenProvider`
- * de `@platform/adapters-aws` lo cumple por forma, así `valkey` no depende de `aws`.
+ * Provides the password of each new connection, for example the ElastiCache
+ * IAM token. It is a port of this adapter: `ElastiCacheIamAuthTokenProvider`
+ * from `@platform/adapters-aws` satisfies it structurally, so `valkey` does not depend on `aws`.
  */
 export abstract class ValkeyAuthTokenProvider {
-  /** Token vigente para esa identidad. Se pide en cada conexión y reconexión, nunca se guarda. */
+  /** Returns the current token for that identity. It is requested on each connection and reconnection, never stored. */
   abstract token(request: ValkeyAuthRequest): Promise<string>;
 }

@@ -5,7 +5,7 @@ import type { SagaEngine } from './saga-engine.js';
 import type { StartOptions } from './start-options.js';
 
 /**
- * Lo que un caso de uso inyecta para arrancar una saga por su clase:
+ * What a use case injects to start a saga by its class:
  * `await this.sagas.start(CreateTenantSaga, state, { idempotencyKey })`.
  */
 export class Sagas {
@@ -15,8 +15,8 @@ export class Sagas {
   ) {}
 
   /**
-   * Arranca la saga de `definition` con `state` y la corre hasta que se pause o termine.
-   * @throws SagaError `UnknownDefinition` si la clase no está registrada con `SagaModule.forFeature`.
+   * Starts the `definition` saga with `state` and runs it until it pauses or finishes.
+   * @throws SagaError `UnknownDefinition` if the class is not registered with `SagaModule.forFeature`.
    */
   start<TState>(
     definition: SagaDefinitionClass<TState>,

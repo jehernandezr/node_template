@@ -6,8 +6,8 @@ import { UsageLedger, type UsageLevel } from '../domain/usage-ledger.js';
 import { UsageFacade } from './usage.facade.js';
 
 /**
- * `UsageFacade` dentro del proceso. Los usuarios no se miden por día: cuentan los miembros de hoy, que es lo
- * que limita la cuota al agregar uno.
+ * In-process `UsageFacade`. Users are not measured per day: today's members count, which is what
+ * the quota limits when adding one.
  */
 @Injectable()
 export class LocalUsageFacade extends UsageFacade {

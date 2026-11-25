@@ -1,22 +1,22 @@
 /**
- * Declaración de un filtro con nombre: cuánto cabe, cuánto puede equivocarse y cuándo se reconstruye.
- * @typeParam TName enum de nombres de filtro del llamador, como cadena.
+ * Declaration of a named filter: how much fits, how wrong it can be and when it is rebuilt.
+ * @typeParam TName caller's enum of filter names, as a string.
  */
 export interface BloomFilterDefinition<TName extends string = string> {
   readonly name: TName;
-  /** Ítems para los que se dimensiona el filtro. Más allá de ellos, la tasa de falsos positivos crece. */
+  /** Items the filter is sized for. Beyond them, the false positive rate grows. */
   readonly expectedItems: number;
-  /** Tasa de falsos positivos objetivo. Por defecto `BloomSizing.DEFAULT_FALSE_POSITIVE_RATE` (1 %). */
+  /** Target false positive rate. Defaults to `BloomSizing.DEFAULT_FALSE_POSITIVE_RATE` (1 %). */
   readonly falsePositiveRate?: number;
   /**
-   * Expresión cron (cinco campos, o seis con segundos, en UTC) del job que reconstruye el filtro desde su
-   * fuente de verdad. Un filtro no olvida ítems, así que la reconstrucción es lo que descarta los eliminados
-   * y reinicia un filtro que creció más allá de `expectedItems`.
+   * Cron expression (five fields, or six with seconds, in UTC) of the job that rebuilds the filter from its
+   * source of truth. A filter does not forget items, so the rebuild is what discards removed ones
+   * and resets a filter that grew beyond `expectedItems`.
    */
   readonly rebuildCron: string;
 }
 
-/** Una definición con su valor por defecto aplicado y sus valores verificados. */
+/** A definition with its default value applied and its values verified. */
 export interface ResolvedBloomFilterDefinition<
   TName extends string = string,
 > extends BloomFilterDefinition<TName> {

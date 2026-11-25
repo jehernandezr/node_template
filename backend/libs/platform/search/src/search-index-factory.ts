@@ -7,8 +7,8 @@ import { SearchMode } from './search-mode.enum.js';
 import type { SearchSettings } from './search.config.js';
 
 /**
- * Arma el `SearchIndex` de un módulo con su `RepositoryKit`, en el modo de `SEARCH_MODE`. El modo híbrido
- * exige un `EmbeddingProvider`: sin él el servicio no arranca, en vez de buscar en silencio solo por texto.
+ * Builds a module's `SearchIndex` with its `RepositoryKit`, in the `SEARCH_MODE` mode. Hybrid mode
+ * requires an `EmbeddingProvider`: without it the service does not start, instead of silently searching by text only.
  */
 export class SearchIndexFactory {
   constructor(

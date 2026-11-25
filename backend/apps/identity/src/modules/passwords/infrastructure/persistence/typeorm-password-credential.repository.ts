@@ -5,7 +5,7 @@ import type { PasswordCredential } from '../../domain/password-credential.js';
 import { PasswordCredentialRepository } from '../../domain/password-credential.repository.js';
 import { PasswordCredentialEntity } from './entities/password-credential.entity.js';
 
-/** `PasswordCredentialRepository` sobre `password_credentials`. */
+/** `PasswordCredentialRepository` on top of `password_credentials`. */
 @Injectable()
 export class TypeOrmPasswordCredentialRepository
   extends UserShardRepository

@@ -7,7 +7,7 @@ import type { SagaStore } from '../store/saga-store.js';
 import type { SagaRun } from './saga-run.js';
 import type { SagaSettings } from './saga-settings.js';
 
-/** Toma, renueva y suelta el lease de una saga para una corrida. */
+/** Takes, renews and releases a saga's lease for a run. */
 export class LeaseKeeper {
   constructor(
     private readonly store: SagaStore,
@@ -17,7 +17,7 @@ export class LeaseKeeper {
     private readonly logger?: LoggerPort,
   ) {}
 
-  /** Corrida nueva para `sagaId`, con un token que nadie más tiene. */
+  /** New run for `sagaId`, with a token nobody else has. */
   newRun(sagaId: string): SagaRun {
     return {
       sagaId,
@@ -25,14 +25,14 @@ export class LeaseKeeper {
     };
   }
 
-  /** Hasta cuándo dura un lease tomado en `now`. */
+  /** Returns until when a lease taken at `now` lasts. */
   leaseUntil(now: Date): Date {
     return new Date(now.getTime() + this.settings.leaseMs);
   }
 
   /**
-   * Toma el lease de la corrida.
-   * @throws SagaError `NotFound` si la saga no existe y `LeaseNotAcquired` si otra corrida lo tiene.
+   * Takes the lease of the run.
+   * @throws SagaError `NotFound` if the saga does not exist and `LeaseNotAcquired` if another run holds it.
    */
   async acquire(run: SagaRun): Promise<void> {
     const now = this.clock.now();
@@ -58,7 +58,7 @@ export class LeaseKeeper {
   }
 
   /**
-   * Extiende el lease más allá del plazo del paso. Si se perdió, se detiene sin escribir.
+   * Extends the lease beyond the step's deadline. If it was lost, it stops without writing.
    * @throws SagaError `LeaseLost`
    */
   async renewPast(run: SagaRun, deadline: Deadline): Promise<void> {
@@ -81,7 +81,7 @@ export class LeaseKeeper {
     await this.store.releaseLease(run.sagaId, run.token);
   }
 
-  /** Suelta el lease tras una corrida fallida; el error original es lo que necesita quien llama. */
+  /** Releases the lease after a failed run; the original error is what the caller needs. */
   async releaseQuietly(run: SagaRun): Promise<void> {
     try {
       await this.release(run);

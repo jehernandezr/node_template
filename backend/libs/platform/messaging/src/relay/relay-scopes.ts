@@ -1,9 +1,9 @@
 /**
- * Recorre las particiones de las que hay que publicar el outbox sin que
- * messaging conozca la persistencia. Con shards, el adaptador de Postgres
- * entrega una versión que corre `body` una vez por shard.
+ * Iterates over the partitions whose outbox must be published without
+ * messaging knowing the persistence. With shards, the Postgres adapter
+ * provides a version that runs `body` once per shard.
  */
 export abstract class RelayScopes {
-  /** Corre `body` una vez por cada partición de la que hay que publicar. */
+  /** Runs `body` once for each partition whose outbox must be published. */
   abstract forEach(body: () => Promise<void>): Promise<void>;
 }

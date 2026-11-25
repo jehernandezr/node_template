@@ -1,15 +1,15 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../notifications/schemas/notifications_schemas.dart';
 import '../../notifications/types/notifications_types.dart';
 import '../../platform/enums/platform_enums.dart';
 
-/// Eventos que publica el contrato `notifications`.
+/// Events published by the `notifications` contract.
 abstract final class NotificationsEvents {
-  /// Se creó una notificación: tenant, tipo y canales usados, sin texto. Reports lo cuenta.
+  /// A notification was created: tenant, type and channels used, without text. Reports counts it.
   ///
   /// `notifications.notification.created.v1`
   static const notificationCreated =
@@ -21,10 +21,10 @@ abstract final class NotificationsEvents {
         decodePayload: NotificationCreatedPayload.fromJson,
       );
 
-  /// Todos los descriptores, en el orden del contrato.
+  /// All descriptors, in contract order.
   static const all = <MessageDescriptor<Object?>>[notificationCreated];
 
-  /// Descriptor con [type], o null si este cliente no lo conoce.
+  /// Descriptor with [type], or null if this client does not know it.
   static MessageDescriptor<Object?>? byType(String type) {
     for (final message in all) {
       if (message.type == type) return message;

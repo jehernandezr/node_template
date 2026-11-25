@@ -40,7 +40,7 @@ describe('AuthModule', () => {
     }
   });
 
-  /** Módulo de pruebas con la configuración mínima y los dobles globales. */
+  /** Test module with the minimal configuration and the global doubles. */
   function testingModule(
     env: Record<string, string> = { AUTH_ISSUER: ISSUER },
     options: Parameters<typeof AuthModule.forRoot>[0] = {

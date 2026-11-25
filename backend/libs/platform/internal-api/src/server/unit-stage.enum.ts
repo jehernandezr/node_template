@@ -1,10 +1,10 @@
-/** Hasta dónde llegó una unidad de trabajo, para decidir cómo cerrar la llave al fallar. */
+/** How far a unit of work got, to decide how to close the key on failure. */
 export enum UnitStage {
-  /** La unidad de trabajo no se abrió: nada corrió. */
+  /** The unit of work did not open: nothing ran. */
   Begin = 'begin',
   Handler = 'handler',
-  /** El resultado se guarda dentro de la unidad de trabajo. */
+  /** The result is stored inside the unit of work. */
   Complete = 'complete',
-  /** El resultado ya se guardó y la unidad de trabajo se está confirmando. */
+  /** The result is already stored and the unit of work is being committed. */
   Commit = 'commit',
 }

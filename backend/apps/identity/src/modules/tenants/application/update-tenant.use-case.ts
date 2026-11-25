@@ -10,7 +10,7 @@ import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes
 import { TenantRepository } from '../domain/tenant.repository.js';
 import { TenantSummaryView } from './tenant-summary-view.js';
 
-/** Cambia el nombre del tenant activo. */
+/** Changes the name of the active tenant. */
 @Injectable()
 export class UpdateTenant {
   constructor(

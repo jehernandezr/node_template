@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { SearchSchema } from '../../search-schema.js';
 
-/** Crea `search_documents` como lo hace la migración de un servicio, con la extensión que provisiona la base. */
+/** Creates `search_documents` as a service migration does, with the extension that provisions the database. */
 export class CreateSearchDocuments1794800000001 implements MigrationInterface {
   readonly name = 'CreateSearchDocuments1794800000001';
 

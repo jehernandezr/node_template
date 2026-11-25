@@ -1,4 +1,4 @@
-/** Rutas de los endpoints de salud, sin el prefijo del servicio. */
+/** Paths of the health endpoints, without the service prefix. */
 export enum HealthRoute {
   Base = 'health',
   Live = 'live',

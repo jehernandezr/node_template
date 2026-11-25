@@ -1,15 +1,15 @@
 import type { TenantWriteGate } from '../../ports/tenant-write-gate.js';
 import { TestTenants } from './test-tenants.js';
 
-/** Lo que la prueba de contrato necesita de cada adaptador de la compuerta. */
+/** What the contract test needs from each gate adapter. */
 export interface TenantWriteGateContractSubject {
-  /** Una compuerta nueva, con los tenants `TestTenants.One` y `Two` abiertos. */
+  /** A new gate, with the tenants `TestTenants.One` and `Two` open. */
   create(): Promise<TenantWriteGate>;
-  /** Libera lo que `create` abrió. */
+  /** Releases what `create` opened. */
   dispose?(): Promise<void>;
 }
 
-/** Prueba de contrato de `TenantWriteGate`: cada adaptador la corre con su propia infraestructura. */
+/** Contract test of `TenantWriteGate`: each adapter runs it with its own infrastructure. */
 export function runTenantWriteGateContract(
   name: string,
   subject: TenantWriteGateContractSubject,

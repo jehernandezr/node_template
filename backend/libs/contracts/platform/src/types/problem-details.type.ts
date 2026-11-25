@@ -1,6 +1,6 @@
 /**
- * Detalle de un campo inválido o de un error parcial.
- * `field` es la ruta del campo con segmentos separados por punto, por ejemplo `items.0.name`.
+ * Detail of an invalid field or of a partial error.
+ * `field` is the field path with dot-separated segments, for example `items.0.name`.
  */
 export interface FieldError {
   field?: string;
@@ -8,11 +8,11 @@ export interface FieldError {
   message?: string;
 }
 
-/** Nombre anterior de `FieldError`. */
+/** Former name of `FieldError`. */
 export type ProblemFieldError = FieldError;
 
 /**
- * Respuesta de error RFC 9457 (Problem Details) con extensiones de la plataforma.
+ * RFC 9457 error response (Problem Details) with platform extensions.
  */
 export interface ProblemDetails {
   type: string;
@@ -23,13 +23,13 @@ export interface ProblemDetails {
   code: string;
   traceId?: string;
   errors?: FieldError[];
-  /** Datos que el código del error declara públicos, por ejemplo la URL de la región del tenant. */
+  /** Data the error code declares public, for example the URL of the tenant's region. */
   details?: ProblemDetailsDetails;
 }
 
-/** Datos públicos de un error, cada uno con la clave de `ProblemDetailKey`. */
+/** Public data of an error, each with a `ProblemDetailKey` key. */
 export interface ProblemDetailsDetails {
-  /** URL de la API de la región donde vive el tenant. */
+  /** API URL of the region where the tenant lives. */
   apiBaseUrl?: string;
   region?: string;
 }

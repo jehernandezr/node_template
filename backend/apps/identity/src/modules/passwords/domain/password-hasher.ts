@@ -1,10 +1,10 @@
-/** Hash de contraseñas en formato PHC. */
+/** Password hashing in PHC format. */
 export abstract class PasswordHasher {
   abstract hash(password: string): Promise<string>;
 
-  /** Compara en tiempo constante. Un hash mal formado no coincide. */
+  /** Compares in constant time. A malformed hash does not match. */
   abstract verify(password: string, hash: string): Promise<boolean>;
 
-  /** Verdadero si el hash usa parámetros distintos de los vigentes y conviene rehacerlo. */
+  /** Whether the hash uses parameters different from the current ones and should be redone. */
   abstract needsRehash(hash: string): boolean;
 }

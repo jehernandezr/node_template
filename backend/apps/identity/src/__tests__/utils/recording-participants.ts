@@ -2,9 +2,9 @@ import { OperationInvoker } from '@platform/saga';
 import { CallOutcome, isFinalOutcome } from '@platform/primitives';
 
 /**
- * Los servicios que llama una saga, de mentira: cada operación responde éxito salvo que la prueba le guarde
- * otro resultado, y una llamada repetida con la misma llave devuelve la respuesta final guardada sin un segundo
- * efecto, como lo hace un participante real con su registro de idempotencia, que no guarda un fallo pasajero.
+ * Fake versions of the services a saga calls: each operation responds with success unless the test stores
+ * another result for it, and a repeated call with the same key returns the stored final response without a second
+ * effect, as a real participant does with its idempotency record, which does not store a transient failure.
  */
 export class RecordingParticipants extends OperationInvoker {
   private readonly calls: {
@@ -16,7 +16,7 @@ export class RecordingParticipants extends OperationInvoker {
   private readonly scripted = new Map<string, CallOutcome<unknown>[]>();
   private readonly effects = new Map<string, number>();
 
-  /** La próxima llamada a `operationId` responde `outcome`. */
+  /** The next call to `operationId` responds with `outcome`. */
   answer(operationId: string, outcome: CallOutcome<unknown>): void {
     this.scripted.set(operationId, [
       ...(this.scripted.get(operationId) ?? []),
@@ -24,7 +24,7 @@ export class RecordingParticipants extends OperationInvoker {
     ]);
   }
 
-  /** Las operaciones llamadas, en orden, contando los reintentos. */
+  /** The operations called, in order, including retries. */
   operations(): string[] {
     return this.calls.map((call) => call.operationId);
   }
@@ -39,7 +39,7 @@ export class RecordingParticipants extends OperationInvoker {
       .map((call) => call.key);
   }
 
-  /** Cuántas veces una operación aplicó su efecto, sin contar las respuestas repetidas por llave. */
+  /** How many times an operation applied its effect, not counting responses repeated by key. */
   effectsOf(operationId: string): number {
     return this.effects.get(operationId) ?? 0;
   }

@@ -1,4 +1,4 @@
-/** Asunto y cuerpos de un correo ya armado con sus datos. */
+/** Subject and bodies of an email already built with its data. */
 export interface RenderedEmail {
   readonly subject: string;
   readonly html: string;

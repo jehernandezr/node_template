@@ -30,12 +30,12 @@ import { PlatformServers } from './platform-servers.js';
 import { PlatformService } from './platform-service.enum.js';
 
 /**
- * Los cinco servicios en un proceso, sobre un PostgreSQL y un Valkey reales, unidos por un bus en memoria en lugar de
- * SNS y SQS y por HTTP firmado en la API interna. Los jobs no corren solos: la prueba publica los outbox con
- * `settle` y corre a mano los que necesita, así cada paso termina antes de mirar el resultado.
+ * The five services in one process, over a real PostgreSQL and Valkey, joined by an in-memory bus instead of
+ * SNS and SQS and by signed HTTP on the internal API. Jobs do not run on their own: the test publishes the outboxes with
+ * `settle` and runs by hand the ones it needs, so each step finishes before checking the result.
  */
 export class PlatformApp {
-  /** Plazo para que un flujo de mensajes entre servicios termine. */
+  /** Timeout for a message flow between services to finish. */
   private static readonly SETTLE_TIMEOUT_MS = 30_000;
   private static readonly DEFINITIONS: Readonly<
     Record<PlatformService, ServiceDefinition>
@@ -73,7 +73,7 @@ export class PlatformApp {
     await this.node(PlatformService.Billing).get(SeedPlans).execute();
   }
 
-  /** Cierra todo lo que alcanzó a abrir, aunque algo falle, y después informa los errores. */
+  /** Closes everything it managed to open, even if something fails, and then reports the errors. */
   async stop(): Promise<void> {
     const failures: unknown[] = [];
     const attempt = async (close: () => Promise<void>): Promise<void> => {
@@ -103,15 +103,15 @@ export class PlatformApp {
     return node;
   }
 
-  /** Lo que necesita un usuario de prueba para recorrer identity por HTTP. */
+  /** What a test user needs to go through identity over HTTP. */
   identity(): IdentityEntry {
     return new IdentityHttpEntry(this.node(PlatformService.Identity));
   }
 
   /**
-   * Publica los outbox de los cinco servicios y entrega lo publicado hasta que nada queda en camino, incluidos los
-   * mensajes que una entrega produce y los reintentos.
-   * @throws Error si un mensaje termina en la cola de errores o el flujo no se detiene a tiempo.
+   * Publishes the outboxes of the five services and delivers what was published until nothing is in flight, including the
+   * messages a delivery produces and the retries.
+   * @throws Error if a message ends up in the error queue or the flow does not stop in time.
    */
   async settle(): Promise<void> {
     await Eventually.until(async () => {
@@ -130,7 +130,7 @@ export class PlatformApp {
     }
   }
 
-  /** Cierra los periodos vencidos de billing, como lo hace su job de cada hora. */
+  /** Closes the expired billing periods, as its hourly job does. */
   async closeInvoicePeriods(): Promise<void> {
     await this.node(PlatformService.Billing)
       .get(CloseInvoicePeriodsJob)

@@ -1,4 +1,4 @@
-/** Métodos de segundo factor que el servidor puede ofrecer. */
+/** Second factor methods the server can offer. */
 export enum MfaFactor {
   DeviceOtp = 'device_otp',
   EmailOtp = 'email_otp',
@@ -7,15 +7,15 @@ export enum MfaFactor {
   Passkey = 'passkey',
 }
 
-/** Resultado de un inicio de sesión o de una verificación MFA. */
+/** Result of a sign-in or an MFA verification. */
 export enum SignInStatus {
-  /** Hay tokens: la sesión quedó creada. */
+  /** There are tokens: the session was created. */
   Authenticated = 'authenticated',
-  /** Falta un segundo factor antes de emitir tokens. */
+  /** A second factor is missing before issuing tokens. */
   MfaRequired = 'mfa_required',
 }
 
-/** Plataforma del cliente de una sesión o dispositivo. */
+/** Client platform of a session or device. */
 export enum ClientPlatform {
   Ios = 'ios',
   Android = 'android',
@@ -25,7 +25,7 @@ export enum ClientPlatform {
   Linux = 'linux',
 }
 
-/** Motivo de la revocación de una sesión. */
+/** Reason for revoking a session. */
 export enum RevocationReason {
   Logout = 'logout',
   UserAction = 'user_action',
@@ -34,14 +34,14 @@ export enum RevocationReason {
   Compromised = 'compromised',
 }
 
-/** Alcance de una revocación de tokens. */
+/** Scope of a token revocation. */
 export enum RevocationScope {
   Session = 'session',
   User = 'user',
   Tenant = 'tenant',
 }
 
-/** Métodos con los que se autenticó una sesión (claim `amr` del access token). */
+/** Methods a session was authenticated with (`amr` claim of the access token). */
 export enum AuthMethodReference {
   Password = 'pwd',
   Passkey = 'passkey',
@@ -51,7 +51,7 @@ export enum AuthMethodReference {
   RecoveryCode = 'recovery_code',
 }
 
-/** Destinatario de un access token: valores del claim `aud`. */
+/** Recipient of an access token: values of the `aud` claim. */
 export enum TokenAudience {
   Api = 'api',
   Backoffice = 'backoffice',

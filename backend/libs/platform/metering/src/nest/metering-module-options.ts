@@ -1,13 +1,13 @@
 import type { Type } from '@nestjs/common';
 import type { UsageCounterStore } from '../usage-counter-store.js';
 
-/** Opciones de `MeteringModule.forRoot`. */
+/** Options of `MeteringModule.forRoot`. */
 export interface MeteringModuleOptions {
-  /** Nombre del servicio que mide; encabeza las llaves de idempotencia de lo que envía. */
+  /** Name of the metering service; it prefixes the idempotency keys of what it sends. */
   readonly service: string;
   /**
-   * Contadores compartidos por las instancias, por ejemplo `ValkeyUsageCounterStore`. Sin valor, contadores
-   * en el proceso.
+   * Counters shared by the instances, for example `ValkeyUsageCounterStore`. Without a value, in-process
+   * counters.
    */
   readonly counters?: Type<UsageCounterStore>;
 }

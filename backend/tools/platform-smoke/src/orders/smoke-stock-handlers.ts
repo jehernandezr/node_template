@@ -4,7 +4,7 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import { PAYMENT_DECLINED, SmokeOperations } from './smoke-operations.js';
 
-/** Handlers de las operaciones internas de la saga. Llevan el registro de reservas para observarlo. */
+/** Handlers of the saga's internal operations. They keep the reservations record to observe it. */
 @Injectable()
 export class SmokeStockHandlers {
   private readonly reserved = new Set<string>();

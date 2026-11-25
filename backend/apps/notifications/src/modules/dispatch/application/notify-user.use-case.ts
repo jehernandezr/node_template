@@ -23,9 +23,9 @@ import { DispatchFacade } from './dispatch.facade.js';
 import type { NotifyCommand } from './notify-command.js';
 
 /**
- * Avisa a un usuario. La bandeja, las entregas pendientes y el evento se guardan juntos en el shard del
- * usuario; el tiempo real, el correo y el push salen después del commit. Si el proceso cae antes de enviar,
- * el job de reintentos encuentra las entregas pendientes. Un aviso repetido devuelve los canales que ya tuvo.
+ * Notifies a user. The inbox, the pending deliveries and the event are stored together in the user's
+ * shard; real time, email and push go out after the commit. If the process crashes before sending,
+ * the retry job finds the pending deliveries. A repeated notification returns the channels it already had.
  */
 @Injectable()
 export class NotifyUser extends DispatchFacade {

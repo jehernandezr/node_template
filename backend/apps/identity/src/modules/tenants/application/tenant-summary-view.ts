@@ -2,7 +2,7 @@ import type { TenantSummary } from '@contracts/identity';
 import type { TenantState } from '../domain/tenant.js';
 import type { TenantSnapshot } from '../domain/tenant-snapshot.js';
 
-/** La vista de un tenant que responden la fachada y el contrato. */
+/** The view of a tenant that the facade and the contract return. */
 export class TenantSummaryView {
   static snapshot(state: TenantState): TenantSnapshot {
     return {

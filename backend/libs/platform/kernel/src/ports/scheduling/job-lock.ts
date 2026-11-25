@@ -1,8 +1,8 @@
 import type { JobLease } from './job-lease.js';
 
-/** Exclusión mutua entre procesos para los jobs `exclusive`. */
+/** Mutual exclusion between processes for `exclusive` jobs. */
 export abstract class JobLock {
-  /** Toma el lock por `ttlMs`, o devuelve `undefined` si otro proceso lo tiene. */
+  /** Takes the lock for `ttlMs`, or returns `undefined` if another process holds it. */
   abstract tryAcquire(
     name: string,
     ttlMs: number,

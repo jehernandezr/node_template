@@ -4,9 +4,9 @@ import { ClaimRecordEntity } from './claim-record.entity.js';
 import { EnumSql } from './enum-sql.js';
 
 /**
- * `processed_messages`: idempotencia de consumidores; la llave es `(consumidor, id del mensaje)`. Va en cada shard
- * para completar el mensaje en la misma transacción que los efectos del handler. El tenant del mensaje va en
- * `tenant_id` para que el traslado del tenant se lleve lo procesado y una reentrega en el destino no se repita.
+ * `processed_messages`: consumer idempotency; the key is `(consumer, message id)`. It goes in each shard
+ * to complete the message in the same transaction as the handler's effects. The message tenant goes in
+ * `tenant_id` so the tenant move takes the processed records along and a redelivery at the destination is not repeated.
  */
 @Entity({ name: 'processed_messages' })
 @Check(

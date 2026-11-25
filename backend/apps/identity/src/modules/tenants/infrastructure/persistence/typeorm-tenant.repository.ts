@@ -9,7 +9,7 @@ import { Tenant } from '../../domain/tenant.js';
 import { TenantRepository } from '../../domain/tenant.repository.js';
 import { TenantEntity } from './entities/tenant.entity.js';
 
-/** `TenantRepository` sobre `tenants` del shard del tenant. */
+/** `TenantRepository` over `tenants` in the tenant's shard. */
 @Injectable()
 export class TypeOrmTenantRepository
   extends TenantIsolatedRepository

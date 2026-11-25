@@ -9,7 +9,7 @@ import {
 } from '@contracts/identity';
 import { ListPushTargets } from '../application/list-push-targets.use-case.js';
 
-/** Operaciones internas de devices. */
+/** Internal operations of devices. */
 @Injectable()
 export class DevicesInternalOperations {
   constructor(private readonly pushTargets: ListPushTargets) {}

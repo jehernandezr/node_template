@@ -48,7 +48,7 @@ async function seedLedger(
   return ledgerId;
 }
 
-/** Filas de cada tabla tal como las ve el superusuario, sin RLS, para comparar los dos lados. */
+/** Rows of each table as the superuser sees them, without RLS, to compare both sides. */
 async function snapshot(
   admin: DataSource,
   tenantId: string,
@@ -65,7 +65,7 @@ async function snapshot(
   };
 }
 
-/** Repite la llamada mientras la ronda no termina en su plazo, como lo hace la saga. */
+/** Repeats the call while the round does not finish within its deadline, as the saga does. */
 async function untilRoundEnds<T>(call: () => Promise<T>): Promise<T> {
   for (;;) {
     try {
@@ -289,7 +289,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await transfer.sync(move);
       const [first, , , , , sixth, , , , , eleventh, , , , , sixteenth] =
         ledgers;
-      // Cambios que las rondas delta no ven: sin tocar `updated_at`, como una transacción que confirmó tarde.
+      // Changes the delta rounds do not see: without touching `updated_at`, like a transaction that committed late.
       await sourceAdmin.query(
         'UPDATE ledgers SET total = total + 1000 WHERE id = ANY($1::uuid[])',
         [[first, eleventh]],

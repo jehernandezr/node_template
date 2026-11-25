@@ -1,21 +1,20 @@
 import type { RedactionWordLists } from './redaction-word-lists.js';
 
 /**
- * Reglas de redacción: las listas de palabras de `RedactionWordLists`. Los
- * valores por defecto cubren los secretos comunes; un servicio los amplía con
- * `extend`. Es inmutable.
+ * Redaction rules: the word lists of `RedactionWordLists`. The defaults cover
+ * common secrets; a service extends them with `extend`. Immutable.
  */
 export class RedactionRules {
   constructor(readonly lists: RedactionWordLists) {}
 
-  /** Las reglas por defecto de la plataforma. Cada llamada devuelve listas nuevas. */
+  /** Returns the platform default rules. Each call returns new lists. */
   static defaults(): RedactionRules {
     return new RedactionRules({
       /**
-       * Palabras que, como última palabra de la llave, nombran el secreto mismo
-       * (`accessToken`, `setCookie`, `userOtp`). `sessions` no está: una lista de
-       * sesiones lleva ids y fechas, y el token de cada una se oculta por su propia
-       * llave.
+       * Words that, as the last word of the key, name the secret itself
+       * (`accessToken`, `setCookie`, `userOtp`). `sessions` is not included: a list of
+       * sessions carries ids and dates, and the token of each one is hidden by its own
+       * key.
        */
       sensitiveLastWords: new Set([
         'token',
@@ -42,9 +41,9 @@ export class RedactionRules {
         'pan',
       ]),
       /**
-       * Palabras que, al inicio de la llave, anuncian un valor secreto
-       * (`passwordConfirmation`, `secretValue`). `session` y `cookie` no están:
-       * `sessionCount` o `cookieConsent` describen el secreto, no lo contienen.
+       * Words that, at the start of the key, announce a secret value
+       * (`passwordConfirmation`, `secretValue`). `session` and `cookie` are not included:
+       * `sessionCount` or `cookieConsent` describe the secret, they do not contain it.
        */
       sensitiveFirstWords: new Set([
         'password',
@@ -61,15 +60,15 @@ export class RedactionRules {
         'cvc',
       ]),
       /**
-       * Últimas palabras que nunca llevan un secreto: ids, instantes y conteos.
-       * Con ellas `sessionId`, `apiKeyId`, `passwordChangedAt` o `tokenCount` quedan
-       * visibles, que es con lo que se diagnostica una revocación o un cambio de
-       * contraseña.
+       * Last words that never carry a secret: ids, instants and counts.
+       * With them `sessionId`, `apiKeyId`, `passwordChangedAt` or `tokenCount` stay
+       * visible, which is what is needed to diagnose a revocation or a password
+       * change.
        */
       publicLastWords: new Set(['id', 'ids', 'at', 'count', 'counts']),
       /**
-       * Un hash o digest es tan sensible como lo que resume cuando este es un
-       * secreto (`tokenHash`, `codeHmac`): con él se prueba un valor adivinado.
+       * A hash or digest is as sensitive as what it summarizes when that is a
+       * secret (`tokenHash`, `codeHmac`): it can be used to test a guessed value.
        */
       digestWords: new Set(['hash', 'hashes', 'hmac', 'digest']),
       digestedSecrets: new Set([
@@ -82,7 +81,7 @@ export class RedactionRules {
         'code',
         'key',
       ]),
-      /** Nombres compuestos que solo tienen sentido juntos (`privateKey`, `signing_key`). */
+      /** Compound names that only make sense together (`privateKey`, `signing_key`). */
       sensitiveCompounds: new Set([
         'apikey',
         'privatekey',
@@ -92,10 +91,10 @@ export class RedactionRules {
         'encryptionkey',
       ]),
       /**
-       * `code` solo es sensible cuando lo califica una de estas palabras: los códigos
-       * de un solo uso de MFA, verificación, recuperación o reset (`mfaCode`,
+       * `code` is sensitive only when qualified by one of these words: the one-time
+       * MFA, verification, recovery or reset codes (`mfaCode`,
        * `verificationCode`, `oneTimeCode`, `recovery_codes`). `errorCode`,
-       * `statusCode` o `countryCode` se mantienen visibles.
+       * `statusCode` or `countryCode` stay visible.
        */
       codeWords: new Set(['code', 'codes']),
       secretCodeQualifiers: new Set([
@@ -129,7 +128,7 @@ export class RedactionRules {
     });
   }
 
-  /** Reglas nuevas con palabras sensibles adicionales (en minúscula) como última palabra de la llave. */
+  /** Returns new rules with additional sensitive words (lowercase) as the last word of the key. */
   extend(extraSensitiveLastWords: readonly string[]): RedactionRules {
     return new RedactionRules({
       ...this.lists,

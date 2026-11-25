@@ -5,50 +5,50 @@ import type { FencedWrite } from './fenced-write.js';
 import type { SagaPurge } from './saga-purge.js';
 
 /**
- * Puerto que persiste las instancias de saga y su bitácora de pasos. Toda
- * implementación pasa `runSagaStoreContract` de `@platform/saga/test-utils`.
+ * Port that persists the saga instances and their step journal. Every
+ * implementation passes `runSagaStoreContract` from `@platform/saga/test-utils`.
  */
 export abstract class SagaStore {
-  /** Sagas que `purge` borra por llamada si no se pide otro límite: lotes cortos que no bloquean la tabla. */
+  /** Sagas that `purge` deletes per call if no other limit is requested: short batches that do not lock the table. */
   static readonly DEFAULT_PURGE_LIMIT = 500;
 
-  /** Inserta una instancia nueva. @throws SagaError `DuplicateSaga` si el id o la llave de idempotencia ya existen. */
+  /** Inserts a new instance. @throws SagaError `DuplicateSaga` if the id or the idempotency key already exist. */
   abstract create(instance: SagaInstance): Promise<void>;
 
-  /** Devuelve la instancia o `null`. */
+  /** Returns the instance or `null`. */
   abstract get(id: string): Promise<SagaInstance | null>;
 
-  /** Devuelve la instancia con esta llave de idempotencia, o `null`. */
+  /** Returns the instance with this idempotency key, or `null`. */
   abstract findByIdempotencyKey(key: string): Promise<SagaInstance | null>;
 
   /**
-   * Comprueba de forma atómica el token del lease y la versión, y escribe
-   * juntas la instancia y la entrada de bitácora opcional. La entrada que ya
-   * existe para el mismo paso y dirección se reemplaza. Devuelve la instancia
-   * guardada, con la versión subida en uno.
-   * @throws SagaError `NotFound` si la saga no existe, `LeaseLost` si el token
-   *   no coincide y `ConcurrentModification` si la versión no coincide; en los
-   *   tres casos no se escribe nada.
+   * Atomically checks the lease token and the version, and writes
+   * the instance and the optional journal entry together. An entry that already
+   * exists for the same step and direction is replaced. Returns the saved
+   * instance, with the version bumped by one.
+   * @throws SagaError `NotFound` if the saga does not exist, `LeaseLost` if the token
+   *   does not match and `ConcurrentModification` if the version does not match; in all
+   *   three cases nothing is written.
    */
   abstract commitStep(write: FencedWrite): Promise<SagaInstance>;
 
   /**
-   * Escritura protegida de una entrada `Dispatched` junto con la instancia.
-   * @throws SagaError `InvalidState` si la entrada no está en `Dispatched`, y los de `commitStep`.
+   * Guarded write of a `Dispatched` entry together with the instance.
+   * @throws SagaError `InvalidState` if the entry is not in `Dispatched`, and those of `commitStep`.
    */
   abstract dispatchStep(write: DispatchWrite): Promise<SagaInstance>;
 
-  /** Bitácora de una saga, ordenada por índice de paso y, dentro de él, hacia delante antes que compensar. */
+  /** Journal of a saga, ordered by step index and, within it, forward before compensation. */
   abstract steps(sagaId: string): Promise<StepLogEntry[]>;
 
   /**
-   * Instancias que necesitan una corrida: `Running` o `Compensating` con el
-   * lease vencido, o `Suspended` con `nextAttemptAt <= now`. Las más antiguas
-   * primero (`updatedAt`, luego `id`). Con varios shards recorre todos.
+   * Instances that need a run: `Running` or `Compensating` with an
+   * expired lease, or `Suspended` with `nextAttemptAt <= now`. Oldest
+   * first (`updatedAt`, then `id`). With several shards it walks all of them.
    */
   abstract findRecoverable(now: Date, limit: number): Promise<SagaInstance[]>;
 
-  /** Toma el lease para `token` hasta `until` si está libre o vencido. */
+  /** Takes the lease for `token` until `until` if it is free or expired. */
   abstract tryAcquireLease(
     id: string,
     token: string,
@@ -56,12 +56,12 @@ export abstract class SagaStore {
     now: Date,
   ): Promise<boolean>;
 
-  /** Extiende el lease si `token` aún lo tiene. Devuelve `false` si se perdió. */
+  /** Extends the lease if `token` still holds it. Returns `false` if it was lost. */
   abstract renewLease(id: string, token: string, until: Date): Promise<boolean>;
 
-  /** Suelta el lease si `token` lo tiene. */
+  /** Releases the lease if `token` holds it. */
   abstract releaseLease(id: string, token: string): Promise<void>;
 
-  /** Borra las sagas terminadas con éxito (`Completed`, `Compensated`) y su bitácora. Devuelve cuántas. */
+  /** Deletes the sagas that finished successfully (`Completed`, `Compensated`) and their journal. Returns how many. */
   abstract purge(options: SagaPurge): Promise<number>;
 }

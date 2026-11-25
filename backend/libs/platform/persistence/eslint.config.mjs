@@ -22,14 +22,14 @@ export default [
     },
   },
   {
-    // El driver `pg` no se importa: la capa va sobre TypeORM.
+    // The `pg` driver is not imported: the layer sits on top of TypeORM.
     files: ['src/**/*.ts'],
     ignores: ['src/index.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          // Redefinir la regla reemplaza la de la base: se repite la restricción del SDK de AWS.
+          // Redefining the rule replaces the base one: the AWS SDK restriction is repeated.
           patterns: [
             {
               group: ['@aws-sdk/*'],
@@ -46,7 +46,7 @@ export default [
     },
   },
   {
-    // Aquí se declaran los códigos: es el único lugar donde van como texto.
+    // Codes are declared here: it is the only place where they appear as text.
     files: ['src/errors/persistence-error-code.enum.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },

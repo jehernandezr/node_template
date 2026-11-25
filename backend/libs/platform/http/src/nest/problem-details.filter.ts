@@ -13,8 +13,8 @@ import type { HttpResponseView } from '../http-response-view.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
 /**
- * Responde cada error como Problem Details. Un 404 de Nest sale como `PLATFORM.RESOURCE.NOT_FOUND`;
- * el resto de excepciones HTTP (por ejemplo el 503 de un readiness) salen tal cual.
+ * Responds to each error as Problem Details. A Nest 404 comes out as `PLATFORM.RESOURCE.NOT_FOUND`;
+ * other HTTP exceptions (for example the 503 of a readiness) come out as is.
  */
 @Catch()
 @Injectable()

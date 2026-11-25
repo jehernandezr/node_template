@@ -2,7 +2,7 @@ import type { Server } from 'node:http';
 import type { HttpAdapterHost } from '@nestjs/core';
 import type { RealtimeHost, StreamRequestHandler } from '../realtime-host.js';
 
-/** El servidor HTTP de la app de Nest como anfitrión de los transportes. */
+/** The Nest app's HTTP server as host of the transports. */
 export class NestRealtimeHost implements RealtimeHost {
   constructor(private readonly adapterHost: HttpAdapterHost) {}
 

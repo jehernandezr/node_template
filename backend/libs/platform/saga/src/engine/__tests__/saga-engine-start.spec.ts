@@ -27,7 +27,7 @@ function setup(options: { transactions?: InMemoryTransactionManager } = {}) {
   return { kit, participant };
 }
 
-/** Código del `SagaError` que lanza la acción, o `undefined` si no lanza ninguno. */
+/** Code of the `SagaError` the action throws, or `undefined` if it throws none. */
 async function codeOf(action: Promise<unknown>): Promise<unknown> {
   try {
     await action;

@@ -1,7 +1,7 @@
 /**
- * CSV según RFC 4180: separado por comas, líneas con CRLF y comillas solo donde hacen falta. Una celda que
- * empieza con `=`, `+`, `-` o `@` lleva un apóstrofo delante para que una hoja de cálculo no la evalúe como
- * fórmula. Utilidad pura.
+ * CSV per RFC 4180: comma separated, CRLF lines and quotes only where needed. A cell that
+ * starts with `=`, `+`, `-` or `@` gets a leading apostrophe so a spreadsheet does not evaluate it as a
+ * formula. Pure utility.
  */
 export class CsvWriter {
   private static readonly NEEDS_QUOTES = /[",\r\n]/;

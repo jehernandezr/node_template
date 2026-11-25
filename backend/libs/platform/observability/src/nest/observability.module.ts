@@ -39,12 +39,12 @@ import { RequestContextMiddleware } from './request-context.middleware.js';
 import { TelemetryShutdownHook } from './telemetry-shutdown.hook.js';
 
 /**
- * Cableado de observability. Provee `LoggerPort`, `MetricsPort`, `ErrorMetrics`,
+ * Observability wiring. Provides `LoggerPort`, `MetricsPort`, `ErrorMetrics`,
  * `RequestContextStore`, `Tracing`, `Redactor`, `HealthRegistry`,
  * `TraceContextCodec`, `TraceContextRestorer`, `DebugSampler`, `TELEMETRY`,
- * `RequestContextMiddleware` y `RequestContextInterceptor`, e importa las
- * secciones de configuración que usa. El reloj, la aleatoriedad y el generador
- * de ids son internos del módulo.
+ * `RequestContextMiddleware` and `RequestContextInterceptor`, and imports the
+ * configuration sections it uses. The clock, the randomness and the id
+ * generator are internal to the module.
  */
 @Global()
 @Module({

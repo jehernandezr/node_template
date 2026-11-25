@@ -1,7 +1,7 @@
 import type { MigrationReport } from '@platform/persistence';
 import type { MigrationTarget } from './migration-target.enum.js';
 
-/** Resultado de `ServiceMigrator.run`: una entrada por base migrada, en el orden en que se migraron. */
+/** Result of `ServiceMigrator.run`: one entry per migrated database, in the order they were migrated. */
 export interface ServiceMigrationReport {
   readonly target: MigrationTarget;
   readonly databases: readonly MigrationReport[];

@@ -31,7 +31,7 @@ const outage = (): Error =>
     failureKind: FailureKind.Transient,
   });
 
-/** Error de dominio que el contrato de `Reserve` no declara. */
+/** Domain error that the `Reserve` contract does not declare. */
 const undeclaredError = (): DomainError =>
   new (class extends DomainError {
     readonly code = 'STOCK.RESERVE.SURPRISE';
@@ -345,8 +345,8 @@ describe('UnitOfWorkRunner', () => {
 });
 
 /**
- * Un intento lento reclama la llave y se queda en el handler; otro la toma
- * cuando vence el lease. El lento termina después y su resultado no se guarda.
+ * A slow attempt claims the key and stays in the handler; another takes it
+ * when the lease expires. The slow one finishes later and its result is not stored.
  */
 async function startTakeover(harness: ServerHarness) {
   let open!: () => void;

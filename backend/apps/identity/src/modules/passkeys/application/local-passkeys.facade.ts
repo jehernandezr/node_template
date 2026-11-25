@@ -9,7 +9,7 @@ import {
 import { PasskeyCeremony } from './passkey-ceremony.js';
 import { PasskeysFacade } from './passkeys.facade.js';
 
-/** `PasskeysFacade` dentro del proceso. */
+/** In-process `PasskeysFacade`. */
 @Injectable()
 export class LocalPasskeysFacade extends PasskeysFacade {
   constructor(
@@ -26,7 +26,7 @@ export class LocalPasskeysFacade extends PasskeysFacade {
     return (await this.ceremony.userPasskeys(user)).length > 0;
   }
 
-  /** Borra primero las del shard y después el índice: un reintento las encuentra mientras queden. */
+  /** Deletes the shard's ones first and then the index: a retry finds them while any remain. */
   async forget(user: UserRef): Promise<void> {
     const removed = await this.scopes.inUserShard(user, () =>
       this.transactions.runInTransaction(async () => {

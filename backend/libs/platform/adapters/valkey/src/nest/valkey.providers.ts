@@ -36,9 +36,9 @@ import { ValkeyLifecycle } from './valkey-lifecycle.js';
 import { VALKEY_CLIENT, VALKEY_MODULE_OPTIONS } from './valkey.tokens.js';
 
 /**
- * Proveedores de `ValkeyModule`. Todos se arman con `useFactory` porque el
- * núcleo de la librería no lleva decoradores; solo `ValkeyLifecycle` es una
- * clase de Nest.
+ * Providers of `ValkeyModule`. All are built with `useFactory` because the
+ * library core has no decorators; only `ValkeyLifecycle` is a
+ * Nest class.
  */
 export class ValkeyProviders {
   static build(extras: ValkeyModuleExtras): Provider[] {
@@ -215,7 +215,7 @@ export class ValkeyProviders {
     ];
   }
 
-  /** Lo que otros módulos reciben: el cliente, los adaptadores por clase y el indicador de salud. */
+  /** What other modules receive: the client, the adapters by class and the health indicator. */
   static exports(): Array<symbol | Type<unknown>> {
     return [
       VALKEY_CLIENT,

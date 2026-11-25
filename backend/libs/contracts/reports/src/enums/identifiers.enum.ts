@@ -1,4 +1,4 @@
-/** Códigos de error del servicio reports. */
+/** Error codes of the reports service. */
 export enum ReportsErrorCode {
   RunNotFound = 'REPORTS.RUN.NOT_FOUND',
   RunNotReady = 'REPORTS.RUN.NOT_READY',
@@ -8,7 +8,7 @@ export enum ReportsErrorCode {
   ResultTooLarge = 'REPORTS.RESULT.TOO_LARGE',
 }
 
-/** Identificadores de las rutas públicas de reports. */
+/** Identifiers of the public routes of reports. */
 export enum ReportsRoute {
   ListCatalog = 'reports.catalog.list',
   CreateRun = 'reports.run.create',
@@ -17,7 +17,7 @@ export enum ReportsRoute {
   DownloadRun = 'reports.run.download',
 }
 
-/** Identificadores de las operaciones internas de reports. */
+/** Identifiers of the internal operations of reports. */
 export enum ReportsOperation {
   EraseUserData = 'reports.user-data.erase.v1',
   TenantMoveSync = 'reports.tenant-move.sync.v1',
@@ -29,22 +29,22 @@ export enum ReportsOperation {
   TenantDirectoryRemove = 'reports.tenant-directory.remove.v1',
 }
 
-/** Tipos CloudEvents de los eventos que publica reports. */
+/** CloudEvents types of the events reports publishes. */
 export enum ReportsEvent {
   RunCompleted = 'reports.run.completed.v1',
 }
 
-/** Tipos CloudEvents de los comandos que atiende reports. */
+/** CloudEvents types of the commands reports handles. */
 export enum ReportsCommand {
   ExecuteRun = 'reports.run.execute.v1',
 }
 
-/** Tópicos donde reports publica sus eventos. */
+/** Topics where reports publishes its events. */
 export enum ReportsTopic {
   Events = 'reports-events',
 }
 
-/** Colas que consume reports. */
+/** Queues that reports consumes. */
 export enum ReportsQueue {
   Runs = 'reports-runs',
   Projections = 'reports-projections',
@@ -52,9 +52,9 @@ export enum ReportsQueue {
 }
 
 /**
- * Nombres de los mensajes de notifications que reports consume. Se repiten aquí
- * porque notifications ya importa a reports y un contrato no puede importar a
- * quien lo importa; `contracts-export` comprueba que existan.
+ * Names of the notifications messages that reports consumes. They are repeated here
+ * because notifications already imports reports and a contract cannot import
+ * whoever imports it; `contracts-export` checks that they exist.
  */
 export enum NotificationsReference {
   Topic = 'notifications-events',

@@ -1,4 +1,4 @@
-/** Nombres lógicos de las colas que consume la prueba de humo. */
+/** Logical names of the queues the smoke test consumes. */
 export enum SmokeQueue {
   Orders = 'smoke-orders',
 }

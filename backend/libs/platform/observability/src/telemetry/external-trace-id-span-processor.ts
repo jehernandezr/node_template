@@ -4,8 +4,8 @@ import { ExternalTraceparentPropagator } from '../propagation/external-tracepare
 import { SpanAttribute } from '../tracing/span-attribute.enum.js';
 
 /**
- * Agrega `platform.external_trace_id` al span raíz cuando la petición traía
- * un `traceparent` externo que no se continuó.
+ * Adds `platform.external_trace_id` to the root span when the request carried
+ * an external `traceparent` that was not continued.
  */
 export class ExternalTraceIdSpanProcessor implements SpanProcessor {
   onStart(span: Span, parentContext: Context): void {
@@ -20,7 +20,7 @@ export class ExternalTraceIdSpanProcessor implements SpanProcessor {
   }
 
   onEnd(): void {
-    // Sin efecto: solo marca spans al iniciar.
+    // No effect: it only marks spans on start.
   }
 
   forceFlush(): Promise<void> {

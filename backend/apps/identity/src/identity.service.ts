@@ -18,7 +18,7 @@ import { identityCatalogMigrations } from './database/catalog-migrations.js';
 import { identityShardMigrations } from './database/shard-migrations.js';
 import { IDENTITY_ERROR_CATALOGS } from './shared/constants/identity-error-catalogs.constants.js';
 
-/** Definición de identity que consumen `ServiceBootstrap`, `ServiceMigrator` y las pruebas. */
+/** Identity definition consumed by `ServiceBootstrap`, `ServiceMigrator` and the tests. */
 export const identityService: ServiceDefinition<IdentityConfig> = {
   name: identityContract.service,
   configSchema: identityConfigSchema,

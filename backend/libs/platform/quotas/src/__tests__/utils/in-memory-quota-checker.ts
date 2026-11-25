@@ -2,7 +2,7 @@ import type { UsageMetric } from '@contracts/billing';
 import type { QuotaCheck } from '../../quota-check.js';
 import { QuotaChecker } from '../../quota-checker.js';
 
-/** Cuotas fijadas por la prueba, por tenant y métrica; sin límite fijado, todo cabe. */
+/** Quotas set by the test, per tenant and metric; with no limit set, everything fits. */
 export class InMemoryQuotaChecker extends QuotaChecker {
   private readonly usage = new Map<string, { limit: number; used: number }>();
 

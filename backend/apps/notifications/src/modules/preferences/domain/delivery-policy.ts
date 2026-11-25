@@ -5,20 +5,20 @@ import {
 } from '@contracts/notifications';
 import type { NotificationPreferences } from './notification-preferences.js';
 
-/** Lo que la política necesita saber del momento de la entrega. */
+/** What the policy needs to know about the moment of delivery. */
 export interface DeliveryContext {
   readonly type: NotificationType;
   readonly preferences: NotificationPreferences;
   readonly now: Date;
-  /** El usuario tiene una conexión de tiempo real abierta. */
+  /** The user has an open real-time connection. */
   readonly online: boolean;
 }
 
 /**
- * Elige los canales de una notificación. Los tipos obligatorios (alertas de seguridad) salen por todos y no
- * miran ni preferencias ni horario. El resto sale por los canales que el usuario eligió; en su horario de
- * silencio solo queda la bandeja, y con una conexión abierta el push sobra porque la bandeja ya le llega.
- * La bandeja siempre está: es el registro de lo que se le avisó.
+ * Chooses the channels of a notification. Mandatory types (security alerts) go out through all of them and
+ * ignore both preferences and schedule. The rest go out through the channels the user chose; during their quiet
+ * hours only the inbox remains, and with an open connection push is redundant because the inbox already reaches them.
+ * The inbox is always there: it is the record of what the user was notified about.
  */
 export class DeliveryPolicy {
   private static readonly ALL: readonly NotificationChannel[] =

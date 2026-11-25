@@ -11,7 +11,7 @@ interface FieldsEntry {
   expiresAt: number;
 }
 
-/** `EphemeralStore` en memoria con el reloj de la prueba: las llaves vencen cuando el reloj avanza. */
+/** In-memory `EphemeralStore` with the test clock: keys expire when the clock advances. */
 export class InMemoryEphemeralStore extends EphemeralStore {
   private readonly entries = new Map<string, Entry>();
   private readonly maps = new Map<string, FieldsEntry>();
@@ -99,7 +99,7 @@ export class InMemoryEphemeralStore extends EphemeralStore {
       : entry.fields;
   }
 
-  /** Llaves vivas, para que una prueba revise qué quedó guardado. */
+  /** Live keys, so a test can check what was stored. */
   keys(): string[] {
     return [...this.entries.keys()].filter((key) => this.live(key));
   }

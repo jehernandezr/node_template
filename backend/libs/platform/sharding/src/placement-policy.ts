@@ -1,24 +1,24 @@
 import type { TenantPlacement } from './model/tenant-placement.js';
 
-/** Petición para ubicar un tenant nuevo. */
+/** Request to place a new tenant. */
 export interface PlacementRequest {
   readonly tenantId: string;
   readonly region: string;
-  /** Si es true, el tenant recibe un shard que ningún otro tenant usa, y nadie más lo puede usar después. */
+  /** If true, the tenant gets a shard no other tenant uses, and no one else can use it afterwards. */
   readonly dedicated: boolean;
 }
 
-/** Un shard lógico que puede recibir tenants, con su región. */
+/** A logical shard that can receive tenants, with its region. */
 export interface AvailableShard {
   readonly region: string;
   readonly shard: string;
 }
 
 /**
- * Decide dónde se ubica un tenant nuevo: el shard menos cargado, la región del
- * tenant o un shard dedicado. Las políticas son puras; `TenantPlacer` escribe su
- * respuesta con una escritura condicional, así dos altas concurrentes no pueden
- * tomar el mismo shard.
+ * Decides where a new tenant is placed: the least loaded shard, the tenant's
+ * region or a dedicated shard. Policies are pure; `TenantPlacer` writes their
+ * answer with a conditional write, so two concurrent sign-ups cannot
+ * take the same shard.
  */
 export abstract class ShardPlacementPolicy {
   abstract place(

@@ -4,11 +4,11 @@ import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
 /**
- * Compuerta de escritura en Valkey: cerrar es crear `<prefijo>:tenant-write-gate:<tenant>`. No toca el
- * directorio, así que sirve cuando otro proceso es dueño del placement. Cada servicio cierra la suya, porque
- * la ACL de cada uno solo alcanza su prefijo. La llave no vence: solo la abre el traslado que la cerró, al
- * cambiar de directorio o al cancelarse. Cada transacción de escritura del servicio consulta la llave con un
- * `EXISTS`; la garantía de que nada llegue tarde al origen la da la barrera del shard, no esta consulta.
+ * Valkey write gate: closing it means creating `<prefix>:tenant-write-gate:<tenant>`. It does not touch the
+ * directory, so it works when another process owns the placement. Each service closes its own, because
+ * each one's ACL only reaches its prefix. The key does not expire: only the move that closed it opens it, when
+ * switching directory or when cancelled. Each write transaction of the service checks the key with an
+ * `EXISTS`; the guarantee that nothing reaches the source late comes from the shard barrier, not from this check.
  */
 export class ValkeyWriteGate extends TenantWriteGate {
   private static readonly KEY_TAG = 'tenant-write-gate';

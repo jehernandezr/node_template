@@ -1,7 +1,7 @@
 import { Injectable, type NestMiddleware } from '@nestjs/common';
 import { ClientIpContext } from './client-ip-context.js';
 
-/** Abre el `ClientIpContext` de cada petición antes de que se autentique. */
+/** Opens the `ClientIpContext` of each request before it is authenticated. */
 @Injectable()
 export class ClientIpMiddleware implements NestMiddleware {
   constructor(private readonly context: ClientIpContext) {}

@@ -12,8 +12,8 @@ import {
 } from '../schemas/user.schema.js';
 
 /**
- * Suspende a un usuario. Su reversa reactiva la cuenta; la operación es
- * idempotente porque una saga puede repetirla.
+ * Suspends a user. Its reversal reactivates the account; the operation is
+ * idempotent because a saga can repeat it.
  */
 export const SuspendUserOperation = defineOperation({
   id: IdentityOperation.SuspendUser,
@@ -23,10 +23,10 @@ export const SuspendUserOperation = defineOperation({
   compensatedBy: IdentityOperation.ReactivateUser,
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 3000,
-  description: 'Suspende a un usuario y revoca sus sesiones.',
+  description: 'Suspends a user and revokes their sessions.',
 });
 
-/** Reactiva a un usuario suspendido. Su reversa es volver a suspenderlo. */
+/** Reactivates a suspended user. Its reversal is to suspend them again. */
 export const ReactivateUserOperation = defineOperation({
   id: IdentityOperation.ReactivateUser,
   input: ReactivateUserInputSchema,
@@ -35,10 +35,10 @@ export const ReactivateUserOperation = defineOperation({
   compensatedBy: IdentityOperation.SuspendUser,
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 3000,
-  description: 'Reactiva a un usuario suspendido.',
+  description: 'Reactivates a suspended user.',
 });
 
-/** Lee el perfil de un usuario. No modifica datos, así que no declara compensación. */
+/** Reads a user's profile. It does not modify data, so it declares no compensation. */
 export const GetUserProfileOperation = defineOperation({
   id: IdentityOperation.GetUserProfile,
   input: GetUserProfileInputSchema,
@@ -47,5 +47,5 @@ export const GetUserProfileOperation = defineOperation({
   mutating: false,
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 3000,
-  description: 'Devuelve el perfil de un usuario.',
+  description: 'Returns the profile of a user.',
 });

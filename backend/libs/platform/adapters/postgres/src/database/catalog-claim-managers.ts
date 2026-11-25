@@ -4,8 +4,8 @@ import type { ClaimRecordManagers } from '../model/claim-record-managers.js';
 import type { CatalogEntityManagers } from './catalog-entity-managers.js';
 
 /**
- * Lleva una tabla de claims al catálogo global. La usan los servicios con `requireScope`: el shard de
- * una operación interna lo decide su handler, así que la llave de idempotencia no puede esperar a saberlo.
+ * Moves a claims table to the global catalog. Used by services with `requireScope`: the shard of
+ * an internal operation is decided by its handler, so the idempotency key cannot wait to know it.
  */
 export class CatalogClaimManagers implements ClaimRecordManagers {
   constructor(private readonly catalog: CatalogEntityManagers) {}

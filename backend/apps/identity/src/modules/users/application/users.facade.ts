@@ -2,17 +2,17 @@ import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import type { RegisterUserInput } from '../domain/register-user-input.js';
 import type { UserSnapshot } from '../domain/user-snapshot.js';
 
-/** Lo que `users` ofrece a los otros módulos. */
+/** What `users` offers to the other modules. */
 export abstract class UsersFacade {
-  /** Busca por email en el catálogo. `undefined` si no existe. */
+  /** Looks up by email in the catalog. `undefined` if it does not exist. */
   abstract findByEmail(email: string): Promise<UserSnapshot | undefined>;
-  /** @throws DomainError `IDENTITY.USER.NOT_FOUND` si no existe. */
+  /** @throws DomainError `IDENTITY.USER.NOT_FOUND` if it does not exist. */
   abstract getByRef(ref: UserRef): Promise<UserSnapshot>;
-  /** El tenant de origen del usuario desde el catálogo, o `undefined` si no existe. */
+  /** The user's home tenant from the catalog, or `undefined` if it does not exist. */
   abstract refOf(userId: string): Promise<UserRef | undefined>;
   abstract register(input: RegisterUserInput): Promise<UserRef>;
   abstract setLastTenant(ref: UserRef, tenantId: string): Promise<void>;
-  /** Apunta a `region` el índice de emails de los usuarios cuyo tenant de origen se trasladó. Idempotente. */
+  /** Points to `region` the email index of the users whose home tenant was moved. Idempotent. */
   abstract relocateHomeTenant(
     homeTenantId: string,
     region: string,

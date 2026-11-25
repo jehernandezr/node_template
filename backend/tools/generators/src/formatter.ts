@@ -1,5 +1,5 @@
-/** Formatea lo generado con el estilo del repositorio, para que pase `nx format:check` sin otro paso. */
+/** Formats the generated output with the repository style, so it passes `nx format:check` with no extra step. */
 export abstract class Formatter {
-  /** Devuelve el texto tal cual si la extensión no es de las que se formatean. */
+  /** Returns the text as is if the extension is not one that gets formatted. */
   abstract format(path: string, content: string): Promise<string>;
 }

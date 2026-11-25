@@ -1,7 +1,7 @@
 import { WorkspaceCopier } from '../../workspace-copier.js';
 import type { InMemoryFileSystem } from './in-memory-file-system.js';
 
-/** Una copia del workspace en memoria con los dos archivos compartidos que la prueba de humo edita. */
+/** An in-memory copy of the workspace with the two shared files the smoke test edits. */
 export class InMemoryWorkspaceCopier extends WorkspaceCopier {
   static readonly ROOT = '/copy';
   readonly removed: string[] = [];

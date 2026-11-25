@@ -5,7 +5,7 @@ import { ApiGatewayRequestMapper } from '../api-gateway-request-mapper.js';
 import { ApiGatewayResponseMapper } from '../api-gateway-response-mapper.js';
 import { LoopbackForwarder } from '../loopback-forwarder.js';
 
-/** Lo que el servidor de prueba devuelve: lo que recibió, en JSON. */
+/** What the test server returns: what it received, as JSON. */
 interface Echo {
   readonly method: string;
   readonly path: string;

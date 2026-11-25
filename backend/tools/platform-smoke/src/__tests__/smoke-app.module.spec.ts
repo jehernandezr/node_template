@@ -20,7 +20,7 @@ import { SmokeOrdersModule } from '../orders/smoke-orders.module.js';
 import { SmokeTenancyModule } from '../smoke-tenancy.module.js';
 import { SmokeKernelModule } from '../smoke-kernel.module.js';
 
-/** Módulos de la composición de referencia, en el orden en que se importan. */
+/** Modules of the reference composition, in import order. */
 const EXPECTED_ORDER: readonly unknown[] = [
   ConfigModule,
   SmokeKernelModule,

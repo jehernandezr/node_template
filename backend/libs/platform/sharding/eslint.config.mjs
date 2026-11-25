@@ -22,7 +22,7 @@ export default [
     },
   },
   {
-    // Aquí se declaran los códigos: es el único lugar donde van como texto.
+    // The codes are declared here: it is the only place where they appear as text.
     files: ['src/errors/sharding-error-code.enum.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },

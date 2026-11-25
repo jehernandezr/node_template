@@ -1,36 +1,36 @@
 import { LoggerPort } from '@platform/observability';
 
-/** Una línea de error que se registró. */
+/** An error line that was logged. */
 export interface RecordedError {
   readonly message: string;
   readonly attributes?: Readonly<Record<string, unknown>>;
 }
 
-/** Logger que guarda los errores para mirarlos en la prueba y descarta el resto. */
+/** Logger that keeps the errors for the test to inspect and discards the rest. */
 export class RecordingLogger extends LoggerPort {
   readonly errors: RecordedError[] = [];
 
-  /** Descarta la línea. */
+  /** Discards the line. */
   debug(): void {
     return;
   }
 
-  /** Descarta la línea. */
+  /** Discards the line. */
   info(): void {
     return;
   }
 
-  /** Descarta la línea. */
+  /** Discards the line. */
   warn(): void {
     return;
   }
 
-  /** Guarda el error. */
+  /** Stores the error. */
   error(message: string, attributes?: Readonly<Record<string, unknown>>): void {
     this.errors.push({ message, ...(attributes && { attributes }) });
   }
 
-  /** El mismo logger. */
+  /** The same logger. */
   child(): LoggerPort {
     return this;
   }

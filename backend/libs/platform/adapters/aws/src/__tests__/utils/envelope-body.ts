@@ -1,7 +1,7 @@
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
 import { EnvelopeFactory, type MessageEnvelope } from '@platform/messaging';
 
-/** Sobres de prueba con ids distintos en cada instancia, así cada prueba tiene los suyos. */
+/** Test envelopes with different ids on each instance, so each test has its own. */
 export class EnvelopeBody {
   private readonly factory = new EnvelopeFactory(
     new FixedClock(),

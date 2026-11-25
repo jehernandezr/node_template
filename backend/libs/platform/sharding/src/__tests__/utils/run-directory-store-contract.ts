@@ -4,18 +4,18 @@ import type { DirectoryWriter } from '../../ports/directory-writer.js';
 import { PlacementBuilder } from './placement-builder.js';
 import { TestTenants } from './test-tenants.js';
 
-/** Lo que la prueba de contrato necesita de un directorio: sus dos puertos y cómo sembrar una instancia. */
+/** What the contract test needs from a directory: its two ports and how to seed an instance. */
 export interface DirectoryContractSubject {
   readonly store: DirectoryStore;
   readonly writer: DirectoryWriter;
-  /** Registra la instancia física de un shard lógico; los puertos no tienen escritura de instancias. */
+  /** Registers the physical instance of a logical shard; the ports have no instance write. */
   seedInstance(logicalShard: string, instance: string): Promise<void>;
 }
 
 /**
- * Prueba de contrato de `DirectoryStore` y `DirectoryWriter`: la corren el doble en
- * memoria y el adaptador real, para que no diverjan.
- * @param factory Crea un directorio vacío y aislado para cada prueba.
+ * Contract test of `DirectoryStore` and `DirectoryWriter`: both the in-memory double
+ * and the real adapter run it, so they do not diverge.
+ * @param factory Creates an empty, isolated directory for each test.
  */
 export function runDirectoryStoreContract(
   name: string,

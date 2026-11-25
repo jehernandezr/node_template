@@ -7,7 +7,7 @@ import {
 import { IdentityRoute } from '../enums/identifiers.enum.js';
 import { JwksSchema } from '../schemas/jwks.schema.js';
 
-/** `GET /v1/auth/jwks`: claves públicas para verificar access tokens sin llamar a identity. */
+/** `GET /v1/auth/jwks`: public keys to verify access tokens without calling identity. */
 export const GetJwksRoute = defineRoute({
   id: IdentityRoute.GetJwks,
   method: HttpMethod.Get,
@@ -16,5 +16,5 @@ export const GetJwksRoute = defineRoute({
   errors: [PlatformErrorCode.RateLimitExceeded],
   access: Access.public(),
   description:
-    'Devuelve las claves públicas vigentes en formato JWKS para verificar access tokens.',
+    'Returns the active public keys in JWKS format to verify access tokens.',
 });

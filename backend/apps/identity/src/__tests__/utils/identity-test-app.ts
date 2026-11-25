@@ -18,12 +18,12 @@ import { PeerServicesStub } from './peer-services-stub.js';
 import { ShardProbe } from './shard-probe.js';
 
 /**
- * Identity completo sobre PostgreSQL y Valkey reales: migra el catálogo y los dos shards, siembra los
- * tenants de la región y sirve HTTP en un puerto libre. Los servicios a los que llama son `peers`. Lo
- * comparten las pruebas de integración y las e2e.
+ * Full identity on real PostgreSQL and Valkey: migrates the catalog and both shards, seeds the
+ * region's tenants and serves HTTP on a free port. The services it calls are `peers`. It is
+ * shared by the integration and e2e tests.
  */
 export class IdentityTestApp implements IdentityEntry {
-  /** Origen web permitido por el entorno de prueba. */
+  /** Web origin allowed by the test environment. */
   static readonly WEB_ORIGIN = 'https://app.identity.test';
   static readonly DEFAULT_IP = '198.51.100.1';
 
@@ -35,8 +35,8 @@ export class IdentityTestApp implements IdentityEntry {
   async start(overrides: ConfigEnv = {}): Promise<void> {
     await this.servers.start();
     await this.peers.start();
-    // Un proxy delante: cada cliente de prueba declara su IP en `X-Forwarded-For`, así el límite por IP
-    // de las rutas públicas no se reparte entre todas las pruebas.
+    // A proxy in front: each test client declares its IP in `X-Forwarded-For`, so the per-IP limit
+    // of the public routes is not shared among all tests.
     this.environment = {
       ...this.servers.environment(),
       TRUST_PROXY_HOPS: '1',
@@ -82,17 +82,17 @@ export class IdentityTestApp implements IdentityEntry {
     return `http://127.0.0.1:${this.service().address?.port ?? 0}`;
   }
 
-  /** Cliente sin headers de canal: la petición cuenta como web. `ip` es la que el proxy declara. */
+  /** Client without channel headers: the request counts as web. `ip` is the one the proxy declares. */
   client(ip = IdentityTestApp.DEFAULT_IP): HttpTestClient {
     return new HttpTestClient(this.baseUrl(), { 'X-Forwarded-For': ip });
   }
 
-  /** Cliente de la app nativa: el session token viaja en el cuerpo. */
+  /** Native app client: the session token travels in the body. */
   nativeClient(ip = IdentityTestApp.DEFAULT_IP): HttpTestClient {
     return this.client(ip).withHeaders({ 'X-Session-Transport': 'bearer' });
   }
 
-  /** Cliente firmado de la API interna de esta app. */
+  /** Signed client for this app's internal API. */
   internal(): InternalOperationsClient {
     return new InternalOperationsClient(
       'identity',
@@ -101,7 +101,7 @@ export class IdentityTestApp implements IdentityEntry {
     );
   }
 
-  /** Lo que se ve de los dos shards y el catálogo desde fuera de la app. */
+  /** What is visible of both shards and the catalog from outside the app. */
   shards(): ShardProbe {
     return new ShardProbe(this.servers, this.get(ShardRouter));
   }

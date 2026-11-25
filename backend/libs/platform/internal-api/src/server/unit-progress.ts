@@ -2,16 +2,16 @@ import type { CallOutcome, FinalOutcome } from '@platform/primitives';
 import { UnitStage } from './unit-stage.enum.js';
 
 /**
- * Lo que el `UnitOfWorkRunner` necesita saber al recuperarse de un fallo: hasta
- * dónde llegó la unidad de trabajo y qué resultado ya se decidió. Vive fuera de
- * la transacción porque el rollback deshace los efectos, no este registro.
+ * What the `UnitOfWorkRunner` needs to know when recovering from a failure: how
+ * far the unit of work got and which result was already decided. It lives outside
+ * the transaction because the rollback undoes the effects, not this record.
  */
 export class UnitProgress {
   stage: UnitStage = UnitStage.Begin;
-  /** Resultado que no se guarda (transitorio, incierto o violación): la unidad se deshace. */
+  /** Result that is not stored (transient, uncertain or violation): the unit is rolled back. */
   rejected?: CallOutcome<unknown>;
-  /** El handler lanzó: el error se clasifica al recuperarse. */
+  /** The handler threw: the error is classified when recovering. */
   thrown?: { readonly error: unknown };
-  /** El handler pidió deshacer su unidad con un resultado final: se guarda aparte. */
+  /** The handler asked to roll back its unit with a final result: it is stored separately. */
   rolledBack?: FinalOutcome<unknown>;
 }

@@ -4,13 +4,13 @@ import { InternalHeader } from '../transport/internal-header.enum.js';
 import type { SignableRequest } from './signable-request.js';
 
 /**
- * Calcula la firma HMAC-SHA256 de una llamada. El firmador y el autenticador
- * la comparten para que no puedan divergir.
+ * Computes the HMAC-SHA256 signature of a call. The signer and the authenticator
+ * share it so they cannot diverge.
  *
- * El texto firmado une, separados por salto de línea: método, ruta, instante,
- * huella del cuerpo y las cabeceras que cambian el significado de la llamada
- * (tenant, actor, llave de idempotencia, plazo y traza). Una cabecera ausente
- * cuenta como texto vacío.
+ * The signed text joins, separated by newlines: method, path, instant,
+ * body hash and the headers that change the meaning of the call
+ * (tenant, actor, idempotency key, deadline and trace). A missing header
+ * counts as empty text.
  */
 export class HmacSignatureCalculator {
   private static readonly SIGNED_HEADERS: readonly InternalHeader[] = [
@@ -23,7 +23,7 @@ export class HmacSignatureCalculator {
 
   constructor(private readonly secret: string) {}
 
-  /** Firma en hexadecimal de `request` para el instante `timestampMs`. */
+  /** Returns the hexadecimal signature of `request` for the instant `timestampMs`. */
   sign(request: SignableRequest, timestampMs: number): string {
     return createHmac('sha256', this.secret)
       .update(this.signedText(request, timestampMs))

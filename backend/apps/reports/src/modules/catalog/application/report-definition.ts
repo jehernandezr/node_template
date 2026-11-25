@@ -9,8 +9,8 @@ import {
 } from '@contracts/reports';
 
 /**
- * Un tipo de reporte: sus columnas y cómo calcula sus filas. Solo lee las proyecciones del propio shard del
- * tenant, nunca otro servicio ni otra base.
+ * A report type: its columns and how it computes its rows. It only reads the projections of the tenant's own
+ * shard, never another service or another database.
  */
 export abstract class ReportDefinition {
   abstract readonly type: ReportType;

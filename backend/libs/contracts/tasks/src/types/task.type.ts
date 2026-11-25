@@ -1,23 +1,23 @@
 import type { Page, UserRef } from '@contracts/platform';
 import type { TaskStatus } from '../enums/tasks.enum.js';
 
-/** Tarea de la organización. Su dueña es el tenant, no quien la crea. */
+/** Task of the organization. Its owner is the tenant, not whoever creates it. */
 export interface Task {
   id: string;
   title: string;
   description: string;
   status: TaskStatus;
-  /** Versión para control de concurrencia optimista: sube en cada cambio. */
+  /** Version for optimistic concurrency control: increases on every change. */
   version: number;
   createdAt: string;
   updatedAt: string;
-  /** Usuario que creó la tarea. */
+  /** User who created the task. */
   createdBy: UserRef;
 }
 
 export type TaskPage = Page<Task>;
 
-/** Listado y búsqueda de tareas del tenant activo. */
+/** Listing and search of tasks in the active tenant. */
 export interface ListTasksRequest {
   status?: TaskStatus;
   q?: string;
@@ -25,18 +25,18 @@ export interface ListTasksRequest {
   after?: string;
 }
 
-/** Lectura de una tarea por su id. */
+/** Read of a task by its id. */
 export interface GetTaskRequest {
   taskId: string;
 }
 
-/** Alta de una tarea en el tenant activo. */
+/** Creation of a task in the active tenant. */
 export interface CreateTaskRequest {
   title: string;
   description?: string;
 }
 
-/** Cambios parciales de una tarea. `expectedVersion` evita pisar un cambio ajeno. */
+/** Partial changes to a task. `expectedVersion` avoids overwriting someone else's change. */
 export interface UpdateTaskRequest {
   taskId: string;
   title?: string;
@@ -45,19 +45,19 @@ export interface UpdateTaskRequest {
   expectedVersion?: number;
 }
 
-/** Borrado lógico de una tarea. */
+/** Soft delete of a task. */
 export interface DeleteTaskRequest {
   taskId: string;
 }
 
-/** Tarea tal como la ve la sincronización de cambios, con la fecha de borrado si la hubo. */
+/** Task as the change sync sees it, with the deletion date if there was one. */
 export interface TaskChange extends Task {
   deletedAt: string | null;
 }
 
 export type TaskChangePage = Page<TaskChange>;
 
-/** Entrada de la operación que pagina los cambios de tareas de un tenant. */
+/** Input of the operation that paginates the task changes of a tenant. */
 export interface ListTaskChangesInput {
   tenantId: string;
   updatedAfter?: string;
@@ -65,12 +65,12 @@ export interface ListTaskChangesInput {
   after?: string;
 }
 
-/** Entrada de la operación que anonimiza al usuario en las tareas. */
+/** Input of the operation that anonymizes the user in the tasks. */
 export interface EraseTasksUserInput {
   user: UserRef;
 }
 
-/** Resultado de anonimizar al usuario en las tareas. */
+/** Result of anonymizing the user in the tasks. */
 export interface EraseTasksUserResult {
   userId: string;
   affectedRows: number;

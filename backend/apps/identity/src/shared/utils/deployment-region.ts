@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ServiceRegions } from '@platform/service';
 import { IdentitySettings } from '../../config/identity-settings.js';
 
-/** La región de este despliegue de identity y la URL de su API, para que el cliente llame a la región correcta. */
+/** The region of this identity deployment and its API URL, so the client calls the right region. */
 export interface RegionLocation {
   readonly region: string;
   readonly apiBaseUrl?: string;
 }
 
-/** Dónde atiende este despliegue: `IDENTITY_REGION` y, si `REGIONS` la declara, su `apiBaseUrl`. */
+/** Where this deployment serves: `IDENTITY_REGION` and, if `REGIONS` declares it, its `apiBaseUrl`. */
 @Injectable()
 export class DeploymentRegion {
   constructor(

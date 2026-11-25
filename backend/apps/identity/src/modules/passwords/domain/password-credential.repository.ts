@@ -1,10 +1,10 @@
 import type { PasswordCredential } from './password-credential.js';
 
-/** Contraseñas en el shard del usuario. */
+/** Passwords in the user's shard. */
 export abstract class PasswordCredentialRepository {
   abstract find(userId: string): Promise<PasswordCredential | undefined>;
 
-  /** Inserta o reemplaza la contraseña del usuario. */
+  /** Inserts or replaces the user's password. */
   abstract save(credential: PasswordCredential): Promise<void>;
 
   abstract delete(userId: string): Promise<void>;

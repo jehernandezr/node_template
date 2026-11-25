@@ -14,8 +14,8 @@ import { HttpMetadataKey } from './http-metadata-key.enum.js';
 import type { ResourceMetadata } from './resource-metadata.js';
 
 /**
- * Registra cada handler con `@Endpoint` en el registro de rutas y comprueba, al arrancar, que el
- * contrato tiene todas sus rutas y que el catálogo cubre todos sus códigos de error.
+ * Registers each handler with `@Endpoint` in the route registry and checks, at startup, that the
+ * contract has all its routes and that the catalog covers all its error codes.
  */
 @Injectable()
 export class HttpRouteExplorer implements OnApplicationBootstrap {

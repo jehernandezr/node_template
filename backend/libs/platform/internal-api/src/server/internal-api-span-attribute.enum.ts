@@ -1,14 +1,14 @@
-/** Atributos del span de servidor de cada llamada. */
+/** Attributes of the server span of each call. */
 export enum InternalApiSpanAttribute {
-  /** Sistema RPC (convenciones semánticas de OpenTelemetry). */
+  /** RPC system (OpenTelemetry semantic conventions). */
   RpcSystem = 'rpc.system',
-  /** Id de la operación. */
+  /** Operation id. */
   RpcMethod = 'rpc.method',
-  /** `CallOutcomeKind` de la llamada. */
+  /** `CallOutcomeKind` of the call. */
   Outcome = 'platform.call.outcome',
 }
 
-/** Valor de `rpc.system` para las llamadas de la API interna. */
+/** Value of `rpc.system` for internal API calls. */
 export enum InternalApiRpcSystem {
   Value = 'platform.internal-api',
 }

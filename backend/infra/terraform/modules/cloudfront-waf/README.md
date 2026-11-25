@@ -1,19 +1,19 @@
-# Módulo cloudfront-waf
+# cloudfront-waf module
 
-CloudFront delante de la web Flutter (S3 con OAC) y de la API (ALB o API Gateway), con un WAFv2 compartido.
+CloudFront in front of the Flutter web (S3 with OAC) and the API (ALB or API Gateway), with a shared WAFv2.
 
-## Qué crea
+## What it creates
 
-- Bucket S3 privado para el build de Flutter web (KMS, versionado, TLS obligatorio), accesible solo por la distribución mediante Origin Access Control.
-- Distribución de la web con fallback de SPA: 403 y 404 devuelven `index.html` con 200. Cache optimizado y compresión.
-- Distribución de la API (opcional, con `api_origin_domain_name`): sin caché, todos los métodos, reenvía cabeceras, cookies y query strings, y los encabezados `CloudFront-Viewer-*` de geolocalización que usa el contexto de MFA.
-- Política de cabeceras de seguridad: HSTS, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y CSP opcional.
-- WAFv2 de ámbito CloudFront con los grupos administrados Common, KnownBadInputs, AmazonIpReputation y SQLi, un límite de tasa por IP y otro más estricto sobre `/auth/` contra relleno de credenciales.
-- Logs de WAF en un log group `aws-waf-logs-*` con KMS en us-east-1, con `authorization` y `cookie` redactados.
+- Private S3 bucket for the Flutter web build (KMS, versioning, mandatory TLS), reachable only by the distribution through Origin Access Control.
+- Web distribution with SPA fallback: 403 and 404 return `index.html` with 200. Optimized cache and compression.
+- API distribution (optional, with `api_origin_domain_name`): no cache, all methods, forwards headers, cookies and query strings, and the `CloudFront-Viewer-*` geolocation headers used by the MFA context.
+- Security headers policy: HSTS, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` and optional CSP.
+- CloudFront-scoped WAFv2 with the Common, KnownBadInputs, AmazonIpReputation and SQLi managed groups, a per-IP rate limit and a stricter one on `/auth/` against credential stuffing.
+- WAF logs in an `aws-waf-logs-*` log group with KMS in us-east-1, with `authorization` and `cookie` redacted.
 
 ## Providers
 
-CloudFront y WAF de ámbito CloudFront solo existen en us-east-1. El módulo declara el alias `aws.us_east_1`, que la raíz debe pasar:
+CloudFront and CloudFront-scoped WAF only exist in us-east-1. The module declares the `aws.us_east_1` alias, which the root must pass:
 
 ```hcl
 providers = {
@@ -22,27 +22,27 @@ providers = {
 }
 ```
 
-El certificado ACM de los dominios debe estar también en us-east-1.
+The ACM certificate for the domains must also be in us-east-1.
 
-## Entradas principales
+## Main inputs
 
-| Variable                                | Descripción                                                                         |
-| --------------------------------------- | ----------------------------------------------------------------------------------- |
-| `acm_certificate_arn`                   | Certificado en us-east-1 que cubre todos los alias.                                 |
-| `web_aliases`, `api_aliases`            | Dominios de cada distribución.                                                      |
-| `api_origin_domain_name`                | Dominio del origen. Debe coincidir con su certificado TLS. Null omite la API.       |
-| `api_origin_verify_header_value`        | Secreto en `X-Origin-Verify` para que el ALB rechace lo que no viene de CloudFront. |
-| `waf_block_mode`                        | `false` solo cuenta: úsalo para afinar reglas antes de bloquear.                    |
-| `waf_rate_limit`, `waf_auth_rate_limit` | Peticiones por IP en 5 minutos.                                                     |
-| `content_security_policy`               | CSP a medida de la web Flutter.                                                     |
+| Variable                                | Description                                                                        |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| `acm_certificate_arn`                   | Certificate in us-east-1 that covers all aliases.                                  |
+| `web_aliases`, `api_aliases`            | Domains of each distribution.                                                      |
+| `api_origin_domain_name`                | Origin domain. Must match its TLS certificate. Null omits the API.                 |
+| `api_origin_verify_header_value`        | Secret in `X-Origin-Verify` so the ALB rejects what does not come from CloudFront. |
+| `waf_block_mode`                        | `false` only counts: use it to tune rules before blocking.                         |
+| `waf_rate_limit`, `waf_auth_rate_limit` | Requests per IP in 5 minutes.                                                      |
+| `content_security_policy`               | CSP tailored to the Flutter web.                                                   |
 
-## Salidas
+## Outputs
 
 `web_bucket_name`, `web_bucket_arn`, `web_kms_key_arn`, `web_distribution_id`, `web_distribution_arn`, `web_domain_name`, `api_distribution_id`, `api_distribution_arn`, `api_domain_name`, `cloudfront_hosted_zone_id`, `web_acl_arn`, `waf_log_group_name`.
 
-## Notas
+## Notes
 
-- El módulo no crea registros DNS. La raíz apunta los alias a `web_domain_name` y `api_domain_name` con `cloudfront_hosted_zone_id`.
-- Socket.IO y SSE entran directo al ALB de tiempo real, no por CloudFront, por los tiempos de lectura del origen.
-- Con `api_origin_verify_header_value`, la raíz agrega al ALB una regla que exija ese encabezado.
-- El pipeline que publica la web necesita `s3:PutObject` en el bucket, `kms:GenerateDataKey` en `web_kms_key_arn` y `cloudfront:CreateInvalidation`.
+- The module does not create DNS records. The root points the aliases to `web_domain_name` and `api_domain_name` with `cloudfront_hosted_zone_id`.
+- Socket.IO and SSE go directly to the realtime ALB, not through CloudFront, because of the origin read timeouts.
+- With `api_origin_verify_header_value`, the root adds a rule to the ALB that requires that header.
+- The pipeline that publishes the web needs `s3:PutObject` on the bucket, `kms:GenerateDataKey` on `web_kms_key_arn` and `cloudfront:CreateInvalidation`.

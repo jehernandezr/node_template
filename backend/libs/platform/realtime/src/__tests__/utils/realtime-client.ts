@@ -1,17 +1,17 @@
 import type { ReceivedFrame } from './received-frame.js';
 
-/** Lo que una prueba de transporte ve de un cliente conectado, sea SSE o Socket.IO. */
+/** What a transport test sees of a connected client, whether SSE or Socket.IO. */
 export interface RealtimeClient {
   readonly frames: readonly ReceivedFrame[];
-  /** El servidor lo rechazó al conectar. */
+  /** The server rejected it on connect. */
   readonly rejected: boolean;
-  /** El servidor cerró la conexión. */
+  /** The server closed the connection. */
   readonly closedByServer: boolean;
   lastEventId(): string | undefined;
   close(): void;
 }
 
-/** Abre un cliente contra el servidor de la prueba con un token y, para reanudar, el último id visto. */
+/** Opens a client against the test server with a token and, to resume, the last id seen. */
 export type RealtimeClientOpener = (
   baseUrl: string,
   token: string,

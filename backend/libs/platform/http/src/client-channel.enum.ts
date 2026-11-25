@@ -1,7 +1,7 @@
-/** Canal por el que habla el cliente: decide dónde viaja el session token. */
+/** Channel the client talks through: decides where the session token travels. */
 export enum ClientChannel {
-  /** Navegador: el session token viaja solo en la cookie. */
+  /** Browser: the session token travels only in the cookie. */
   Web = 'web',
-  /** App nativa: el session token viaja en el cuerpo. */
+  /** Native app: the session token travels in the body. */
   Native = 'native',
 }

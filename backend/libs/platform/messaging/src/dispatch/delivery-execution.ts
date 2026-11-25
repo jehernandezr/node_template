@@ -15,9 +15,9 @@ import { DispatchOutcome } from './dispatch-outcome.enum.js';
 import type { MessageDispatcherOptions } from './message-dispatcher-options.js';
 import type { PreparedDelivery } from './handler-registry.js';
 
-/** Hasta dónde llegó la ejecución, para decidir qué significa un error. */
+/** How far the execution got, to decide what an error means. */
 enum Stage {
-  /** Abriendo el contexto o tomando el claim: falla de infraestructura. */
+  /** While opening the context or taking the claim: infrastructure failure. */
   Claim = 'claim',
   Handler = 'handler',
   Complete = 'complete',
@@ -27,14 +27,14 @@ enum Stage {
 interface RunState {
   stage: Stage;
   claim: AcquiredMessageClaim | undefined;
-  /** Se fija cuando el claim decidió el resultado sin correr el manejador. */
+  /** Set when the claim decided the result without running the handler. */
   result: DispatchResult | undefined;
 }
 
 /**
- * Ejecuta una entrega ya validada: toma el claim, corre el manejador y
- * completa el claim, dentro de un span de consumidor que continúa la traza del
- * sobre.
+ * Runs an already validated delivery: takes the claim, runs the handler and
+ * completes the claim, inside a consumer span that continues the trace of the
+ * envelope.
  */
 export class DeliveryExecution {
   constructor(
@@ -66,7 +66,7 @@ export class DeliveryExecution {
         case Stage.Handler:
           return this.classifier.failure(envelope.id, err, options, false);
         case Stage.Complete:
-          // Los efectos pudieron deshacerse junto con la falla de complete.
+          // The effects may have been rolled back along with the complete failure.
           return this.classifier.failure(envelope.id, err, options, true);
         case Stage.Claim:
         case Stage.Done:
@@ -129,8 +129,8 @@ export class DeliveryExecution {
       state.stage = Stage.Complete;
       await this.claimGuard.complete(outcome.claim);
     } catch (err) {
-      // El claim se libera aquí, todavía dentro del contexto de la entrega: en un servicio con shards, el
-      // almacén solo sabe a qué shard ir mientras ese contexto está abierto.
+      // The claim is released here, still inside the delivery context: in a sharded service, the
+      // store only knows which shard to go to while that context is open.
       await this.releaseHeld(state);
       throw err;
     }

@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../identity/schemas/identity_schemas.dart';
@@ -9,9 +9,9 @@ import '../../platform/enums/platform_enums.dart';
 import '../../platform/schemas/platform_schemas.dart';
 import '../../platform/types/platform_types.dart';
 
-/// Rutas HTTP públicas del contrato `identity`.
+/// Public HTTP routes of the `identity` contract.
 abstract final class IdentityRoutes {
-  /// Inicia sesión con email y contraseña. Responde tokens o un desafío MFA.
+  /// Signs in with email and password. Responds with tokens or an MFA challenge.
   ///
   /// `POST /v1/auth/sign-in`
   static const signIn = RouteDescriptor<SignInRequest, SignInResponse>(
@@ -35,7 +35,7 @@ abstract final class IdentityRoutes {
     decodeResponse: SignInResponse.fromJson,
   );
 
-  /// Crea un desafío MFA para el login pendiente y envía el código por el método elegido.
+  /// Creates an MFA challenge for the pending login and sends the code through the chosen method.
   ///
   /// `POST /v1/auth/mfa/challenges`
   static const requestMfaChallenge =
@@ -62,7 +62,7 @@ abstract final class IdentityRoutes {
         decodeResponse: MfaChallenge.fromJson,
       );
 
-  /// Verifica un desafío MFA, crea la sesión y registra el dispositivo nuevo.
+  /// Verifies an MFA challenge, creates the session and registers the new device.
   ///
   /// `POST /v1/auth/mfa/verify`
   static const verifyMfa = RouteDescriptor<MfaVerifyRequest, SignInResponse>(
@@ -89,7 +89,7 @@ abstract final class IdentityRoutes {
     decodeResponse: SignInResponse.fromJson,
   );
 
-  /// Rota el session token (cuerpo en móvil, cookie httpOnly en web) y emite un access token nuevo.
+  /// Rotates the session token (body on mobile, httpOnly cookie on web) and issues a new access token.
   ///
   /// `POST /v1/auth/refresh`
   static const refreshSession =
@@ -119,7 +119,7 @@ abstract final class IdentityRoutes {
         decodeResponse: SessionTokens.fromJson,
       );
 
-  /// Cierra la sesión del session token, revoca sus tokens y borra la cookie en web.
+  /// Closes the session of the session token, revokes its tokens and clears the cookie on web.
   ///
   /// `POST /v1/auth/sign-out`
   static const signOut = RouteDescriptor<SessionTokenRequest, void>(
@@ -138,7 +138,7 @@ abstract final class IdentityRoutes {
     validateRequest: SessionTokenRequestSchema.validate,
   );
 
-  /// Abre el paso adicional (step-up) de la sesión actual y devuelve los métodos que ofrece.
+  /// Opens the step-up of the current session and returns the methods it offers.
   ///
   /// `POST /v1/me/step-up`
   static const startStepUp = RouteDescriptor<Empty, PendingMfa>(
@@ -167,7 +167,7 @@ abstract final class IdentityRoutes {
     decodeResponse: PendingMfa.fromJson,
   );
 
-  /// Crea el desafío del paso adicional y envía el código por el método elegido.
+  /// Creates the step-up challenge and sends the code through the chosen method.
   ///
   /// `POST /v1/me/step-up/challenges`
   static const requestStepUpChallenge =
@@ -200,7 +200,7 @@ abstract final class IdentityRoutes {
         decodeResponse: MfaChallenge.fromJson,
       );
 
-  /// Verifica el paso adicional, actualiza el último MFA de la sesión y emite un access token nuevo.
+  /// Verifies the step-up, updates the last MFA of the session and issues a new access token.
   ///
   /// `POST /v1/me/step-up/verify`
   static const verifyStepUp =
@@ -234,7 +234,7 @@ abstract final class IdentityRoutes {
         decodeResponse: StepUpResult.fromJson,
       );
 
-  /// Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.
+  /// Returns user, tenant, permissions, roles, plan, flags and last MFA of the current session.
   ///
   /// `GET /v1/me/access`
   static const getSessionAccess = RouteDescriptor<Empty, SessionAccess>(
@@ -262,7 +262,7 @@ abstract final class IdentityRoutes {
     decodeResponse: SessionAccess.fromJson,
   );
 
-  /// Lista las sesiones activas del usuario, la actual primero.
+  /// Lists the active sessions of the user, current one first.
   ///
   /// `GET /v1/me/sessions`
   static const listSessions = RouteDescriptor<PageQuery, SessionPage>(
@@ -290,7 +290,7 @@ abstract final class IdentityRoutes {
     decodeResponse: SessionPage.fromJson,
   );
 
-  /// Cierra una sesión del usuario y revoca sus tokens.
+  /// Closes a session of the user and revokes its tokens.
   ///
   /// `DELETE /v1/me/sessions/{sessionId}`
   static const revokeSession = RouteDescriptor<RevokeSessionRequest, void>(
@@ -317,7 +317,7 @@ abstract final class IdentityRoutes {
     validateRequest: RevokeSessionRequestSchema.validate,
   );
 
-  /// Cierra todas las sesiones del usuario menos la actual.
+  /// Closes all sessions of the user except the current one.
   ///
   /// `POST /v1/me/sessions/revoke-others`
   static const revokeOtherSessions = RouteDescriptor<Empty, RevokedSessions>(
@@ -345,7 +345,7 @@ abstract final class IdentityRoutes {
     decodeResponse: RevokedSessions.fromJson,
   );
 
-  /// Lista los dispositivos del usuario con confianza vigente.
+  /// Lists the user devices with active trust.
   ///
   /// `GET /v1/me/devices`
   static const listDevices = RouteDescriptor<PageQuery, DevicePage>(
@@ -373,7 +373,7 @@ abstract final class IdentityRoutes {
     decodeResponse: DevicePage.fromJson,
   );
 
-  /// Registra un usuario y envía el email de verificación. Responde aceptado sin revelar si el email ya existe.
+  /// Registers a user and sends the verification email. Responds accepted without revealing whether the email already exists.
   ///
   /// `POST /v1/auth/sign-up`
   static const signUp = RouteDescriptor<SignUpRequest, void>(
@@ -398,7 +398,7 @@ abstract final class IdentityRoutes {
     validateRequest: SignUpRequestSchema.validate,
   );
 
-  /// Envía un nuevo email de verificación. Responde aceptado aunque el email no exista.
+  /// Sends a new verification email. Responds accepted even if the email does not exist.
   ///
   /// `POST /v1/auth/email-verifications`
   static const resendEmailVerification =
@@ -418,7 +418,7 @@ abstract final class IdentityRoutes {
         validateRequest: EmailVerificationRequestSchema.validate,
       );
 
-  /// Marca el email del usuario como verificado con el token recibido.
+  /// Marks the user email as verified with the received token.
   ///
   /// `POST /v1/auth/email-verifications/confirm`
   static const confirmEmailVerification =
@@ -441,7 +441,7 @@ abstract final class IdentityRoutes {
         validateRequest: EmailVerificationConfirmRequestSchema.validate,
       );
 
-  /// Cambia la contraseña y cierra las demás sesiones del usuario.
+  /// Changes the password and closes the other sessions of the user.
   ///
   /// `POST /v1/me/password`
   static const changePassword = RouteDescriptor<ChangePasswordRequest, void>(
@@ -472,7 +472,7 @@ abstract final class IdentityRoutes {
     validateRequest: ChangePasswordRequestSchema.validate,
   );
 
-  /// Envía el correo para restablecer la contraseña. Responde aceptado aunque el email no exista.
+  /// Sends the password reset email. Responds accepted even if the email does not exist.
   ///
   /// `POST /v1/auth/password-resets`
   static const requestPasswordReset =
@@ -492,7 +492,7 @@ abstract final class IdentityRoutes {
         validateRequest: PasswordResetRequestSchema.validate,
       );
 
-  /// Restablece la contraseña con el token del correo y cierra las sesiones del usuario.
+  /// Resets the password with the emailed token and closes the user sessions.
   ///
   /// `POST /v1/auth/password-resets/confirm`
   static const confirmPasswordReset =
@@ -517,7 +517,7 @@ abstract final class IdentityRoutes {
         validateRequest: PasswordResetConfirmRequestSchema.validate,
       );
 
-  /// Devuelve el perfil del usuario autenticado.
+  /// Returns the profile of the authenticated user.
   ///
   /// `GET /v1/me`
   static const getProfile = RouteDescriptor<Empty, UserProfile>(
@@ -545,7 +545,7 @@ abstract final class IdentityRoutes {
     decodeResponse: UserProfile.fromJson,
   );
 
-  /// Cambia el nombre o el idioma del perfil y devuelve el perfil nuevo.
+  /// Changes the profile name or language and returns the new profile.
   ///
   /// `PATCH /v1/me`
   static const updateProfile =
@@ -574,7 +574,7 @@ abstract final class IdentityRoutes {
         decodeResponse: UserProfile.fromJson,
       );
 
-  /// Envía un token a la dirección nueva para confirmar el cambio de email.
+  /// Sends a token to the new address to confirm the email change.
   ///
   /// `POST /v1/me/email-changes`
   static const requestEmailChange = RouteDescriptor<EmailChangeRequest, void>(
@@ -602,7 +602,7 @@ abstract final class IdentityRoutes {
     validateRequest: EmailChangeRequestSchema.validate,
   );
 
-  /// Aplica el cambio de email con el token enviado a la dirección nueva.
+  /// Applies the email change with the token sent to the new address.
   ///
   /// `POST /v1/me/email-changes/confirm`
   static const confirmEmailChange =
@@ -630,7 +630,7 @@ abstract final class IdentityRoutes {
         validateRequest: EmailChangeConfirmRequestSchema.validate,
       );
 
-  /// Devuelve las claves públicas vigentes en formato JWKS para verificar access tokens.
+  /// Returns the active public keys in JWKS format to verify access tokens.
   ///
   /// `GET /v1/auth/jwks`
   static const getJwks = RouteDescriptor<Empty, Jwks>(
@@ -651,7 +651,7 @@ abstract final class IdentityRoutes {
     decodeResponse: Jwks.fromJson,
   );
 
-  /// Quita un dispositivo de la cuenta y cierra sus sesiones.
+  /// Removes a device from the account and closes its sessions.
   ///
   /// `DELETE /v1/me/devices/{deviceId}`
   static const removeDevice = RouteDescriptor<RemoveDeviceRequest, void>(
@@ -678,7 +678,7 @@ abstract final class IdentityRoutes {
     validateRequest: RemoveDeviceRequestSchema.validate,
   );
 
-  /// Quita la confianza de un dispositivo sin borrar su registro.
+  /// Removes the trust of a device without deleting its record.
   ///
   /// `POST /v1/me/devices/{deviceId}/untrust`
   static const untrustDevice = RouteDescriptor<UntrustDeviceRequest, void>(
@@ -705,7 +705,7 @@ abstract final class IdentityRoutes {
     validateRequest: UntrustDeviceRequestSchema.validate,
   );
 
-  /// Guarda o reemplaza el token push del dispositivo actual.
+  /// Saves or replaces the push token of the current device.
   ///
   /// `PUT /v1/me/devices/current/push-token`
   static const updatePushToken = RouteDescriptor<PushTokenRequest, void>(
@@ -731,7 +731,7 @@ abstract final class IdentityRoutes {
     validateRequest: PushTokenRequestSchema.validate,
   );
 
-  /// Devuelve las aprobaciones pendientes del dispositivo que firma la petición.
+  /// Returns the pending approvals of the device that signs the request.
   ///
   /// `POST /v1/auth/device-approvals/pull`
   static const pullDeviceApprovals =
@@ -756,7 +756,7 @@ abstract final class IdentityRoutes {
         decodeResponse: DeviceApprovals.fromJson,
       );
 
-  /// Rechaza una aprobación pendiente desde el dispositivo que firma la petición.
+  /// Rejects a pending approval from the device that signs the request.
   ///
   /// `POST /v1/auth/device-approvals/{challengeId}/deny`
   static const denyDeviceApproval =
@@ -780,7 +780,7 @@ abstract final class IdentityRoutes {
         validateRequest: DenyDeviceApprovalRequestSchema.validate,
       );
 
-  /// Crea el secreto TOTP y su URI. El factor queda activo al confirmarlo.
+  /// Creates the TOTP secret and its URI. The factor becomes active once confirmed.
   ///
   /// `POST /v1/me/mfa/totp`
   static const startTotpEnrollment = RouteDescriptor<Empty, TotpEnrollment>(
@@ -811,7 +811,7 @@ abstract final class IdentityRoutes {
     decodeResponse: TotpEnrollment.fromJson,
   );
 
-  /// Confirma el TOTP con el primer código y devuelve los códigos de recuperación.
+  /// Confirms the TOTP with the first code and returns the recovery codes.
   ///
   /// `POST /v1/me/mfa/totp/confirm`
   static const confirmTotpEnrollment =
@@ -843,7 +843,7 @@ abstract final class IdentityRoutes {
         decodeResponse: RecoveryCodes.fromJson,
       );
 
-  /// Quita el TOTP de la cuenta y avisa por alerta de seguridad.
+  /// Removes the TOTP from the account and sends a security alert.
   ///
   /// `DELETE /v1/me/mfa/totp`
   static const removeTotp = RouteDescriptor<Empty, void>(
@@ -872,7 +872,7 @@ abstract final class IdentityRoutes {
     validateRequest: EmptySchema.validate,
   );
 
-  /// Reemplaza los códigos de recuperación y devuelve los nuevos una sola vez.
+  /// Replaces the recovery codes and returns the new ones only once.
   ///
   /// `POST /v1/me/mfa/recovery-codes`
   static const regenerateRecoveryCodes = RouteDescriptor<Empty, RecoveryCodes>(
@@ -903,7 +903,7 @@ abstract final class IdentityRoutes {
     decodeResponse: RecoveryCodes.fromJson,
   );
 
-  /// Inicia la recuperación de MFA y envía el token por email. Se confirma después de la espera indicada.
+  /// Starts MFA recovery and sends the token by email. It is confirmed after the indicated wait.
   ///
   /// `POST /v1/auth/mfa/recoveries`
   static const startMfaRecovery =
@@ -929,7 +929,7 @@ abstract final class IdentityRoutes {
         decodeResponse: MfaRecoveryStarted.fromJson,
       );
 
-  /// Confirma la recuperación de MFA, desactiva los factores anteriores y crea la sesión.
+  /// Confirms MFA recovery, disables the previous factors and creates the session.
   ///
   /// `POST /v1/auth/mfa/recoveries/confirm`
   static const confirmMfaRecovery =
@@ -956,7 +956,7 @@ abstract final class IdentityRoutes {
         decodeResponse: SignInResponse.fromJson,
       );
 
-  /// Crea el desafío de un inicio de sesión con passkey.
+  /// Creates the challenge for a passkey sign-in.
   ///
   /// `POST /v1/auth/passkeys/options`
   static const passkeySignInOptions = RouteDescriptor<Empty, PasskeyOptions>(
@@ -977,7 +977,7 @@ abstract final class IdentityRoutes {
     decodeResponse: PasskeyOptions.fromJson,
   );
 
-  /// Verifica la respuesta de la passkey y devuelve tokens o un desafío MFA.
+  /// Verifies the passkey response and returns tokens or an MFA challenge.
   ///
   /// `POST /v1/auth/passkeys/verify`
   static const passkeySignInVerify =
@@ -1003,7 +1003,7 @@ abstract final class IdentityRoutes {
         decodeResponse: SignInResponse.fromJson,
       );
 
-  /// Crea el desafío de passkey para el segundo factor de un login pendiente.
+  /// Creates the passkey challenge for the second factor of a pending login.
   ///
   /// `POST /v1/auth/mfa/passkey/options`
   static const passkeyMfaOptions =
@@ -1028,7 +1028,7 @@ abstract final class IdentityRoutes {
         decodeResponse: PasskeyOptions.fromJson,
       );
 
-  /// Verifica la passkey como segundo factor y crea la sesión.
+  /// Verifies the passkey as second factor and creates the session.
   ///
   /// `POST /v1/auth/mfa/passkey/verify`
   static const passkeyMfaVerify =
@@ -1055,7 +1055,7 @@ abstract final class IdentityRoutes {
         decodeResponse: SignInResponse.fromJson,
       );
 
-  /// Crea el desafío de passkey para el paso adicional de una sesión abierta.
+  /// Creates the passkey challenge for the step-up of an open session.
   ///
   /// `POST /v1/me/step-up/passkey/options`
   static const passkeyStepUpOptions =
@@ -1085,7 +1085,7 @@ abstract final class IdentityRoutes {
         decodeResponse: PasskeyOptions.fromJson,
       );
 
-  /// Verifica la passkey del paso adicional y devuelve un access token con el MFA nuevo.
+  /// Verifies the step-up passkey and returns an access token with the new MFA.
   ///
   /// `POST /v1/me/step-up/passkey/verify`
   static const passkeyStepUpVerify =
@@ -1117,7 +1117,7 @@ abstract final class IdentityRoutes {
         decodeResponse: StepUpResult.fromJson,
       );
 
-  /// Lista las passkeys registradas del usuario.
+  /// Lists the registered passkeys of the user.
   ///
   /// `GET /v1/me/passkeys`
   static const listPasskeys = RouteDescriptor<PageQuery, PasskeyPage>(
@@ -1145,7 +1145,7 @@ abstract final class IdentityRoutes {
     decodeResponse: PasskeyPage.fromJson,
   );
 
-  /// Crea el desafío para registrar una passkey nueva.
+  /// Creates the challenge to register a new passkey.
   ///
   /// `POST /v1/me/passkeys/registration-options`
   static const passkeyRegistrationOptions =
@@ -1176,7 +1176,7 @@ abstract final class IdentityRoutes {
         decodeResponse: PasskeyOptions.fromJson,
       );
 
-  /// Registra una passkey nueva con la respuesta del autenticador.
+  /// Registers a new passkey with the authenticator response.
   ///
   /// `POST /v1/me/passkeys`
   static const registerPasskey =
@@ -1207,7 +1207,7 @@ abstract final class IdentityRoutes {
         decodeResponse: PasskeySummary.fromJson,
       );
 
-  /// Quita una passkey de la cuenta.
+  /// Removes a passkey from the account.
   ///
   /// `DELETE /v1/me/passkeys/{passkeyId}`
   static const removePasskey = RouteDescriptor<RemovePasskeyRequest, void>(
@@ -1236,7 +1236,7 @@ abstract final class IdentityRoutes {
     validateRequest: RemovePasskeyRequestSchema.validate,
   );
 
-  /// Cambia el tenant de la sesión abierta y devuelve tokens del tenant elegido.
+  /// Switches the tenant of the open session and returns tokens for the chosen tenant.
   ///
   /// `POST /v1/me/tenant-switch`
   static const switchTenant =
@@ -1266,7 +1266,7 @@ abstract final class IdentityRoutes {
         decodeResponse: SessionTokens.fromJson,
       );
 
-  /// Inicia el aprovisionamiento de un tenant y deja al usuario autenticado como dueño.
+  /// Starts provisioning a tenant and makes the authenticated user its owner.
   ///
   /// `POST /v1/tenants`
   static const createTenant =
@@ -1296,7 +1296,7 @@ abstract final class IdentityRoutes {
         decodeResponse: TenantCreation.fromJson,
       );
 
-  /// Devuelve el tenant de la sesión actual.
+  /// Returns the tenant of the current session.
   ///
   /// `GET /v1/tenant`
   static const getTenant = RouteDescriptor<Empty, TenantSummary>(
@@ -1324,7 +1324,7 @@ abstract final class IdentityRoutes {
     decodeResponse: TenantSummary.fromJson,
   );
 
-  /// Cambia el nombre del tenant de la sesión actual.
+  /// Changes the name of the current session tenant.
   ///
   /// `PATCH /v1/tenant`
   static const updateTenant =
@@ -1354,7 +1354,7 @@ abstract final class IdentityRoutes {
         decodeResponse: TenantSummary.fromJson,
       );
 
-  /// Lista los tenants a los que pertenece el usuario.
+  /// Lists the tenants the user belongs to.
   ///
   /// `GET /v1/me/tenants`
   static const listMyTenants = RouteDescriptor<PageQuery, MyTenantPage>(

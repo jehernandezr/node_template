@@ -21,7 +21,7 @@ import {
   UserSuspendedEvent,
 } from './user.events.js';
 
-/** Tópico de los eventos de identity. Lo consumen el gateway de tiempo real y los servicios con caché de tokens. */
+/** Topic of the identity events. Consumed by the real-time gateway and the services with a token cache. */
 export const IdentityEventsTopic = defineTopic({
   name: IdentityTopic.Events,
   events: [
@@ -44,5 +44,5 @@ export const IdentityEventsTopic = defineTopic({
     UserErasedEvent,
   ],
   description:
-    'Eventos de identity: usuarios, dispositivos, tenants, membresías, API keys, sesiones y alertas. Cada servicio suscribe su propia cola.',
+    'Identity events: users, devices, tenants, memberships, API keys, sessions and alerts. Each service subscribes its own queue.',
 });

@@ -1,8 +1,8 @@
 import type { UsageWindow } from './usage-count.js';
 
-/** Contadores de uso por ventana, compartidos por todas las instancias del servicio. */
+/** Usage counters per window, shared by all instances of the service. */
 export abstract class UsageCounterStore {
-  /** Suma `quantity` al contador del tenant y la métrica en la ventana que empieza en `windowStart`. */
+  /** Adds `quantity` to the counter of the tenant and the metric in the window starting at `windowStart`. */
   abstract add(
     windowStart: Date,
     tenantId: string,
@@ -10,9 +10,9 @@ export abstract class UsageCounterStore {
     quantity: number,
   ): Promise<void>;
 
-  /** Las ventanas que empezaron antes de `before` y todavía no se vaciaron, de la más vieja a la más nueva. */
+  /** The windows that started before `before` and were not flushed yet, from oldest to newest. */
   abstract pending(before: Date): Promise<readonly UsageWindow[]>;
 
-  /** Olvida la ventana: ya se envió completa. */
+  /** Forgets the window: it was already sent in full. */
   abstract clear(windowStart: Date): Promise<void>;
 }

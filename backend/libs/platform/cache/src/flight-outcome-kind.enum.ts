@@ -1,7 +1,7 @@
-/** Qué entrega el líder de una carga compartida de `CacheAside`. */
+/** What the leader of a shared `CacheAside` load delivers. */
 export enum FlightOutcomeKind {
-  /** El texto serializado, leído del caché o recién cargado. */
+  /** The serialized text, read from the cache or just loaded. */
   Raw = 'raw',
-  /** El valor cargado, cuando no se pudo serializar. */
+  /** The loaded value, when it could not be serialized. */
   Value = 'value',
 }

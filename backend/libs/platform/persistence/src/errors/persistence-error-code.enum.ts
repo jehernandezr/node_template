@@ -1,4 +1,4 @@
-/** Códigos de error estables de `@platform/persistence`. */
+/** Stable error codes of `@platform/persistence`. */
 export enum PersistenceErrorCode {
   QueryFailed = 'PLATFORM.PERSISTENCE.QUERY_FAILED',
   InvalidConfig = 'PLATFORM.PERSISTENCE.INVALID_CONFIG',

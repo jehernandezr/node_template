@@ -8,14 +8,14 @@ import type {
 import type { FrameSink } from './frame-sink.js';
 
 /**
- * Una conexión abierta de un usuario. Entrega primero lo que se perdió desde `lastEventId` y después cada
- * trama nueva del canal, siempre en orden y sin repetir: cada lectura parte del id de la última entregada.
- * Una trama con `closesSession` igual a la sesión de la conexión se entrega y cierra la conexión. Si el stream
- * falla a mitad de la entrega, la sesión se cierra: el cliente reconecta con el id de la última trama recibida
- * y no pierde ninguna.
+ * An open connection of a user. It first delivers what was missed since `lastEventId` and then each
+ * new frame of the channel, always in order and without repeats: each read starts from the id of the last one delivered.
+ * A frame with `closesSession` equal to the connection's session is delivered and closes the connection. If the stream
+ * fails midway through delivery, the session is closed: the client reconnects with the id of the last frame received
+ * and loses none.
  */
 export class RealtimeSession {
-  /** Tramas por lectura: acota la memoria de una reconexión que vuelve después de mucho tiempo. */
+  /** Frames per read: bounds the memory of a reconnection that comes back after a long time. */
   private static readonly BATCH = 100;
 
   private lastId: string | undefined;
@@ -35,7 +35,7 @@ export class RealtimeSession {
     return this.principal.userId;
   }
 
-  /** Sin `lastEventId`, o con uno que no es del stream, la conexión empieza en el final: lo anterior ya lo trae la API. */
+  /** Without `lastEventId`, or with one that is not from the stream, the connection starts at the end: the API already provides what came before. */
   async open(): Promise<void> {
     this.lastId = await this.stream.resumePoint(this.channel, this.lastEventId);
     this.unsubscribe = await this.stream.subscribe(this.channel, () => {
@@ -47,8 +47,8 @@ export class RealtimeSession {
   }
 
   /**
-   * Lee lo pendiente; las llamadas se encadenan para no entregar dos veces la misma trama. La cadena nunca
-   * queda rechazada: lo llaman avisos y latidos que nadie espera.
+   * Reads what is pending; the calls are chained so the same frame is not delivered twice. The chain is never
+   * left rejected: it is called by notices and heartbeats that nobody awaits.
    */
   catchUp(): void {
     this.draining = this.draining
@@ -92,7 +92,7 @@ export class RealtimeSession {
       channel: this.channel,
       error: error instanceof Error ? error.message : String(error),
     });
-    // Sin Valkey la suscripción tampoco se cancela; el aviso que llegue después encuentra la sesión cerrada.
+    // Without Valkey the subscription is not canceled either; a notice that arrives later finds the session closed.
     await this.close().catch(() => undefined);
   }
 

@@ -1,7 +1,7 @@
 import { PlatformError } from '@platform/kernel';
 import { ServiceErrorCode } from './service-error-code.enum.js';
 
-/** El cierre del servicio superó el plazo de gracia. */
+/** The service shutdown exceeded the grace period. */
 export class ServiceShutdownTimeoutError extends PlatformError {
   override readonly code = ServiceErrorCode.ShutdownTimeout;
 

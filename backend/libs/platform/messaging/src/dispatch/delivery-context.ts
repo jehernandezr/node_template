@@ -1,9 +1,9 @@
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 
 /**
- * Abre el contexto en el que corre una entrega: el claim de idempotencia, el manejador y el `complete`. Un
- * servicio con shards lo usa para fijar el shard y el tenant del sobre, porque el claim vive en la base del
- * tenant y fuera de un contexto no sabría a qué shard ir.
+ * Opens the context in which a delivery runs: the idempotency claim, the handler and the `complete`. A
+ * sharded service uses it to set the shard and the tenant of the envelope, because the claim lives in the
+ * tenant database and outside a context it would not know which shard to go to.
  */
 export abstract class DeliveryContext {
   abstract run(

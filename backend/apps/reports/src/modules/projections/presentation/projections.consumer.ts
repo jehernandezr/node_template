@@ -23,7 +23,7 @@ import { Subscribe } from '@platform/messaging/nest';
 import { ProjectFinanceEvents } from '../application/project-finance-events.use-case.js';
 import { ProjectTaskEvents } from '../application/project-task-events.use-case.js';
 
-/** Colas `reports-projections` (tareas) y `reports-finance-projections` (facturas y notificaciones). */
+/** Queues `reports-projections` (tasks) and `reports-finance-projections` (invoices and notifications). */
 @Injectable()
 export class ProjectionsConsumer {
   constructor(

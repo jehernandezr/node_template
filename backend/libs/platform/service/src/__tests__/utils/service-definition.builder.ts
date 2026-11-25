@@ -3,7 +3,7 @@ import { serviceConfigSchema } from '@platform/config';
 import type { ServiceDefinition } from '../../service-definition.js';
 import { TestRootModule } from './test-root.module.js';
 
-/** Arma una `ServiceDefinition` mínima y válida; cada `with*` cambia un campo. */
+/** Builds a minimal valid `ServiceDefinition`; each `with*` changes a field. */
 export class ServiceDefinitionBuilder {
   private definition: ServiceDefinition;
 

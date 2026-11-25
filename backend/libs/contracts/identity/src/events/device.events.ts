@@ -8,12 +8,11 @@ import {
 export const DeviceRegisteredEvent = defineEvent({
   type: IdentityEvent.DeviceRegistered,
   payload: DeviceRegisteredPayloadSchema,
-  description:
-    'Se registró un dispositivo que puede aprobar acciones sensibles.',
+  description: 'A device that can approve sensitive actions was registered.',
 });
 
 export const DeviceRemovedEvent = defineEvent({
   type: IdentityEvent.DeviceRemoved,
   payload: DeviceRemovedPayloadSchema,
-  description: 'Se quitó un dispositivo de la cuenta.',
+  description: 'A device was removed from the account.',
 });

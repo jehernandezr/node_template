@@ -41,20 +41,20 @@ import { TypeOrmTransactionManager } from '../../typeorm-transaction-manager.js'
 import { StaticShardLister } from './static-shard-lister.js';
 import { RecordingLogger } from './recording-logger.js';
 
-/** Opciones de {@link ShardedTestDatabase}. */
+/** Options of {@link ShardedTestDatabase}. */
 export interface ShardedTestDatabaseOptions {
-  /** Entidades y migraciones de los dos shards. */
+  /** Entities and migrations of both shards. */
   readonly shard: DatabaseSetDefinition;
   readonly catalog: DatabaseSetDefinition;
-  /** Por defecto `false`. */
+  /** `false` by default. */
   readonly requireScope?: boolean;
-  /** Imagen de PostgreSQL; por defecto `postgres:17-alpine`. Las suites que usan pgvector piden su imagen. */
+  /** PostgreSQL image; `postgres:17-alpine` by default. Suites that use pgvector request their own image. */
   readonly image?: string;
-  /** Barrera de traslado que consultan las escrituras; las migraciones deben crear `tenant_write_fences`. */
+  /** Relocation barrier checked by writes; migrations must create `tenant_write_fences`. */
   readonly fence?: TenantWriteFence;
 }
 
-/** Resuelve la única instancia del arnés al contenedor que la aloja. */
+/** Resolves the single harness instance to the container that hosts it. */
 class ContainerEndpointResolver extends InstanceEndpointResolver {
   constructor(
     private readonly container: StartedPostgreSqlContainer,
@@ -81,8 +81,8 @@ class ContainerEndpointResolver extends InstanceEndpointResolver {
 }
 
 /**
- * Arnés de pruebas: un PostgreSQL real en un contenedor con dos shards lógicos y un catálogo, y toda
- * la capa cableada a mano (sin NestJS). El tenant A vive en el shard 0 y el tenant B en el shard 1.
+ * Test harness: a real PostgreSQL in a container with two logical shards and a catalog, and the whole
+ * layer wired by hand (without NestJS). Tenant A lives in shard 0 and tenant B in shard 1.
  */
 export class ShardedTestDatabase {
   static readonly DEFAULT_IMAGE = 'postgres:17-alpine';
@@ -114,7 +114,7 @@ export class ShardedTestDatabase {
 
   constructor(protected readonly options: ShardedTestDatabaseOptions) {}
 
-  /** Arranca el contenedor, crea las tres bases y arma la capa. No migra: llama a `migrate()`. */
+  /** Starts the container, creates the three databases and builds the layer. Does not migrate: call `migrate()`. */
   async start(): Promise<void> {
     const container = await new PostgreSqlContainer(
       this.options.image ?? ShardedTestDatabase.DEFAULT_IMAGE,
@@ -126,20 +126,20 @@ export class ShardedTestDatabase {
     this.wire(container);
   }
 
-  /** Aplica las migraciones al catálogo y a los dos shards con `ShardedMigrationRunner`. */
+  /** Applies the migrations to the catalog and both shards with `ShardedMigrationRunner`. */
   async migrate(): Promise<void> {
     this.requireStarted();
     await this.runner.migrateAll();
   }
 
-  /** Cierra los `DataSource` y detiene el contenedor. */
+  /** Closes the `DataSource`s and stops the container. */
   async stop(): Promise<void> {
     await this.sources?.close();
     await this.catalog?.close();
     await this.container?.stop();
   }
 
-  /** Ejecuta `fn` como una petición del tenant (y del usuario) dados, con actor y traza. */
+  /** Runs `fn` as a request of the given tenant (and user), with actor and trace. */
   runAs<T>(
     tenantId: string,
     fn: () => Promise<T>,
@@ -159,7 +159,7 @@ export class ShardedTestDatabase {
     );
   }
 
-  /** Otro gestor de transacciones sobre los mismos shards, con otra barrera de traslado. */
+  /** Another transaction manager over the same shards, with another relocation barrier. */
   transactionsWith(fence: TenantWriteFence): TypeOrmTransactionManager {
     this.requireStarted();
     return new TypeOrmTransactionManager(
@@ -171,7 +171,7 @@ export class ShardedTestDatabase {
     );
   }
 
-  /** `RepositoryKit` de un módulo con esa declaración de sharding, listo para un repositorio. */
+  /** `RepositoryKit` of a module with that sharding declaration, ready for a repository. */
   kitFor(feature: PersistenceFeature): RepositoryKit {
     this.requireStarted();
     return new RepositoryKit(
@@ -208,7 +208,7 @@ export class ShardedTestDatabase {
     }
   }
 
-  /** Arma la capa a mano, con el mismo cableado que `PersistenceModule`. */
+  /** Builds the layer by hand, with the same wiring as `PersistenceModule`. */
   private wire(container: StartedPostgreSqlContainer): void {
     this.directory = new InMemoryDirectoryStore();
     this.directory.setPlacement(

@@ -1,8 +1,8 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Contrato `reports` generado.
+/// Generated `reports` contract.
 library;
 
 export 'enums/reports_enums.dart';

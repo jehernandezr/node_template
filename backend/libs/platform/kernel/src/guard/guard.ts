@@ -1,14 +1,14 @@
 import { GuardViolationError } from '../errors/guard-violation.error.js';
 
-/** Qué argumento falló y qué se esperaba de él. */
+/** Which argument failed and what was expected of it. */
 export interface GuardViolation {
   readonly name: string;
   readonly expectation: string;
 }
 
 /**
- * Construye el error de una violación. Recibe el mensaje ya redactado y, para
- * quien necesita separar argumento y expectativa, la violación.
+ * Builds the error of a violation. It receives the already written message and, for
+ * whoever needs to separate argument and expectation, the violation.
  */
 export type GuardFailure = (
   message: string,
@@ -16,12 +16,12 @@ export type GuardFailure = (
 ) => Error;
 
 /**
- * Validaciones de argumentos con el error como colaborador: cada librería
- * construye su guarda con su propio tipo de error y sus códigos. Cada método
- * devuelve el valor validado, así se valida en la misma asignación.
+ * Argument validations with the error as a collaborator: each library
+ * builds its guard with its own error type and codes. Each method
+ * returns the validated value, so validation happens in the same assignment.
  */
 export class Guard {
-  /** Guarda que lanza `GuardViolationError`. */
+  /** Guard that throws `GuardViolationError`. */
   static readonly default = new Guard();
 
   constructor(

@@ -1,9 +1,9 @@
 import type { MessageEnvelope } from '../envelope/message-envelope.js';
 
 /**
- * Decide si el tenant del sobre es legítimo para este consumidor, por ejemplo
- * que el tenant exista y esté suscrito. `tenantId` es `undefined` cuando el
- * sobre no trae ninguno. Si lanza, el dispatcher lo trata como falla transitoria.
+ * Decides whether the envelope tenant is legitimate for this consumer, for example
+ * that the tenant exists and is subscribed. `tenantId` is `undefined` when the
+ * envelope carries none. If it throws, the dispatcher treats it as a transient failure.
  */
 export abstract class TenantVerifier {
   abstract verify(

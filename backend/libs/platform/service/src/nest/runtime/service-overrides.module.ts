@@ -1,8 +1,8 @@
 import { Module, type DynamicModule, type Provider } from '@nestjs/common';
 
 /**
- * Entrega providers del proceso en un módulo global, para que el negocio los inyecte sin
- * importar este módulo. Es interno: el servicio pasa sus sustitutos por `ServiceHostOptions`.
+ * Supplies process providers in a global module, so the business code injects them without
+ * importing this module. It is internal: the service passes its substitutes through `ServiceHostOptions`.
  */
 @Module({})
 export class ServiceOverridesModule {

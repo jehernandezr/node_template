@@ -1,7 +1,7 @@
-/** Dónde se atienden las conexiones de tiempo real de las notificaciones. */
+/** Where the real-time connections of notifications are served. */
 export enum RealtimeHost {
-  /** Dentro de notifications, junto a su API. */
+  /** Inside notifications, next to its API. */
   Service = 'service',
-  /** En `apps/realtime`: notifications solo publica en el stream. */
+  /** In `apps/realtime`: notifications only publishes to the stream. */
   App = 'app',
 }

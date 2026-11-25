@@ -15,8 +15,8 @@ interface PageRow {
 }
 
 /**
- * Las sentencias de la copia de una tabla. Lee filas como JSON de texto, sin pasarlas por números de JavaScript,
- * y escribe con `json_populate_recordset`, así cada tipo vuelve a su valor exacto. Todo filtra por el tenant en `$1`.
+ * The statements of a table copy. It reads rows as JSON text, without passing them through JavaScript numbers,
+ * and writes with `json_populate_recordset`, so each type returns to its exact value. Everything filters by the tenant in `$1`.
  */
 export class TableCopier {
   private static readonly ALIAS = 't';
@@ -26,12 +26,12 @@ export class TableCopier {
     private readonly filter: TenantRowFilter,
   ) {}
 
-  /** Si la tabla tiene `updated_at` para las rondas delta. */
+  /** Whether the table has `updated_at` for the delta rounds. */
   tracksUpdates(): boolean {
     return this.shape.hasUpdatedAt;
   }
 
-  /** Llave de la última fila del tenant, o `undefined` si no tiene ninguna. */
+  /** Key of the tenant's last row, or `undefined` if it has none. */
   async lastKey(
     runner: QueryRunner,
     tenantId: string,
@@ -44,7 +44,7 @@ export class TableCopier {
     return row === undefined ? undefined : this.keyOf(row);
   }
 
-  /** `updated_at` más reciente de las filas del tenant, como texto. */
+  /** Latest `updated_at` of the tenant rows, as text. */
   async latestUpdate(
     runner: QueryRunner,
     tenantId: string,
@@ -56,7 +56,7 @@ export class TableCopier {
     return rows[0]?.latest ?? undefined;
   }
 
-  /** Filas del tenant con llave mayor que `after` y hasta `upTo`, en orden de llave. */
+  /** Tenant rows with a key greater than `after` and up to `upTo`, in key order. */
   async readAfterKey(
     runner: QueryRunner,
     tenantId: string,
@@ -75,7 +75,7 @@ export class TableCopier {
     return this.page(rows);
   }
 
-  /** Llave de la fila del tenant que está `position` filas después de `after`, o `undefined` si no hay tantas. */
+  /** Key of the tenant row that is `position` rows after `after`, or `undefined` if there are not that many. */
   async keyAt(
     runner: QueryRunner,
     tenantId: string,
@@ -94,7 +94,7 @@ export class TableCopier {
     return row === undefined ? undefined : this.keyOf(row);
   }
 
-  /** Filas del tenant cambiadas entre `since` y `until`, en orden de `updated_at` y llave, después del cursor. */
+  /** Tenant rows changed between `since` and `until`, in `updated_at` and key order, after the cursor. */
   async readChangedSince(
     runner: QueryRunner,
     tenantId: string,
@@ -122,8 +122,8 @@ export class TableCopier {
   }
 
   /**
-   * Escribe las filas en el destino: inserta las nuevas y actualiza solo las que cambiaron.
-   * @returns cuántas filas insertó o cambió.
+   * Writes the rows to the target: inserts the new ones and updates only those that changed.
+   * @returns how many rows it inserted or changed.
    */
   async upsert(runner: QueryRunner, rows: readonly string[]): Promise<number> {
     if (rows.length === 0) {
@@ -150,7 +150,7 @@ export class TableCopier {
     return written.length;
   }
 
-  /** Llaves de las filas del tenant en el tramo, como texto de fila, para buscarlas en el otro lado. */
+  /** Keys of the tenant rows in the range, as row text, to look them up on the other side. */
   async keysIn(
     runner: QueryRunner,
     tenantId: string,
@@ -174,7 +174,7 @@ export class TableCopier {
       : { ids: rows.map((row) => row.id), lastKey: this.keyOf(last) };
   }
 
-  /** De las llaves dadas, las que existen para el tenant. */
+  /** Of the given keys, those that exist for the tenant. */
   async existing(
     runner: QueryRunner,
     tenantId: string,
@@ -187,7 +187,7 @@ export class TableCopier {
     return new Set(rows.map((row) => row.id));
   }
 
-  /** Borra las filas del tenant con esas llaves. */
+  /** Deletes the tenant rows with those keys. */
   async deleteKeys(
     runner: QueryRunner,
     tenantId: string,
@@ -202,7 +202,7 @@ export class TableCopier {
     );
   }
 
-  /** Borra hasta `limit` filas del tenant. Devuelve cuántas borró. */
+  /** Deletes up to `limit` tenant rows. Returns how many it deleted. */
   async deleteBatch(
     runner: QueryRunner,
     tenantId: string,
@@ -217,9 +217,9 @@ export class TableCopier {
   }
 
   /**
-   * Conteo y suma de verificación de las filas del tenant, de toda la tabla o de un tramo de llaves. La suma se
-   * calcula sobre las columnas en orden de nombre, no sobre la fila entera: el orden físico de las columnas puede
-   * diferir entre el origen y el destino si una migración las agregó en otro orden.
+   * Count and checksum of the tenant rows, of the whole table or of a key range. The sum is
+   * computed over the columns in name order, not over the whole row: the physical column order can
+   * differ between source and target if a migration added them in a different order.
    */
   async checksum(
     runner: QueryRunner,
@@ -237,7 +237,7 @@ export class TableCopier {
     return { rows: Number(row?.rows ?? 0), checksum: row?.checksum ?? '' };
   }
 
-  /** Fija `column` en `value` en las filas del tenant que tengan otro valor. */
+  /** Sets `column` to `value` in the tenant rows that have a different value. */
   async assign(
     runner: QueryRunner,
     tenantId: string,
@@ -267,7 +267,7 @@ export class TableCopier {
     return this.shape.keyColumns.map((_, index) => row[`k${index}`]);
   }
 
-  /** Condiciones ` AND ...` del tramo de llaves; agrega los valores a `params`. */
+  /** ` AND ...` conditions for the key range; appends the values to `params`. */
   private range(range: KeyRange, params: unknown[]): string {
     const lower =
       range.after === undefined
@@ -280,7 +280,7 @@ export class TableCopier {
     return `${lower}${upper}`;
   }
 
-  /** `(llave) <op> (valores)` con cada valor convertido a su tipo; agrega los valores a `params`. */
+  /** `(key) <op> (values)` with each value cast to its type; appends the values to `params`. */
   private keyCompare(
     key: readonly string[],
     operator: KeyComparison,
@@ -293,7 +293,7 @@ export class TableCopier {
     return `(${this.keyColumns().join(', ')}) ${operator} (${values.join(', ')})`;
   }
 
-  /** `ROW(...)` con las columnas escritas por la copia, en orden de nombre. */
+  /** `ROW(...)` with the columns written by the copy, in name order. */
   private projection(): string {
     const columns = [...this.shape.columns]
       .sort()

@@ -2,14 +2,14 @@ import type { ClaimRequest } from './claim-request.js';
 import type { ClaimResult } from './claim-result.js';
 
 /**
- * Puerto de idempotencia de tres estados con fencing.
- * - `claim` es atómico por llave. Un lease vencido lo puede tomar otro intento,
- *   que recibe un token nuevo e invalida el anterior.
- * - `complete` guarda el resultado final y solo lo acepta del token vigente.
- *   En producción se escribe en la misma unidad de trabajo que los efectos.
- * - `release` borra un claim en curso (para permitir otro intento) y también
- *   exige el token vigente.
- * `complete` y `release` rechazan un token viejo con un error de claim vencido.
+ * Three-state idempotency port with fencing.
+ * - `claim` is atomic per key. An expired lease can be taken by another attempt,
+ *   which receives a new token and invalidates the previous one.
+ * - `complete` stores the final result and only accepts it from the current token.
+ *   In production it is written in the same unit of work as the effects.
+ * - `release` deletes an in-progress claim (to allow another attempt) and also
+ *   requires the current token.
+ * `complete` and `release` reject a stale token with an expired claim error.
  */
 export abstract class IdempotencyStore<R = unknown> {
   abstract claim(key: string, request: ClaimRequest): Promise<ClaimResult<R>>;

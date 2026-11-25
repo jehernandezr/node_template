@@ -1,11 +1,11 @@
 import type { CallOutcome } from '@platform/primitives';
 import type { ClaimedOperation } from './claimed-operation.js';
 
-/** Qué hace el router después de pedir el claim. */
+/** What the router does after requesting the claim. */
 export enum GateDecisionKind {
-  /** La llave es de esta llamada: se corre el handler. */
+  /** The key belongs to this call: the handler runs. */
   Proceed = 'proceed',
-  /** Hay respuesta sin correr el handler: un resultado guardado o un rechazo. */
+  /** There is a response without running the handler: a stored result or a rejection. */
   Respond = 'respond',
 }
 

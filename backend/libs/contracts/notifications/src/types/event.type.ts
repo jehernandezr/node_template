@@ -3,12 +3,12 @@ import type {
   NotificationType,
 } from '../enums/notifications.enum.js';
 
-/** Se creó una notificación. No lleva texto: solo lo que reports agrega. */
+/** A notification was created. It carries no text: only what reports aggregates. */
 export interface NotificationCreatedPayload {
   notificationId: string;
   tenantId: string;
   type: NotificationType;
-  /** Canales por los que salió. */
+  /** Channels through which it went out. */
   channels: NotificationChannel[];
   createdAt: string;
 }

@@ -16,8 +16,8 @@ import { RecordingLogger } from '../../__tests__/utils/index.js';
 import { NotificationsIdentityMailer } from '../notifications-identity-mailer.js';
 
 /**
- * Notifications de mentira: guarda cada correo pedido, descarta los dirigidos a una dirección suprimida y
- * falla con los de una plantilla que no conoce.
+ * Fake notifications: stores each requested email, discards those addressed to a suppressed address and
+ * fails for those with a template it does not know.
  */
 class RecordingSendEmailHandler extends OperationHandler<
   typeof SendEmailOperation

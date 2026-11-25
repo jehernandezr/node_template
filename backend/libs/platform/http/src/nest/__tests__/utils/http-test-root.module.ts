@@ -14,7 +14,7 @@ import type { ServiceContract, ErrorCatalogEntry } from '@contracts/platform';
 import { HttpModule } from '../../http.module.js';
 import { AuthDoublesModule } from './auth-doubles.module.js';
 
-/** Módulo raíz de la app de prueba: configuración, observabilidad, auth con dobles y la entrada HTTP. */
+/** Root module of the test app: configuration, observability, auth with doubles and the HTTP entry. */
 @Module({})
 export class HttpTestRootModule {
   static forRoot(params: {

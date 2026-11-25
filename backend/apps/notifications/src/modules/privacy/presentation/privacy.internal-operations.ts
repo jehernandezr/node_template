@@ -12,7 +12,7 @@ import { DeliveryRepository } from '../../dispatch/index.js';
 import { InboxFacade } from '../../inbox/index.js';
 import { PreferencesFacade } from '../../preferences/index.js';
 
-/** Borrado de los datos de notificaciones de un usuario. */
+/** Deletion of a user's notification data. */
 @Injectable()
 export class PrivacyInternalOperations {
   constructor(
@@ -22,7 +22,7 @@ export class PrivacyInternalOperations {
     private readonly shard: UserShard,
   ) {}
 
-  /** Repetirla no cambia nada: ya no queda nada del usuario. */
+  /** Repeating it changes nothing: nothing of the user remains. */
   @InternalHandler(EraseNotificationsUserDataOperation)
   async eraseUserData(
     input: EraseNotificationsUserInput,

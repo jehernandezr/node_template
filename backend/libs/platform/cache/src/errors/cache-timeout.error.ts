@@ -2,7 +2,7 @@ import { FailureKind } from '@platform/kernel';
 import { CacheError } from './cache-error.js';
 import { CacheErrorCode } from './cache-error-code.enum.js';
 
-/** Una llamada al caché superó su tiempo máximo. */
+/** A cache call exceeded its maximum time. */
 export class CacheTimeoutError extends CacheError {
   override readonly code = CacheErrorCode.Timeout;
 

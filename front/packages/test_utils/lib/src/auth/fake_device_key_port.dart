@@ -1,6 +1,6 @@
 import 'package:auth/auth.dart';
 
-/// Clave de dispositivo falsa. [sign] invierte los bytes para que sea determinista.
+/// Fake device key. [sign] reverses the bytes so it is deterministic.
 class FakeDeviceKeyPort implements DeviceKeyPort {
   FakeDeviceKeyPort({this._publicKey = const [1, 2, 3, 4]});
 

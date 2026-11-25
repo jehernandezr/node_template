@@ -1,5 +1,5 @@
-/** Adaptador de `ReportResultStore` que elige `REPORTS_RESULT_STORE`. */
+/** `ReportResultStore` adapter chosen by `REPORTS_RESULT_STORE`. */
 export enum ReportResultStoreKind {
-  /** En la columna `result` de la propia ejecución. */
+  /** In the `result` column of the run itself. */
   Row = 'row',
 }

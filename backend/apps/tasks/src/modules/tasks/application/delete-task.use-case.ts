@@ -9,7 +9,7 @@ import { TasksError } from '../domain/tasks.error.js';
 import type { DeleteTaskCommand } from './task-commands.js';
 import { TaskEvents } from './task-events.js';
 
-/** Borrado lógico: la tarea sale de la lista y de la búsqueda, y el job la elimina después. */
+/** Soft delete: the task leaves the list and the search, and the job removes it later. */
 @Injectable()
 export class DeleteTask {
   constructor(
@@ -21,7 +21,7 @@ export class DeleteTask {
     private readonly clock: Clock,
   ) {}
 
-  /** @throws TasksError `TASKS.TASK.NOT_FOUND` si no existe o ya se borró. */
+  /** @throws TasksError `TASKS.TASK.NOT_FOUND` if it does not exist or was already deleted. */
   execute(command: DeleteTaskCommand): Promise<void> {
     return this.shard.run(command.tenantId, () =>
       this.transactions.runInTransaction(async () => {

@@ -4,13 +4,13 @@ import type { EventDefinition } from './define-event.js';
 import type { OperationRetryPolicy } from './define-operation.js';
 
 /**
- * Tópico de un servicio: el punto de difusión de sus eventos. Cada evento del
- * servicio se publica en exactamente uno de sus tópicos.
+ * Topic of a service: the broadcast point of its events. Each event of the
+ * service is published on exactly one of its topics.
  */
 export interface TopicDefinition {
-  /** Nombre lógico, `servicio-...`. Terraform le agrega el prefijo del ambiente. */
+  /** Logical name, `service-...`. Terraform adds the environment prefix. */
   readonly name: string;
-  /** Entrega ordenada (SNS FIFO). Solo colas FIFO pueden suscribirse. */
+  /** Ordered delivery (SNS FIFO). Only FIFO queues can subscribe. */
   readonly fifo: boolean;
   readonly events: readonly EventDefinition[];
   readonly description: string;
@@ -23,42 +23,42 @@ export interface TopicSpec {
   readonly description: string;
 }
 
-/** Suscripción de una cola a un tópico, propio o de otro servicio. */
+/** Subscription of a queue to a topic, owned or from another service. */
 export interface QueueSubscription {
   readonly topic: TopicDefinition;
-  /** Eventos que recibe la cola. Vacío: todos los del tópico, sin filtro. */
+  /** Events the queue receives. Empty: all of the topic's events, without a filter. */
   readonly events: readonly EventDefinition[];
 }
 
 export interface QueueSubscriptionSpec {
   readonly topic: TopicDefinition;
-  /** Si se omite, la cola recibe todos los eventos del tópico. */
+  /** If omitted, the queue receives all of the topic's events. */
   readonly events?: readonly EventDefinition[];
 }
 
-/** Política de reintentos de una cola: entregas totales y backoff exponencial. */
+/** Retry policy of a queue: total deliveries and exponential backoff. */
 export type QueueRetryPolicy = OperationRetryPolicy;
 
-/** Cola de destino de los mensajes que fallan todos sus intentos. */
+/** Destination queue for messages that fail all their attempts. */
 export interface DeadLetterPolicy {
-  /** Recepciones antes de moverlo a la DLQ. Nunca menos que los intentos. */
+  /** Times a message is received before it moves to the DLQ. Never fewer than the attempts. */
   readonly maxReceiveCount: number;
-  /** Días que la DLQ guarda un mensaje, de 1 a 14. */
+  /** Days the DLQ keeps a message, from 1 to 14. */
   readonly retentionDays: number;
 }
 
 /**
- * Cola de un servicio: recibe sus comandos y los eventos de los tópicos a los
- * que se suscribe. El servicio dueño del contrato es su único consumidor.
+ * Queue of a service: receives its commands and the events of the topics it
+ * subscribes to. The service that owns the contract is its only consumer.
  */
 export interface QueueDefinition {
-  /** Nombre lógico, `servicio-...`. La DLQ se llama `<name>-dlq`. */
+  /** Logical name, `service-...`. The DLQ is named `<name>-dlq`. */
   readonly name: string;
   readonly fifo: boolean;
   readonly visibilityTimeoutSeconds: number;
   readonly retry: QueueRetryPolicy;
   readonly deadLetter: DeadLetterPolicy;
-  /** Comandos del propio servicio que llegan a esta cola. */
+  /** Commands of the service itself that arrive at this queue. */
   readonly commands: readonly CommandDefinition[];
   readonly subscriptions: readonly QueueSubscription[];
   readonly description: string;
@@ -67,14 +67,14 @@ export interface QueueDefinition {
 export interface QueueSpec {
   readonly name: string;
   readonly fifo?: boolean;
-  /** Segundos que un mensaje queda invisible mientras se procesa. Por defecto 30. */
+  /** Seconds a message stays invisible while it is processed. Defaults to 30. */
   readonly visibilityTimeoutSeconds?: number;
-  /** Por defecto 10 intentos, 1 s de base y 5 min de tope: la ventana cubre varios minutos de una caída. */
+  /** Defaults to 10 attempts, 1 s base and 5 min cap: the window covers several minutes of an outage. */
   readonly retry?: QueueRetryPolicy;
   /**
-   * Por defecto `maxReceiveCount` diez veces los intentos (hasta 1 000) y 14 días de retención. SQS cuenta cada
-   * recepción, también las fallas de infraestructura y las reentregas de un mensaje en curso, que el consumidor no
-   * cuenta como intentos; el margen evita que la cola los mande a la DLQ por su cuenta.
+   * Defaults to `maxReceiveCount` ten times the attempts (up to 1 000) and 14 days of retention. SQS counts every
+   * receive, including infrastructure failures and redeliveries of an in-flight message, which the consumer does not
+   * count as attempts; the margin keeps the queue from sending them to the DLQ on its own.
    */
   readonly deadLetter?: Partial<DeadLetterPolicy>;
   readonly commands?: readonly CommandDefinition[];
@@ -82,16 +82,16 @@ export interface QueueSpec {
   readonly description: string;
 }
 
-/** Nombre de tópico o cola: minúsculas, dígitos y guiones (SNS y SQS). */
+/** Topic or queue name: lowercase letters, digits and hyphens (SNS and SQS). */
 export const MESSAGING_NAME_PATTERN = /^[a-z][a-z0-9-]*[a-z0-9]$/;
 
-/** Largo máximo del nombre lógico; deja lugar al prefijo, `-dlq` y `.fifo`. */
+/** Maximum length of the logical name; leaves room for the prefix, `-dlq` and `.fifo`. */
 export const MESSAGING_NAME_MAX_LENGTH = 60;
 
-/** Sufijo de la cola de mensajes fallidos. */
+/** Suffix of the dead-letter queue. */
 export const DEAD_LETTER_SUFFIX = '-dlq';
 
-/** Valores por defecto de una cola; coinciden con los de `@platform/messaging`. */
+/** Default values of a queue; they match those of `@platform/messaging`. */
 export const QueueDefaults = {
   visibilityTimeoutSeconds: 30,
   maxVisibilityTimeoutSeconds: 43_200,
@@ -109,7 +109,7 @@ function checkName(kind: string, name: string): void {
     name.endsWith(DEAD_LETTER_SUFFIX)
   ) {
     throw new ContractDefinitionError(
-      `${kind} ${name}: nombre inválido (minúsculas, dígitos y guiones, hasta ${MESSAGING_NAME_MAX_LENGTH}, sin ${DEAD_LETTER_SUFFIX})`,
+      `${kind} ${name}: invalid name (lowercase letters, digits and hyphens, up to ${MESSAGING_NAME_MAX_LENGTH}, without ${DEAD_LETTER_SUFFIX})`,
     );
   }
 }
@@ -120,7 +120,7 @@ function checkUniqueTypes(
 ): void {
   const types = messages.map((m) => m.type);
   if (new Set(types).size !== types.length) {
-    throw new ContractDefinitionError(`${where}: mensajes repetidos`);
+    throw new ContractDefinitionError(`${where}: duplicate messages`);
   }
 }
 
@@ -128,15 +128,15 @@ function isPositiveInt(value: number): boolean {
   return Number.isInteger(value) && value > 0;
 }
 
-/** Declara un tópico con los eventos que se publican en él. */
+/** Declares a topic with the events published on it. */
 export function defineTopic(spec: TopicSpec): TopicDefinition {
-  const where = `Tópico ${spec.name}`;
-  checkName('Tópico', spec.name);
+  const where = `Topic ${spec.name}`;
+  checkName('Topic', spec.name);
   if (!spec.description.trim()) {
-    throw new ContractDefinitionError(`${where}: falta la descripción`);
+    throw new ContractDefinitionError(`${where}: missing description`);
   }
   if (spec.events.length === 0) {
-    throw new ContractDefinitionError(`${where}: no tiene eventos`);
+    throw new ContractDefinitionError(`${where}: has no events`);
   }
   checkUniqueTypes(where, spec.events);
   return Object.freeze({
@@ -147,14 +147,14 @@ export function defineTopic(spec: TopicSpec): TopicDefinition {
   });
 }
 
-/** Declara una cola con sus comandos, suscripciones, reintentos y DLQ. */
+/** Declares a queue with its commands, subscriptions, retries and DLQ. */
 export function defineQueue(spec: QueueSpec): QueueDefinition {
-  const where = `Cola ${spec.name}`;
+  const where = `Queue ${spec.name}`;
   const fail = (reason: string): never => {
     throw new ContractDefinitionError(`${where}: ${reason}`);
   };
-  checkName('Cola', spec.name);
-  if (!spec.description.trim()) fail('falta la descripción');
+  checkName('Queue', spec.name);
+  if (!spec.description.trim()) fail('missing description');
 
   const fifo = spec.fifo ?? false;
   const visibility =
@@ -164,7 +164,7 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
     visibility > QueueDefaults.maxVisibilityTimeoutSeconds
   ) {
     fail(
-      `visibilityTimeoutSeconds debe ser un entero entre 1 y ${QueueDefaults.maxVisibilityTimeoutSeconds}`,
+      `visibilityTimeoutSeconds must be an integer between 1 and ${QueueDefaults.maxVisibilityTimeoutSeconds}`,
     );
   }
 
@@ -174,7 +174,9 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
     !(retry.baseMs > 0) ||
     !(retry.maxMs >= retry.baseMs)
   ) {
-    fail('retry exige maxAttempts entero positivo y 0 < baseMs <= maxMs');
+    fail(
+      'retry requires a positive integer maxAttempts and 0 < baseMs <= maxMs',
+    );
   }
 
   const maxReceiveCount =
@@ -189,7 +191,7 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
     maxReceiveCount > QueueDefaults.maxReceiveCount
   ) {
     fail(
-      `deadLetter.maxReceiveCount debe estar entre retry.maxAttempts y ${QueueDefaults.maxReceiveCount}`,
+      `deadLetter.maxReceiveCount must be between retry.maxAttempts and ${QueueDefaults.maxReceiveCount}`,
     );
   }
   const retentionDays =
@@ -199,7 +201,7 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
     retentionDays > QueueDefaults.maxDeadLetterRetentionDays
   ) {
     fail(
-      `deadLetter.retentionDays debe estar entre 1 y ${QueueDefaults.maxDeadLetterRetentionDays}`,
+      `deadLetter.retentionDays must be between 1 and ${QueueDefaults.maxDeadLetterRetentionDays}`,
     );
   }
 
@@ -208,22 +210,22 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
   const topics = new Set<string>();
   for (const subscription of spec.subscriptions ?? []) {
     const { topic } = subscription;
-    if (topics.has(topic.name)) fail(`suscripción repetida a ${topic.name}`);
+    if (topics.has(topic.name)) fail(`duplicate subscription to ${topic.name}`);
     topics.add(topic.name);
     if (topic.fifo && !fifo) {
-      fail(`el tópico FIFO ${topic.name} solo entrega a colas FIFO`);
+      fail(`FIFO topic ${topic.name} only delivers to FIFO queues`);
     }
     const events = [...(subscription.events ?? [])];
     for (const event of events) {
       if (!topic.events.includes(event)) {
-        fail(`el evento ${event.type} no se publica en ${topic.name}`);
+        fail(`event ${event.type} is not published on ${topic.name}`);
       }
     }
     checkUniqueTypes(`${where} (${topic.name})`, events);
     subscriptions.push(Object.freeze({ topic, events: Object.freeze(events) }));
   }
   if (commands.length === 0 && subscriptions.length === 0) {
-    fail('no recibe comandos ni eventos');
+    fail('receives neither commands nor events');
   }
   checkUniqueTypes(where, commands);
 
@@ -239,7 +241,7 @@ export function defineQueue(spec: QueueSpec): QueueDefinition {
   });
 }
 
-/** Tipos de mensaje que recibe una cola: sus comandos y los eventos suscritos. */
+/** Message types a queue receives: its commands and the subscribed events. */
 export function deliveredTypes(queue: QueueDefinition): string[] {
   const types = queue.commands.map((c) => c.type);
   for (const subscription of queue.subscriptions) {

@@ -1,22 +1,22 @@
 import type { AccessKind } from '../enums/access-kind.enum.js';
 
 /**
- * Requisito de acceso de una ruta. Los permisos y roles son valores de los enums
- * del contrato de identity; el kit los trata como texto para no depender de él.
+ * Access requirement of a route. Permissions and roles are values of the enums
+ * of the identity contract; the kit treats them as text to avoid depending on it.
  */
 export interface AccessRequirement {
   readonly kind: AccessKind;
-  /** Permisos que debe tener el usuario en el tenant activo (todos). */
+  /** Permissions the user must have in the active tenant (all of them). */
   readonly permissions?: readonly string[];
-  /** Roles de plataforma aceptados (cualquiera). */
+  /** Accepted platform roles (any of them). */
   readonly platformRoles?: readonly string[];
-  /** Edad máxima del último MFA, en minutos, para operaciones sensibles (step-up). */
+  /** Maximum age of the last MFA, in minutes, for sensitive operations (step-up). */
   readonly mfaMaxAgeMinutes?: number;
-  /** Funcionalidades del plan del tenant que la ruta exige (todas); valores de `PlanFeature`. */
+  /** Tenant plan features the route requires (all of them); values of `PlanFeature`. */
   readonly features?: readonly string[];
   /**
-   * Feature flags que deben estar encendidos para el usuario (todos); valores de
-   * `FeatureFlag`. Un flag apagado responde como una ruta inexistente.
+   * Feature flags that must be on for the user (all of them); values of
+   * `FeatureFlag`. A flag that is off responds like a nonexistent route.
    */
   readonly flags?: readonly string[];
 }

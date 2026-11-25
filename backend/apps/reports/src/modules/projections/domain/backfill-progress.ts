@@ -1,16 +1,16 @@
-/** El servicio dueño de los datos que se copian a una proyección. */
+/** The service that owns the data copied into a projection. */
 export enum BackfillSource {
   Tasks = 'tasks',
   Invoices = 'invoices',
 }
 
-/** Hasta dónde se rellenó una proyección del tenant del `ShardScope` abierto. */
+/** How far a projection of the tenant of the open `ShardScope` has been backfilled. */
 export interface Backfill {
   readonly cursor?: string;
   readonly completed: boolean;
 }
 
-/** Avance del relleno de cada tenant, con un cursor por fuente. */
+/** Backfill progress of each tenant, with one cursor per source. */
 export abstract class BackfillProgress {
   abstract find(source: BackfillSource): Promise<Backfill>;
   abstract save(source: BackfillSource, backfill: Backfill): Promise<void>;

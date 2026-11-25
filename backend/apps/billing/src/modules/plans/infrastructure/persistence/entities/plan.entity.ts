@@ -1,7 +1,7 @@
 import { VersionedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `billing_plans`, en el catálogo: el plan y su precio fijo por periodo. */
+/** `billing_plans`, in the catalog: the plan and its fixed price per period. */
 @Entity({ name: 'billing_plans' })
 @Index('billing_plans_code_key', ['code'], { unique: true })
 export class PlanEntity extends VersionedEntity {

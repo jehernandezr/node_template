@@ -10,11 +10,11 @@ import { LogicalReplicationTransfer } from './logical/logical-replication-transf
 import type { TenantDataTransfer } from './tenant-data-transfer.js';
 
 /**
- * Elige la estrategia de copia según `TENANT_MOVE_STRATEGY` y le suma al manifiesto del servicio las tablas de la
- * plataforma. Un manifiesto que la replicación lógica no puede copiar (alguna tabla llega al tenant por su padre, como
- * en identity) usa la copia por lotes aunque la variable pida la lógica: la variable es de todo el despliegue y cada
- * servicio usa la mejor que su manifiesto admite. Las tablas de la plataforma siempre van por lotes, porque la
- * bitácora de pasos de las sagas llega al tenant por su saga.
+ * Chooses the copy strategy from `TENANT_MOVE_STRATEGY` and adds the platform tables to the service manifest.
+ * A manifest that logical replication cannot copy (some table reaches the tenant through its parent, as
+ * in identity) uses the batch copy even if the variable asks for logical: the variable is deployment-wide and each
+ * service uses the best one its manifest allows. Platform tables always go by batch, because the
+ * saga step log reaches the tenant through its saga.
  */
 export class TenantDataTransferSelector {
   select(

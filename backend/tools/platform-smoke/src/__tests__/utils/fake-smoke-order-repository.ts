@@ -3,10 +3,10 @@ import { SmokeOrder } from '../../orders/smoke-order.js';
 import { SmokeOrderMapper } from '../../orders/smoke-order.mapper.js';
 import { SmokeOrderRepository } from '../../orders/smoke-order.repository.js';
 
-/** Repositorio en memoria para las pruebas unitarias: guarda agregados sin tocar una base. */
+/** In-memory repository for unit tests: stores aggregates without touching a database. */
 export class FakeSmokeOrderRepository extends SmokeOrderRepository {
   readonly rows = new Map<string, SmokeOrder>();
-  /** Cuando es `true`, el próximo `save` falla como lo haría una fila que no cabe. */
+  /** When `true`, the next `save` fails as a row that does not fit would. */
   failNextSave = false;
 
   constructor() {

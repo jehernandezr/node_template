@@ -1,4 +1,4 @@
-/** Headers HTTP que lee o escribe la librería. En minúsculas, como los entrega Node. */
+/** HTTP headers the library reads or writes. Lowercase, as Node delivers them. */
 export enum HttpHeader {
   Authorization = 'authorization',
   ApiVersion = 'api-version',

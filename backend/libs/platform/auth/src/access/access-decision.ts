@@ -1,16 +1,16 @@
 import type { AccessOutcome } from './access-outcome.enum.js';
 
-/** Decisión del evaluador de acceso. `Forbidden`, `FeatureNotIncluded` y `StepUpRequired` indican qué faltó, sin datos del usuario. */
+/** Decision of the access evaluator. `Forbidden`, `FeatureNotIncluded` and `StepUpRequired` state what was missing, without user data. */
 export type AccessDecision =
   | { readonly outcome: AccessOutcome.Allowed }
   | {
       readonly outcome: AccessOutcome.Forbidden;
-      /** Permisos o roles de plataforma que el actor no tiene. */
+      /** Permissions or platform roles the actor does not have. */
       readonly missing: readonly string[];
     }
   | {
       readonly outcome: AccessOutcome.FeatureNotIncluded;
-      /** Funcionalidades del plan que el tenant no tiene. */
+      /** Plan features the tenant does not have. */
       readonly missing: readonly string[];
     }
   | { readonly outcome: AccessOutcome.FlagDisabled }

@@ -11,7 +11,7 @@ import {
 } from './demo-contract.js';
 import { DemoResource } from './demo-resource.enum.js';
 
-/** Rutas del usuario autenticado. */
+/** Routes of the authenticated user. */
 @Resource(DemoResource.Me)
 export class MeController {
   constructor(private readonly store: RequestContextStore) {}

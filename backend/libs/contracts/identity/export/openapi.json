@@ -4,17 +4,17 @@
   "info": {
     "title": "identity",
     "version": "2",
-    "description": "Identidad: registro, contraseñas, perfil, sesiones, dispositivos, MFA, passkeys, tenants, membresías, invitaciones y API keys."
+    "description": "Identity: registration, passwords, profile, sessions, devices, MFA, passkeys, tenants, memberships, invitations and API keys."
   },
   "paths": {
     "/v1/auth/sign-in": {
       "post": {
         "operationId": "identity.auth.sign-in",
-        "description": "Inicia sesión con email y contraseña. Responde tokens o un desafío MFA.",
+        "description": "Signs in with email and password. Responds with tokens or an MFA challenge.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SignInResponse" }
@@ -22,7 +22,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.AUTH.INVALID_CREDENTIALS, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.AUTH.INVALID_CREDENTIALS, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -49,11 +49,11 @@
     "/v1/auth/mfa/challenges": {
       "post": {
         "operationId": "identity.auth.mfa-challenge",
-        "description": "Crea un desafío MFA para el login pendiente y envía el código por el método elegido.",
+        "description": "Creates an MFA challenge for the pending login and sends the code through the chosen method.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/MfaChallenge" }
@@ -61,7 +61,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.METHOD_UNAVAILABLE, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.METHOD_UNAVAILABLE, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -90,11 +90,11 @@
     "/v1/auth/mfa/verify": {
       "post": {
         "operationId": "identity.auth.mfa-verify",
-        "description": "Verifica un desafío MFA, crea la sesión y registra el dispositivo nuevo.",
+        "description": "Verifies an MFA challenge, creates the session and registers the new device.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SignInResponse" }
@@ -102,7 +102,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.CODE_INVALID, IDENTITY.MFA.CODE_EXPIRED, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.CODE_INVALID, IDENTITY.MFA.CODE_EXPIRED, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -132,11 +132,11 @@
     "/v1/auth/refresh": {
       "post": {
         "operationId": "identity.auth.refresh",
-        "description": "Rota el session token (cuerpo en móvil, cookie httpOnly en web) y emite un access token nuevo.",
+        "description": "Rotates the session token (body on mobile, httpOnly cookie on web) and issues a new access token.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SessionTokens" }
@@ -144,7 +144,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: PLATFORM.AUTH.UNAUTHENTICATED, IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.SESSION.REUSED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: PLATFORM.AUTH.UNAUTHENTICATED, IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.SESSION.REUSED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -176,12 +176,12 @@
     "/v1/auth/sign-out": {
       "post": {
         "operationId": "identity.auth.sign-out",
-        "description": "Cierra la sesión del session token, revoca sus tokens y borra la cookie en web.",
+        "description": "Closes the session of the session token, revokes its tokens and clears the cookie on web.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -205,11 +205,11 @@
     "/v1/me/step-up": {
       "post": {
         "operationId": "identity.step-up.start",
-        "description": "Abre el paso adicional (step-up) de la sesión actual y devuelve los métodos que ofrece.",
+        "description": "Opens the step-up of the current session and returns the methods it offers.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PendingMfa" }
@@ -217,7 +217,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -253,11 +253,11 @@
     "/v1/me/step-up/challenges": {
       "post": {
         "operationId": "identity.step-up.challenge",
-        "description": "Crea el desafío del paso adicional y envía el código por el método elegido.",
+        "description": "Creates the step-up challenge and sends the code through the chosen method.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/MfaChallenge" }
@@ -265,7 +265,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.METHOD_UNAVAILABLE, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.METHOD_UNAVAILABLE, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -302,11 +302,11 @@
     "/v1/me/step-up/verify": {
       "post": {
         "operationId": "identity.step-up.verify",
-        "description": "Verifica el paso adicional, actualiza el último MFA de la sesión y emite un access token nuevo.",
+        "description": "Verifies the step-up, updates the last MFA of the session and issues a new access token.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/StepUpResult" }
@@ -314,7 +314,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.CODE_INVALID, IDENTITY.MFA.CODE_EXPIRED, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.CODE_INVALID, IDENTITY.MFA.CODE_EXPIRED, IDENTITY.MFA.TOO_MANY_ATTEMPTS, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -352,11 +352,11 @@
     "/v1/me/access": {
       "get": {
         "operationId": "identity.me.access",
-        "description": "Devuelve usuario, tenant, permisos, roles, plan, flags y último MFA de la sesión actual.",
+        "description": "Returns user, tenant, permissions, roles, plan, flags and last MFA of the current session.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SessionAccess" }
@@ -364,7 +364,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -389,7 +389,7 @@
     "/v1/me/sessions": {
       "get": {
         "operationId": "identity.sessions.list",
-        "description": "Lista las sesiones activas del usuario, la actual primero.",
+        "description": "Lists the active sessions of the user, current one first.",
         "parameters": [
           {
             "name": "limit",
@@ -406,7 +406,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SessionPage" }
@@ -414,7 +414,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -439,7 +439,7 @@
     "/v1/me/sessions/{sessionId}": {
       "delete": {
         "operationId": "identity.sessions.revoke",
-        "description": "Cierra una sesión del usuario y revoca sus tokens.",
+        "description": "Closes a session of the user and revokes its tokens.",
         "parameters": [
           {
             "name": "sessionId",
@@ -449,9 +449,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -477,11 +477,11 @@
     "/v1/me/sessions/revoke-others": {
       "post": {
         "operationId": "identity.sessions.revoke-others",
-        "description": "Cierra todas las sesiones del usuario menos la actual.",
+        "description": "Closes all sessions of the user except the current one.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/RevokedSessions" }
@@ -489,7 +489,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -524,7 +524,7 @@
     "/v1/me/devices": {
       "get": {
         "operationId": "identity.devices.list",
-        "description": "Lista los dispositivos del usuario con confianza vigente.",
+        "description": "Lists the user devices with active trust.",
         "parameters": [
           {
             "name": "limit",
@@ -541,7 +541,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/DevicePage" }
@@ -549,7 +549,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -574,12 +574,12 @@
     "/v1/auth/sign-up": {
       "post": {
         "operationId": "identity.auth.sign-up",
-        "description": "Registra un usuario y envía el email de verificación. Responde aceptado sin revelar si el email ya existe.",
+        "description": "Registers a user and sends the verification email. Responds accepted without revealing whether the email already exists.",
         "parameters": [],
         "responses": {
-          "202": { "description": "Sin contenido." },
+          "202": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.PASSWORD.POLICY_VIOLATION, IDENTITY.PASSWORD.BREACHED, IDENTITY.INVITATION.INVALID, BILLING.QUOTA.EXCEEDED, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.PASSWORD.POLICY_VIOLATION, IDENTITY.PASSWORD.BREACHED, IDENTITY.INVITATION.INVALID, BILLING.QUOTA.EXCEEDED, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -609,12 +609,12 @@
     "/v1/auth/email-verifications": {
       "post": {
         "operationId": "identity.auth.email-verification-resend",
-        "description": "Envía un nuevo email de verificación. Responde aceptado aunque el email no exista.",
+        "description": "Sends a new verification email. Responds accepted even if the email does not exist.",
         "parameters": [],
         "responses": {
-          "202": { "description": "Sin contenido." },
+          "202": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -640,12 +640,12 @@
     "/v1/auth/email-verifications/confirm": {
       "post": {
         "operationId": "identity.auth.email-verification-confirm",
-        "description": "Marca el email del usuario como verificado con el token recibido.",
+        "description": "Marks the user email as verified with the received token.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.USER.EMAIL_VERIFICATION_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.USER.EMAIL_VERIFICATION_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -674,12 +674,12 @@
     "/v1/me/password": {
       "post": {
         "operationId": "identity.me.password-change",
-        "description": "Cambia la contraseña y cierra las demás sesiones del usuario.",
+        "description": "Changes the password and closes the other sessions of the user.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.PASSWORD.CURRENT_INVALID, IDENTITY.PASSWORD.POLICY_VIOLATION, IDENTITY.PASSWORD.BREACHED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.PASSWORD.CURRENT_INVALID, IDENTITY.PASSWORD.POLICY_VIOLATION, IDENTITY.PASSWORD.BREACHED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -716,12 +716,12 @@
     "/v1/auth/password-resets": {
       "post": {
         "operationId": "identity.auth.password-reset-request",
-        "description": "Envía el correo para restablecer la contraseña. Responde aceptado aunque el email no exista.",
+        "description": "Sends the password reset email. Responds accepted even if the email does not exist.",
         "parameters": [],
         "responses": {
-          "202": { "description": "Sin contenido." },
+          "202": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -745,12 +745,12 @@
     "/v1/auth/password-resets/confirm": {
       "post": {
         "operationId": "identity.auth.password-reset-confirm",
-        "description": "Restablece la contraseña con el token del correo y cierra las sesiones del usuario.",
+        "description": "Resets the password with the emailed token and closes the user sessions.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.PASSWORD.RESET_INVALID, IDENTITY.PASSWORD.POLICY_VIOLATION, IDENTITY.PASSWORD.BREACHED, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.PASSWORD.RESET_INVALID, IDENTITY.PASSWORD.POLICY_VIOLATION, IDENTITY.PASSWORD.BREACHED, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -781,11 +781,11 @@
     "/v1/me": {
       "get": {
         "operationId": "identity.me.profile",
-        "description": "Devuelve el perfil del usuario autenticado.",
+        "description": "Returns the profile of the authenticated user.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UserProfile" }
@@ -793,7 +793,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -816,11 +816,11 @@
       },
       "patch": {
         "operationId": "identity.me.profile-update",
-        "description": "Cambia el nombre o el idioma del perfil y devuelve el perfil nuevo.",
+        "description": "Changes the profile name or language and returns the new profile.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UserProfile" }
@@ -828,7 +828,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -861,12 +861,12 @@
     "/v1/me/email-changes": {
       "post": {
         "operationId": "identity.me.email-change",
-        "description": "Envía un token a la dirección nueva para confirmar el cambio de email.",
+        "description": "Sends a token to the new address to confirm the email change.",
         "parameters": [],
         "responses": {
-          "202": { "description": "Sin contenido." },
+          "202": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -900,12 +900,12 @@
     "/v1/me/email-changes/confirm": {
       "post": {
         "operationId": "identity.me.email-change-confirm",
-        "description": "Aplica el cambio de email con el token enviado a la dirección nueva.",
+        "description": "Applies the email change with the token sent to the new address.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.USER.EMAIL_VERIFICATION_INVALID.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.USER.EMAIL_VERIFICATION_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -941,11 +941,11 @@
     "/v1/auth/jwks": {
       "get": {
         "operationId": "identity.auth.jwks",
-        "description": "Devuelve las claves públicas vigentes en formato JWKS para verificar access tokens.",
+        "description": "Returns the active public keys in JWKS format to verify access tokens.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Jwks" }
@@ -953,7 +953,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -969,7 +969,7 @@
     "/v1/me/devices/{deviceId}": {
       "delete": {
         "operationId": "identity.devices.remove",
-        "description": "Quita un dispositivo de la cuenta y cierra sus sesiones.",
+        "description": "Removes a device from the account and closes its sessions.",
         "parameters": [
           {
             "name": "deviceId",
@@ -979,9 +979,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1007,7 +1007,7 @@
     "/v1/me/devices/{deviceId}/untrust": {
       "post": {
         "operationId": "identity.devices.untrust",
-        "description": "Quita la confianza de un dispositivo sin borrar su registro.",
+        "description": "Removes the trust of a device without deleting its record.",
         "parameters": [
           {
             "name": "deviceId",
@@ -1017,9 +1017,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1053,12 +1053,12 @@
     "/v1/me/devices/current/push-token": {
       "put": {
         "operationId": "identity.devices.push-token",
-        "description": "Guarda o reemplaza el token push del dispositivo actual.",
+        "description": "Saves or replaces the push token of the current device.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1091,11 +1091,11 @@
     "/v1/auth/device-approvals/pull": {
       "post": {
         "operationId": "identity.device-approvals.pull",
-        "description": "Devuelve las aprobaciones pendientes del dispositivo que firma la petición.",
+        "description": "Returns the pending approvals of the device that signs the request.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/DeviceApprovals" }
@@ -1103,7 +1103,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.DEVICE.SIGNATURE_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.DEVICE.SIGNATURE_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1132,7 +1132,7 @@
     "/v1/auth/device-approvals/{challengeId}/deny": {
       "post": {
         "operationId": "identity.device-approvals.deny",
-        "description": "Rechaza una aprobación pendiente desde el dispositivo que firma la petición.",
+        "description": "Rejects a pending approval from the device that signs the request.",
         "parameters": [
           {
             "name": "challengeId",
@@ -1142,9 +1142,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.DEVICE.SIGNATURE_INVALID, PLATFORM.RESOURCE.NOT_FOUND, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.DEVICE.SIGNATURE_INVALID, PLATFORM.RESOURCE.NOT_FOUND, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1174,11 +1174,11 @@
     "/v1/me/mfa/totp": {
       "post": {
         "operationId": "identity.mfa.totp-start",
-        "description": "Crea el secreto TOTP y su URI. El factor queda activo al confirmarlo.",
+        "description": "Creates the TOTP secret and its URI. The factor becomes active once confirmed.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TotpEnrollment" }
@@ -1186,7 +1186,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.MFA.FACTOR_ALREADY_ENROLLED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.MFA.FACTOR_ALREADY_ENROLLED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1221,12 +1221,12 @@
       },
       "delete": {
         "operationId": "identity.mfa.totp-remove",
-        "description": "Quita el TOTP de la cuenta y avisa por alerta de seguridad.",
+        "description": "Removes the TOTP from the account and sends a security alert.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.MFA.FACTOR_NOT_ENROLLED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.MFA.FACTOR_NOT_ENROLLED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1253,11 +1253,11 @@
     "/v1/me/mfa/totp/confirm": {
       "post": {
         "operationId": "identity.mfa.totp-confirm",
-        "description": "Confirma el TOTP con el primer código y devuelve los códigos de recuperación.",
+        "description": "Confirms the TOTP with the first code and returns the recovery codes.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/RecoveryCodes" }
@@ -1265,7 +1265,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.CODE_INVALID, IDENTITY.MFA.CODE_EXPIRED, IDENTITY.MFA.TOO_MANY_ATTEMPTS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.CODE_INVALID, IDENTITY.MFA.CODE_EXPIRED, IDENTITY.MFA.TOO_MANY_ATTEMPTS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1301,11 +1301,11 @@
     "/v1/me/mfa/recovery-codes": {
       "post": {
         "operationId": "identity.mfa.recovery-codes",
-        "description": "Reemplaza los códigos de recuperación y devuelve los nuevos una sola vez.",
+        "description": "Replaces the recovery codes and returns the new ones only once.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/RecoveryCodes" }
@@ -1313,7 +1313,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.MFA.FACTOR_NOT_ENROLLED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.MFA.FACTOR_NOT_ENROLLED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1350,11 +1350,11 @@
     "/v1/auth/mfa/recoveries": {
       "post": {
         "operationId": "identity.auth.mfa-recovery-start",
-        "description": "Inicia la recuperación de MFA y envía el token por email. Se confirma después de la espera indicada.",
+        "description": "Starts MFA recovery and sends the token by email. It is confirmed after the indicated wait.",
         "parameters": [],
         "responses": {
           "202": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/MfaRecoveryStarted" }
@@ -1362,7 +1362,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.RECOVERY_NOT_READY, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.RECOVERY_NOT_READY, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1392,11 +1392,11 @@
     "/v1/auth/mfa/recoveries/confirm": {
       "post": {
         "operationId": "identity.auth.mfa-recovery-confirm",
-        "description": "Confirma la recuperación de MFA, desactiva los factores anteriores y crea la sesión.",
+        "description": "Confirms MFA recovery, disables the previous factors and creates the session.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SignInResponse" }
@@ -1404,7 +1404,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.RECOVERY_NOT_READY, IDENTITY.MFA.CODE_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.MFA.RECOVERY_NOT_READY, IDENTITY.MFA.CODE_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1435,11 +1435,11 @@
     "/v1/auth/passkeys/options": {
       "post": {
         "operationId": "identity.auth.passkey-options",
-        "description": "Crea el desafío de un inicio de sesión con passkey.",
+        "description": "Creates the challenge for a passkey sign-in.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PasskeyOptions" }
@@ -1447,7 +1447,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1473,11 +1473,11 @@
     "/v1/auth/passkeys/verify": {
       "post": {
         "operationId": "identity.auth.passkey-verify",
-        "description": "Verifica la respuesta de la passkey y devuelve tokens o un desafío MFA.",
+        "description": "Verifies the passkey response and returns tokens or an MFA challenge.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SignInResponse" }
@@ -1485,7 +1485,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1515,11 +1515,11 @@
     "/v1/auth/mfa/passkey/options": {
       "post": {
         "operationId": "identity.auth.mfa-passkey-options",
-        "description": "Crea el desafío de passkey para el segundo factor de un login pendiente.",
+        "description": "Creates the passkey challenge for the second factor of a pending login.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PasskeyOptions" }
@@ -1527,7 +1527,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.MFA.TOKEN_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.MFA.TOKEN_INVALID, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1556,11 +1556,11 @@
     "/v1/auth/mfa/passkey/verify": {
       "post": {
         "operationId": "identity.auth.mfa-passkey-verify",
-        "description": "Verifica la passkey como segundo factor y crea la sesión.",
+        "description": "Verifies the passkey as second factor and creates the session.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SignInResponse" }
@@ -1568,7 +1568,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED, PLATFORM.RATE_LIMIT.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.MFA.TOKEN_INVALID, IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED, PLATFORM.RATE_LIMIT.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1599,11 +1599,11 @@
     "/v1/me/step-up/passkey/options": {
       "post": {
         "operationId": "identity.step-up.passkey-options",
-        "description": "Crea el desafío de passkey para el paso adicional de una sesión abierta.",
+        "description": "Creates the passkey challenge for the step-up of an open session.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PasskeyOptions" }
@@ -1611,7 +1611,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1647,11 +1647,11 @@
     "/v1/me/step-up/passkey/verify": {
       "post": {
         "operationId": "identity.step-up.passkey-verify",
-        "description": "Verifica la passkey del paso adicional y devuelve un access token con el MFA nuevo.",
+        "description": "Verifies the step-up passkey and returns an access token with the new MFA.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/StepUpResult" }
@@ -1659,7 +1659,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID, IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.TOKEN_INVALID, IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1697,7 +1697,7 @@
     "/v1/me/passkeys": {
       "get": {
         "operationId": "identity.passkeys.list",
-        "description": "Lista las passkeys registradas del usuario.",
+        "description": "Lists the registered passkeys of the user.",
         "parameters": [
           {
             "name": "limit",
@@ -1714,7 +1714,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PasskeyPage" }
@@ -1722,7 +1722,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1745,11 +1745,11 @@
       },
       "post": {
         "operationId": "identity.passkeys.register",
-        "description": "Registra una passkey nueva con la respuesta del autenticador.",
+        "description": "Registers a new passkey with the authenticator response.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PasskeySummary" }
@@ -1757,7 +1757,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.PASSKEY.VERIFICATION_FAILED, IDENTITY.PASSKEY.CHALLENGE_EXPIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1794,11 +1794,11 @@
     "/v1/me/passkeys/registration-options": {
       "post": {
         "operationId": "identity.passkeys.registration-options",
-        "description": "Crea el desafío para registrar una passkey nueva.",
+        "description": "Creates the challenge to register a new passkey.",
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PasskeyOptions" }
@@ -1806,7 +1806,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1842,7 +1842,7 @@
     "/v1/me/passkeys/{passkeyId}": {
       "delete": {
         "operationId": "identity.passkeys.remove",
-        "description": "Quita una passkey de la cuenta.",
+        "description": "Removes a passkey from the account.",
         "parameters": [
           {
             "name": "passkeyId",
@@ -1852,9 +1852,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1881,11 +1881,11 @@
     "/v1/me/tenant-switch": {
       "post": {
         "operationId": "identity.sessions.switch-tenant",
-        "description": "Cambia el tenant de la sesión abierta y devuelve tokens del tenant elegido.",
+        "description": "Switches the tenant of the open session and returns tokens for the chosen tenant.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SessionTokens" }
@@ -1893,7 +1893,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.TENANT.NOT_MEMBER.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.TENANT.NOT_MEMBER.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1927,11 +1927,11 @@
     "/v1/tenants": {
       "post": {
         "operationId": "identity.tenants.create",
-        "description": "Inicia el aprovisionamiento de un tenant y deja al usuario autenticado como dueño.",
+        "description": "Starts provisioning a tenant and makes the authenticated user its owner.",
         "parameters": [],
         "responses": {
           "202": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TenantCreation" }
@@ -1939,7 +1939,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.TENANT.SLUG_TAKEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.TENANT.SLUG_TAKEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1973,11 +1973,11 @@
     "/v1/tenant": {
       "get": {
         "operationId": "identity.tenant.get",
-        "description": "Devuelve el tenant de la sesión actual.",
+        "description": "Returns the tenant of the current session.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TenantSummary" }
@@ -1985,7 +1985,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2008,11 +2008,11 @@
       },
       "patch": {
         "operationId": "identity.tenant.update",
-        "description": "Cambia el nombre del tenant de la sesión actual.",
+        "description": "Changes the name of the current session tenant.",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/TenantSummary" }
@@ -2020,7 +2020,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2054,7 +2054,7 @@
     "/v1/me/tenants": {
       "get": {
         "operationId": "identity.me.tenants",
-        "description": "Lista los tenants a los que pertenece el usuario.",
+        "description": "Lists the tenants the user belongs to.",
         "parameters": [
           {
             "name": "limit",
@@ -2071,7 +2071,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/MyTenantPage" }
@@ -2079,7 +2079,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2121,7 +2121,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/MemberPage" }
@@ -2129,7 +2129,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2165,9 +2165,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.LAST_OWNER, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.LAST_OWNER, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2206,9 +2206,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2263,7 +2263,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/GroupPage" }
@@ -2271,7 +2271,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2299,7 +2299,7 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/GroupSummary" }
@@ -2307,7 +2307,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.NAME_TAKEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.NAME_TAKEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2353,7 +2353,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/GroupSummary" }
@@ -2361,7 +2361,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.NAME_TAKEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.NAME_TAKEN, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2405,9 +2405,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2444,9 +2444,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2499,7 +2499,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/RolePage" }
@@ -2507,7 +2507,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2535,7 +2535,7 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/RoleSummary" }
@@ -2543,7 +2543,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.NAME_TAKEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.NAME_TAKEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2590,7 +2590,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/RoleSummary" }
@@ -2598,7 +2598,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.NAME_TAKEN, IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.NAME_TAKEN, IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2644,9 +2644,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.ACCESS.SYSTEM_ROLE_IMMUTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2678,7 +2678,7 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/InvitationSummary" }
@@ -2686,7 +2686,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2736,7 +2736,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/InvitationPage" }
@@ -2744,7 +2744,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2780,9 +2780,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.INVITATION.INVALID, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.INVITATION.INVALID, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2813,9 +2813,9 @@
         "description": "Accepts an invitation. The email of the session must be the invited one and verified, its inviter must still be able to grant its groups, and the plan of the tenant must have a seat.",
         "parameters": [],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.INVITATION.INVALID, IDENTITY.INVITATION.EMAIL_MISMATCH, IDENTITY.AUTH.EMAIL_NOT_VERIFIED, BILLING.QUOTA.EXCEEDED.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.INVITATION.INVALID, IDENTITY.INVITATION.EMAIL_MISMATCH, IDENTITY.AUTH.EMAIL_NOT_VERIFIED, BILLING.QUOTA.EXCEEDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2871,7 +2871,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ServiceAccountPage" }
@@ -2879,7 +2879,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2907,7 +2907,7 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2917,7 +2917,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2966,7 +2966,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2976,7 +2976,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3023,9 +3023,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3075,7 +3075,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ApiKeyPage" }
@@ -3083,7 +3083,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3119,7 +3119,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/CreatedApiKey" }
@@ -3127,7 +3127,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE, IDENTITY.SERVICE_ACCOUNT.DISABLED, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE, IDENTITY.SERVICE_ACCOUNT.DISABLED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3176,7 +3176,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/CreatedApiKey" }
@@ -3184,7 +3184,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.SERVICE_ACCOUNT.DISABLED, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.SERVICE_ACCOUNT.DISABLED, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3231,9 +3231,9 @@
           }
         ],
         "responses": {
-          "204": { "description": "Sin contenido." },
+          "204": { "description": "No content." },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.AUTH.FORBIDDEN, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3264,7 +3264,7 @@
         "parameters": [],
         "responses": {
           "202": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3274,7 +3274,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.LAST_OWNER.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, IDENTITY.MFA.STEP_UP_REQUIRED, IDENTITY.ACCESS.LAST_OWNER.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3322,7 +3322,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Respuesta exitosa.",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SagaSummary" }
@@ -3330,7 +3330,7 @@
             }
           },
           "default": {
-            "description": "Problem Details con uno de estos códigos: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
+            "description": "Problem Details with one of these codes: IDENTITY.SESSION.REVOKED, IDENTITY.SESSION.EXPIRED, IDENTITY.TOKEN.REVOKED, IDENTITY.USER.SUSPENDED, IDENTITY.TENANT.SUSPENDED, IDENTITY.TOKEN.STALE_PERMISSIONS, PLATFORM.RESOURCE.NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3375,17 +3375,17 @@
           "identity:api-keys:manage",
           "identity:tenant:manage"
         ],
-        "description": "Permiso dentro de un tenant."
+        "description": "Permission within a tenant."
       },
       "PlatformRole": {
         "type": "string",
         "enum": ["super_admin", "support", "finance", "read_only"],
-        "description": "Rol de plataforma."
+        "description": "Platform role."
       },
       "PlanFeature": {
         "type": "string",
         "enum": ["ai_assistant", "webhooks", "billing", "advanced_reports"],
-        "description": "Funcionalidad del plan."
+        "description": "Plan feature."
       },
       "FeatureFlag": {
         "type": "string",
@@ -3405,7 +3405,7 @@
       "ClientPlatform": {
         "type": "string",
         "enum": ["ios", "android", "web", "macos", "windows", "linux"],
-        "description": "Plataforma del cliente."
+        "description": "Client platform."
       },
       "RevocationReason": {
         "type": "string",
@@ -3416,12 +3416,12 @@
           "admin_action",
           "compromised"
         ],
-        "description": "Motivo de una revocación."
+        "description": "Reason for a revocation."
       },
       "RevocationScope": {
         "type": "string",
         "enum": ["session", "user", "tenant"],
-        "description": "Alcance de una revocación de tokens."
+        "description": "Scope of a token revocation."
       },
       "AuthMethodReference": {
         "type": "string",
@@ -3438,7 +3438,7 @@
       "TokenAudience": {
         "type": "string",
         "enum": ["api", "backoffice"],
-        "description": "Destinatario de un access token."
+        "description": "Audience of an access token."
       },
       "AccessTokenClaims": {
         "type": "object",
@@ -3523,37 +3523,37 @@
           "exp",
           "jti"
         ],
-        "description": "Claims del access token JWT."
+        "description": "Claims of the JWT access token."
       },
       "TenantRole": {
         "type": "string",
         "enum": ["owner", "admin", "member", "billing"],
-        "description": "Rol de sistema de un tenant."
+        "description": "System role of a tenant."
       },
       "TenantKind": {
         "type": "string",
         "enum": ["organization", "shared_customers", "platform"],
-        "description": "Tipo de tenant."
+        "description": "Tenant type."
       },
       "TenantLifecycle": {
         "type": "string",
         "enum": ["provisioning", "active", "suspended", "deleting"],
-        "description": "Ciclo de vida de un tenant."
+        "description": "Lifecycle of a tenant."
       },
       "InvitationStatus": {
         "type": "string",
         "enum": ["pending", "accepted", "revoked", "expired"],
-        "description": "Estado de una invitación."
+        "description": "Status of an invitation."
       },
       "MembershipChangeKind": {
         "type": "string",
         "enum": ["added", "removed", "groups_changed"],
-        "description": "Qué cambió en la membresía de un usuario."
+        "description": "What changed in the membership of a user."
       },
       "UserStatus": {
         "type": "string",
         "enum": ["pending_verification", "active", "suspended", "deleted"],
-        "description": "Estado de la cuenta de un usuario."
+        "description": "Status of a user account."
       },
       "SecurityAlertType": {
         "type": "string",
@@ -3573,22 +3573,22 @@
           "protected_mode_enabled",
           "device_approval_denied"
         ],
-        "description": "Alerta de seguridad sobre una cuenta."
+        "description": "Security alert on an account."
       },
       "ApiKeyEnvironment": {
         "type": "string",
         "enum": ["live", "test"],
-        "description": "Entorno de una API key."
+        "description": "Environment of an API key."
       },
       "ApiKeyStatus": {
         "type": "string",
         "enum": ["active", "rotated", "revoked"],
-        "description": "Estado de una API key."
+        "description": "Status of an API key."
       },
       "ServiceAccountStatus": {
         "type": "string",
         "enum": ["active", "disabled"],
-        "description": "Estado de una service account."
+        "description": "Status of a service account."
       },
       "DeviceSignatureFields": {
         "type": "object",
@@ -3784,7 +3784,7 @@
           "current": { "type": "boolean" }
         },
         "required": ["id", "deviceName", "platform", "lastSeenAt", "current"],
-        "description": "Sesión activa en un dispositivo."
+        "description": "Active session on a device."
       },
       "SessionPage": {
         "type": "object",
@@ -3804,7 +3804,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de sesiones."
+        "description": "Page of sessions."
       },
       "DeviceSummary": {
         "type": "object",
@@ -3823,7 +3823,7 @@
           "verifier": { "type": "boolean" }
         },
         "required": ["id", "name", "platform", "lastSeenAt", "verifier"],
-        "description": "Dispositivo con confianza vigente."
+        "description": "Device with active trust."
       },
       "DevicePage": {
         "type": "object",
@@ -3843,7 +3843,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de dispositivos."
+        "description": "Page of devices."
       },
       "RevokeSessionRequest": {
         "type": "object",
@@ -3854,7 +3854,7 @@
         },
         "required": ["sessionId"],
         "additionalProperties": false,
-        "description": "Sesión a cerrar."
+        "description": "Session to close."
       },
       "RevokedSessions": {
         "type": "object",
@@ -3866,7 +3866,7 @@
           }
         },
         "required": ["revoked"],
-        "description": "Cantidad de sesiones cerradas."
+        "description": "Number of closed sessions."
       },
       "RevokeUserSessionsInput": {
         "type": "object",
@@ -3878,7 +3878,7 @@
         },
         "required": ["userId", "reason"],
         "additionalProperties": false,
-        "description": "Revoca todas las sesiones de un usuario."
+        "description": "Revokes all sessions of a user."
       },
       "GetUserAccessInput": {
         "type": "object",
@@ -3892,7 +3892,7 @@
         },
         "required": ["userId", "tenantId"],
         "additionalProperties": false,
-        "description": "Usuario y tenant a consultar."
+        "description": "User and tenant to query."
       },
       "UserAccess": {
         "type": "object",
@@ -3932,7 +3932,7 @@
           "features",
           "flags"
         ],
-        "description": "Acceso efectivo de un usuario en un tenant."
+        "description": "Effective access of a user in a tenant."
       },
       "SessionAccess": {
         "type": "object",
@@ -3993,7 +3993,7 @@
           "flags",
           "mfaVerifiedAt"
         ],
-        "description": "Acceso de la sesión actual: usuario, tenant, permisos, roles, plan, flags y último MFA."
+        "description": "Access of the current session: user, tenant, permissions, roles, plan, flags and last MFA."
       },
       "SessionRevokedPayload": {
         "type": "object",
@@ -4013,7 +4013,7 @@
           }
         },
         "required": ["sessionId", "userId", "tenantId", "reason", "revokedAt"],
-        "description": "Se revocó una sesión."
+        "description": "A session was revoked."
       },
       "TokensRevokedPayload": {
         "type": "object",
@@ -4027,7 +4027,7 @@
           }
         },
         "required": ["scope", "subjectId", "revokedBefore"],
-        "description": "Se revocaron tokens de una sesión, un usuario o un tenant."
+        "description": "Tokens of a session, a user or a tenant were revoked."
       },
       "SignUpRequest": {
         "type": "object",
@@ -4054,7 +4054,7 @@
         },
         "required": ["email", "password", "displayName", "locale"],
         "additionalProperties": false,
-        "description": "Alta de un usuario con email, contraseña, nombre e idioma."
+        "description": "Registration of a user with email, password, name and language."
       },
       "EmailVerificationRequest": {
         "type": "object",
@@ -4068,7 +4068,7 @@
         },
         "required": ["email"],
         "additionalProperties": false,
-        "description": "Pedido de un email de verificación."
+        "description": "Request for a verification email."
       },
       "EmailVerificationConfirmRequest": {
         "type": "object",
@@ -4077,7 +4077,7 @@
         },
         "required": ["token"],
         "additionalProperties": false,
-        "description": "Confirmación de la verificación del email."
+        "description": "Confirmation of the email verification."
       },
       "UserProfile": {
         "type": "object",
@@ -4129,7 +4129,7 @@
           "homeTenantId",
           "lastTenantId"
         ],
-        "description": "Perfil del usuario autenticado."
+        "description": "Profile of the authenticated user."
       },
       "UpdateProfileRequest": {
         "type": "object",
@@ -4143,7 +4143,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Cambios parciales del perfil."
+        "description": "Partial changes of the profile."
       },
       "EmailChangeRequest": {
         "type": "object",
@@ -4157,7 +4157,7 @@
         },
         "required": ["newEmail"],
         "additionalProperties": false,
-        "description": "Pedido de cambio de email a una dirección nueva."
+        "description": "Request to change the email to a new address."
       },
       "EmailChangeConfirmRequest": {
         "type": "object",
@@ -4166,7 +4166,7 @@
         },
         "required": ["token"],
         "additionalProperties": false,
-        "description": "Confirmación del cambio de email."
+        "description": "Confirmation of the email change."
       },
       "SuspendUserInput": {
         "type": "object",
@@ -4178,7 +4178,7 @@
         },
         "required": ["userId"],
         "additionalProperties": false,
-        "description": "Suspende a un usuario y revoca sus sesiones."
+        "description": "Suspends a user and revokes their sessions."
       },
       "ReactivateUserInput": {
         "type": "object",
@@ -4189,7 +4189,7 @@
         },
         "required": ["userId"],
         "additionalProperties": false,
-        "description": "Reactiva a un usuario suspendido."
+        "description": "Reactivates a suspended user."
       },
       "UserOperationResult": {
         "type": "object",
@@ -4200,7 +4200,7 @@
           "status": { "$ref": "#/components/schemas/UserStatus" }
         },
         "required": ["userId", "status"],
-        "description": "Resultado de suspender o reactivar a un usuario."
+        "description": "Result of suspending or reactivating a user."
       },
       "GetUserProfileInput": {
         "type": "object",
@@ -4211,7 +4211,7 @@
         },
         "required": ["userId"],
         "additionalProperties": false,
-        "description": "Usuario a consultar."
+        "description": "User to query."
       },
       "ChangePasswordRequest": {
         "type": "object",
@@ -4225,7 +4225,7 @@
         },
         "required": ["currentPassword", "newPassword"],
         "additionalProperties": false,
-        "description": "Cambio de contraseña con la contraseña actual."
+        "description": "Password change with the current password."
       },
       "PasswordResetRequest": {
         "type": "object",
@@ -4239,7 +4239,7 @@
         },
         "required": ["email"],
         "additionalProperties": false,
-        "description": "Pedido de un correo para restablecer la contraseña."
+        "description": "Request for a password reset email."
       },
       "PasswordResetConfirmRequest": {
         "type": "object",
@@ -4249,7 +4249,7 @@
         },
         "required": ["token", "newPassword"],
         "additionalProperties": false,
-        "description": "Restablecimiento de la contraseña con el token del correo."
+        "description": "Password reset with the emailed token."
       },
       "RemoveDeviceRequest": {
         "type": "object",
@@ -4392,7 +4392,7 @@
           "otpauthUri": { "type": "string", "minLength": 1, "maxLength": 512 }
         },
         "required": ["secret", "otpauthUri"],
-        "description": "Secreto TOTP y URI para la app autenticadora."
+        "description": "TOTP secret and URI for the authenticator app."
       },
       "TotpConfirmRequest": {
         "type": "object",
@@ -4406,7 +4406,7 @@
         },
         "required": ["code"],
         "additionalProperties": false,
-        "description": "Primer código de la app autenticadora para confirmar el TOTP."
+        "description": "First code from the authenticator app to confirm the TOTP."
       },
       "RecoveryCodes": {
         "type": "object",
@@ -4418,7 +4418,7 @@
           }
         },
         "required": ["codes"],
-        "description": "Códigos de recuperación, que se muestran una sola vez."
+        "description": "Recovery codes, shown only once."
       },
       "MfaRecoveryStartRequest": {
         "type": "object",
@@ -4427,7 +4427,7 @@
         },
         "required": ["mfaToken"],
         "additionalProperties": false,
-        "description": "Inicio de la recuperación de una cuenta sin factores disponibles."
+        "description": "Start of the recovery of an account without available factors."
       },
       "MfaRecoveryStarted": {
         "type": "object",
@@ -4437,7 +4437,7 @@
           }
         },
         "required": ["availableAt"],
-        "description": "Recuperación iniciada."
+        "description": "Recovery started."
       },
       "MfaRecoveryConfirmRequest": {
         "type": "object",
@@ -4453,7 +4453,7 @@
         },
         "required": ["mfaToken", "token"],
         "additionalProperties": false,
-        "description": "Confirmación de la recuperación con el token enviado por email."
+        "description": "Confirmation of the recovery with the token sent by email."
       },
       "PasskeyOptions": {
         "type": "object",
@@ -4626,7 +4626,7 @@
         "minLength": 3,
         "maxLength": 63,
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-        "description": "Identificador legible del tenant."
+        "description": "Readable identifier of the tenant."
       },
       "TenantSummary": {
         "type": "object",
@@ -4641,7 +4641,7 @@
           "status": { "$ref": "#/components/schemas/TenantLifecycle" }
         },
         "required": ["id", "slug", "name", "region", "kind", "status"],
-        "description": "Tenant visible para sus miembros."
+        "description": "Tenant visible to its members."
       },
       "CreateTenantRequest": {
         "type": "object",
@@ -4652,7 +4652,7 @@
         },
         "required": ["slug", "name"],
         "additionalProperties": false,
-        "description": "Alta de un tenant del usuario."
+        "description": "Creation of a tenant by the user."
       },
       "UpdateTenantRequest": {
         "type": "object",
@@ -4660,7 +4660,7 @@
           "name": { "type": "string", "minLength": 1, "maxLength": 120 }
         },
         "additionalProperties": false,
-        "description": "Cambios parciales del tenant actual."
+        "description": "Partial changes of the current tenant."
       },
       "MyTenantSummary": {
         "type": "object",
@@ -4677,7 +4677,7 @@
           }
         },
         "required": ["id", "slug", "name", "kind", "status", "joinedAt"],
-        "description": "Tenant del usuario con la fecha en que se unió."
+        "description": "Tenant of the user with the date they joined."
       },
       "MyTenantPage": {
         "type": "object",
@@ -4697,7 +4697,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de tenants del usuario."
+        "description": "Page of the user tenants."
       },
       "SwitchTenantRequest": {
         "type": "object",
@@ -4708,7 +4708,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Tenant al que cambia la sesión abierta."
+        "description": "Tenant the open session switches to."
       },
       "TenantOperationResult": {
         "type": "object",
@@ -4719,7 +4719,7 @@
           "status": { "$ref": "#/components/schemas/TenantLifecycle" }
         },
         "required": ["tenantId", "status"],
-        "description": "Resultado de una operación sobre el ciclo de vida de un tenant."
+        "description": "Result of an operation on the lifecycle of a tenant."
       },
       "CreateTenantInput": {
         "type": "object",
@@ -4744,7 +4744,7 @@
           "ownerUserId"
         ],
         "additionalProperties": false,
-        "description": "Crea un tenant en aprovisionamiento con su dueño."
+        "description": "Creates a tenant being provisioned with its owner."
       },
       "TenantRefInput": {
         "type": "object",
@@ -4755,7 +4755,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Tenant a consultar o cambiar."
+        "description": "Tenant to query or change."
       },
       "SuspendTenantInput": {
         "type": "object",
@@ -4767,7 +4767,7 @@
         },
         "required": ["tenantId"],
         "additionalProperties": false,
-        "description": "Suspende un tenant y revoca sus tokens."
+        "description": "Suspends a tenant and revokes its tokens."
       },
       "MemberSummary": {
         "type": "object",
@@ -4794,7 +4794,7 @@
           }
         },
         "required": ["userId", "email", "displayName", "groupIds", "joinedAt"],
-        "description": "Miembro del tenant con sus grupos."
+        "description": "Tenant member with their groups."
       },
       "MemberPage": {
         "type": "object",
@@ -4814,7 +4814,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de miembros."
+        "description": "Page of members."
       },
       "RemoveMemberRequest": {
         "type": "object",
@@ -4825,7 +4825,7 @@
         },
         "required": ["userId"],
         "additionalProperties": false,
-        "description": "Miembro a quitar del tenant."
+        "description": "Member to remove from the tenant."
       },
       "SetMemberGroupsRequest": {
         "type": "object",
@@ -4843,7 +4843,7 @@
         },
         "required": ["userId", "groupIds"],
         "additionalProperties": false,
-        "description": "Reemplazo de los grupos de un miembro."
+        "description": "Replacement of the groups of a member."
       },
       "GroupSummary": {
         "type": "object",
@@ -4867,7 +4867,7 @@
           }
         },
         "required": ["id", "name", "system", "roleIds", "memberCount"],
-        "description": "Grupo del tenant."
+        "description": "Tenant group."
       },
       "GroupPage": {
         "type": "object",
@@ -4887,7 +4887,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de grupos."
+        "description": "Page of groups."
       },
       "CreateGroupRequest": {
         "type": "object",
@@ -4896,7 +4896,7 @@
         },
         "required": ["name"],
         "additionalProperties": false,
-        "description": "Alta de un grupo."
+        "description": "Group creation."
       },
       "UpdateGroupRequest": {
         "type": "object",
@@ -4908,7 +4908,7 @@
         },
         "required": ["groupId", "name"],
         "additionalProperties": false,
-        "description": "Cambio de nombre de un grupo."
+        "description": "Group rename."
       },
       "DeleteGroupRequest": {
         "type": "object",
@@ -4919,7 +4919,7 @@
         },
         "required": ["groupId"],
         "additionalProperties": false,
-        "description": "Borrado de un grupo."
+        "description": "Group deletion."
       },
       "SetGroupRolesRequest": {
         "type": "object",
@@ -4937,7 +4937,7 @@
         },
         "required": ["groupId", "roleIds"],
         "additionalProperties": false,
-        "description": "Reemplazo de los roles de un grupo."
+        "description": "Replacement of the roles of a group."
       },
       "RoleSummary": {
         "type": "object",
@@ -4978,7 +4978,7 @@
           }
         },
         "required": ["id", "name", "systemRole", "permissions"],
-        "description": "Rol del tenant con sus permisos."
+        "description": "Tenant role with its permissions."
       },
       "RolePage": {
         "type": "object",
@@ -4998,7 +4998,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de roles."
+        "description": "Page of roles."
       },
       "CreateRoleRequest": {
         "type": "object",
@@ -5031,7 +5031,7 @@
         },
         "required": ["name", "permissions"],
         "additionalProperties": false,
-        "description": "Alta de un rol personalizado."
+        "description": "Custom role creation."
       },
       "UpdateRoleRequest": {
         "type": "object",
@@ -5067,7 +5067,7 @@
         },
         "required": ["roleId"],
         "additionalProperties": false,
-        "description": "Cambios parciales de un rol."
+        "description": "Partial changes of a role."
       },
       "DeleteRoleRequest": {
         "type": "object",
@@ -5078,7 +5078,7 @@
         },
         "required": ["roleId"],
         "additionalProperties": false,
-        "description": "Borrado de un rol."
+        "description": "Role deletion."
       },
       "InvitationSummary": {
         "type": "object",
@@ -5115,7 +5115,7 @@
           "expiresAt",
           "invitedBy"
         ],
-        "description": "Invitación a un tenant."
+        "description": "Invitation to a tenant."
       },
       "InvitationPage": {
         "type": "object",
@@ -5135,7 +5135,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de invitaciones."
+        "description": "Page of invitations."
       },
       "InviteUserRequest": {
         "type": "object",
@@ -5156,7 +5156,7 @@
         },
         "required": ["email", "groupIds"],
         "additionalProperties": false,
-        "description": "Invitación de un email a los grupos indicados."
+        "description": "Invitation of an email to the given groups."
       },
       "RevokeInvitationRequest": {
         "type": "object",
@@ -5167,7 +5167,7 @@
         },
         "required": ["invitationId"],
         "additionalProperties": false,
-        "description": "Invitación pendiente a revocar."
+        "description": "Pending invitation to revoke."
       },
       "AcceptInvitationRequest": {
         "type": "object",
@@ -5176,7 +5176,7 @@
         },
         "required": ["token"],
         "additionalProperties": false,
-        "description": "Aceptación de una invitación con el token del correo."
+        "description": "Acceptance of an invitation with the emailed token."
       },
       "ServiceAccountSummary": {
         "type": "object",
@@ -5209,7 +5209,7 @@
           "pinnedApiVersion",
           "createdAt"
         ],
-        "description": "Identidad no humana del tenant que usa API keys."
+        "description": "Non-human tenant identity that uses API keys."
       },
       "ServiceAccountPage": {
         "type": "object",
@@ -5229,7 +5229,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de service accounts."
+        "description": "Page of service accounts."
       },
       "CreateServiceAccountRequest": {
         "type": "object",
@@ -5248,7 +5248,7 @@
         },
         "required": ["name", "permissions"],
         "additionalProperties": false,
-        "description": "Alta de una service account."
+        "description": "Service account creation."
       },
       "UpdateServiceAccountRequest": {
         "type": "object",
@@ -5265,7 +5265,7 @@
         },
         "required": ["serviceAccountId"],
         "additionalProperties": false,
-        "description": "Cambios parciales de una service account."
+        "description": "Partial changes of a service account."
       },
       "DeleteServiceAccountRequest": {
         "type": "object",
@@ -5276,7 +5276,7 @@
         },
         "required": ["serviceAccountId"],
         "additionalProperties": false,
-        "description": "Borrado de una service account con sus API keys."
+        "description": "Deletion of a service account with its API keys."
       },
       "ApiKeySummary": {
         "type": "object",
@@ -5340,7 +5340,7 @@
           "lastUsedAt",
           "createdAt"
         ],
-        "description": "API key sin secreto."
+        "description": "API key without its secret."
       },
       "ApiKeyPage": {
         "type": "object",
@@ -5360,7 +5360,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de API keys."
+        "description": "Page of API keys."
       },
       "ListApiKeysRequest": {
         "type": "object",
@@ -5377,7 +5377,7 @@
         },
         "required": ["serviceAccountId"],
         "additionalProperties": false,
-        "description": "Listado de las API keys de una service account."
+        "description": "Listing of the API keys of a service account."
       },
       "CreateApiKeyRequest": {
         "type": "object",
@@ -5397,7 +5397,7 @@
         },
         "required": ["serviceAccountId", "environment"],
         "additionalProperties": false,
-        "description": "Alta de una API key."
+        "description": "API key creation."
       },
       "CreatedApiKey": {
         "type": "object",
@@ -5406,7 +5406,7 @@
           "secret": { "type": "string", "minLength": 1, "maxLength": 128 }
         },
         "required": ["apiKey", "secret"],
-        "description": "API key creada. El secreto aparece solo en esta respuesta."
+        "description": "API key created. The secret appears only in this response."
       },
       "RotateApiKeyRequest": {
         "type": "object",
@@ -5417,7 +5417,7 @@
         },
         "required": ["apiKeyId"],
         "additionalProperties": false,
-        "description": "Rotación de una API key."
+        "description": "Rotation of an API key."
       },
       "RevokeApiKeyRequest": {
         "type": "object",
@@ -5428,7 +5428,7 @@
         },
         "required": ["apiKeyId"],
         "additionalProperties": false,
-        "description": "Revocación inmediata de una API key."
+        "description": "Immediate revocation of an API key."
       },
       "AuthenticateApiKeyInput": {
         "type": "object",
@@ -5438,7 +5438,7 @@
         },
         "required": ["apiKey"],
         "additionalProperties": false,
-        "description": "Valida una API key presentada por un cliente."
+        "description": "Validates an API key presented by a client."
       },
       "ApiKeyPrincipal": {
         "type": "object",
@@ -5482,7 +5482,7 @@
           "expiresAt",
           "pinnedApiVersion"
         ],
-        "description": "Principal que resulta de validar una API key."
+        "description": "Principal resulting from validating an API key."
       },
       "Jwk": {
         "type": "object",
@@ -5496,7 +5496,7 @@
           "y": { "type": "string", "minLength": 1, "maxLength": 256 }
         },
         "required": ["kty", "crv", "kid", "use", "alg", "x", "y"],
-        "description": "Clave pública del conjunto JWKS."
+        "description": "Public key of the JWKS set."
       },
       "Jwks": {
         "type": "object",
@@ -5508,7 +5508,7 @@
           }
         },
         "required": ["keys"],
-        "description": "Claves públicas vigentes para verificar access tokens."
+        "description": "Active public keys to verify access tokens."
       },
       "UserRegisteredPayload": {
         "type": "object",
@@ -5524,7 +5524,7 @@
           }
         },
         "required": ["userId", "homeTenantId", "registeredAt"],
-        "description": "Se registró un usuario."
+        "description": "A user was registered."
       },
       "UserSuspendedPayload": {
         "type": "object",
@@ -5538,7 +5538,7 @@
           }
         },
         "required": ["userId", "suspendedAt"],
-        "description": "Se suspendió un usuario."
+        "description": "A user was suspended."
       },
       "UserReactivatedPayload": {
         "type": "object",
@@ -5551,7 +5551,7 @@
           }
         },
         "required": ["userId", "reactivatedAt"],
-        "description": "Se reactivó un usuario."
+        "description": "A user was reactivated."
       },
       "UserEmailChangedPayload": {
         "type": "object",
@@ -5564,7 +5564,7 @@
           }
         },
         "required": ["userId", "changedAt"],
-        "description": "Cambió el email de un usuario."
+        "description": "The email of a user changed."
       },
       "DeviceRegisteredPayload": {
         "type": "object",
@@ -5591,7 +5591,7 @@
           "verifier",
           "registeredAt"
         ],
-        "description": "Se registró un dispositivo verificador."
+        "description": "A verifier device was registered."
       },
       "DeviceRemovedPayload": {
         "type": "object",
@@ -5607,7 +5607,7 @@
           }
         },
         "required": ["userId", "deviceId", "removedAt"],
-        "description": "Se quitó un dispositivo de la cuenta."
+        "description": "A device was removed from the account."
       },
       "TenantCreatedPayload": {
         "type": "object",
@@ -5629,7 +5629,7 @@
           }
         },
         "required": ["tenantId", "slug", "kind", "region", "createdAt"],
-        "description": "Se creó un tenant."
+        "description": "A tenant was created."
       },
       "TenantSuspendedPayload": {
         "type": "object",
@@ -5642,7 +5642,7 @@
           }
         },
         "required": ["tenantId", "suspendedAt"],
-        "description": "Se suspendió un tenant."
+        "description": "A tenant was suspended."
       },
       "TenantReactivatedPayload": {
         "type": "object",
@@ -5655,7 +5655,7 @@
           }
         },
         "required": ["tenantId", "reactivatedAt"],
-        "description": "Se reactivó un tenant."
+        "description": "A tenant was reactivated."
       },
       "MembershipChangedPayload": {
         "type": "object",
@@ -5682,7 +5682,7 @@
           }
         },
         "required": ["tenantId", "userId", "kind", "groupIds", "changedAt"],
-        "description": "Cambió la membresía de un usuario en un tenant."
+        "description": "The membership of a user in a tenant changed."
       },
       "PermissionsChangedPayload": {
         "type": "object",
@@ -5703,7 +5703,7 @@
           }
         },
         "required": ["tenantId", "permissionVersion", "changedAt"],
-        "description": "Cambiaron los permisos de un usuario o de un tenant."
+        "description": "The permissions of a user or a tenant changed."
       },
       "ApiKeyCreatedPayload": {
         "type": "object",
@@ -5735,7 +5735,7 @@
           "createdBy",
           "createdAt"
         ],
-        "description": "Se creó una API key. No incluye el secreto."
+        "description": "An API key was created. It does not include the secret."
       },
       "ApiKeyRevokedPayload": {
         "type": "object",
@@ -5752,7 +5752,7 @@
           }
         },
         "required": ["apiKeyId", "tenantId", "prefix", "revokedAt"],
-        "description": "Se revocó una API key."
+        "description": "An API key was revoked."
       },
       "SecurityAlertRaisedPayload": {
         "type": "object",
@@ -5769,7 +5769,7 @@
           }
         },
         "required": ["alertId", "userId", "type", "raisedAt"],
-        "description": "Se levantó una alerta de seguridad sobre una cuenta."
+        "description": "A security alert was raised on an account."
       },
       "IdentitySaga": {
         "type": "string",
@@ -5778,7 +5778,7 @@
           "identity.delete-account",
           "identity.move-tenant"
         ],
-        "description": "Saga que orquesta identity."
+        "description": "Saga orchestrated by identity."
       },
       "IdentitySagaStatus": {
         "type": "string",
@@ -5791,7 +5791,7 @@
           "compensation_failed",
           "requires_intervention"
         ],
-        "description": "Estado de una saga de identity."
+        "description": "Status of an identity saga."
       },
       "TenantCreation": {
         "type": "object",
@@ -5804,7 +5804,7 @@
           }
         },
         "required": ["tenantId", "sagaId"],
-        "description": "Tenant en aprovisionamiento y la saga que lo activa."
+        "description": "Tenant being provisioned and the saga that activates it."
       },
       "AccountDeletionStarted": {
         "type": "object",
@@ -5814,7 +5814,7 @@
           }
         },
         "required": ["sagaId"],
-        "description": "Saga que borra la cuenta del usuario."
+        "description": "Saga that deletes the user account."
       },
       "GetSagaRequest": {
         "type": "object",
@@ -5825,7 +5825,7 @@
         },
         "required": ["sagaId"],
         "additionalProperties": false,
-        "description": "Saga a consultar."
+        "description": "Saga to query."
       },
       "SagaSummary": {
         "type": "object",
@@ -5848,7 +5848,7 @@
           }
         },
         "required": ["sagaId", "saga", "status", "startedAt", "finishedAt"],
-        "description": "Estado de una saga de identity."
+        "description": "Status of an identity saga."
       },
       "EraseUserInput": {
         "type": "object",
@@ -5859,7 +5859,7 @@
         },
         "required": ["userId"],
         "additionalProperties": false,
-        "description": "Usuario cuyos datos personales se borran."
+        "description": "User whose personal data is erased."
       },
       "EraseUserResult": {
         "type": "object",
@@ -5872,7 +5872,7 @@
           }
         },
         "required": ["userId", "erasedAt"],
-        "description": "Resultado de borrar a un usuario."
+        "description": "Result of erasing a user."
       },
       "ListPushTargetsInput": {
         "type": "object",
@@ -5883,7 +5883,7 @@
         },
         "required": ["user"],
         "additionalProperties": false,
-        "description": "Usuario cuyos dispositivos con push se piden."
+        "description": "User whose push devices are requested."
       },
       "PushTarget": {
         "type": "object",
@@ -5898,7 +5898,7 @@
           "pushToken": { "type": "string", "minLength": 1, "maxLength": 512 }
         },
         "required": ["deviceId", "platform", "pushToken"],
-        "description": "Dispositivo al que se puede enviar un push."
+        "description": "Device that can receive a push."
       },
       "PushTargets": {
         "type": "object",
@@ -5910,7 +5910,7 @@
           }
         },
         "required": ["targets"],
-        "description": "Dispositivos con push de un usuario."
+        "description": "Push devices of a user."
       },
       "ListMembersByPermissionInput": {
         "type": "object",
@@ -5947,7 +5947,7 @@
         },
         "required": ["tenantId", "permission"],
         "additionalProperties": false,
-        "description": "Miembros de un tenant que tienen un permiso."
+        "description": "Members of a tenant that have a permission."
       },
       "UserRefPage": {
         "type": "object",
@@ -5969,7 +5969,7 @@
           }
         },
         "required": ["items", "nextCursor"],
-        "description": "Página de usuarios."
+        "description": "Page of users."
       },
       "UserErasedPayload": {
         "type": "object",
@@ -5985,7 +5985,7 @@
           }
         },
         "required": ["userId", "homeTenantId", "erasedAt"],
-        "description": "Se borró a un usuario."
+        "description": "A user was erased."
       }
     },
     "securitySchemes": {

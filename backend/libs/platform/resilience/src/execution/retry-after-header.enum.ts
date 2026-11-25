@@ -1,4 +1,4 @@
-/** Encabezados HTTP que lee la pista de espera. */
+/** HTTP headers that the wait hint reads. */
 export enum RetryAfterHeader {
   RetryAfter = 'retry-after',
 }

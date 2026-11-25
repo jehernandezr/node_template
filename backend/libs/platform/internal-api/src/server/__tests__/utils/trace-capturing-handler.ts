@@ -5,7 +5,7 @@ import type { OperationOutputOf } from '../../../contract/operation-io.type.js';
 import type { HandlerResult } from '../../handler-result.js';
 import { OperationHandler } from '../../operation-handler.js';
 
-/** Handler que guarda el `traceparent` del span activo cuando corre. */
+/** Handler that stores the `traceparent` of the active span when it runs. */
 export class TraceCapturingHandler<
   S extends OperationDefinition = OperationDefinition,
 > extends OperationHandler<S> {

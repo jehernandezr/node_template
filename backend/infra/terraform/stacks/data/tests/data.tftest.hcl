@@ -1,5 +1,5 @@
-# Pruebas del stack de datos con proveedores simulados: no tocan AWS ni el backend.
-# Ejecuta: terraform init -backend=false && terraform test
+# Tests for the data stack with mocked providers: they touch neither AWS nor the backend.
+# Run: terraform init -backend=false && terraform test
 
 mock_provider "aws" {
   mock_data "aws_region" {
@@ -21,7 +21,7 @@ mock_provider "aws" {
   }
 }
 
-# archive y random son locales: empaquetan el bootstrap y generan contraseñas efímeras.
+# archive and random are local: they package the bootstrap and generate ephemeral passwords.
 
 variables {
   region       = "us-east-1"
@@ -62,47 +62,47 @@ run "one_database_per_shard_plus_catalog" {
 
   assert {
     condition     = toset([for d in local.databases : d.name]) == toset(["catalog", "identity_shard_0", "identity_shard_1", "tasks_shard_0"])
-    error_message = "Las bases coinciden con backend/infra/local/postgres/init.sql."
+    error_message = "The databases match backend/infra/local/postgres/init.sql."
   }
 
   assert {
     condition     = alltrue([for d in local.databases : d.extensions == tolist(["vector"])])
-    error_message = "Cada base tiene pgvector."
+    error_message = "Every database has pgvector."
   }
 
   assert {
     condition     = [for d in local.databases : d.owner if d.name == "identity_shard_1"][0] == "identity"
-    error_message = "Cada servicio es dueño de sus shards."
+    error_message = "Each service owns its shards."
   }
 
   assert {
     condition     = tolist(local.group_roles[0].members) == tolist(["identity"]) && tolist(local.group_roles[1].members) == tolist(["tasks"])
-    error_message = "catalog owner y read se traducen en roles de grupo."
+    error_message = "catalog owner and read map to group roles."
   }
 
   assert {
     condition     = local.service_databases["tasks"].catalog == "catalog" && length(local.service_databases["tasks"].shards) == 1
-    error_message = "Cada servicio recibe el mapa de sus bases."
+    error_message = "Each service receives the map of its databases."
   }
 
   assert {
     condition     = local.valkey_users["tasks"] == "on ~tasks:* &tasks:* %R~auth:* &auth:revocations +@all -@dangerous"
-    error_message = "Un servicio que no es dueño del estado de autenticación ve sus llaves y solo lee auth:*."
+    error_message = "A service that does not own the authentication state sees its own keys and only reads auth:*."
   }
 
   assert {
     condition     = local.valkey_users["identity"] == "on ~identity:* &identity:* ~auth:* &auth:* +@all -@dangerous"
-    error_message = "El servicio dueño del estado de autenticación escribe auth:*."
+    error_message = "The service that owns the authentication state writes auth:*."
   }
 
   assert {
     condition     = output.valkey.cache_name == "nt-dev-valkey" && output.valkey.user_names["tasks"] == "nt-dev-tasks"
-    error_message = "Los servicios reciben la caché y el usuario con los que firman el token IAM."
+    error_message = "Services receive the cache and the user they sign the IAM token with."
   }
 
   assert {
     condition     = length(aws_vpc_security_group_egress_rule.clients_to_replicas) == 1
-    error_message = "Con réplicas, los clientes salen hacia ellas."
+    error_message = "With replicas, clients have egress to them."
   }
 }
 
@@ -125,7 +125,7 @@ run "auth_writer_is_configurable" {
 
   assert {
     condition     = local.valkey_users["tasks"] == "on ~tasks:* &tasks:* ~auth:* &auth:* +@all -@dangerous" && local.valkey_users["identity"] == "on ~identity:* &identity:* %R~auth:* &auth:revocations +@all -@dangerous"
-    error_message = "El dueño de auth:* sale de valkey_auth_writer."
+    error_message = "The owner of auth:* comes from valkey_auth_writer."
   }
 }
 
@@ -138,6 +138,6 @@ run "acl_overrides_replace_the_generated_rules" {
 
   assert {
     condition     = local.valkey_users["tasks"] == "on ~* +@all"
-    error_message = "Una ACL propia reemplaza la generada."
+    error_message = "A custom ACL replaces the generated one."
   }
 }

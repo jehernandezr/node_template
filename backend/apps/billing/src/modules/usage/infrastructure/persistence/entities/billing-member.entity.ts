@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `billing_members`: los miembros facturables de cada tenant, según identity. */
+/** `billing_members`: the billable members of each tenant, according to identity. */
 @Entity({ name: 'billing_members' })
 @Index('billing_members_tenant_user_key', ['tenantId', 'userId'], {
   unique: true,

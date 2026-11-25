@@ -2,8 +2,8 @@ import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 /**
- * Barrera de escritura de un tenant que se trasladó o se está trasladando fuera de este shard. La escribe y la
- * lee `TenantWriteFence` de `@platform/persistence`; una fila basta para rechazar toda escritura del tenant aquí.
+ * Write fence of a tenant that was moved or is being moved out of this shard. Written and
+ * read by `TenantWriteFence` from `@platform/persistence`; one row is enough to reject every write of the tenant here.
  */
 @Entity({ name: 'tenant_write_fences' })
 export class TenantWriteFenceEntity {
@@ -21,7 +21,7 @@ export class TenantWriteFenceEntity {
   })
   createdAt!: Date;
 
-  /** Cuándo pivotó el traslado; mientras es nulo el traslado está a medio camino y frena los mantenimientos. */
+  /** When the move pivoted; while it is null the move is halfway and holds back maintenance. */
   @Column({
     type: 'timestamptz',
     name: 'switched_at',

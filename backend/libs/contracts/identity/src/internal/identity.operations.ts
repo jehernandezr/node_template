@@ -10,7 +10,7 @@ import {
   UserAccessSchema,
 } from '../schemas/session.schema.js';
 
-/** Revoca todas las sesiones de un usuario. Lo usan backoffice y las sagas de seguridad. */
+/** Revokes all of a user's sessions. Used by backoffice and the security sagas. */
 export const RevokeUserSessionsOperation = defineOperation({
   id: IdentityOperation.RevokeUserSessions,
   input: RevokeUserSessionsInputSchema,
@@ -18,13 +18,13 @@ export const RevokeUserSessionsOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Revocar sesiones no se deshace por seguridad: el usuario vuelve a iniciar sesión.',
+    'Revoking sessions is not undone for security: the user signs in again.',
   errors: [IdentityErrorCode.UserNotFound],
   timeoutMs: 3000,
-  description: 'Revoca todas las sesiones de un usuario y publica el evento.',
+  description: 'Revokes all sessions of a user and publishes the event.',
 });
 
-/** Lee el acceso efectivo de un usuario en un tenant. */
+/** Reads a user's effective access in a tenant. */
 export const GetUserAccessOperation = defineOperation({
   id: IdentityOperation.GetUserAccess,
   input: GetUserAccessInputSchema,
@@ -33,5 +33,5 @@ export const GetUserAccessOperation = defineOperation({
   mutating: false,
   errors: [IdentityErrorCode.UserNotFound],
   description:
-    'Devuelve permisos, roles, funcionalidades y flags de un usuario en un tenant.',
+    'Returns permissions, roles, features and flags of a user in a tenant.',
 });

@@ -2,7 +2,7 @@ import { FailureKind } from '@platform/kernel';
 import { BloomError } from './bloom-error.js';
 import { BloomErrorCode } from './bloom-error-code.enum.js';
 
-/** Un tamaño, una tasa, un nombre o una definición están fuera de rango. */
+/** A size, a rate, a name or a definition is out of range. */
 export class InvalidParametersError extends BloomError {
   constructor(message: string) {
     super(

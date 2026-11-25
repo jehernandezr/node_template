@@ -1,13 +1,13 @@
 import type { Clock } from '@platform/kernel';
 
-/** Opciones de {@link InMemoryRateLimiter}. */
+/** Options of {@link InMemoryRateLimiter}. */
 export interface InMemoryRateLimiterOptions {
-  /** Fuente de tiempo. En pruebas, `FixedClock` de `@platform/kernel/test-utils`. */
+  /** Time source. In tests, `FixedClock` from `@platform/kernel/test-utils`. */
   readonly clock?: Clock;
   /**
-   * Llaves que guarda como máximo. Al pasarse olvida la usada hace más tiempo,
-   * que vuelve a empezar de cero: así una ráfaga de llaves distintas no agota
-   * la memoria del proceso. Por defecto {@link InMemoryRateLimiter.DEFAULT_MAX_ENTRIES}.
+   * Maximum number of keys it stores. When exceeded it forgets the least recently used one,
+   * which starts again from zero: this way a burst of distinct keys does not exhaust
+   * the process memory. Defaults to {@link InMemoryRateLimiter.DEFAULT_MAX_ENTRIES}.
    */
   readonly maxEntries?: number;
 }

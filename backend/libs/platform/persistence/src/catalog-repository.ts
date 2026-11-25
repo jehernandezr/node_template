@@ -13,8 +13,8 @@ import type { OptimisticWriter } from './optimistic-writer.js';
 import { TypeOrmCriteriaTranslator } from './typeorm-criteria-translator.js';
 
 /**
- * Base de los repositorios del catálogo global: lo mismo que `ShardedRepository`, sin tenant y sin
- * ruteo, siempre sobre el `DataSource` del catálogo.
+ * Base for the global catalog repositories: the same as `ShardedRepository`, without a tenant and without
+ * routing, always over the catalog `DataSource`.
  */
 export abstract class CatalogRepository<
   TAggregate,
@@ -27,7 +27,7 @@ export abstract class CatalogRepository<
     protected readonly writer: OptimisticWriter,
   ) {}
 
-  /** Lee con un manager de la réplica del catálogo. */
+  /** Reads with a manager from the catalog replica. */
   protected async read<T>(
     fn: (manager: EntityManager) => Promise<T>,
   ): Promise<T> {
@@ -40,7 +40,7 @@ export abstract class CatalogRepository<
     }
   }
 
-  /** Escribe en una transacción del primario del catálogo. */
+  /** Writes in a transaction on the catalog primary. */
   protected async write<T>(
     fn: (manager: EntityManager) => Promise<T>,
   ): Promise<T> {
@@ -57,7 +57,7 @@ export abstract class CatalogRepository<
     });
   }
 
-  /** @throws OptimisticLockError si la versión ya no es la guardada. */
+  /** @throws OptimisticLockError if the version is no longer the stored one. */
   async save(aggregate: TAggregate): Promise<TAggregate> {
     const entity = this.mapper.toPersistence(aggregate);
     return this.write(async (manager) => {
@@ -85,9 +85,9 @@ export abstract class CatalogRepository<
   }
 
   /**
-   * Una página según el criterio, con paginación por cursor. El `codec` firma el cursor siguiente; sin él, el
-   * cursor no va firmado.
-   * @throws CriteriaError `UnknownField` si el criterio nombra un campo que la entidad no tiene.
+   * Returns a page according to the criteria, with cursor pagination. The `codec` signs the next cursor; without it, the
+   * cursor is not signed.
+   * @throws CriteriaError `UnknownField` if the criteria names a field the entity does not have.
    */
   async findByCriteria(
     criteria: Criteria<TEntity>,

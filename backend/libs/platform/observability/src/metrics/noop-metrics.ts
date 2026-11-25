@@ -1,12 +1,12 @@
 import { MetricsPort } from './metrics.port.js';
 
-/** Descarta todo. Es el puerto cuando la telemetría está apagada. */
+/** Discards everything. It is the port when telemetry is off. */
 export class NoopMetrics extends MetricsPort {
   increment(): void {
-    // Sin efecto: la telemetría está apagada.
+    // No effect: telemetry is off.
   }
 
   record(): void {
-    // Sin efecto: la telemetría está apagada.
+    // No effect: telemetry is off.
   }
 }

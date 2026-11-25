@@ -18,20 +18,20 @@ import {
 import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import type { CriteriaFieldMap } from './criteria-field-map.js';
 
-/** Una condición o un grupo ya traducido: su texto y si necesita paréntesis dentro de otra unión. */
+/** An already translated condition or group: its text and whether it needs parentheses inside another union. */
 interface Rendered {
   readonly sql: string;
   readonly compound: boolean;
 }
 
-/** Término de orden: la propiedad pedida, su columna calificada y la dirección. */
+/** Sort term: the requested property, its qualified column and the direction. */
 interface OrderTerm {
   readonly field: string;
   readonly column: string;
   readonly direction: SortDirection;
 }
 
-/** Todo lo que `apply` necesita, armado antes de tocar el `SelectQueryBuilder`. */
+/** Everything `apply` needs, built before touching the `SelectQueryBuilder`. */
 interface Compiled {
   readonly where: string | null;
   readonly params: Readonly<Record<string, unknown>>;
@@ -43,7 +43,7 @@ const LOGICAL_OPERATORS: ReadonlySet<unknown> = new Set<unknown>(
   Object.values(LogicalOperator),
 );
 
-/** Nombres de parámetro de una sola traducción: cada valor recibe uno nuevo y nunca entra al texto. */
+/** Parameter names of a single translation: each value gets a new one and never enters the text. */
 class ParameterBag {
   private readonly values: Record<string, unknown> = {};
   private next = 0;
@@ -61,16 +61,16 @@ class ParameterBag {
 }
 
 /**
- * Traduce el AST de `@platform/criteria` a un `SelectQueryBuilder` de TypeORM: filtro con parámetros,
- * orden y paginación por cursor (keyset) con desempate por id.
+ * Translates the `@platform/criteria` AST into a TypeORM `SelectQueryBuilder`: parameterized filter,
+ * sorting and cursor (keyset) pagination with an id tie-breaker.
  */
 export class TypeOrmCriteriaTranslator {
   constructor(private readonly fields: CriteriaFieldMap) {}
 
   /**
-   * Agrega filtro, orden y `limit + 1` al constructor. Los valores van siempre como parámetros.
-   * Si la traducción falla, el constructor queda intacto.
-   * @throws CriteriaError `UnknownField` si el AST nombra un campo fuera de la lista blanca.
+   * Adds filter, sorting and `limit + 1` to the builder. Values always go as parameters.
+   * If the translation fails, the builder is left intact.
+   * @throws CriteriaError `UnknownField` if the AST names a field outside the allowlist.
    */
   apply<TEntity extends ObjectLiteral>(
     qb: SelectQueryBuilder<TEntity>,
@@ -93,8 +93,8 @@ export class TypeOrmCriteriaTranslator {
   }
 
   /**
-   * Aplica el límite original a las filas leídas con `limit + 1` y arma el cursor siguiente con el `codec` que
-   * recibe. Sin `codec` usa uno sin firma.
+   * Applies the original limit to the rows read with `limit + 1` and builds the next cursor with the given
+   * `codec`. Without a `codec` it uses an unsigned one.
    */
   toPage<TEntity extends ObjectLiteral>(
     rows: readonly TEntity[],
@@ -272,8 +272,8 @@ export class TypeOrmCriteriaTranslator {
   }
 
   /**
-   * Predicado de "estrictamente después del cursor" en el orden pedido. Direcciones iguales usan una
-   * comparación de filas; mezcladas, la expansión en cadena de OR.
+   * Predicate for "strictly after the cursor" in the requested order. Equal directions use a
+   * row comparison; mixed ones, the chained OR expansion.
    */
   private keysetSql(
     cursor: Cursor,
@@ -329,7 +329,7 @@ export class TypeOrmCriteriaTranslator {
     return { field: item.field, column, direction: item.direction };
   }
 
-  /** Propiedad de la lista blanca como `alias.propiedad`; TypeORM la traduce a la columna. */
+  /** Allowlist property as `alias.property`; TypeORM translates it to the column. */
   private column(field: string): string {
     if (!this.fields.properties.includes(field)) {
       throw new CriteriaError(
@@ -365,7 +365,7 @@ export class TypeOrmCriteriaTranslator {
     return value instanceof Date ? value.toISOString() : value;
   }
 
-  /** Error de entrada inválida. El mensaje nunca lleva el valor recibido. */
+  /** Invalid input error. The message never carries the received value. */
   private invalid(message: string): CriteriaError {
     return new CriteriaError(CriteriaErrorCode.InvalidValue, message);
   }

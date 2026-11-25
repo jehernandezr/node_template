@@ -2,9 +2,9 @@ import { ApiGatewayHeader } from './api-gateway-header.enum.js';
 import type { ApiGatewayHttpResponse } from './api-gateway-http-response.js';
 
 /**
- * Traduce la respuesta `fetch` a la forma de API Gateway. Lo textual viaja como
- * texto UTF-8 y lo demás en base64, para que ningún binario se corrompa al
- * pasar por JSON.
+ * Translates the `fetch` response into the API Gateway shape. Textual content travels as
+ * UTF-8 text and the rest as base64, so no binary gets corrupted when
+ * going through JSON.
  */
 export class ApiGatewayResponseMapper {
   private static readonly TEXT_CONTENT = {
@@ -13,7 +13,7 @@ export class ApiGatewayResponseMapper {
     suffixes: ['+json', '+xml'],
   } as const;
 
-  /** Lee el cuerpo entero; las `set-cookie` van aparte porque no se pueden unir con coma. */
+  /** Reads the whole body; the `set-cookie` headers go separately because they cannot be joined with a comma. */
   async fromResponse(response: Response): Promise<ApiGatewayHttpResponse> {
     const headers: Record<string, string> = {};
     response.headers.forEach((value, name) => {

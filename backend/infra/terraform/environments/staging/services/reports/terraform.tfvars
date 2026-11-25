@@ -5,9 +5,9 @@ state_bucket = "node-template-staging-tfstate"
 
 service_name = "reports"
 
-# API en Fargate detrás del ALB interno. Los workers calculan las ejecuciones que la API deja en cola y
-# mantienen las proyecciones con los eventos de tasks, billing y notifications. Para pasar la API a Lambda:
-# runtime = "lambda" (usa lambda.handler) y quitar listener_rule_priority.
+# API on Fargate behind the internal ALB. The workers compute the runs that the API queues and keep the
+# projections up to date with events from tasks, billing and notifications. To move the API to Lambda:
+# runtime = "lambda" (uses lambda.handler) and remove listener_rule_priority.
 api = {
   runtime                = "fargate"
   route_prefixes         = ["/v1/reports"]
@@ -25,13 +25,13 @@ workers = {
   finance-projections = { queue = "reports-finance-projections", max_capacity = 2 }
 }
 
-# Valores no secretos.
-# INTERNAL_API_BASE_URLS es obligatoria y la da el despliegue: un JSON con la dirección interna de identity
-# (verificación de acceso), tasks y billing (relleno de proyecciones) en este ambiente, por ejemplo
+# Non-secret values.
+# INTERNAL_API_BASE_URLS is required and comes from the deployment: a JSON with the internal address of identity
+# (access check), tasks and billing (projection backfill) in this environment, for example
 # "{\"identity\":\"http://identity.staging.internal\",\"tasks\":\"http://tasks.staging.internal\",
-# \"billing\":\"http://billing.staging.internal\"}" en una sola línea. La API interna de todos los servicios
-# responde en el mismo path, así que el ALB compartido no sirve para llegar a ellos. Sin alguna de esas URLs
-# el servicio no arranca.
+# \"billing\":\"http://billing.staging.internal\"}" on a single line. The internal API of every service
+# answers on the same path, so the shared ALB cannot be used to reach them. If any of those URLs is missing,
+# the service does not start.
 environment_variables = {
   INTERNAL_API_SIGNER      = "hmac"
   REPORTS_MAX_RESULT_BYTES = "1000000"
@@ -40,8 +40,8 @@ environment_variables = {
   TRUST_PROXY_HOPS         = "2"
 }
 
-# Secretos en Secrets Manager (nombre de variable a ARN, con clave JSON opcional). La config del servicio
-# exige INTERNAL_API_SHARED_SECRET.
+# Secrets in Secrets Manager (variable name to ARN, with an optional JSON key). The service config
+# requires INTERNAL_API_SHARED_SECRET.
 secrets = {}
 
 database_access = true

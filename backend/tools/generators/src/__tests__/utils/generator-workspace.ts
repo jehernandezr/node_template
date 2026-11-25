@@ -13,8 +13,8 @@ import { RecordingCommandRunner } from './recording-command-runner.js';
 import { UnchangedFormatter } from './unchanged-formatter.js';
 
 /**
- * Los generadores con las plantillas reales del repositorio y un `backend/` en memoria, donde escriben. Así las
- * pruebas ejercitan las plantillas que se publican sin tocar el disco.
+ * The generators with the real repository templates and an in-memory `backend/`, where they write. This way the
+ * tests exercise the published templates without touching the disk.
  */
 export class GeneratorWorkspace {
   static readonly BACKEND = '/backend';
@@ -69,12 +69,12 @@ export class GeneratorWorkspace {
   readonly runner = new RecordingCommandRunner();
   smoke = new GeneratorSmoke(this.copier, this.runner, this.copy);
 
-  /** El texto de un archivo de `backend/` en memoria. */
+  /** The text of a `backend/` file in memory. */
   file(path: string): Promise<string> {
     return this.backend.read(`${GeneratorWorkspace.BACKEND}/${path}`);
   }
 
-  /** Copia a la memoria los archivos del servicio de referencia tal como están en el repositorio. */
+  /** Copies the reference service files into memory as they are in the repository. */
   async copyReference(paths: readonly string[]): Promise<void> {
     const disk = new NodeFileSystem();
     for (const path of paths) {

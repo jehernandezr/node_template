@@ -20,7 +20,7 @@ import { TypeOrmPasskeyRepository } from '../infrastructure/persistence/typeorm-
 import { SimpleWebAuthnVerifier } from '../infrastructure/simple-webauthn-verifier.js';
 import { PasskeysController } from './passkeys.controller.js';
 
-/** WebAuthn: registro, inicio de sesión sin contraseña, segundo factor y step-up. Global solo para su fachada. */
+/** WebAuthn: registration, passwordless sign-in, second factor and step-up. Global only for its facade. */
 @Global()
 @Module({
   imports: [

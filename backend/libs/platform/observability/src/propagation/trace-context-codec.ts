@@ -3,18 +3,18 @@ import { InvalidTraceContextError } from '../errors/invalid-trace-context.error.
 import type { TraceparentFields } from './traceparent-fields.js';
 
 /**
- * Relación entre el `traceId` de la plataforma (UUIDv7, ADR 0003) y el trace id
- * de W3C/OpenTelemetry: los 128 bits del UUIDv7 escritos como 32 hex en
- * minúscula son el trace-id W3C. La conversión va en los dos sentidos. Las
- * operaciones de formato son estáticas; la generación usa las fuentes inyectadas.
+ * Relation between the platform `traceId` (UUIDv7, ADR 0003) and the
+ * W3C/OpenTelemetry trace id: the 128 bits of the UUIDv7 written as 32 lowercase
+ * hex are the W3C trace-id. The conversion works both ways. The formatting
+ * operations are static; generation uses the injected sources.
  */
 export class TraceContextCodec {
-  /** Header W3C que lleva la traza. */
+  /** W3C header that carries the trace. */
   static readonly TRACEPARENT_HEADER = 'traceparent';
 
   private static readonly TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
   private static readonly SPAN_ID_PATTERN = /^[0-9a-f]{16}$/;
-  /* Los UUID llegan a soporte con guiones; se aceptan para normalizarlos. */
+  /* UUIDs reach support with dashes; they are accepted so they can be normalized. */
   private static readonly UUID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   private static readonly TRACEPARENT_PATTERN =
@@ -28,19 +28,19 @@ export class TraceContextCodec {
     private readonly random: RandomSource,
   ) {}
 
-  /** UUIDv7 sin guiones: un trace id W3C válido. */
+  /** UUIDv7 without dashes: a valid W3C trace id. */
   newTraceId(): string {
     return this.ids.next().toString().replace(/-/g, '');
   }
 
-  /** 8 bytes aleatorios como 16 hex en minúscula. */
+  /** 8 random bytes as 16 lowercase hex. */
   newSpanId(): string {
     return TraceContextCodec.toHex(
       this.random.bytes(TraceContextCodec.SPAN_ID_BYTES),
     );
   }
 
-  /** 32 hex en minúscula y no todo ceros. */
+  /** 32 lowercase hex, not all zeros. */
   static isTraceId(value: unknown): value is string {
     return (
       typeof value === 'string' &&
@@ -49,7 +49,7 @@ export class TraceContextCodec {
     );
   }
 
-  /** 16 hex en minúscula y no todo ceros. */
+  /** 16 lowercase hex, not all zeros. */
   static isSpanId(value: unknown): value is string {
     return (
       typeof value === 'string' &&
@@ -58,7 +58,7 @@ export class TraceContextCodec {
     );
   }
 
-  /** Lleva un trace id (32 hex o UUID con guiones, en cualquier caja) a 32 hex; `undefined` si no es válido. Nunca lanza. */
+  /** Converts a trace id (32 hex or dashed UUID, in any case) to 32 hex; `undefined` if invalid. Never throws. */
   static normalizeTraceId(value: unknown): string | undefined {
     if (typeof value !== 'string') {
       return undefined;
@@ -70,7 +70,7 @@ export class TraceContextCodec {
     return TraceContextCodec.isTraceId(compact) ? compact : undefined;
   }
 
-  /** Igual que `normalizeTraceId` para span ids de 16 hex. */
+  /** Same as `normalizeTraceId` for 16-hex span ids. */
   static normalizeSpanId(value: unknown): string | undefined {
     if (typeof value !== 'string') {
       return undefined;
@@ -79,7 +79,7 @@ export class TraceContextCodec {
     return TraceContextCodec.isSpanId(lower) ? lower : undefined;
   }
 
-  /** Arma un `traceparent` versión 00. Lanza `InvalidTraceContextError` si un id no es válido. */
+  /** Builds a version 00 `traceparent`. Throws `InvalidTraceContextError` if an id is invalid. */
   static formatTraceparent(fields: TraceparentFields): string {
     if (!TraceContextCodec.isTraceId(fields.traceId)) {
       throw new InvalidTraceContextError('trace id of 32 lowercase hex chars');
@@ -90,7 +90,7 @@ export class TraceContextCodec {
     return `00-${fields.traceId}-${fields.spanId}-${fields.sampled ? '01' : '00'}`;
   }
 
-  /** Lee un `traceparent`; `null` si falta o no es válido. */
+  /** Parses a `traceparent`; `null` if missing or invalid. */
   static parseTraceparent(
     header: string | null | undefined,
   ): TraceparentFields | null {
@@ -115,7 +115,7 @@ export class TraceContextCodec {
     };
   }
 
-  /** 32 hex como UUID 8-4-4-4-12. Lanza `InvalidTraceContextError` si no es válido. */
+  /** Formats 32 hex as an 8-4-4-4-12 UUID. Throws `InvalidTraceContextError` if invalid. */
   static toDisplayTraceId(traceId: string): string {
     if (!TraceContextCodec.isTraceId(traceId)) {
       throw new InvalidTraceContextError('trace id of 32 lowercase hex chars');

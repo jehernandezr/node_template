@@ -4,7 +4,7 @@ import { JwkCodec } from '@platform/auth';
 import { UseCase } from '@platform/kernel';
 import { SigningKeyProvider } from '../domain/signing-key-provider.js';
 
-/** El JWKS con las claves públicas activa y de verificación. */
+/** The JWKS with the active and verification public keys. */
 @Injectable()
 export class GetJwks implements UseCase<void, Jwks> {
   constructor(private readonly keys: SigningKeyProvider) {}

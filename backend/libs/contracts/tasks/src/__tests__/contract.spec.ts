@@ -21,7 +21,7 @@ const operations = Object.values(tasksContract.operations);
 const events = Object.values(tasksContract.events);
 const commands = Object.values(tasksContract.commands);
 
-/** Esquemas que una ruta, operación o mensaje puede usar: los de este contrato y los de platform. */
+/** Schemas that a route, operation or message may use: those of this contract and those of platform. */
 const registered = new Set<z.ZodType>([
   ...Object.values(tasksContract.schemas),
   ...Object.values(platformContract.schemas),

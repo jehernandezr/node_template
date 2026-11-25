@@ -4,13 +4,13 @@ import type { HttpRequestView } from '../http-request-view.js';
 import { HttpRequestKey } from './http-metadata-key.enum.js';
 
 /**
- * La petición como la ven los middlewares, el guard, los interceptores y los decoradores: la vista
- * mínima más lo que el propio pipeline deja escrito en ella. Así nadie lee esas propiedades con un
+ * The request as seen by the middlewares, the guard, the interceptors and the decorators: the minimal
+ * view plus what the pipeline itself writes on it. This way nobody reads those properties with a
  * cast.
  */
 export interface PipelineRequest extends HttpRequestView {
-  /** Lo escribe `OriginPolicyMiddleware`. */
+  /** Written by `OriginPolicyMiddleware`. */
   [HttpRequestKey.ClientInfo]?: ClientInfo;
-  /** Lo escribe `EndpointGuard`; ausente en un controller sin `@Endpoint`. */
+  /** Written by `EndpointGuard`; absent in a controller without `@Endpoint`. */
   [HttpRequestKey.Call]?: EndpointCall;
 }

@@ -1,6 +1,6 @@
 import type { ApiGatewayHttpEvent } from '../../lambda/api-gateway-http-event.js';
 
-/** Arma un evento de API Gateway con formato de carga 2.0; cada `with*` cambia un campo. */
+/** Builds an API Gateway event with payload format 2.0; each `with*` changes a field. */
 export class ApiGatewayEventBuilder {
   private event: {
     version: string;

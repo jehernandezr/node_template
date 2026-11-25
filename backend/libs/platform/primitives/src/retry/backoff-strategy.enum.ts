@@ -1,9 +1,9 @@
 /**
- * Cómo se reparte la espera dentro del techo exponencial
+ * How the wait is distributed within the exponential ceiling
  * `min(maxMs, baseMs * factor^(attempt - 1))`.
- * - `None`: espera exactamente el techo (exponencial sin jitter).
- * - `FullJitter`: espera uniforme en `[0, techo)`.
- * - `EqualJitter`: espera uniforme en `[techo / 2, techo)`.
+ * - `None`: waits exactly the ceiling (exponential without jitter).
+ * - `FullJitter`: uniform wait in `[0, ceiling)`.
+ * - `EqualJitter`: uniform wait in `[ceiling / 2, ceiling)`.
  */
 export enum BackoffStrategy {
   None = 'none',

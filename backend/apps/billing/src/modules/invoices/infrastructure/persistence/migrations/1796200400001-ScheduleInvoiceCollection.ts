@@ -1,8 +1,8 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * `next_collection_at`: cuándo toca cobrar cada factura, al emitirla y después de cada rechazo según el calendario de
- * reintentos. Las emitidas que ya existían se cobran en la próxima corrida; las fallidas no tenían reintento.
+ * `next_collection_at`: when each invoice is due for collection, at issue time and after each rejection per the retry
+ * schedule. Existing issued invoices are charged on the next run; failed ones had no retry.
  */
 export class ScheduleInvoiceCollection1796200400001 implements MigrationInterface {
   readonly name = 'ScheduleInvoiceCollection1796200400001';

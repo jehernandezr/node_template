@@ -1,16 +1,16 @@
 /**
- * Estrategia de enrutamiento declarativa de un módulo, como en
+ * Declarative routing strategy of a module, as in
  * `PersistenceModule.forFeature({ sharding: { strategy: ShardStrategy.Directory, key: ShardKey.User } })`.
  */
 export enum ShardStrategy {
   /**
-   * Por defecto. El directorio del catálogo asigna tenant, región y grupo de
-   * shards; un grupo con más de un shard se divide por hash consistente de la
-   * clave de enrutamiento (`ConsistentHashStrategy`). Permite mover tenants.
+   * Default. The catalog directory assigns tenant, region and shard
+   * group; a group with more than one shard is split by consistent hashing of the
+   * routing key (`ConsistentHashStrategy`). Allows moving tenants.
    */
   Directory = 'directory',
-  /** Anillo con nodos virtuales sobre el grupo (`ConsistentHashStrategy`). Muchas claves pequeñas. */
+  /** Ring with virtual nodes over the group (`ConsistentHashStrategy`). Many small keys. */
   ConsistentHash = 'consistent-hash',
-  /** Rangos ordenados de claves (`RangeShardStrategy`). Claves con orden natural, como fechas. */
+  /** Ordered key ranges (`RangeShardStrategy`). Keys with a natural order, such as dates. */
   Range = 'range',
 }

@@ -3,7 +3,7 @@ import { EphemeralStore } from '../../../ephemeral/ephemeral-store.js';
 import { IdentityCacheKey } from '../../../shared/enums/identity-cache-key.enum.js';
 import { LockoutStore } from '../domain/lockout-store.js';
 
-/** Bloqueos en Valkey con incrementos atómicos y llaves que vencen solas. */
+/** Lockouts in Valkey with atomic increments and self-expiring keys. */
 @Injectable()
 export class EphemeralLockoutStore extends LockoutStore {
   private static readonly MARK = '1';

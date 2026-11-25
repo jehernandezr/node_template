@@ -2,8 +2,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { Injectable } from '@nestjs/common';
 
 /**
- * IP del cliente de la petición en curso, ya resuelta con `trust proxy`. El autenticador de API keys de la
- * plataforma no recibe la petición, y sin la IP una key limitada por CIDR no se podría revisar.
+ * Client IP of the current request, already resolved with `trust proxy`. The platform's API key authenticator
+ * does not receive the request, and without the IP a CIDR-restricted key could not be checked.
  */
 @Injectable()
 export class ClientIpContext {
@@ -13,7 +13,7 @@ export class ClientIpContext {
     return this.storage.run(ip, fn);
   }
 
-  /** `undefined` fuera de una petición HTTP o si el servidor no conoce la IP. */
+  /** `undefined` outside an HTTP request or if the server does not know the IP. */
   current(): string | undefined {
     const ip = this.storage.getStore();
     return ip === undefined || ip === '' ? undefined : ip;

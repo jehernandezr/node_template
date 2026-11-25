@@ -1,4 +1,4 @@
-/** Nivel de aislamiento de una transacción. */
+/** Isolation level of a transaction. */
 export enum IsolationLevel {
   ReadCommitted = 'READ COMMITTED',
   RepeatableRead = 'REPEATABLE READ',

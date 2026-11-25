@@ -10,10 +10,10 @@ import { Subscribe } from '@platform/messaging/nest';
 import { RealtimeFacade } from '../../realtime/index.js';
 
 /**
- * Cola `notifications-realtime-control`: cierra las conexiones de tiempo real de lo que identity revoca. La
- * revocación de una sesión llega con su usuario en `session.revoked`; la de todos los tokens de un usuario
- * cierra todas sus conexiones. La de un tenant no nombra usuarios: cada conexión abierta la encuentra en el
- * estado de autenticación compartido en su siguiente latido.
+ * `notifications-realtime-control` queue: closes the real-time connections of what identity revokes. The
+ * revocation of a session arrives with its user in `session.revoked`; the revocation of all of a user's tokens
+ * closes all their connections. A tenant revocation names no users: each open connection finds it in the
+ * shared authentication state on its next heartbeat.
  */
 @Injectable()
 export class RealtimeControlConsumer {

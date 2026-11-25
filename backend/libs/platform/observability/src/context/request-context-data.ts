@@ -1,10 +1,10 @@
 import type { ActorType } from './actor-type.enum.js';
 
-/** Contexto vigente. Los ids de traza siempre están en 32/16 hex W3C. */
+/** Current context. Trace ids are always W3C 32/16 hex. */
 export interface RequestContextData {
   readonly traceId?: string;
   readonly spanId?: string;
-  /** El `traceId` recibido no era válido y se descartó. Nunca se guarda el valor. */
+  /** The received `traceId` was not valid and was discarded. The value is never stored. */
   readonly traceIdInvalid?: true;
   readonly externalTraceId?: string;
   readonly tenantId?: string;

@@ -12,7 +12,7 @@ import { InvoiceLineEntity } from './entities/invoice-line.entity.js';
 import { InvoiceEntity } from './entities/invoice.entity.js';
 import { InvoiceMapper } from './invoice.mapper.js';
 
-/** `InvoiceRepository` sobre `invoices` e `invoice_lines` del shard del tenant. Las líneas no cambian. */
+/** `InvoiceRepository` over `invoices` and `invoice_lines` of the tenant shard. Lines do not change. */
 @Injectable()
 export class TypeOrmInvoiceRepository
   extends TenantIsolatedRepository

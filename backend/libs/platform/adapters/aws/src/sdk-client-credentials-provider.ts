@@ -3,10 +3,10 @@ import type { AwsCredentials } from './aws-credentials.js';
 import { AwsCredentialsProvider } from './aws-credentials-provider.js';
 
 /**
- * Credenciales de la cadena por defecto del SDK, tomadas de un cliente ya
- * creado: así se firma con la misma identidad que publica (rol de la Lambda o
- * de la tarea, o las variables de LocalStack) sin sumar otro paquete del SDK.
- * El cliente las guarda y las renueva antes de que venzan.
+ * Credentials from the SDK default chain, taken from an already created
+ * client: so signing uses the same identity that publishes (Lambda role or
+ * task role, or the LocalStack variables) without adding another SDK package.
+ * The client stores them and renews them before they expire.
  */
 export class SdkClientCredentialsProvider extends AwsCredentialsProvider {
   constructor(private readonly client: SQSClient) {

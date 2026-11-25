@@ -1,6 +1,6 @@
 import type { StepStatus } from '../model/step-status.enum.js';
 
-/** Entrada de un paso hacia delante, como la ven los constructores de entrada de compensación. */
+/** Input of a forward step, as the compensation input builders see it. */
 export interface ForwardEntry {
   readonly input: unknown;
   readonly output: unknown;

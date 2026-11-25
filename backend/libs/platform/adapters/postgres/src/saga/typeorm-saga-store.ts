@@ -27,7 +27,7 @@ import type { SagaInstanceMapper } from './saga-instance.mapper.js';
 import { SagaStepLogEntity } from './saga-step-log.entity.js';
 import type { SagaStepLogMapper } from './saga-step-log.mapper.js';
 
-/** Colaboradores de `TypeOrmSagaStore`. */
+/** Collaborators of `TypeOrmSagaStore`. */
 export interface TypeOrmSagaStoreDeps {
   readonly provider: EntityManagerProvider;
   readonly feature: PersistenceFeature;
@@ -39,7 +39,7 @@ export interface TypeOrmSagaStoreDeps {
   readonly logger?: LoggerPort;
 }
 
-/** Columnas de la bitácora que un intento nuevo reemplaza en el upsert. */
+/** Log columns that a new attempt replaces in the upsert. */
 const STEP_OVERWRITE_COLUMNS: readonly string[] = [
   'operation_id',
   'status',
@@ -52,31 +52,31 @@ const STEP_OVERWRITE_COLUMNS: readonly string[] = [
   'finished_at',
 ];
 
-/** Columnas de la llave de la bitácora, para el upsert. */
+/** Log key columns, for the upsert. */
 const STEP_CONFLICT_COLUMNS: readonly string[] = [
   'saga_id',
   'step_index',
   'direction',
 ];
 
-/** Estados que una corrida todavía tiene que atender, y los que atiende el recuperador. */
+/** Statuses that a run still has to handle, and the ones the recoverer handles. */
 const RUNNABLE_STATUSES: readonly SagaStatus[] = [
   SagaStatus.Running,
   SagaStatus.Compensating,
 ];
 
-/** Estados terminados con éxito: los que borra la retención. */
+/** Statuses finished successfully: the ones retention deletes. */
 const PURGEABLE_STATUSES: readonly SagaStatus[] = [
   SagaStatus.Completed,
   SagaStatus.Compensated,
 ];
 
 /**
- * `SagaStore` sobre TypeORM y Postgres. La bitácora vive en el esquema `saga`
- * del shard del tenant de la saga. Cada escritura protegida es un `UPDATE ...
- * WHERE id = :id AND version = :v AND lease_token = :t`, y la instancia y su
- * paso se guardan en la misma transacción. Toda lectura va al primario,
- * porque el fencing necesita datos recién confirmados.
+ * `SagaStore` on TypeORM and Postgres. The log lives in the `saga` schema
+ * of the shard of the saga tenant. Each guarded write is an `UPDATE ...
+ * WHERE id = :id AND version = :v AND lease_token = :t`, and the instance and its
+ * step are saved in the same transaction. Every read goes to the primary,
+ * because fencing needs freshly committed data.
  */
 export class TypeOrmSagaStore extends SagaStore {
   constructor(private readonly deps: TypeOrmSagaStoreDeps) {
@@ -84,11 +84,11 @@ export class TypeOrmSagaStore extends SagaStore {
   }
 
   /**
-   * Inserta la instancia en el shard del tenant del contexto. `ON CONFLICT DO
-   * NOTHING` no aborta la transacción de quien llama, a diferencia de un error
-   * de unicidad, así que el id repetido y la llave repetida se tratan igual.
-   * @throws SagaError `DuplicateSaga` si el id o la llave ya existen.
-   * @throws PersistenceError `PersistenceTenantMismatch` si la instancia es de otro tenant.
+   * Inserts the instance in the shard of the context tenant. `ON CONFLICT DO
+   * NOTHING` does not abort the caller's transaction, unlike a uniqueness
+   * error, so a repeated id and a repeated key are treated the same.
+   * @throws SagaError `DuplicateSaga` if the id or the key already exist.
+   * @throws PersistenceError `PersistenceTenantMismatch` if the instance belongs to another tenant.
    */
   async create(instance: SagaInstance): Promise<void> {
     const tenantId = this.tenantId();
@@ -137,7 +137,7 @@ export class TypeOrmSagaStore extends SagaStore {
     return this.fencedWrite(write);
   }
 
-  /** @throws SagaError `InvalidState` si la entrada no está en `Dispatched`. */
+  /** @throws SagaError `InvalidState` if the entry is not in `Dispatched`. */
   dispatchStep(write: DispatchWrite): Promise<SagaInstance> {
     if (write.step.status !== StepStatus.Dispatched) {
       return Promise.reject(
@@ -151,8 +151,8 @@ export class TypeOrmSagaStore extends SagaStore {
   }
 
   /**
-   * Bitácora de la saga. Como texto, `forward` queda después de `compensate`:
-   * ordenar `direction` de forma descendente deja primero hacia delante.
+   * Returns the saga log. As text, `forward` sorts after `compensate`:
+   * ordering `direction` descending puts forward first.
    */
   async steps(sagaId: string): Promise<StepLogEntry[]> {
     const tenantId = this.tenantId();
@@ -172,9 +172,9 @@ export class TypeOrmSagaStore extends SagaStore {
   }
 
   /**
-   * Instancias que necesitan una corrida, en todos los shards. Cada shard se
-   * consulta en su transacción con `FOR UPDATE SKIP LOCKED`: las filas que
-   * otro nodo ya tomó se saltan. No hay petición, así que no usa el tenant del contexto.
+   * Returns the instances that need a run, across all shards. Each shard is
+   * queried in its own transaction with `FOR UPDATE SKIP LOCKED`: rows that
+   * another node already took are skipped. There is no request, so it does not use the context tenant.
    */
   async findRecoverable(now: Date, limit: number): Promise<SagaInstance[]> {
     const result = await this.deps.acrossShards.run(({ dataSource }) =>
@@ -274,8 +274,8 @@ export class TypeOrmSagaStore extends SagaStore {
   }
 
   /**
-   * Borra las sagas terminadas con éxito y viejas, con su bitácora, en todos
-   * los shards. `limit` es por shard: cada shard borra como mucho ese número en una pasada.
+   * Deletes old sagas finished successfully, with their log, across all
+   * shards. `limit` is per shard: each shard deletes at most that number in one pass.
    */
   async purge(options: SagaPurge): Promise<number> {
     const limit = options.limit ?? SagaStore.DEFAULT_PURGE_LIMIT;
@@ -321,9 +321,9 @@ export class TypeOrmSagaStore extends SagaStore {
   }
 
   /**
-   * Escritura protegida de la instancia y, si hay, de su entrada de bitácora,
-   * en una sola transacción. Si el `UPDATE` no afecta una fila, se busca la
-   * causa y se lanza el error dentro de la transacción, que así se deshace.
+   * Guarded write of the instance and, if present, of its log entry,
+   * in a single transaction. If the `UPDATE` does not affect a row, the
+   * cause is looked up and the error is thrown inside the transaction, which is thereby rolled back.
    */
   private fencedWrite(write: FencedWrite): Promise<SagaInstance> {
     const tenantId = this.tenantId();
@@ -380,9 +380,9 @@ export class TypeOrmSagaStore extends SagaStore {
   }
 
   /**
-   * Explica por qué el `UPDATE` no afectó a la fila: la saga no existe, otro
-   * proceso tiene el lease, o la versión cambió.
-   * @throws SagaError `NotFound`, `LeaseLost` o `ConcurrentModification`
+   * Explains why the `UPDATE` did not affect the row: the saga does not exist, another
+   * process holds the lease, or the version changed.
+   * @throws SagaError `NotFound`, `LeaseLost` or `ConcurrentModification`
    */
   private async throwFenceFailure(
     manager: EntityManager,
@@ -409,7 +409,7 @@ export class TypeOrmSagaStore extends SagaStore {
     );
   }
 
-  /** Reemplaza el intento del mismo paso y dirección, o lo inserta. */
+  /** Replaces the attempt of the same step and direction, or inserts it. */
   private async upsertStep(
     manager: EntityManager,
     step: StepLogEntry,
@@ -427,14 +427,14 @@ export class TypeOrmSagaStore extends SagaStore {
       .execute();
   }
 
-  /** Instancia candidata a una corrida. Si su contexto no traía tenant, el de la fila la completa para enrutarla. */
+  /** Returns the instance that is a candidate for a run. If its context had no tenant, the row's tenant completes it for routing. */
   private recoverable(row: SagaInstanceEntity): SagaInstance {
     const instance = this.deps.instances.toDomain(row);
     if (instance.tenantId !== null) {
       return instance;
     }
-    // Este candidato solo sirve para que `SagaScopes` lo enrute al shard. El motor
-    // vuelve a leer la instancia con `get`, que conserva el contexto original.
+    // This candidate only serves so `SagaScopes` routes it to the shard. The engine
+    // reads the instance again with `get`, which keeps the original context.
     return SagaInstance.rehydrate({
       ...instance.toProps(),
       context: { ...(instance.context ?? {}), tenantId: row.tenantId },

@@ -4,7 +4,7 @@ import {
   platformCatalogMigrations,
 } from '../platform-database-sets.js';
 
-/** Definición que lee la CLI `migration-generate` para generar las migraciones del catálogo de la plataforma. */
+/** Definition the `migration-generate` CLI reads to generate the migrations of the platform catalog. */
 const definition: DatabaseSetDefinition = {
   entities: platformCatalogEntities,
   migrations: platformCatalogMigrations,

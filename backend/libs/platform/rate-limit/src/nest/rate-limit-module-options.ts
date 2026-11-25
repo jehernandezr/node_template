@@ -3,21 +3,21 @@ import type { LoggerPort, MetricsPort } from '@platform/observability';
 import type { RateLimiter } from '../rate-limiter.js';
 import type { RateLimitKeyResolver } from './rate-limit-key-resolver.js';
 
-/** Opciones de `RateLimitModule.forRoot`. */
+/** Options of `RateLimitModule.forRoot`. */
 export interface RateLimitModuleOptions {
-  /** Si un limitador compartido que falla pasa al local. */
+  /** Whether a failing shared limiter falls back to the local one. */
   readonly degradeLocally?: boolean;
-  /** Divisor del límite mientras responde el local. Por defecto 1. */
+  /** Divisor of the limit while the local one responds. Defaults to 1. */
   readonly localDivisor?: number;
 }
 
-/** Extras de `RateLimitModule.forRoot` que no son opciones del módulo. */
+/** Extras of `RateLimitModule.forRoot` that are not module options. */
 export interface RateLimitModuleExtras {
-  /** Por defecto, el módulo es global. */
+  /** The module is global by default. */
   isGlobal?: boolean;
-  /** Limitador compartido. Su clase debe estar registrada por quien llama. */
+  /** Shared limiter. Its class must be registered by the caller. */
   limiter?: Type<RateLimiter> | Abstract<RateLimiter>;
-  /** Cómo se obtiene la llave de cada petición. Por defecto, la IP. */
+  /** How the key of each request is obtained. Defaults to the IP. */
   keyResolver?: Type<RateLimitKeyResolver> | Abstract<RateLimitKeyResolver>;
   metrics?: Type<MetricsPort> | Abstract<MetricsPort>;
   logger?: Type<LoggerPort> | Abstract<LoggerPort>;

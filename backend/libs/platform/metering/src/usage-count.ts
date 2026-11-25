@@ -1,6 +1,6 @@
 /**
- * Lo que un tenant consumió de una métrica en una ventana. La métrica es texto: el almacén de contadores no
- * conoce el catálogo de billing, y `UsageFlushJob` la valida contra él antes de enviarla.
+ * What a tenant consumed of a metric in a window. The metric is text: the counter store does not
+ * know the billing catalog, and `UsageFlushJob` validates it against the catalog before sending it.
  */
 export interface UsageCount {
   readonly tenantId: string;
@@ -8,7 +8,7 @@ export interface UsageCount {
   readonly quantity: number;
 }
 
-/** Los contadores de una ventana de un minuto, identificada por su inicio. */
+/** The counters of a one-minute window, identified by its start. */
 export interface UsageWindow {
   readonly start: Date;
   readonly counts: readonly UsageCount[];

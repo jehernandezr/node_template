@@ -8,9 +8,9 @@ import type { ShardBinding } from '../database/shard-binding.js';
 import type { ShardedRelayScopesOptions } from '../model/sharded-relay-scopes-options.js';
 
 /**
- * Corre una pasada del relay por cada shard lógico del servicio: recorre los shards con `AcrossShards` y, en cada uno,
- * fija el shard con `ShardBinding` para que `TypeOrmOutboxStore` trabaje contra su outbox. Un shard caído no detiene a
- * los demás; la pasada falla al final con la lista de los que fallaron.
+ * Runs one relay pass per logical shard of the service: visits the shards with `AcrossShards` and, in each one,
+ * pins the shard with `ShardBinding` so `TypeOrmOutboxStore` works against its outbox. A down shard does not stop
+ * the others; the pass fails at the end with the list of the ones that failed.
  */
 export class ShardedRelayScopes extends RelayScopes {
   static readonly DEFAULT_SHARD_TIMEOUT_MS = 30_000;
@@ -23,7 +23,7 @@ export class ShardedRelayScopes extends RelayScopes {
     super();
   }
 
-  /** @throws PersistenceError `PersistenceQueryFailed` si `body` falló o no terminó a tiempo en algún shard. */
+  /** @throws PersistenceError `PersistenceQueryFailed` if `body` failed or did not finish in time on some shard. */
   async forEach(body: () => Promise<void>): Promise<void> {
     const outcome = await this.acrossShards.run(
       (connection) => this.binding.run(connection, body),

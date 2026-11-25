@@ -1,7 +1,7 @@
 /**
- * Cuándo se vuelve a cobrar una factura rechazada: tras el rechazo número `n` espera `delaysDays[n - 1]` días. Agotado
- * el calendario no hay más reintentos automáticos: la morosidad sigue su curso y un pago tardío la salda igual.
- * Los reintentos caen dentro de la gracia de morosidad para que un rechazo pasajero de la tarjeta no suspenda.
+ * When a rejected invoice is charged again: after rejection number `n` it waits `delaysDays[n - 1]` days. Once
+ * the schedule is exhausted there are no more automatic retries: delinquency runs its course and a late payment still settles it.
+ * The retries fall within the delinquency grace period so that a transient card rejection does not suspend.
  */
 export class CollectionRetrySchedule {
   static readonly STANDARD = new CollectionRetrySchedule([1, 3, 5]);
@@ -9,7 +9,7 @@ export class CollectionRetrySchedule {
 
   constructor(private readonly delaysDays: readonly number[]) {}
 
-  /** El próximo cobro después del rechazo número `failedAttempts`, o `undefined` si no quedan reintentos. */
+  /** The next charge after rejection number `failedAttempts`, or `undefined` if no retries remain. */
   nextAfter(failedAttempts: number, failedAt: Date): Date | undefined {
     const days = this.delaysDays[failedAttempts - 1];
     return days === undefined

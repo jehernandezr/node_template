@@ -1,32 +1,32 @@
-# Módulo observability
+# observability module
 
-OpenObserve en un solo nodo sobre Fargate. Recibe logs, métricas y trazas por OTLP HTTP desde los collectors de los servicios y las Lambdas.
+Single-node OpenObserve on Fargate. It receives logs, metrics and traces over OTLP HTTP from the services' collectors and the Lambdas.
 
-## Qué crea
+## What it creates
 
-- Servicio ECS de una tarea con OpenObserve (ARM64 por defecto). Los datos de telemetría van a un bucket S3 cifrado con KMS; los metadatos (usuarios, dashboards, alertas) viven en SQLite sobre EFS cifrado con KMS y con backup.
-- Secreto en Secrets Manager con el usuario raíz, una contraseña generada y la cabecera `Authorization` lista para los exporters OTLP. Terraform genera la contraseña, así que queda en el estado: protege el bucket del estado.
-- Clave KMS con rotación para el secreto, el bucket, EFS y los logs.
-- Entrada por un ALB interno propio (por defecto) o por una regla en el listener de un ALB existente.
-- Roles de ejecución y de tarea de mínimo privilegio, security groups y log group con KMS.
+- ECS service with one task running OpenObserve (ARM64 by default). Telemetry data goes to a KMS-encrypted S3 bucket; metadata (users, dashboards, alerts) lives in SQLite on KMS-encrypted EFS with backup.
+- Secrets Manager secret with the root user, a generated password and the `Authorization` header ready for the OTLP exporters. Terraform generates the password, so it ends up in the state: protect the state bucket.
+- KMS key with rotation for the secret, the bucket, EFS and the logs.
+- Entry through its own internal ALB (default) or through a rule on the listener of an existing ALB.
+- Least-privilege execution and task roles, security groups and a log group with KMS.
 
-## Entradas principales
+## Main inputs
 
-| Variable                           | Descripción                                                                                                |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `cluster_arn`                      | Clúster ECS (módulo `ecs-cluster`).                                                                        |
-| `vpc_id`, `vpc_cidr`, `subnet_ids` | Red privada.                                                                                               |
-| `create_internal_alb`              | `true` crea un ALB interno. `false` requiere `alb_listener_arn`, `alb_security_group_id` y `host_headers`. |
-| `internal_alb_certificate_arn`     | Si es null, el ALB interno atiende HTTP en el puerto 80 solo dentro de la VPC.                             |
-| `root_user_email`                  | Usuario raíz.                                                                                              |
-| `image`                            | Imagen fijada por versión. Revisa la versión antes de aplicar.                                             |
-| `data_retention_days`              | Retención de datos (30 por defecto).                                                                       |
+| Variable                           | Description                                                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `cluster_arn`                      | ECS cluster (`ecs-cluster` module).                                                                              |
+| `vpc_id`, `vpc_cidr`, `subnet_ids` | Private network.                                                                                                 |
+| `create_internal_alb`              | `true` creates an internal ALB. `false` requires `alb_listener_arn`, `alb_security_group_id` and `host_headers`. |
+| `internal_alb_certificate_arn`     | If null, the internal ALB serves HTTP on port 80 only inside the VPC.                                            |
+| `root_user_email`                  | Root user.                                                                                                       |
+| `image`                            | Image pinned by version. Check the version before applying.                                                      |
+| `data_retention_days`              | Data retention (30 by default).                                                                                  |
 
-## Salidas
+## Outputs
 
 `otlp_http_endpoint`, `console_url`, `secret_arn`, `otlp_authorization_value_from`, `kms_key_arn`, `storage_bucket_name`, `service_name`, `security_group_id`, `alb_dns_name`, `alb_zone_id`.
 
-## Cómo se conectan los servicios
+## How services connect
 
 ```hcl
 module "reports" {
@@ -38,10 +38,10 @@ module "reports" {
 }
 ```
 
-Para Lambda, el collector de la capa ADOT usa el mismo endpoint y la cabecera guardada en el secreto.
+For Lambda, the ADOT layer collector uses the same endpoint and the header stored in the secret.
 
-## Límites
+## Limits
 
-- Es un solo nodo: una tarea a la vez, y el despliegue detiene la anterior antes de iniciar la nueva. Hay unos minutos sin ingesta en cada cambio de versión; los collectors reintentan. Para alta disponibilidad se necesita el modo clúster de OpenObserve con NATS y PostgreSQL, fuera del alcance de este módulo.
-- Solo se expone OTLP HTTP. OTLP gRPC requiere un listener HTTPS con target group gRPC.
-- El ALB interno no guarda access logs.
+- It is a single node: one task at a time, and a deployment stops the previous one before starting the new one. There are a few minutes without ingestion on each version change; the collectors retry. High availability needs OpenObserve cluster mode with NATS and PostgreSQL, out of scope for this module.
+- Only OTLP HTTP is exposed. OTLP gRPC requires an HTTPS listener with a gRPC target group.
+- The internal ALB does not keep access logs.

@@ -1,4 +1,4 @@
-/** Versiones de permisos vigentes de un usuario en un tenant. */
+/** Current permission versions of a user in a tenant. */
 export interface PermissionVersion {
   readonly tenant: number;
   readonly user: number;

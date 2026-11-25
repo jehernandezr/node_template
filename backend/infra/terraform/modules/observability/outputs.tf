@@ -1,59 +1,59 @@
 output "otlp_http_endpoint" {
-  description = "Endpoint OTLP HTTP base de OpenObserve (con la organización). Los exporters agregan /v1/traces, /v1/metrics y /v1/logs. Pásalo a otlp_endpoint de service-fargate."
+  description = "Base OTLP HTTP endpoint of OpenObserve (including the organization). Exporters append /v1/traces, /v1/metrics and /v1/logs. Pass it to otlp_endpoint of service-fargate."
   value       = "${local.base_url}/api/${var.organization}"
 }
 
 output "console_url" {
-  description = "URL de la interfaz de OpenObserve."
+  description = "OpenObserve UI URL."
   value       = local.base_url
 }
 
 output "secret_arn" {
-  description = "ARN del secreto con ZO_ROOT_USER_EMAIL, ZO_ROOT_USER_PASSWORD y OTLP_AUTHORIZATION."
+  description = "ARN of the secret with ZO_ROOT_USER_EMAIL, ZO_ROOT_USER_PASSWORD and OTLP_AUTHORIZATION."
   value       = aws_secretsmanager_secret.root.arn
 }
 
 output "otlp_authorization_value_from" {
-  description = "valueFrom del secreto con la cabecera Authorization del OTLP. Pásalo a otlp_authorization_secret de service-fargate."
+  description = "valueFrom of the secret with the OTLP Authorization header. Pass it to otlp_authorization_secret of service-fargate."
   value       = "${aws_secretsmanager_secret.root.arn}:OTLP_AUTHORIZATION::"
 }
 
 output "kms_key_arn" {
-  description = "ARN de la clave KMS del secreto, el bucket, EFS y los logs. Pásalo a secrets_kms_key_arns de service-fargate."
+  description = "ARN of the KMS key for the secret, the bucket, EFS and the logs. Pass it to secrets_kms_key_arns of service-fargate."
   value       = module.kms.arn
 }
 
 output "storage_bucket_name" {
-  description = "Nombre del bucket S3 donde OpenObserve guarda los datos."
+  description = "Name of the S3 bucket where OpenObserve stores data."
   value       = aws_s3_bucket.storage.id
 }
 
 output "service_name" {
-  description = "Nombre del servicio ECS de OpenObserve."
+  description = "OpenObserve ECS service name."
   value       = aws_ecs_service.this.name
 }
 
 output "security_group_id" {
-  description = "Security group de las tareas de OpenObserve."
+  description = "Security group of the OpenObserve tasks."
   value       = aws_security_group.service.id
 }
 
 output "alb_dns_name" {
-  description = "Nombre DNS del ALB interno. Null si se usa un listener existente."
+  description = "DNS name of the internal ALB. Null when an existing listener is used."
   value       = var.create_internal_alb ? aws_lb.internal[0].dns_name : null
 }
 
 output "alb_zone_id" {
-  description = "ID de zona Route 53 del ALB interno, para registros alias. Null si se usa un listener existente."
+  description = "Route 53 zone ID of the internal ALB, for alias records. Null when an existing listener is used."
   value       = var.create_internal_alb ? aws_lb.internal[0].zone_id : null
 }
 
 output "alb_security_group_id" {
-  description = "Security group del ALB interno. Los clientes de OTLP salen hacia él. Null si se usa un listener existente."
+  description = "Security group of the internal ALB. OTLP clients send egress to it. Null when an existing listener is used."
   value       = var.create_internal_alb ? aws_security_group.alb[0].id : null
 }
 
 output "alb_port" {
-  description = "Puerto del listener del ALB interno: 443 con certificado, 80 sin él."
+  description = "Internal ALB listener port: 443 with a certificate, 80 without one."
   value       = local.tls_internal ? 443 : 80
 }

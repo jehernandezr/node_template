@@ -7,7 +7,7 @@ import { CallOutcomeKind } from '@platform/primitives';
 import { PushTargetDirectory } from '../domain/push-target-directory.js';
 import { IdentityUnavailableError } from '../../../shared/errors/identity-unavailable.error.js';
 
-/** Dispositivos con push por la operación `identity.devices.list-push-targets.v1`. */
+/** Push-enabled devices through the `identity.devices.list-push-targets.v1` operation. */
 @Injectable()
 export class IdentityPushTargetDirectory extends PushTargetDirectory {
   constructor(
@@ -17,7 +17,7 @@ export class IdentityPushTargetDirectory extends PushTargetDirectory {
     super();
   }
 
-  /** @throws IdentityUnavailableError si identity no responde: la entrega se reintenta después. */
+  /** @throws IdentityUnavailableError if identity does not respond: delivery is retried later. */
   async targetsOf(user: UserRef): Promise<readonly PushTarget[]> {
     const outcome = await this.client.call(
       ListPushTargetsOperation,

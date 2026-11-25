@@ -8,7 +8,7 @@ import {
   UsageMetric,
 } from '../../enums/billing.enum.js';
 
-/** Identificadores UUIDv7 fijos para que las pruebas sean reproducibles. */
+/** Fixed UUIDv7 identifiers so the tests are reproducible. */
 export const Ids = {
   user: '0190f2a4-7b3c-7d4e-8f00-000000000001',
   tenant: '0190f2a4-7b3c-7d4e-8f00-000000000002',
@@ -19,16 +19,16 @@ export const Ids = {
 /** Instante ISO 8601 fijo. */
 export const Now = '2026-11-13T12:00:00.000Z';
 
-/** UUID v4: no cumple el contrato, que exige v7. */
+/** UUID v4: does not meet the contract, which requires v7. */
 export const UuidV4 = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 
-/** Periodo de facturación de noviembre. */
+/** November billing period. */
 export const Period = { start: '2026-11-01', end: '2026-11-30' } as const;
 
-/** Monto de un plan mensual en dólares. */
+/** Amount of a monthly plan in dollars. */
 export const Price = { amountMinor: 4900, currency: Currency.Usd } as const;
 
-/** Plan de ejemplo con una cuota y una funcionalidad. */
+/** Sample plan with one quota and one feature. */
 export const Plan = {
   id: Ids.item,
   name: 'Equipo',
@@ -38,7 +38,7 @@ export const Plan = {
   features: [PlanFeature.Billing],
 } as const;
 
-/** Suscripción de ejemplo sobre el plan de arriba. */
+/** Sample subscription on the plan above. */
 export const Subscription = {
   id: Ids.other,
   plan: Plan,
@@ -46,7 +46,7 @@ export const Subscription = {
   period: Period,
 } as const;
 
-/** Factura de ejemplo con una línea de cargo fijo. */
+/** Sample invoice with one fixed charge line. */
 export const Invoice = {
   id: Ids.item,
   number: 'FAC-0001',
@@ -63,7 +63,7 @@ export const Invoice = {
   total: Price,
 } as const;
 
-/** Registro de uso válido con su llave de idempotencia. */
+/** Valid usage record with its idempotency key. */
 export const UsageRecord = {
   metric: UsageMetric.ApiCalls,
   quantity: 5,

@@ -1,8 +1,8 @@
 import { InternalHandlerMetadata } from './internal-handler.metadata.js';
 
 /**
- * Declara que un método de un provider atiende una operación. El método
- * recibe la entrada ya parseada y el `CallMeta`, y devuelve un `HandlerResult`.
- * `InternalHandlerExplorer` lo descubre y lo registra en el router.
+ * Declares that a provider method handles an operation. The method
+ * receives the already parsed input and the `CallMeta`, and returns a `HandlerResult`.
+ * `InternalHandlerExplorer` discovers it and registers it in the router.
  */
 export const InternalHandler = InternalHandlerMetadata.decorator;

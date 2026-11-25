@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-/** El tenant de cada mensaje procesado del shard, para que el traslado del tenant se lleve su idempotencia. */
+/** The tenant of each processed message in the shard, so the tenant move takes its idempotency along. */
 export class AddProcessedMessageTenant1794800001005 implements MigrationInterface {
   readonly name = 'AddProcessedMessageTenant1794800001005';
 

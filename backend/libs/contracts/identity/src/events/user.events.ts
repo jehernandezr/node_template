@@ -11,30 +11,30 @@ import {
 export const UserRegisteredEvent = defineEvent({
   type: IdentityEvent.UserRegistered,
   payload: UserRegisteredPayloadSchema,
-  description: 'Se registró un usuario nuevo.',
+  description: 'A new user was registered.',
 });
 
 export const UserSuspendedEvent = defineEvent({
   type: IdentityEvent.UserSuspended,
   payload: UserSuspendedPayloadSchema,
-  description: 'Se suspendió un usuario y se revocaron sus sesiones.',
+  description: 'A user was suspended and their sessions were revoked.',
 });
 
 export const UserReactivatedEvent = defineEvent({
   type: IdentityEvent.UserReactivated,
   payload: UserReactivatedPayloadSchema,
-  description: 'Se reactivó un usuario suspendido.',
+  description: 'A suspended user was reactivated.',
 });
 
 export const UserEmailChangedEvent = defineEvent({
   type: IdentityEvent.UserEmailChanged,
   payload: UserEmailChangedPayloadSchema,
-  description: 'Cambió el email de un usuario. No incluye direcciones.',
+  description: 'The email of a user changed. It does not include addresses.',
 });
 
 export const UserErasedEvent = defineEvent({
   type: IdentityEvent.UserErased,
   payload: UserErasedPayloadSchema,
   description:
-    'Se borraron los datos personales de un usuario. Los servicios que guardan su rastro lo borran o anonimizan.',
+    'The personal data of a user was erased. Services that keep a trace of the user delete or anonymize it.',
 });

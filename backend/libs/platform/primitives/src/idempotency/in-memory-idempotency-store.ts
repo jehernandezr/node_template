@@ -24,9 +24,9 @@ type StoredRecord<R> =
     };
 
 /**
- * Adaptador en memoria. Es atómico dentro de un proceso porque cada método
- * resuelve sin ceder el hilo; sirve para tests y para un solo proceso. No
- * expira resultados completados.
+ * In-memory adapter. It is atomic within a process because each method
+ * resolves without yielding the thread; it suits tests and a single process. It
+ * does not expire completed results.
  */
 export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
   private readonly records = new Map<string, StoredRecord<R>>();
@@ -68,8 +68,8 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
   }
 
   /**
-   * Extiende hasta `leaseUntilMs` el lease de un claim en curso que sigue siendo de `claimToken`. Devuelve `false` si
-   * el claim ya terminó o lo tomó otro intento.
+   * Extends to `leaseUntilMs` the lease of an in-progress claim that still belongs to `claimToken`. Returns `false` if
+   * the claim already finished or another attempt took it.
    */
   renew(
     key: string,
@@ -110,8 +110,8 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
       throw new DeadlineExceededError(request.deadline.atMs);
     }
 
-    // Llave libre o lease vencido: se emite un token nuevo y el anterior deja de valer.
-    // Al tomar un lease vencido se conserva la huella del primer claim.
+    // Free key or expired lease: a new token is issued and the previous one stops being valid.
+    // When an expired lease is taken, the fingerprint of the first claim is kept.
     const fingerprint = record?.fingerprint ?? request.fingerprint;
     const claimToken = this.ids.next().toString();
     const leaseUntil = ClaimRules.computeLeaseUntil(request, now);
@@ -130,7 +130,7 @@ export class InMemoryIdempotencyStore<R = unknown> extends IdempotencyStore<R> {
     };
   }
 
-  /** Registro en curso cuyo token vigente es `claimToken`, aunque su lease haya vencido. */
+  /** In-progress record whose current token is `claimToken`, even if its lease has expired. */
   private ownedRecord(
     key: string,
     claimToken: string,

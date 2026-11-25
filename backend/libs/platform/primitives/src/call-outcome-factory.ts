@@ -3,13 +3,13 @@ import { CallOutcome } from './call-outcome.js';
 import type { FailureClassifier } from './failure/failure-classifier.js';
 
 /**
- * Convierte un valor lanzado en un `CallOutcome`. Recibe el clasificador para
- * que cada adaptador sume sus reglas de falla sin tocar este cálculo:
- * - `DomainError` → `business-error` con su código, mensaje y detalles; si es
- *   `retryable`, `transient-failure` (no final, libera el claim de idempotencia).
+ * Converts a thrown value into a `CallOutcome`. Receives the classifier so
+ * that each adapter adds its failure rules without touching this calculation:
+ * - `DomainError` → `business-error` with its code, message and details; if it is
+ *   `retryable`, `transient-failure` (not final, releases the idempotency claim).
  * - `Transient` → `transient-failure`.
- * - `Timeout` y `Cancelled` → `uncertain`.
- * - `ProtocolViolation` y el resto de `Permanent` → `protocol-violation`.
+ * - `Timeout` and `Cancelled` → `uncertain`.
+ * - `ProtocolViolation` and the rest of `Permanent` → `protocol-violation`.
  */
 export class CallOutcomeFactory {
   constructor(private readonly classifier: FailureClassifier) {}
@@ -36,7 +36,7 @@ export class CallOutcomeFactory {
 
   private static fromDomainError(error: DomainError): CallOutcome<never> {
     if (error.retryable) {
-      // Un conflicto reintentable no es un resultado final: no se guarda para idempotencia.
+      // A retryable conflict is not a final result: it is not stored for idempotency.
       return CallOutcome.transientFailure(error.code, { cause: error });
     }
     return CallOutcome.businessError(error.code, {
@@ -45,7 +45,7 @@ export class CallOutcomeFactory {
     });
   }
 
-  /** Motivo legible sin copiar el mensaje del error, que puede traer datos de entrada. */
+  /** Readable reason without copying the error message, which may carry input data. */
   private static reasonOf(error: unknown): string {
     const code = CallOutcomeFactory.textCodeOf(error);
     if (code !== undefined && code !== '') {

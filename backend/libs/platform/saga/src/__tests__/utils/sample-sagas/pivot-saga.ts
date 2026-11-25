@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { SEND, STEP_A } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Un paso compensable antes del pivote y un envío que ya no se puede deshacer. */
+/** A compensable step before the pivot and a send that can no longer be undone. */
 export class PivotSaga extends SagaDefinition<SampleState> {
   readonly type = 'pivot-saga';
 

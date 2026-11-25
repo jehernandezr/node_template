@@ -1,7 +1,7 @@
 import { SecurityAlerts } from '../../domain/security-alerts.js';
 import type { SecurityAlert } from '../../domain/security-alert.js';
 
-/** Alertas de seguridad en memoria. */
+/** In-memory security alerts. */
 export class InMemorySecurityAlerts extends SecurityAlerts {
   readonly raised: SecurityAlert[] = [];
 

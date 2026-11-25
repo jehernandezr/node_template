@@ -4,9 +4,9 @@ import type { SQSClient } from '@aws-sdk/client-sqs';
 import { SNS_CLIENT, SQS_CLIENT } from './aws.tokens.js';
 
 /**
- * Cierra los clientes del SDK al apagar. El consumo de colas vive en
- * `SqsConsumerModule`, que no es global y se destruye antes, así que ningún
- * poller usa ya los clientes cuando se cierran.
+ * Closes the SDK clients on shutdown. Queue consumption lives in
+ * `SqsConsumerModule`, which is not global and is destroyed earlier, so no
+ * poller is still using the clients when they are closed.
  */
 @Injectable()
 export class AwsLifecycle implements OnModuleDestroy {

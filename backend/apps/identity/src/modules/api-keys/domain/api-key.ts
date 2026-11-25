@@ -1,6 +1,6 @@
 import { ApiKeyStatus, type ApiKeyEnvironment } from '@contracts/identity';
 
-/** Estado completo de una API key, tal como se guarda. */
+/** Full state of an API key, as stored. */
 export interface ApiKeyState {
   readonly id: string;
   readonly tenantId: string;
@@ -12,13 +12,13 @@ export interface ApiKeyState {
   readonly allowedCidrs: readonly string[];
   readonly lastUsedAt?: Date;
   readonly status: ApiKeyStatus;
-  /** Hasta cuándo sigue valiendo una key rotada. */
+  /** Until when a rotated key remains valid. */
   readonly validUntil?: Date;
   readonly createdAt: Date;
   readonly version?: number;
 }
 
-/** Una API key de una cuenta de servicio. Rotarla deja la anterior válida un tiempo de gracia. */
+/** An API key of a service account. Rotating it keeps the previous one valid for a grace period. */
 export class ApiKey {
   private constructor(private state: ApiKeyState) {}
 
@@ -34,7 +34,7 @@ export class ApiKey {
     return this.state;
   }
 
-  /** Vigente a la hora `now`: activa o rotada dentro de su gracia, y sin vencer. */
+  /** Whether it is valid at time `now`: active or rotated within its grace period, and not expired. */
   isUsable(now: Date): boolean {
     const ms = now.getTime();
     if (this.state.status === ApiKeyStatus.Revoked) {
@@ -61,7 +61,7 @@ export class ApiKey {
     this.state = { ...this.state, status: ApiKeyStatus.Rotated, validUntil };
   }
 
-  /** Devuelve `false` si ya estaba revocada. */
+  /** Returns `false` if it was already revoked. */
   revoke(): boolean {
     if (this.state.status === ApiKeyStatus.Revoked) {
       return false;

@@ -3,7 +3,7 @@ import { Column, Entity, Index } from 'typeorm';
 
 const timestamp = new TimestampTransformer();
 
-/** `api_keys`, en el shard del tenant. */
+/** `api_keys`, in the tenant shard. */
 @Entity({ name: 'api_keys' })
 @Index('api_keys_service_account_idx', ['tenantId', 'serviceAccountId'])
 export class ApiKeyEntity extends AuditedEntity {

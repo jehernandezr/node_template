@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../billing/schemas/billing_schemas.dart';
 import '../../billing/types/billing_types.dart';
@@ -9,9 +9,9 @@ import '../../platform/enums/platform_enums.dart';
 import '../../platform/schemas/platform_schemas.dart';
 import '../../platform/types/platform_types.dart';
 
-/// Rutas HTTP públicas del contrato `billing`.
+/// Public HTTP routes of the `billing` contract.
 abstract final class BillingRoutes {
-  /// Consulta la suscripción del tenant con su plan.
+  /// Gets the tenant subscription with its plan.
   ///
   /// `GET /v1/billing/subscription`
   static const getSubscription = RouteDescriptor<Empty, Subscription>(
@@ -40,7 +40,7 @@ abstract final class BillingRoutes {
     decodeResponse: Subscription.fromJson,
   );
 
-  /// Consulta el uso del periodo vigente de cada métrica con cuota.
+  /// Gets the current period usage of each metric with a quota.
   ///
   /// `GET /v1/billing/usage`
   static const getUsage = RouteDescriptor<Empty, UsageOverview>(
@@ -69,7 +69,7 @@ abstract final class BillingRoutes {
     decodeResponse: UsageOverview.fromJson,
   );
 
-  /// Lista los planes del catálogo con su precio y sus límites.
+  /// Lists the catalog plans with their price and limits.
   ///
   /// `GET /v1/billing/plans`
   static const listPlans = RouteDescriptor<Empty, PlanCatalog>(
@@ -97,7 +97,7 @@ abstract final class BillingRoutes {
     decodeResponse: PlanCatalog.fromJson,
   );
 
-  /// Cambia el plan de la suscripción del tenant.
+  /// Changes the plan of the tenant subscription.
   ///
   /// `PUT /v1/billing/subscription/plan`
   static const changePlan = RouteDescriptor<ChangePlanRequest, Subscription>(
@@ -130,7 +130,7 @@ abstract final class BillingRoutes {
     decodeResponse: Subscription.fromJson,
   );
 
-  /// Lista las facturas del tenant, con filtro y paginación.
+  /// Lists the tenant invoices, with filter and pagination.
   ///
   /// `GET /v1/billing/invoices`
   static const listInvoices = RouteDescriptor<ListInvoicesRequest, InvoicePage>(
@@ -159,7 +159,7 @@ abstract final class BillingRoutes {
     decodeResponse: InvoicePage.fromJson,
   );
 
-  /// Consulta una factura con sus líneas.
+  /// Gets an invoice with its lines.
   ///
   /// `GET /v1/billing/invoices/{invoiceId}`
   static const getInvoice = RouteDescriptor<GetInvoiceRequest, Invoice>(

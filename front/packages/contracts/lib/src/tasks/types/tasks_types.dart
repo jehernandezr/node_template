@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import 'package:meta/meta.dart';
 
@@ -8,7 +8,7 @@ import '../../core/core.dart';
 import '../../platform/types/platform_types.dart';
 import '../../tasks/enums/tasks_enums.dart';
 
-/// Se creó una tarea.
+/// A task was created.
 @immutable
 final class TaskCreatedPayload {
   const TaskCreatedPayload({
@@ -20,7 +20,7 @@ final class TaskCreatedPayload {
     required this.createdAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TaskCreatedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return TaskCreatedPayload(
@@ -48,7 +48,7 @@ final class TaskCreatedPayload {
 
   final DateTime createdAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'taskId': taskId,
@@ -58,7 +58,7 @@ final class TaskCreatedPayload {
     'createdAt': createdAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TaskCreatedPayload value) =>
       value.toJson();
 
@@ -78,7 +78,7 @@ final class TaskCreatedPayload {
       contractHash([tenantId, taskId, status, version, createdBy, createdAt]);
 }
 
-/// Se cambió una tarea.
+/// A task was changed.
 @immutable
 final class TaskUpdatedPayload {
   const TaskUpdatedPayload({
@@ -93,7 +93,7 @@ final class TaskUpdatedPayload {
     required this.updatedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TaskUpdatedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return TaskUpdatedPayload(
@@ -141,7 +141,7 @@ final class TaskUpdatedPayload {
 
   final DateTime updatedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'taskId': taskId,
@@ -154,7 +154,7 @@ final class TaskUpdatedPayload {
     'updatedAt': updatedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TaskUpdatedPayload value) =>
       value.toJson();
 
@@ -186,7 +186,7 @@ final class TaskUpdatedPayload {
   ]);
 }
 
-/// Se borró una tarea.
+/// A task was deleted.
 @immutable
 final class TaskDeletedPayload {
   const TaskDeletedPayload({
@@ -198,7 +198,7 @@ final class TaskDeletedPayload {
     required this.deletedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TaskDeletedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return TaskDeletedPayload(
@@ -226,7 +226,7 @@ final class TaskDeletedPayload {
 
   final DateTime deletedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'taskId': taskId,
@@ -236,7 +236,7 @@ final class TaskDeletedPayload {
     'deletedAt': deletedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TaskDeletedPayload value) =>
       value.toJson();
 
@@ -256,7 +256,7 @@ final class TaskDeletedPayload {
       contractHash([tenantId, taskId, status, version, actor, deletedAt]);
 }
 
-/// Una tarea de la organización.
+/// A task of the organization.
 @immutable
 final class Task {
   const Task({
@@ -270,7 +270,7 @@ final class Task {
     required this.createdBy,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory Task.fromJson(Map<String, dynamic> json) {
     try {
       return Task(
@@ -304,7 +304,7 @@ final class Task {
 
   final UserRef createdBy;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'title': title,
@@ -316,7 +316,7 @@ final class Task {
     'createdBy': createdBy.toJson(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(Task value) => value.toJson();
 
   @override
@@ -345,12 +345,12 @@ final class Task {
   ]);
 }
 
-/// Página de tareas del tenant.
+/// Page of tenant tasks.
 @immutable
 final class TaskPage {
   const TaskPage({required this.items, required this.nextCursor});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TaskPage.fromJson(Map<String, dynamic> json) {
     try {
       return TaskPage(
@@ -369,13 +369,13 @@ final class TaskPage {
 
   final String? nextCursor;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
     'nextCursor': nextCursor,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TaskPage value) => value.toJson();
 
   @override
@@ -389,12 +389,12 @@ final class TaskPage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Listado o búsqueda de tareas, con filtro de estado opcional.
+/// Listing or search of tasks, with an optional status filter.
 @immutable
 final class ListTasksRequest {
   const ListTasksRequest({this.status, this.q, this.limit, this.after});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ListTasksRequest.fromJson(Map<String, dynamic> json) {
     try {
       return ListTasksRequest(
@@ -418,7 +418,7 @@ final class ListTasksRequest {
 
   final String? after;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     if (status case final value?) 'status': value.wireCode,
     'q': ?q,
@@ -426,7 +426,7 @@ final class ListTasksRequest {
     'after': ?after,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ListTasksRequest value) => value.toJson();
 
   @override
@@ -442,12 +442,12 @@ final class ListTasksRequest {
   int get hashCode => contractHash([status, q, limit, after]);
 }
 
-/// Tarea a consultar.
+/// Task to query.
 @immutable
 final class GetTaskRequest {
   const GetTaskRequest({required this.taskId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory GetTaskRequest.fromJson(Map<String, dynamic> json) {
     try {
       return GetTaskRequest(taskId: json['taskId'] as String);
@@ -458,10 +458,10 @@ final class GetTaskRequest {
 
   final String taskId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'taskId': taskId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(GetTaskRequest value) => value.toJson();
 
   @override
@@ -473,12 +473,12 @@ final class GetTaskRequest {
   int get hashCode => contractHash([taskId]);
 }
 
-/// Alta de una tarea.
+/// Task creation.
 @immutable
 final class CreateTaskRequest {
   const CreateTaskRequest({required this.title, this.description});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory CreateTaskRequest.fromJson(Map<String, dynamic> json) {
     try {
       return CreateTaskRequest(
@@ -494,13 +494,13 @@ final class CreateTaskRequest {
 
   final String? description;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'title': title,
     'description': ?description,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(CreateTaskRequest value) => value.toJson();
 
   @override
@@ -514,7 +514,7 @@ final class CreateTaskRequest {
   int get hashCode => contractHash([title, description]);
 }
 
-/// Cambios parciales de una tarea, con versión esperada opcional.
+/// Partial changes of a task, with an optional expected version.
 @immutable
 final class UpdateTaskRequest {
   const UpdateTaskRequest({
@@ -525,7 +525,7 @@ final class UpdateTaskRequest {
     this.expectedVersion,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory UpdateTaskRequest.fromJson(Map<String, dynamic> json) {
     try {
       return UpdateTaskRequest(
@@ -554,7 +554,7 @@ final class UpdateTaskRequest {
 
   final int? expectedVersion;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'taskId': taskId,
     'title': ?title,
@@ -563,7 +563,7 @@ final class UpdateTaskRequest {
     'expectedVersion': ?expectedVersion,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(UpdateTaskRequest value) => value.toJson();
 
   @override
@@ -581,12 +581,12 @@ final class UpdateTaskRequest {
       contractHash([taskId, title, description, status, expectedVersion]);
 }
 
-/// Tarea a borrar.
+/// Task to delete.
 @immutable
 final class DeleteTaskRequest {
   const DeleteTaskRequest({required this.taskId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory DeleteTaskRequest.fromJson(Map<String, dynamic> json) {
     try {
       return DeleteTaskRequest(taskId: json['taskId'] as String);
@@ -597,10 +597,10 @@ final class DeleteTaskRequest {
 
   final String taskId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'taskId': taskId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(DeleteTaskRequest value) => value.toJson();
 
   @override
@@ -612,7 +612,7 @@ final class DeleteTaskRequest {
   int get hashCode => contractHash([taskId]);
 }
 
-/// Tarea con la fecha de borrado lógico, si la hubo.
+/// Task with the soft delete date, if any.
 @immutable
 final class TaskChange {
   const TaskChange({
@@ -627,7 +627,7 @@ final class TaskChange {
     required this.deletedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TaskChange.fromJson(Map<String, dynamic> json) {
     try {
       return TaskChange(
@@ -666,7 +666,7 @@ final class TaskChange {
 
   final DateTime? deletedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'title': title,
@@ -682,7 +682,7 @@ final class TaskChange {
     },
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TaskChange value) => value.toJson();
 
   @override
@@ -713,12 +713,12 @@ final class TaskChange {
   ]);
 }
 
-/// Página de cambios de tareas.
+/// Page of task changes.
 @immutable
 final class TaskChangePage {
   const TaskChangePage({required this.items, required this.nextCursor});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory TaskChangePage.fromJson(Map<String, dynamic> json) {
     try {
       return TaskChangePage(
@@ -737,13 +737,13 @@ final class TaskChangePage {
 
   final String? nextCursor;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
     'nextCursor': nextCursor,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(TaskChangePage value) => value.toJson();
 
   @override
@@ -757,7 +757,7 @@ final class TaskChangePage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Entrada para paginar los cambios de tareas de un tenant.
+/// Input to page the task changes of a tenant.
 @immutable
 final class ListTaskChangesInput {
   const ListTaskChangesInput({
@@ -767,7 +767,7 @@ final class ListTaskChangesInput {
     this.after,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ListTaskChangesInput.fromJson(Map<String, dynamic> json) {
     try {
       return ListTaskChangesInput(
@@ -791,7 +791,7 @@ final class ListTaskChangesInput {
 
   final String? after;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     if (updatedAfter case final value?)
@@ -800,7 +800,7 @@ final class ListTaskChangesInput {
     'after': ?after,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ListTaskChangesInput value) =>
       value.toJson();
 
@@ -817,12 +817,12 @@ final class ListTaskChangesInput {
   int get hashCode => contractHash([tenantId, updatedAfter, limit, after]);
 }
 
-/// Usuario cuyos datos se anonimizan en las tareas.
+/// User whose data is anonymized in the tasks.
 @immutable
 final class EraseTasksUserInput {
   const EraseTasksUserInput({required this.user});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EraseTasksUserInput.fromJson(Map<String, dynamic> json) {
     try {
       return EraseTasksUserInput(
@@ -835,10 +835,10 @@ final class EraseTasksUserInput {
 
   final UserRef user;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'user': user.toJson()};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EraseTasksUserInput value) =>
       value.toJson();
 
@@ -851,7 +851,7 @@ final class EraseTasksUserInput {
   int get hashCode => contractHash([user]);
 }
 
-/// Filas de tareas anonimizadas para un usuario.
+/// Task rows anonymized for a user.
 @immutable
 final class EraseTasksUserResult {
   const EraseTasksUserResult({
@@ -859,7 +859,7 @@ final class EraseTasksUserResult {
     required this.affectedRows,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EraseTasksUserResult.fromJson(Map<String, dynamic> json) {
     try {
       return EraseTasksUserResult(
@@ -875,13 +875,13 @@ final class EraseTasksUserResult {
 
   final int affectedRows;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'userId': userId,
     'affectedRows': affectedRows,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EraseTasksUserResult value) =>
       value.toJson();
 

@@ -10,7 +10,7 @@ import {
   SubscriptionSuspendedEvent,
 } from './billing.events.js';
 
-/** Tópico de los eventos de billing. Lo consumen identity, notifications y reports, cada uno en su cola. */
+/** Topic of the billing events. Consumed by identity, notifications and reports, each in its own queue. */
 export const BillingEventsTopic = defineTopic({
   name: BillingTopic.Events,
   events: [
@@ -23,5 +23,5 @@ export const BillingEventsTopic = defineTopic({
     InvoiceFailedEvent,
   ],
   description:
-    'Eventos de billing: suscripciones, funcionalidades vigentes y facturas. Cada servicio suscribe su propia cola.',
+    'Billing events: subscriptions, active features and invoices. Each service subscribes its own queue.',
 });

@@ -1,6 +1,6 @@
 import { ModuleLoader } from '../../module-loader.js';
 
-/** Cargador que devuelve módulos preparados por la prueba, indexados por ruta. */
+/** Loader that returns modules prepared by the test, indexed by path. */
 export class FakeModuleLoader extends ModuleLoader {
   constructor(
     private readonly modules: Readonly<

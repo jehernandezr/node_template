@@ -16,7 +16,7 @@ import { LedgerShardMigration1900000000030 } from '../../nest/__tests__/utils/in
 const ids = new UuidV7IdGenerator();
 const newId = (): string => ids.next().toString();
 
-/** Repite el paso mientras su ronda no termina en el plazo de la llamada, como la saga. */
+/** Repeats the step while its round does not finish within the call's deadline, like the saga. */
 async function untilDone<T>(step: () => Promise<T>): Promise<T> {
   for (;;) {
     try {
@@ -69,7 +69,7 @@ runtime.describeIfAvailable('TenantMoves back and forth between shards', () => {
       ])) as { id: string }[]
     ).map((row) => row.id);
 
-  /** Una saga del tenant en el shard, con el estado dado. */
+  /** A tenant saga on the shard, with the given status. */
   const sagaOf = async (
     shard: RehearsalShard,
     tenantId: string,

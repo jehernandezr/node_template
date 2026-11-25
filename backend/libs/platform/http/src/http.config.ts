@@ -7,23 +7,23 @@ import {
 import { z } from 'zod';
 
 /**
- * Variables de la entrada HTTP. `SESSION_IDLE_TTL` es la misma variable que lee el servicio que
- * emite las sesiones: la cookie dura lo que la ventana de inactividad.
+ * HTTP entry variables. `SESSION_IDLE_TTL` is the same variable read by the service that
+ * issues sessions: the cookie lasts as long as the idle window.
  */
 export const httpConfigSchema = z.object({
-  /** Orígenes permitidos para CORS y para la política de `Origin`, separados por coma. */
+  /** Allowed origins for CORS and for the `Origin` policy, comma-separated. */
   WEB_ORIGINS: envList().default([]),
-  /** Saltos de proxy de confianza para calcular la IP del cliente. */
+  /** Trusted proxy hops used to compute the client IP. */
   TRUST_PROXY_HOPS: envNumber({ min: 0, max: 10 }).default(0),
-  /** Vida de la cookie de sesión. */
+  /** Session cookie lifetime. */
   SESSION_IDLE_TTL: envDuration().default(86_400_000),
-  /** Base de la URL `type` de los Problem Details. */
+  /** Base of the Problem Details `type` URL. */
   PROBLEM_TYPE_BASE_URL: z.url().default('https://docs.node-template.dev'),
 });
 
 export type HttpSettings = z.infer<typeof httpConfigSchema>;
 
-/** Sección de configuración que `HttpModule` valida al arrancar. */
+/** Configuration section that `HttpModule` validates at startup. */
 export const HttpConfig = new ConfigSection<HttpSettings>(
   'http',
   httpConfigSchema,

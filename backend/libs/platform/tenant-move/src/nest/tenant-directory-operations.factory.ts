@@ -9,7 +9,7 @@ import { InternalHandler } from '@platform/internal-api/nest';
 import { CallOutcome } from '@platform/primitives';
 import type { TenantDirectoryEntries } from '../directory/tenant-directory-entries.js';
 
-/** Handlers de las dos operaciones del directorio de tenants de un servicio. */
+/** Handlers of the two tenant directory operations of a service. */
 export interface TenantDirectoryInternalOperations {
   place(
     input: TenantDirectoryEntry,
@@ -18,8 +18,8 @@ export interface TenantDirectoryInternalOperations {
 }
 
 /**
- * Arma la clase de handlers de las operaciones de un servicio. Cada servicio tiene sus propios ids de operación,
- * así que la clase se crea por servicio y sus métodos se marcan con `@InternalHandler` de esas operaciones.
+ * Builds the handler class for a service's operations. Each service has its own operation ids,
+ * so the class is created per service and its methods are marked with `@InternalHandler` for those operations.
  */
 export class TenantDirectoryOperationsFactory {
   static create(

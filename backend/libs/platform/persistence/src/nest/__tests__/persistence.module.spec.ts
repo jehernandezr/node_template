@@ -42,21 +42,21 @@ import { RecordingLogger } from '../../__tests__/utils/recording-logger.js';
 import { StaticShardLister } from '../../__tests__/utils/static-shard-lister.js';
 import { PersistenceModule } from '../persistence.module.js';
 
-/** Entidad de un módulo que trabaja por usuario, para comprobar que su declaración no se mezcla con la del tenant. */
+/** Entity of a module that works per user, to check that its declaration does not mix with the tenant one. */
 @Entity({ name: 'spec_user_labels' })
 class SpecUserEntity extends AuditedEntity {
   @Column({ type: 'varchar', length: 64, name: 'label', nullable: false })
   label!: string;
 }
 
-/** Entidad del catálogo global. */
+/** Global catalog entity. */
 @Entity({ name: 'spec_catalog_items' })
 class SpecCatalogEntity extends VersionedEntity {
   @Column({ type: 'varchar', length: 64, name: 'code', nullable: false })
   code!: string;
 }
 
-/** Lista de shards del servicio en la prueba: un solo shard lógico en la instancia de prueba. */
+/** Shard list of the service in the test: a single logical shard on the test instance. */
 @Injectable()
 class SpecShardLister extends StaticShardLister {
   constructor() {
@@ -64,23 +64,23 @@ class SpecShardLister extends StaticShardLister {
   }
 }
 
-/** Resolución de instancias propia del servicio, en lugar de la que lee `DB_INSTANCES`. */
+/** The service's own instance resolution, instead of the one that reads `DB_INSTANCES`. */
 @Injectable()
 class SpecEndpoints extends FakeInstanceEndpointResolver {}
 
-/** Entrega el `RepositoryKit` del módulo que lo declara, para ver su llave y sus entidades. */
+/** Provides the `RepositoryKit` of the module that declares it, to inspect its key and entities. */
 @Injectable()
 class TenantFeatureConsumer {
   constructor(readonly kit: RepositoryKit) {}
 }
 
-/** Entrega el `RepositoryKit` del módulo que trabaja por usuario. */
+/** Provides the `RepositoryKit` of the module that works per user. */
 @Injectable()
 class UserFeatureConsumer {
   constructor(readonly kit: RepositoryKit) {}
 }
 
-/** Dependencias globales que el servicio aporta: contexto, logs, ruteo y la lista de shards. */
+/** Global dependencies provided by the service: context, logs, routing and the shard list. */
 @Global()
 @Module({
   providers: [
@@ -106,7 +106,7 @@ class UserFeatureConsumer {
 })
 class SpecGlobalModule {}
 
-/** Reloj del contenedor, que la persistencia toma en lugar del reloj del sistema. */
+/** Container clock, which persistence uses instead of the system clock. */
 @Global()
 @Module({
   providers: [{ provide: Clock, useValue: new FixedClock() }],
@@ -114,7 +114,7 @@ class SpecGlobalModule {}
 })
 class SpecClockModule {}
 
-/** `ShardDataSources` que registra su cierre, para comprobarlo al apagar el módulo. */
+/** `ShardDataSources` that records its closing, to check it when the module shuts down. */
 class ClosableShardDataSources extends ShardDataSources {
   closed = false;
 
@@ -135,7 +135,7 @@ class ClosableShardDataSources extends ShardDataSources {
   }
 }
 
-/** `CatalogDataSource` que registra su cierre. */
+/** `CatalogDataSource` that records its closing. */
 class ClosableCatalogDataSource extends CatalogDataSource {
   closed = false;
 
@@ -273,7 +273,7 @@ describe('PersistenceModule', () => {
         strict: false,
       });
 
-      // Con la llave por usuario, un contexto que solo trae tenant no alcanza para elegir el shard.
+      // With the per-user key, a context that only carries a tenant is not enough to choose the shard.
       await expect(
         store.run(
           {

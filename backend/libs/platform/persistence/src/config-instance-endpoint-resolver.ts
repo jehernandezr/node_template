@@ -4,14 +4,14 @@ import { PersistenceErrorCode } from './errors/persistence-error-code.enum.js';
 import type { InstanceEndpoints } from './model/instance-endpoints.js';
 import { InstanceEndpointResolver } from './ports/instance-endpoint-resolver.js';
 
-/** Resuelve instancias con el mapa `DB_INSTANCES` de la configuración. */
+/** Resolves instances with the `DB_INSTANCES` map from the configuration. */
 export class ConfigInstanceEndpointResolver extends InstanceEndpointResolver {
   constructor(private readonly instances: DatabaseSettings['DB_INSTANCES']) {
     super();
   }
 
   resolve(instance: string): InstanceEndpoints {
-    // Un nombre como `constructor` no es una instancia configurada aunque exista en el prototipo.
+    // A name like `constructor` is not a configured instance even if it exists on the prototype.
     if (Object.hasOwn(this.instances, instance)) {
       return this.instances[instance];
     }

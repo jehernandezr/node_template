@@ -1,13 +1,13 @@
 import type { MigrationStatement } from './model/migration-statement.js';
 
 /**
- * Escribe el código TypeScript de una migración de TypeORM con `up` y `down`. Está separado de
- * `MigrationGenerator` para probar el texto generado sin una base de datos.
+ * Writes the TypeScript code of a TypeORM migration with `up` and `down`. It is separate from
+ * `MigrationGenerator` so the generated text can be tested without a database.
  */
 export class MigrationSourceRenderer {
   /**
-   * @param className nombre de la clase y de la migración, por ejemplo `CreateUsers1794700000001`.
-   * @param up sentencias de `up` en orden. @param down sentencias de `down` en el orden en que deben correr.
+   * @param className name of the class and of the migration, for example `CreateUsers1794700000001`.
+   * @param up `up` statements in order. @param down `down` statements in the order they must run.
    */
   render(
     className: string,
@@ -44,7 +44,7 @@ export class MigrationSourceRenderer {
     return `    await queryRunner.query(\`${sql}\`, ${JSON.stringify(statement.parameters)});`;
   }
 
-  /** Escapa lo que un template literal interpretaría: la barra invertida, el backtick y la interpolación. */
+  /** Escapes what a template literal would interpret: the backslash, the backtick and interpolation. */
   private escape(sql: string): string {
     return sql
       .replace(/\\/g, () => '\\\\')

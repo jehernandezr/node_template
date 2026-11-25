@@ -1,4 +1,4 @@
-/** Tipos de evento que emiten las políticas. */
+/** Event types that the policies emit. */
 export enum ResilienceEventKind {
   Retry = 'retry',
   Break = 'break',

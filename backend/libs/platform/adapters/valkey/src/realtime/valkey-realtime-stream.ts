@@ -11,23 +11,23 @@ import type { ValkeyKeyspace } from '../valkey-keyspace.js';
 import type { ValkeySubscriberSource } from '../valkey-subscriber-source.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 
-/** Retención del stream de cada canal. */
+/** Retention of each channel's stream. */
 export interface ValkeyRealtimeStreamOptions {
-  /** Tramas que se conservan; el recorte es aproximado (`MAXLEN ~`), más barato que el exacto. */
+  /** Frames that are kept; trimming is approximate (`MAXLEN ~`), cheaper than exact. */
   readonly retained: number;
-  /** Vida del stream desde su última trama. */
+  /** Lifetime of the stream since its last frame. */
   readonly ttlMs: number;
 }
 
 /**
- * Un Valkey Stream por canal (`<prefijo>:rt:{canal}`) con sus últimas tramas, y un aviso por pub/sub en
- * `<prefijo>:rt-appended:{canal}` cada vez que llega una. Todas las instancias leen el mismo stream, así que
- * un usuario reanuda donde quedó aunque se reconecte a otra.
+ * One Valkey Stream per channel (`<prefix>:rt:{channel}`) with its latest frames, and a pub/sub notice on
+ * `<prefix>:rt-appended:{channel}` each time one arrives. All instances read the same stream, so
+ * a user resumes where they left off even if they reconnect to another one.
  */
 export class ValkeyRealtimeStream extends RealtimeStream {
   private static readonly FIELD = 'frame';
   private static readonly STREAM_ID = /^\d+-\d+$/;
-  /** KEYS[1] stream; ARGV: retención, vida en ms, trama, canal del aviso. */
+  /** KEYS[1] stream; ARGV: retention, lifetime in ms, frame, notice channel. */
   private static readonly APPEND = new LuaScript(`
 local id = redis.call('XADD', KEYS[1], 'MAXLEN', '~', ARGV[1], '*', '${ValkeyRealtimeStream.FIELD}', ARGV[3])
 redis.call('PEXPIRE', KEYS[1], ARGV[2])
@@ -86,7 +86,7 @@ return id
     return ValkeyRealtimeStream.entries(reply, ValkeyCommand.Xrange);
   }
 
-  /** Un id con forma válida pero posterior a la última trama (de otro Valkey o inventado) cuenta como el final. */
+  /** An id with a valid shape but later than the last frame (from another Valkey or made up) counts as the end. */
   async resumePoint(
     channel: string,
     lastEventId: string | undefined,

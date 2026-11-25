@@ -1,6 +1,6 @@
 import { ActorType, type RequestContextInit } from '@platform/observability';
 
-/** Contexto de una petición del tenant indicado, con la misma forma que arma el arnés de persistencia. */
+/** Context of a request from the given tenant, with the same shape the persistence harness builds. */
 export class ProbeRequest {
   static contextFor(tenantId: string): RequestContextInit {
     return {

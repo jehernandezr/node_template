@@ -2,15 +2,15 @@ import { TenantWriteFence } from '@platform/persistence';
 import { ShardingError } from '@platform/sharding';
 import type { DataSource } from 'typeorm';
 
-/** Una fila escrita y confirmada por el writer: su id y el valor con que quedó. */
+/** A row written and committed by the writer: its id and its resulting value. */
 export interface AckedWrite {
   readonly id: string;
   readonly total: string;
 }
 
 /**
- * Escribe ledgers de un tenant como lo haría un servicio: cada escritura entra por la barrera del tenant, en su
- * propia transacción con el tenant en la sesión. Lleva cuenta de lo que se confirmó y de lo que la barrera rechazó.
+ * Writes ledgers of a tenant as a service would: each write goes through the tenant fence, in its
+ * own transaction with the tenant in the session. Tracks what was committed and what the fence rejected.
  */
 export class LedgerWriter {
   private readonly fence = new TenantWriteFence();
@@ -24,7 +24,7 @@ export class LedgerWriter {
     private readonly ids: () => string,
   ) {}
 
-  /** Inserta un ledger nuevo o cambia uno ya confirmado. Devuelve `false` si la barrera lo rechazó. */
+  /** Inserts a new ledger or changes an already committed one. Returns `false` if the fence rejected it. */
   async writeOnce(): Promise<boolean> {
     this.sequence += 1;
     const existing = [...this.acked.keys()];

@@ -1,4 +1,4 @@
-/** Escapa texto para HTML. Utilidad pura. */
+/** Escapes text for HTML. Pure utility. */
 export class HtmlText {
   private static readonly ENTITIES: Readonly<Record<string, string>> = {
     '&': '&amp;',

@@ -1,9 +1,9 @@
-/** Puerto de filtros de Bloom para backends remotos (por ejemplo, Valkey). */
+/** Bloom filter port for remote backends (for example, Valkey). */
 export abstract class AsyncBloomFilter {
-  /** Inserta un ítem. */
+  /** Inserts an item. */
   abstract add(item: string): Promise<void>;
-  /** Inserta varios ítems. */
+  /** Inserts several items. */
   abstract addMany(items: readonly string[]): Promise<void>;
-  /** Resuelve false cuando el ítem seguro que no está; true cuando puede estar. */
+  /** Resolves false when the item is definitely absent; true when it might be present. */
   abstract mightContain(item: string): Promise<boolean>;
 }

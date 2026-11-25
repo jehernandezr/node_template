@@ -3,8 +3,8 @@ import { LogSink } from './log-sink.js';
 import type { LogRecord } from './log-record.js';
 
 /**
- * Una línea JSON por log. Es el destino cuando la telemetría está apagada
- * (pruebas, scripts) y el de Lambda y Fargate, donde stdout llega a CloudWatch.
+ * One JSON line per log. It is the destination when telemetry is off
+ * (tests, scripts) and the one for Lambda and Fargate, where stdout reaches CloudWatch.
  */
 export class StdoutLogSink extends LogSink {
   constructor(

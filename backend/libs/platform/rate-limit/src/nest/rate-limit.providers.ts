@@ -19,7 +19,7 @@ import {
 } from './rate-limit-tokens.js';
 import { RateLimitGuard } from './rate-limit.guard.js';
 
-/** Proveedores del módulo de límite de tasa. */
+/** Providers of the rate limit module. */
 export class RateLimitProviders {
   static build(extras: RateLimitModuleExtras): Provider[] {
     const providers: Provider[] = [
@@ -62,8 +62,8 @@ export class RateLimitProviders {
   }
 
   /**
-   * Sin limitador propio, el local. Con uno, se degrada al local solo si
-   * `degradeLocally` está activo.
+   * Without its own limiter, the local one. With one, it degrades to the local one only if
+   * `degradeLocally` is enabled.
    */
   private static limiterProvider(extras: RateLimitModuleExtras): Provider {
     if (extras.limiter === undefined) {

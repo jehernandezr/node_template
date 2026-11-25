@@ -4,7 +4,7 @@ import { HttpApplicationSetup } from '@platform/http/nest';
 import { LambdaBootstrap } from '@platform/service/nest';
 import { identityService } from './identity.service.js';
 
-/** API de identity en Lambda: `api.runtime = "lambda"` en los tfvars del servicio usa este handler. */
+/** Identity API on Lambda: `api.runtime = "lambda"` in the service tfvars uses this handler. */
 export const handler = LambdaBootstrap.http(identityService, {
   env: process.env,
   telemetry,

@@ -9,9 +9,9 @@ import { authErrorCatalog } from '@platform/auth';
 import { rateLimitErrorCatalog } from '@platform/rate-limit';
 
 /**
- * Catálogo de códigos que puede responder la entrada HTTP: los transversales, los de auth, los de
- * límite de tasa y los de identity (que `AccessTokenVerifier` lanza en cualquier servicio), más los
- * del servicio.
+ * Catalog of codes the HTTP entry can respond with: the cross-cutting ones, auth, rate
+ * limit and identity ones (which `AccessTokenVerifier` throws in any service), plus those
+ * of the service.
  */
 export class ErrorCatalogRegistry {
   private readonly catalog = new ErrorCatalog();
@@ -31,7 +31,7 @@ export class ErrorCatalogRegistry {
   }
 
   /**
-   * @throws Error con todos los códigos de `route.errors` del contrato que no tienen entrada.
+   * @throws Error with all the codes in the contract's `route.errors` that have no entry.
    */
   assertCovers(contract: ServiceContract): void {
     const missing = new Set<string>();

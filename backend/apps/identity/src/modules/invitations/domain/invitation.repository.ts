@@ -1,6 +1,6 @@
 import type { Invitation } from './invitation.js';
 
-/** Invitaciones en el shard del tenant. */
+/** Invitations in the tenant's shard. */
 export abstract class InvitationRepository {
   abstract insert(invitation: Invitation): Promise<void>;
   abstract find(invitationId: string): Promise<Invitation | undefined>;

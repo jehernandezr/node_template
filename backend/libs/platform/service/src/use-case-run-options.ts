@@ -1,5 +1,5 @@
-/** Opciones de `UseCaseRunner.run`. */
+/** Options of `UseCaseRunner.run`. */
 export interface UseCaseRunOptions {
-  /** Con `true`, el caso de uso corre dentro de `TransactionManager.runInTransaction`. Por defecto `false`. */
+  /** With `true`, the use case runs inside `TransactionManager.runInTransaction`. `false` by default. */
   readonly transaction?: boolean;
 }

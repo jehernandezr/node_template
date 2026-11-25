@@ -1,6 +1,6 @@
 import type { TransactionHook, UnitOfWork } from '@platform/kernel';
 
-/** Unidad de trabajo que no hace nada; basta para las pruebas que solo cuentan aperturas. */
+/** Unit of work that does nothing; enough for tests that only count openings. */
 export class NoopUnitOfWork implements UnitOfWork {
   readonly database = 'test';
 

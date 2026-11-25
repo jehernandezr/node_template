@@ -13,11 +13,11 @@ interface KeyRow {
   readonly type: string;
 }
 
-/** Lee columnas y llave primaria de una tabla del shard. */
+/** Reads the columns and primary key of a shard table. */
 export class TableShapeReader {
   private static readonly UPDATED_AT = 'updated_at';
 
-  /** @throws TenantMoveError `InvalidManifest` si la tabla no existe o no tiene llave primaria. */
+  /** @throws TenantMoveError `InvalidManifest` if the table does not exist or has no primary key. */
   async read(runner: QueryRunner, table: string): Promise<TableShape> {
     const columns: ColumnRow[] = await runner.query(
       `SELECT a.attname AS name, a.attgenerated <> '' AS generated

@@ -5,8 +5,8 @@ import { HttpLimits } from './http-limits.js';
 import type { HttpRequestView } from './http-request-view.js';
 
 /**
- * Decide el canal de la petición. La app nativa lo declara con un session token en `Authorization` o
- * con `X-Session-Transport: bearer`; cualquier otro caso es web.
+ * Decides the request's channel. The native app declares it with a session token in `Authorization` or
+ * with `X-Session-Transport: bearer`; any other case is web.
  */
 export class ClientChannelResolver {
   static resolve(headers: HttpRequestView['headers']): ClientChannel {

@@ -1,7 +1,7 @@
 /**
- * Cuándo toca el próximo intento de una entrega. `NotifyUser` envía apenas confirma, así que el primer
- * reintento espera un margen para no competir con ese envío; después, cada fallo duplica la espera.
- * Utilidad pura.
+ * When a delivery's next attempt is due. `NotifyUser` sends as soon as it commits, so the first
+ * retry waits a margin so as not to compete with that send; after that, each failure doubles the wait.
+ * Pure utility.
  */
 export class DeliveryRetrySchedule {
   static readonly FIRST_RETRY_MS = 2 * 60_000;

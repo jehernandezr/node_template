@@ -1,11 +1,11 @@
-/** Límites y plazos de las operaciones que ubican un tenant en el directorio de shards de un servicio. */
+/** Limits and timeouts of the operations that place a tenant in a service's shard directory. */
 export const TenantDirectoryLimits = {
-  /** Largo máximo del identificador de una región o de un grupo de shards. */
+  /** Maximum length of the identifier of a region or a shard group. */
   fieldMaxLength: 64,
-  /** Grupos de shards de un tenant; el tenant compartido de clientes ocupa todos los de su región. */
+  /** Shard groups of a tenant; the shared customer tenant occupies all of those in its region. */
   maxGroups: 64,
-  /** Plazo de la escritura de una fila del directorio. */
+  /** Timeout for writing a directory row. */
   placeTimeoutMs: 5_000,
-  /** Plazo del retiro de una fila del directorio. */
+  /** Timeout for removing a directory row. */
   removeTimeoutMs: 5_000,
 } as const;

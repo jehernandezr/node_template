@@ -2,12 +2,12 @@ import type { CallOutcome } from '@platform/primitives';
 import type { CallMeta } from '../../../transport/call-meta.js';
 import { Transport } from '../../../transport/transport.js';
 
-/** Paso del guion: produce el resultado de un intento a partir de sus metadatos. */
+/** Script step: produces the result of an attempt from its metadata. */
 type ScriptedStep = (meta: CallMeta) => Promise<CallOutcome<unknown>>;
 
 /**
- * Transporte de prueba con un guion de pasos en orden. El último paso se repite
- * cuando el guion se agota. Cuenta las llamadas y guarda sus metadatos.
+ * Test transport with a script of steps in order. The last step repeats
+ * when the script runs out. It counts the calls and stores their metadata.
  */
 export class ScriptedTransport extends Transport {
   calls = 0;
@@ -15,21 +15,21 @@ export class ScriptedTransport extends Transport {
   readonly inputs: unknown[] = [];
   private readonly steps: ScriptedStep[] = [];
 
-  /** El siguiente intento devuelve `outcome`. */
+  /** Makes the next attempt return `outcome`. */
   thenReturn(outcome: CallOutcome<unknown>): this {
     this.steps.push(() => Promise.resolve(outcome));
     return this;
   }
 
-  /** El siguiente intento falla con `error`. */
+  /** Makes the next attempt fail with `error`. */
   thenThrow(error: unknown): this {
     this.steps.push(() => Promise.reject(error));
     return this;
   }
 
   /**
-   * El siguiente intento cancela `controller` y espera a que su señal se aborte;
-   * así se simula una cancelación con el intento en vuelo.
+   * Makes the next attempt cancel `controller` and wait for its signal to abort;
+   * this simulates a cancellation with the attempt in flight.
    */
   thenAbort(controller: AbortController): this {
     this.steps.push((meta) => {

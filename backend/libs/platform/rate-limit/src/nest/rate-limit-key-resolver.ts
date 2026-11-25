@@ -1,6 +1,6 @@
 import type { ExecutionContext } from '@nestjs/common';
 
-/** Obtiene la llave que se limita para una petición. */
+/** Gets the key that is limited for a request. */
 export abstract class RateLimitKeyResolver {
   abstract resolve(context: ExecutionContext): string;
 }

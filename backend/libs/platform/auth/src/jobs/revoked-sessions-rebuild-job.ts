@@ -9,13 +9,13 @@ import type { RevokedSessionRegistry } from '../state/revoked-session-registry.j
 import { AuthJob } from './auth-job.enum.js';
 
 /**
- * Reconstruye el Bloom de sesiones revocadas desde `auth:revoked-index`. No es
- * exclusivo: el filtro vive en la memoria de cada proceso y cada uno tiene que
- * llenar el suyo, también para recuperar los avisos del canal que se perdieron.
+ * Rebuilds the revoked sessions Bloom filter from `auth:revoked-index`. It is not
+ * exclusive: the filter lives in the memory of each process and each one has to
+ * fill its own, also to recover the channel notices that were lost.
  */
 export class RevokedSessionsRebuildJob extends ScheduledJob {
   static readonly EVERY_MS = 10_000;
-  /** Desfasa a los procesos para que no lean el índice todos en el mismo instante. */
+  /** Staggers the processes so they do not all read the index at the same instant. */
   static readonly JITTER_RATIO = 0.1;
 
   readonly name = AuthJob.RevokedSessionsRebuild;
@@ -26,7 +26,7 @@ export class RevokedSessionsRebuildJob extends ScheduledJob {
   };
   override readonly exclusive = false;
 
-  /** @param source El lector de Valkey, sin las cachés locales. */
+  /** @param source The Valkey reader, without the local caches. */
   constructor(
     private readonly source: AuthStateReader,
     private readonly registry: RevokedSessionRegistry,
@@ -34,7 +34,7 @@ export class RevokedSessionsRebuildJob extends ScheduledJob {
     super();
   }
 
-  /** @throws el error de la lectura del índice; el registro conserva el filtro anterior. */
+  /** @throws the index read error; the registry keeps the previous filter. */
   async run(context: JobContext): Promise<void> {
     await this.registry.rebuild(this.source.revokedSessionIds(context.signal));
   }

@@ -1,6 +1,6 @@
 /**
- * Quién tiene una conexión de tiempo real abierta. Una conexión se anuncia con una vida y la renueva mientras
- * sigue abierta; si el proceso cae, la marca vence sola.
+ * Who has an open realtime connection. A connection announces itself with a lifetime and renews it while
+ * it stays open; if the process goes down, the mark expires on its own.
  */
 export abstract class PresenceTracker {
   abstract connected(

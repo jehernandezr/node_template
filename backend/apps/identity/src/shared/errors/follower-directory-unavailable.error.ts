@@ -2,8 +2,8 @@ import { PlatformErrorCode } from '@contracts/platform';
 import { PlatformError } from '@platform/kernel';
 
 /**
- * Un servicio no anotó en su directorio un tenant que identity ubicó. Es reintentable: la ubicación es idempotente y
- * quien la pidió puede repetirla.
+ * A service did not record in its directory a tenant that identity placed. It is retryable: placement is idempotent and
+ * whoever requested it can repeat it.
  */
 export class FollowerDirectoryUnavailableError extends PlatformError {
   readonly code = PlatformErrorCode.InternalUnexpected;

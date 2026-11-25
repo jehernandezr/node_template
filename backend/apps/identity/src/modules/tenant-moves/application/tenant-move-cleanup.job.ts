@@ -30,22 +30,22 @@ import { TenantMoveLog } from '../domain/tenant-move-log.js';
 import { TenantMoveParticipants } from './tenant-move-participants.js';
 
 /**
- * Pasada la gracia desde que todos los servicios apuntan al destino, pide a cada uno que borre lo que quedó del tenant
- * en el origen. Cada llamada borra lo que cabe en su plazo y responde que la ronda sigue: el job la repite, con una
- * llave nueva por intento y una pausa corta entre intentos para no cargar el shard sin respiro, hasta que el servicio
- * termina, se acaba su tramo de la corrida o llega al tope de intentos. Un servicio que falla no
- * impide intentar los demás, y un traslado que no termina queda para la corrida siguiente, que empieza por los que
- * llevan más tiempo sin intentarse. Un tenant con otro traslado en curso espera: ese traslado puede volver al shard que
- * se iba a limpiar y entre su `finalize` y su `switch` la copia buena vive ahí.
+ * Once the grace period has passed since every service points to the target, asks each one to delete what remained of the tenant
+ * in the source. Each call deletes what fits in its time budget and responds that the round continues: the job repeats it, with a
+ * new key per attempt and a short pause between attempts so as not to load the shard without respite, until the service
+ * finishes, its slice of the run ends or it reaches the attempt cap. A failing service does not
+ * prevent trying the others, and a move that does not finish is left for the next run, which starts with those that
+ * have gone longest without an attempt. A tenant with another move in progress waits: that move may return to the shard that
+ * was going to be cleaned, and between its `finalize` and its `switch` the good copy lives there.
  */
 @Injectable()
 export class TenantMoveCleanupJob extends ScheduledJob {
   private static readonly EVERY_MS = 60 * 60_000;
   private static readonly DAY_MS = 24 * 60 * 60_000;
   private static readonly BATCH = 20;
-  /** Tiempo de una corrida en que empieza llamadas; deja margen a la última antes de `timeoutMs`. */
+  /** Time of a run during which it starts calls; leaves margin for the last one before `timeoutMs`. */
   private static readonly RUN_BUDGET_MS = 14 * 60_000;
-  /** Tiempo de cada servicio por traslado y corrida, para que uno grande no deje sin turno a los demás. */
+  /** Time for each service per move and run, so a large one does not starve the others. */
   private static readonly SERVICE_SLICE_MS = 2 * 60_000;
 
   readonly name = IdentityJob.CleanUpTenantMoves;
@@ -101,7 +101,7 @@ export class TenantMoveCleanupJob extends ScheduledJob {
     }
   }
 
-  /** Pide la limpieza a cada servicio. Devuelve lo que respondió cada uno que no terminó. */
+  /** Requests the cleanup from each service. Returns what each one that did not finish responded. */
   private async cleanUp(
     move: TenantMove,
     runEndsAt: number,
@@ -136,8 +136,8 @@ export class TenantMoveCleanupJob extends ScheduledJob {
   }
 
   /**
-   * Repite la llamada, con una pausa entre intentos, mientras el servicio responde que su limpieza sigue, queda
-   * tiempo en su tramo y no se llegó al tope de intentos.
+   * Repeats the call, with a pause between attempts, while the service responds that its cleanup continues, there is
+   * time left in its slice and the attempt cap has not been reached.
    */
   private async untilFinished(
     operation: TenantMoveOperations['tenantMoveCleanup'],
@@ -168,7 +168,7 @@ export class TenantMoveCleanupJob extends ScheduledJob {
     return outcome;
   }
 
-  /** Espera la pausa entre intentos; un aborto la corta antes. */
+  /** Waits for the pause between attempts; an abort cuts it short. */
   private pause(signal: AbortSignal): Promise<void> {
     return new Promise((resolve) => {
       const done = (): void => {

@@ -2,13 +2,13 @@ import { CanonicalJson, NonJsonValueError } from '@platform/primitives';
 import { SagaError } from '../errors/saga-error.js';
 import { SagaErrorCode } from '../errors/saga-error-code.enum.js';
 
-/** Reglas sobre los valores que la saga guarda: estado, entrada y salida de pasos. */
+/** Rules on the values the saga saves: state, and step input and output. */
 export class SagaPayload {
   /**
-   * Rechaza lo que no sobrevive a JSON con su forma intacta, con las reglas de
-   * `CanonicalJson`: funciones, símbolos, bigints, números no finitos, ciclos,
-   * `undefined` dentro de arreglos y todo objeto que no sea simple (Map, Set,
-   * Date, instancias de clase). Un `undefined` de primer nivel se acepta.
+   * Rejects what does not survive JSON with its shape intact, with the rules of
+   * `CanonicalJson`: functions, symbols, bigints, non-finite numbers, cycles,
+   * `undefined` inside arrays and any object that is not plain (Map, Set,
+   * Date, class instances). A top-level `undefined` is accepted.
    * @throws SagaError `InvalidState`
    */
   static assertSerializable(value: unknown): void {
@@ -29,7 +29,7 @@ export class SagaPayload {
     }
   }
 
-  /** Copia profunda por JSON, la única representación que sobrevive al almacén. */
+  /** Deep copy through JSON, the only representation that survives the store. */
   static clone<T>(value: T): T {
     if (value === undefined) {
       return value;
@@ -38,7 +38,7 @@ export class SagaPayload {
     return text === undefined ? (undefined as T) : (JSON.parse(text) as T);
   }
 
-  /** Huella estable del valor, para comparar estados iniciales. */
+  /** Stable fingerprint of the value, to compare initial states. */
   static digest(value: unknown): string {
     return CanonicalJson.digest(value ?? null);
   }

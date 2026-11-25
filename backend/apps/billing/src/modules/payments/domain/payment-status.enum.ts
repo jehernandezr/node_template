@@ -1,12 +1,12 @@
-/** En qué quedó un intento de cobro. */
+/** How a charge attempt ended up. */
 export enum PaymentStatus {
   /**
-   * Anotado antes de pedir el cobro, sin respuesta todavía: el pedido está en vuelo o el proceso cayó a mitad. Se
-   * retoma con la misma llave de idempotencia, nunca con un cobro nuevo.
+   * Recorded before requesting the charge, with no response yet: the request is in flight or the process crashed midway. It
+   * is resumed with the same idempotency key, never with a new charge.
    */
   Requested = 'requested',
   Approved = 'approved',
   Declined = 'declined',
-  /** El proveedor responde después; el resultado llega por `mark-paid` o `mark-failed`. */
+  /** The provider responds later; the result arrives through `mark-paid` or `mark-failed`. */
   Pending = 'pending',
 }

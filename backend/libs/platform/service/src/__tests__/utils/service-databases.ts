@@ -3,8 +3,8 @@ import type { PostgresConnection } from './postgres-connection.js';
 import { ProbeDatabase } from './probe-database.js';
 
 /**
- * Un catálogo y dos shards recién creados en el servidor de pruebas. Cada prueba pide los suyos, así
- * que ninguna depende del estado que deja otra.
+ * A freshly created catalog and two shards on the test server. Each test requests its own, so
+ * none depends on the state another one leaves behind.
  */
 export class ServiceDatabases {
   static readonly INSTANCE = 'main';
@@ -26,7 +26,7 @@ export class ServiceDatabases {
     ];
   }
 
-  /** Variables de entorno que apuntan el servicio a estas bases. */
+  /** Environment variables that point the service at these databases. */
   environment(serviceName: string): ConfigEnv {
     return {
       SERVICE_NAME: serviceName,
@@ -43,7 +43,7 @@ export class ServiceDatabases {
     };
   }
 
-  /** Anota los dos shards en el directorio del catálogo, que ya debe estar migrado. */
+  /** Records the two shards in the catalog directory, which must already be migrated. */
   async registerShards(): Promise<void> {
     const [first, second] = this.shards;
     await this.catalog.query(

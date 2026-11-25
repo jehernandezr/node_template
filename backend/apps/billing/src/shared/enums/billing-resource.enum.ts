@@ -1,4 +1,4 @@
-/** Recursos HTTP de billing, para la etiqueta de las rutas. */
+/** Billing HTTP resources, for the route tag. */
 export enum BillingResource {
   Plans = 'plans',
   Subscription = 'subscription',

@@ -1,9 +1,9 @@
 /**
- * Los campos de una entidad que un criterio puede filtrar u ordenar. Cualquier otro nombre se rechaza,
- * así un valor que llega de fuera nunca llega a la sentencia como identificador.
+ * The fields of an entity that a criteria can filter or sort by. Any other name is rejected,
+ * so a value coming from outside never reaches the statement as an identifier.
  */
 export class CriteriaFieldMap {
-  /** @param alias alias de la entidad en el `SelectQueryBuilder`. @param properties nombres de propiedad permitidos. @param idField propiedad del desempate de la paginación, por defecto `id`. */
+  /** @param alias alias of the entity in the `SelectQueryBuilder`. @param properties allowed property names. @param idField pagination tie-breaker property, `id` by default. */
   constructor(
     readonly alias: string,
     readonly properties: readonly string[],

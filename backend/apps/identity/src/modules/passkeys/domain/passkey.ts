@@ -1,10 +1,10 @@
-/** Una passkey registrada del usuario. */
+/** A registered passkey of the user. */
 export interface Passkey {
   readonly id: string;
   readonly userId: string;
-  /** Id de la credencial en base64url, como lo devuelve el autenticador. */
+  /** Credential id in base64url, as the authenticator returns it. */
   readonly credentialId: string;
-  /** Clave pública COSE en base64url. */
+  /** COSE public key in base64url. */
   readonly publicKey: string;
   readonly signCount: number;
   readonly transports: readonly string[];

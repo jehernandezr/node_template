@@ -11,7 +11,7 @@ import { InvitationEntity } from '../infrastructure/persistence/entities/invitat
 import { TypeOrmInvitationRepository } from '../infrastructure/persistence/typeorm-invitation.repository.js';
 import { InvitationsController } from './invitations.controller.js';
 
-/** Invitaciones a un tenant. Global solo para su fachada. */
+/** Invitations to a tenant. Global only for its facade. */
 @Global()
 @Module({
   imports: [

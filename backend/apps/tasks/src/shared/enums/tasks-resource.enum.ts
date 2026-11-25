@@ -1,4 +1,4 @@
-/** Recursos HTTP de tasks, para la etiqueta de las rutas. */
+/** tasks HTTP resources, for the route tag. */
 export enum TasksResource {
   Tasks = 'tasks',
 }

@@ -4,7 +4,7 @@ import { IdentityErrorCode } from '@contracts/identity';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { DeviceSignatureVerifier } from '../domain/device-signature-verifier.js';
 
-/** ES256 con `node:crypto`. Acepta la firma en IEEE P1363 (64 bytes) o en DER, como la entregan los SDK. */
+/** ES256 with `node:crypto`. Accepts the signature in IEEE P1363 (64 bytes) or in DER, as the SDKs deliver it. */
 @Injectable()
 export class NodeDeviceSignatureVerifier extends DeviceSignatureVerifier {
   private static readonly P1363_BYTES = 64;

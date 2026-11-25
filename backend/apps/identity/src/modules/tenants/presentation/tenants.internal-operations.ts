@@ -17,7 +17,7 @@ import {
 import { ChangeTenantStatus } from '../application/change-tenant-status.use-case.js';
 import { ProvisionTenant } from '../application/provision-tenant.use-case.js';
 
-/** Operaciones internas de tenants. */
+/** Internal operations of tenants. */
 @Injectable()
 export class TenantsInternalOperations {
   constructor(

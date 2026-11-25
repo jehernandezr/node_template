@@ -1,7 +1,7 @@
 /**
- * Campos fijos de cada línea. `trace_id` y `span_id` usan los nombres y el
- * formato (32/16 hex) de OpenTelemetry, así OpenObserve abre la traza desde
- * el log. Un campo del llamador con el mismo nombre se descarta.
+ * Fixed fields of each line. `trace_id` and `span_id` use the OpenTelemetry names and
+ * format (32/16 hex), so OpenObserve opens the trace from
+ * the log. A caller field with the same name is discarded.
  */
 export enum LogField {
   Timestamp = 'timestamp',
@@ -11,7 +11,7 @@ export enum LogField {
   Message = 'message',
   TraceId = 'trace_id',
   SpanId = 'span_id',
-  /** El contexto traía un `traceId` malformado; nunca se escribe el valor. */
+  /** The context carried a malformed `traceId`; the value is never written. */
   TraceIdInvalid = 'trace_id_invalid',
   ExternalTraceId = 'external_trace_id',
   TenantId = 'tenant_id',

@@ -1,6 +1,6 @@
 import type { SmokeOrderStatus } from './smoke-order-status.enum.js';
 
-/** Forma en la que el caché guarda un pedido: datos planos, sin clases, para que sobreviva el JSON. */
+/** Shape in which the cache stores an order: plain data, without classes, so it survives JSON. */
 export interface SmokeOrderView {
   readonly id: string;
   readonly customer: string;

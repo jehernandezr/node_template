@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `proj_tasks`: lo que reports sabe de cada tarea del tenant, con la versión de la tarea que lo produjo. */
+/** `proj_tasks`: what reports knows about each task of the tenant, with the task version that produced it. */
 @Entity({ name: 'proj_tasks' })
 @Index('proj_tasks_tenant_task_key', ['tenantId', 'taskId'], { unique: true })
 export class ProjectedTaskEntity extends AuditedEntity {

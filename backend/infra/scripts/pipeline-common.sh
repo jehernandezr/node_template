@@ -1,7 +1,7 @@
 # shellcheck shell=bash
-# Funciones compartidas de los scripts del pipeline. Se cargan con source desde los scripts
-# que ya activan set -euo pipefail. Con DRY_RUN=1 cada comando se imprime con el prefijo "+ "
-# en stdout en lugar de ejecutarse; capture devuelve "<dry-run>" y muestra el comando en stderr.
+# Shared functions of the pipeline scripts. They are loaded with source from scripts that
+# already enable set -euo pipefail. With DRY_RUN=1 each command is printed with the "+ " prefix
+# on stdout instead of running; capture returns "<dry-run>" and shows the command on stderr.
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
 SCRIPTS_DIR="$REPO_ROOT/backend/infra/scripts"
@@ -16,7 +16,7 @@ is_dry() {
   [[ "${DRY_RUN:-0}" == "1" ]]
 }
 
-# Escribe una palabra entre comillas simples solo si tiene caracteres que la shell interpretaría.
+# Writes a word in single quotes only if it has characters the shell would interpret.
 quote_word() {
   if [[ "$1" =~ ^[A-Za-z0-9_@%+=:,./-]+$ ]]; then
     printf '%s' "$1"
@@ -25,7 +25,7 @@ quote_word() {
   fi
 }
 
-# Imprime una línea "+ comando ..." en stdout sin ejecutarla.
+# Prints a "+ command ..." line on stdout without running it.
 dry_print() {
   local line="+" word
   for word in "$@"; do
@@ -34,12 +34,12 @@ dry_print() {
   printf '%s\n' "$line"
 }
 
-# Imprime texto libre (pipelines, subshells) con el prefijo "+ ".
+# Prints free text (pipelines, subshells) with the "+ " prefix.
 dry_text() {
   printf '+ %s\n' "$1"
 }
 
-# Ejecuta el comando o, en DRY_RUN, lo imprime.
+# Runs the command or, in DRY_RUN, prints it.
 run() {
   if is_dry; then
     dry_print "$@"
@@ -48,7 +48,7 @@ run() {
   "$@"
 }
 
-# Devuelve la salida del comando. En DRY_RUN lo muestra en stderr y devuelve "<dry-run>".
+# Returns the command output. In DRY_RUN it shows the command on stderr and returns "<dry-run>".
 capture() {
   if is_dry; then
     dry_print "$@" >&2
@@ -58,8 +58,8 @@ capture() {
   "$@"
 }
 
-# Comprueba una condición de existencia. En DRY_RUN imprime el comando y responde que no existe,
-# así el flujo sigue hasta la creación o la subida.
+# Checks an existence condition. In DRY_RUN it prints the command and answers that it does not exist,
+# so the flow continues to the creation or the upload.
 probe() {
   if is_dry; then
     dry_print "$@"
@@ -68,8 +68,8 @@ probe() {
   "$@" >/dev/null 2>&1
 }
 
-# Lee un campo de un JSON: json_get <json> <expresión sobre o>. Imprime el valor, o nada si es
-# null o undefined. Las cadenas salen sin comillas y el resto como JSON.
+# Reads a field of a JSON: json_get <json> <expression over o>. Prints the value, or nothing if it is
+# null or undefined. Strings come out without quotes and the rest as JSON.
 json_get() {
   printf '%s' "$1" | node -e "
     const o = JSON.parse(require('node:fs').readFileSync(0, 'utf8'));
@@ -79,16 +79,16 @@ json_get() {
   "
 }
 
-# Valida un nombre de servicio o de ambiente antes de usarlo en rutas y expresiones.
+# Validates a service or environment name before using it in paths and expressions.
 require_identifier() {
   local label=$1 value=$2
   if [[ ! "$value" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-    log "$label no válido: $value"
+    log "Invalid $label: $value"
     exit 1
   fi
 }
 
-# Escribe KEY=valor en GITHUB_ENV o, fuera de Actions, en stdout.
+# Writes KEY=value to GITHUB_ENV or, outside Actions, to stdout.
 export_value() {
   local key=$1 value=$2
   if [[ -n "${GITHUB_ENV:-}" ]]; then

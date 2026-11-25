@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { PersistenceErrorCode } from './persistence-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/persistence`. Ninguno llega al cliente. */
+/** Catalog of the `@platform/persistence` codes. None of them reaches the client. */
 export const persistenceErrorCatalog = defineErrorCatalog(
   PersistenceErrorCode,
   {

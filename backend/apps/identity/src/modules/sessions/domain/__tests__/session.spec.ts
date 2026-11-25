@@ -30,7 +30,7 @@ function aSession(overrides: Partial<SessionState> = {}): Session {
   });
 }
 
-/** Un verificador que solo acepta el secreto verdadero de las generaciones dadas. */
+/** A verifier that only accepts the real secret of the given generations. */
 const genuineFor =
   (...generations: number[]) =>
   (generation: number) =>

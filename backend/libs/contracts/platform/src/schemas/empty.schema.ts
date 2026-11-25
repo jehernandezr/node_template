@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-/** Petición sin campos. Es la petición por defecto de una ruta. */
+/** Request without fields. It is the default request of a route. */
 export const EmptySchema = z
   .strictObject({})
-  .describe('Petición sin campos.') satisfies z.ZodType<Record<string, never>>;
+  .describe('Request without fields.') satisfies z.ZodType<
+  Record<string, never>
+>;

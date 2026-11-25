@@ -2,13 +2,13 @@ import { DomainError } from '@platform/kernel';
 import type { IdentityErrorCode } from '@contracts/identity';
 import { PlatformErrorCode } from '@contracts/platform';
 
-/** Códigos de la plataforma que un caso de uso de identity puede responder sin depender de HTTP. */
+/** Platform codes that an identity use case can respond with without depending on HTTP. */
 export type IdentityPlatformCode =
   PlatformErrorCode.ResourceNotFound | PlatformErrorCode.AuthForbidden;
 
 /**
- * Regla de negocio de identity que no se cumple. El código sale del catálogo del contrato, que fija el
- * estado HTTP y la audiencia; `details.retryAfterSeconds` se convierte en `Retry-After`.
+ * An identity business rule that is not met. The code comes from the contract's catalog, which sets the
+ * HTTP status and the audience; `details.retryAfterSeconds` becomes `Retry-After`.
  */
 export class IdentityError extends DomainError {
   constructor(
@@ -19,19 +19,19 @@ export class IdentityError extends DomainError {
     super(message, details);
   }
 
-  /** El recurso no existe o no es visible para quien pregunta: no revela cuál de los dos. */
+  /** The resource does not exist or is not visible to the requester: does not reveal which of the two. */
   static notFound(): IdentityError {
     return new IdentityError(PlatformErrorCode.ResourceNotFound);
   }
 
-  /** Quien actúa no tiene los permisos `missing`. */
+  /** The actor lacks the `missing` permissions. */
   static forbidden(missing: readonly string[]): IdentityError {
     return new IdentityError(PlatformErrorCode.AuthForbidden, 'Access denied', {
       missing: [...new Set(missing)],
     });
   }
 
-  /** Un error que pide esperar: el cliente recibe `Retry-After` con los segundos que faltan. */
+  /** An error that asks to wait: the client receives `Retry-After` with the remaining seconds. */
   static retryAfter(code: IdentityErrorCode, waitMs: number): IdentityError {
     return new IdentityError(code, code, {
       retryAfterSeconds: Math.max(1, Math.ceil(waitMs / 1000)),

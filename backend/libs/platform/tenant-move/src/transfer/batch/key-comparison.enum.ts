@@ -1,4 +1,4 @@
-/** Cómo se compara la llave de una fila con un cursor. */
+/** How a row key is compared with a cursor. */
 export enum KeyComparison {
   After = '>',
   UpTo = '<=',

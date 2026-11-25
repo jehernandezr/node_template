@@ -16,8 +16,8 @@ import { WebAuthnChallengeStore } from '../domain/webauthn-challenge-store.js';
 import { WebAuthnVerifier } from '../domain/webauthn-verifier.js';
 
 /**
- * Los pasos comunes de una ceremonia de WebAuthn: emitir un desafío, leer la respuesta del navegador
- * (base64url de un JSON) y verificar una aserción contra la passkey guardada, con su contador de firmas.
+ * The common steps of a WebAuthn ceremony: issue a challenge, read the browser's response
+ * (base64url of a JSON) and verify an assertion against the stored passkey, with its signature counter.
  */
 @Injectable()
 export class PasskeyCeremony {
@@ -58,7 +58,7 @@ export class PasskeyCeremony {
     };
   }
 
-  /** @throws IdentityError `IDENTITY.PASSKEY.CHALLENGE_EXPIRED` si el desafío no existe, venció o es de otro uso. */
+  /** @throws IdentityError `IDENTITY.PASSKEY.CHALLENGE_EXPIRED` if the challenge does not exist, expired or is for another use. */
   async take(
     challengeId: string,
     purpose: WebAuthnPurpose,
@@ -70,7 +70,7 @@ export class PasskeyCeremony {
     return challenge;
   }
 
-  /** @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` si no es un JSON en base64url. */
+  /** @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` if it is not base64url JSON. */
   credential(credentialJson: string): unknown {
     try {
       return JSON.parse(decodeBase64Url(credentialJson).toString('utf8'));
@@ -88,8 +88,8 @@ export class PasskeyCeremony {
   }
 
   /**
-   * Verifica la aserción y guarda el contador nuevo y el último uso. Devuelve si hubo verificación del usuario.
-   * @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` si la passkey no es del usuario o no verifica.
+   * Verifies the assertion and saves the new counter and the last use. Returns whether there was user verification.
+   * @throws IdentityError `IDENTITY.PASSKEY.VERIFICATION_FAILED` if the passkey is not the user's or does not verify.
    */
   async assert(
     user: UserRef,

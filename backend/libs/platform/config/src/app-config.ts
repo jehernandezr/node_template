@@ -1,13 +1,13 @@
 import type { ConfigSection } from './config-section.js';
 
 /**
- * Configuración ya validada e inmutable. Es el único punto de lectura: nadie
- * más toca `process.env`.
+ * Already validated, immutable configuration. It is the only read point: nobody
+ * else touches `process.env`.
  */
 export abstract class AppConfig {
-  /** Valores de una sección. Falla con `ConfigValidationError` si el entorno no la cumple. */
+  /** Returns the values of a section. Fails with `ConfigValidationError` if the environment does not satisfy it. */
   abstract get<T>(section: ConfigSection<T>): T;
 
-  /** Valores del esquema propio del servicio (`ConfigModule.forRoot({ schema })`). */
+  /** Returns the values of the service's own schema (`ConfigModule.forRoot({ schema })`). */
   abstract root<T = unknown>(): T;
 }

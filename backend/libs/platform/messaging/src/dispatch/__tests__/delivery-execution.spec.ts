@@ -43,7 +43,7 @@ function transient(message: string): Error {
   return Object.assign(new Error(message), { retryable: true });
 }
 
-/** Arma la ejecución sobre un almacén que recibe el mismo reloj que el claim. */
+/** Builds the execution on a store that receives the same clock as the claim. */
 function setup<S extends ProcessedMessageStore>(
   makeStore: (clock: FixedClock) => S,
   runInContext?: RecordingRunInContext,

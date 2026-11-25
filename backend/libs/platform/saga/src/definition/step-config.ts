@@ -5,8 +5,8 @@ import type { StepDraft } from './step-draft.js';
 import type { StepInputOf, StepOutputOf } from './step-types.js';
 
 /**
- * Configura un paso. Los métodos devuelven el mismo objeto, así la cadena
- * sigue con `.step()`, `.pivot()` o la siguiente llamada de configuración.
+ * Configures a step. The methods return the same object, so the chain
+ * continues with `.step()`, `.pivot()` or the next configuration call.
  */
 export class StepConfig<TState, TIn, TOut> {
   constructor(
@@ -14,20 +14,20 @@ export class StepConfig<TState, TIn, TOut> {
     private readonly draft: StepDraft<TState>,
   ) {}
 
-  /** Construye la entrada de este paso desde el estado de la saga. Por defecto `undefined`. */
+  /** Builds this step's input from the saga state. Defaults to `undefined`. */
   input(fn: (state: TState) => TIn): this {
     this.draft.input = fn;
     return this;
   }
 
-  /** Aplica la salida de este paso al estado de la saga. Recibe una copia normalizada. */
+  /** Applies this step's output to the saga state. Receives a normalized copy. */
   onSuccess(fn: (state: TState, output: TOut) => void): this {
-    // El motor entrega la salida normalizada por JSON que produjo el invocador.
+    // The engine delivers the JSON-normalized output that the invoker produced.
     this.draft.onSuccess = fn as (state: TState, output: unknown) => void;
     return this;
   }
 
-  /** Construye la entrada de la compensación. Por defecto, la entrada registrada hacia delante. */
+  /** Builds the compensation input. Defaults to the input recorded going forward. */
   compensationInput(
     fn: (state: TState, forward: ForwardEntry) => unknown,
   ): this {
@@ -36,23 +36,23 @@ export class StepConfig<TState, TIn, TOut> {
   }
 
   /**
-   * Motivos de `transient-failure` que dicen que el participante avanzó y pide otra llamada, como una ronda de copia
-   * que no cupo en su plazo. El paso se repite sin gastar las suspensiones, que quedan para los fallos de verdad; antes
-   * del pivote lo acota el plazo de la saga.
+   * `transient-failure` reasons that say the participant made progress and asks for another call, like a copy round
+   * that did not fit in its deadline. The step is repeated without spending the suspensions, which are kept for real failures; before
+   * the pivot it is bounded by the saga deadline.
    */
   progressOn(...reasons: readonly string[]): this {
     this.draft.progressReasons = reasons;
     return this;
   }
 
-  /** Agrega el siguiente paso, que llama a la operación de un contrato. */
+  /** Adds the next step, which calls a contract's operation. */
   step<D extends OperationDefinition>(
     operation: D,
   ): StepConfig<TState, StepInputOf<D>, StepOutputOf<D>> {
     return this.flow.step(operation);
   }
 
-  /** Marca la frontera: los pasos agregados después nunca se compensan. */
+  /** Marks the boundary: steps added afterwards are never compensated. */
   pivot(): this {
     this.flow.markPivot();
     return this;

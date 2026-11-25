@@ -15,7 +15,7 @@ jest.setTimeout(180_000);
 const ALPHA_ID = '0193f1c2-0000-7000-8000-0000000000d1';
 const BETA_ID = '0193f1c2-0000-7000-8000-0000000000d2';
 
-/** Repositorio que lee contra el primario: lo recién confirmado. */
+/** Repository that reads against the primary: what was just committed. */
 class PrimaryProbeRepository extends ProbeRepository {
   findByNameOnPrimary(name: string): Promise<Probe | null> {
     return this.readPrimary(async (manager) => {

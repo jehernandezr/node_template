@@ -1,38 +1,38 @@
-# Módulo service-lambda
+# service-lambda module
 
-Una Lambda en arm64: consumidora de una cola SQS con respuesta parcial de lotes, o API detrás de API Gateway HTTP (`queue_arn = null`, rutas con el módulo `api-routes`).
+An arm64 Lambda: a consumer of an SQS queue with partial batch responses, or an API behind API Gateway HTTP (`queue_arn = null`, routes with the `api-routes` module).
 
-## Qué crea
+## What it creates
 
-- Función Lambda arm64 con paquete local o en S3, JSON logging, variables de entorno cifradas con KMS y X-Ray activo.
-- Mapeo de eventos SQS con `ReportBatchItemFailures`: solo los mensajes que fallan vuelven a la cola y, tras agotar los reintentos, van a su DLQ (definida en `messaging`). Admite `maximum_concurrency`, ventana de agrupación y filtros.
-- Concurrencia reservada opcional (`reserved_concurrent_executions`).
-- Cola de mensajes fallidos para invocaciones asíncronas (`dead_letter_config`), cifrada con KMS, con alarma.
-- Capa de OpenTelemetry (ADOT) por `otel_layer_arn`: el módulo fija `AWS_LAMBDA_EXEC_WRAPPER`, `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` y la configuración del collector que reenvía a OpenObserve.
-- Log group con retención y KMS, rol de mínimo privilegio y alarma de errores.
-- Opcional: ejecución en la VPC con su propio security group (`vpc_enabled`), que solo sale por HTTPS. El acceso a RDS Proxy, réplicas, Valkey y OpenObserve llega con `additional_security_group_ids` (security group de clientes del stack data).
+- arm64 Lambda function with a local or S3 package, JSON logging, KMS-encrypted environment variables and X-Ray enabled.
+- SQS event source mapping with `ReportBatchItemFailures`: only the failed messages go back to the queue and, after the retries run out, go to their DLQ (defined in `messaging`). Supports `maximum_concurrency`, batching window and filters.
+- Optional reserved concurrency (`reserved_concurrent_executions`).
+- Dead-letter queue for asynchronous invocations (`dead_letter_config`), KMS-encrypted, with an alarm.
+- OpenTelemetry (ADOT) layer through `otel_layer_arn`: the module sets `AWS_LAMBDA_EXEC_WRAPPER`, `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` and the configuration of the collector that forwards to OpenObserve.
+- Log group with retention and KMS, least-privilege role and an errors alarm.
+- Optional: execution in the VPC with its own security group (`vpc_enabled`), with HTTPS-only egress. Access to RDS Proxy, replicas, Valkey and OpenObserve comes with `additional_security_group_ids` (clients security group of the data stack).
 
-## Entradas principales
+## Main inputs
 
-| Variable                                                                                  | Descripción                                                                         |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `name_prefix`, `function_name`, `environment`                                             | Nombres y entorno.                                                                  |
-| `handler`, `runtime`                                                                      | Handler y runtime (`nodejs24.x`, la versión mayor de `.nvmrc`; otra falla el plan). |
-| `filename` o `s3_bucket` con `s3_key`, `source_code_hash`                                 | Paquete.                                                                            |
-| `queue_arn`, `queue_kms_key_arn`                                                          | Cola de `messaging` y su clave KMS.                                                 |
-| `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumo.                                                                            |
-| `reserved_concurrent_executions`                                                          | Protege la base de datos de picos.                                                  |
-| `otel_layer_arn`, `otel_collector_config_uri`                                             | OpenTelemetry. Null desactiva la capa.                                              |
-| `vpc_enabled`, `vpc_id`, `subnet_ids`                                                     | Ejecución en la VPC.                                                                |
-| `secret_arns`, `secrets_kms_key_arns`, `task_policies`                                    | Permisos adicionales.                                                               |
+| Variable                                                                                  | Description                                                                                  |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `name_prefix`, `function_name`, `environment`                                             | Names and environment.                                                                       |
+| `handler`, `runtime`                                                                      | Handler and runtime (`nodejs24.x`, the major version in `.nvmrc`; any other fails the plan). |
+| `filename` or `s3_bucket` with `s3_key`, `source_code_hash`                               | Package.                                                                                     |
+| `queue_arn`, `queue_kms_key_arn`                                                          | Queue from `messaging` and its KMS key.                                                      |
+| `batch_size`, `maximum_batching_window_seconds`, `maximum_concurrency`, `filter_patterns` | Consumption.                                                                                 |
+| `reserved_concurrent_executions`                                                          | Protects the database from spikes.                                                           |
+| `otel_layer_arn`, `otel_collector_config_uri`                                             | OpenTelemetry. Null disables the layer.                                                      |
+| `vpc_enabled`, `vpc_id`, `subnet_ids`                                                     | Execution in the VPC.                                                                        |
+| `secret_arns`, `secrets_kms_key_arns`, `task_policies`                                    | Additional permissions.                                                                      |
 
-## Salidas
+## Outputs
 
 `function_name`, `function_arn`, `role_arn`, `role_name`, `security_group_id`, `log_group_name`, `async_dlq_arn`, `kms_key_arn`, `event_source_mapping_uuid`.
 
-## Notas
+## Notes
 
-- La visibilidad de la cola de origen debe ser al menos seis veces `timeout`; lo declara la topología de mensajería.
-- El handler (`lambda.ts`) debe devolver `batchItemFailures` con los identificadores de los mensajes fallidos.
-- La capa ADOT depende de la región y la arquitectura: confirma el ARN vigente antes de usarlo.
-- La clave KMS es del módulo salvo que pases `kms_key_arn`; su política debe permitir a CloudWatch Logs y a SQS. El stack `service` pasa la CMK de cómputo del ambiente (`compute_logs_kms_key_arn` de `platform`).
+- The visibility timeout of the source queue must be at least six times `timeout`; the messaging topology declares it.
+- The handler (`lambda.ts`) must return `batchItemFailures` with the identifiers of the failed messages.
+- The ADOT layer depends on the region and the architecture: confirm the current ARN before using it.
+- The KMS key is the module's unless you pass `kms_key_arn`; its policy must allow CloudWatch Logs and SQS. The `service` stack passes the environment's compute CMK (`compute_logs_kms_key_arn` from `platform`).

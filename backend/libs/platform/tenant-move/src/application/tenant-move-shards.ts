@@ -13,7 +13,7 @@ import { TenantMoveError } from '../errors/tenant-move.error.js';
 import type { TenantMoveTarget } from '../targets/tenant-move-target.js';
 import type { TenantMoveTargets } from '../targets/tenant-move-targets.js';
 
-/** El shard de origen de un tenant y el de su destino, con sus `DataSource`. */
+/** The source shard of a tenant and its target shard, with their `DataSource`. */
 export class TenantMoveShards {
   constructor(
     private readonly router: ShardRouter,
@@ -23,8 +23,8 @@ export class TenantMoveShards {
   ) {}
 
   /**
-   * @throws TenantMoveError `NotMovable` si el tenant reparte sus datos en varios shards o ya vive en el destino.
-   * @throws WrongRegionError si el tenant no vive en la región de este proceso.
+   * @throws TenantMoveError `NotMovable` if the tenant spreads its data across several shards or already lives on the target.
+   * @throws WrongRegionError if the tenant does not live in this process's region.
    */
   async source(move: TenantMoveRef): Promise<DataSource> {
     const target = this.targets.of(move);
@@ -45,7 +45,7 @@ export class TenantMoveShards {
     return this.sources.get(resolved);
   }
 
-  /** @throws TenantMoveError `UnknownTarget` si el grupo no está configurado o su shard no está en el directorio. */
+  /** @throws TenantMoveError `UnknownTarget` if the group is not configured or its shard is not in the directory. */
   async target(move: TenantMoveRef): Promise<DataSource> {
     const target = this.targets.of(move);
     const instance = await this.directory.getInstance(target.shard);
@@ -59,12 +59,12 @@ export class TenantMoveShards {
     return this.sources.get({ logicalShard: target.shard, instance });
   }
 
-  /** El placement del tenant tal como lo guarda el directorio del servicio, sin pasar por el caché del router. */
+  /** The tenant placement as the service directory stores it, bypassing the router cache. */
   placementOf(tenantId: string): Promise<TenantPlacement | undefined> {
     return this.directory.getPlacement(tenantId);
   }
 
-  /** @throws TenantMoveError `UnknownTarget` si el grupo no está configurado para la región pedida. */
+  /** @throws TenantMoveError `UnknownTarget` if the group is not configured for the requested region. */
   targetOf(move: TenantMoveRef): TenantMoveTarget {
     return this.targets.of(move);
   }

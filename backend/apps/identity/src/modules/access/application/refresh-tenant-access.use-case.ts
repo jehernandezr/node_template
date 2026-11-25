@@ -5,8 +5,8 @@ import { TenantAccessRepository } from '../domain/access-store.js';
 import { AccessVersionPublisher } from './access-version-publisher.js';
 
 /**
- * Sube la versión de permisos del tenant cuando cambia algo que va en el acceso de todos sus miembros (las
- * funcionalidades del plan): cada servicio deja de usar el acceso que guardó y el siguiente token lo trae nuevo.
+ * Bumps the tenant's permission version when something in the access of all its members changes (the
+ * plan features): each service stops using the access it cached and the next token brings it fresh.
  */
 @Injectable()
 export class RefreshTenantAccess {

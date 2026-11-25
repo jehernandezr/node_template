@@ -2,9 +2,9 @@ import type { Message } from '@aws-sdk/client-sqs';
 import type { SqsDelivery } from './sqs-delivery.js';
 import type { SqsLambdaRecord } from './sqs-lambda-event.js';
 
-/** Convierte lo que entrega SQS (Lambda o `ReceiveMessage`) en un {@link SqsDelivery}. */
+/** Converts what SQS delivers (Lambda or `ReceiveMessage`) into a {@link SqsDelivery}. */
 export class SqsDeliveryMapper {
-  /** Un conteo ausente o inválido cuenta como la primera entrega. */
+  /** A missing or invalid count counts as the first delivery. */
   static receiveCount(value: string | undefined): number {
     const count = Number(value);
     return Number.isInteger(count) && count > 0 ? count : 1;
@@ -24,7 +24,7 @@ export class SqsDeliveryMapper {
     };
   }
 
-  /** `undefined` cuando al mensaje le falta el id o el recibo: no se puede confirmar. */
+  /** `undefined` when the message lacks the id or the receipt: it cannot be acknowledged. */
   static fromMessage(message: Message): SqsDelivery | undefined {
     if (!message.MessageId || !message.ReceiptHandle) {
       return undefined;

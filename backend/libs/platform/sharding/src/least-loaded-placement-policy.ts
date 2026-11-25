@@ -9,14 +9,14 @@ import {
 } from './placement-policy.js';
 
 /**
- * Ubica tenants en el shard de la región con menos tenants (carga = tenants por shard).
+ * Places tenants on the region shard with the fewest tenants (load = tenants per shard).
  *
- * - Idempotente: un tenant que ya está en `current` recibe su placement existente, así los reintentos son seguros.
- * - Los tenants dedicados solo toman shards sin ningún tenant.
- * - Los shards que usa un tenant dedicado quedan excluidos para los demás.
- * - Los empates van al shard que aparece primero en la lista.
+ * - Idempotent: a tenant already in `current` gets its existing placement, so retries are safe.
+ * - Dedicated tenants only take shards with no tenants at all.
+ * - Shards used by a dedicated tenant are excluded for everyone else.
+ * - Ties go to the shard that appears first in the list.
  *
- * @throws ShardingError `UnknownShard` cuando no hay un shard adecuado en la región.
+ * @throws ShardingError `UnknownShard` when there is no suitable shard in the region.
  */
 export class LeastLoadedPlacementPolicy extends ShardPlacementPolicy {
   place(

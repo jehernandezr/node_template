@@ -4,9 +4,9 @@ import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 
 const ISSUER = 'https://identity.test';
 
-/** Variables de entorno válidas para `identityConfigSchema`, con secretos nuevos en cada llamada. */
+/** Valid environment variables for `identityConfigSchema`, with new secrets on each call. */
 export class IdentityTestEnvironment {
-  /** URLs de los servicios a los que llaman las sagas; las pruebas que las ejercitan las reemplazan por stubs. */
+  /** URLs of the services the sagas call; the tests that exercise them replace them with stubs. */
   static readonly PEERS = {
     billing: 'http://billing.test',
     notifications: 'http://notifications.test',
@@ -15,8 +15,8 @@ export class IdentityTestEnvironment {
   } as const;
 
   /**
-   * `base` gana sobre los valores por defecto y `SERVICE_NAME` siempre queda en `identity`, aunque
-   * el entorno de otro servicio (por ejemplo el de Valkey) traiga otro nombre.
+   * `base` wins over the defaults and `SERVICE_NAME` always stays `identity`, even if
+   * another service's environment (for example Valkey's) brings a different name.
    */
   static build(base: ConfigEnv = {}): ConfigEnv {
     const ids = new SequentialIdGenerator();
@@ -56,7 +56,7 @@ export class IdentityTestEnvironment {
     return randomBytes(32).toString('base64url');
   }
 
-  /** Una clave ES256 nueva en JWK privado, con `kid` aleatorio, como la que espera `IDENTITY_SIGNING_KEYS`. */
+  /** A new ES256 key as a private JWK, with a random `kid`, as `IDENTITY_SIGNING_KEYS` expects. */
   private static signingKeys(): string {
     const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
     return JSON.stringify([

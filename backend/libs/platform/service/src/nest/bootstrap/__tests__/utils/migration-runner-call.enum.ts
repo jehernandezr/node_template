@@ -1,4 +1,4 @@
-/** Métodos de `ShardedMigrationRunner` que anota `FakeMigrationRunner`. */
+/** `ShardedMigrationRunner` methods that `FakeMigrationRunner` records. */
 export enum MigrationRunnerCall {
   Catalog = 'migrateCatalog',
   Shard = 'migrateShard',

@@ -5,10 +5,10 @@ import {
 } from '@platform/primitives';
 
 /**
- * Almacén de idempotencia del router en memoria, para pruebas. Es atómico
- * dentro de un proceso, pero no es un modo de ejecución: un servicio real usa
- * el almacén de `adapters-postgres`. El tipo del resultado es genérico solo
- * para que la prueba de contrato compartida guarde los suyos.
+ * In-memory router idempotency store, for tests. It is atomic
+ * within a process, but it is not a runtime mode: a real service uses
+ * the store from `adapters-postgres`. The result type is generic only
+ * so the shared contract test can store its own.
  */
 export class InMemoryProcessedOperationStore<
   R = FinalOutcome<unknown>,

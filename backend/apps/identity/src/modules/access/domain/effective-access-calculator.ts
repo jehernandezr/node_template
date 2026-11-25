@@ -3,13 +3,13 @@ import type { Group } from './group.js';
 import type { Membership } from './membership.js';
 import type { Role } from './role.js';
 
-/** Permisos y roles efectivos de un miembro. */
+/** Effective permissions and roles of a member. */
 export interface EffectiveAccess {
   readonly permissions: readonly Permission[];
   readonly roles: readonly string[];
 }
 
-/** Unión de los permisos de los roles de los grupos del miembro. */
+/** Union of the permissions of the roles of the member's groups. */
 export class EffectiveAccessCalculator {
   calculate(
     membership: Membership,
@@ -23,7 +23,7 @@ export class EffectiveAccessCalculator {
     };
   }
 
-  /** Permisos que otorga pertenecer a esos grupos. */
+  /** Permissions granted by belonging to those groups. */
   permissionsOfGroups(
     groupIds: readonly string[],
     groups: readonly Group[],
@@ -32,7 +32,7 @@ export class EffectiveAccessCalculator {
     return this.union(this.rolesOfGroups(groupIds, groups, roles));
   }
 
-  /** Permisos que otorga un grupo con esos roles. */
+  /** Permissions granted by a group with those roles. */
   permissionsOfRoles(
     roleIds: readonly string[],
     roles: readonly Role[],

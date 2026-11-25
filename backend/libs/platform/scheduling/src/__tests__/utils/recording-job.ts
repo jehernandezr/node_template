@@ -9,7 +9,7 @@ export enum RecordingJobBehavior {
   Succeed = 'succeed',
   Fail = 'fail',
   HangUntilAborted = 'hang-until-aborted',
-  /** Termina bien cuando la prueba llama a `release`, aunque se aborte antes. */
+  /** Finishes successfully when the test calls `release`, even if it is aborted earlier. */
   WaitForRelease = 'wait-for-release',
 }
 
@@ -24,7 +24,7 @@ export interface RecordingJobOptions {
 const HOUR_MS = 3_600_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
 
-/** Job que anota cada corrida para que las pruebas verifiquen qué ocurrió. */
+/** Job that records each run so the tests can verify what happened. */
 export class RecordingJob extends ScheduledJob {
   override readonly name: string;
   override readonly schedule: JobSchedule;
@@ -76,7 +76,7 @@ export class RecordingJob extends ScheduledJob {
     }
   }
 
-  /** Deja terminar la corrida de un job `WaitForRelease`. */
+  /** Lets the run of a `WaitForRelease` job finish. */
   release(): void {
     this.releaseRun();
   }

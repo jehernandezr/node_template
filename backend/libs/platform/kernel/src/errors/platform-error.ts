@@ -1,43 +1,43 @@
 import { FailureKind } from './failure-kind.js';
 
-/** Opciones comunes al construir un `PlatformError`. */
+/** Common options when building a `PlatformError`. */
 export interface PlatformErrorOptions {
   /**
-   * `true` si reintentar la misma operación puede dar otro resultado. Sin
-   * valor, o con `false`, quien clasifica la falla sigue a la `cause` y, si
-   * nada la explica, la trata como permanente.
+   * `true` if retrying the same operation can give a different result. Without a
+   * value, or with `false`, whoever classifies the failure follows the `cause` and, if
+   * nothing explains it, treats it as permanent.
    */
   readonly retryable?: boolean;
-  /** Datos de diagnóstico. No deben incluir secretos ni datos personales. */
+  /** Diagnostic data. Must not include secrets or personal data. */
   readonly details?: Readonly<Record<string, unknown>>;
-  /** Error que lo originó. Se guarda en la propiedad nativa `cause`. */
+  /** Error that caused it. Stored in the native `cause` property. */
   readonly cause?: unknown;
   /**
-   * Clase de la falla. Por defecto `Transient` si `retryable` es `true` y
-   * `Permanent` si no. Una subclase que necesita otra (tiempo agotado,
-   * violación de protocolo) la pasa en `super`.
+   * Kind of the failure. Defaults to `Transient` if `retryable` is `true` and
+   * `Permanent` otherwise. A subclass that needs another one (timeout,
+   * protocol violation) passes it in `super`.
    */
   readonly failureKind?: FailureKind;
 }
 
 /**
- * Base de todos los errores de la plataforma. El `code` es estable y lo
- * consumen otros servicios y el frontend; el `message` es solo para personas
- * y no debe incluir valores de entrada crudos.
+ * Base of all platform errors. The `code` is stable and other services
+ * and the frontend consume it; the `message` is only for people
+ * and must not include raw input values.
  *
- * El constructor deja calculada la propiedad `failureKind`, pero la clase no
- * la declara: varias subclases la redeclaran sin `override` y, con
- * `noImplicitOverride`, una declaración aquí las dejaría sin compilar. Quien
- * tiene un `PlatformError` la lee con `FailureClassifier`.
+ * The constructor computes the `failureKind` property, but the class does not
+ * declare it: several subclasses redeclare it without `override` and, with
+ * `noImplicitOverride`, a declaration here would make them fail to compile. Whoever
+ * has a `PlatformError` reads it with `FailureClassifier`.
  */
 export abstract class PlatformError extends Error {
-  /** Código único con forma `SERVICIO.SUBMODULO.ERROR`. */
+  /** Unique code shaped as `SERVICE.SUBMODULE.ERROR`. */
   abstract readonly code: string;
 
-  /** Si reintentar la misma operación puede dar otro resultado. */
+  /** Whether retrying the same operation can give a different result. */
   readonly retryable: boolean;
 
-  /** Datos adicionales opcionales para diagnóstico. */
+  /** Optional additional diagnostic data. */
   readonly details?: Readonly<Record<string, unknown>>;
 
   constructor(message: string, options: PlatformErrorOptions = {}) {
@@ -58,7 +58,7 @@ export abstract class PlatformError extends Error {
     });
   }
 
-  /** Indica si `value` es un `PlatformError`. */
+  /** Whether `value` is a `PlatformError`. */
   static is(value: unknown): value is PlatformError {
     return value instanceof PlatformError;
   }

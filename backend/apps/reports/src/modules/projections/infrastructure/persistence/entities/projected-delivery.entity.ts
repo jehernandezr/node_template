@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `proj_deliveries`: cada notificación del tenant y los canales por los que salió. */
+/** `proj_deliveries`: each notification of the tenant and the channels it went out through. */
 @Entity({ name: 'proj_deliveries' })
 @Index(
   'proj_deliveries_tenant_notification_key',

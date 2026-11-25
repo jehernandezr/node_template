@@ -12,7 +12,7 @@ import { TopicDef } from './topic-def.js';
 import { Topology } from './topology.js';
 import { MessagingErrorCode } from '../errors/messaging-error-code.enum.js';
 
-/** Traduce una cola del contrato a su definición de topología. */
+/** Translates a contract queue into its topology definition. */
 function queueDefOf(
   queue: QueueDefinition,
   topicDef: (topic: TopicDefinition) => TopicDef,
@@ -41,29 +41,29 @@ function queueDefOf(
 }
 
 /**
- * Construye la topología en tiempo de ejecución de un servicio a partir de sus
- * contratos.
+ * Builds the runtime topology of a service from its
+ * contracts.
  *
- * Se pasan el contrato del propio servicio y los de los servicios con los que
- * habla: los dueños de los comandos que envía (`sends`) y de los tópicos a los
- * que se suscriben sus colas. Los tópicos de una suscripción entran aunque falte
- * su contrato, porque la definición viaja con la suscripción; un comando de
- * `sends` necesita el contrato que declara su cola.
+ * It receives the service's own contract and those of the services it
+ * talks to: the owners of the commands it sends (`sends`) and of the topics
+ * its queues subscribe to. The topics of a subscription are included even if
+ * their contract is missing, because the definition travels with the subscription; a command in
+ * `sends` needs the contract that declares its queue.
  *
- * Cada evento obtiene la ruta a su tópico y cada comando la ruta a su cola, con
- * el contrato del kit, así el bus y el relay validan el payload y el
- * dispatcher sabe si un tipo sin manejador es un evento (se ignora) o un
- * comando. La topología se valida antes de devolverse (`TopologyError` si no es
- * válida).
+ * Each event gets the route to its topic and each command the route to its queue, with
+ * the kit contract, so the bus and the relay validate the payload and the
+ * dispatcher knows whether a type without a handler is an event (ignored) or a
+ * command. The topology is validated before being returned (`TopologyError` if it is not
+ * valid).
  */
 export function topologyFromContracts(
   contracts: readonly ServiceContract[],
 ): Topology {
-  // Por nombre: un suscriptor apunta al tópico de otro servicio con una referencia, que es otro objeto.
+  // By name: a subscriber points to another service's topic with a reference, which is a different object.
   const topics = new Map<string, TopicDef>();
   const queues: QueueDef[] = [];
   const routes: RouteDef[] = [];
-  // Por tipo, por la misma razón: lo que un servicio envía puede ser una referencia al comando.
+  // By type, for the same reason: what a service sends can be a reference to the command.
   const commandQueues = new Map<string, QueueDef>();
 
   const topicDef = (topic: TopicDefinition): TopicDef => {

@@ -3,7 +3,7 @@ import type { FlagRule } from './flag-rule.js';
 import { FlagStore } from './flag-store.js';
 import { RolloutBucket } from './rollout-bucket.js';
 
-/** Decide qué flags están encendidos para un contexto. */
+/** Decides which flags are on for a context. */
 export class FlagEvaluator {
   constructor(private readonly store: FlagStore) {}
 

@@ -1,7 +1,7 @@
 import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
-/** `identity_lookup`, en el catálogo: un email (por su huella) por plataforma y dónde vive su usuario. */
+/** `identity_lookup`, in the catalog: one email (by its hash) per platform and where its user lives. */
 @Entity({ name: 'identity_lookup' })
 export class IdentityLookupEntity {
   @PrimaryColumn({ type: 'bytea', name: 'email_fingerprint' })

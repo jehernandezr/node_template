@@ -10,7 +10,7 @@ import {
   type OperationDefinition,
 } from './define-operation.js';
 
-/** Las dos operaciones del directorio de tenants de un servicio, con las claves que usa su contrato. */
+/** The two tenant directory operations of a service, with the keys its contract uses. */
 export interface TenantDirectoryOperations {
   readonly tenantDirectoryPlace: OperationDefinition<
     typeof TenantDirectoryEntrySchema,
@@ -23,9 +23,9 @@ export interface TenantDirectoryOperations {
 }
 
 /**
- * Declara las operaciones `<servicio>.tenant-directory.{place,remove}.v1` que `@platform/tenant-move` registra en
- * cada servicio que sigue la ubicación que identity elige. Los ids se arman con el nombre del servicio y el enum
- * `<S>Operation` de cada contrato debe repetirlos.
+ * Declares the `<service>.tenant-directory.{place,remove}.v1` operations that `@platform/tenant-move` registers in
+ * each service that follows the placement identity chooses. The ids are built from the service name and the
+ * `<S>Operation` enum of each contract must repeat them.
  */
 export function defineTenantDirectoryOperations(
   service: string,
@@ -39,7 +39,7 @@ export function defineTenantDirectoryOperations(
       idempotent: true,
       compensatedBy: id('remove'),
       timeoutMs: TenantDirectoryLimits.placeTimeoutMs,
-      description: `Anota un tenant nuevo en el directorio de shards de ${service} con la región y los grupos que eligió identity; si ya está, lo deja como está.`,
+      description: `Records a new tenant in the ${service} shard directory with the region and groups identity chose; if it is already there, leaves it as is.`,
     }),
     tenantDirectoryRemove: defineOperation({
       id: id('remove'),
@@ -48,9 +48,9 @@ export function defineTenantDirectoryOperations(
       idempotent: true,
       compensatedBy: Compensation.None,
       compensationReason:
-        'Solo corre como compensación del alta, antes de que el tenant tenga datos: no hay nada que restaurar.',
+        'Only runs as compensation of the creation, before the tenant has data: there is nothing to restore.',
       timeoutMs: TenantDirectoryLimits.removeTimeoutMs,
-      description: `Retira de ${service} la fila del directorio de un tenant cuya alta se deshace.`,
+      description: `Removes from ${service} the directory row of a tenant whose creation is undone.`,
     }),
   };
 }

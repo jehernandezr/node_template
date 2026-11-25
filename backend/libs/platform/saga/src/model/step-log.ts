@@ -2,7 +2,7 @@ import type { ForwardEntry } from '../definition/forward-entry.js';
 import type { StepDirection } from './step-direction.enum.js';
 import type { StepLogEntry } from './step-log-entry.js';
 
-/** Bitácora de pasos de una saga, de solo lectura. */
+/** Read-only step journal of a saga. */
 export class StepLog {
   private constructor(private readonly items: readonly StepLogEntry[]) {}
 
@@ -10,19 +10,19 @@ export class StepLog {
     return new StepLog(entries);
   }
 
-  /** Entradas en el orden en que las devolvió el almacén. */
+  /** Entries in the order the store returned them. */
   entries(): readonly StepLogEntry[] {
     return this.items;
   }
 
-  /** La entrada de un paso en una dirección, si existe. */
+  /** The entry of a step in one direction, if it exists. */
   find(stepIndex: number, direction: StepDirection): StepLogEntry | undefined {
     return this.items.find(
       (entry) => entry.stepIndex === stepIndex && entry.direction === direction,
     );
   }
 
-  /** Bitácora con `entry` en lugar de su antecesora, o agregada si es nueva. */
+  /** Journal with `entry` in place of its predecessor, or appended if it is new. */
   with(entry: StepLogEntry): StepLog {
     const matches = (item: StepLogEntry): boolean =>
       item.stepIndex === entry.stepIndex && item.direction === entry.direction;
@@ -33,7 +33,7 @@ export class StepLog {
     );
   }
 
-  /** La vista de una entrada hacia delante que reciben los constructores de entrada de compensación. */
+  /** The view of a forward entry that the compensation input builders receive. */
   static forwardEntryOf(entry: StepLogEntry): ForwardEntry {
     return {
       input: entry.input,

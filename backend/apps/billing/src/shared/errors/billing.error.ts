@@ -1,7 +1,7 @@
 import { BillingErrorCode } from '@contracts/billing';
 import { DomainError } from '@platform/kernel';
 
-/** Regla de billing que no se cumple. El estado HTTP y la audiencia salen del catálogo del contrato. */
+/** Billing rule that is not met. The HTTP status and the audience come from the contract catalog. */
 export class BillingError extends DomainError {
   constructor(
     readonly code: BillingErrorCode,

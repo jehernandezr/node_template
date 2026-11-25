@@ -9,8 +9,8 @@ import { SessionRevoker } from './session-revoker.js';
 import { SessionTokenIssuer } from './session-token-issuer.js';
 
 /**
- * Cierra la sesión del session token. Es idempotente: un token mal formado, de una sesión que no existe o
- * ya cerrada responde igual, sin revelar nada.
+ * Closes the session token's session. It is idempotent: a malformed token, one from a session that does not exist or
+ * one already closed responds the same, without revealing anything.
  */
 @Injectable()
 export class SignOut implements UseCase<string | undefined, void> {

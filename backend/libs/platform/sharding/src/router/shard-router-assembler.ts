@@ -14,10 +14,10 @@ import { SHARD_ROUTER_DEFAULTS } from './shard-router-defaults.js';
 import type { ShardRouterOptions } from './shard-router-options.js';
 import type { ShardRouterParts } from './shard-router-parts.js';
 
-/** Valida las opciones de `ShardRouter` y construye sus piezas con las dependencias cruzadas ya conectadas. */
+/** Validates the `ShardRouter` options and builds its parts with the cross dependencies already wired. */
 export class ShardRouterAssembler {
   /**
-   * @throws ShardingError `InvalidConfiguration` por un TTL, un límite o un patrón inválido.
+   * @throws ShardingError `InvalidConfiguration` for an invalid TTL, limit or pattern.
    */
   static assemble(options: ShardRouterOptions): ShardRouterParts {
     const localTtlMs = options.localTtlMs ?? SHARD_ROUTER_DEFAULTS.localTtlMs;
@@ -52,7 +52,7 @@ export class ShardRouterAssembler {
       options.tenantIdPattern ?? TenantId.DEFAULT_PATTERN,
       maxKeyLength,
     );
-    // Un solo registro de invalidaciones de tenants, compartido por la carga, la invalidación y los cambios.
+    // A single tenant invalidation log, shared by loading, invalidation and changes.
     const tenantInvalidations = new InvalidationLog(maxPlacements);
     const cache = new PlacementCache(
       { localTtlMs, sharedTtlMs, tombstoneTtlMs, maxPlacements },

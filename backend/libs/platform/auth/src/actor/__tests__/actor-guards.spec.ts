@@ -8,7 +8,7 @@ import type {
 } from '../actor.js';
 import { ActorGuards } from '../actor-guards.js';
 
-/** `jti` del access token de prueba. */
+/** `jti` of the test access token. */
 const JTI = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f05';
 
 const user: UserActor = {

@@ -18,8 +18,8 @@ import { OriginPolicyMiddleware } from './origin-policy.middleware.js';
 import { SecurityHeadersMiddleware } from './security-headers.middleware.js';
 
 /**
- * Entrada HTTP de un servicio sobre NestJS: middlewares, guard, interceptores, pipe y filtro
- * de la ruta guiada por el contrato. Es global y exige `ObservabilityModule`, `AuthModule` y
+ * HTTP entry of a service on NestJS: middlewares, guard, interceptors, pipe and filter
+ * of the contract-driven route. It is global and requires `ObservabilityModule`, `AuthModule` and
  * `RateLimitModule`.
  */
 @Module({})
@@ -42,8 +42,8 @@ export class HttpModule implements NestModule {
   }
 
   /**
-   * Registra, en este orden, `RequestContextMiddleware`, `SecurityHeadersMiddleware`,
-   * `OriginPolicyMiddleware` y `JsonBodyPolicyMiddleware` en todas las rutas.
+   * Registers, in this order, `RequestContextMiddleware`, `SecurityHeadersMiddleware`,
+   * `OriginPolicyMiddleware` and `JsonBodyPolicyMiddleware` on all routes.
    */
   configure(consumer: MiddlewareConsumer): void {
     consumer

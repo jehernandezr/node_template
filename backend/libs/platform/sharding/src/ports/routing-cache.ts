@@ -1,12 +1,12 @@
-/** Caché compartido entre procesos (por ejemplo Valkey). Los valores son cadenas JSON. */
+/** Cache shared across processes (for example Valkey). Values are JSON strings. */
 export abstract class RoutingCache {
   abstract get(key: string): Promise<string | undefined>;
 
   /**
-   * Escribe solo si la clave no existe, expiró o la versión guardada es menor;
-   * una versión igual se rechaza. Debe ser atómica: `ShardRouter` depende de
-   * ello para que una lápida no la pise un placement más viejo.
-   * @returns `true` si escribió.
+   * Writes only if the key does not exist, expired, or the stored version is lower;
+   * an equal version is rejected. Must be atomic: `ShardRouter` relies on
+   * it so that an older placement does not overwrite a tombstone.
+   * @returns `true` if it wrote.
    */
   abstract setIfNewer(
     key: string,
@@ -15,6 +15,6 @@ export abstract class RoutingCache {
     ttlMs: number,
   ): Promise<boolean>;
 
-  /** Borra la clave. `ShardRouter` no la llama: las invalidaciones escriben una lápida versionada. */
+  /** Deletes the key. `ShardRouter` does not call it: invalidations write a versioned tombstone. */
   abstract delete(key: string): Promise<void>;
 }

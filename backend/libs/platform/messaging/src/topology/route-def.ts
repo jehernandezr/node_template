@@ -6,16 +6,16 @@ import type { QueueDef } from './queue-def.js';
 import type { TargetKind } from './target-kind.enum.js';
 import type { TopicDef } from './topic-def.js';
 
-/** Liga un tipo de mensaje con su destino. */
+/** Binds a message type to its destination. */
 export class RouteDef {
   readonly kind: MessageKind;
   readonly type: string;
   readonly target: TopicDef | QueueDef;
   readonly targetKind: TargetKind;
   /**
-   * Contrato con el que se declaró la ruta. La validación de la topología exige
-   * uno (aquí o en `ValidateOptions.contracts`), porque el relay del outbox y el
-   * dispatcher validan los payloads con él.
+   * Contract the route was declared with. The topology validation requires
+   * one (here or in `ValidateOptions.contracts`), because the outbox relay and the
+   * dispatcher validate payloads with it.
    */
   readonly contract: MessageDefinition | null;
 
@@ -33,7 +33,7 @@ export class RouteDef {
     this.contract = contract;
   }
 
-  /** Si el destino es un tópico o una cola FIFO (entonces necesita id de grupo). */
+  /** Whether the destination is a FIFO topic or queue (then it needs a group id). */
   get fifo(): boolean {
     return 'isFifo' in this.target ? this.target.isFifo : this.target.fifo;
   }

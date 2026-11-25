@@ -1,10 +1,10 @@
 import type { JobContext } from '../../ports/scheduling/job-context.js';
 
-/** Contextos de corrida para llamar a `ScheduledJob.run()` directo en una prueba. */
+/** Run contexts to call `ScheduledJob.run()` directly in a test. */
 export class JobContexts {
   private static readonly STARTED_AT = new Date('2026-01-01T00:00:00.000Z');
 
-  /** Una corrida en curso, que nadie aborta. */
+  /** A run in progress, which nobody aborts. */
   static live(runId = 'test-run'): JobContext {
     return {
       signal: new AbortController().signal,
@@ -13,7 +13,7 @@ export class JobContexts {
     };
   }
 
-  /** Una corrida cuyo plazo ya venció: el job debe parar en el siguiente punto seguro. */
+  /** A run whose deadline already expired: the job must stop at the next safe point. */
   static aborted(runId = 'test-run'): JobContext {
     return {
       signal: AbortSignal.abort(),

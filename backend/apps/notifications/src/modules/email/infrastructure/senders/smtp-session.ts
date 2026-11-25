@@ -1,14 +1,14 @@
 import { connect, type Socket } from 'node:net';
 
-/** Una respuesta del servidor SMTP: el código y el texto de sus líneas. */
+/** A response from the SMTP server: the code and the text of its lines. */
 interface SmtpReply {
   readonly code: number;
   readonly text: string;
 }
 
 /**
- * Conversación SMTP sobre una conexión TCP: envía un comando y espera la respuesta completa, que puede venir
- * en varias líneas (`250-...` hasta `250 ...`). Sin autenticación ni TLS: solo para un servidor de desarrollo.
+ * SMTP conversation over a TCP connection: sends a command and waits for the full response, which can span
+ * several lines (`250-...` up to `250 ...`). No authentication or TLS: only for a development server.
  */
 export class SmtpSession {
   private buffer = '';
@@ -42,13 +42,13 @@ export class SmtpSession {
     return session;
   }
 
-  /** @throws Error si el servidor responde con otro código. */
+  /** @throws Error if the server responds with another code. */
   async command(line: string, expected: number): Promise<SmtpReply> {
     this.socket.write(`${line}\r\n`);
     return this.expect(expected);
   }
 
-  /** Envía el cuerpo de `DATA` ya terminado en CRLF y la línea con el punto final. */
+  /** Sends the `DATA` body already terminated in CRLF and the line with the final dot. */
   async data(message: string, expected: number): Promise<SmtpReply> {
     this.socket.write(`${message}.\r\n`);
     return this.expect(expected);

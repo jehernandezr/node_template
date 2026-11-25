@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { RateLimitErrorCode } from './rate-limit-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/rate-limit`. */
+/** Catalog of the `@platform/rate-limit` codes. */
 export const rateLimitErrorCatalog = defineErrorCatalog(RateLimitErrorCode, {
   [RateLimitErrorCode.Exceeded]: ErrorSpecs.pub(
     429,

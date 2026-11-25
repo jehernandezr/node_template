@@ -13,9 +13,9 @@ import type { Output } from './output.js';
 import { WriteMode } from './write-mode.js';
 
 const USAGE =
-  'Uso: contracts-export <export|check|topology-export|topology-check|openapi>';
+  'Usage: contracts-export <export|check|topology-export|topology-check|openapi>';
 
-/** Interpreta el subcomando, elige modo y alcance y devuelve el código de salida. */
+/** Parses the subcommand, chooses mode and scope and returns the exit code. */
 export class ExportCommand {
   constructor(
     private readonly exporter: ContractExporter,

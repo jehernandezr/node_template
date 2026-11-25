@@ -1,22 +1,22 @@
 import type { ActorType } from './actor-type.enum.js';
 
-/** Datos con los que se abre un contexto de petición, mensaje o job. */
+/** Data a request, message or job context is opened with. */
 export interface RequestContextInit {
   /**
-   * `traceId` de la operación: 32 hex o UUIDv7 con guiones. Se normaliza a
-   * 32 hex. Si hay un span de OpenTelemetry activo, manda el del span.
+   * `traceId` of the operation: 32 hex or hyphenated UUIDv7. It is normalized to
+   * 32 hex. If there is an active OpenTelemetry span, the span's one wins.
    */
   readonly traceId?: string;
   readonly spanId?: string;
-  /** Trace id del `traceparent` que mandó un cliente externo (no se continúa su traza). */
+  /** Trace id of the `traceparent` sent by an external client (its trace is not continued). */
   readonly externalTraceId?: string;
   readonly tenantId?: string;
   readonly actorId?: string;
   readonly actorType?: ActorType;
-  /** Usuario final. Coincide con `actorId` cuando `actorType` es `User`. */
+  /** End user. Matches `actorId` when `actorType` is `User`. */
   readonly userId?: string;
-  /** Región de residencia del tenant (claim `rgn` del JWT). */
+  /** Residency region of the tenant (JWT `rgn` claim). */
   readonly region?: string;
-  /** La petición entró en la muestra de debug (`LOG_SAMPLE_RATE`). */
+  /** Whether the request was included in the debug sample (`LOG_SAMPLE_RATE`). */
   readonly debugSampled?: boolean;
 }

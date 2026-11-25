@@ -17,8 +17,8 @@ import {
 import { SessionGuardErrors } from './session-guard.errors.js';
 
 /**
- * `POST /v1/tenants`: crea un tenant y deja al usuario como dueño. El tenant se
- * aprovisiona en una saga: responde 202 y el cliente consulta `GET /v1/sagas/{sagaId}`.
+ * `POST /v1/tenants`: creates a tenant and makes the user its owner. The tenant is
+ * provisioned in a saga: responds 202 and the client polls `GET /v1/sagas/{sagaId}`.
  */
 export const CreateTenantRoute = defineRoute({
   id: IdentityRoute.CreateTenant,
@@ -30,10 +30,10 @@ export const CreateTenantRoute = defineRoute({
   errors: [...SessionGuardErrors, IdentityErrorCode.TenantSlugTaken],
   access: Access.authenticated(),
   description:
-    'Inicia el aprovisionamiento de un tenant y deja al usuario autenticado como dueño.',
+    'Starts provisioning a tenant and makes the authenticated user its owner.',
 });
 
-/** `GET /v1/tenant`: tenant de la sesión actual. */
+/** `GET /v1/tenant`: tenant of the current session. */
 export const GetTenantRoute = defineRoute({
   id: IdentityRoute.GetTenant,
   method: HttpMethod.Get,
@@ -41,10 +41,10 @@ export const GetTenantRoute = defineRoute({
   response: TenantSummarySchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Devuelve el tenant de la sesión actual.',
+  description: 'Returns the tenant of the current session.',
 });
 
-/** `PATCH /v1/tenant`: cambia el nombre del tenant de la sesión actual. */
+/** `PATCH /v1/tenant`: changes the name of the current session's tenant. */
 export const UpdateTenantRoute = defineRoute({
   id: IdentityRoute.UpdateTenant,
   method: HttpMethod.Patch,
@@ -55,10 +55,10 @@ export const UpdateTenantRoute = defineRoute({
   access: Access.authenticated({
     permissions: [Permission.IdentityTenantManage],
   }),
-  description: 'Cambia el nombre del tenant de la sesión actual.',
+  description: 'Changes the name of the current session tenant.',
 });
 
-/** `GET /v1/me/tenants`: tenants a los que pertenece el usuario. */
+/** `GET /v1/me/tenants`: tenants the user belongs to. */
 export const ListMyTenantsRoute = defineRoute({
   id: IdentityRoute.ListMyTenants,
   method: HttpMethod.Get,
@@ -67,5 +67,5 @@ export const ListMyTenantsRoute = defineRoute({
   response: MyTenantPageSchema,
   errors: SessionGuardErrors,
   access: Access.authenticated(),
-  description: 'Lista los tenants a los que pertenece el usuario.',
+  description: 'Lists the tenants the user belongs to.',
 });

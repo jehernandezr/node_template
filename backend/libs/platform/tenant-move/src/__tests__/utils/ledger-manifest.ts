@@ -2,7 +2,7 @@ import { TenantMoveManifest } from '../../manifest/tenant-move-manifest.js';
 import { TenantMoveSelectorKind } from '../../manifest/tenant-move-selector-kind.enum.js';
 import type { TenantMoveTable } from '../../manifest/tenant-move-table.js';
 
-/** Manifiesto de las tablas de prueba: `ledgers` con columna del tenant y `entries` colgando de su ledger. */
+/** Manifest of the test tables: `ledgers` with a tenant column and `entries` hanging from their ledger. */
 export class LedgerManifest extends TenantMoveManifest {
   tables(): readonly TenantMoveTable[] {
     return [
@@ -26,7 +26,7 @@ export class LedgerManifest extends TenantMoveManifest {
   }
 }
 
-/** Solo `ledgers`: lo que admite la replicación lógica, que no sigue a los hijos por su padre. */
+/** Only `ledgers`: what logical replication supports, since it does not follow children through their parent. */
 export class LedgersOnlyManifest extends TenantMoveManifest {
   tables(): readonly TenantMoveTable[] {
     return [
@@ -41,7 +41,7 @@ export class LedgersOnlyManifest extends TenantMoveManifest {
   }
 }
 
-/** `ledgers` y `attempts`, una bitácora sin `updated_at` como `login_attempts`: solo se inserta. */
+/** `ledgers` and `attempts`, a log without `updated_at` like `login_attempts`: insert only. */
 export class LedgerWithAttemptsManifest extends TenantMoveManifest {
   tables(): readonly TenantMoveTable[] {
     return [

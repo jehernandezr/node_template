@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-/** `api_key_lookup`, en el catálogo: el tenant de cada prefijo. */
+/** `api_key_lookup`, in the catalog: the tenant of each prefix. */
 @Entity({ name: 'api_key_lookup' })
 export class ApiKeyLookupEntity {
   @PrimaryColumn({ type: 'text', name: 'prefix' })

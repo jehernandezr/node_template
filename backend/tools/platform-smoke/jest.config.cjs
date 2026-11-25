@@ -15,17 +15,17 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
-  // uuid y NestJS 12 se publican solo como ESM: hay que transformarlos para que Jest los cargue.
+  // uuid and NestJS 12 are published only as ESM: they must be transformed for Jest to load them.
   transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?(uuid|@nestjs)[@/])'],
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // main.ts e instrumentation.ts arrancan el proceso real; sus pruebas solo leen su texto.
+  // main.ts and instrumentation.ts start the real process; their tests only read their source text.
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',
     'src/main.ts',
     'src/instrumentation.ts',
   ],
-  // SWC emite una rama `typeof X === 'undefined'` por cada tipo de parámetro decorado que Istanbul cuenta como no cubierta; V8 mide solo el código que se ejecuta.
+  // SWC emits a `typeof X === 'undefined'` branch for each decorated parameter type that Istanbul counts as uncovered; V8 measures only the code that runs.
   coverageProvider: 'v8',
   coverageDirectory: 'test-output/jest/coverage',
 };

@@ -30,7 +30,7 @@ const RECENT_MOVE = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9f02';
 const TENANT_A = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a01';
 const TENANT_B = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9a02';
 
-/** Cómo responde la limpieza de un servicio a su llamada número `call`, contando desde 1. */
+/** How a service's cleanup responds to its call number `call`, counting from 1. */
 type CleanupScript = (
   input: TenantMoveRef,
   call: number,
@@ -40,8 +40,8 @@ const done: CleanupScript = (input) =>
   CallOutcome.success({ moveId: input.moveId });
 
 /**
- * La limpieza de un servicio: responde según su guion y anota cada traslado que terminó de limpiar y cada llave de
- * idempotencia que recibió, que es un intento del job (los reintentos del cliente repiten la llave).
+ * A service's cleanup: responds according to its script and records each move it finished cleaning and each
+ * idempotency key it received, which is one job attempt (the client's retries repeat the key).
  */
 class ScriptedCleanup extends OperationHandler<
   TenantMoveOperations['tenantMoveCleanup']
@@ -182,7 +182,7 @@ describe('TenantMoveCleanupJob', () => {
 
     await job.run(context());
 
-    // Más llamadas que los intentos que el cliente hace por su cuenta en una sola llamada.
+    // More calls than the attempts the client makes on its own in a single call.
     expect(handlers[0]?.callCount).toBe(5);
     expect(handlers[0]?.keys.size).toBeGreaterThan(1);
     expect(log.find(OLD_MOVE)?.status).toBe(TenantMoveStatus.CleanedUp);

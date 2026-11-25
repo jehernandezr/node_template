@@ -1,7 +1,7 @@
-/** Nombre de servicio de AWS con el que se firma: el destino lo verifica con IAM. */
+/** AWS service name used for signing: the destination verifies it with IAM. */
 export enum SigV4Service {
-  /** API Gateway, y el ALB o la API interna detrás de ella. */
+  /** API Gateway, and the ALB or internal API behind it. */
   ExecuteApi = 'execute-api',
-  /** URL de función de Lambda con autorización `AWS_IAM`. */
+  /** Lambda function URL with `AWS_IAM` authorization. */
   Lambda = 'lambda',
 }

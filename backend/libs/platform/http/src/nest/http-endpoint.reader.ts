@@ -4,7 +4,7 @@ import type { EndpointMetadata } from './endpoint-metadata.js';
 import { HttpMetadataKey } from './http-metadata-key.enum.js';
 import type { ResourceMetadata } from './resource-metadata.js';
 
-/** Lee los metadatos de `@Endpoint` y `@Resource` del handler en curso. */
+/** Reads the `@Endpoint` and `@Resource` metadata of the current handler. */
 @Injectable()
 export class HttpEndpointReader {
   constructor(private readonly reflector: Reflector) {}

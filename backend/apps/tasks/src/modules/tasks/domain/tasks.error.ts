@@ -1,7 +1,7 @@
 import { DomainError } from '@platform/kernel';
 import { TasksErrorCode } from '@contracts/tasks';
 
-/** Regla de tasks que no se cumple. El estado HTTP y la audiencia salen del catálogo del contrato. */
+/** A tasks rule that is not met. The HTTP status and the audience come from the contract catalog. */
 export class TasksError extends DomainError {
   constructor(
     readonly code: TasksErrorCode,
@@ -11,7 +11,7 @@ export class TasksError extends DomainError {
     super(message, details);
   }
 
-  /** La tarea no existe en el tenant, o ya se borró. */
+  /** The task does not exist in the tenant, or was already deleted. */
   static notFound(): TasksError {
     return new TasksError(TasksErrorCode.TaskNotFound);
   }

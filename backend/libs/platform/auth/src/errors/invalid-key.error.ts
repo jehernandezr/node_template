@@ -1,7 +1,7 @@
 import { FailureKind, PlatformError } from '@platform/kernel';
 import { AuthErrorCode } from './auth-error-code.enum.js';
 
-/** Un JWK no es una clave pública EC P-256 utilizable. Es un dato de configuración, no se arregla reintentando. */
+/** A JWK is not a usable EC P-256 public key. It is configuration data; retrying does not fix it. */
 export class InvalidKeyError extends PlatformError {
   override readonly code = AuthErrorCode.InvalidKey;
 

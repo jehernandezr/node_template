@@ -23,9 +23,9 @@ import type {
 } from './scheduling-module-options.js';
 
 /**
- * Provee `JobRunner` y `JobLock`, y registra los `ScheduledJob` que declaren otros
- * módulos. Es global porque se registra una vez en la raíz y las librerías
- * inyectan `JobRunner` sin importar este módulo.
+ * Provides `JobRunner` and `JobLock`, and registers the `ScheduledJob`s that other
+ * modules declare. It is global because it is registered once at the root and the libraries
+ * inject `JobRunner` without importing this module.
  */
 @Module({})
 export class SchedulingModule extends SchedulingModuleClass {
@@ -41,7 +41,7 @@ export class SchedulingModule extends SchedulingModuleClass {
     return SchedulingModule.complete(super.forRootAsync(options), options);
   }
 
-  /** @throws InvalidArgumentError cuando falta `logger`. */
+  /** @throws InvalidArgumentError when `logger` is missing. */
   private static complete(
     base: DynamicModule,
     extras: SchedulingModuleExtras,

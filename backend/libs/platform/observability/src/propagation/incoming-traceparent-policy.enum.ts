@@ -1,10 +1,10 @@
-/** Qué hacer con el `traceparent` de una petición entrante. */
+/** What to do with the `traceparent` of an incoming request. */
 export enum IncomingTraceparentPolicy {
-  /** Continuar la traza recibida (llamadas internas, mensajes, sagas). */
+  /** Continue the received trace (internal calls, messages, sagas). */
   Continue = 'continue',
   /**
-   * Abrir una traza nueva con un `traceId` UUIDv7 propio y guardar el trace id
-   * recibido como `externalTraceId`.
+   * Open a new trace with its own UUIDv7 `traceId` and store the received trace id
+   * as `externalTraceId`.
    */
   External = 'external',
 }

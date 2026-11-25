@@ -11,14 +11,14 @@ import {
 import { PaymentStatus } from '../domain/payment-status.enum.js';
 
 /**
- * Cobra un intento de una factura sin cobrarlo nunca dos veces. El intento se anota en `Requested` antes de llamar al
- * proveedor y su id viaja como llave de idempotencia: si el proceso cae entre cobrar y anotar la respuesta, la
- * corrida siguiente encuentra el intento abierto y le pregunta al proveedor en vez de cobrar de nuevo. Como cada número
- * de intento se anota una sola vez, dos réplicas que lo pidan a la vez no cobran las dos: la segunda no lo reserva.
+ * Charges an invoice attempt without ever charging it twice. The attempt is recorded as `Requested` before calling the
+ * provider and its id travels as the idempotency key: if the process crashes between charging and recording the response, the
+ * next run finds the open attempt and asks the provider instead of charging again. Since each attempt number
+ * is recorded only once, two replicas requesting it at the same time do not both charge: the second one does not reserve it.
  */
 @Injectable()
 export class ChargeInvoice {
-  /** Un intento abierto más viejo que esto ya no está en vuelo: quien lo pidió cayó y se retoma. */
+  /** An open attempt older than this is no longer in flight: whoever requested it crashed and it is resumed. */
   static readonly ABANDONED_AFTER_MS = 10 * 60_000;
 
   constructor(
@@ -30,11 +30,11 @@ export class ChargeInvoice {
   ) {}
 
   /**
-   * Cobra el intento si nadie lo anotó, devuelve la respuesta si ya está resuelto o retoma uno abandonado preguntando
-   * al proveedor por su llave antes de pedirlo otra vez.
-   * @param request Factura, número de intento y monto a cobrar.
-   * @returns La respuesta del proveedor, o `Requested` si otra corrida tiene el intento en vuelo: su resultado lo
-   *   aplica ella.
+   * Charges the attempt if nobody recorded it, returns the response if it is already resolved, or resumes an abandoned one
+   * by asking the provider for its key before requesting it again.
+   * @param request Invoice, attempt number and amount to charge.
+   * @returns The provider response, or `Requested` if another run has the attempt in flight: that run applies
+   *   its result.
    */
   async execute(request: ChargeRequest): Promise<PaymentResult> {
     const existing = await this.shard.run(request.tenantId, () =>

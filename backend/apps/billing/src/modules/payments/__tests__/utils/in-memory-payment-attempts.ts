@@ -5,7 +5,7 @@ import {
 import { PaymentAttempts } from '../../domain/payment-attempts.js';
 import type { PaymentResult } from '../../domain/payment-provider.js';
 
-/** `PaymentAttempts` en memoria con la misma llave única por factura y número de intento que la tabla. */
+/** In-memory `PaymentAttempts` with the same unique key per invoice and attempt number as the table. */
 export class InMemoryPaymentAttempts extends PaymentAttempts {
   protected readonly rows = new Map<string, PaymentAttempt>();
 
@@ -64,7 +64,7 @@ export class InMemoryPaymentAttempts extends PaymentAttempts {
   }
 }
 
-/** La bitácora de un proceso que cae justo después de cobrar: la primera respuesta del proveedor no se anota. */
+/** The log of a process that crashes right after charging: the first provider response is not recorded. */
 export class CrashingAfterChargeAttempts extends InMemoryPaymentAttempts {
   private crashed = false;
 

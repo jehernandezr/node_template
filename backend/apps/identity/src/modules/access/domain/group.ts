@@ -1,6 +1,6 @@
 import type { TenantRole } from '@contracts/identity';
 
-/** Un grupo del tenant con sus roles. Los de sistema representan un rol fijo y no se editan. */
+/** A tenant group with its roles. System groups represent a fixed role and are not edited. */
 export interface Group {
   readonly id: string;
   readonly tenantId: string;

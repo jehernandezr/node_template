@@ -8,7 +8,7 @@ import { ValkeyBloomFilter } from './valkey-bloom-filter.js';
 import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
-/** Crea el `ValkeyBloomFilter` de cada definición. `BloomModule` la recibe como `factory`. */
+/** Creates the `ValkeyBloomFilter` of each definition. `BloomModule` receives it as `factory`. */
 export class ValkeyBloomFilterFactory extends BloomFilterFactory {
   constructor(
     private readonly executor: ValkeyCommandExecutor,

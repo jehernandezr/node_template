@@ -8,9 +8,9 @@ import type { InvoiceState } from '../domain/invoice.js';
 import { SettleInvoice } from './settle-invoice.use-case.js';
 
 /**
- * Cobra una factura a la que le toca cobro (recién emitida o con un reintento vencido) y aplica el resultado. Cada
- * intento lleva su número, así `payments` nunca lo cobra dos veces: si una corrida anterior ya lo cobró y cayó antes
- * de saldar, aquí se aplica esa respuesta. Un cobro en curso se deja al webhook o a la corrida siguiente.
+ * Charges an invoice that is due for collection (newly issued or with an overdue retry) and applies the result. Each
+ * attempt carries its number, so `payments` never charges it twice: if a previous run already charged it and crashed
+ * before settling, that response is applied here. A pending charge is left to the webhook or the next run.
  */
 @Injectable()
 export class CollectInvoice {
@@ -44,9 +44,9 @@ export class CollectInvoice {
   }
 
   /**
-   * Una factura en cero o negativa queda saldada sin cobro: no se le pide al proveedor un cobro negativo. Un total
-   * negativo sale de un precio de plan que cambió dentro del periodo; no hay saldo a favor que trasladar, así que se
-   * deja en el log para que se emita una nota crédito a mano.
+   * A zero or negative invoice is settled without a charge: the provider is never asked for a negative charge. A
+   * negative total comes from a plan price that changed within the period; there is no credit balance to carry over, so it
+   * is logged so that a credit note is issued manually.
    */
   private async outcomeOf(
     tenantId: string,

@@ -5,13 +5,13 @@ import type { AwsModuleOptions } from './aws-module-options.js';
 import { AwsProviders } from './aws.providers.js';
 
 /**
- * Cableado del adaptador de AWS: clientes de SNS y SQS, nombres físicos,
- * traductor de errores, publicador y bus sobre SNS y SQS, y el proveedor del
- * token IAM de ElastiCache. Es global y cierra los clientes en su
- * `onModuleDestroy`: Nest destruye los módulos globales después de los demás,
- * así el consumo de la cola (`SqsConsumerModule`, que no es global) ya se
- * detuvo. Solo tiene `forRoot`: sus opciones (la topología) no salen del
- * entorno, y qué providers registra depende de ellas.
+ * Wiring of the AWS adapter: SNS and SQS clients, physical names,
+ * error translator, publisher and bus over SNS and SQS, and the ElastiCache
+ * IAM token provider. It is global and closes the clients in its
+ * `onModuleDestroy`: Nest destroys global modules after the others,
+ * so queue consumption (`SqsConsumerModule`, which is not global) has already
+ * stopped. It only has `forRoot`: its options (the topology) do not come from the
+ * environment, and which providers it registers depends on them.
  */
 @Module({})
 export class AwsModule {

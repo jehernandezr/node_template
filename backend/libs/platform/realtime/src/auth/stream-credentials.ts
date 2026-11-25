@@ -1,7 +1,7 @@
-/** Lo que trae la petición de una conexión de tiempo real para autenticarla. */
+/** What the request of a realtime connection carries to authenticate it. */
 export interface StreamCredentials {
-  /** Cabecera `Authorization` o, en Socket.IO, `Bearer <token>` armado con el `auth.token` del handshake. */
+  /** `Authorization` header or, in Socket.IO, `Bearer <token>` built from the handshake's `auth.token`. */
   readonly authorization?: string;
-  /** Cabecera `Cookie` tal como llega. */
+  /** `Cookie` header as it arrives. */
   readonly cookie?: string;
 }

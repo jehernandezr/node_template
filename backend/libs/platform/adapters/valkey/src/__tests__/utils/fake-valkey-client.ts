@@ -1,15 +1,15 @@
 /**
- * Cliente de iovalkey falso para las pruebas de módulo: responde `PING`,
- * guarda cada comando y cuenta los cierres.
+ * Fake iovalkey client for the module tests: answers `PING`,
+ * records each command and counts the closes.
  */
 export class FakeValkeyClient {
   readonly commands: string[] = [];
   quits = 0;
   disconnects = 0;
-  /** Si es `true`, `quit` falla y el ciclo de vida debe cortar la conexión. */
+  /** Whether `quit` fails, so the lifecycle must cut the connection. */
   quitFails = false;
 
-  /** @param log Bitácora compartida con otros dobles, para comprobar el orden de los cierres. */
+  /** @param log Log shared with other doubles, to check the order of the closes. */
   constructor(private readonly log: string[] = []) {}
 
   async call(command: string): Promise<unknown> {

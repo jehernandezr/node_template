@@ -5,7 +5,7 @@ import { PlatformMetric } from '../platform-metric.enum.js';
 
 const LATENCY = 'platform.test.latency';
 
-/** `OtelMetrics` sobre un SDK real cuyo lector devuelve lo registrado en memoria. */
+/** `OtelMetrics` on a real SDK whose reader returns what was recorded in memory. */
 function setup(): {
   metrics: OtelMetrics;
   collect: () => Promise<MetricData[]>;

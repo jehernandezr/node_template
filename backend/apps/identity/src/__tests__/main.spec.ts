@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Los puntos de entrada arrancan el proceso real y no se ejecutan aquí: se lee su texto para comprobar
- * el orden que importa: la telemetría antes que cualquier otra cosa y cada binario con su arranque.
+ * The entry points start the real process and are not executed here: their text is read to check
+ * the order that matters: telemetry before anything else and each binary with its bootstrap.
  */
 describe('entry points', () => {
   const srcDir = join(__dirname, '..');

@@ -2,11 +2,11 @@ import { CircuitState } from './circuit-state.enum.js';
 import type { CircuitBreakerOptions } from './circuit-breaker.options.js';
 
 /**
- * Circuit breaker que se abre tras N fallas contadas consecutivas. Un éxito
- * reinicia la cuenta. Pasado `halfOpenAfterMs`, corre una llamada de prueba:
- * si falla con un error contado, el circuito vuelve a abrirse; cualquier otro
- * resultado lo cierra, porque solo una falla contada dice que la dependencia
- * sigue caída.
+ * Circuit breaker that opens after N consecutive counted failures. A success
+ * resets the count. After `halfOpenAfterMs`, it runs a trial call:
+ * if it fails with a counted error, the circuit opens again; any other
+ * result closes it, because only a counted failure says the dependency
+ * is still down.
  */
 export class ConsecutiveCircuitBreaker {
   private current = CircuitState.Closed;

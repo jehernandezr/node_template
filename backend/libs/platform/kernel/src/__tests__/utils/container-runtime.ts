@@ -5,9 +5,9 @@ import { JestSuiteApi } from './jest-suite-api.js';
 import type { SuiteApi } from './suite-api.js';
 
 /**
- * Decide si corren las pruebas que necesitan contenedores. Una sola variable,
- * `INTEGRATION_TESTS=skip|require`, y una sola detección de Docker para todas
- * las librerías.
+ * Decides whether the tests that need containers run. A single variable,
+ * `INTEGRATION_TESTS=skip|require`, and a single Docker detection for all
+ * the libraries.
  */
 export class ContainerRuntime {
   private available: boolean | undefined;
@@ -19,8 +19,8 @@ export class ContainerRuntime {
   ) {}
 
   /**
-   * Valor de `INTEGRATION_TESTS`. Sin valor, `Require` si `CI` es `true` y
-   * `Skip` si no. Un valor desconocido lanza un `Error` que lista los válidos.
+   * Returns the value of `INTEGRATION_TESTS`. Without a value, `Require` if `CI` is `true` and
+   * `Skip` otherwise. An unknown value throws an `Error` that lists the valid ones.
    */
   get mode(): IntegrationMode {
     const raw = this.env['INTEGRATION_TESTS'];
@@ -41,27 +41,27 @@ export class ContainerRuntime {
   }
 
   /**
-   * Si los contenedores se registran en el reaper de Testcontainers. Con `TESTCONTAINERS_RYUK_DISABLED=true`
-   * no hay reaper que los limpie, pero Testcontainers igual toma un candado de archivo compartido por todos
-   * los procesos y lista los contenedores antes de cada arranque. Con muchas suites en paralelo un proceso
-   * cargado no renueva ese candado a tiempo, otro lo da por vencido y la suite falla con "Lock is already
-   * released" o queda esperando. Sin reaper no hay nada que registrar, así que se omite el candado.
+   * Whether containers are registered in the Testcontainers reaper. With `TESTCONTAINERS_RYUK_DISABLED=true`
+   * there is no reaper to clean them up, but Testcontainers still takes a file lock shared by all
+   * processes and lists the containers before each startup. With many suites in parallel a loaded
+   * process does not renew that lock in time, another one considers it expired and the suite fails with "Lock is already
+   * released" or hangs. Without a reaper there is nothing to register, so the lock is skipped.
    */
   autoCleanup(): boolean {
     return this.env['TESTCONTAINERS_RYUK_DISABLED'] !== 'true';
   }
 
-  /** Indica si hay un runtime de contenedores. Consulta la sonda una sola vez. */
+  /** Whether there is a container runtime. Queries the probe only once. */
   isAvailable(): boolean {
     this.available ??= this.probe.isRunning();
     return this.available;
   }
 
   /**
-   * `describe` de una suite con contenedores. Con runtime corre normal; sin
-   * runtime en modo `Skip` queda como `describe.skip`; en modo `Require` define
-   * una prueba que falla con un mensaje claro. Lee el modo antes de consultar
-   * la sonda, así un `INTEGRATION_TESTS` inválido falla aunque haya runtime.
+   * `describe` for a suite with containers. With a runtime it runs normally; without
+   * a runtime in `Skip` mode it becomes `describe.skip`; in `Require` mode it defines
+   * a test that fails with a clear message. It reads the mode before querying
+   * the probe, so an invalid `INTEGRATION_TESTS` fails even if there is a runtime.
    */
   describeIfAvailable(name: string, body: () => void): void {
     const mode = this.mode;

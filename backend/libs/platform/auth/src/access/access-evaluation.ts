@@ -2,12 +2,12 @@ import type { AccessRequirement } from '@contracts/platform';
 import type { Actor } from '../actor/actor.js';
 import type { AccessGrant } from './access-grant.js';
 
-/** Entrada de `AccessEvaluator.evaluate`. */
+/** Input of `AccessEvaluator.evaluate`. */
 export interface AccessEvaluation {
   readonly requirement: AccessRequirement;
   readonly actor: Actor;
-  /** Para un `ServiceAccountActor` es el grant que arma el llamador con los permisos de su API key. */
+  /** For a `ServiceAccountActor` it is the grant the caller builds with the permissions of its API key. */
   readonly grant: AccessGrant;
-  /** Instante de la evaluación, de `Clock`. */
+  /** Instant of the evaluation, from `Clock`. */
   readonly now: Date;
 }

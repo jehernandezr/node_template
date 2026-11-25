@@ -8,15 +8,15 @@ import { SmokeOrderCreated } from './smoke-order-events.js';
 import { SmokeOrderRepository } from './smoke-order.repository.js';
 import { SmokeOrderStatus } from './smoke-order-status.enum.js';
 
-/** Datos para registrar un pedido: el tenant dueño y el cliente. */
+/** Data to register an order: the owning tenant and the customer. */
 export interface RegisterSmokeOrderInput {
   readonly tenantId: string;
   readonly customer: string;
 }
 
 /**
- * Registra un pedido y su evento en una sola unidad de trabajo: el sobre entra al outbox y la fila al
- * shard del tenant en la misma transacción. Si cualquiera de las dos escrituras falla, no queda ninguna.
+ * Registers an order and its event in a single unit of work: the envelope enters the outbox and the row the
+ * tenant's shard in the same transaction. If either write fails, neither remains.
  */
 @Injectable()
 export class RegisterSmokeOrder {

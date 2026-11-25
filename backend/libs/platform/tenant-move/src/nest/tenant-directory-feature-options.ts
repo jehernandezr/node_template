@@ -2,12 +2,12 @@ import type { Type } from '@nestjs/common';
 import type { TenantDirectoryOperations } from '@contracts/platform';
 import type { TenantMoveManifest } from '../manifest/tenant-move-manifest.js';
 
-/** Lo que cada servicio que sigue la ubicación de identity pasa a `TenantDirectoryModule.forFeature`. */
+/** What each service that follows the identity placement passes to `TenantDirectoryModule.forFeature`. */
 export interface TenantDirectoryFeatureOptions {
-  /** Nombre del servicio: el prefijo de sus shards lógicos cuando un grupo no está declarado. */
+  /** Service name: the prefix of its logical shards when a group is not declared. */
   readonly service: string;
-  /** Las operaciones de su contrato, las de `defineTenantDirectoryOperations`. */
+  /** The operations of its contract, those from `defineTenantDirectoryOperations`. */
   readonly operations: TenantDirectoryOperations;
-  /** El manifiesto de traslado del servicio: con sus tablas se mira si un tenant ya tiene datos antes de retirarlo. */
+  /** The service move manifest: its tables are used to check whether a tenant already has data before removing it. */
   readonly manifest: Type<TenantMoveManifest>;
 }

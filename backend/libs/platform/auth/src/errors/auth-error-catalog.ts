@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { AuthErrorCode } from './auth-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/auth`. */
+/** Catalog of the `@platform/auth` codes. */
 export const authErrorCatalog = defineErrorCatalog(AuthErrorCode, {
   [AuthErrorCode.TokenExpired]: ErrorSpecs.pub(
     401,

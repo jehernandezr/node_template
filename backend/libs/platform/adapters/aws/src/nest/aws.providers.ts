@@ -24,8 +24,8 @@ import { AwsLifecycle } from './aws-lifecycle.js';
 import { SNS_CLIENT, SQS_CLIENT } from './aws.tokens.js';
 
 /**
- * Proveedores de `AwsModule`. Todos se arman con `useFactory` porque el núcleo
- * de la librería no lleva decoradores; solo `AwsLifecycle` es una clase de Nest.
+ * Providers of `AwsModule`. All are built with `useFactory` because the core
+ * of the library has no decorators; only `AwsLifecycle` is a Nest class.
  */
 export class AwsProviders {
   static build(options: AwsModuleOptions): Provider[] {
@@ -122,7 +122,7 @@ export class AwsProviders {
     return providers;
   }
 
-  /** Lo que otros módulos reciben: los clientes, los nombres y los puertos que se registraron. */
+  /** What other modules receive: the clients, the names and the ports that were registered. */
   static exports(
     options: AwsModuleOptions,
   ): Array<symbol | Type<unknown> | Abstract<unknown>> {

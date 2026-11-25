@@ -6,7 +6,7 @@ import type {
 import { Session } from '../../domain/session.js';
 import { SessionEntity } from './entities/session.entity.js';
 
-/** Convierte entre `Session` y su fila. */
+/** Converts between `Session` and its row. */
 export class SessionMapper {
   toDomain(row: SessionEntity): Session {
     return Session.rehydrate({

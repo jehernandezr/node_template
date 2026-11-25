@@ -5,7 +5,7 @@ import type { TenantPlacement } from '../model/tenant-placement.js';
 import type { DirectoryWriter } from '../ports/directory-writer.js';
 import type { ShardRouter } from '../shard-router.js';
 
-/** Lo que cambia de un placement; `undefined` cuando ya está como se pide. */
+/** What changes in a placement; `undefined` when it is already as requested. */
 export type PlacementChange = (
   current: TenantPlacement,
 ) =>
@@ -13,9 +13,9 @@ export type PlacementChange = (
   | undefined;
 
 /**
- * Cambia el placement de un tenant con la escritura condicional del directorio: lee del primario, escribe la
- * versión siguiente y, si otra escritura ganó entre medio, vuelve a leer. Al escribir invalida el router, que
- * publica el cambio a los demás procesos.
+ * Changes a tenant placement with the directory conditional write: reads from the primary, writes the
+ * next version and, if another write won in between, reads again. On write it invalidates the router, which
+ * publishes the change to the other processes.
  */
 export class PlacementTransition {
   private static readonly MAX_ATTEMPTS = 5;
@@ -26,9 +26,9 @@ export class PlacementTransition {
   ) {}
 
   /**
-   * @returns el placement vigente al terminar.
-   * @throws ShardingError `UnknownTenant` si el directorio no tiene el tenant; `InvalidConfiguration` si
-   *   otras escrituras ganan todos los intentos o el grupo nuevo choca con un shard dedicado.
+   * @returns the current placement when done.
+   * @throws ShardingError `UnknownTenant` if the directory does not have the tenant; `InvalidConfiguration` if
+   *   other writes win every attempt or the new group collides with a dedicated shard.
    */
   async apply(
     tenantId: string,

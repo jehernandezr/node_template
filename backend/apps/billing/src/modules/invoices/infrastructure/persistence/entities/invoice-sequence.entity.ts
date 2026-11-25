@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `invoice_sequences`: el último consecutivo usado por cada tenant y serie. */
+/** `invoice_sequences`: the last sequence number used by each tenant and series. */
 @Entity({ name: 'invoice_sequences' })
 @Index('invoice_sequences_tenant_series_key', ['tenantId', 'series'], {
   unique: true,

@@ -1,4 +1,4 @@
-/** Atributos de las métricas de `@platform/cache`. Su cardinalidad es baja. */
+/** Attributes of the `@platform/cache` metrics. Their cardinality is low. */
 export enum CacheMetricAttribute {
   Cache = 'cache',
   Result = 'result',

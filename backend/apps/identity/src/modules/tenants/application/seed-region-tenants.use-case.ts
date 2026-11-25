@@ -9,9 +9,9 @@ import { TenantDirectoryEntryFactory } from './tenant-directory-entry.factory.js
 import { TenantReader } from './tenant-reader.js';
 
 /**
- * Siembra los dos tenants fijos de la región: el de plataforma y el compartido de clientes, donde quedan
- * quienes se registran sin invitación. No pasan por la saga de alta, así que aquí mismo se anotan en el directorio
- * de los demás servicios: corre después de desplegarlos. Es idempotente: se corre en cada despliegue.
+ * Seeds the region's two fixed tenants: the platform one and the shared customer one, where those who
+ * sign up without an invitation end up. They do not go through the creation saga, so they are recorded right here in the directory
+ * of the other services: it runs after deploying them. It is idempotent: it runs on every deployment.
  */
 @Injectable()
 export class SeedRegionTenants {

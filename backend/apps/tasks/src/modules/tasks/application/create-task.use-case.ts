@@ -10,7 +10,7 @@ import type { CreateTaskCommand } from './task-commands.js';
 import { TaskEvents } from './task-events.js';
 import { TaskViews } from './task-view.js';
 
-/** Crea una tarea abierta, la indexa y publica `tasks.task.created.v1`, todo en una transacción. */
+/** Creates an open task, indexes it and publishes `tasks.task.created.v1`, all in one transaction. */
 @Injectable()
 export class CreateTask {
   constructor(

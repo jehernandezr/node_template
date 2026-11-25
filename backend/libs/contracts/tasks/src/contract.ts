@@ -24,18 +24,18 @@ import * as http from './http/index.js';
 import * as internal from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-/** Las operaciones de traslado de tenant de tasks, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant move operations of tasks, with their exact type to register and call them. */
 export const TasksTenantMoveOperations = defineTenantMoveOperations('tasks');
 
-/** Las operaciones del directorio de tenants de tasks, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant directory operations of tasks, with their exact type to register and call them. */
 export const TasksTenantDirectoryOperations =
   defineTenantDirectoryOperations('tasks');
 
-/** Contrato del servicio tasks: tareas del tenant, búsqueda y eventos. */
+/** Contract of the tasks service: tenant tasks, search and events. */
 export const tasksContract = defineServiceContract({
   service: 'tasks',
   description:
-    'Tareas de la organización: alta, lectura, búsqueda, cambio y borrado, y los eventos que otros servicios consumen.',
+    'Organization tasks: creation, reading, search, change and deletion, and the events other services consume.',
   enums: {
     TaskStatus,
     TaskField,

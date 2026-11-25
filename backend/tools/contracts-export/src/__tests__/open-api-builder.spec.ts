@@ -105,7 +105,7 @@ describe('OpenApiBuilder', () => {
           },
         },
       },
-      responses: { '204': { description: 'Sin contenido.' } },
+      responses: { '204': { description: 'No content.' } },
     });
     expect(operation).not.toHaveProperty('security');
   });

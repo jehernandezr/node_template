@@ -1,25 +1,25 @@
 import { LoggerPort } from '@platform/observability';
 
-/** Línea de error que guardó {@link RecordingLogger}. */
+/** Error line recorded by {@link RecordingLogger}. */
 export interface RecordedError {
   readonly message: string;
   readonly fields?: Record<string, unknown>;
 }
 
-/** Logger que guarda los errores, para afirmar sobre ellos. */
+/** Logger that records the errors, to assert on them. */
 export class RecordingLogger extends LoggerPort {
   readonly errors: RecordedError[] = [];
 
   debug(): void {
-    // Solo interesan los errores.
+    // Only errors matter.
   }
 
   info(): void {
-    // Solo interesan los errores.
+    // Only errors matter.
   }
 
   warn(): void {
-    // Solo interesan los errores.
+    // Only errors matter.
   }
 
   error(message: string, fields?: Record<string, unknown>): void {

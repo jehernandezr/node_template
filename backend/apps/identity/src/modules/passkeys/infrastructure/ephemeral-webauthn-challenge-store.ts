@@ -17,7 +17,7 @@ const ChallengeSchema = z.object({
   homeTenantId: z.string().optional(),
 });
 
-/** Desafíos de WebAuthn en Valkey; consumirlos es un `GETDEL`. */
+/** WebAuthn challenges in Valkey; consuming them is a `GETDEL`. */
 @Injectable()
 export class EphemeralWebAuthnChallengeStore extends WebAuthnChallengeStore {
   constructor(private readonly store: EphemeralStore) {

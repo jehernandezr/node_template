@@ -3,7 +3,7 @@ import type { SagaFlow } from '../../../definition/saga-flow.js';
 import { STEP_A } from './sample-operations.js';
 import type { SampleState } from './sample-state.js';
 
-/** Su regla de estado lanza después de un éxito de la operación. */
+/** Its state rule throws after a successful operation. */
 export class ThrowingSaga extends SagaDefinition<SampleState> {
   readonly type = 'throwing';
 

@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `groups`: grupos del tenant con sus roles. */
+/** `groups`: tenant groups with their roles. */
 @Entity({ name: 'groups' })
 @Index('groups_name_key', ['tenantId', 'name'], { unique: true })
 export class GroupEntity extends AuditedEntity {

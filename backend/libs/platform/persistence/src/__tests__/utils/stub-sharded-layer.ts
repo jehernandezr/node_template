@@ -21,8 +21,8 @@ import type { StubDataSource } from './stub-data-source.js';
 import { ProbeEntity } from './probe.entity.js';
 
 /**
- * Capa de sharding cableada a mano sobre `DataSource` sin base: dos tenants en dos shards lógicos
- * de una misma instancia, para probar ruteo, transacciones y repositorios sin PostgreSQL.
+ * Sharding layer wired by hand over `DataSource`s without a database: two tenants in two logical shards
+ * of the same instance, to test routing, transactions and repositories without PostgreSQL.
  */
 export class StubShardedLayer {
   static readonly TENANT_A = TestTenants.One;
@@ -98,7 +98,7 @@ export class StubShardedLayer {
     this.provider = new EntityManagerProvider(this.resolver, this.transactions);
   }
 
-  /** Fija el contexto de la petición como un usuario del tenant dado. */
+  /** Sets the request context as a user of the given tenant. */
   asTenant(tenantId: string, userId?: string): void {
     this.context.set({
       tenantId,
@@ -109,7 +109,7 @@ export class StubShardedLayer {
     });
   }
 
-  /** El último `DataSource` creado para ese shard lógico, para leer sus `runners`. */
+  /** The last `DataSource` created for that logical shard, to read its `runners`. */
   dataSource(shard: string): StubDataSource {
     const found = [...this.factory.created]
       .reverse()

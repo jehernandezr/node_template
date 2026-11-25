@@ -44,12 +44,12 @@ import { PERSISTENCE_CATALOG_FEATURE } from './persistence.tokens.js';
 const DEFAULT_IDLE_TTL_MS = 300_000;
 
 /**
- * Arma la persistencia sobre TypeORM: `DataSource` por shard y del catálogo, ruteo, transacciones de un
- * solo shard, `EntityManagerProvider`, `AcrossShards` y `ShardedMigrationRunner`. Es global porque se
- * registra una vez en la raíz; cada módulo de negocio declara su llave con `forFeature`.
+ * Builds persistence on TypeORM: per-shard and catalog `DataSource`s, routing, single-shard
+ * transactions, `EntityManagerProvider`, `AcrossShards` and `ShardedMigrationRunner`. It is global because it is
+ * registered once at the root; each business module declares its key with `forFeature`.
  *
- * Requiere en el contexto: `ConfigModule.forRoot` (`AppConfig`), `ObservabilityModule` (`RequestContextStore`,
- * `LoggerPort`) y `ShardingModule` (`ShardRouter`).
+ * Requires in the context: `ConfigModule.forRoot` (`AppConfig`), `ObservabilityModule` (`RequestContextStore`,
+ * `LoggerPort`) and `ShardingModule` (`ShardRouter`).
  */
 @Module({})
 export class PersistenceModule extends PersistenceModuleClass {
@@ -66,8 +66,8 @@ export class PersistenceModule extends PersistenceModuleClass {
   }
 
   /**
-   * Registra los repositorios de un módulo con su llave de sharding (`PersistenceFeature` y `RepositoryKit`),
-   * o las entidades de un módulo que usa el catálogo. Las entidades se suman a las del `DataSource` al crearlo.
+   * Registers the repositories of a module with its sharding key (`PersistenceFeature` and `RepositoryKit`),
+   * or the entities of a module that uses the catalog. The entities are added to those of the `DataSource` when it is created.
    */
   static forFeature(options: PersistenceFeatureOptions): DynamicModule {
     if ('catalog' in options) {
@@ -120,7 +120,7 @@ export class PersistenceModule extends PersistenceModuleClass {
     };
   }
 
-  /** @throws PersistenceError `PersistenceInvalidConfig` cuando falta `shardLister`. */
+  /** @throws PersistenceError `PersistenceInvalidConfig` when `shardLister` is missing. */
   private static complete(
     base: DynamicModule,
     extras: PersistenceModuleExtras,

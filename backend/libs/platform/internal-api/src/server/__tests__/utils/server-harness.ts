@@ -20,7 +20,7 @@ import type { ProcessedOperationStore } from '../../processed-operation-store.js
 import { UnitOfWorkRunner } from '../../unit-of-work-runner.js';
 import { RecordingProcessedOperationStore } from './recording-processed-operation-store.js';
 
-/** Opciones del arnés del servidor. */
+/** Options of the server harness. */
 export interface ServerHarnessOptions {
   readonly clock?: FixedClock;
   readonly transactions?: Pick<TransactionManager, 'runInTransaction'>;
@@ -32,9 +32,9 @@ export interface ServerHarnessOptions {
 }
 
 /**
- * Servidor completo de la API interna cableado en memoria para las pruebas:
- * router, despachador, compuerta, runner y almacén. Los colaboradores son
- * propiedades públicas porque las pruebas las inspeccionan.
+ * Full internal API server wired in memory for tests:
+ * router, dispatcher, gate, runner and store. The collaborators are
+ * public properties because the tests inspect them.
  */
 export class ServerHarness {
   static readonly OUT_OF_STOCK = 'STOCK.RESERVE.OUT_OF_STOCK';
@@ -95,14 +95,14 @@ export class ServerHarness {
   }
 
   /**
-   * Deja correr las continuaciones pendientes (en memoria no hay E/S): cuando
-   * vuelve, una llamada ya reclamó su llave o llegó a su handler.
+   * Lets pending continuations run (in memory there is no I/O): when it
+   * returns, a call has already claimed its key or reached its handler.
    */
   async settle(): Promise<void> {
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
 
-  /** Metadatos de una llamada con plazo de un segundo desde el reloj del arnés. */
+  /** Returns call metadata with a one-second deadline from the harness clock. */
   meta(idempotencyKey: string, overrides: Partial<CallMeta> = {}): CallMeta {
     return {
       idempotencyKey,

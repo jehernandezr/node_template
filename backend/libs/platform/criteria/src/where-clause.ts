@@ -4,67 +4,67 @@ import { CriteriaValidator } from './criteria-validator.js';
 import { NodeKind } from './node-kind.enum.js';
 import { Operator } from './operator.enum.js';
 
-/** Nombres de las propiedades de una entidad, como cadenas. */
+/** Names of an entity's properties, as strings. */
 export type FieldOf<Entity> = keyof Entity & string;
 
-/** Tipo no nulo de un campo. */
+/** Non-null type of a field. */
 type Present<T> = NonNullable<T>;
 
-/** `null` solo se acepta cuando el tipo del campo lo incluye. */
+/** `null` is only accepted when the field's type includes it. */
 type NullIfNullable<T> = null extends T ? null : never;
 
-/** Métodos de operador para un campo. Cada llamada devuelve un `Criteria` nuevo. */
+/** Operator methods for a field. Each call returns a new `Criteria`. */
 export class WhereClause<Entity extends object, K extends FieldOf<Entity>> {
   constructor(
     private readonly field: K,
     private readonly append: (node: ConditionNode) => Criteria<Entity>,
   ) {}
 
-  /** El campo es igual a `value`. `eq(null)` equivale a IS NULL y solo se admite si el campo puede ser nulo. */
+  /** The field equals `value`. `eq(null)` is equivalent to IS NULL and is only allowed if the field is nullable. */
   eq(value: Present<Entity[K]> | NullIfNullable<Entity[K]>): Criteria<Entity> {
     return this.add(Operator.Eq, value);
   }
 
-  /** El campo es distinto de `value`. `ne(null)` equivale a IS NOT NULL. Los demás valores usan IS DISTINCT FROM. */
+  /** The field differs from `value`. `ne(null)` is equivalent to IS NOT NULL. Other values use IS DISTINCT FROM. */
   ne(value: Present<Entity[K]> | NullIfNullable<Entity[K]>): Criteria<Entity> {
     return this.add(Operator.Ne, value);
   }
 
-  /** El campo es mayor que `value`. */
+  /** The field is greater than `value`. */
   gt(value: Present<Entity[K]>): Criteria<Entity> {
     CriteriaValidator.present(value, 'gt value');
     return this.add(Operator.Gt, value);
   }
 
-  /** El campo es mayor o igual que `value`. */
+  /** The field is greater than or equal to `value`. */
   gte(value: Present<Entity[K]>): Criteria<Entity> {
     CriteriaValidator.present(value, 'gte value');
     return this.add(Operator.Gte, value);
   }
 
-  /** El campo es menor que `value`. */
+  /** The field is less than `value`. */
   lt(value: Present<Entity[K]>): Criteria<Entity> {
     CriteriaValidator.present(value, 'lt value');
     return this.add(Operator.Lt, value);
   }
 
-  /** El campo es menor o igual que `value`. */
+  /** The field is less than or equal to `value`. */
   lte(value: Present<Entity[K]>): Criteria<Entity> {
     CriteriaValidator.present(value, 'lte value');
     return this.add(Operator.Lte, value);
   }
 
-  /** El campo está en `values`. Una lista vacía no coincide con nada. */
+  /** The field is in `values`. An empty list matches nothing. */
   in(values: readonly Present<Entity[K]>[]): Criteria<Entity> {
     return this.add(Operator.In, CriteriaValidator.list(values));
   }
 
-  /** El campo no está en `values`. Una lista vacía coincide con todo. */
+  /** The field is not in `values`. An empty list matches everything. */
   notIn(values: readonly Present<Entity[K]>[]): Criteria<Entity> {
     return this.add(Operator.NotIn, CriteriaValidator.list(values));
   }
 
-  /** El campo cumple el patrón `LIKE` de SQL. Solo para campos de texto. Quien llama escapa los comodines con `escapeLike`. */
+  /** The field matches the SQL `LIKE` pattern. Text fields only. The caller escapes wildcards with `escapeLike`. */
   like(
     pattern: Present<Entity[K]> extends string ? string : never,
   ): Criteria<Entity> {
@@ -72,7 +72,7 @@ export class WhereClause<Entity extends object, K extends FieldOf<Entity>> {
     return this.add(Operator.Like, pattern);
   }
 
-  /** Igual que `like`, sin distinguir mayúsculas. Solo para campos de texto. */
+  /** Same as `like`, case-insensitive. Text fields only. */
   ilike(
     pattern: Present<Entity[K]> extends string ? string : never,
   ): Criteria<Entity> {
@@ -80,17 +80,17 @@ export class WhereClause<Entity extends object, K extends FieldOf<Entity>> {
     return this.add(Operator.ILike, pattern);
   }
 
-  /** El campo es nulo. */
+  /** The field is null. */
   isNull(): Criteria<Entity> {
     return this.add(Operator.IsNull);
   }
 
-  /** El campo no es nulo. */
+  /** The field is not null. */
   isNotNull(): Criteria<Entity> {
     return this.add(Operator.IsNotNull);
   }
 
-  /** El campo está entre `from` y `to`, ambos incluidos. */
+  /** The field is between `from` and `to`, both inclusive. */
   between(from: Present<Entity[K]>, to: Present<Entity[K]>): Criteria<Entity> {
     CriteriaValidator.present(from, 'between lower bound');
     CriteriaValidator.present(to, 'between upper bound');

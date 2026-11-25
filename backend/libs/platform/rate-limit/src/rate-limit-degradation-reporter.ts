@@ -1,9 +1,9 @@
 import type { RateLimitOperation } from './rate-limit-operation.enum.js';
 import type { RateLimitRule } from './rate-limit-rule.js';
 
-/** Recibe cada falla del limitador compartido para registrarla o medirla. */
+/** Receives each failure of the shared limiter to log or measure it. */
 export abstract class RateLimitDegradationReporter {
-  /** Llamado cuando el limitador compartido falla y se usa el local. */
+  /** Called when the shared limiter fails and the local one is used. */
   abstract degraded(
     operation: RateLimitOperation,
     rule: RateLimitRule,

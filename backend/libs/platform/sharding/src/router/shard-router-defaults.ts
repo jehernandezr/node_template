@@ -1,4 +1,4 @@
-/** Límites por defecto de `ShardRouter`. */
+/** Default limits of `ShardRouter`. */
 export const SHARD_ROUTER_DEFAULTS = {
   localTtlMs: 60_000,
   sharedTtlMs: 300_000,

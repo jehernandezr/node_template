@@ -5,7 +5,7 @@ import { PasswordReset } from '../../domain/password-reset.js';
 import { PasswordResetRepository } from '../../domain/password-reset.repository.js';
 import { PasswordResetEntity } from './entities/password-reset.entity.js';
 
-/** `PasswordResetRepository` sobre `password_resets` del shard del usuario. */
+/** `PasswordResetRepository` over `password_resets` in the user's shard. */
 @Injectable()
 export class TypeOrmPasswordResetRepository
   extends UserShardRepository

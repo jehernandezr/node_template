@@ -8,7 +8,7 @@ const regionSchema = z.object({
   issuer: z.url({ protocol: /^https?$/ }),
 });
 
-/** `[{"code": "...", "apiBaseUrl": "...", "issuer": "..."}]` como JSON en una variable. */
+/** `[{"code": "...", "apiBaseUrl": "...", "issuer": "..."}]` as JSON in a variable. */
 const regionsSchema = z
   .string()
   .default('[]')
@@ -27,13 +27,13 @@ const regionsSchema = z
 
 export const regionsConfigSchema = z
   .object({
-    /** Las regiones del despliegue. Vacío: una sola región y ningún rechazo por región. */
+    /** The regions of the deployment. Empty: a single region and no rejection by region. */
     REGIONS: regionsSchema,
-    /** Región que sirve este proceso; los tenants de otra responden `PLATFORM.SHARDING.WRONG_REGION`. */
+    /** Region this process serves; tenants of another one get `PLATFORM.SHARDING.WRONG_REGION`. */
     SERVICE_REGION: z.string().trim().min(1).max(32).optional(),
     /**
-     * El emisor que este proceso acepta en los tokens (lo lee `@platform/auth`). Con regiones debe ser el `issuer` de
-     * `SERVICE_REGION`: así un token emitido en otra región no verifica aquí.
+     * The issuer this process accepts in tokens (read by `@platform/auth`). With regions it must be the `issuer` of
+     * `SERVICE_REGION`: that way a token issued in another region does not verify here.
      */
     AUTH_ISSUER: z.string().trim().min(1).optional(),
   })
@@ -80,16 +80,16 @@ export const RegionsConfig = new ConfigSection<RegionsSettings>(
   regionsConfigSchema,
 );
 
-/** Las regiones del despliegue, de `REGIONS` y `SERVICE_REGION`. */
+/** The regions of the deployment, from `REGIONS` and `SERVICE_REGION`. */
 export class ServiceRegions {
   constructor(private readonly settings: RegionsSettings) {}
 
-  /** La región de este proceso, o `undefined` si el despliegue no declara una. */
+  /** The region of this process, or `undefined` if the deployment does not declare one. */
   current(): string | undefined {
     return this.settings.SERVICE_REGION;
   }
 
-  /** El emisor de los tokens de una región, o `undefined` si no está en `REGIONS`. */
+  /** The token issuer of a region, or `undefined` if it is not in `REGIONS`. */
   issuerOf(code: string): string | undefined {
     return this.settings.REGIONS.find((region) => region.code === code)?.issuer;
   }
@@ -98,7 +98,7 @@ export class ServiceRegions {
     return this.settings.REGIONS;
   }
 
-  /** La URL de la API de una región, o `undefined` si no está en `REGIONS`. */
+  /** The API URL of a region, or `undefined` if it is not in `REGIONS`. */
   apiBaseUrlOf(code: string): string | undefined {
     return this.settings.REGIONS.find((region) => region.code === code)
       ?.apiBaseUrl;

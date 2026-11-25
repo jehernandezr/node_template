@@ -1,7 +1,7 @@
 import { HttpLimits } from './http-limits.js';
 import { HttpProblemError } from './http-problem.error.js';
 
-/** Resuelve la versión de la API de una petición: `Api-Version` con formato de fecha y versión soportada. */
+/** Resolves the API version of a request: `Api-Version` with date format and a supported version. */
 export class ApiVersionPolicy {
   private static readonly FORMAT = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -13,7 +13,7 @@ export class ApiVersionPolicy {
   ) {}
 
   /**
-   * @throws HttpProblemError (`PLATFORM.API.UNSUPPORTED_VERSION`) si el header es inválido, repetido o no soportado.
+   * @throws HttpProblemError (`PLATFORM.API.UNSUPPORTED_VERSION`) if the header is invalid, repeated or unsupported.
    */
   resolve(header: string | string[] | undefined, pinned?: string): string {
     if (header === undefined) {
@@ -31,7 +31,7 @@ export class ApiVersionPolicy {
     return header;
   }
 
-  /** @throws HttpProblemError si la ruta declara versiones y no incluye la pedida. */
+  /** @throws HttpProblemError if the route declares versions and does not include the requested one. */
   assertAccepts(version: string, routeVersions?: readonly string[]): void {
     if (routeVersions !== undefined && !routeVersions.includes(version)) {
       throw HttpProblemError.unsupportedVersion(version);

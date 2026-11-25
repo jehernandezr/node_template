@@ -2,8 +2,8 @@ import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { CriteriaErrorCode } from './criteria-error-code.enum.js';
 
 /**
- * Catálogo de los códigos de `@platform/criteria`. Repite el estado HTTP y la audiencia que hoy tiene el catálogo
- * central, así que ningún código observable cambia.
+ * Catalog of the `@platform/criteria` codes. Repeats the HTTP status and audience the central catalog
+ * has today, so no observable code changes.
  */
 export const criteriaErrorCatalog = defineErrorCatalog(CriteriaErrorCode, {
   [CriteriaErrorCode.UnknownField]: ErrorSpecs.pub(

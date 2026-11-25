@@ -8,7 +8,7 @@ import { NotificationTemplate } from './notification.template.js';
 import { PasswordResetTemplate } from './password-reset.template.js';
 import { VerifyEmailTemplate } from './verify-email.template.js';
 
-/** Las plantillas que notifications sabe armar, por su llave. */
+/** The templates notifications knows how to build, by their key. */
 export class EmailTemplates {
   private readonly byKey: ReadonlyMap<string, EmailTemplate>;
 

@@ -9,7 +9,7 @@ import { ResilienceConfigurableModule } from './resilience.module-definition.js'
 import { ResilienceFeatureModule } from './resilience-feature.module.js';
 import { policyRegistrationToken } from './resilience-tokens.js';
 
-/** Módulo de resiliencia de NestJS: entrega un `ResilienceRegistry` por aplicación. */
+/** NestJS resilience module: provides one `ResilienceRegistry` per application. */
 @Module({})
 export class ResilienceModule extends ResilienceConfigurableModule {
   static override forRoot(
@@ -19,8 +19,8 @@ export class ResilienceModule extends ResilienceConfigurableModule {
   }
 
   /**
-   * Registra la política de un servicio. El registro se hace al crear el
-   * módulo, así que una política mal configurada falla al arrancar.
+   * Registers a service's policy. Registration happens when the
+   * module is created, so a misconfigured policy fails at startup.
    */
   static forFeature(feature: ResilienceFeatureOptions): DynamicModule {
     const token = policyRegistrationToken(feature.name);

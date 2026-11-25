@@ -2,35 +2,35 @@ import type { DirectoryWriteResult } from '../model/directory-write-result.enum.
 import type { TenantPlacement } from '../model/tenant-placement.js';
 
 /**
- * Lado de escritura del directorio, usado por las sagas de alta y de traslado.
- * Toda escritura es condicional, así que dos sagas concurrentes nunca ganan a la vez:
+ * Write side of the directory, used by the sign-up and move sagas.
+ * Every write is conditional, so two concurrent sagas never both win:
  *
- * - `putPlacement` compara y fija sobre `version`. Crear un tenant
- *   (`expectedVersion` indefinido) solo funciona si no tiene fila; actualizar
- *   solo funciona si la versión guardada es `expectedVersion`, y el placement
- *   nuevo lleva `expectedVersion + 1`.
- * - La exclusividad del shard se comprueba en el mismo paso atómico que la
- *   escritura (en Postgres, una transacción que bloquea las filas de los shards
- *   destino con `SELECT ... FOR UPDATE` antes de contar sus tenants, o una
- *   restricción de exclusión). Una política pura no ve un placement concurrente;
- *   esta comprobación impide que dos tenants dedicados tomen el mismo shard vacío.
+ * - `putPlacement` compares and sets on `version`. Creating a tenant
+ *   (`expectedVersion` undefined) only works if it has no row; updating
+ *   only works if the stored version is `expectedVersion`, and the new
+ *   placement carries `expectedVersion + 1`.
+ * - Shard exclusivity is checked in the same atomic step as the
+ *   write (in Postgres, a transaction that locks the target shard rows
+ *   with `SELECT ... FOR UPDATE` before counting their tenants, or an
+ *   exclusion constraint). A pure policy does not see a concurrent placement;
+ *   this check prevents two dedicated tenants from taking the same empty shard.
  *
- * Tras una actualización exitosa, quien escribe llama a
- * `ShardRouter.invalidate(tenantId, { version })`, que además publica
- * `ShardingEvent.ShardDirectoryChanged` cuando el router tiene un publicador.
+ * After a successful update, the writer calls
+ * `ShardRouter.invalidate(tenantId, { version })`, which also publishes
+ * `ShardingEvent.ShardDirectoryChanged` when the router has a publisher.
  */
 export abstract class DirectoryWriter {
-  /** Placement de un tenant leído del primario, la base de una escritura condicional. */
+  /** Placement of a tenant read from the primary, the basis of a conditional write. */
   abstract readPlacement(
     tenantId: string,
   ): Promise<TenantPlacement | undefined>;
 
-  /** Placements de una región, la entrada de una `ShardPlacementPolicy`. */
+  /** Placements of a region, the input of a `ShardPlacementPolicy`. */
   abstract listPlacements(region: string): Promise<readonly TenantPlacement[]>;
 
   /**
-   * @param placement Placement nuevo. Su versión es 1 para un tenant nuevo y `expectedVersion + 1` en los demás casos.
-   * @param expectedVersion Versión que leyó quien llama, o `undefined` para crear el tenant.
+   * @param placement New placement. Its version is 1 for a new tenant and `expectedVersion + 1` otherwise.
+   * @param expectedVersion Version the caller read, or `undefined` to create the tenant.
    */
   abstract putPlacement(
     placement: TenantPlacement,
@@ -38,9 +38,9 @@ export abstract class DirectoryWriter {
   ): Promise<DirectoryWriteResult>;
 
   /**
-   * Borra la fila de un tenant solo si su versión guardada es `expectedVersion`. Es la reversa del alta, antes de
-   * que el tenant tenga datos.
-   * @returns `Written` si borró, `VersionConflict` si la fila cambió o ya no existe.
+   * Deletes a tenant row only if its stored version is `expectedVersion`. It reverses the sign-up, before
+   * the tenant has data.
+   * @returns `Written` if it deleted, `VersionConflict` if the row changed or no longer exists.
    */
   abstract deletePlacement(
     tenantId: string,

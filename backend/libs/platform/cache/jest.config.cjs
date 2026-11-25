@@ -16,7 +16,7 @@ module.exports = {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  // @nestjs/* es solo ESM: Jest tiene que transformarlo para poder cargarlo.
+  // @nestjs/* is ESM only: Jest must transform it to be able to load it.
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm/)?(@nestjs\\+|@nestjs/|uid@|uid/|load-esm@|load-esm/))',
   ],

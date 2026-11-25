@@ -17,8 +17,8 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
-  // main.ts solo compone, y prettier carga sus plugins con import() dinámico, que jest no ejecuta sin
-  // --experimental-vm-modules. Los cubre generators:verify.
+  // main.ts only composes, and prettier loads its plugins with dynamic import(), which jest does not run without
+  // --experimental-vm-modules. generators:verify covers them.
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

@@ -15,8 +15,8 @@ import { AccessVersionPublisher } from './access-version-publisher.js';
 import { GrantCeiling } from './grant-ceiling.js';
 
 /**
- * Roles del tenant. Los de sistema no se editan ni se borran, y un rol no puede otorgar un permiso que
- * quien lo edita no tiene.
+ * Tenant roles. System roles are not edited or deleted, and a role cannot grant a permission that
+ * its editor does not have.
  */
 @Injectable()
 export class ManageRoles {

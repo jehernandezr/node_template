@@ -18,10 +18,10 @@ import { StaticContractRegistry } from './utils/static-contract-registry.js';
 
 const paths = new ExportPaths('/backend');
 const USAGE =
-  'Uso: contracts-export <export|check|topology-export|topology-check|openapi>';
-const UP_TO_DATE = 'Archivos generados al día.';
+  'Usage: contracts-export <export|check|topology-export|topology-check|openapi>';
+const UP_TO_DATE = 'Generated files up to date.';
 
-/** Comando con el exportador real de los contratos registrados, sobre el disco dado. */
+/** Command with the real exporter of the registered contracts, over the given disk. */
 function commandOver(fileSystem: FileSystem, output: Output): ExportCommand {
   const uniqueness = new GlobalUniquenessChecker();
   const topology = new TopologyBuilder(uniqueness);
@@ -76,7 +76,7 @@ describe('ExportCommand', () => {
       expect(fileSystem.contentOf(paths.topology)).toBeDefined();
       expect(fileSystem.contentOf(paths.asyncApi)).toBeDefined();
       expect(fileSystem.contentOf(paths.openApiOf('identity'))).toBeDefined();
-      // contract.json y openapi.json de platform, identity y billing, la topología y el asyncapi.
+      // contract.json and openapi.json for platform, identity and billing, the topology and the asyncapi.
       expect(output.infoLines).toHaveLength(8);
     });
 

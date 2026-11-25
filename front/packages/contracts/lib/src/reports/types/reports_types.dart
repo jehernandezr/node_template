@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import 'package:meta/meta.dart';
 
@@ -8,7 +8,7 @@ import '../../core/core.dart';
 import '../../platform/types/platform_types.dart';
 import '../../reports/enums/reports_enums.dart';
 
-/// Terminó una ejecución de reporte.
+/// A report run finished.
 @immutable
 final class RunCompletedPayload {
   const RunCompletedPayload({
@@ -20,7 +20,7 @@ final class RunCompletedPayload {
     required this.completedAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory RunCompletedPayload.fromJson(Map<String, dynamic> json) {
     try {
       return RunCompletedPayload(
@@ -54,7 +54,7 @@ final class RunCompletedPayload {
 
   final DateTime completedAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'runId': runId,
@@ -64,7 +64,7 @@ final class RunCompletedPayload {
     'completedAt': completedAt.toUtc().toIso8601String(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(RunCompletedPayload value) =>
       value.toJson();
 
@@ -84,12 +84,12 @@ final class RunCompletedPayload {
       contractHash([tenantId, runId, type, status, requestedBy, completedAt]);
 }
 
-/// Retoma una ejecución de reporte en un worker.
+/// Resumes a report run in a worker.
 @immutable
 final class ExecuteRunPayload {
   const ExecuteRunPayload({required this.tenantId, required this.runId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ExecuteRunPayload.fromJson(Map<String, dynamic> json) {
     try {
       return ExecuteRunPayload(
@@ -105,13 +105,13 @@ final class ExecuteRunPayload {
 
   final String runId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tenantId': tenantId,
     'runId': runId,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ExecuteRunPayload value) => value.toJson();
 
   @override
@@ -125,7 +125,7 @@ final class ExecuteRunPayload {
   int get hashCode => contractHash([tenantId, runId]);
 }
 
-/// Rango de fechas y granularidad de un reporte.
+/// Date range and granularity of a report.
 @immutable
 final class ReportParams {
   const ReportParams({
@@ -134,7 +134,7 @@ final class ReportParams {
     required this.granularity,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportParams.fromJson(Map<String, dynamic> json) {
     try {
       return ReportParams(
@@ -157,14 +157,14 @@ final class ReportParams {
 
   final ReportGranularity granularity;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'from': from,
     'to': to,
     'granularity': granularity.wireCode,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportParams value) => value.toJson();
 
   @override
@@ -179,7 +179,7 @@ final class ReportParams {
   int get hashCode => contractHash([from, to, granularity]);
 }
 
-/// Columna del resultado de un reporte.
+/// Column of a report result.
 @immutable
 final class ReportColumn {
   const ReportColumn({
@@ -188,7 +188,7 @@ final class ReportColumn {
     required this.kind,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportColumn.fromJson(Map<String, dynamic> json) {
     try {
       return ReportColumn(
@@ -211,14 +211,14 @@ final class ReportColumn {
 
   final ReportColumnKind kind;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'key': key,
     'header': header,
     'kind': kind.wireCode,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportColumn value) => value.toJson();
 
   @override
@@ -233,12 +233,12 @@ final class ReportColumn {
   int get hashCode => contractHash([key, header, kind]);
 }
 
-/// Fila del resultado de un reporte.
+/// Row of a report result.
 @immutable
 final class ReportRow {
   const ReportRow({required this.cells});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportRow.fromJson(Map<String, dynamic> json) {
     try {
       return ReportRow(
@@ -251,10 +251,10 @@ final class ReportRow {
 
   final List<String> cells;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'cells': cells};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportRow value) => value.toJson();
 
   @override
@@ -266,12 +266,12 @@ final class ReportRow {
   int get hashCode => contractHash([cells]);
 }
 
-/// Resultado tabular de una ejecución terminada.
+/// Tabular result of a finished run.
 @immutable
 final class ReportResult {
   const ReportResult({required this.columns, required this.rows});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportResult.fromJson(Map<String, dynamic> json) {
     try {
       return ReportResult(
@@ -293,13 +293,13 @@ final class ReportResult {
 
   final List<ReportRow> rows;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'columns': [for (final e0 in columns) e0.toJson()],
     'rows': [for (final e0 in rows) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportResult value) => value.toJson();
 
   @override
@@ -313,7 +313,7 @@ final class ReportResult {
   int get hashCode => contractHash([columns, rows]);
 }
 
-/// Tipo de reporte disponible, con sus formatos y granularidades.
+/// Available report type, with its formats and granularities.
 @immutable
 final class ReportCatalogEntry {
   const ReportCatalogEntry({
@@ -322,7 +322,7 @@ final class ReportCatalogEntry {
     required this.granularities,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportCatalogEntry.fromJson(Map<String, dynamic> json) {
     try {
       return ReportCatalogEntry(
@@ -347,14 +347,14 @@ final class ReportCatalogEntry {
 
   final List<ReportGranularity> granularities;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'type': type.wireCode,
     'formats': [for (final e0 in formats) e0.wireCode],
     'granularities': [for (final e0 in granularities) e0.wireCode],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportCatalogEntry value) =>
       value.toJson();
 
@@ -370,12 +370,12 @@ final class ReportCatalogEntry {
   int get hashCode => contractHash([type, formats, granularities]);
 }
 
-/// Catálogo de reportes que puede pedir el tenant.
+/// Catalog of reports the tenant can request.
 @immutable
 final class ReportCatalog {
   const ReportCatalog({required this.items});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportCatalog.fromJson(Map<String, dynamic> json) {
     try {
       return ReportCatalog(
@@ -391,12 +391,12 @@ final class ReportCatalog {
 
   final List<ReportCatalogEntry> items;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportCatalog value) => value.toJson();
 
   @override
@@ -408,7 +408,7 @@ final class ReportCatalog {
   int get hashCode => contractHash([items]);
 }
 
-/// Petición de una ejecución de reporte.
+/// Request for a report run.
 @immutable
 final class CreateReportRunRequest {
   const CreateReportRunRequest({
@@ -417,7 +417,7 @@ final class CreateReportRunRequest {
     required this.params,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory CreateReportRunRequest.fromJson(Map<String, dynamic> json) {
     try {
       return CreateReportRunRequest(
@@ -440,14 +440,14 @@ final class CreateReportRunRequest {
 
   final ReportParams params;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'type': type.wireCode,
     'format': format.wireCode,
     'params': params.toJson(),
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(CreateReportRunRequest value) =>
       value.toJson();
 
@@ -463,12 +463,12 @@ final class CreateReportRunRequest {
   int get hashCode => contractHash([type, format, params]);
 }
 
-/// Ejecución aceptada; su resultado se consulta por el id.
+/// Run accepted; its result is queried by id.
 @immutable
 final class ReportRunCreated {
   const ReportRunCreated({required this.runId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportRunCreated.fromJson(Map<String, dynamic> json) {
     try {
       return ReportRunCreated(runId: json['runId'] as String);
@@ -479,10 +479,10 @@ final class ReportRunCreated {
 
   final String runId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'runId': runId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportRunCreated value) => value.toJson();
 
   @override
@@ -494,7 +494,7 @@ final class ReportRunCreated {
   int get hashCode => contractHash([runId]);
 }
 
-/// Ejecución de reporte sin su resultado.
+/// Report run without its result.
 @immutable
 final class ReportRunSummary {
   const ReportRunSummary({
@@ -509,7 +509,7 @@ final class ReportRunSummary {
     required this.expiresAt,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportRunSummary.fromJson(Map<String, dynamic> json) {
     try {
       return ReportRunSummary(
@@ -560,7 +560,7 @@ final class ReportRunSummary {
 
   final DateTime? expiresAt;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'type': type.wireCode,
@@ -579,7 +579,7 @@ final class ReportRunSummary {
     },
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportRunSummary value) => value.toJson();
 
   @override
@@ -610,12 +610,12 @@ final class ReportRunSummary {
   ]);
 }
 
-/// Página de ejecuciones de reporte.
+/// Page of report runs.
 @immutable
 final class ReportRunPage {
   const ReportRunPage({required this.items, required this.nextCursor});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportRunPage.fromJson(Map<String, dynamic> json) {
     try {
       return ReportRunPage(
@@ -634,13 +634,13 @@ final class ReportRunPage {
 
   final String? nextCursor;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'items': [for (final e0 in items) e0.toJson()],
     'nextCursor': nextCursor,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportRunPage value) => value.toJson();
 
   @override
@@ -654,12 +654,12 @@ final class ReportRunPage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Filtros y paginación del listado de ejecuciones.
+/// Filters and pagination of the run listing.
 @immutable
 final class ListReportRunsRequest {
   const ListReportRunsRequest({this.type, this.status, this.limit, this.after});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ListReportRunsRequest.fromJson(Map<String, dynamic> json) {
     try {
       return ListReportRunsRequest(
@@ -689,7 +689,7 @@ final class ListReportRunsRequest {
 
   final String? after;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     if (type case final value?) 'type': value.wireCode,
     if (status case final value?) 'status': value.wireCode,
@@ -697,7 +697,7 @@ final class ListReportRunsRequest {
     'after': ?after,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ListReportRunsRequest value) =>
       value.toJson();
 
@@ -714,12 +714,12 @@ final class ListReportRunsRequest {
   int get hashCode => contractHash([type, status, limit, after]);
 }
 
-/// Ejecución de reporte a consultar.
+/// Report run to query.
 @immutable
 final class GetReportRunRequest {
   const GetReportRunRequest({required this.runId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory GetReportRunRequest.fromJson(Map<String, dynamic> json) {
     try {
       return GetReportRunRequest(runId: json['runId'] as String);
@@ -730,10 +730,10 @@ final class GetReportRunRequest {
 
   final String runId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'runId': runId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(GetReportRunRequest value) =>
       value.toJson();
 
@@ -746,7 +746,7 @@ final class GetReportRunRequest {
   int get hashCode => contractHash([runId]);
 }
 
-/// Ejecución de reporte con su resultado, nulo mientras no esté lista.
+/// Report run with its result, null until it is ready.
 @immutable
 final class ReportRunDetail {
   const ReportRunDetail({
@@ -762,7 +762,7 @@ final class ReportRunDetail {
     required this.result,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportRunDetail.fromJson(Map<String, dynamic> json) {
     try {
       return ReportRunDetail(
@@ -818,7 +818,7 @@ final class ReportRunDetail {
 
   final ReportResult? result;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'type': type.wireCode,
@@ -841,7 +841,7 @@ final class ReportRunDetail {
     },
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportRunDetail value) => value.toJson();
 
   @override
@@ -874,12 +874,12 @@ final class ReportRunDetail {
   ]);
 }
 
-/// Ejecución de reporte cuyo resultado se descarga.
+/// Report run whose result is downloaded.
 @immutable
 final class DownloadReportRunRequest {
   const DownloadReportRunRequest({required this.runId});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory DownloadReportRunRequest.fromJson(Map<String, dynamic> json) {
     try {
       return DownloadReportRunRequest(runId: json['runId'] as String);
@@ -890,10 +890,10 @@ final class DownloadReportRunRequest {
 
   final String runId;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'runId': runId};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(DownloadReportRunRequest value) =>
       value.toJson();
 
@@ -906,7 +906,7 @@ final class DownloadReportRunRequest {
   int get hashCode => contractHash([runId]);
 }
 
-/// Contenido de un reporte listo para descargar.
+/// Content of a report ready to download.
 @immutable
 final class ReportDownload {
   const ReportDownload({
@@ -915,7 +915,7 @@ final class ReportDownload {
     required this.content,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory ReportDownload.fromJson(Map<String, dynamic> json) {
     try {
       return ReportDownload(
@@ -934,14 +934,14 @@ final class ReportDownload {
 
   final String content;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'fileName': fileName,
     'contentType': contentType,
     'content': content,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(ReportDownload value) => value.toJson();
 
   @override
@@ -956,12 +956,12 @@ final class ReportDownload {
   int get hashCode => contractHash([fileName, contentType, content]);
 }
 
-/// Usuario cuyos datos se borran de reports.
+/// User whose data is deleted from reports.
 @immutable
 final class EraseReportsUserInput {
   const EraseReportsUserInput({required this.user});
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EraseReportsUserInput.fromJson(Map<String, dynamic> json) {
     try {
       return EraseReportsUserInput(
@@ -974,10 +974,10 @@ final class EraseReportsUserInput {
 
   final UserRef user;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{'user': user.toJson()};
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EraseReportsUserInput value) =>
       value.toJson();
 
@@ -990,7 +990,7 @@ final class EraseReportsUserInput {
   int get hashCode => contractHash([user]);
 }
 
-/// Filas de reports que dejaron de guardar al usuario.
+/// Reports rows that stopped storing the user.
 @immutable
 final class EraseReportsUserResult {
   const EraseReportsUserResult({
@@ -998,7 +998,7 @@ final class EraseReportsUserResult {
     required this.affectedRows,
   });
 
-  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  /// Reads the object from JSON. Throws [FormatException] if it does not match the type.
   factory EraseReportsUserResult.fromJson(Map<String, dynamic> json) {
     try {
       return EraseReportsUserResult(
@@ -1014,13 +1014,13 @@ final class EraseReportsUserResult {
 
   final int affectedRows;
 
-  /// JSON del objeto; omite los campos opcionales nulos.
+  /// JSON of the object; omits null optional fields.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'userId': userId,
     'affectedRows': affectedRows,
   };
 
-  /// Igual a [toJson], para usar como tear-off constante.
+  /// Same as [toJson], for use as a constant tear-off.
   static Map<String, dynamic> encode(EraseReportsUserResult value) =>
       value.toJson();
 

@@ -1,4 +1,4 @@
-/** Una sesión y el usuario que la tiene: con esto se llega a su fila. */
+/** A session and the user that owns it: this is enough to reach its row. */
 export interface SessionRef {
   readonly sessionId: string;
   readonly userId: string;

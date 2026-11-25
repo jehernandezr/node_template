@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
-# Sube la web compilada al bucket de la web del ambiente e invalida CloudFront.
-# Uso: publish-web.sh <ambiente>
-# Variables: NAME_PREFIX y AWS_REGION (obligatorias). Requiere haber corrido flutter build web
-# en front/apps/web. Los archivos de arranque y los manifiestos van con no-cache; el resto,
-# inmutable. Si CloudFront no tiene distribución para el bucket, termina sin invalidar.
-# DRY_RUN=1 imprime los comandos.
+# Uploads the built web app to the environment web bucket and invalidates CloudFront.
+# Usage: publish-web.sh <environment>
+# Variables: NAME_PREFIX and AWS_REGION (required). Requires flutter build web to have run
+# in front/apps/web. Bootstrap files and manifests go with no-cache; the rest,
+# immutable. If CloudFront has no distribution for the bucket, it ends without invalidating.
+# DRY_RUN=1 prints the commands.
 set -euo pipefail
 
 # shellcheck source=pipeline-common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pipeline-common.sh"
 
-ENVIRONMENT="${1:?uso: publish-web.sh <ambiente>}"
-require_identifier "ambiente" "$ENVIRONMENT"
-: "${NAME_PREFIX:?falta NAME_PREFIX}"
-: "${AWS_REGION:?falta AWS_REGION}"
+ENVIRONMENT="${1:?usage: publish-web.sh <environment>}"
+require_identifier "environment" "$ENVIRONMENT"
+: "${NAME_PREFIX:?missing NAME_PREFIX}"
+: "${AWS_REGION:?missing AWS_REGION}"
 cd "$REPO_ROOT"
 
 web_dir="$REPO_ROOT/front/apps/web/build/web"
 if ! is_dry && [[ ! -d "$web_dir" ]]; then
-  log "No existe $web_dir: corre flutter build web --release antes"
+  log "$web_dir does not exist: run flutter build web --release first"
   exit 1
 fi
 
 account="$(capture aws sts get-caller-identity --query Account --output text)"
 bucket="$NAME_PREFIX-web-$account"
-log "Publicando la web de $ENVIRONMENT en s3://$bucket"
+log "Publishing the $ENVIRONMENT web app to s3://$bucket"
 
 run aws s3 sync "$web_dir" "s3://$bucket" --delete \
   --cache-control 'public,max-age=31536000,immutable' \
@@ -48,7 +48,7 @@ distribution="$(capture aws cloudfront list-distributions \
   --output text)"
 
 if [[ -z "$distribution" || "$distribution" == "None" ]]; then
-  log "Ninguna distribución de CloudFront apunta a $bucket: no hay nada que invalidar"
+  log "No CloudFront distribution points to $bucket: nothing to invalidate"
   exit 0
 fi
 

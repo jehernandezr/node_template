@@ -1,10 +1,10 @@
 import type { EmailRequest } from './email-request.js';
 
-/** Envío de correos para los otros módulos. */
+/** Email sending for the other modules. */
 export abstract class EmailFacade {
   /**
-   * Envía el correo una sola vez por `messageId` y devuelve el id del proveedor.
-   * @throws RecipientSuppressedError, TemplateUnknownError, TemplateParameterMissingError o EmailInProgressError.
+   * Sends the email only once per `messageId` and returns the provider's id.
+   * @throws RecipientSuppressedError, TemplateUnknownError, TemplateParameterMissingError or EmailInProgressError.
    */
   abstract send(request: EmailRequest): Promise<string>;
 }

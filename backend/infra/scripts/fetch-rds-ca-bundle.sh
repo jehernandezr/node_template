@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Descarga el bundle público de CA de RDS junto al handler de la Lambda de bootstrap, que lo
-# usa para verificar el certificado de la instancia. Se corre una vez y el archivo se
-# confirma en git; volver a correrlo cuando AWS publique CA nuevas.
+# Downloads the public RDS CA bundle next to the bootstrap Lambda handler, which uses it
+# to verify the instance certificate. Run it once and commit the file to git; run it
+# again when AWS publishes new CAs.
 #   backend/infra/scripts/fetch-rds-ca-bundle.sh
 set -euo pipefail
 
@@ -12,10 +12,10 @@ trap 'rm -f "$TMP"' EXIT
 
 curl -fsSL --proto '=https' --tlsv1.2 -o "$TMP" "$URL"
 
-# Solo certificados PEM: nada de HTML de error ni archivos vacíos.
+# PEM certificates only: no error HTML and no empty files.
 count="$(grep -c -- '-----BEGIN CERTIFICATE-----' "$TMP" || true)"
 if [[ "$count" -eq 0 ]] || grep -qv -e '^-----BEGIN CERTIFICATE-----$' -e '^-----END CERTIFICATE-----$' -e '^[A-Za-z0-9+/=]*$' "$TMP"; then
-  echo "La descarga de $URL no es un bundle PEM" >&2
+  echo "The download from $URL is not a PEM bundle" >&2
   exit 1
 fi
 if command -v openssl >/dev/null; then
@@ -24,4 +24,4 @@ fi
 
 mv "$TMP" "$TARGET"
 trap - EXIT
-echo "Bundle de RDS con $count certificados en $TARGET"
+echo "RDS bundle with $count certificates in $TARGET"

@@ -14,7 +14,7 @@ import { SchemaExportBuilder } from './schema-export-builder.js';
 import { SchemaOwnership } from './schema-ownership.js';
 import { TopologyBuilder } from './topology-builder.js';
 
-/** Punto de entrada de la línea de comandos: arma las piezas y ejecuta el subcomando. */
+/** Command line entry point: assembles the pieces and runs the subcommand. */
 async function main(args: readonly string[]): Promise<ExitCode> {
   const paths = new ExportPaths(process.cwd());
   const fileSystem = new NodeFileSystem();

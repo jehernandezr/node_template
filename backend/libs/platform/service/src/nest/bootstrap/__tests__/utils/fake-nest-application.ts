@@ -1,16 +1,16 @@
 import type { INestApplication } from '@nestjs/common';
 import { BootstrapStep } from './bootstrap-step.enum.js';
 
-/** Dirección en la que se pidió escuchar a `FakeNestApplication`. */
+/** Address that `FakeNestApplication` was asked to listen on. */
 export interface ListenRequest {
   readonly port: number | string;
   readonly host: string | undefined;
 }
 
 /**
- * Doble parcial de la aplicación HTTP de Nest: anota en `steps` el orden del arranque y en `listened`
- * dónde se pidió escuchar. Sin adaptador real, `NestFactory.create` no puede crear una aplicación
- * completa en las pruebas.
+ * Partial double of the Nest HTTP application: records in `steps` the startup order and in `listened`
+ * where it was asked to listen. Without a real adapter, `NestFactory.create` cannot create a full
+ * application in the tests.
  */
 export class FakeNestApplication {
   readonly listened: ListenRequest[] = [];
@@ -39,7 +39,7 @@ export class FakeNestApplication {
     return this.server;
   }
 
-  /** La forma que espera el código de arranque; el doble solo implementa lo que el arranque usa. */
+  /** The shape the startup code expects; the double only implements what the startup uses. */
   asNestApplication(): INestApplication {
     return this as unknown as INestApplication;
   }

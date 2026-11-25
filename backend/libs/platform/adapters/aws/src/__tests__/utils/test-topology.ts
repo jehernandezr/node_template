@@ -5,7 +5,7 @@ import {
   tasksContract,
 } from './test-contracts.js';
 
-/** Topología de las pruebas, armada con los contratos de `test-contracts.ts`. */
+/** Test topology, built with the contracts in `test-contracts.ts`. */
 export class TestTopology {
   static readonly topology = topologyFromContracts([
     tasksContract,
@@ -13,7 +13,7 @@ export class TestTopology {
     ledgerContract,
   ]);
 
-  /** Cola de la topología por su nombre lógico; falla si el contrato de prueba no la declara. */
+  /** Topology queue by its logical name; fails if the test contract does not declare it. */
   static queue(name: string): QueueDef {
     const queue = TestTopology.topology.queueFor(name);
     if (queue === undefined) {

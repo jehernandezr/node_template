@@ -1,20 +1,20 @@
 import { PaymentStatus } from './payment-status.enum.js';
 
-/** Un intento de cobro de una factura, anotado antes de pedirlo al proveedor. */
+/** An invoice charge attempt, recorded before requesting it from the provider. */
 export interface PaymentAttempt {
   readonly id: string;
   readonly invoiceId: string;
-  /** Número del intento dentro de la factura: hay a lo sumo un intento por número. */
+  /** Attempt number within the invoice: there is at most one attempt per number. */
   readonly attempt: number;
   readonly status: PaymentStatus;
   readonly requestedAt: Date;
-  /** Referencia del proveedor, con un cobro aprobado. */
+  /** Provider reference, for an approved charge. */
   readonly reference?: string;
-  /** Motivo del rechazo, con un cobro rechazado. */
+  /** Rejection reason, for a rejected charge. */
   readonly reason?: string;
 }
 
-/** Estados de un intento que todavía espera la respuesta final del proveedor. */
+/** States of an attempt that is still waiting for the final provider response. */
 export const OPEN_PAYMENT_STATUSES: ReadonlySet<PaymentStatus> = new Set([
   PaymentStatus.Requested,
   PaymentStatus.Pending,

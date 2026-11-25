@@ -5,12 +5,12 @@ import type { RealtimeSession } from './realtime-session.js';
 import type { FrameSink } from './frame-sink.js';
 
 /**
- * Lo que dura mientras una conexión sigue abierta: la presencia del usuario, la señal de vida y el cierre al
- * vencer su sesión o al revocarse su tenant. Cada latido también relee el stream, por si se perdió un aviso
- * de trama nueva.
+ * What lasts while a connection stays open: the user's presence, the keep-alive signal and the close when
+ * its session expires or its tenant is revoked. Each heartbeat also rereads the stream, in case a new frame
+ * notice was lost.
  */
 export class RealtimeConnection {
-  /** `setTimeout` dispara de inmediato con una espera mayor: una sesión de meses cerraría la conexión al abrirla. */
+  /** `setTimeout` fires immediately with a longer wait: a months-long session would close the connection on opening it. */
   private static readonly MAX_TIMER_MS = 2 ** 31 - 1;
 
   private heartbeat: NodeJS.Timeout | undefined;
@@ -27,10 +27,10 @@ export class RealtimeConnection {
     private readonly logger: LoggerPort,
   ) {}
 
-  /** Si la sesión no logra abrirse, la conexión se cierra y deja de anunciarse antes de propagar el error. */
+  /** If the session fails to open, the connection is closed and stops being announced before the error is propagated. */
   async start(heartbeatMs: number, closeInMs: number): Promise<void> {
     await this.announce(heartbeatMs);
-    // Latido de una conexión viva, no un job: termina con la conexión.
+    // Heartbeat of a live connection, not a job: it ends with the connection.
     this.heartbeat = setInterval(
       () => void this.beat(heartbeatMs),
       heartbeatMs,
@@ -77,7 +77,7 @@ export class RealtimeConnection {
     await this.announce(heartbeatMs);
   }
 
-  /** Sin estado de autenticación la conexión sigue: el próximo latido vuelve a consultar. */
+  /** Without authentication state the connection continues: the next heartbeat checks again. */
   private revoked(): Promise<boolean> {
     return this.revocations
       .revokedSince(this.session.principal, this.openedAt)
@@ -87,7 +87,7 @@ export class RealtimeConnection {
       });
   }
 
-  /** La marca dura dos latidos: si se pierde uno, el usuario no aparece desconectado. */
+  /** The mark lasts two heartbeats: if one is lost, the user does not appear disconnected. */
   private async announce(heartbeatMs: number): Promise<void> {
     await this.presence
       .connected(this.session.channel, this.id, 2 * heartbeatMs)

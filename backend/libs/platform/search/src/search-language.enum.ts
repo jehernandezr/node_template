@@ -1,4 +1,4 @@
-/** Configuraciones de texto de PostgreSQL que la plantilla admite para el índice. */
+/** PostgreSQL text configurations that the template supports for the index. */
 export enum SearchLanguage {
   Spanish = 'spanish',
   English = 'english',

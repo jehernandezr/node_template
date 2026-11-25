@@ -2,7 +2,7 @@ import { FailureKind } from '@platform/kernel';
 import { CacheError } from './cache-error.js';
 import { CacheErrorCode } from './cache-error-code.enum.js';
 
-/** El valor serializado supera el tamaño permitido y no se guarda. */
+/** The serialized value exceeds the allowed size and is not stored. */
 export class CacheValueTooLargeError extends CacheError {
   override readonly code = CacheErrorCode.ValueTooLarge;
 

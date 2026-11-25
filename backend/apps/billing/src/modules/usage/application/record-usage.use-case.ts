@@ -5,8 +5,8 @@ import { TenantShard } from '../../../shared/utils/tenant-shard.js';
 import { UsageLedger } from '../domain/usage-ledger.js';
 
 /**
- * Aplica un lote de uso de otro servicio en una transacción: cada registro cuenta una sola vez por su llave,
- * aunque el lote llegue de nuevo o la llave se repita en otro lote.
+ * Applies a usage batch from another service in one transaction: each record counts only once by its key,
+ * even if the batch arrives again or the key is repeated in another batch.
  */
 @Injectable()
 export class RecordUsage {

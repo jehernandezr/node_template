@@ -11,7 +11,7 @@ import { identityConfigSchema } from '../config/identity.config.js';
 import { identityService } from '../identity.service.js';
 import { IdentityTestEnvironment, StaticAppConfig } from './utils/index.js';
 
-/** Credenciales armadas en la prueba: nunca salen del proceso. */
+/** Credentials built in the test: they never leave the process. */
 class FixedCredentials extends AwsCredentialsProvider {
   async resolve(): Promise<AwsCredentials> {
     return {

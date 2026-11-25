@@ -1,17 +1,17 @@
-# Dos importadores: la raíz (Nx y herramientas de git) y backend/ (dependencias externas del
-# backend). Las librerías, apps y herramientas de backend/ no son paquetes: son proyectos de Nx
-# que se importan por alias de TypeScript (backend/tsconfig.base.json).
+# Two importers: the root (Nx and git tooling) and backend/ (external backend
+# dependencies). The libraries, apps and tools in backend/ are not packages: they are Nx projects
+# imported through TypeScript aliases (backend/tsconfig.base.json).
 packages:
   - 'backend'
 
-# hoisted instala todo en un único node_modules plano en la raíz, sin carpetas node_modules
-# dentro de backend/. Las versiones exactas en los dos package.json evitan copias anidadas.
+# hoisted installs everything in a single flat node_modules at the root, with no node_modules
+# folders inside backend/. Exact versions in both package.json files avoid nested copies.
 nodeLinker: hoisted
 
-# nx 24.0.0 fija undici 7.29.0, que tiene avisos de seguridad (GHSA-2m5v-pch6-74hx y otros).
-# 7.30.2 es un parche de la misma versión mayor. Quitar cuando nx suba su versión.
+# nx 24.0.0 pins undici 7.29.0, which has security advisories (GHSA-2m5v-pch6-74hx and others).
+# 7.30.2 is a patch of the same major version. Remove when nx upgrades it.
 overrides:
   undici: 7.30.2
-  # glob 10 y 13 (GHSA-3g3m-2fjr-6pw4) solo se corrige en la versión mayor siguiente.
-  # Lo traen Jest y test-exclude como herramientas de desarrollo.
+  # glob 10 and 13 (GHSA-3g3m-2fjr-6pw4) is only fixed in the next major version.
+  # Jest and test-exclude bring it in as development tools.
   'glob@>=10 <14': 14.0.6

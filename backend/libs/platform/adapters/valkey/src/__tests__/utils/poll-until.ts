@@ -1,4 +1,4 @@
-/** Espera una condición con sondeos acotados, en lugar de dormir un tiempo fijo. */
+/** Waits for a condition with bounded polling, instead of sleeping a fixed time. */
 export class PollUntil {
   static readonly DEFAULT_TIMEOUT_MS = 5_000;
   private static readonly INTERVAL_MS = 10;

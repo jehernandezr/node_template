@@ -4,7 +4,7 @@ import type {
   RevocationReason,
 } from '@contracts/identity';
 
-/** Estado completo de una sesión, tal como se guarda. */
+/** Full state of a session, as stored. */
 export interface SessionState {
   readonly id: string;
   readonly userId: string;
@@ -13,7 +13,7 @@ export interface SessionState {
   readonly deviceId?: string;
   readonly deviceName: string;
   readonly platform: ClientPlatform;
-  /** Sal aleatoria de la sesión; con la llave del servicio deriva el secreto de cada generación. */
+  /** Random salt of the session; with the service key it derives the secret of each generation. */
   readonly tokenSalt: string;
   readonly generation: number;
   readonly previousGenerationUntil?: Date;
@@ -30,21 +30,21 @@ export interface SessionState {
   readonly version?: number;
 }
 
-/** Cómo se compara una generación presentada con la de la sesión. */
+/** How a presented generation compares with the session's. */
 export enum GenerationMatch {
-  /** Es la generación vigente. */
+  /** It is the current generation. */
   Current = 'current',
-  /** Es la anterior y llegó dentro de la gracia: dos pestañas que refrescan a la vez. */
+  /** It is the previous one and arrived within the grace period: two tabs refreshing at the same time. */
   Grace = 'grace',
-  /** Es una generación ya rotada con su secreto verdadero: alguien reusa un token robado. */
+  /** It is an already rotated generation with its real secret: someone is reusing a stolen token. */
   Reused = 'reused',
-  /** La generación no existe o su secreto no coincide: no prueba nada y no revoca. */
+  /** The generation does not exist or its secret does not match: it proves nothing and does not revoke. */
   Unknown = 'unknown',
 }
 
-/** Una sesión abierta en un dispositivo, con su session token que rota en cada refresh. */
+/** A session open on a device, with its session token that rotates on each refresh. */
 export class Session {
-  /** Generación del primer session token de una sesión. */
+  /** Generation of a session's first session token. */
   static readonly FIRST_GENERATION = 1;
 
   private constructor(private state: SessionState) {}
@@ -77,10 +77,10 @@ export class Session {
   }
 
   /**
-   * Compara la generación presentada con la sesión. `secretMatches` recalcula el secreto de esa generación y
-   * lo compara en tiempo constante; la sesión no lo conoce. Solo un secreto verdadero cuenta como reuso: la
-   * ruta del token sale de los claims de cualquier access token, así que una generación vieja con un secreto
-   * inventado no debe poder revocar la sesión de otro.
+   * Compares the presented generation with the session. `secretMatches` recomputes the secret of that generation and
+   * compares it in constant time; the session does not know it. Only a real secret counts as reuse: the
+   * token's route comes from the claims of any access token, so an old generation with a forged
+   * secret must not be able to revoke someone else's session.
    */
   classify(
     generation: number,
@@ -106,7 +106,7 @@ export class Session {
   }
 
   /**
-   * Sube la generación, abre la gracia de la anterior y extiende la inactividad sin pasar del tope absoluto.
+   * Bumps the generation, opens the grace period of the previous one and extends inactivity without exceeding the absolute cap.
    */
   rotate(now: Date, graceMs: number, idleMs: number): void {
     this.state = {

@@ -1,7 +1,7 @@
 import type { ApiKeyPrincipal } from '../../api-keys/api-key-principal.js';
 import { ApiKeyResolver } from '../../api-keys/api-key-resolver.js';
 
-/** Resolutor de API keys de prueba: devuelve el principal fijado por prefijo y hash, y cuenta las llamadas. */
+/** Test API key resolver: returns the principal set per prefix and hash, and counts the calls. */
 export class FakeApiKeyResolver extends ApiKeyResolver {
   private readonly principals = new Map<string, ApiKeyPrincipal>();
   private resolved = 0;
@@ -14,12 +14,12 @@ export class FakeApiKeyResolver extends ApiKeyResolver {
     return this.principals.get(`${prefix}:${secretHash}`);
   }
 
-  /** Fija el principal que devuelve `resolve(prefix, secretHash)`. */
+  /** Sets the principal returned by `resolve(prefix, secretHash)`. */
   set(prefix: string, secretHash: string, principal: ApiKeyPrincipal): void {
     this.principals.set(`${prefix}:${secretHash}`, principal);
   }
 
-  /** Veces que se llamó a `resolve`. */
+  /** Number of times `resolve` was called. */
   get resolveCount(): number {
     return this.resolved;
   }

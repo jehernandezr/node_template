@@ -7,10 +7,10 @@ const SUNDAY = 0;
 const SUNDAY_AS_SEVEN = 7;
 
 /**
- * Expresión cron en UTC de 5 campos (minuto, hora, día del mes, mes, día de la
- * semana) o de 6 (con segundos al inicio). Admite `*`, listas, rangos y pasos.
- * Si el día del mes y el de la semana están ambos restringidos, basta con que
- * se cumpla uno. El domingo es 0 o 7.
+ * UTC cron expression with 5 fields (minute, hour, day of month, month, day of
+ * week) or 6 (with seconds first). Supports `*`, lists, ranges and steps.
+ * If day of month and day of week are both restricted, it is enough for
+ * one of them to match. Sunday is 0 or 7.
  */
 export class CronExpression {
   private constructor(
@@ -23,7 +23,7 @@ export class CronExpression {
     private readonly daysOfWeek: CronField,
   ) {}
 
-  /** @throws InvalidCronExpressionError cuando la expresión no es válida. */
+  /** @throws InvalidCronExpressionError when the expression is not valid. */
   static parse(expression: string): CronExpression {
     const fields = expression.trim().split(/\s+/);
     if (fields.length !== 5 && fields.length !== 6) {
@@ -32,7 +32,7 @@ export class CronExpression {
         'se esperaban 5 o 6 campos',
       );
     }
-    // Sin segundos, la expresión dispara al inicio del minuto.
+    // Without seconds, the expression fires at the start of the minute.
     const [secondsText, ...rest] =
       fields.length === 6 ? fields : ['0', ...fields];
     const field = (text: string, min: number, max: number, name: string) =>
@@ -49,11 +49,11 @@ export class CronExpression {
   }
 
   /**
-   * Primer instante estrictamente posterior a `from` que cumple la expresión, en UTC.
-   * @throws InvalidCronExpressionError si no hay ninguna fecha en los cinco años siguientes.
+   * First instant strictly after `from` that matches the expression, in UTC.
+   * @throws InvalidCronExpressionError if there is no date in the next five years.
    */
   nextAfter(from: Date): Date {
-    // El tope se calcula una vez: sin él, una expresión imposible como el 31 de febrero no terminaría.
+    // The limit is computed once: without it, an impossible expression such as February 31 would never end.
     const limit = Date.UTC(
       from.getUTCFullYear() + SEARCH_YEARS,
       from.getUTCMonth(),
@@ -78,7 +78,7 @@ export class CronExpression {
     );
   }
 
-  /** `undefined` si `at` cumple; si no, el siguiente instante que puede cumplir. */
+  /** `undefined` if `at` matches; otherwise, the next instant that can match. */
   private skip(at: Date): Date | undefined {
     const year = at.getUTCFullYear();
     const month = at.getUTCMonth();

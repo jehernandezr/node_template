@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { PrimitivesErrorCode } from './primitives-error-code.enum.js';
 
-/** Catálogo de los códigos de `@platform/primitives`; ninguno llega al cliente. */
+/** Catalog of the `@platform/primitives` codes; none of them reaches the client. */
 export const primitivesErrorCatalog = defineErrorCatalog(PrimitivesErrorCode, {
   [PrimitivesErrorCode.InvalidArgument]: ErrorSpecs.internal(
     500,

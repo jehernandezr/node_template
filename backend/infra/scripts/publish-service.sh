@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Publica el artefacto de un servicio: imagen en ECR (Fargate, workers, tiempo real) y/o paquete
-# en S3 (Lambda, consumidores). Escribe .artifacts/<servicio>.env con TF_VAR_image y
-# TF_VAR_lambda_package para que el stack service los use al planear.
-# Uso: publish-service.sh <ambiente> <servicio>
-# Variables: ARTIFACTS_BUCKET, ECR_PREFIX, AWS_REGION (obligatorias), GIT_SHA (por defecto HEAD).
-# DRY_RUN=1 imprime los comandos y no escribe .artifacts.
+# Publishes a service artifact: image in ECR (Fargate, workers, real time) and/or package
+# in S3 (Lambda, consumers). Writes .artifacts/<service>.env with TF_VAR_image and
+# TF_VAR_lambda_package for the service stack to use when planning.
+# Usage: publish-service.sh <environment> <service>
+# Variables: ARTIFACTS_BUCKET, ECR_PREFIX, AWS_REGION (required), GIT_SHA (default HEAD).
+# DRY_RUN=1 prints the commands and does not write .artifacts.
 set -euo pipefail
 
 # shellcheck source=pipeline-common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pipeline-common.sh"
 
-ENVIRONMENT="${1:?uso: publish-service.sh <ambiente> <servicio>}"
-SERVICE="${2:?uso: publish-service.sh <ambiente> <servicio>}"
-require_identifier "ambiente" "$ENVIRONMENT"
-require_identifier "servicio" "$SERVICE"
-: "${ARTIFACTS_BUCKET:?falta ARTIFACTS_BUCKET}"
-: "${ECR_PREFIX:?falta ECR_PREFIX}"
-: "${AWS_REGION:?falta AWS_REGION}"
+ENVIRONMENT="${1:?usage: publish-service.sh <environment> <service>}"
+SERVICE="${2:?usage: publish-service.sh <environment> <service>}"
+require_identifier "environment" "$ENVIRONMENT"
+require_identifier "service" "$SERVICE"
+: "${ARTIFACTS_BUCKET:?missing ARTIFACTS_BUCKET}"
+: "${ECR_PREFIX:?missing ECR_PREFIX}"
+: "${AWS_REGION:?missing AWS_REGION}"
 cd "$REPO_ROOT"
 GIT_SHA="${GIT_SHA:-$(git rev-parse HEAD)}"
 
@@ -76,7 +76,7 @@ if [[ "$needs_package" == "true" ]]; then
     --query VersionId --output text)"
 
   if is_dry; then
-    dry_text "TF_VAR_lambda_package con s3://$ARTIFACTS_BUCKET/$key"
+    dry_text "TF_VAR_lambda_package with s3://$ARTIFACTS_BUCKET/$key"
   else
     package_json="$(node -e 'process.stdout.write(JSON.stringify({
       s3_bucket: process.argv[1], s3_key: process.argv[2], s3_object_version: process.argv[3]
@@ -92,7 +92,7 @@ if ! is_dry; then
   for line in "${env_lines[@]+"${env_lines[@]}"}"; do
     printf '%s\n' "$line" >> "$env_file"
   done
-  log "Artefactos de $SERVICE escritos en $env_file"
+  log "Artifacts of $SERVICE written to $env_file"
 else
-  dry_text "escribir .artifacts/$SERVICE.env"
+  dry_text "write .artifacts/$SERVICE.env"
 fi

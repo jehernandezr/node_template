@@ -15,9 +15,9 @@ import {
 import { SessionGuardErrors } from './session-guard.errors.js';
 
 /**
- * `POST /v1/me/step-up`: abre el paso adicional de la sesión actual. Responde
- * un `mfaToken` atado a la sesión y los métodos que ofrece; con un dispositivo
- * registrado, el email deja de ofrecerse.
+ * `POST /v1/me/step-up`: opens the step-up of the current session. Responds with
+ * an `mfaToken` bound to the session and the methods it offers; with a registered
+ * device, email is no longer offered.
  */
 export const StartStepUpRoute = defineRoute({
   id: IdentityRoute.StartStepUp,
@@ -28,12 +28,12 @@ export const StartStepUpRoute = defineRoute({
   errors: [...SessionGuardErrors, PlatformErrorCode.RateLimitExceeded],
   access: Access.authenticated(),
   description:
-    'Abre el paso adicional (step-up) de la sesión actual y devuelve los métodos que ofrece.',
+    'Opens the step-up of the current session and returns the methods it offers.',
 });
 
 /**
- * `POST /v1/me/step-up/challenges`: crea el desafío del paso adicional con uno
- * de los métodos ofrecidos, con las mismas reglas que el desafío del login.
+ * `POST /v1/me/step-up/challenges`: creates the step-up challenge with one
+ * of the offered methods, with the same rules as the login challenge.
  */
 export const RequestStepUpChallengeRoute = defineRoute({
   id: IdentityRoute.RequestStepUpChallenge,
@@ -51,13 +51,13 @@ export const RequestStepUpChallengeRoute = defineRoute({
   ],
   access: Access.authenticated(),
   description:
-    'Crea el desafío del paso adicional y envía el código por el método elegido.',
+    'Creates the step-up challenge and sends the code through the chosen method.',
 });
 
 /**
- * `POST /v1/me/step-up/verify`: verifica el desafío, actualiza el
- * `mfaVerifiedAt` de la sesión y emite un access token nuevo con `auth_time`
- * y `amr` al día. El session token no cambia.
+ * `POST /v1/me/step-up/verify`: verifies the challenge, updates the session's
+ * `mfaVerifiedAt` and issues a new access token with up-to-date `auth_time`
+ * and `amr`. The session token does not change.
  */
 export const VerifyStepUpRoute = defineRoute({
   id: IdentityRoute.VerifyStepUp,
@@ -75,5 +75,5 @@ export const VerifyStepUpRoute = defineRoute({
   ],
   access: Access.authenticated(),
   description:
-    'Verifica el paso adicional, actualiza el último MFA de la sesión y emite un access token nuevo.',
+    'Verifies the step-up, updates the last MFA of the session and issues a new access token.',
 });

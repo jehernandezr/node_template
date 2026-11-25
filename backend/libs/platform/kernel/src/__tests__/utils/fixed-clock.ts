@@ -1,6 +1,6 @@
 import type { Clock } from '../../time/clock.js';
 
-/** Reloj de test con hora fija que se puede cambiar y adelantar. */
+/** Test clock with a fixed time that can be changed and advanced. */
 export class FixedClock implements Clock {
   private current: Date;
 
@@ -12,12 +12,12 @@ export class FixedClock implements Clock {
     return new Date(this.current.getTime());
   }
 
-  /** Fija una hora nueva. */
+  /** Sets a new time. */
   set(date: Date): void {
     this.current = new Date(date.getTime());
   }
 
-  /** Avanza la hora los milisegundos indicados. */
+  /** Advances the time by the given milliseconds. */
   advance(ms: number): void {
     this.current = new Date(this.current.getTime() + ms);
   }

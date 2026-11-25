@@ -2,14 +2,14 @@ import type { ManagerIntent } from '@platform/persistence';
 import type { EntityManager } from 'typeorm';
 
 /**
- * Dónde corre una tabla de claims: `PlatformEntityManagers` la lleva al shard del tenant y
- * `CatalogClaimManagers` al catálogo global.
+ * Where a claims table runs: `PlatformEntityManagers` takes it to the tenant's shard and
+ * `CatalogClaimManagers` to the global catalog.
  */
 export interface ClaimRecordManagers {
   run<T>(
     intent: ManagerIntent,
     fn: (manager: EntityManager) => Promise<T>,
   ): Promise<T>;
-  /** Mantenimiento que no pertenece a un tenant: devuelve la suma de lo que devuelve `fn`. */
+  /** Maintenance that does not belong to a tenant: returns the sum of what `fn` returns. */
   sweep(fn: (manager: EntityManager) => Promise<number>): Promise<number>;
 }

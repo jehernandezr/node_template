@@ -2,7 +2,7 @@ import type { RequestContextStore } from '@platform/observability';
 import { PersistenceContextProvider } from './persistence-context-provider.js';
 import type { PersistenceContext } from './persistence-context.js';
 
-/** Toma el contexto del `RequestContextStore` de observability. */
+/** Takes the context from the observability `RequestContextStore`. */
 export class RequestPersistenceContextProvider extends PersistenceContextProvider {
   private static readonly EMPTY: PersistenceContext = Object.freeze({});
 

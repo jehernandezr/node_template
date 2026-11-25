@@ -1,7 +1,7 @@
 import { request, type ClientRequest, type IncomingMessage } from 'node:http';
 import type { ReceivedFrame } from './received-frame.js';
 
-/** Cliente SSE de prueba: abre la transmisión, guarda cada evento y avisa cuando el servidor la cierra. */
+/** Test SSE client: opens the stream, stores each event and notifies when the server closes it. */
 export class SseTestClient {
   readonly frames: ReceivedFrame[] = [];
   status = 0;

@@ -1,23 +1,23 @@
 # test_utils
 
-Dobles y utilitarios de prueba que comparten varios paquetes del front. Solo se declara en `dev_dependencies`: el código de producción nunca lo importa.
+Test doubles and utilities shared by several front packages. It is only declared in `dev_dependencies`: production code never imports it.
 
-- `FakeAuthRepository`, `FakeTokenStore` y `FakeDeviceKeyPort`: implementan los puertos de `auth`.
-- `FakeClock`: reloj que solo avanza cuando la prueba lo pide.
-- `FakeFailure`: excepción que lanza un fake para simular una llamada fallida. Reemplaza a `StateError` en ese papel, porque un `StateError` es un error de programación y escapa de los manejadores `on Exception`.
-- `TestApp`: monta `MaterialApp` o `MaterialApp.router` con los delegados compartidos, la sesión y el tema; `wrap` y `wrapRouter` devuelven el widget, y `pump` lo monta y deja un frame asentado.
-- `SessionBuilder`: arma `UserSession` paso a paso, en lugar de literales repetidos. Con `tenantId: null` arma un operador de plataforma.
-- `ProblemFixtures`: respuestas de problema (503, 403, 404 y un código libre) que comparten las pruebas de fallos.
-- `TestScope`: un `MicrofrontendScope` de demo con los repositorios ya registrados con `withRepository`.
-- `expectAccessible`: corre las cuatro guías de tamaño táctil y contraste sobre lo que está en pantalla.
-- `pumpAtWidths`: monta una pantalla a cada ancho y llama a una comprobación con cada uno.
-- `pumpAtTextScale`: monta una pantalla con la escala de texto de accesibilidad (2x por defecto).
-- `DeferredLibrariesPreloader`: carga en `setUpAll` las librerías diferidas de los manifiestos, sus pantallas y su ciclo de vida.
-- `ShellFixture` y `ShellUnderTest`: lo que la suite de escenarios pide a cada app para montarla y observarla.
-- `ShellScenarioSetup`: manifiestos, reloj, sesión inicial, conexión real y ruta inicial de un escenario.
-- `defineShellScenarios`: registra en un grupo los escenarios compartidos de sesión, paso adicional e identidad de shell.
-- `ScenarioProbe` y `ScenarioIdentity`: microfrontend de sonda y conexión real sobre `FakeAuthRepository`, para los escenarios.
-- `RuntimeSettler`: espera en una prueba de widgets a que el runtime del shell termine su cola, alternando el reloj falso y el ciclo de eventos real.
-- `RoutePaths`: todas las rutas de un árbol de `go_router` y las que aparecen repetidas.
+- `FakeAuthRepository`, `FakeTokenStore` and `FakeDeviceKeyPort`: implement the `auth` ports.
+- `FakeClock`: a clock that only advances when the test asks.
+- `FakeFailure`: exception a fake throws to simulate a failed call. It replaces `StateError` in that role, because a `StateError` is a programming error and escapes `on Exception` handlers.
+- `TestApp`: mounts `MaterialApp` or `MaterialApp.router` with the shared delegates, the session and the theme; `wrap` and `wrapRouter` return the widget, and `pump` mounts it and leaves a settled frame.
+- `SessionBuilder`: builds `UserSession` step by step, instead of repeated literals. With `tenantId: null` it builds a platform operator.
+- `ProblemFixtures`: problem responses (503, 403, 404 and a free code) shared by the failure tests.
+- `TestScope`: a demo `MicrofrontendScope` with the repositories already registered with `withRepository`.
+- `expectAccessible`: runs the four touch target size and contrast guidelines on what is on screen.
+- `pumpAtWidths`: mounts a screen at each width and calls a check with each one.
+- `pumpAtTextScale`: mounts a screen with the accessibility text scale (2x by default).
+- `DeferredLibrariesPreloader`: loads in `setUpAll` the deferred libraries of the manifests, their screens and their lifecycle.
+- `ShellFixture` and `ShellUnderTest`: what the scenario suite asks of each app to mount and observe it.
+- `ShellScenarioSetup`: manifests, clock, initial session, real connection and initial route of a scenario.
+- `defineShellScenarios`: registers in a group the shared session, additional step and shell identity scenarios.
+- `ScenarioProbe` and `ScenarioIdentity`: probe microfrontend and real connection on top of `FakeAuthRepository`, for the scenarios.
+- `RuntimeSettler`: waits in a widget test for the shell runtime to finish its queue, alternating the fake clock and the real event loop.
+- `RoutePaths`: all the routes of a `go_router` tree and the ones that appear repeated.
 
-Lo que solo usan las pruebas de un paquete va en el `test/utils/` de ese paquete.
+What only one package's tests use goes in that package's `test/utils/`.

@@ -4,7 +4,7 @@ import { SessionState } from '../domain/session.js';
 import { SessionRef } from '../domain/session-ref.js';
 import { SessionRepository } from '../domain/session.repository.js';
 
-/** Lee una sesión, por ejemplo para responder su último MFA. */
+/** Reads a session, for example to return its last MFA. */
 @Injectable()
 export class FindSession {
   constructor(

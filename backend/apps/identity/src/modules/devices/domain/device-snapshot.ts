@@ -1,14 +1,14 @@
 import type { ClientPlatform } from '@contracts/identity';
 
-/** Vista de solo lectura de un dispositivo registrado. */
+/** Read-only view of a registered device. */
 export interface DeviceSnapshot {
   readonly id: string;
   readonly userId: string;
   readonly name: string;
   readonly platform: ClientPlatform;
-  /** Clave pública P-256 en SPKI DER, base64url. */
+  /** P-256 public key in SPKI DER, base64url. */
   readonly publicKey: string;
-  /** Si aprueba códigos y acciones sensibles de las otras sesiones. */
+  /** Whether it approves codes and sensitive actions of the other sessions. */
   readonly verifier: boolean;
   readonly trustedUntil?: Date;
 }

@@ -1,7 +1,7 @@
 import { AuditedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `report_runs`: cada ejecución de reporte del tenant, con su resultado mientras no venza. */
+/** `report_runs`: each report run of the tenant, with its result while it has not expired. */
 @Entity({ name: 'report_runs' })
 @Index('report_runs_tenant_idx', ['tenantId', 'id'])
 @Index('report_runs_expiry_idx', ['status', 'expiresAt'])

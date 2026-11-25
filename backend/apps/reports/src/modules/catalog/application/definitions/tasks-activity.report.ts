@@ -8,7 +8,7 @@ import {
 import { ProjectionsFacade } from '../../../projections/index.js';
 import { ReportDefinition } from '../report-definition.js';
 
-/** Tareas creadas y terminadas por periodo. */
+/** Tasks created and completed per period. */
 @Injectable()
 export class TasksActivityReport extends ReportDefinition {
   readonly type = ReportType.TasksActivity;

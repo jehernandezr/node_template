@@ -1,8 +1,8 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
-/// Constantes `ReportsLimits` del contrato `reports`.
+/// `ReportsLimits` constants of the `reports` contract.
 abstract final class ReportsLimits {
   static const int maxRangeDays = 366;
   static const int maxColumns = 20;

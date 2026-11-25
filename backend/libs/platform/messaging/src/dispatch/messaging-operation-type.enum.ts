@@ -1,4 +1,4 @@
-/** Valor de `messaging.operation.type` de una entrega que atiende un consumidor. */
+/** Value of `messaging.operation.type` for a delivery a consumer handles. */
 export enum MessagingOperationType {
   Process = 'process',
 }

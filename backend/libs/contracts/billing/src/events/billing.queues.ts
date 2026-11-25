@@ -7,17 +7,17 @@ import { BillingQueue } from '../enums/identifiers.enum.js';
 import { RecordUsageCommand } from './billing.commands.js';
 
 /**
- * Cola FIFO de los registros de uso. El grupo de mensajes es el tenant, así los
- * lotes de un mismo tenant se aplican en orden.
+ * FIFO queue of usage records. The message group is the tenant, so the
+ * batches of the same tenant are applied in order.
  */
 export const UsageQueue = defineQueue({
   name: BillingQueue.Usage,
   fifo: true,
   commands: [RecordUsageCommand],
-  description: 'Lotes de uso que envían los servicios que miden.',
+  description: 'Usage batches sent by the metering services.',
 });
 
-/** Cambios de membresía de identity, para el conteo de usuarios facturables. */
+/** Membership changes from identity, for the count of billable users. */
 export const IdentityEventsQueue = defineQueue({
   name: BillingQueue.Identity,
   subscriptions: [
@@ -26,6 +26,5 @@ export const IdentityEventsQueue = defineQueue({
       events: [MembershipChangedEvent],
     },
   ],
-  description:
-    'Cambios de membresía que alimentan el conteo de usuarios facturables.',
+  description: 'Membership changes that feed the billable user count.',
 });

@@ -12,7 +12,7 @@ export interface RecordedMeasurement {
   readonly attributes: MetricAttributes;
 }
 
-/** Métricas en memoria con una suma por nombre y atributos para las pruebas. */
+/** In-memory metrics with a sum per name and attributes for the tests. */
 export class RecordingMetrics implements MetricsPort {
   readonly increments: RecordedIncrement[] = [];
   readonly records: RecordedMeasurement[] = [];
@@ -25,7 +25,7 @@ export class RecordingMetrics implements MetricsPort {
     this.records.push({ name, value, attributes });
   }
 
-  /** Suma de los incrementos con ese nombre cuyos atributos incluyen todos los pares de `where`. */
+  /** Sum of the increments with that name whose attributes include all the pairs of `where`. */
   total(name: string, where: MetricAttributes = {}): number {
     return this.increments
       .filter(

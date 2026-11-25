@@ -1,10 +1,10 @@
 import type { MigrationInterface } from 'typeorm';
 import type { EntityClass } from '../metadata/entity-metadata.js';
 
-/** Clase de una migración de TypeORM. */
+/** Class of a TypeORM migration. */
 export type MigrationClass = new () => MigrationInterface;
 
-/** Entidades y migraciones de una clase de base: las de los shards o las del catálogo. */
+/** Entities and migrations of a database kind: those of the shards or those of the catalog. */
 export interface DatabaseSetDefinition {
   readonly entities: readonly EntityClass[];
   readonly migrations: readonly MigrationClass[];

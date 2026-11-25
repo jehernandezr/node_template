@@ -4,8 +4,8 @@ import { AwsOperation } from '../aws-operation.enum.js';
 import type { OutboundEmail } from './outbound-email.js';
 
 /**
- * Envía correos con la API v2 de SES. Un error del SDK sale como `PLATFORM.MESSAGING.TRANSPORT_FAILED`,
- * reintentable si es throttling, red o falla del servidor; el destinatario nunca va en el mensaje.
+ * Sends emails with the SES v2 API. An SDK error comes out as `PLATFORM.MESSAGING.TRANSPORT_FAILED`,
+ * retryable if it is throttling, network or a server fault; the recipient never goes in the message.
  */
 export class SesEmailClient {
   constructor(
@@ -13,7 +13,7 @@ export class SesEmailClient {
     private readonly errors: AwsErrorTranslator,
   ) {}
 
-  /** Devuelve el id que SES asigna al mensaje. */
+  /** Returns the id SES assigns to the message. */
   async send(email: OutboundEmail): Promise<string> {
     try {
       const output = await this.client.send(

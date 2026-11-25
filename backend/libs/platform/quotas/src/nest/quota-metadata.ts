@@ -1,2 +1,2 @@
-/** Llave de metadatos donde `@Quota` deja la métrica de la ruta. */
+/** Metadata key where `@Quota` stores the route's metric. */
 export const QUOTA_METRIC = Symbol('QuotaMetric');

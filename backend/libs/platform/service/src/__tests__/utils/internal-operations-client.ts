@@ -9,7 +9,7 @@ import {
 import { SystemClock } from '@platform/kernel';
 import { RetryAfterParser, type CallOutcome } from '@platform/primitives';
 
-/** Llama las operaciones internas de un servicio por HTTP, firmadas con el secreto del entorno de prueba. */
+/** Calls a service's internal operations over HTTP, signed with the test environment secret. */
 export class InternalOperationsClient {
   private static readonly BUDGET_MS = 20_000;
   private readonly transport: HttpTransport;
@@ -30,7 +30,7 @@ export class InternalOperationsClient {
     tenantId?: string,
   ): Promise<CallOutcome<unknown>> {
     return this.transport.invoke(operation.id, input, {
-      // Cada llamada es una operación nueva: la llave no se repite entre clientes de la misma app.
+      // Each call is a new operation: the key does not repeat across clients of the same app.
       idempotencyKey: randomUUID(),
       deadline: Date.now() + InternalOperationsClient.BUDGET_MS,
       timeoutMs: InternalOperationsClient.BUDGET_MS,

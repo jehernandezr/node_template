@@ -18,8 +18,8 @@ import {
 import { InboxFacade } from './inbox.facade.js';
 
 /**
- * La bandeja del usuario en su shard. Cada lectura que cambia el conteo de no leídas lo publica por tiempo
- * real después de guardarse, así las otras pestañas y dispositivos del usuario lo ven sin consultar.
+ * The user's inbox in their shard. Every read that changes the unread count publishes it over real time
+ * after it is saved, so the user's other tabs and devices see it without querying.
  */
 @Injectable()
 export class ManageInbox extends InboxFacade {
@@ -68,7 +68,7 @@ export class ManageInbox extends InboxFacade {
     return this.shard.run(user, () => this.inbox.unreadCount(user.userId));
   }
 
-  /** @throws NotificationNotFoundError si no está en la bandeja del usuario. */
+  /** @throws NotificationNotFoundError if it is not in the user's inbox. */
   async markRead(user: UserRef, notificationId: string): Promise<void> {
     const unread = await this.shard.run(user, async () => {
       if (

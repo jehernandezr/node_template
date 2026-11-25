@@ -14,8 +14,8 @@ import { MigrationHostModule } from './migration-host.module.js';
 import type { ServiceMigratorOptions } from './service-migrator-options.js';
 
 /**
- * Migra las bases de un servicio con `ShardedMigrationRunner`. Lo llama el binario `migrate`
- * del servicio.
+ * Migrates the databases of a service with `ShardedMigrationRunner`. The service's `migrate` binary
+ * calls it.
  */
 export class ServiceMigrator {
   async run(
@@ -25,7 +25,7 @@ export class ServiceMigrator {
   ): Promise<ServiceMigrationReport> {
     new ServiceDefinitionValidator().validate(definition);
     const env = options.env ?? process.env;
-    // El migrador no exporta telemetría: arrancarla apagada evita que el proceso espere a un colector.
+    // The migrator does not export telemetry: starting it disabled keeps the process from waiting for a collector.
     const telemetry = TelemetryBootstrap.startWith({
       serviceName: definition.name,
       disabled: true,
@@ -62,7 +62,7 @@ export class ServiceMigrator {
     }
   }
 
-  /** Las bases se migran una a una: un fallo corta la corrida y las ya migradas quedan al día. */
+  /** The databases are migrated one by one: a failure stops the run and the ones already migrated stay up to date. */
   private async migrateShards(
     runner: ShardedMigrationRunner,
     lister: ShardLister,

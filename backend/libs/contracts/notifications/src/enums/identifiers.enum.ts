@@ -1,4 +1,4 @@
-/** Códigos de error del servicio notifications. */
+/** Error codes of the notifications service. */
 export enum NotificationsErrorCode {
   InboxNotFound = 'NOTIFICATIONS.INBOX.NOT_FOUND',
   PreferencesInvalidQuietHours = 'NOTIFICATIONS.PREFERENCES.INVALID_QUIET_HOURS',
@@ -9,7 +9,7 @@ export enum NotificationsErrorCode {
   RealtimeUnauthenticated = 'NOTIFICATIONS.REALTIME.UNAUTHENTICATED',
 }
 
-/** Identificadores de las rutas públicas de notifications. */
+/** Identifiers of the public routes of notifications. */
 export enum NotificationsRoute {
   ListInbox = 'notifications.inbox.list',
   GetUnreadCount = 'notifications.inbox.unread-count',
@@ -19,7 +19,7 @@ export enum NotificationsRoute {
   SavePreferences = 'notifications.preferences.save',
 }
 
-/** Identificadores de las operaciones internas de notifications. */
+/** Identifiers of the internal operations of notifications. */
 export enum NotificationsOperation {
   SendMessage = 'notifications.messages.send.v1',
   NotifyUser = 'notifications.users.notify.v1',
@@ -33,17 +33,17 @@ export enum NotificationsOperation {
   TenantDirectoryRemove = 'notifications.tenant-directory.remove.v1',
 }
 
-/** Tipos CloudEvents de los eventos que publica notifications. */
+/** CloudEvents types of the events notifications publishes. */
 export enum NotificationsEvent {
   NotificationCreated = 'notifications.notification.created.v1',
 }
 
-/** Tópicos donde notifications publica sus eventos. */
+/** Topics where notifications publishes its events. */
 export enum NotificationsTopic {
   Events = 'notifications-events',
 }
 
-/** Colas que consume notifications. */
+/** Queues that notifications consumes. */
 export enum NotificationsQueue {
   Triggers = 'notifications-triggers',
   RealtimeControl = 'notifications-realtime-control',

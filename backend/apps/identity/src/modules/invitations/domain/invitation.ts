@@ -1,6 +1,6 @@
 import { InvitationStatus } from '@contracts/identity';
 
-/** Estado completo de una invitación, tal como se guarda. */
+/** Full state of an invitation, as stored. */
 export interface InvitationState {
   readonly id: string;
   readonly tenantId: string;
@@ -14,7 +14,7 @@ export interface InvitationState {
   readonly version?: number;
 }
 
-/** Una invitación a un tenant: vale siete días y un solo uso. */
+/** An invitation to a tenant: valid for seven days and a single use. */
 export class Invitation {
   private constructor(private state: InvitationState) {}
 
@@ -30,7 +30,7 @@ export class Invitation {
     return this.state;
   }
 
-  /** El estado a la hora `now`: una pendiente vencida cuenta como vencida aunque nadie la haya marcado. */
+  /** The state at time `now`: an expired pending one counts as expired even if no one has marked it. */
   statusAt(now: Date): InvitationStatus {
     return this.state.status === InvitationStatus.Pending &&
       now.getTime() >= this.state.expiresAt.getTime()
@@ -46,7 +46,7 @@ export class Invitation {
     this.state = { ...this.state, status: InvitationStatus.Accepted };
   }
 
-  /** Devuelve `false` si ya no estaba pendiente. */
+  /** Returns `false` if it was no longer pending. */
   revoke(now: Date): boolean {
     if (!this.isUsable(now)) {
       return false;

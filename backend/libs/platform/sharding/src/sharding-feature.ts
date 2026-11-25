@@ -7,8 +7,8 @@ import type { RoutingKey } from './routing-key.js';
 import type { ShardKeyContext } from './shard-key-context.js';
 
 /**
- * Declaración de sharding de un módulo, inmutable: valida las opciones al
- * arrancar y calcula la clave de enrutamiento de cada consulta.
+ * Immutable sharding declaration of a module: validates the options on
+ * startup and computes the routing key of each query.
  */
 export class ShardingFeature<TSource = unknown> {
   private static readonly STRATEGIES: ReadonlySet<string> = new Set(
@@ -25,9 +25,9 @@ export class ShardingFeature<TSource = unknown> {
   }
 
   /**
-   * Valida la declaración.
-   * @throws ShardingError `InvalidConfiguration` por una estrategia o clave desconocida, un
-   *   `ShardKey.Custom` sin `keyResolver` o un `keyResolver` con otra clave.
+   * Validates the declaration.
+   * @throws ShardingError `InvalidConfiguration` for an unknown strategy or key, a
+   *   `ShardKey.Custom` without `keyResolver` or a `keyResolver` with another key.
    */
   validate(): this {
     if (!ShardingFeature.STRATEGIES.has(this.options.strategy)) {
@@ -36,7 +36,7 @@ export class ShardingFeature<TSource = unknown> {
     if (!ShardingFeature.KEYS.has(this.options.key)) {
       throw ShardingFeature.invalid('Unknown shard key', 'key');
     }
-    // Un resolver sin clave Custom sería código muerto que oculta una mala configuración.
+    // A resolver without a Custom key would be dead code hiding a misconfiguration.
     const hasResolver = this.options.keyResolver !== undefined;
     if (this.options.key === ShardKey.Custom && !hasResolver) {
       throw ShardingFeature.invalid(
@@ -54,10 +54,10 @@ export class ShardingFeature<TSource = unknown> {
   }
 
   /**
-   * Clave de enrutamiento de una consulta: el tenant, el usuario del contexto o lo que el
-   * `ShardKeyResolver` del módulo lee de `source`.
-   * @throws ShardingError `KeyMissing` cuando la clave que declaró el módulo no está disponible.
-   *   Nunca hay un shard por defecto.
+   * Routing key of a query: the tenant, the context user or what the module's
+   * `ShardKeyResolver` reads from `source`.
+   * @throws ShardingError `KeyMissing` when the key the module declared is not available.
+   *   There is never a default shard.
    */
   keyFor(context: ShardKeyContext, source?: TSource): RoutingKey {
     switch (this.options.key) {

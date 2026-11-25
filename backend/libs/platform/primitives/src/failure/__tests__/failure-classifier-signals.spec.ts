@@ -9,7 +9,7 @@ import { RetryAfterParser } from '../retry-after-parser.js';
 
 const classifier = new FailureClassifier();
 
-/** Espera de `Retry-After` con el reloj fijado en `nowMs`. */
+/** `Retry-After` wait with the clock fixed at `nowMs`. */
 function retryAfter(
   value: string | number | Date | null | undefined,
   maxMs: number = RetryAfterParser.DEFAULT_MAX_MS,
@@ -176,7 +176,7 @@ describe('FailureClassifier signals', () => {
   });
 
   it('walks the cause chain when the outer error says nothing', () => {
-    // fetch de undici: TypeError('fetch failed') con la causa de red.
+    // undici fetch: TypeError('fetch failed') with the network cause.
     const fetchFailed = new TypeError('fetch failed', {
       cause: withCode('ECONNREFUSED'),
     });

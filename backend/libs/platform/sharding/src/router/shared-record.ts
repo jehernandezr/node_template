@@ -1,23 +1,23 @@
 import type { TenantPlacement } from '../model/tenant-placement.js';
 import type { SharedRecordKind } from './shared-record-kind.enum.js';
 
-/** Un placement tal como se guarda en el caché compartido, con el instante en que deja de confiarse en él. */
+/** A placement as stored in the shared cache, with the instant from which it is no longer trusted. */
 export interface SharedPlacementEntry {
   readonly placement: TenantPlacement;
   readonly expiresAt: number;
 }
 
 /**
- * Marca que deja una invalidación en el caché compartido. Se guarda con una
- * versión de caché mayor que el placement que reemplaza, así `setIfNewer`
- * rechaza una lectura en vuelo que intenta devolver el placement viejo.
+ * Marker an invalidation leaves in the shared cache. It is stored with a
+ * cache version higher than the placement it replaces, so `setIfNewer`
+ * rejects an in-flight read that tries to put back the old placement.
  */
 export interface SharedTombstone {
   readonly cacheVersion: number;
   readonly expiresAt: number;
 }
 
-/** Lo que puede contener una clave del caché compartido. */
+/** What a shared cache key can contain. */
 export type SharedRecord =
   | {
       readonly kind: SharedRecordKind.Placement;

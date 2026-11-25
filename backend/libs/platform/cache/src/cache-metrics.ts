@@ -4,11 +4,11 @@ import type { CacheLookupResult } from './cache-lookup-result.enum.js';
 import { CacheMetricAttribute } from './cache-metric-attribute.enum.js';
 import { CacheMetricName } from './cache-metric-name.enum.js';
 
-/** Publica las métricas de `@platform/cache` por el puerto de métricas. */
+/** Publishes the `@platform/cache` metrics through the metrics port. */
 export class CacheMetrics {
   constructor(private readonly metrics: MetricsPort) {}
 
-  /** Cuenta una falla absorbida, con su nombre y su código si los tiene. */
+  /** Counts an absorbed failure, with its name and its code if it has them. */
   reportError(error: unknown, cacheName?: string): void {
     const described = ErrorDescriptor.describe(error);
     const attributes: Record<string, string> = {
@@ -23,7 +23,7 @@ export class CacheMetrics {
     this.metrics.increment(CacheMetricName.Errors, attributes);
   }
 
-  /** Cuenta una lectura por resultado (`hit` o `miss`). */
+  /** Counts a read by result (`hit` or `miss`). */
   recordLookup(result: CacheLookupResult, cacheName?: string): void {
     const attributes: Record<string, string> = {
       [CacheMetricAttribute.Result]: result,

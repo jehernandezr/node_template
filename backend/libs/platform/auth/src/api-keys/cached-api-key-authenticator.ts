@@ -9,8 +9,8 @@ import { ApiKeyFormat } from './api-key-format.js';
 import type { ApiKeyResolver } from './api-key-resolver.js';
 
 /**
- * Autentica con la copia compartida `auth:apikey:{prefix}` y, si no está, con
- * el `ApiKeyResolver`. Identity es quien llena esa copia; este servicio solo la lee.
+ * Authenticates with the shared copy `auth:apikey:{prefix}` and, if it is not there, with
+ * the `ApiKeyResolver`. Identity is the one that fills that copy; this service only reads it.
  */
 export class CachedApiKeyAuthenticator extends ApiKeyAuthenticator {
   constructor(
@@ -32,7 +32,7 @@ export class CachedApiKeyAuthenticator extends ApiKeyAuthenticator {
     try {
       principal = await this.state.apiKey(parsed.prefix, hash);
     } catch {
-      // La copia en Valkey no es la fuente de verdad: si no responde, el resolutor decide.
+      // The Valkey copy is not the source of truth: if it does not respond, the resolver decides.
       principal = undefined;
     }
     if (principal === undefined) {

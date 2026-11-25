@@ -5,17 +5,17 @@ import type { SagaEventListener } from '../model/saga-event.js';
 import type { SagaInstance } from '../model/saga-instance.js';
 
 /**
- * Emite en proceso los eventos del motor. Salen después de confirmada la
- * transición y son de mejor esfuerzo: un proceso que muere tras confirmar, o
- * un oyente agregado después, no los recibe. Una entrega durable pide un
- * outbox con las filas del evento en la misma confirmación.
+ * Emits the engine's events in process. They go out after the transition is
+ * committed and are best effort: a process that dies after committing, or
+ * a listener added later, does not receive them. Durable delivery requires an
+ * outbox with the event rows in the same commit.
  */
 export class SagaEventPublisher {
   private readonly listeners = new Set<SagaEventListener>();
 
   constructor(private readonly logger?: LoggerPort) {}
 
-  /** Suscribe un oyente. Devuelve la función que lo retira. */
+  /** Subscribes a listener. Returns the function that removes it. */
   subscribe(listener: SagaEventListener): () => void {
     this.listeners.add(listener);
     return () => {
@@ -23,7 +23,7 @@ export class SagaEventPublisher {
     };
   }
 
-  /** Un fallo de un oyente nunca afecta a la saga: solo se registra. */
+  /** A listener failure never affects the saga: it is only logged. */
   publish(kind: SagaEventKind, instance: SagaInstance): void {
     const event: SagaEvent = {
       kind,

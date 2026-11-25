@@ -6,8 +6,8 @@ import { TokensFacade } from '../application/tokens.facade.js';
 import { TokensController } from './tokens.controller.js';
 
 /**
- * Claves de firma, JWKS y emisión del access token. `SigningKeyProvider` lo da `IdentityAuthSupportModule`,
- * porque la verificación de tokens también lo usa. Es global solo para exportar su fachada.
+ * Signing keys, JWKS and access token issuance. `SigningKeyProvider` is provided by `IdentityAuthSupportModule`,
+ * because token verification also uses it. It is global only to export its facade.
  */
 @Global()
 @Module({

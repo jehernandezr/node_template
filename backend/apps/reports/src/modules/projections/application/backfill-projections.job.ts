@@ -24,14 +24,14 @@ import { TaskHistory } from '../domain/task-history.js';
 import { TaskCompletion, TaskProjection } from '../domain/task-projection.js';
 
 /**
- * Rellena las proyecciones de tareas y de facturas de los tenants que existían antes que reports, paginando
- * `tasks.tasks.list-changes.v1` y `billing.invoices.list-changes.v1` hasta el final, con un cursor por fuente;
- * luego marca esa fuente como rellenada. Cada fuente de cada tenant avanza aparte: si una falla, las demás
- * siguen y la siguiente corrida la retoma.
+ * Backfills the task and invoice projections of the tenants that existed before reports, paging through
+ * `tasks.tasks.list-changes.v1` and `billing.invoices.list-changes.v1` to the end, with one cursor per source;
+ * then marks that source as backfilled. Each source of each tenant advances separately: if one fails, the others
+ * continue and the next run picks it up.
  *
- * El relleno y los eventos nuevos se mezclan sin duplicar ni retroceder: una tarea lleva su versión y una
- * factura el avance de su estado. La historia de tareas no trae la fecha de cierre: una tarea completada toma
- * la de su último cambio.
+ * The backfill and new events merge without duplicating or going backwards: a task carries its version and an
+ * invoice the progress of its status. The task history does not include the completion date: a completed task takes
+ * the date of its last change.
  */
 @Injectable()
 export class BackfillProjectionsJob extends ScheduledJob {
@@ -154,7 +154,7 @@ export class BackfillProjectionsJob extends ScheduledJob {
     );
   }
 
-  /** Proyecta una página y guarda hasta dónde llegó, en una transacción. */
+  /** Projects a page and saves how far it got, in one transaction. */
   private async saveCopied(
     source: BackfillSource,
     nextCursor: string | null,

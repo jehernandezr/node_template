@@ -11,9 +11,9 @@ import { PlatformEntityManagers } from '../../database/platform-entity-managers.
 import type { ShardBinding } from '../../database/shard-binding.js';
 
 /**
- * `PlatformEntityManagers` fijado a un shard: cada llamada corre con ese shard como shard fijo, sin tenant ni
- * `ShardedRelayScopes`. Permite correr los contratos de los stores, que llaman al store directamente, contra un
- * shard de `ShardedTestDatabase`.
+ * `PlatformEntityManagers` pinned to a shard: each call runs with that shard as the fixed shard, without a tenant or
+ * `ShardedRelayScopes`. Allows running the store contracts, which call the store directly, against a
+ * shard of `ShardedTestDatabase`.
  */
 export class PinnedPlatformEntityManagers extends PlatformEntityManagers {
   constructor(

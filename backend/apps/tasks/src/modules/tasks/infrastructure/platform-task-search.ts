@@ -10,14 +10,14 @@ import {
 import type { Task } from '../domain/task.js';
 
 /**
- * `TaskSearch` sobre `@platform/search`: indexa título y descripción, y arma la página con las tareas
- * vigentes de los resultados. El índice no conoce el estado, así que con un filtro de estado se recorre el
- * ranking por tandas hasta llenar la página, agotarlo o leer `MAX_BATCHES` tandas: una página puede quedar
- * corta, o vacía, y aun así traer cursor. El cursor apunta a la posición del ranking donde sigue la lectura.
+ * `TaskSearch` over `@platform/search`: indexes title and description, and builds the page with the current
+ * tasks among the results. The index does not know the status, so with a status filter the ranking is walked
+ * in batches until the page is full, the ranking is exhausted or `MAX_BATCHES` batches are read: a page can be
+ * short, or empty, and still carry a cursor. The cursor points to the ranking position where reading continues.
  */
 @Injectable()
 export class PlatformTaskSearch extends TaskSearch {
-  /** Tope de lecturas al índice por petición, así un estado raro no recorre todo el ranking de una vez. */
+  /** Cap on index reads per request, so an unusual status does not walk the whole ranking at once. */
   static readonly MAX_BATCHES = 5;
 
   constructor(
@@ -70,7 +70,7 @@ export class PlatformTaskSearch extends TaskSearch {
     };
   }
 
-  /** Las tareas vigentes del estado pedido, con su posición en el ranking. */
+  /** The current tasks of the requested status, with their position in the ranking. */
   private async matching(
     hits: readonly SearchHit[],
     offset: number,

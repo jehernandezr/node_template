@@ -1,4 +1,4 @@
-/** Un correo listo para enviar: remitente, un destinatario y el cuerpo en HTML y en texto. */
+/** An email ready to send: sender, one recipient and the body in HTML and in text. */
 export interface OutboundEmail {
   readonly from: string;
   readonly to: string;

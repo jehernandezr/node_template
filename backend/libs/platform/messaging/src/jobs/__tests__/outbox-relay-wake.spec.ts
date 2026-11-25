@@ -30,8 +30,8 @@ const UserRegistered = defineEvent({
 });
 
 /**
- * El primer intervalo del relay cae entre 800 y 1 200 ms con el jitter del job,
- * así que un tiempo de espera de 500 ms solo se cumple si el commit lo despierta.
+ * The first relay interval falls between 800 and 1 200 ms with the job jitter,
+ * so a 500 ms timeout is only met if the commit wakes it up.
  */
 describe('OutboxRelayJob woken by a commit', () => {
   let runner: JobRunner | undefined;

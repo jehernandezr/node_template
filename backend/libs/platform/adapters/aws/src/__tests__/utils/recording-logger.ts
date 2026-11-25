@@ -1,13 +1,13 @@
 import { LoggerPort, LogLevel } from '@platform/observability';
 
-/** Una línea registrada por {@link RecordingLogger}. */
+/** A line recorded by {@link RecordingLogger}. */
 export interface RecordedLine {
   readonly level: LogLevel;
   readonly message: string;
   readonly fields?: Record<string, unknown>;
 }
 
-/** Logger que guarda las líneas, para afirmar sobre ellas. */
+/** Logger that stores the lines, to assert on them. */
 export class RecordingLogger extends LoggerPort {
   readonly lines: RecordedLine[] = [];
 

@@ -5,7 +5,7 @@ import type { QueryDeepPartialEntity } from 'typeorm';
 import { ReportResultStore } from '../../domain/report-result-store.js';
 import { ReportRunEntity } from './entities/report-run.entity.js';
 
-/** `ReportResultStore` en la columna `result` de `report_runs`, en el shard del tenant. */
+/** `ReportResultStore` in the `result` column of `report_runs`, in the tenant's shard. */
 @Injectable()
 export class RowReportResultStore
   extends TenantIsolatedRepository

@@ -8,8 +8,8 @@ terraform {
     }
   }
 
-  # Un estado por servicio: environments/<ambiente>/services/<servicio>/backend.tfvars
-  # fija la clave <región>/services/<servicio>/terraform.tfstate.
+  # One state per service: environments/<environment>/services/<service>/backend.tfvars
+  # sets the key <region>/services/<service>/terraform.tfstate.
   backend "s3" {}
 }
 
@@ -25,7 +25,7 @@ resource "terraform_data" "aws_only" {
   lifecycle {
     precondition {
       condition     = !local.localstack
-      error_message = "Los stacks de servicio solo se despliegan en AWS. En local los servicios corren con nx serve contra Docker y LocalStack."
+      error_message = "Service stacks are deployed only on AWS. Locally the services run with nx serve against Docker and LocalStack."
     }
   }
 }

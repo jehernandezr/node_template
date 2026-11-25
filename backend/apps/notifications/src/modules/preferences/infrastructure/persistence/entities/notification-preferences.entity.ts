@@ -1,14 +1,14 @@
 import { VersionedEntity } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `notification_preferences`, una fila por usuario en su shard. */
+/** `notification_preferences`, one row per user in their shard. */
 @Entity({ name: 'notification_preferences' })
 export class NotificationPreferencesEntity extends VersionedEntity {
   @Index('notification_preferences_user_key', { unique: true })
   @Column({ type: 'uuid', name: 'user_id', nullable: false })
   userId!: string;
 
-  /** Nulo solo en las filas anteriores a la columna. */
+  /** Null only in rows created before the column. */
   @Column({ type: 'uuid', name: 'home_tenant_id', nullable: true })
   homeTenantId!: string | null;
 

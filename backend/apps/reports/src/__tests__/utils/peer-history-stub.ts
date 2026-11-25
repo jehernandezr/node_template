@@ -20,9 +20,9 @@ interface PageInput {
 }
 
 /**
- * Tasks y billing de mentira: responden `tasks.tasks.list-changes.v1` y `billing.invoices.list-changes.v1`
- * con la historia que la prueba les da por tenant, en páginas del tamaño pedido. Cuentan las páginas servidas
- * para ver cuándo el relleno deja de pedir.
+ * Fake tasks and billing: they answer `tasks.tasks.list-changes.v1` and `billing.invoices.list-changes.v1`
+ * with the history the test gives them per tenant, in pages of the requested size. They count the pages served
+ * to see when the backfill stops requesting.
  */
 export class PeerHistoryStub {
   private readonly tasks = new Map<string, readonly TaskChange[]>();

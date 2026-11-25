@@ -2,13 +2,13 @@ import { join } from 'node:path';
 import type { FileSystem } from './file-system.js';
 import { TemplateRenderer } from './template-renderer.js';
 
-/** Un archivo de plantilla: su ruta relativa a la carpeta de la plantilla y su texto. */
+/** A template file: its path relative to the template folder and its text. */
 export interface TemplateFile {
   readonly path: string;
   readonly content: string;
 }
 
-/** Las plantillas de un generador, leídas de `templates/<tipo>`. */
+/** A generator's templates, read from `templates/<kind>`. */
 export class TemplateSource {
   constructor(
     private readonly files: FileSystem,

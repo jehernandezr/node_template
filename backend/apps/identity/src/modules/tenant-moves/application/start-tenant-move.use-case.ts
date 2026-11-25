@@ -16,22 +16,22 @@ import { TenantMovePolicy } from '../domain/tenant-move-policy.js';
 import { TenantMoveStatus } from '../domain/tenant-move-status.enum.js';
 import { MoveTenantSaga } from './move-tenant.saga.js';
 
-/** Lo que pide quien lanza un traslado: el tenant y el grupo de shards de destino. */
+/** What the requester of a move asks for: the tenant and the target shard group. */
 export interface TenantMoveRequest {
   readonly tenantId: string;
   readonly targetGroup: string;
 }
 
-/** Lo que devuelve el lanzamiento: el id del traslado y el de su saga. */
+/** What the launch returns: the move's id and its saga's id. */
 export interface TenantMoveLaunch {
   readonly moveId: string;
   readonly sagaId: string;
 }
 
 /**
- * Lanza el traslado de un tenant: valida el tenant y el destino, lo anota en `tenant_moves` y arranca `MoveTenant`.
- * La saga arranca con el plazo `TENANT_MOVE_DEADLINE_MS`. La bitácora de la saga vive en el shard del tenant de plataforma, que nunca se traslada: la del tenant que se
- * mueve quedaría atrás de su propia barrera.
+ * Launches a tenant's move: validates the tenant and the target, records it in `tenant_moves` and starts `MoveTenant`.
+ * The saga starts with the deadline `TENANT_MOVE_DEADLINE_MS`. The saga's log lives in the platform tenant's shard, which is never moved: the one of the tenant being
+ * moved would be left behind its own barrier.
  */
 @Injectable()
 export class StartTenantMove {
@@ -49,11 +49,11 @@ export class StartTenantMove {
   ) {}
 
   /**
-   * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` si el tenant no existe.
-   * @throws IdentityError `IDENTITY.TENANT_MOVE.NOT_MOVABLE` si no es una organización.
-   * @throws IdentityError `IDENTITY.TENANT_MOVE.UNKNOWN_TARGET` si el grupo no está configurado o su región no es del
-   *   despliegue.
-   * @throws IdentityError `IDENTITY.TENANT_MOVE.IN_PROGRESS` si el tenant ya tiene un traslado sin terminar.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if the tenant does not exist.
+   * @throws IdentityError `IDENTITY.TENANT_MOVE.NOT_MOVABLE` if it is not an organization.
+   * @throws IdentityError `IDENTITY.TENANT_MOVE.UNKNOWN_TARGET` if the group is not configured or its region is not part of the
+   *   deployment.
+   * @throws IdentityError `IDENTITY.TENANT_MOVE.IN_PROGRESS` if the tenant already has an unfinished move.
    */
   async execute(request: TenantMoveRequest): Promise<TenantMoveLaunch> {
     const tenant = await this.tenants.get(request.tenantId);
@@ -108,8 +108,8 @@ export class StartTenantMove {
   }
 
   /**
-   * Un traslado anotado cuya saga terminó sin tocar identity, por ejemplo compensada en su primer paso, quedó en curso
-   * en la bitácora: se cierra como cancelado y no bloquea uno nuevo.
+   * A recorded move whose saga finished without touching identity, for example compensated in its first step, was left in progress
+   * in the log: it is closed as cancelled and does not block a new one.
    */
   private async assertNoMoveInProgress(tenantId: string): Promise<void> {
     const running = await this.log.runningFor(tenantId);

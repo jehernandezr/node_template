@@ -1,4 +1,4 @@
-/** Convierte texto en vectores para la búsqueda semántica. Todos los vectores tienen `dimensions` componentes. */
+/** Converts text into vectors for semantic search. All vectors have `dimensions` components. */
 export abstract class EmbeddingProvider {
   abstract readonly dimensions: number;
 

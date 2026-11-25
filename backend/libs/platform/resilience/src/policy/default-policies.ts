@@ -3,7 +3,7 @@ import { PolicyName } from './policy-name.js';
 import type { ResiliencePolicyConfig } from './resilience-policy-config.js';
 import { TimeoutStrategy } from './timeout-strategy.enum.js';
 
-/** Políticas que trae la librería. El resto las declara cada servicio. */
+/** Policies that the library ships. Each service declares the rest. */
 export class DefaultPolicies {
   static readonly database: ResiliencePolicyConfig = {
     timeoutMs: 2_000,
@@ -21,7 +21,7 @@ export class DefaultPolicies {
     circuitBreaker: { consecutiveFailures: 5, halfOpenAfterMs: 10_000 },
   };
 
-  /** Políticas por nombre. Las referencias son las mismas que las constantes de arriba. */
+  /** Policies by name. The references are the same as the constants above. */
   static all(): ReadonlyMap<string, ResiliencePolicyConfig> {
     return new Map<string, ResiliencePolicyConfig>([
       [PolicyName.Cache.value, DefaultPolicies.cache],

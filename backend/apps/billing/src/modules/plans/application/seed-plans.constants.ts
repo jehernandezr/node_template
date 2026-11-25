@@ -3,9 +3,9 @@ import { PlanFeature } from '@contracts/identity';
 import type { PlanState } from '../domain/plan.js';
 
 /**
- * Planes de demostración de la plantilla, los mismos del microfrontend de billing. Los precios son una
- * decisión comercial: se editan en el catálogo y la semilla solo los repone por `code`. Ningún plan cobra por
- * unidad, así que las facturas no llevan líneas de uso hasta que un plan defina `unitPriceMinor`.
+ * Template demo plans, the same as the billing microfrontend. Prices are a
+ * business decision: they are edited in the catalog and the seed only restores them by `code`. No plan charges per
+ * unit, so invoices carry no usage lines until a plan defines `unitPriceMinor`.
  */
 export const SEED_PLANS: readonly Omit<PlanState, 'id'>[] = [
   {

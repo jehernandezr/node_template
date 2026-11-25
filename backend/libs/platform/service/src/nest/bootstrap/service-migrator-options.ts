@@ -1,7 +1,7 @@
 import type { ConfigEnv } from '@platform/config';
 
-/** Opciones de `ServiceMigrator.run`. */
+/** Options of `ServiceMigrator.run`. */
 export interface ServiceMigratorOptions {
-  /** Por defecto `process.env`. */
+  /** `process.env` by default. */
   readonly env?: ConfigEnv;
 }

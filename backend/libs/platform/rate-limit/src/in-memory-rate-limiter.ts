@@ -9,7 +9,7 @@ import { SlidingWindow } from './sliding-window.js';
 import type { WindowCounts } from './window-counts.js';
 import type { WindowPosition } from './window-position.js';
 
-/** Contadores de una llave: índice de la ventana y cuentas. */
+/** Counters of a key: window index and counts. */
 interface Entry {
   index: number;
   previous: number;
@@ -17,20 +17,20 @@ interface Entry {
 }
 
 /**
- * {@link RateLimiter} local a un proceso. Sirve para un solo proceso, para
- * pruebas y como respaldo de `DegradingRateLimiter` cuando el limitador
- * compartido falla.
+ * {@link RateLimiter} local to a process. It suits a single process,
+ * tests and as a fallback for `DegradingRateLimiter` when the shared
+ * limiter fails.
  */
 export class InMemoryRateLimiter extends RateLimiter {
-  /** Llaves que guarda por defecto. */
+  /** Keys it stores by default. */
   static readonly DEFAULT_MAX_ENTRIES = 100_000;
 
-  // El orden de inserción del Map es el orden de uso: cada acceso reinserta.
+  // The Map insertion order is the usage order: each access reinserts.
   private readonly entries = new Map<string, Entry>();
   private readonly clock: Clock;
   private readonly maxEntries: number;
 
-  /** @throws InvalidArgumentError si `maxEntries` no es un entero positivo. */
+  /** @throws InvalidArgumentError if `maxEntries` is not a positive integer. */
   constructor(options: InMemoryRateLimiterOptions = {}) {
     super();
     this.maxEntries = RateLimitArgumentGuard.instance.positiveInteger(
@@ -54,7 +54,7 @@ export class InMemoryRateLimiter extends RateLimiter {
       previous: counts.previous,
       current: counts.current + (allowed ? cost : 0),
     };
-    // También al rechazar: una llave que insiste es la última que conviene olvidar.
+    // Also when rejecting: a key that insists is the last one worth forgetting.
     this.entries.delete(id);
     this.entries.set(id, next);
     this.evict();
@@ -82,14 +82,14 @@ export class InMemoryRateLimiter extends RateLimiter {
   }
 
   /**
-   * Identidad de los contadores: nombre, ventana y llave. El separador no puede
-   * aparecer en el nombre ni en la ventana, así que dos llaves no chocan.
+   * Identity of the counters: name, window and key. The separator cannot
+   * appear in the name or the window, so two keys do not collide.
    */
   private static entryId(key: string, rule: RateLimitRule): string {
     return `${rule.name}\u0000${rule.windowMs}\u0000${key}`;
   }
 
-  /** Cuentas de la ventana en curso, corriendo las ventanas que ya pasaron. */
+  /** Counts of the current window, shifting the windows that already passed. */
   private read(
     id: string,
     rule: RateLimitRule,
@@ -103,7 +103,7 @@ export class InMemoryRateLimiter extends RateLimiter {
       return { position: now, counts: { previous: 0, current: 0 } };
     }
     if (entry.index > now.index) {
-      // El reloj retrocedió: se sigue en la ventana guardada, desde su inicio.
+      // The clock went back: it stays in the stored window, from its start.
       return {
         position: { index: entry.index, elapsedMs: 0 },
         counts: entry,

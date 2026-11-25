@@ -31,7 +31,7 @@ const GenerateReport = defineCommand({
 
 const policy = new RetryPolicy(3, 100, 10_000, BackoffStrategy.None);
 
-/** Error que el clasificador de la plataforma trata como transitorio. */
+/** Error that the platform classifier treats as transient. */
 function transient(message: string): Error {
   return Object.assign(new Error(message), { retryable: true });
 }

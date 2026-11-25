@@ -58,7 +58,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
       await db.stop();
     });
 
-    /** Recorre todas las páginas con el cursor firmado y devuelve las filas en orden. */
+    /** Walks all pages with the signed cursor and returns the rows in order. */
     async function collect(direction: SortDirection): Promise<Probe[]> {
       const rows: Probe[] = [];
       let token: string | null = null;
@@ -127,7 +127,7 @@ new ContainerRuntime(process.env).describeIfAvailable(
   },
 );
 
-/** Id UUIDv7 determinista para las filas de prueba. */
+/** Deterministic UUIDv7 id for the test rows. */
 function seedId(index: number): string {
   return `0193f1c2-0000-7000-8000-${index.toString(16).padStart(12, '0')}`;
 }

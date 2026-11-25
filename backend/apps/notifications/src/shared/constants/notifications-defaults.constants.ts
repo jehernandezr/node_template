@@ -1,11 +1,11 @@
-/** Valores por defecto de notifications. */
+/** notifications default values. */
 export const NotificationsDefaults = {
   inboxRetentionDays: 90,
   pageSize: 20,
-  /** Intentos de una entrega por correo o push antes de darla por perdida. */
+  /** Attempts of an email or push delivery before giving it up as lost. */
   maxDeliveryAttempts: 5,
   defaultLocale: 'es',
-  /** Sin preferencias guardadas no hay horario de silencio. */
+  /** Without saved preferences there are no quiet hours. */
   quietStart: '00:00',
   quietEnd: '00:00',
   timezone: 'UTC',

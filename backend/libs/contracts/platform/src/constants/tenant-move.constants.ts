@@ -1,21 +1,21 @@
-/** Límites y plazos de las operaciones de traslado de un tenant entre shards y regiones. */
+/** Limits and timeouts of the operations that move a tenant between shards and regions. */
 export const TenantMoveLimits = {
-  /** Largo máximo del identificador de un grupo de shards o de una región. */
+  /** Maximum length of the identifier of a shard group or a region. */
   targetMaxLength: 64,
-  /** Largo máximo del nombre de una tabla de PostgreSQL. */
+  /** Maximum length of a PostgreSQL table name. */
   tableNameMaxLength: 63,
-  /** Tablas que un servicio declara en su manifiesto de traslado. */
+  /** Tables a service declares in its move manifest. */
   maxTables: 64,
-  /** Largo máximo de la suma de verificación de una tabla (hexadecimal). */
+  /** Maximum length of a table checksum (hexadecimal). */
   checksumMaxLength: 64,
-  /** Plazo de una llamada de copia: copia un lote acotado y devuelve el progreso; la saga repite hasta terminar la ronda. */
+  /** Timeout of a copy call: copies a bounded batch and returns the progress; the saga repeats until the round finishes. */
   syncTimeoutMs: 6_000,
-  /** Plazo de una llamada de la última ronda y la verificación, por lotes como la copia. */
+  /** Timeout of a call of the final round and the verification, in batches like the copy. */
   finalizeTimeoutMs: 6_000,
-  /** Plazo de una llamada de cancelación, por lotes. */
+  /** Timeout of a cancellation call, in batches. */
   abortTimeoutMs: 6_000,
-  /** Plazo del cambio de directorio de un servicio al destino. */
+  /** Timeout of a service's directory switch to the destination. */
   switchTimeoutMs: 6_000,
-  /** Plazo de una llamada de limpieza del origen, por lotes. */
+  /** Timeout of a source cleanup call, in batches. */
   cleanupTimeoutMs: 6_000,
 } as const;

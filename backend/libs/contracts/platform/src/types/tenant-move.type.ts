@@ -1,27 +1,27 @@
-/** Traslado de un tenant: lo que cada servicio necesita para copiar, verificar o cancelar. */
+/** Move of a tenant: what each service needs to copy, verify or cancel. */
 export interface TenantMoveRef {
   moveId: string;
   tenantId: string;
-  /** Grupo de shards de destino. */
+  /** Target shard group. */
   targetGroup: string;
-  /** Región de destino. */
+  /** Destination region. */
   targetRegion: string;
 }
 
-/** Avance de la copia de una tabla. */
+/** Copy progress of a table. */
 export interface TenantMoveTableProgress {
   table: string;
   copiedRows: number;
   pendingRows: number;
 }
 
-/** Resultado de una ronda de copia. `caughtUp` es true cuando el atraso bajó del umbral. */
+/** Result of a copy round. `caughtUp` is true when the lag dropped below the threshold. */
 export interface TenantMoveProgress {
   tables: TenantMoveTableProgress[];
   caughtUp: boolean;
 }
 
-/** Comparación de una tabla entre el origen y el destino. */
+/** Comparison of a table between source and destination. */
 export interface TenantMoveTableCheck {
   table: string;
   sourceRows: number;
@@ -30,13 +30,13 @@ export interface TenantMoveTableCheck {
   targetChecksum: string;
 }
 
-/** Resultado de la última ronda y la verificación. */
+/** Result of the final round and the verification. */
 export interface TenantMoveVerification {
   verified: boolean;
   tables: TenantMoveTableCheck[];
 }
 
-/** Acuse de una cancelación o una limpieza. */
+/** Acknowledgment of a cancellation or a cleanup. */
 export interface TenantMoveAck {
   moveId: string;
 }

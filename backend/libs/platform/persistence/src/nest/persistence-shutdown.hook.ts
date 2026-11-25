@@ -3,8 +3,8 @@ import { CatalogDataSource } from '../catalog-data-source.js';
 import { ShardDataSources } from '../shard-data-sources.js';
 
 /**
- * Cierra todos los `DataSource` al apagar el proceso. Va en `onModuleDestroy`: los productores de trabajo se
- * detienen antes porque sus módulos se importan después de `PersistenceModule`.
+ * Closes all `DataSource`s when the process shuts down. It goes in `onModuleDestroy`: work producers
+ * stop earlier because their modules are imported after `PersistenceModule`.
  */
 @Injectable()
 export class PersistenceShutdownHook implements OnModuleDestroy {

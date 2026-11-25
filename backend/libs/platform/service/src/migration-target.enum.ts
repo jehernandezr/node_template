@@ -1,9 +1,9 @@
-/** Qué bases migra `ServiceMigrator`. */
+/** Which databases `ServiceMigrator` migrates. */
 export enum MigrationTarget {
-  /** Solo el catálogo. */
+  /** Only the catalog. */
   Catalog = 'catalog',
-  /** Solo los shards que lista el directorio del catálogo. */
+  /** Only the shards listed in the catalog directory. */
   Shards = 'shards',
-  /** El catálogo primero y luego los shards. */
+  /** The catalog first and then the shards. */
   All = 'all',
 }

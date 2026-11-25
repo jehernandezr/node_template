@@ -1,7 +1,7 @@
 import { PlatformError } from '@platform/kernel';
 import { DemoErrorCode } from './demo-error-code.enum.js';
 
-/** Conflicto de negocio del servicio de prueba, con su código propio. */
+/** Business conflict of the test service, with its own code. */
 export class DemoConflictError extends PlatformError {
   override readonly code = DemoErrorCode.ItemConflict;
 }

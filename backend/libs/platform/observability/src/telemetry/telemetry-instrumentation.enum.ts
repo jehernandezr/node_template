@@ -1,10 +1,10 @@
-/** Instrumentaciones automáticas disponibles. */
+/** Available automatic instrumentations. */
 export enum TelemetryInstrumentation {
   Http = 'http',
-  /** `fetch` nativo de Node (undici). */
+  /** Native Node `fetch` (undici). */
   Fetch = 'fetch',
   Pg = 'pg',
-  /** Cliente de Valkey (`iovalkey`). */
+  /** Valkey client (`iovalkey`). */
   Valkey = 'valkey',
   AwsSdk = 'aws-sdk',
   NestJs = 'nestjs',

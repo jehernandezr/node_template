@@ -4,16 +4,16 @@ import { RateLimitRule } from '../rate-limit-rule.js';
 import { RATE_LIMIT_METADATA } from './rate-limit-tokens.js';
 import { RateLimitKey } from './rate-limit-key.enum.js';
 
-/** Metadata que guarda el decorador en cada ruta. */
+/** Metadata that the decorator stores on each route. */
 export interface RateLimitMetadata {
   readonly rule: RateLimitRule;
   readonly cost: number;
 }
 
-/** Escribe la regla de una ruta. Valida al cargar la clase, no en la petición. */
+/** Writes the rule of a route. Validates when the class loads, not on the request. */
 export class RateLimitMetadataWriter {
   /**
-   * @throws InvalidArgumentError si la regla o el costo no son válidos.
+   * @throws InvalidArgumentError if the rule or the cost is not valid.
    */
   static decorate(
     rule: RateLimitRule,
@@ -29,5 +29,5 @@ export class RateLimitMetadataWriter {
   }
 }
 
-/** Decorador `@RateLimit(rule)` para las rutas. */
+/** `@RateLimit(rule)` decorator for routes. */
 export const RateLimit = RateLimitMetadataWriter.decorate;

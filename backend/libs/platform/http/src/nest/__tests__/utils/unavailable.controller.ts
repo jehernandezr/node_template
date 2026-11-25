@@ -1,6 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
 
-/** Responde 503 con un cuerpo propio, como un readiness que no está listo. */
+/** Responds 503 with its own body, like a readiness that is not ready. */
 @Controller('unavailable')
 export class UnavailableController {
   @Get()

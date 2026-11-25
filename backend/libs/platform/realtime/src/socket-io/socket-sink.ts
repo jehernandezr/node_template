@@ -3,8 +3,8 @@ import type { FrameSink } from '../session/frame-sink.js';
 import type { StoredFrame } from '../stream/realtime-frame.js';
 
 /**
- * Emite cada trama como evento con su id, que el cliente devuelve en `auth.lastEventId` al reconectar. El
- * evento `ready` le dice al cliente que ya no se pierde nada de lo que se publique.
+ * Emits each frame as an event with its id, which the client sends back in `auth.lastEventId` when reconnecting. The
+ * `ready` event tells the client that nothing published from now on is lost.
  */
 export class SocketSink implements FrameSink {
   static readonly READY_EVENT = 'ready';
@@ -19,7 +19,7 @@ export class SocketSink implements FrameSink {
     this.socket.emit(frame.type, { id: frame.id, data: frame.data });
   }
 
-  /** Socket.IO ya tiene su ping. */
+  /** Socket.IO already has its ping. */
   keepAlive(): void {
     return;
   }

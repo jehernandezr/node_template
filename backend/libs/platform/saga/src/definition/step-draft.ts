@@ -1,7 +1,7 @@
 import type { OperationDefinition } from '@contracts/platform';
 import type { ForwardEntry } from './forward-entry.js';
 
-/** Configuración de un paso mientras se arma el flujo. */
+/** Configuration of a step while the flow is being built. */
 export interface StepDraft<TState> {
   readonly operation: OperationDefinition;
   input?: (state: TState) => unknown;

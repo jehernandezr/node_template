@@ -1,5 +1,5 @@
-/** Limpieza de las recuperaciones de contraseña de todos los shards. */
+/** Cleanup of password recoveries in all shards. */
 export abstract class PasswordResetRetention {
-  /** Borra las recuperaciones que vencieron antes de `cutoff` y devuelve cuántas. */
+  /** Deletes the recoveries that expired before `cutoff` and returns how many. */
   abstract purgeExpiredBefore(cutoff: Date): Promise<number>;
 }

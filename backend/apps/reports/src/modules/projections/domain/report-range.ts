@@ -1,12 +1,12 @@
 import type { ReportGranularity } from '@contracts/reports';
 
-/** Rango de fechas de calendario de un reporte, con ambos extremos incluidos. */
+/** Calendar date range of a report, with both ends included. */
 export interface ReportRange {
   readonly from: string;
   readonly to: string;
 }
 
-/** Un rango partido en periodos de la granularidad pedida. */
+/** A range split into periods of the requested granularity. */
 export interface BucketedRange extends ReportRange {
   readonly granularity: ReportGranularity;
 }

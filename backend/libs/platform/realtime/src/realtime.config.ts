@@ -16,13 +16,13 @@ export const realtimeConfigSchema = z.object({
     .pipe(z.array(z.enum(RealtimeTransportKind)).min(1))
     .default([RealtimeTransportKind.Sse, RealtimeTransportKind.SocketIo]),
   REALTIME_AUTH: z.enum(RealtimeAuthKind).default(RealtimeAuthKind.Bearer),
-  /** Cookie con el access token cuando `REALTIME_AUTH=cookie`. */
+  /** Cookie with the access token when `REALTIME_AUTH=cookie`. */
   REALTIME_AUTH_COOKIE: z.string().trim().min(1).default('rt_access'),
-  /** Latido de cada conexión: por debajo del tiempo ocioso del balanceador (60 s en el ALB). */
+  /** Heartbeat of each connection: below the load balancer's idle timeout (60 s on the ALB). */
   REALTIME_HEARTBEAT: envDuration().default(15 * SECOND_MS),
-  /** Tramas que retiene el stream de cada usuario para reanudar. */
+  /** Frames that each user's stream retains for resuming. */
   REALTIME_STREAM_RETAINED: envNumber({ min: 10 }).default(1000),
-  /** Vida del stream de un usuario sin tramas nuevas: cubre una reconexión tras horas sin red. */
+  /** Lifetime of a user's stream without new frames: covers a reconnection after hours without network. */
   REALTIME_STREAM_TTL: envDuration().default(24 * HOUR_MS),
 });
 

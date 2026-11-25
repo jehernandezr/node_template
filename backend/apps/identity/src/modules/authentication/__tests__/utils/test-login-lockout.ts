@@ -8,8 +8,8 @@ import { EphemeralLockoutStore } from '../../infrastructure/ephemeral-lockout-st
 import { RateLimiterAttemptCounters } from '../../infrastructure/rate-limiter-attempt-counters.js';
 
 /**
- * El bloqueo real sobre dobles en memoria: contadores en un `InMemoryRateLimiter` y bloqueos en el
- * `EphemeralStore` de la prueba. Otros módulos cuentan fallos con las mismas reglas.
+ * The real lockout over in-memory doubles: counters in an `InMemoryRateLimiter` and lockouts in the
+ * test `EphemeralStore`. Other modules count failures with the same rules.
  */
 export class TestLoginLockout {
   readonly keys = new LockoutKeys(

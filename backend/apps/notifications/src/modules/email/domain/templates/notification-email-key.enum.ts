@@ -1,4 +1,4 @@
-/** Plantillas propias de notifications, fuera de las transaccionales del contrato. */
+/** Notifications' own templates, apart from the contract's transactional ones. */
 export enum NotificationEmailKey {
   Notification = 'notification',
 }

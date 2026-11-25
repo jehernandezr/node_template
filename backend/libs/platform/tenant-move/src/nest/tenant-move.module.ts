@@ -29,9 +29,9 @@ import type { TenantMoveFeatureOptions } from './tenant-move-feature-options.js'
 import { TenantMoveOperationsFactory } from './tenant-move-operations.factory.js';
 
 /**
- * Registra las operaciones de traslado de un servicio sobre su manifiesto. Requiere en el contexto la persistencia y
- * el sharding de la plataforma (`ShardRouter`, `DirectoryStore`, `TenantWriteGate`, `PlacementTransition`,
- * `ShardDataSources`, `ShardLister` y `TenantWriteFence`), que el runtime de `@platform/service` monta como globales.
+ * Registers the move operations of a service over its manifest. Requires the platform persistence and
+ * sharding (`ShardRouter`, `DirectoryStore`, `TenantWriteGate`, `PlacementTransition`,
+ * `ShardDataSources`, `ShardLister` and `TenantWriteFence`) in the context, which the `@platform/service` runtime mounts as globals.
  */
 @Module({})
 export class TenantMoveModule {

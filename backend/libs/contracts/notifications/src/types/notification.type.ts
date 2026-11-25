@@ -6,7 +6,7 @@ import type {
   TemplateParameter,
 } from '../enums/notifications.enum.js';
 
-/** Notificación de la bandeja de un usuario. El texto lo genera el servidor en su idioma. */
+/** Notification in a user's inbox. The server generates the text in the user's language. */
 export interface AppNotification {
   id: string;
   type: NotificationType;
@@ -18,40 +18,40 @@ export interface AppNotification {
 
 export type NotificationPage = Page<AppNotification>;
 
-/** Cantidad de notificaciones sin leer de la bandeja. */
+/** Number of unread notifications in the inbox. */
 export interface UnreadCount {
   count: number;
 }
 
-/** Marca como leída una notificación de la bandeja del usuario. */
+/** Marks a notification in the user's inbox as read. */
 export interface MarkNotificationReadRequest {
   notificationId: string;
 }
 
-/** Canales por los que el usuario recibe un tipo de notificación. */
+/** Channels through which the user receives a notification type. */
 export interface NotificationPreferenceEntry {
   type: NotificationType;
   channels: NotificationChannel[];
 }
 
-/** Preferencias del usuario: tipos y canales, horario de silencio y zona horaria. */
+/** User preferences: types and channels, quiet hours and time zone. */
 export interface NotificationPreferences {
   enabled: NotificationPreferenceEntry[];
-  /** Hora de inicio del silencio, `HH:mm`. */
+  /** Start time of the quiet hours, `HH:mm`. */
   quietStart: string;
-  /** Hora de fin del silencio, `HH:mm`. */
+  /** End time of the quiet hours, `HH:mm`. */
   quietEnd: string;
-  /** Zona horaria IANA donde se aplica el silencio. */
+  /** IANA time zone where the quiet hours apply. */
   timezone: string;
 }
 
-/** Dato que llena una plantilla de correo o el texto de una notificación. */
+/** Value that fills an email template or the text of a notification. */
 export interface TemplateParameterValue {
   name: TemplateParameter;
   value: string;
 }
 
-/** Entrada de la operación que envía un correo transaccional. */
+/** Input of the operation that sends a transactional email. */
 export interface SendEmailInput {
   messageId: string;
   template: EmailTemplate;
@@ -60,12 +60,12 @@ export interface SendEmailInput {
   parameters: TemplateParameterValue[];
 }
 
-/** Resultado de enviar un correo transaccional. */
+/** Result of sending a transactional email. */
 export interface SendEmailResult {
   messageId: string;
 }
 
-/** Entrada de la operación que notifica a un usuario por sus canales. */
+/** Input of the operation that notifies a user through their channels. */
 export interface NotifyUserInput {
   notificationId: string;
   user: UserRef;
@@ -74,18 +74,18 @@ export interface NotifyUserInput {
   parameters: TemplateParameterValue[];
 }
 
-/** Resultado de notificar a un usuario: los canales por los que salió. */
+/** Result of notifying a user: the channels through which it went out. */
 export interface NotifyUserResult {
   notificationId: string;
   channels: NotificationChannel[];
 }
 
-/** Entrada de la operación que borra los datos de notificaciones de un usuario. */
+/** Input of the operation that deletes a user's notification data. */
 export interface EraseNotificationsUserInput {
   user: UserRef;
 }
 
-/** Resultado del borrado de datos de notificaciones de un usuario. */
+/** Result of deleting a user's notification data. */
 export interface EraseNotificationsUserResult {
   userId: string;
   affectedRows: number;

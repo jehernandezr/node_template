@@ -2,17 +2,17 @@ import { SetMetadata } from '@nestjs/common';
 import type { MessageDefinition } from '../contracts/message-contract.js';
 import { SubscribeMetadata } from './subscribe-metadata.js';
 
-/** Fábrica del decorador `@Subscribe`. */
+/** Factory of the `@Subscribe` decorator. */
 export class SubscribeDecorator {
   /**
-   * Marca un método de una clase `@Injectable()` como manejador del contrato:
-   * `(data, envelope) => Promise<void>`. `MessagingExplorer` lo registra en el
-   * `MessageDispatcher` al arrancar.
+   * Marks a method of an `@Injectable()` class as the handler of the contract:
+   * `(data, envelope) => Promise<void>`. `MessagingExplorer` registers it in the
+   * `MessageDispatcher` at startup.
    */
   static create(contract: MessageDefinition): MethodDecorator {
     return SetMetadata(SubscribeMetadata.KEY, contract);
   }
 }
 
-/** `@Subscribe(UserRegisteredV1)` sobre el método de un consumidor. */
+/** `@Subscribe(UserRegisteredV1)` on a consumer method. */
 export const Subscribe = SubscribeDecorator.create;

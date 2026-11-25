@@ -1,11 +1,11 @@
 import { SigningKeyState } from './signing-key-state.enum.js';
 import type { SigningKey } from './signing-key.js';
 
-/** Claves de firma vigentes: firma con la activa y publica la activa y las de verificación. */
+/** Current signing keys: signs with the active one and publishes the active one and the verification ones. */
 export class SigningKeyRing {
   private readonly activeKey: SigningKey;
 
-  /** @throws Error si no hay exactamente una clave activa o si dos claves comparten `kid`. */
+  /** @throws Error if there is not exactly one active key or if two keys share a `kid`. */
   constructor(private readonly keys: readonly SigningKey[]) {
     const active = keys.filter((key) => key.state === SigningKeyState.Active);
     if (active.length !== 1 || active[0] === undefined) {
@@ -21,7 +21,7 @@ export class SigningKeyRing {
     return this.activeKey;
   }
 
-  /** Las claves que el JWKS publica: la activa y las de verificación, nunca las retiradas. */
+  /** The keys the JWKS publishes: the active one and the verification ones, never the retired ones. */
   published(): readonly SigningKey[] {
     return this.keys.filter((key) => key.state !== SigningKeyState.Retired);
   }

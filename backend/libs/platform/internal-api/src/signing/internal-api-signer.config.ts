@@ -2,19 +2,19 @@ import { ConfigSection } from '@platform/config';
 import { z } from 'zod';
 import { InternalApiSignerKind } from './internal-api-signer-kind.enum.js';
 
-/** Variable que elige el firmador de las llamadas internas de un servicio. */
+/** Variable that chooses the signer of a service's internal calls. */
 export const internalApiSignerConfigSchema = z.object({
   INTERNAL_API_SIGNER: z
     .enum(InternalApiSignerKind)
     .default(InternalApiSignerKind.Hmac),
 });
 
-/** Configuración validada del firmador de llamadas internas. */
+/** Validated configuration of the internal call signer. */
 export type InternalApiSignerSettings = z.infer<
   typeof internalApiSignerConfigSchema
 >;
 
-/** Sección de configuración del firmador de llamadas internas. */
+/** Configuration section of the internal call signer. */
 export const InternalApiSignerConfig =
   new ConfigSection<InternalApiSignerSettings>(
     'internalApiSigner',

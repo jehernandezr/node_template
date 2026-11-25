@@ -11,7 +11,7 @@ import type { Plan } from '../../plans/index.js';
 import type { Subscription } from '../domain/subscription.js';
 import { EntitlementsOf } from './entitlements-of.js';
 
-/** Los eventos de integración de una suscripción, publicados por el outbox de la transacción abierta. */
+/** The integration events of a subscription, published through the outbox of the open transaction. */
 @Injectable()
 export class SubscriptionEvents {
   constructor(

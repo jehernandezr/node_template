@@ -9,8 +9,8 @@ import { IdentityJob } from '../../../shared/enums/identity-job.enum.js';
 import { PasswordResetRetention } from '../domain/password-reset-retention.js';
 
 /**
- * Borra las recuperaciones de contraseña vencidas. Se conservan unos días después de vencer para poder
- * investigar un abuso reciente; un token vencido ya no sirve, así que guardarlo más solo acumula filas.
+ * Deletes expired password recoveries. They are kept for a few days after expiring to allow investigating
+ * a recent abuse; an expired token no longer works, so keeping it longer only piles up rows.
  */
 @Injectable()
 export class PurgePasswordResetsJob extends ScheduledJob {

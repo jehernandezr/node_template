@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { TenantDirectory } from '../domain/tenant-directory.js';
 
 /**
- * Apunta a la región nueva de un tenant trasladado el índice de slugs del catálogo. La fila del tenant ya llega con
- * su región nueva al shard de destino: la cambia el traslado antes de abrir las escrituras, porque desde la región
- * de origen ese shard ya no se alcanza por el enrutamiento. Repetirlo no cambia nada.
+ * Points the catalog's slug index to the new region of a moved tenant. The tenant's row already arrives with
+ * its new region at the target shard: the move changes it before opening writes, because from the source region
+ * that shard is no longer reachable through routing. Repeating it changes nothing.
  */
 @Injectable()
 export class RelocateTenant {

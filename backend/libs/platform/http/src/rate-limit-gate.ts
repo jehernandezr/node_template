@@ -5,14 +5,14 @@ import { HttpProblemError } from './http-problem.error.js';
 import { RateLimitTier } from './rate-limit-tier.enum.js';
 import type { RateLimitTierRules } from './rate-limit-tier-rules.js';
 
-/** Cuenta cada petición contra el límite de su escalón. */
+/** Counts each request against the limit of its tier. */
 export class RateLimitGate {
   constructor(
     private readonly limiter: RateLimiter,
     private readonly rules: RateLimitTierRules,
   ) {}
 
-  /** @throws HttpProblemError (`PLATFORM.RATE_LIMIT.EXCEEDED`) con el tiempo de espera. */
+  /** @throws HttpProblemError (`PLATFORM.RATE_LIMIT.EXCEEDED`) with the wait time. */
   async check(tier: RateLimitTier, key: string): Promise<void> {
     const result = await this.limiter.consume(key, this.rules.ruleFor(tier));
     if (!result.allowed) {
@@ -23,7 +23,7 @@ export class RateLimitGate {
   }
 
   /**
-   * La llave del límite: por IP en el tier de auth o sin actor; por actor en los demás.
+   * Returns the limit key: by IP in the auth tier or without an actor; by actor in the others.
    */
   static keyFor(
     tier: RateLimitTier,

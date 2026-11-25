@@ -5,7 +5,7 @@ import { ServiceBootstrap } from '@platform/service/nest';
 import { billingService } from './billing.service.js';
 import { SeedPlans } from './modules/plans/index.js';
 
-// Siembra el catálogo de planes sin correr jobs: es un paso del despliegue, después de migrar.
+// Seeds the plan catalog without running jobs: it is a deployment step, after migrating.
 const running = await ServiceBootstrap.worker(billingService, {
   env: process.env,
   telemetry,

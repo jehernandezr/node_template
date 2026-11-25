@@ -1,22 +1,22 @@
 import { MessagingError, MessagingErrorCode } from '@platform/messaging';
 
-/** Ajustes del consumo de una cola SQS. Lo que falta toma el valor por defecto. */
+/** Consumption settings of an SQS queue. Whatever is missing takes the default value. */
 export interface SqsConsumerSettings {
-  /** Mensajes por `ReceiveMessage`, de 1 a 10. */
+  /** Messages per `ReceiveMessage`, from 1 to 10. */
   readonly batchSize?: number;
-  /** Long polling en segundos, de 0 a 20. */
+  /** Long polling in seconds, from 0 to 20. */
   readonly waitTimeSeconds?: number;
-  /** Pausa en milisegundos después de un error del ciclo de polling. */
+  /** Pause in milliseconds after an error in the polling loop. */
   readonly errorDelayMs?: number;
 }
 
-/** Ajustes del consumo de una cola SQS ya validados, con sus valores por defecto. */
+/** Validated consumption settings of an SQS queue, with their default values. */
 export class SqsConsumerConfig {
-  /** Visibilidad máxima de SQS (12 h). */
+  /** Maximum SQS visibility (12 h). */
   static readonly MAX_VISIBILITY_SECONDS = 43_200;
-  /** Largo máximo del motivo copiado a la DLQ. */
+  /** Maximum length of the reason copied to the DLQ. */
   static readonly MAX_ERROR_ATTRIBUTE_LENGTH = 1_024;
-  /** Mensajes que SQS entrega por lote como máximo. */
+  /** Maximum number of messages SQS delivers per batch. */
   static readonly MAX_BATCH_SIZE = 10;
   static readonly DEFAULT_BATCH_SIZE = 10;
   static readonly DEFAULT_WAIT_TIME_SECONDS = 20;
@@ -28,7 +28,7 @@ export class SqsConsumerConfig {
   readonly waitTimeSeconds: number;
   readonly errorDelayMs: number;
 
-  /** @throws MessagingError `InvalidOptions` cuando un valor sale de su rango. */
+  /** @throws MessagingError `InvalidOptions` when a value is out of its range. */
   constructor(settings: SqsConsumerSettings = {}) {
     this.batchSize = SqsConsumerConfig.checked(
       'batchSize',

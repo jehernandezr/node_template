@@ -17,13 +17,13 @@ import type {
 import { InternalTransportKind } from './internal-transport-kind.enum.js';
 
 /**
- * Cableado de la API interna: cliente, router, transporte, controller de
- * entrada y jobs. El servicio elige el transporte y el almacén de idempotencia
- * al componer el módulo. Exige un `ResilienceModule.forRoot`, el módulo de
- * observabilidad y, para correr la retención, un `SchedulingModule`.
+ * Wiring of the internal API: client, router, transport, incoming
+ * controller and jobs. The service chooses the transport and the idempotency store
+ * when composing the module. It requires a `ResilienceModule.forRoot`, the
+ * observability module and, to run retention, a `SchedulingModule`.
  *
- * Al arrancar, `InternalHandlerExplorer` registra los handlers decorados y
- * comprueba que no falte ninguno.
+ * On startup, `InternalHandlerExplorer` registers the decorated handlers and
+ * checks that none is missing.
  */
 @Module({})
 export class InternalApiModule extends InternalApiModuleClass {
@@ -39,7 +39,7 @@ export class InternalApiModule extends InternalApiModuleClass {
     return InternalApiModule.complete(super.forRootAsync(options), options);
   }
 
-  /** @throws InternalApiError `InvalidConfiguration` si falta el transporte o el almacén de idempotencia. */
+  /** @throws InternalApiError `InvalidConfiguration` if the transport or the idempotency store is missing. */
   private static complete(
     base: DynamicModule,
     extras: InternalApiModuleExtras,

@@ -1,7 +1,7 @@
 import type { UserRef } from '@contracts/platform';
 import type { ReportRunStatus, ReportType } from '../enums/reports.enum.js';
 
-/** Terminó una ejecución de reporte (lista o fallida). */
+/** A report run finished (ready or failed). */
 export interface RunCompletedPayload {
   tenantId: string;
   runId: string;
@@ -11,7 +11,7 @@ export interface RunCompletedPayload {
   completedAt: string;
 }
 
-/** Comando que retoma una ejecución en un worker. */
+/** Command that resumes a run in a worker. */
 export interface ExecuteRunPayload {
   tenantId: string;
   runId: string;

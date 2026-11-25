@@ -5,7 +5,7 @@ export interface EnvNumberOptions {
   max?: number;
 }
 
-/** `'true' | 'false' | '1' | '0'`, sin distinguir mayúsculas ni espacios alrededor. */
+/** `'true' | 'false' | '1' | '0'`, case-insensitive and ignoring surrounding whitespace. */
 export function envBoolean() {
   return z.string().transform((value, ctx) => {
     const normalized = value.trim().toLowerCase();
@@ -19,7 +19,7 @@ export function envBoolean() {
   });
 }
 
-/** Número finito leído de texto, con límites inclusivos opcionales. */
+/** Finite number read from text, with optional inclusive bounds. */
 export function envNumber(options: EnvNumberOptions = {}) {
   const { min, max } = options;
   return z.string().transform((value, ctx) => {
@@ -41,7 +41,7 @@ export function envNumber(options: EnvNumberOptions = {}) {
   });
 }
 
-/** Lista separada por comas. Se recortan las entradas y se descartan las vacías; `''` da `[]`. */
+/** Comma-separated list. Entries are trimmed and empty ones discarded; `''` yields `[]`. */
 export function envList() {
   return z.string().transform((value) =>
     value
@@ -61,7 +61,7 @@ const DURATION_UNITS_MS: Readonly<Record<string, number>> = {
 
 const DURATION_PATTERN = /^(?<amount>\d+)(?<unit>ms|s|m|h|d)$/;
 
-/** Duración como `500ms`, `5s`, `10m`, `1h` o `2d`, en milisegundos. */
+/** Duration such as `500ms`, `5s`, `10m`, `1h` or `2d`, in milliseconds. */
 export function envDuration() {
   return z.string().transform((value, ctx) => {
     const groups = DURATION_PATTERN.exec(value.trim())?.groups;

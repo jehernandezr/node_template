@@ -6,7 +6,7 @@ const awsSdkPattern = {
     '@aws-sdk/* solo se importa dentro de backend/libs/platform/adapters/aws (ADR 0002).',
 };
 
-// Dentro del dominio no entra infraestructura ni framework.
+// No infrastructure or framework enters the domain.
 const domainPatterns = [
   awsSdkPattern,
   {
@@ -16,8 +16,8 @@ const domainPatterns = [
 ];
 
 /**
- * Reglas de ubicación de archivos (skill backend-estructura). Van en un plugin propio y no en
- * `no-restricted-syntax` porque las librerías redefinen esa regla en su eslint.config.mjs.
+ * File location rules (backend-estructura skill). They live in their own plugin and not in
+ * `no-restricted-syntax` because the libraries redefine that rule in their eslint.config.mjs.
  */
 const fileRule = (message, matches) => ({
   meta: { type: 'problem', schema: [], messages: { misplaced: message } },
@@ -31,8 +31,8 @@ const fileRule = (message, matches) => ({
 });
 
 /**
- * NestJS solo entra por `src/nest/` (ADR 0025): el núcleo de las librerías no importa `@nestjs/*`
- * ni la sub-entrada `@platform/<lib>/nest` de otra librería.
+ * NestJS only enters through `src/nest/` (ADR 0025): the core of the libraries does not import `@nestjs/*`
+ * nor the `@platform/<lib>/nest` sub-entry of another library.
  */
 const nestImportSource = /^(@nestjs\/|@platform\/[\w-]+\/nest$)/;
 const nestGuardedFile = /\/libs\/(platform|contracts|shared)\//;
@@ -67,14 +67,14 @@ const nestBoundaryRule = {
 const layoutPlugin = {
   rules: {
     'no-nest-outside-nest-folder': nestBoundaryRule,
-    // Jest solo ejecuta las pruebas de las carpetas __tests__ (jest.preset.js): una
-    // prueba fuera de ellas no correría nunca.
+    // Jest only runs tests in __tests__ folders (jest.preset.js): a
+    // test outside them would never run.
     'tests-in-tests-folder': fileRule(
       'Las pruebas van en la carpeta __tests__ de la carpeta del código que prueban.',
       (file) =>
         /\.(int-)?spec\.ts$/.test(file) && !file.includes('/__tests__/'),
     ),
-    // Lo que comparten las pruebas (fakes, builders, contenedores) vive en __tests__/utils.
+    // What tests share (fakes, builders, containers) lives in __tests__/utils.
     'test-utils-in-tests-folder': fileRule(
       'Los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte.',
       (file) =>
@@ -88,7 +88,7 @@ const layoutPlugin = {
   },
 };
 
-// Reglas de dependencia entre proyectos del ADR 0015.
+// Dependency rules between projects from ADR 0015.
 const depConstraints = [
   {
     sourceTag: 'type:contracts',
@@ -115,17 +115,17 @@ const depConstraints = [
       'type:contracts',
     ],
   },
-  // Reglas por servicio: el código interno de un servicio es privado.
-  // De otro servicio solo se importa su paquete `@contracts/<servicio>`
-  // (`type:contracts`). Al crear un servicio, agrega aquí su `scope:<servicio>`
-  // con la misma forma que `scope:identity`.
+  // Per-service rules: a service's internal code is private.
+  // From another service only its `@contracts/<service>` package is imported
+  // (`type:contracts`). When creating a service, add its `scope:<service>` here
+  // with the same shape as `scope:identity`.
   {
     sourceTag: 'scope:platform',
     onlyDependOnLibsWithTags: ['scope:platform', 'scope:shared'],
   },
   {
     sourceTag: 'scope:shared',
-    // Las herramientas compartidas leen los contratos de todos los servicios.
+    // The shared tools read the contracts of all services.
     onlyDependOnLibsWithTags: [
       'scope:shared',
       'scope:platform',
@@ -141,8 +141,8 @@ const depConstraints = [
       'type:contracts',
     ],
   },
-  // La prueba de punta a punta del flujo de la plataforma: lee contratos y librerías, y entra a las apps por la
-  // excepción de `allowAppImports`.
+  // The end-to-end test of the platform flow: reads contracts and libraries, and enters the apps through the
+  // `allowAppImports` exception.
   {
     sourceTag: 'type:e2e',
     onlyDependOnLibsWithTags: [
@@ -174,11 +174,11 @@ const depConstraints = [
 ];
 
 /**
- * Excepciones a `scope:platform` para leer contratos de un servicio: `@platform/auth` y sus vecinos leen el
- * formato del token y sus códigos de `@contracts/identity` (ADR 0022); `@platform/quotas` y
- * `@platform/metering` hablan con billing por su operación de cuotas y su comando de uso. La regla se vuelve a
- * declarar completa porque una configuración posterior reemplaza las opciones de la anterior; solo cambia la
- * restricción de `scope:platform`. Cada librería la usa con las rutas de `files` relativas a su proyecto.
+ * Exceptions to `scope:platform` for reading a service's contracts: `@platform/auth` and its neighbors read the
+ * token format and its codes from `@contracts/identity` (ADR 0022); `@platform/quotas` and
+ * `@platform/metering` talk to billing through its quota operation and its usage command. The rule is declared
+ * again in full because a later configuration replaces the options of the earlier one; only the
+ * `scope:platform` restriction changes. Each library uses it with `files` paths relative to its project.
  */
 const allowServiceContracts = (scopes) => (files) => ({
   files,
@@ -211,8 +211,8 @@ const allowBillingContracts = allowServiceContracts([
 ]);
 
 /**
- * Nx prohíbe importar una app desde cualquier proyecto. La prueba de punta a punta arranca los cinco servicios en un
- * proceso y es el único proyecto que entra a ellos, solo por `@apps/<servicio>/test-utils`.
+ * Nx forbids importing an app from any project. The end-to-end test starts the five services in one
+ * process and is the only project that enters them, only through `@apps/<service>/test-utils`.
  */
 const allowAppImports = (files) => ({
   files,
@@ -263,30 +263,30 @@ export default [
         {
           enforceBuildableLibDependency: true,
           allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
-          // Reglas de dependencia entre proyectos del ADR 0015.
+          // Dependency rules between projects from ADR 0015.
           depConstraints,
         },
       ],
     },
   },
   {
-    // El SDK de AWS solo vive en libs/platform/adapters/aws. Las rutas de `files` son
-    // relativas al proyecto que carga esta configuración, así que esa librería apaga
-    // la regla en su propio eslint.config.mjs (`'no-restricted-imports': 'off'`).
+    // The AWS SDK only lives in libs/platform/adapters/aws. The `files` paths are
+    // relative to the project that loads this configuration, so that library turns off
+    // the rule in its own eslint.config.mjs (`'no-restricted-imports': 'off'`).
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [awsSdkPattern] }],
     },
   },
   {
-    // Cuando ESLint corre desde backend/ (hooks de git), las rutas son relativas a esta
-    // carpeta y la excepción del adaptador de AWS se declara aquí.
+    // When ESLint runs from backend/ (git hooks), paths are relative to this
+    // folder and the AWS adapter exception is declared here.
     files: ['libs/platform/adapters/aws/**/*.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },
   },
-  // Cuando ESLint corre desde backend/, la excepción de auth y de http se declara con rutas de esta carpeta.
+  // When ESLint runs from backend/, the auth and http exception is declared with paths from this folder.
   allowIdentityContracts([
     'libs/platform/auth/**/*.ts',
     'libs/platform/http/**/*.ts',

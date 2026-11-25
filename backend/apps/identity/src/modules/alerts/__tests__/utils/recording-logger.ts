@@ -1,17 +1,17 @@
 import { LoggerPort } from '@platform/observability';
 
-/** Una línea que registró {@link RecordingLogger}. */
+/** A line recorded by {@link RecordingLogger}. */
 export interface RecordedLine {
   readonly message: string;
   readonly fields?: Record<string, unknown>;
 }
 
-/** Logger que guarda lo registrado en `info` y `warn`, para comprobar qué deja un adaptador en el log. */
+/** Logger that stores what is logged in `info` and `warn`, to check what an adapter leaves in the log. */
 export class RecordingLogger extends LoggerPort {
   readonly lines: RecordedLine[] = [];
 
   debug(): void {
-    // Las pruebas no miran el nivel de depuración.
+    // The tests do not look at the debug level.
   }
 
   info(message: string, fields?: Record<string, unknown>): void {

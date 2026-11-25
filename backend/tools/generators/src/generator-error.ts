@@ -1,4 +1,4 @@
-/** Por qué un generador no puede seguir; se le muestra a quien lo corre. */
+/** Why a generator cannot continue; shown to whoever runs it. */
 export enum GeneratorErrorReason {
   InvalidName = 'invalid-name',
   AlreadyExists = 'already-exists',
@@ -7,7 +7,7 @@ export enum GeneratorErrorReason {
   InvalidArguments = 'invalid-arguments',
 }
 
-/** Un generador que no escribe nada porque su entrada o el repositorio no lo permiten. */
+/** A generator that writes nothing because its input or the repository does not allow it. */
 export class GeneratorError extends Error {
   constructor(
     readonly reason: GeneratorErrorReason,

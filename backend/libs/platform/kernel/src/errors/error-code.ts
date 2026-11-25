@@ -1,13 +1,13 @@
-/** Formato de un código de error estable: `SERVICIO.SUBMODULO.ERROR`. */
+/** Format of a stable error code: `SERVICE.SUBMODULE.ERROR`. */
 export class ErrorCode {
   /**
-   * Mayúsculas, dígitos o guion bajo, con al menos tres segmentos separados por
-   * punto. Los contratos declaran la misma expresión, porque un contrato
-   * no puede depender del kernel; una prueba comprueba que coinciden.
+   * Uppercase letters, digits or underscores, with at least three segments separated by
+   * dots. The contracts declare the same expression, because a contract
+   * cannot depend on the kernel; a test checks that they match.
    */
   static readonly PATTERN = /^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*){2,}$/;
 
-  /** Indica si `value` es un texto con el formato de un código de error. */
+  /** Whether `value` is a text with the format of an error code. */
   static isValid(value: unknown): value is string {
     return typeof value === 'string' && ErrorCode.PATTERN.test(value);
   }

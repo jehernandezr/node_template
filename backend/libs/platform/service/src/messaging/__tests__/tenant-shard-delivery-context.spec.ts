@@ -19,7 +19,7 @@ class DeliveryHarness {
   readonly context = new RequestContextStore(new Tracing(new Redactor()));
   readonly delivery = new TenantShardDeliveryContext(this.scope, this.context);
 
-  /** Lo que ve el manejador mientras corre: el scope de shard y el tenant y actor del contexto. */
+  /** What the handler sees while it runs: the shard scope and the tenant and actor of the context. */
   async observe(tenantid?: string, actorid?: string) {
     let seen:
       | { scope?: ShardScopeInit; tenantId?: string; actorId?: string }

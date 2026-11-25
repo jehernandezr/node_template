@@ -6,7 +6,7 @@ import {
 } from '@platform/sharding';
 import type { EntityClass } from './metadata/entity-metadata.js';
 
-/** Datos para armar un {@link PersistenceFeature}. */
+/** Data to build a {@link PersistenceFeature}. */
 export interface PersistenceFeatureInit {
   readonly key: ShardKey;
   readonly strategy?: ShardStrategy;
@@ -15,14 +15,14 @@ export interface PersistenceFeatureInit {
 }
 
 /**
- * Declaración de sharding de un módulo ya validada, con las entidades que registra.
- * `PersistenceModule.forFeature` la crea y la inyecta en los repositorios del módulo.
+ * Validated sharding declaration of a module, with the entities it registers.
+ * `PersistenceModule.forFeature` creates it and injects it into the module's repositories.
  */
 export class PersistenceFeature {
   readonly sharding: ShardingFeature;
   readonly entities: readonly EntityClass[];
 
-  /** @throws ShardingError `InvalidConfiguration` si la declaración de sharding no es válida. */
+  /** @throws ShardingError `InvalidConfiguration` if the sharding declaration is invalid. */
   constructor(init: PersistenceFeatureInit) {
     this.sharding = new ShardingFeature({
       strategy: init.strategy ?? ShardStrategy.Directory,

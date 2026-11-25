@@ -94,16 +94,16 @@ describe('defineRoute', () => {
   });
 
   it.each([
-    [{ id: 'Bad Id' }, /id inválido/],
-    [{ path: 'v1/items' }, /path inválido/],
-    [{ path: '/items/{itemId}' }, /empieza con \/vN\//],
-    [{ path: '/v0/items/{itemId}' }, /path inválido/],
-    [{ path: '/v1/items/{missing}' }, /no está en request/],
-    [{ path: '/v1/{itemId}/{itemId}' }, /repetidos/],
-    [{ errors: ['bad'] }, /código inválido/],
-    [{ errors: ['A.B.C', 'A.B.C'] }, /códigos repetidos/],
-    [{ successStatus: 400 }, /estado de éxito/],
-    [{ description: ' ' }, /descripción/],
+    [{ id: 'Bad Id' }, /invalid id/],
+    [{ path: 'v1/items' }, /invalid path/],
+    [{ path: '/items/{itemId}' }, /it starts with \/vN\//],
+    [{ path: '/v0/items/{itemId}' }, /invalid path/],
+    [{ path: '/v1/items/{missing}' }, /is not in request/],
+    [{ path: '/v1/{itemId}/{itemId}' }, /duplicate/],
+    [{ errors: ['bad'] }, /invalid code/],
+    [{ errors: ['A.B.C', 'A.B.C'] }, /duplicate codes/],
+    [{ successStatus: 400 }, /success status/],
+    [{ description: ' ' }, /description/],
   ])('rejects %j', (override, message) => {
     expect(() =>
       defineRoute({
@@ -149,10 +149,10 @@ describe('defineRoute', () => {
   });
 
   it.each([
-    [z.object({ a: z.string() }), /escalar/],
-    [z.array(z.object({ a: z.string() })), /escalar/],
+    [z.object({ a: z.string() }), /scalar/],
+    [z.array(z.object({ a: z.string() })), /scalar/],
     [z.string().nullable(), /null/],
-    [z.union([z.string(), z.number()]), /escalar/],
+    [z.union([z.string(), z.number()]), /scalar/],
   ])('rejects the query field %#', (field, message) => {
     expect(() =>
       defineRoute({
@@ -205,13 +205,13 @@ describe('defineRoute', () => {
         ...base,
         deprecated: { since: '2026-13-01', sunset: '2027-05-01' },
       }),
-    ).toThrow(/fechas/);
+    ).toThrow(/dates/);
     expect(() =>
       defineRoute({
         ...base,
         deprecated: { since: '2027-05-01', sunset: '2027-05-01' },
       }),
-    ).toThrow(/posterior/);
+    ).toThrow(/must be after/);
   });
 });
 
@@ -269,7 +269,7 @@ describe('defineOperation', () => {
       }),
     ).toThrow(/compensationReason/);
     expect(() => defineOperation({ ...base, compensatedBy: base.id })).toThrow(
-      /sí misma/,
+      /compensate itself/,
     );
     expect(() =>
       defineOperation({
@@ -277,7 +277,7 @@ describe('defineOperation', () => {
         mutating: false,
         compensatedBy: 'x.y',
       } as never),
-    ).toThrow(/solo lectura/);
+    ).toThrow(/read-only/);
     expect(() =>
       defineOperation({ ...base, mutating: false, timeoutMs: 0 }),
     ).toThrow(/timeoutMs/);
@@ -320,7 +320,7 @@ describe('defineEvent', () => {
     (type) => {
       expect(() =>
         defineEvent({ type, payload: ItemRequest, description: 'x' }),
-      ).toThrow(/tipo/);
+      ).toThrow(/the type must have the shape/);
     },
   );
 });
@@ -347,7 +347,7 @@ describe('defineCommand', () => {
     (type) => {
       expect(() =>
         defineCommand({ type, payload: ItemRequest, description: 'x' }),
-      ).toThrow(/servicio\.entidad\.verbo\.vN/);
+      ).toThrow(/service\.entity\.verb\.vN/);
     },
   );
 });
@@ -399,19 +399,19 @@ describe('defineTopic and defineQueue', () => {
   });
 
   it.each([
-    [{ name: 'Bad_Name' }, /nombre inválido/],
-    [{ name: 'sample-work-dlq' }, /nombre inválido/],
+    [{ name: 'Bad_Name' }, /invalid name/],
+    [{ name: 'sample-work-dlq' }, /invalid name/],
     [{ visibilityTimeoutSeconds: 0 }, /visibilityTimeoutSeconds/],
     [{ retry: { maxAttempts: 0, baseMs: 1, maxMs: 1 } }, /retry/],
     [{ deadLetter: { maxReceiveCount: 9 } }, /maxReceiveCount/],
     [{ deadLetter: { retentionDays: 15 } }, /retentionDays/],
-    [{ commands: [] }, /no recibe/],
-    [{ commands: [generate, generate] }, /repetidos/],
+    [{ commands: [] }, /receives neither/],
+    [{ commands: [generate, generate] }, /duplicate/],
     [
       { subscriptions: [{ topic: { ...topic, fifo: true } }] },
-      /solo entrega a colas FIFO/,
+      /only delivers to FIFO queues/,
     ],
-    [{ subscriptions: [{ topic }, { topic }] }, /suscripción repetida/],
+    [{ subscriptions: [{ topic }, { topic }] }, /duplicate subscription/],
   ])('rejects the queue %j', (override, message) => {
     expect(() =>
       defineQueue({
@@ -435,20 +435,20 @@ describe('defineTopic and defineQueue', () => {
         ],
         description: 'Trabajo.',
       }),
-    ).toThrow(/no se publica/);
+    ).toThrow(/is not published/);
   });
 
   it('rejects empty or repeated topics', () => {
     expect(() =>
       defineTopic({ name: 'sample-events', events: [], description: 'x' }),
-    ).toThrow(/no tiene eventos/);
+    ).toThrow(/has no events/);
     expect(() =>
       defineTopic({
         name: 'sample-events',
         events: [created, created],
         description: 'x',
       }),
-    ).toThrow(/repetidos/);
+    ).toThrow(/duplicate/);
   });
 });
 
@@ -518,11 +518,11 @@ describe('defineServiceContract', () => {
     });
 
     it('rejects a missing reverse', () => {
-      expect(() => contractWith(null)).toThrow(/no está en el contrato/);
+      expect(() => contractWith(null)).toThrow(/is not in the contract/);
     });
 
     it('rejects a read-only reverse', () => {
-      expect(() => contractWith({ mutating: false })).toThrow(/solo lectura/);
+      expect(() => contractWith({ mutating: false })).toThrow(/read-only/);
     });
 
     it('rejects a reverse that is not idempotent', () => {
@@ -532,7 +532,7 @@ describe('defineServiceContract', () => {
           compensatedBy: Compensation.None,
           compensationReason: 'Es la reversa.',
         }),
-      ).toThrow(/no es idempotente/);
+      ).toThrow(/is not idempotent/);
     });
   });
 
@@ -550,7 +550,7 @@ describe('defineServiceContract', () => {
         description: 'x',
         routes: { list: foreignRoute },
       }),
-    ).toThrow(/no pertenece al servicio/);
+    ).toThrow(/does not belong to the service/);
     enum OtherError {
       Locked = 'OTHER.ITEMS.LOCKED',
     }
@@ -589,7 +589,7 @@ describe('defineServiceContract', () => {
           }),
         },
       }),
-    ).toThrow(/no pertenece al servicio/);
+    ).toThrow(/does not belong to the service/);
     expect(() =>
       defineServiceContract({
         service: 'sample',
@@ -605,7 +605,7 @@ describe('defineServiceContract', () => {
           }),
         },
       }),
-    ).toThrow(/no pertenece al servicio/);
+    ).toThrow(/does not belong to the service/);
   });
 
   describe('messaging', () => {
@@ -650,14 +650,14 @@ describe('defineServiceContract', () => {
           description: 'x',
           events: { created },
         }),
-      ).toThrow(/no tiene tópico/);
+      ).toThrow(/has no topic/);
       expect(() =>
         defineServiceContract({
           service: 'sample',
           description: 'x',
           commands: { generate },
         }),
-      ).toThrow(/no tiene cola/);
+      ).toThrow(/has no queue/);
     });
 
     it('rejects a message placed twice or not declared', () => {
@@ -675,14 +675,14 @@ describe('defineServiceContract', () => {
             }),
           },
         }),
-      ).toThrow(/está en/);
+      ).toThrow(/is in/);
       expect(() =>
         defineServiceContract({
           service: 'sample',
           description: 'x',
           topics: { events: topic },
         }),
-      ).toThrow(/no es un evento del contrato/);
+      ).toThrow(/is not a contract event/);
     });
 
     it('rejects a queue or topic of another service', () => {
@@ -722,34 +722,34 @@ describe('defineServiceContract', () => {
         description: 'x',
         routes: { legacy },
       }),
-    ).toThrow(/se reemplaza/);
+    ).toThrow(/is replaced by/);
   });
 
   it('rejects invalid names, repeated ids and incomplete catalogs', () => {
     expect(() =>
       defineServiceContract({ service: 'Sample', description: 'x' }),
-    ).toThrow(/Servicio inválido/);
+    ).toThrow(/Invalid service/);
     expect(() =>
       defineServiceContract({
         service: 'sample',
         description: 'x',
         schemas: { badName: EmptySchema },
       }),
-    ).toThrow(/esquema/);
+    ).toThrow(/schema/);
     expect(() =>
       defineServiceContract({
         service: 'sample',
         description: 'x',
         routes: { a: route, b: route },
       }),
-    ).toThrow(/repetido/);
+    ).toThrow(/duplicate/);
     expect(() =>
       defineServiceContract({
         service: 'sample',
         description: 'x',
         errors: { SampleError: errors },
       }),
-    ).toThrow(/no tiene enum/);
+    ).toThrow(/has no enum/);
     expect(() =>
       defineServiceContract({
         service: 'sample',
@@ -757,6 +757,6 @@ describe('defineServiceContract', () => {
         enums: { SampleError },
         errors: { SampleError: [] },
       }),
-    ).toThrow(/no coincide/);
+    ).toThrow(/does not match/);
   });
 });

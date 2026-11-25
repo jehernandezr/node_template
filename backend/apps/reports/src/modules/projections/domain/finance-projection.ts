@@ -7,8 +7,8 @@ import type { DeliveryPoint, InvoicePoint } from './projection-points.js';
 import type { BucketedRange } from './report-range.js';
 
 /**
- * Cuánto avanzó una factura en su cobro: una emitida puede fallar o pagarse, una fallida aún puede pagarse y
- * una pagada ya no cambia. Un evento atrasado con menos avance no devuelve la factura a un estado anterior.
+ * How far an invoice has progressed in its collection: an issued one can fail or be paid, a failed one can still be paid and
+ * a paid one no longer changes. A late event with less progress does not return the invoice to an earlier status.
  */
 export class InvoiceProgress {
   private static readonly RANK: Readonly<Record<InvoiceStatus, number>> = {
@@ -24,11 +24,11 @@ export class InvoiceProgress {
   }
 }
 
-/** Lo que se sabe de una factura por sus eventos; lo que un evento no trae no borra lo ya sabido. */
+/** What is known about an invoice from its events; what an event does not carry does not erase what is already known. */
 export interface InvoiceProjectionChange {
   readonly invoiceId: string;
   readonly status: InvoiceStatus;
-  /** `InvoiceProgress.rankOf(status)`: decide si el cambio avanza la factura. */
+  /** `InvoiceProgress.rankOf(status)`: decides whether the change advances the invoice. */
   readonly progress: number;
   readonly number: string;
   readonly currency: Currency;
@@ -38,7 +38,7 @@ export interface InvoiceProjectionChange {
   readonly failedAt?: Date;
 }
 
-/** Una notificación creada y los canales por los que salió. */
+/** A created notification and the channels it went out through. */
 export interface DeliveryProjectionChange {
   readonly notificationId: string;
   readonly type: NotificationType;
@@ -46,7 +46,7 @@ export interface DeliveryProjectionChange {
   readonly createdAt: Date;
 }
 
-/** Proyecciones de facturas y entregas del tenant del `ShardScope` abierto. */
+/** Invoice and delivery projections of the tenant of the open `ShardScope`. */
 export abstract class FinanceProjection {
   abstract applyInvoice(change: InvoiceProjectionChange): Promise<void>;
   abstract applyDelivery(change: DeliveryProjectionChange): Promise<void>;

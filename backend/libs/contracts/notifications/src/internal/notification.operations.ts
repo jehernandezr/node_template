@@ -13,8 +13,8 @@ import {
 } from '../schemas/notification.schema.js';
 
 /**
- * Envía un correo transaccional. El código de un solo uso viaja por la API
- * interna y nunca por el bus de eventos.
+ * Sends a transactional email. The one-time code travels through the internal
+ * API and never through the event bus.
  */
 export const SendEmailOperation = defineOperation({
   id: NotificationsOperation.SendMessage,
@@ -22,7 +22,7 @@ export const SendEmailOperation = defineOperation({
   output: SendEmailResultSchema,
   idempotent: true,
   compensatedBy: Compensation.None,
-  compensationReason: 'Un correo ya enviado no se puede retirar.',
+  compensationReason: 'An email already sent cannot be withdrawn.',
   errors: [
     NotificationsErrorCode.EmailRecipientSuppressed,
     NotificationsErrorCode.EmailTemplateUnknown,
@@ -30,12 +30,12 @@ export const SendEmailOperation = defineOperation({
   ],
   timeoutMs: 6_000,
   description:
-    'Envía un correo transaccional. El código de un solo uso viaja por la API interna y nunca por el bus.',
+    'Sends a transactional email. The one-time code travels through the internal API and never through the bus.',
 });
 
 /**
- * Entrega una notificación a un usuario por sus canales. Corre después del
- * pivote de la saga y se repite con el mismo `notificationId`.
+ * Delivers a notification to a user through their channels. Runs after the
+ * saga pivot and is retried with the same `notificationId`.
  */
 export const NotifyUserOperation = defineOperation({
   id: NotificationsOperation.NotifyUser,
@@ -44,13 +44,13 @@ export const NotifyUserOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'Una notificación ya entregada no se retira; el paso corre después del pivote de la saga y se repite con el mismo notificationId.',
+    'A delivered notification is not withdrawn; the step runs after the saga pivot and is retried with the same notificationId.',
   errors: [],
   timeoutMs: 6_000,
-  description: 'Entrega una notificación a un usuario por sus canales.',
+  description: 'Delivers a notification to a user through their channels.',
 });
 
-/** Borra las notificaciones, preferencias y entregas de un usuario. */
+/** Deletes a user's notifications, preferences and deliveries. */
 export const EraseNotificationsUserDataOperation = defineOperation({
   id: NotificationsOperation.EraseUserData,
   input: EraseNotificationsUserInputSchema,
@@ -58,9 +58,9 @@ export const EraseNotificationsUserDataOperation = defineOperation({
   idempotent: true,
   compensatedBy: Compensation.None,
   compensationReason:
-    'El borrado de datos del usuario es irreversible y corre después del pivote de la saga.',
+    'Erasing the user data is irreversible and runs after the saga pivot.',
   errors: [],
   timeoutMs: 6_000,
   description:
-    'Borra las notificaciones, preferencias y entregas de un usuario.',
+    'Deletes the notifications, preferences and deliveries of a user.',
 });

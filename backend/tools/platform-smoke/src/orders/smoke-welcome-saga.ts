@@ -1,13 +1,13 @@
 import { SagaDefinition, type SagaFlow } from '@platform/saga';
 import { SmokeOperations } from './smoke-operations.js';
 
-/** Estado de la saga de bienvenida. `failVerify` pide que el segundo paso falle, para probar la compensación. */
+/** State of the welcome saga. `failVerify` asks for the second step to fail, to test compensation. */
 export interface SmokeWelcomeState {
   readonly orderId: string;
   readonly failVerify: boolean;
 }
 
-/** Reserva el stock y verifica el pago; si la verificación falla, libera la reserva. */
+/** Reserves the stock and verifies the payment; if the verification fails, releases the reservation. */
 export class SmokeWelcomeSaga extends SagaDefinition<SmokeWelcomeState> {
   readonly type = 'smoke-welcome';
 

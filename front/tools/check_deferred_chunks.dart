@@ -1,35 +1,35 @@
-// Verifica que los microfrontends diferidos no viajen en el bundle inicial.
+// Checks that deferred microfrontends do not ship in the initial bundle.
 //
-// Se ejecuta después de `flutter build web --release --source-maps`, desde
+// Runs after `flutter build web --release --source-maps`, from
 // `front/apps/web`:
 //
 //   dart run tools/check_deferred_chunks.dart
 //
-// Es un script independiente (sin pubspec): solo usa `dart:*`. Falla con
-// código 1 cuando:
-//   1. `main.dart.js.map` lista fuentes de `microfrontends/<mf>/lib/src/`
-//      fuera de las carpetas que el manifiesto puede cargar de entrada
-//      (`shared/constants`, `shared/enums` y `lifecycle`). Todo lo demás
-//      (pantallas, datos, textos, widgets, utilidades) debe vivir solo en
-//      chunks diferidos, aunque esté en una carpeta nueva.
-//   2. algún texto de los ARB del backoffice aparece en `main.dart.js`.
+// It is a standalone script (no pubspec): it only uses `dart:*`. Fails with
+// code 1 when:
+//   1. `main.dart.js.map` lists sources from `microfrontends/<mf>/lib/src/`
+//      outside the folders the manifest can load eagerly
+//      (`shared/constants`, `shared/enums` and `lifecycle`). Everything else
+//      (screens, data, texts, widgets, utilities) must live only in
+//      deferred chunks, even if it is in a new folder.
+//   2. some text from the backoffice ARB files appears in `main.dart.js`.
 //
-// Opciones:
-//   --build-dir=<ruta>   Salida de la compilación. Por defecto `build/web`.
-//   --front-root=<ruta>  Raíz de `front/`. Por defecto, la que contiene
-//                        `microfrontends/` subiendo desde el directorio actual
-//                        o desde este script.
-//   --arb-mf=<nombre>    Microfrontend cuyos ARB no pueden estar en el bundle
-//                        inicial. Repetible. Por defecto `backoffice`.
-//   --min-length=<n>     Longitud mínima de un texto ARB para comprobarlo
-//                        (evita falsos positivos con palabras sueltas).
-//                        Por defecto 12.
+// Options:
+//   --build-dir=<path>   Build output. Defaults to `build/web`.
+//   --front-root=<path>  Root of `front/`. Defaults to the one containing
+//                        `microfrontends/` going up from the current directory
+//                        or from this script.
+//   --arb-mf=<name>      Microfrontend whose ARB files cannot be in the initial
+//                        bundle. Repeatable. Defaults to `backoffice`.
+//   --min-length=<n>     Minimum length of an ARB text to check it
+//                        (avoids false positives with single words).
+//                        Defaults to 12.
 
 import 'dart:convert';
 import 'dart:io';
 
-/// Carpetas de `lib/src/` de un microfrontend que pueden ir en el bundle
-/// inicial: lo que el manifiesto y el ciclo de vida necesitan al arrancar.
+/// Folders of a microfrontend's `lib/src/` that can go in the initial
+/// bundle: what the manifest and the lifecycle need at startup.
 const _eagerSourceDirs = ['shared/constants/', 'shared/enums/', 'lifecycle/'];
 
 void main(List<String> args) {
@@ -100,8 +100,8 @@ void main(List<String> args) {
   exit(1);
 }
 
-/// Fuentes del mapa del bundle inicial bajo `lib/src/` de un microfrontend y
-/// fuera de [_eagerSourceDirs].
+/// Sources of the initial bundle map under a microfrontend's `lib/src/` and
+/// outside [_eagerSourceDirs].
 List<String> _checkSourceMap(File mapFile) {
   final map = jsonDecode(mapFile.readAsStringSync()) as Map<String, dynamic>;
   final sources = (map['sources'] as List).cast<String>();
@@ -116,13 +116,13 @@ List<String> _checkSourceMap(File mapFile) {
   return found;
 }
 
-// Cubre rutas relativas (`../../microfrontends/x/lib/src/data/a.dart`) y
+// Covers relative paths (`../../microfrontends/x/lib/src/data/a.dart`) and
 // `package:mf_x/src/data/a.dart`.
 final _byPath = RegExp(r'microfrontends/[^/]+/lib/src/(.+)$');
 final _byPackage = RegExp(r'package:mf_[^/]+/src/(.+)$');
 
-/// Si [source] es código de `lib/src/` de un microfrontend que no puede ir en
-/// el bundle inicial.
+/// Whether [source] is code from a microfrontend's `lib/src/` that cannot go in
+/// the initial bundle.
 bool isForbiddenEagerSource(String source) {
   final match = _byPath.firstMatch(source) ?? _byPackage.firstMatch(source);
   if (match == null) return false;
@@ -192,15 +192,15 @@ List<_ArbText> _checkArbStrings({
   return found;
 }
 
-/// Segmentos literales de un mensaje ICU: lo que queda al quitar `{...}`.
+/// Literal segments of an ICU message: what remains after removing `{...}`.
 Iterable<String> _literals(String message) => message
     .replaceAll(RegExp(r'\{[^{}]*(\{[^{}]*\}[^{}]*)*\}'), '\u0000')
     .split('\u0000')
     .map((s) => s.trim())
     .where((s) => s.isNotEmpty);
 
-/// Formas en que dart2js puede emitir el texto: literal y con escapes
-/// (`\xHH` hasta U+00FF, `\uHHHH` por encima).
+/// Forms in which dart2js can emit the text: literal and with escapes
+/// (`\xHH` up to U+00FF, `\uHHHH` above).
 Iterable<String> _variants(String text) sync* {
   yield text;
   final escaped = StringBuffer();

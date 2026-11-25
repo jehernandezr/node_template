@@ -1,5 +1,5 @@
-# Configuración de tflint para todo backend/infra/terraform. CI la pasa con ruta absoluta
-# (--config) porque --recursive la buscaría en cada módulo.
+# tflint configuration for all of backend/infra/terraform. CI passes it with an absolute path
+# (--config) because --recursive would look for it in each module.
 config {
   call_module_type = "local"
 }
@@ -9,8 +9,8 @@ plugin "terraform" {
   preset  = "recommended"
 }
 
-# Reglas de AWS: tipos de instancia, clases de RDS y ElastiCache, runtimes, etc.
-# Renovate (gestor tflint-plugin) propone las subidas.
+# AWS rules: instance types, RDS and ElastiCache classes, runtimes, etc.
+# Renovate (tflint-plugin manager) proposes the upgrades.
 plugin "aws" {
   enabled = true
   version = "0.50.0"

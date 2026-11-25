@@ -4,7 +4,7 @@ import { TenantMoveRehearsal } from '@platform/tenant-move/test-utils';
 import { billingShardMigrations } from '../shard-migrations.js';
 import { BillingTenantMoveManifest } from '../billing-tenant-move.manifest.js';
 
-/** Una fila por tabla: la suscripción y los consecutivos son únicos por tenant. */
+/** One row per table: the subscription and the sequences are unique per tenant. */
 const ROWS_PER_TABLE = 1;
 
 const runtime = new ContainerRuntime(process.env);

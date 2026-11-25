@@ -5,14 +5,14 @@ import type { DirectoryStore } from '../ports/directory-store.js';
 import { ExpiringLru } from './expiring-lru.js';
 import { InvalidationLog } from './invalidation-log.js';
 
-/** Resuelve la instancia física de un shard lógico, con caché en proceso y registro de invalidaciones. */
+/** Resolves the physical instance of a logical shard, with an in-process cache and an invalidation log. */
 export class InstanceResolver {
   private readonly instances: ExpiringLru<string>;
   private readonly invalidations: InvalidationLog;
 
   /**
-   * @param localTtlMs TTL de cada instancia en el caché.
-   * @param maxInstances Capacidad del caché y del registro de invalidaciones.
+   * @param localTtlMs TTL of each instance in the cache.
+   * @param maxInstances Capacity of the cache and of the invalidation log.
    */
   constructor(
     private readonly directory: DirectoryStore,
@@ -24,15 +24,15 @@ export class InstanceResolver {
     this.invalidations = new InvalidationLog(maxInstances);
   }
 
-  /** Instancia vigente en el caché, o `undefined`. */
+  /** Current instance in the cache, or `undefined`. */
   cached(logicalShard: string): string | undefined {
     return this.instances.get(logicalShard);
   }
 
   /**
-   * Lee la instancia del directorio y la cachea salvo que el shard se invalidara mientras
-   * se leía.
-   * @throws ShardingError `UnknownShard` si el directorio no la conoce.
+   * Reads the instance from the directory and caches it unless the shard was invalidated while
+   * it was being read.
+   * @throws ShardingError `UnknownShard` if the directory does not know it.
    */
   async load(logicalShard: string): Promise<string> {
     const since = this.invalidations.current();
@@ -54,7 +54,7 @@ export class InstanceResolver {
     return instance;
   }
 
-  /** Borra la instancia cacheada y registra la invalidación. */
+  /** Deletes the cached instance and logs the invalidation. */
   invalidate(logicalShard: string): void {
     this.invalidations.mark(logicalShard);
     this.instances.delete(logicalShard);

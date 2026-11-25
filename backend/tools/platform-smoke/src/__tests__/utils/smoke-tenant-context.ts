@@ -1,13 +1,13 @@
 import { ActorType, type RequestContextStore } from '@platform/observability';
 
 /**
- * Abre el contexto de petición de un tenant en el `RequestContextStore` de la app, como lo haría el
- * middleware HTTP o el consumidor de un mensaje.
+ * Opens a tenant's request context in the app's `RequestContextStore`, as the
+ * HTTP middleware or a message consumer would.
  */
 export class SmokeTenantContext {
   constructor(private readonly store: RequestContextStore) {}
 
-  /** Ejecuta `fn` como una petición del tenant dado, con la traza y el actor que pide el contexto. */
+  /** Runs `fn` as a request of the given tenant, with the trace and actor the context requires. */
   runAs<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
     return this.store.run(
       {

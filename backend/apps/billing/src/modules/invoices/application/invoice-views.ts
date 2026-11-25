@@ -5,7 +5,7 @@ import type {
 } from '@contracts/billing';
 import type { InvoiceState } from '../domain/invoice.js';
 
-/** La factura como la publica el contrato. Utilidad pura. */
+/** The invoice as the contract publishes it. Pure utility. */
 export class InvoiceViews {
   static summary(state: InvoiceState): InvoiceSummary {
     return {

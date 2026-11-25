@@ -1,11 +1,11 @@
 import { TenantMoveErrorCode } from '../../errors/tenant-move-error-code.enum.js';
 import { TenantMoveError } from '../../errors/tenant-move.error.js';
 
-/** Nombres de tabla y columna que van dentro del SQL: solo identificadores simples de PostgreSQL. */
+/** Table and column names that go inside the SQL: only simple PostgreSQL identifiers. */
 export class SqlIdentifier {
   private static readonly PATTERN = /^[a-z_][a-z0-9_]{0,62}$/;
 
-  /** @throws TenantMoveError `InvalidManifest` si el nombre no es un identificador simple. */
+  /** @throws TenantMoveError `InvalidManifest` if the name is not a simple identifier. */
   static quote(name: string): string {
     if (!SqlIdentifier.PATTERN.test(name)) {
       throw new TenantMoveError(
@@ -18,9 +18,9 @@ export class SqlIdentifier {
   }
 
   /**
-   * Una tabla, con su esquema si lo nombra (`saga.instances`): las tablas de la plataforma no siempre viven en el
-   * esquema por defecto.
-   * @throws TenantMoveError `InvalidManifest` si alguna parte no es un identificador simple o sobran partes.
+   * A table, with its schema if it names one (`saga.instances`): the platform tables do not always live in the
+   * default schema.
+   * @throws TenantMoveError `InvalidManifest` if any part is not a simple identifier or there are extra parts.
    */
   static quoteTable(name: string): string {
     const parts = name.split('.');

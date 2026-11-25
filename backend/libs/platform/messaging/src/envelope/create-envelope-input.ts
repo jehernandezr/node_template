@@ -1,4 +1,4 @@
-/** Datos con los que `EnvelopeFactory` arma un sobre. */
+/** Data `EnvelopeFactory` builds an envelope from. */
 export interface CreateEnvelopeInput<T> {
   readonly type: string;
   readonly source: string;

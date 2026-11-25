@@ -1,6 +1,6 @@
 import { CaptchaVerifier } from '../../domain/captcha-verifier.js';
 
-/** `CaptchaVerifier` de prueba: aprueba solo las respuestas dadas y anota cada consulta. */
+/** Test `CaptchaVerifier`: approves only the given responses and records each query. */
 export class RecordingCaptchaVerifier extends CaptchaVerifier {
   readonly checked: Array<{ response?: string; ip: string }> = [];
 

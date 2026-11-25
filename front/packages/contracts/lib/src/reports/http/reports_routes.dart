@@ -1,6 +1,6 @@
 // GENERATED, do not edit.
-// Fuente: backend/libs/contracts/*/export/contract.json.
-// Regenerar: cd front && dart run contracts_gen
+// Source: backend/libs/contracts/*/export/contract.json.
+// Regenerate: cd front && dart run contracts_gen
 
 import '../../core/core.dart';
 import '../../platform/enums/platform_enums.dart';
@@ -9,9 +9,9 @@ import '../../platform/types/platform_types.dart';
 import '../../reports/schemas/reports_schemas.dart';
 import '../../reports/types/reports_types.dart';
 
-/// Rutas HTTP públicas del contrato `reports`.
+/// Public HTTP routes of the `reports` contract.
 abstract final class ReportsRoutes {
-  /// Lista los tipos de reporte, con sus formatos y granularidades.
+  /// Lists the report types, with their formats and granularities.
   ///
   /// `GET /v1/reports`
   static const listCatalog = RouteDescriptor<Empty, ReportCatalog>(
@@ -41,7 +41,7 @@ abstract final class ReportsRoutes {
     decodeResponse: ReportCatalog.fromJson,
   );
 
-  /// Crea una ejecución de reporte. Responde 202 con su id.
+  /// Creates a report run. Responds 202 with its id.
   ///
   /// `POST /v1/reports/runs`
   static const createRun =
@@ -76,7 +76,7 @@ abstract final class ReportsRoutes {
         decodeResponse: ReportRunCreated.fromJson,
       );
 
-  /// Lista las ejecuciones de reporte, con filtros y paginación.
+  /// Lists the report runs, with filters and pagination.
   ///
   /// `GET /v1/reports/runs`
   static const listRuns = RouteDescriptor<ListReportRunsRequest, ReportRunPage>(
@@ -107,7 +107,7 @@ abstract final class ReportsRoutes {
     decodeResponse: ReportRunPage.fromJson,
   );
 
-  /// Consulta una ejecución de reporte y su resultado.
+  /// Gets a report run and its result.
   ///
   /// `GET /v1/reports/runs/{runId}`
   static const getRun = RouteDescriptor<GetReportRunRequest, ReportRunDetail>(
@@ -138,7 +138,7 @@ abstract final class ReportsRoutes {
     decodeResponse: ReportRunDetail.fromJson,
   );
 
-  /// Descarga el resultado de una ejecución lista en su formato.
+  /// Downloads the result of a ready run in its format.
   ///
   /// `GET /v1/reports/runs/{runId}/download`
   static const downloadRun =

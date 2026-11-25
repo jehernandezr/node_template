@@ -4,15 +4,15 @@ type HttpArguments = ReturnType<ExecutionContext['switchToHttp']>;
 type RpcArguments = ReturnType<ExecutionContext['switchToRpc']>;
 type WsArguments = ReturnType<ExecutionContext['switchToWs']>;
 
-/** Petición HTTP mínima para el contexto de prueba. */
+/** Minimal HTTP request for the test context. */
 export interface FakeRequest {
   readonly ip?: string;
 }
 
-/** Función que hace de manejador de una ruta, en las pruebas. */
+/** Function that acts as the handler of a route, in the tests. */
 export type FakeHandler = (...args: unknown[]) => unknown;
 
-/** Contexto de ejecución HTTP con un controlador, un manejador y una petición fijos. */
+/** HTTP execution context with a fixed controller, handler and request. */
 export class FakeHttpExecutionContext implements ExecutionContext {
   constructor(
     private readonly request: FakeRequest,
@@ -53,7 +53,7 @@ export class FakeHttpExecutionContext implements ExecutionContext {
   }
 }
 
-/** Argumentos HTTP de la prueba. */
+/** HTTP arguments of the test. */
 class FakeHttpArguments implements HttpArguments {
   constructor(private readonly request: FakeRequest) {}
 

@@ -7,7 +7,7 @@ data "aws_partition" "current" {}
 locals {
   master_secret_arn = aws_db_instance.this.master_user_secret[0].secret_arn
 
-  # Familia del grupo de parámetros: postgres17 para la versión mayor 17.
+  # Parameter group family: postgres17 for major version 17.
   parameter_group_family = "postgres${split(".", var.engine_version)[0]}"
 
   users = { for u in var.service_users : u.name => u }
@@ -20,7 +20,7 @@ locals {
     }
   ]
 
-  # Lo que crea el bootstrap: roles de grupo, bases con su dueño, lectores y extensiones.
+  # What the bootstrap creates: group roles, databases with their owner, readers and extensions.
   bootstrap_spec = {
     users       = local.bootstrap_users
     group_roles = var.group_roles
@@ -40,35 +40,35 @@ locals {
   log_group_arn_base  = "arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group"
 }
 
-# Cada base tiene un dueño declarado y cada miembro de un grupo es un usuario de servicio.
+# Every database has a declared owner and every group member is a service user.
 resource "terraform_data" "input_check" {
   input = local.role_names
 
   lifecycle {
     precondition {
       condition     = alltrue([for d in var.databases : contains(local.role_names, d.owner)])
-      error_message = "El dueño de cada base debe estar en service_users o en group_roles."
+      error_message = "The owner of each database must be in service_users or group_roles."
     }
 
     precondition {
       condition     = alltrue(flatten([for d in var.databases : [for r in d.readers : contains(local.role_names, r)]]))
-      error_message = "Los lectores de cada base deben estar en service_users o en group_roles."
+      error_message = "The readers of each database must be in service_users or group_roles."
     }
 
     precondition {
       condition     = alltrue(flatten([for g in var.group_roles : [for m in g.members : contains([for u in var.service_users : u.name], m)]]))
-      error_message = "Los miembros de un rol de grupo deben estar en service_users."
+      error_message = "The members of a group role must be in service_users."
     }
 
     precondition {
       condition     = length(distinct(local.role_names)) == length(local.role_names)
-      error_message = "Un nombre no puede ser a la vez usuario de servicio y rol de grupo."
+      error_message = "A name cannot be both a service user and a group role."
     }
   }
 }
 
 # ---------------------------------------------------------------------------
-# Clave KMS (CMK): almacenamiento, Performance Insights y secretos.
+# KMS key (CMK): storage, Performance Insights and secrets.
 # ---------------------------------------------------------------------------
 
 module "kms" {
@@ -84,7 +84,7 @@ module "kms" {
 }
 
 # ---------------------------------------------------------------------------
-# Red y seguridad.
+# Network and security.
 # ---------------------------------------------------------------------------
 
 resource "aws_db_subnet_group" "this" {
@@ -102,8 +102,8 @@ resource "aws_security_group" "rds" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds" })
 }
 
-# Las réplicas no pasan por RDS Proxy: fuera de Aurora el proxy solo admite la instancia
-# escritora. Los clientes autorizados leen directo de la réplica, con TLS.
+# Replicas do not go through RDS Proxy: outside Aurora the proxy only supports the writer
+# instance. Authorized clients read straight from the replica, over TLS.
 resource "aws_security_group" "replica" {
   count = var.read_replica_count > 0 ? 1 : 0
 
@@ -133,7 +133,7 @@ resource "aws_security_group" "proxy" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-rds-proxy" })
 }
 
-# Lambdas de administración (creación de usuarios y rotación). Solo hablan con RDS y Secrets Manager.
+# Admin Lambdas (user creation and rotation). They only talk to RDS and Secrets Manager.
 resource "aws_security_group" "tooling" {
   name        = "${var.name_prefix}-rds-tooling"
   description = "Lambdas de bootstrap y rotación de usuarios de ${var.name_prefix}"
@@ -208,7 +208,7 @@ resource "aws_vpc_security_group_egress_rule" "proxy_to_endpoints" {
 }
 
 # ---------------------------------------------------------------------------
-# Grupo de parámetros: replicación lógica, consultas lentas y pg_stat_statements.
+# Parameter group: logical replication, slow queries and pg_stat_statements.
 # ---------------------------------------------------------------------------
 
 resource "aws_db_parameter_group" "this" {
@@ -216,7 +216,7 @@ resource "aws_db_parameter_group" "this" {
   family      = local.parameter_group_family
   description = "Parámetros de PostgreSQL de ${var.name_prefix}"
 
-  # Necesario para mover shards sin corte con replicación lógica (ADR 0010). Pide reinicio.
+  # Needed to move shards without downtime using logical replication (ADR 0010). Requires a reboot.
   parameter {
     name         = "rds.logical_replication"
     value        = "1"
@@ -269,8 +269,8 @@ resource "aws_db_parameter_group" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# Log groups con retención y CMK. Se crean antes que la instancia y las funciones;
-# si no, AWS los crea solos sin expiración ni cifrado propio.
+# Log groups with retention and CMK. They are created before the instance and the functions;
+# otherwise AWS creates them on its own with no expiration and no custom encryption.
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "postgresql" {
@@ -302,7 +302,7 @@ resource "aws_cloudwatch_log_group" "rotation" {
 }
 
 # ---------------------------------------------------------------------------
-# Instancia primaria y réplicas.
+# Primary instance and replicas.
 # ---------------------------------------------------------------------------
 
 resource "aws_db_instance" "this" {
@@ -318,7 +318,7 @@ resource "aws_db_instance" "this" {
   storage_encrypted     = true
   kms_key_id            = module.kms.arn
 
-  # Sin base inicial: el bootstrap crea el catálogo y las bases de cada servicio.
+  # No initial database: the bootstrap creates the catalog and each service's databases.
   username = var.db_username
 
   manage_master_user_password   = true
@@ -341,7 +341,7 @@ resource "aws_db_instance" "this" {
   performance_insights_retention_period = var.performance_insights_retention_days
 
   skip_final_snapshot = var.skip_final_snapshot
-  # El sufijo con fecha se fija al crear. ignore_changes evita un reemplazo en cada plan.
+  # The date suffix is fixed at creation. ignore_changes avoids a replacement on every plan.
   final_snapshot_identifier = "${var.name_prefix}-postgres-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-postgres" })
@@ -383,8 +383,8 @@ resource "aws_db_instance" "replica" {
 }
 
 # ---------------------------------------------------------------------------
-# Usuarios de servicio y secretos. Las apps nunca usan el usuario maestro.
-# La contraseña inicial es efímera: nunca llega al estado de Terraform.
+# Service users and secrets. Apps never use the master user.
+# The initial password is ephemeral: it never reaches the Terraform state.
 # ---------------------------------------------------------------------------
 
 ephemeral "random_password" "service" {
@@ -405,10 +405,10 @@ resource "aws_secretsmanager_secret" "service" {
   tags = merge(var.tags, { Service = each.key })
 }
 
-# Valor inicial. El campo host apunta a la instancia directa porque la rotación
-# necesita conectarse sin pasar por el proxy. Las apps usan proxy_endpoint y reader_endpoints.
-# dbname es la base de mantenimiento: la rotación solo cambia la contraseña del rol. Las
-# bases de cada servicio llegan a la app en un mapa aparte (stack data).
+# Initial value. The host field points to the instance directly because rotation
+# needs to connect without going through the proxy. Apps use proxy_endpoint and reader_endpoints.
+# dbname is the maintenance database: rotation only changes the role password. Each
+# service's databases reach the app in a separate map (data stack).
 resource "aws_secretsmanager_secret_version" "service" {
   for_each = local.users
 
@@ -424,8 +424,8 @@ resource "aws_secretsmanager_secret_version" "service" {
   secret_string_wo_version = 1
 }
 
-# El paquete incluye rds-ca-bundle.pem (backend/infra/scripts/fetch-rds-ca-bundle.sh). Sin
-# él, el bootstrap se niega a conectarse y la invocación hace fallar el apply.
+# The package includes rds-ca-bundle.pem (backend/infra/scripts/fetch-rds-ca-bundle.sh). Without
+# it, the bootstrap refuses to connect and the invocation fails the apply.
 data "archive_file" "bootstrap" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/db_bootstrap"
@@ -501,8 +501,8 @@ resource "aws_lambda_function" "bootstrap" {
   ]
 }
 
-# Crea (o completa) roles, bases, extensiones y permisos. Se repite cuando cambia la
-# especificación o el código. Nunca borra bases ni roles.
+# Creates (or completes) roles, databases, extensions and grants. It runs again when the
+# spec or the code changes. It never drops databases or roles.
 resource "aws_lambda_invocation" "bootstrap" {
   function_name = aws_lambda_function.bootstrap.function_name
 
@@ -528,7 +528,7 @@ resource "aws_lambda_invocation" "bootstrap" {
 }
 
 # ---------------------------------------------------------------------------
-# Rotación de los secretos de servicio (función oficial de AWS, estrategia de usuario único).
+# Rotation of the service secrets (official AWS function, single user strategy).
 # ---------------------------------------------------------------------------
 
 data "aws_serverlessapplicationrepository_application" "rotation" {
@@ -545,7 +545,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "rotation" {
   semantic_version = data.aws_serverlessapplicationrepository_application.rotation[0].semantic_version
   capabilities     = data.aws_serverlessapplicationrepository_application.rotation[0].required_capabilities
 
-  # kmsKeyArn da al rol de la función permiso para descifrar y cifrar con la CMK de los secretos.
+  # kmsKeyArn gives the function role permission to decrypt and encrypt with the secrets CMK.
   parameters = {
     endpoint            = "https://secretsmanager.${data.aws_region.current.region}.amazonaws.com"
     functionName        = local.rotation_function
@@ -569,12 +569,12 @@ resource "aws_secretsmanager_secret_rotation" "service" {
     automatically_after_days = var.secret_rotation_days
   }
 
-  # El usuario debe existir en la base antes de la primera rotación.
+  # The user must exist in the database before the first rotation.
   depends_on = [aws_lambda_invocation.bootstrap]
 }
 
 # ---------------------------------------------------------------------------
-# RDS Proxy. Autentica con los secretos de servicio, no con el maestro.
+# RDS Proxy. It authenticates with the service secrets, not the master one.
 # ---------------------------------------------------------------------------
 
 resource "aws_iam_role" "proxy" {
@@ -623,7 +623,7 @@ resource "aws_iam_role_policy" "proxy_read_secret" {
   })
 }
 
-# Proxy de escritura: apunta a la instancia primaria.
+# Write proxy: points to the primary instance.
 resource "aws_db_proxy" "this" {
   name          = "${var.name_prefix}-proxy"
   engine_family = "POSTGRESQL"
@@ -667,7 +667,7 @@ resource "aws_db_proxy_target" "this" {
 }
 
 # ---------------------------------------------------------------------------
-# Alarmas de RDS.
+# RDS alarms.
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudwatch_metric_alarm" "cpu" {

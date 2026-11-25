@@ -17,7 +17,7 @@ import { ApiKeyViews } from './api-key-views.js';
 import { GrantablePermissions } from './grantable-permissions.js';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 
-/** Cuentas de servicio del tenant. Deshabilitar una revoca sus keys en el mismo paso. */
+/** The tenant's service accounts. Disabling one revokes its keys in the same step. */
 @Injectable()
 export class ManageServiceAccounts {
   constructor(
@@ -114,7 +114,7 @@ export class ManageServiceAccounts {
     }
   }
 
-  /** Aplica el cambio y devuelve los prefijos de sus keys, cuyo caché `auth:apikey:*` hay que borrar. */
+  /** Applies the change and returns the prefixes of its keys, whose `auth:apikey:*` cache must be deleted. */
   private change(
     tenantId: string,
     serviceAccountId: string,

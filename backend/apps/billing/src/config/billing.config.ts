@@ -6,8 +6,8 @@ import { FakePaymentOutcome } from '../shared/enums/fake-payment-outcome.enum.js
 import { PaymentProviderKind } from '../shared/enums/payment-provider-kind.enum.js';
 
 /**
- * Configuración de billing. Los días de prueba y de gracia son obligatorios y sin valor por defecto: son una
- * decisión comercial de quien usa la plantilla (el entorno local usa 14 y 7).
+ * Billing configuration. Trial and grace days are required and have no default: they are a
+ * business decision of whoever uses the template (the local environment uses 14 and 7).
  */
 export const billingConfigSchema = serviceConfigSchema.extend({
   ...internalHttpConfigSchema.shape,

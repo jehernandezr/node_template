@@ -20,25 +20,25 @@ import type { ResilienceOverrides } from './resilience-overrides.js';
 import type { ResiliencePolicyConfig } from './resilience-policy-config.js';
 
 /**
- * Guarda las políticas por nombre, con sus ajustes mezclados, y los breakers y
- * bulkheads de cada dependencia. Un nombre sin base puede llegar con ajustes
- * parciales antes que su `register`; quedan pendientes hasta entonces.
+ * Stores the policies by name, with their overrides merged, and the breakers and
+ * bulkheads of each dependency. A name without a base can arrive with partial
+ * overrides before its `register`; they stay pending until then.
  */
 export class PolicyRegistry {
-  /** Configuración base con la que se registró cada política. */
+  /** Base configuration each policy was registered with. */
   private readonly bases = new Map<string, ResiliencePolicyConfig>();
-  /** Configuración efectiva, ya mezclada y validada. */
+  /** Effective configuration, already merged and validated. */
   private readonly configs = new Map<string, ResiliencePolicyConfig>();
-  /** Ajustes que esperan a que se registre su política base. */
+  /** Overrides waiting for their base policy to be registered. */
   private readonly pending = new Map<string, Partial<ResiliencePolicyConfig>>();
   private readonly entries = new Map<string, Map<string, DependencyEntry>>();
 
   /**
-   * @param clock Reloj del breaker y de los plazos.
-   * @param events Bus al que se publican los eventos de cada dependencia.
-   * @param overrides Ajustes por nombre sobre las políticas base.
-   * @param classifier Decide qué errores son transitorios cuando la política no lo dice.
-   * @throws InvalidPolicyError si una clave o una política no es válida.
+   * @param clock Clock of the breaker and the deadlines.
+   * @param events Bus to which each dependency's events are published.
+   * @param overrides Overrides by name over the base policies.
+   * @param classifier Decides which errors are transient when the policy does not say.
+   * @throws InvalidPolicyError if a key or a policy is not valid.
    */
   constructor(
     private readonly clock: Clock,
@@ -69,8 +69,8 @@ export class PolicyRegistry {
   }
 
   /**
-   * Registra la política de un servicio. Registrar la misma referencia otra
-   * vez no hace nada; otra configuración para el mismo nombre falla.
+   * Registers a service's policy. Registering the same reference again
+   * does nothing; a different configuration for the same name fails.
    * @throws InvalidPolicyError
    */
   register(name: PolicyName, config: ResiliencePolicyConfig): void {
@@ -88,7 +88,7 @@ export class PolicyRegistry {
     this.pending.delete(name.value);
   }
 
-  /** @throws UnknownPolicyError si no hay ninguna política con ese nombre. */
+  /** @throws UnknownPolicyError if there is no policy with that name. */
   config(name: PolicyName): ResiliencePolicyConfig {
     const config = this.configs.get(name.value);
     if (config === undefined) {
@@ -97,7 +97,7 @@ export class PolicyRegistry {
     return config;
   }
 
-  /** Breaker y bulkhead de la dependencia, creados la primera vez. */
+  /** Breaker and bulkhead of the dependency, created the first time. */
   dependency(name: PolicyName, dependencyKey: string): DependencyEntry {
     let byDependency = this.entries.get(name.value);
     if (byDependency === undefined) {
@@ -153,9 +153,9 @@ export class PolicyRegistry {
             consecutiveFailures: breakerConfig.consecutiveFailures,
             halfOpenAfterMs: breakerConfig.halfOpenAfterMs,
             clock: this.clock,
-            // Los timeouts de intento cuentan como falla. Los errores no
-            // transitorios, las cancelaciones y un plazo agotado del llamador
-            // no abren el circuito.
+            // Attempt timeouts count as a failure. Non-transient errors,
+            // cancellations and an exhausted caller deadline
+            // do not open the circuit.
             counts: (error) =>
               error instanceof ResilienceTimeoutError
                 ? error.scope === TimeoutScope.Attempt

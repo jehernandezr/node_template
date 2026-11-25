@@ -9,12 +9,12 @@ export const SessionRevokedEvent = defineEvent({
   type: IdentityEvent.SessionRevoked,
   payload: SessionRevokedPayloadSchema,
   description:
-    'Se revocó una sesión. El gateway de tiempo real cierra sus conexiones.',
+    'A session was revoked. The realtime gateway closes its connections.',
 });
 
 export const TokensRevokedEvent = defineEvent({
   type: IdentityEvent.TokensRevoked,
   payload: TokensRevokedPayloadSchema,
   description:
-    'Se revocaron los tokens de una sesión, un usuario o un tenant. Cada servicio actualiza su caché.',
+    'The tokens of a session, a user or a tenant were revoked. Each service updates its cache.',
 });

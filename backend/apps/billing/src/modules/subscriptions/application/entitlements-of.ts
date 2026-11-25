@@ -2,7 +2,7 @@ import type { Plan } from '../../plans/index.js';
 import type { Entitlements } from '../domain/entitlements.js';
 import type { Subscription } from '../domain/subscription.js';
 
-/** Las funcionalidades y cuotas que da una suscripción con su plan. Utilidad pura. */
+/** The features and quotas a subscription grants with its plan. Pure utility. */
 export class EntitlementsOf {
   static subscription(subscription: Subscription, plan: Plan): Entitlements {
     const state = plan.snapshot();

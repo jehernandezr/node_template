@@ -7,47 +7,47 @@ import type { PermanenceCheck } from './delivery-classifier.js';
 import type { ProcessedMessageStore } from './processed-message-store.js';
 import type { TenantVerifier } from './tenant-verifier.js';
 
-/** Dependencias y reglas del dispatcher. */
+/** Dependencies and rules of the dispatcher. */
 export interface MessageDispatcherOptions {
-  /** Nombre del consumidor, normalmente la cola. La llave de idempotencia es `(consumer, id)`. */
+  /** Consumer name, usually the queue. The idempotency key is `(consumer, id)`. */
   readonly consumer: string;
   readonly processed: ProcessedMessageStore;
-  /** Dice de qué tipo es un mensaje sin manejador: un evento se ignora, un comando va a la cola de errores. */
+  /** Tells the kind of a message without a handler: an event is ignored, a command goes to the dead-letter queue. */
   readonly topology?: Topology;
   /**
-   * Regla de permanencia de los errores que lanza un manejador. Por defecto,
-   * la del `FailureClassifier` (ver `DeliveryClassifier.disposition`).
+   * Permanence rule for the errors a handler throws. Defaults to
+   * the one of `FailureClassifier` (see `DeliveryClassifier.disposition`).
    */
   readonly isPermanent?: PermanenceCheck;
-  /** Envuelve el claim y el manejador, por ejemplo para abrir una transacción o un contexto de tenant. */
+  /** Wraps the claim and the handler, for example to open a transaction or a tenant context. */
   readonly runInContext?: (
     envelope: MessageEnvelope,
     fn: () => Promise<void>,
   ) => Promise<void>;
-  /** Fuente de la hora de los leases. Por defecto, el reloj del sistema. */
+  /** Time source for the leases. Defaults to the system clock. */
   readonly clock?: Clock;
   /**
-   * Lease mínimo del claim en milisegundos, entero positivo. Debe cubrir el
-   * visibility timeout de la cola. Por defecto, el visibility timeout de la
-   * cola del consumidor en `topology` o `ClaimGuard.DEFAULT_LEASE_MS`.
+   * Minimum claim lease in milliseconds, a positive integer. It must cover the
+   * queue visibility timeout. Defaults to the visibility timeout of the
+   * consumer queue in `topology` or `ClaimGuard.DEFAULT_LEASE_MS`.
    */
   readonly minLeaseMs?: number;
-  /** Margen extra sobre `minLeaseMs`. Por defecto, el de `ClaimRules`. */
+  /** Extra margin over `minLeaseMs`. Defaults to the one in `ClaimRules`. */
   readonly leaseMarginMs?: number;
-  /** Tenant que sirve este consumidor (cola de un solo tenant). Ver `DispatchOptions.expectedTenantId`. */
+  /** Tenant this consumer serves (single-tenant queue). See `DispatchOptions.expectedTenantId`. */
   readonly expectedTenantId?: string;
-  /** Verifica el tenant del sobre antes de correr el manejador. */
+  /** Verifies the envelope tenant before running the handler. */
   readonly verifyTenant?: TenantVerifier;
 }
 
-/** Colaboradores opcionales del dispatcher; sin ellos arma los de por defecto. */
+/** Optional collaborators of the dispatcher; without them it builds the default ones. */
 export interface MessageDispatcherParts {
-  /** Spans de consumidor. Por defecto, un `Tracing` propio sin SDK registrado (no-op). */
+  /** Consumer spans. Defaults to its own `Tracing` with no registered SDK (no-op). */
   readonly tracing?: Tracing;
-  /** Continúa la traza del `traceparent` del sobre. Por defecto, sobre `tracing`. */
+  /** Continues the trace of the envelope `traceparent`. Defaults to one over `tracing`. */
   readonly restorer?: TraceContextRestorer;
-  /** Fuente del jitter de la espera de reintento. Por defecto `SystemRandomSource`. */
+  /** Source of the retry wait jitter. Defaults to `SystemRandomSource`. */
   readonly random?: RandomSource;
-  /** Clasificador de fallas. Por defecto `FailureClassifier` sin reglas. */
+  /** Failure classifier. Defaults to `FailureClassifier` with no rules. */
   readonly failures?: FailureClassifier;
 }

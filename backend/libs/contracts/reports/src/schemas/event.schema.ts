@@ -13,22 +13,20 @@ import type {
 
 export const ReportTypeSchema = z
   .enum(ReportType)
-  .describe('Tipo de reporte.') satisfies z.ZodType<ReportType>;
+  .describe('Report type.') satisfies z.ZodType<ReportType>;
 
 export const ReportRunStatusSchema = z
   .enum(ReportRunStatus)
-  .describe(
-    'Estado de una ejecución de reporte.',
-  ) satisfies z.ZodType<ReportRunStatus>;
+  .describe('Status of a report run.') satisfies z.ZodType<ReportRunStatus>;
 
 export const ReportFormatSchema = z
   .enum(ReportFormat)
-  .describe('Formato de un reporte.') satisfies z.ZodType<ReportFormat>;
+  .describe('Format of a report.') satisfies z.ZodType<ReportFormat>;
 
 export const ReportGranularitySchema = z
   .enum(ReportGranularity)
   .describe(
-    'Granularidad temporal de un reporte.',
+    'Time granularity of a report.',
   ) satisfies z.ZodType<ReportGranularity>;
 
 export const RunCompletedPayloadSchema = z
@@ -40,12 +38,10 @@ export const RunCompletedPayloadSchema = z
     requestedBy: UserRefSchema,
     completedAt: TimestampSchema,
   })
-  .describe(
-    'Terminó una ejecución de reporte.',
-  ) satisfies z.ZodType<RunCompletedPayload>;
+  .describe('A report run finished.') satisfies z.ZodType<RunCompletedPayload>;
 
 export const ExecuteRunPayloadSchema = z
   .strictObject({ tenantId: IdSchema, runId: IdSchema })
   .describe(
-    'Retoma una ejecución de reporte en un worker.',
+    'Resumes a report run in a worker.',
   ) satisfies z.ZodType<ExecuteRunPayload>;

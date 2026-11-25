@@ -18,7 +18,7 @@ import type {
   CacheModuleOptions,
 } from './cache-module-options.js';
 
-/** Providers del módulo raíz del caché y los que exporta. */
+/** Providers of the cache root module and those it exports. */
 export class CacheProviders {
   static build(extras: CacheModuleExtras): Provider[] {
     return [

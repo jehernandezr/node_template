@@ -1,7 +1,7 @@
 import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import { PasskeysFacade } from '../../application/passkeys.facade.js';
 
-/** Passkeys en memoria: solo recuerda qué usuarios tienen alguna y a qué región se trasladaron. */
+/** In-memory passkeys: only remembers which users have any and which region they were moved to. */
 export class InMemoryPasskeysFacade extends PasskeysFacade {
   private readonly owners = new Set<string>();
   private readonly regions = new Map<string, string>();
@@ -26,7 +26,7 @@ export class InMemoryPasskeysFacade extends PasskeysFacade {
     this.regions.set(homeTenantId, region);
   }
 
-  /** La región a la que se apuntaron las credenciales de los usuarios de un tenant de origen. */
+  /** The region the credentials of the users of a home tenant were pointed to. */
   regionOfHomeTenant(homeTenantId: string): string | undefined {
     return this.regions.get(homeTenantId);
   }

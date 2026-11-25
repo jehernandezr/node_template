@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * `main.ts` y `instrumentation.ts` arrancan el proceso real y no se ejecutan en una prueba: aquí se lee su
- * texto para comprobar el orden que importa: la telemetría antes que cualquier otra cosa y el apagado ordenado.
+ * `main.ts` and `instrumentation.ts` start the real process and are not run in a test: here their
+ * text is read to check the order that matters: telemetry before anything else and graceful shutdown.
  */
 describe('process entry point', () => {
   const srcDir = join(__dirname, '..');

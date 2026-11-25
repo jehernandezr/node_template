@@ -11,7 +11,7 @@ import type { SubscriptionState } from '../domain/subscription.js';
 import type { CurrentSubscription } from './current-subscription.js';
 import { SubscriptionEvents } from './subscription-events.js';
 
-/** Cambia el plan de la suscripción del tenant, con prorrateo, y publica el cambio y los entitlements nuevos. */
+/** Changes the plan of the tenant's subscription, with proration, and publishes the change and the new entitlements. */
 @Injectable()
 export class ChangePlan {
   constructor(

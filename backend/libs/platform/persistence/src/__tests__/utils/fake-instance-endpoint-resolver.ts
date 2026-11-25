@@ -1,7 +1,7 @@
 import type { InstanceEndpoints } from '../../model/instance-endpoints.js';
 import { InstanceEndpointResolver } from '../../ports/instance-endpoint-resolver.js';
 
-/** Resuelve cualquier instancia a un primario con su mismo nombre como host, sin réplicas. Registra cada consulta. */
+/** Resolves any instance to a primary with its same name as host, without replicas. Records each query. */
 export class FakeInstanceEndpointResolver extends InstanceEndpointResolver {
   readonly resolved: string[] = [];
 

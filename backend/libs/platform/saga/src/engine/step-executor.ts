@@ -19,7 +19,7 @@ import type { SagaSettings } from './saga-settings.js';
 import type { StepCaller } from './step-caller.js';
 import { type StepAttempt, StepCallResult } from './step-attempt.js';
 
-/** Colaboradores de `StepExecutor`. */
+/** Collaborators of `StepExecutor`. */
 export interface StepExecutorDeps {
   readonly caller: StepCaller;
   readonly events: SagaEventPublisher;
@@ -29,22 +29,22 @@ export interface StepExecutorDeps {
 }
 
 /**
- * Ejecuta un intento hacia delante del paso actual y escribe su resultado.
- * Reglas (el `CallOutcome` de `@platform/primitives`):
- * - `success`: aplica la salida con `onSuccess` y avanza (`completeStep`).
- * - `business-error`: antes del pivote compensa desde el paso anterior; después, exige intervención.
- * - `transient-failure` y `uncertain`: suspende y reintenta con la misma llave y entrada hasta agotar la suspensión, y entonces exige intervención. Antes del pivote, un plazo de saga pasado compensa incluido el paso.
- * - `transient-failure` con un motivo de avance del paso (`progressOn`): repite sin gastar suspensiones.
- * - `protocol-violation`: antes del pivote compensa incluido el paso; después, exige intervención. Emite `SagaEventKind.ProtocolViolation`.
+ * Runs a forward attempt of the current step and writes its result.
+ * Rules (the `CallOutcome` from `@platform/primitives`):
+ * - `success`: applies the output with `onSuccess` and advances (`completeStep`).
+ * - `business-error`: before the pivot, compensates from the previous step; after it, requires intervention.
+ * - `transient-failure` and `uncertain`: suspends and retries with the same key and input until the suspension runs out, and then requires intervention. Before the pivot, a passed saga deadline compensates including the step.
+ * - `transient-failure` with a step progress reason (`progressOn`): repeats without spending suspensions.
+ * - `protocol-violation`: before the pivot, compensates including the step; after it, requires intervention. Emits `SagaEventKind.ProtocolViolation`.
  */
 export class StepExecutor {
   constructor(private readonly deps: StepExecutorDeps) {}
 
   /**
-   * Un intento del paso `instance.currentStep`. Si el plazo de la saga ya pasó
-   * y el paso es anterior al pivote, no despacha: empieza a compensar (incluye
-   * el paso si su entrada está `Dispatched` o `Uncertain`) con `DeadlineExceeded`.
-   * Devuelve la instancia escrita.
+   * One attempt of step `instance.currentStep`. If the saga deadline already passed
+   * and the step is before the pivot, it does not dispatch: it starts compensating (including
+   * the step if its entry is `Dispatched` or `Uncertain`) with `DeadlineExceeded`.
+   * Returns the written instance.
    */
   async run(
     run: SagaRun,
@@ -57,7 +57,7 @@ export class StepExecutor {
     const entry = steps.find(index, StepDirection.Forward);
     const before = this.deps.clock.now();
     if (index < compiled.pivotIndex && instance.deadlinePassed(before)) {
-      // Nada se despacha tras el plazo, pero un paso incierto aún debe deshacerse.
+      // Nothing is dispatched after the deadline, but an uncertain step must still be undone.
       const uncertain =
         entry?.status === StepStatus.Dispatched ||
         entry?.status === StepStatus.Uncertain;
@@ -83,8 +83,8 @@ export class StepExecutor {
     if (call.result === StepCallResult.Halted) {
       return call.instance;
     }
-    // El reloj se lee después de la llamada: un paso que agotó su plazo debe
-    // ver el plazo de la saga ya vencido y medir el backoff desde ese momento.
+    // The clock is read after the call: a step that used up its deadline must
+    // see the saga deadline already expired and measure the backoff from that moment.
     const now = this.deps.clock.now();
     return this.settle(run, compiled, steps, call.attempt, now);
   }
@@ -163,7 +163,7 @@ export class StepExecutor {
     }
   }
 
-  /** Aplica la salida al estado y avanza. Una salida que no es JSON es una violación de protocolo. */
+  /** Applies the output to the state and advances. An output that is not JSON is a protocol violation. */
   private async succeed(
     run: SagaRun,
     compiled: CompiledSaga<unknown>,
@@ -230,9 +230,9 @@ export class StepExecutor {
   }
 
   /**
-   * Un fallo que puede o no haber aplicado y se puede reintentar: suspende y
-   * reintenta con la misma llave, salvo que el plazo de la saga haya pasado
-   * antes del pivote, en cuyo caso el paso también se deshace.
+   * A failure that may or may not have applied and can be retried: suspends and
+   * retries with the same key, unless the saga deadline passed
+   * before the pivot, in which case the step is also undone.
    */
   private async retry(
     run: SagaRun,
@@ -276,9 +276,9 @@ export class StepExecutor {
   }
 
   /**
-   * Un paso cuyo participante rompió el protocolo: pudo aplicar su efecto y
-   * reintentar no lo arregla. Antes del pivote se deshace el saga incluido el
-   * paso; después, decide una persona. En ambos casos se emite una alerta.
+   * A step whose participant broke the protocol: it may have applied its effect and
+   * retrying does not fix it. Before the pivot the saga is undone including the
+   * step; after it, a person decides. In both cases an alert is emitted.
    */
   private async protocol(
     run: SagaRun,

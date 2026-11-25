@@ -11,7 +11,7 @@ import type {
 import { AuthProviders } from './auth.providers.js';
 import { AUTH_OPTIONS } from './auth.tokens.js';
 
-/** Opciones de `AuthModule.forRootAsync`, sin los adaptadores. */
+/** Options of `AuthModule.forRootAsync`, without the adapters. */
 export type AuthModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<AuthModuleOptions>;
 

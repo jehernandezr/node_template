@@ -13,7 +13,7 @@ import { DeliveryClassifier } from '../delivery-classifier.js';
 import { ErrorDisposition } from '../error-disposition.enum.js';
 import { DispatchOutcome } from '../dispatch-outcome.enum.js';
 
-/** Regla de prueba que clasifica cualquier error con la clase dada. */
+/** Test rule that classifies any error with the given class. */
 class KindRule extends FailureRule {
   constructor(private readonly kind: FailureKind) {
     super();
@@ -35,7 +35,7 @@ function classifierWith(
   return new DeliveryClassifier(failures, NO_RANDOM, isPermanent);
 }
 
-/** Error de prueba con la señal de reintento que pide la plataforma. */
+/** Test error with the retry signal the platform asks for. */
 function transient(message: string): Error {
   return Object.assign(new Error(message), { retryable: true });
 }
@@ -144,7 +144,7 @@ describe('DeliveryClassifier', () => {
   });
 
   it('asks for a retry with the exact backoff delay of the policy', () => {
-    // Segundo intento: techo 200 ms; con la aleatoriedad en 0.5 la espera es 100 ms.
+    // Second attempt: 200 ms ceiling; with randomness at 0.5 the wait is 100 ms.
     expect(
       classifierWith().failure(
         ID,

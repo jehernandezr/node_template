@@ -1,12 +1,12 @@
 import { NotificationType } from '../enums/notifications.enum.js';
 
-/** Límites de los campos de notifications. Todo texto y toda lista del contrato se acotan con uno de estos valores. */
+/** Field limits of notifications. Every text and every list in the contract is bounded by one of these values. */
 export const NotificationsLimits = {
   titleMaxLength: 200,
   bodyMaxLength: 1000,
-  /** Hora `HH:mm` de 24 horas del horario de silencio. */
+  /** 24-hour `HH:mm` time of the quiet hours. */
   quietTimePattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
-  /** Zona horaria IANA, por ejemplo `America/Bogota`. */
+  /** IANA time zone, for example `America/Bogota`. */
   timezoneMaxLength: 64,
   maxChannels: 3,
   maxTypes: 4,
@@ -16,8 +16,8 @@ export const NotificationsLimits = {
   localeMaxLength: 35,
 } as const;
 
-/** Reglas de entrega que no dependen de las preferencias del usuario. */
+/** Delivery rules that do not depend on user preferences. */
 export const NotificationPolicy = {
-  /** Tipos que ignoran las preferencias y el horario de silencio, y salen por todos los canales. */
+  /** Types that ignore preferences and quiet hours, and go out through every channel. */
   mandatoryTypes: [NotificationType.SecurityAlert],
 } as const;

@@ -9,7 +9,7 @@ import {
 } from '../domain/email-proof-store.js';
 import { UserRepository } from '../domain/user.repository.js';
 
-/** Confirma el email con el token del correo y activa la cuenta. */
+/** Confirms the email with the token from the email message and activates the account. */
 @Injectable()
 export class ConfirmEmailVerification implements UseCase<string, void> {
   constructor(

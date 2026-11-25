@@ -14,12 +14,12 @@ export const JwkSchema = z
     x: JwkFieldSchema,
     y: JwkFieldSchema,
   })
-  .describe('Clave pública del conjunto JWKS.') satisfies z.ZodType<Jwk>;
+  .describe('Public key of the JWKS set.') satisfies z.ZodType<Jwk>;
 
 export const JwksSchema = z
   .object({
     keys: z.array(JwkSchema).max(IdentityLimits.maxJwks),
   })
   .describe(
-    'Claves públicas vigentes para verificar access tokens.',
+    'Active public keys to verify access tokens.',
   ) satisfies z.ZodType<Jwks>;

@@ -5,11 +5,11 @@ import { UserRegisteredV1 } from './utils/index.js';
 class DecoratedConsumer {
   @Subscribe(UserRegisteredV1)
   handle(): void {
-    // Solo importa el decorador.
+    // Only the decorator matters.
   }
 
   plain(): void {
-    // Sin decorador a propósito.
+    // No decorator on purpose.
   }
 }
 

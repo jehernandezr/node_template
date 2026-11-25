@@ -1,4 +1,4 @@
-/** Proyección en el shard del usuario de una de sus membresías. */
+/** Projection, in the user's shard, of one of their memberships. */
 export interface UserTenant {
   readonly userId: string;
   readonly tenantId: string;

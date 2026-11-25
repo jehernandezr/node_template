@@ -1,4 +1,4 @@
-/** Qué hacer con una entrega fallida. */
+/** What to do with a failed delivery. */
 export enum ErrorDisposition {
   Retry = 'retry',
   DeadLetter = 'dead-letter',

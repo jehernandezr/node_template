@@ -53,28 +53,24 @@ import {
 export const SubscriptionStatusSchema = z
   .enum(SubscriptionStatus)
   .describe(
-    'Estado de una suscripción.',
+    'Status of a subscription.',
   ) satisfies z.ZodType<SubscriptionStatus>;
 
 export const InvoiceStatusSchema = z
   .enum(InvoiceStatus)
-  .describe('Estado de una factura.') satisfies z.ZodType<InvoiceStatus>;
+  .describe('Status of an invoice.') satisfies z.ZodType<InvoiceStatus>;
 
 export const InvoiceLineKindSchema = z
   .enum(InvoiceLineKind)
-  .describe(
-    'Tipo de línea de una factura.',
-  ) satisfies z.ZodType<InvoiceLineKind>;
+  .describe('Type of an invoice line.') satisfies z.ZodType<InvoiceLineKind>;
 
 export const PlanPeriodicitySchema = z
   .enum(PlanPeriodicity)
-  .describe(
-    'Periodicidad de cobro de un plan.',
-  ) satisfies z.ZodType<PlanPeriodicity>;
+  .describe('Billing interval of a plan.') satisfies z.ZodType<PlanPeriodicity>;
 
 export const CurrencySchema = z
   .enum(Currency)
-  .describe('Moneda en que se factura.') satisfies z.ZodType<Currency>;
+  .describe('Currency of the invoice.') satisfies z.ZodType<Currency>;
 
 export const PlanSchema = z
   .object({
@@ -86,12 +82,12 @@ export const PlanSchema = z
     features: z.array(PlanFeatureSchema).max(BillingLimits.maxFeaturesPerPlan),
   })
   .describe(
-    'Plan del catálogo con su precio y sus límites.',
+    'Catalog plan with its price and limits.',
   ) satisfies z.ZodType<Plan>;
 
 export const PlanCatalogSchema = z
   .object({ items: z.array(PlanSchema).max(BillingLimits.maxPlans) })
-  .describe('Catálogo de planes disponibles.') satisfies z.ZodType<PlanCatalog>;
+  .describe('Catalog of available plans.') satisfies z.ZodType<PlanCatalog>;
 
 export const SubscriptionSchema = z
   .object({
@@ -101,7 +97,7 @@ export const SubscriptionSchema = z
     period: BillingPeriodSchema,
   })
   .describe(
-    'Suscripción del tenant con su plan y el periodo vigente.',
+    'Tenant subscription with its plan and current period.',
   ) satisfies z.ZodType<Subscription>;
 
 export const QuotaUsageSchema = z
@@ -111,7 +107,7 @@ export const QuotaUsageSchema = z
     used: z.int().min(0),
   })
   .describe(
-    'Uso de una métrica frente a su límite.',
+    'Usage of a metric against its limit.',
   ) satisfies z.ZodType<QuotaUsage>;
 
 export const UsageOverviewSchema = z
@@ -119,7 +115,7 @@ export const UsageOverviewSchema = z
     items: z.array(QuotaUsageSchema).max(BillingLimits.maxQuotasPerPlan),
   })
   .describe(
-    'Uso del periodo vigente de cada métrica con cuota.',
+    'Current period usage of each metric with a quota.',
   ) satisfies z.ZodType<UsageOverview>;
 
 export const InvoiceLineSchema = z
@@ -131,7 +127,7 @@ export const InvoiceLineSchema = z
       .max(BillingLimits.invoiceDescriptionMaxLength),
     amount: MoneyAmountSchema,
   })
-  .describe('Línea de una factura.') satisfies z.ZodType<InvoiceLine>;
+  .describe('Invoice line.') satisfies z.ZodType<InvoiceLine>;
 
 export const InvoiceSchema = z
   .object({
@@ -143,7 +139,7 @@ export const InvoiceSchema = z
     lines: z.array(InvoiceLineSchema).max(BillingLimits.maxLinesPerInvoice),
     total: MoneyAmountSchema,
   })
-  .describe('Factura completa con sus líneas.') satisfies z.ZodType<Invoice>;
+  .describe('Full invoice with its lines.') satisfies z.ZodType<Invoice>;
 
 export const InvoiceSummarySchema = z
   .object({
@@ -155,24 +151,24 @@ export const InvoiceSummarySchema = z
     total: MoneyAmountSchema,
   })
   .describe(
-    'Factura sin líneas, para listados.',
+    'Invoice without lines, for listings.',
   ) satisfies z.ZodType<InvoiceSummary>;
 
 export const InvoicePageSchema = pageOf(
   InvoiceSummarySchema,
-  'Página de facturas, más nuevas primero.',
+  'Page of invoices, newest first.',
 ) satisfies z.ZodType<InvoicePage>;
 
 export const InvoiceChangeSchema = InvoiceSummarySchema.extend({
   issuedAt: TimestampSchema,
   paidAt: TimestampSchema.nullable(),
 }).describe(
-  'Factura con sus fechas de emisión y de pago, para sincronizar otro servicio.',
+  'Invoice with its issue and payment dates, to sync another service.',
 ) satisfies z.ZodType<InvoiceChange>;
 
 export const InvoiceChangePageSchema = pageOf(
   InvoiceChangeSchema,
-  'Página de facturas de un tenant, más nuevas primero.',
+  'Page of a tenant invoices, newest first.',
 ) satisfies z.ZodType<InvoiceChangePage>;
 
 export const ListInvoiceChangesInputSchema = z
@@ -182,13 +178,13 @@ export const ListInvoiceChangesInputSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Entrada para paginar las facturas de un tenant.',
+    'Input to page the invoices of a tenant.',
   ) satisfies z.ZodType<ListInvoiceChangesInput>;
 
 export const ChangePlanRequestSchema = z
   .strictObject({ planId: IdSchema })
   .describe(
-    'Plan al que cambia la suscripción.',
+    'Plan the subscription changes to.',
   ) satisfies z.ZodType<ChangePlanRequest>;
 
 export const ListInvoicesRequestSchema = z
@@ -198,17 +194,17 @@ export const ListInvoicesRequestSchema = z
     after: CursorSchema.optional(),
   })
   .describe(
-    'Filtros y paginación del listado de facturas.',
+    'Filters and pagination of the invoice listing.',
   ) satisfies z.ZodType<ListInvoicesRequest>;
 
 export const GetInvoiceRequestSchema = z
   .strictObject({ invoiceId: IdSchema })
-  .describe('Factura a consultar.') satisfies z.ZodType<GetInvoiceRequest>;
+  .describe('Invoice to query.') satisfies z.ZodType<GetInvoiceRequest>;
 
 export const OpenBillingAccountInputSchema = z
   .strictObject({ tenantId: IdSchema, ownerUserId: IdSchema })
   .describe(
-    'Abre la cuenta de facturación de un tenant nuevo.',
+    'Opens the billing account of a new tenant.',
   ) satisfies z.ZodType<OpenBillingAccountInput>;
 
 export const BillingAccountResultSchema = z
@@ -218,25 +214,25 @@ export const BillingAccountResultSchema = z
     status: SubscriptionStatusSchema,
   })
   .describe(
-    'Cuenta de facturación abierta con su suscripción.',
+    'Billing account opened with its subscription.',
   ) satisfies z.ZodType<BillingAccountResult>;
 
 export const CloseBillingAccountInputSchema = z
   .strictObject({ tenantId: IdSchema })
   .describe(
-    'Cierra la cuenta de facturación de un tenant.',
+    'Closes the billing account of a tenant.',
   ) satisfies z.ZodType<CloseBillingAccountInput>;
 
 export const BillingAccountClosedSchema = z
   .object({ tenantId: IdSchema })
   .describe(
-    'Cuenta de facturación cerrada.',
+    'Billing account closed.',
   ) satisfies z.ZodType<BillingAccountClosed>;
 
 export const GetEntitlementsInputSchema = z
   .strictObject({ tenantId: IdSchema })
   .describe(
-    'Tenant cuyas funcionalidades y cuotas se consultan.',
+    'Tenant whose features and quotas are queried.',
   ) satisfies z.ZodType<GetEntitlementsInput>;
 
 export const EntitlementsSchema = z
@@ -247,7 +243,7 @@ export const EntitlementsSchema = z
     quotas: z.array(QuotaLimitSchema).max(BillingLimits.maxQuotasPerPlan),
   })
   .describe(
-    'Funcionalidades y cuotas vigentes de un tenant.',
+    'Active features and quotas of a tenant.',
   ) satisfies z.ZodType<Entitlements>;
 
 export const CheckQuotaInputSchema = z
@@ -257,7 +253,7 @@ export const CheckQuotaInputSchema = z
     requested: z.int().min(1).max(BillingLimits.maxUsageQuantity).optional(),
   })
   .describe(
-    'Consulta si un tenant puede consumir una cantidad de una métrica.',
+    'Checks whether a tenant can consume an amount of a metric.',
   ) satisfies z.ZodType<CheckQuotaInput>;
 
 export const QuotaCheckSchema = z
@@ -267,9 +263,7 @@ export const QuotaCheckSchema = z
     used: z.int().min(0),
     allowed: z.boolean(),
   })
-  .describe(
-    'Resultado de consultar una cuota.',
-  ) satisfies z.ZodType<QuotaCheck>;
+  .describe('Result of a quota check.') satisfies z.ZodType<QuotaCheck>;
 
 export const MarkInvoicePaidInputSchema = z
   .strictObject({
@@ -281,7 +275,7 @@ export const MarkInvoicePaidInputSchema = z
     attemptId: IdSchema.optional(),
   })
   .describe(
-    'Marca una factura como pagada con la referencia del proveedor.',
+    'Marks an invoice as paid with the provider reference.',
   ) satisfies z.ZodType<MarkInvoicePaidInput>;
 
 export const MarkInvoiceFailedInputSchema = z
@@ -297,11 +291,11 @@ export const MarkInvoiceFailedInputSchema = z
     attemptId: IdSchema.optional(),
   })
   .describe(
-    'Marca una factura como fallida después de un cobro rechazado.',
+    'Marks an invoice as failed after a declined charge.',
   ) satisfies z.ZodType<MarkInvoiceFailedInput>;
 
 export const InvoiceStateResultSchema = z
   .object({ invoiceId: IdSchema, status: InvoiceStatusSchema })
   .describe(
-    'Estado de una factura después de la operación.',
+    'Invoice status after the operation.',
   ) satisfies z.ZodType<InvoiceStateResult>;

@@ -5,7 +5,7 @@ import { DataSourceFactory } from '../../ports/data-source-factory.js';
 import type { EntityClass } from '../../metadata/entity-metadata.js';
 import { StubDataSource } from './stub-data-source.js';
 
-/** `StubDataSource` cuyo `initialize` rechaza: simula una base caída al primer uso. */
+/** `StubDataSource` whose `initialize` rejects: simulates a database that is down on first use. */
 class FailingStubDataSource extends StubDataSource {
   override async initialize(): Promise<this> {
     this.initializeCalls += 1;
@@ -14,8 +14,8 @@ class FailingStubDataSource extends StubDataSource {
 }
 
 /**
- * Crea un `StubDataSource` por destino, con las entidades dadas, y guarda lo creado. `failNext` hace que
- * los próximos `n` creados fallen al inicializar.
+ * Creates a `StubDataSource` per target, with the given entities, and stores what was created. `failNext` makes
+ * the next `n` created ones fail on initialization.
  */
 export class FakeDataSourceFactory extends DataSourceFactory {
   readonly created: StubDataSource[] = [];

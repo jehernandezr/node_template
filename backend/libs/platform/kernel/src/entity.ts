@@ -1,6 +1,6 @@
 import type { Id } from './ids/id.js';
 
-/** Objeto con identidad: dos entidades son iguales si tienen el mismo `id`. */
+/** Object with identity: two entities are equal if they have the same `id`. */
 export abstract class Entity<TId extends Id = Id> {
   protected constructor(readonly id: TId) {}
 

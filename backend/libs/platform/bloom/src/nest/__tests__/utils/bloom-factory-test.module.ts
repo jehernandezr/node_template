@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { CountingBloomFilterFactory } from './counting-bloom-filter-factory.js';
 
-/** Fábrica de prueba disponible de forma global, para que `BloomModule.forRoot` la inyecte por clase. */
+/** Test factory available globally, so `BloomModule.forRoot` injects it by class. */
 @Global()
 @Module({
   providers: [CountingBloomFilterFactory],

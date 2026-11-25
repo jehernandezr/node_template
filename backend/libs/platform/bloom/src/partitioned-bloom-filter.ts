@@ -9,19 +9,19 @@ import { InvalidParametersError } from './errors/invalid-parameters.error.js';
 import { RebuildableBloomFilter } from './rebuildable-bloom-filter.js';
 
 /**
- * Un filtro lógico repartido en varios filtros según un hash del ítem. Cada ítem vive en una sola
- * partición, así que la tasa de falsos positivos del conjunto es la de cada partición. Sirve cuando un
- * conjunto no cabe en un solo filtro: la lista de Have I Been Pwned no cabe en un filtro de 2^32 bits al
- * 1 %, y el módulo `BF.*` de Valkey limita la memoria de cada filtro (`bf.bloom-memory-usage-limit`, 128 MiB
- * por defecto).
+ * A logical filter split into several filters by a hash of the item. Each item lives in a single
+ * partition, so the false positive rate of the whole is that of each partition. Useful when a
+ * set does not fit in a single filter: the Have I Been Pwned list does not fit in a 2^32-bit filter at
+ * 1 %, and Valkey's `BF.*` module limits each filter's memory (`bf.bloom-memory-usage-limit`, 128 MiB
+ * by default).
  *
- * Dimensiona cada partición para `expectedItems / partitions` ítems. Reconstruye cada partición por separado,
- * dándole solo los ítems para los que `BloomMath.partitionOf` devuelve su índice.
+ * Sizes each partition for `expectedItems / partitions` items. Rebuilds each partition separately,
+ * giving it only the items for which `BloomMath.partitionOf` returns its index.
  */
 export class PartitionedBloomFilter extends AsyncBloomFilter {
   private readonly partitions: readonly AsyncBloomFilter[];
 
-  /** @throws InvalidParametersError sin particiones o con más de `BloomSizing.MAX_PARTITIONS`. */
+  /** @throws InvalidParametersError with no partitions or with more than `BloomSizing.MAX_PARTITIONS`. */
   constructor(partitions: readonly AsyncBloomFilter[]) {
     super();
     if (
@@ -35,7 +35,7 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
     this.partitions = [...partitions];
   }
 
-  /** Número de particiones. */
+  /** Number of partitions. */
   get size(): number {
     return this.partitions.length;
   }
@@ -67,9 +67,9 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
   }
 
   /**
-   * Reconstruye cada partición desde una fuente nueva. Antes comprueba que todas se puedan reconstruir y, si
-   * no, lanza `InvalidParametersError` sin tocar ninguna. Luego, en secuencia, cada partición lee la fuente
-   * desde el principio y se queda solo con sus ítems, así no se guarda todo el conjunto en memoria.
+   * Rebuilds each partition from a new source. First checks that all of them can be rebuilt and, if
+   * not, throws `InvalidParametersError` without touching any. Then, in sequence, each partition reads the source
+   * from the start and keeps only its items, so the whole set is never held in memory.
    */
   async rebuildFrom(factory: BloomRebuildSourceFactory): Promise<void> {
     const rebuildable = this.partitions.filter(RebuildableBloomFilter.is);
@@ -87,7 +87,7 @@ export class PartitionedBloomFilter extends AsyncBloomFilter {
     return this.partitions[BloomMath.partitionOf(item, this.partitions.length)];
   }
 
-  /** Lotes de la fuente que pertenecen a la partición `index`. Los lotes vacíos no se entregan. */
+  /** Returns the source batches that belong to partition `index`. Empty batches are not yielded. */
   private async *itemsOf(
     factory: BloomRebuildSourceFactory,
     index: number,

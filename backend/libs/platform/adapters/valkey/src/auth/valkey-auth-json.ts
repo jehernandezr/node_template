@@ -2,9 +2,9 @@ import type { z } from 'zod';
 import { ValkeyCommand } from '../valkey-command.enum.js';
 import { ValkeyUnexpectedReplyError } from '../valkey-unexpected-reply.error.js';
 
-/** Lee y escribe los valores JSON de `auth:*` con la forma que fija `AuthStateSchemas`. */
+/** Reads and writes the JSON values of `auth:*` with the shape set by `AuthStateSchemas`. */
 export class ValkeyAuthJson {
-  /** @throws ValkeyUnexpectedReplyError si el texto no es JSON o no cumple el esquema. */
+  /** @throws ValkeyUnexpectedReplyError if the text is not JSON or does not match the schema. */
   static parse<T>(
     command: ValkeyCommand,
     text: string,

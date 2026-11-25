@@ -1,17 +1,17 @@
 import type { UserRef } from '@contracts/platform';
 import { ActorGuards, AuthenticationError, type Actor } from '@platform/auth';
 
-/** Quién pide un reporte y en qué tenant. */
+/** Who requests a report and in which tenant. */
 export interface ActingMember {
   readonly tenantId: string;
   readonly ref: UserRef;
-  /** Las service accounts no tienen funcionalidades de plan propias en su acceso. */
+  /** Service accounts have no plan features of their own in their access. */
   readonly person: boolean;
 }
 
-/** El tenant activo y quien actúa: una persona o una service account con su propio id. */
+/** The active tenant and who acts: a person or a service account with its own id. */
 export class ActingMembers {
-  /** @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` si el actor no es un usuario ni una service account. */
+  /** @throws AuthenticationError `PLATFORM.AUTH.UNAUTHENTICATED` if the actor is neither a user nor a service account. */
   static of(actor: Actor | undefined): ActingMember {
     if (actor !== undefined && ActorGuards.isUser(actor)) {
       return {

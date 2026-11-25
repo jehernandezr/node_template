@@ -8,19 +8,19 @@ import type { AwsCredentialsProvider } from '../aws-credentials-provider.js';
 import { SigV4Signer } from './sigv4-signer.js';
 import type { SigV4SignerSettings } from './sigv4-signer-settings.js';
 
-/** Lo que hace falta para armar cualquiera de los firmadores. */
+/** What is needed to build any of the signers. */
 export interface InternalRequestSignerDependencies {
-  /** Secreto del `HmacSigner`; solo se usa con `InternalApiSignerKind.Hmac`. */
+  /** Secret of the `HmacSigner`; only used with `InternalApiSignerKind.Hmac`. */
   readonly hmacSecret: string;
   readonly clock: Clock;
-  /** Credenciales del `SigV4Signer`; solo se usan con `InternalApiSignerKind.SigV4`. */
+  /** Credentials of the `SigV4Signer`; only used with `InternalApiSignerKind.SigV4`. */
   readonly credentials: AwsCredentialsProvider;
   readonly sigv4: SigV4SignerSettings;
 }
 
 /**
- * Elige el firmador de llamadas internas según `INTERNAL_API_SIGNER`. Vive en
- * el adaptador de AWS porque es el único que conoce los dos firmadores.
+ * Chooses the internal call signer according to `INTERNAL_API_SIGNER`. Lives in
+ * the AWS adapter because it is the only one that knows both signers.
  */
 export class InternalRequestSignerSelector {
   select(

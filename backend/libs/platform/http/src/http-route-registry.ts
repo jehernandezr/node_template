@@ -1,13 +1,13 @@
 import { AccessKind, type ServiceContract } from '@contracts/platform';
 import type { RegisteredEndpoint } from './registered-endpoint.js';
 
-/** Rutas atendidas por un handler, indexadas por método y path y por id del contrato. */
+/** Routes served by a handler, indexed by method and path and by contract id. */
 export class HttpRouteRegistry {
   private readonly byRoute = new Map<string, RegisteredEndpoint>();
   private readonly byId = new Map<string, RegisteredEndpoint>();
 
   /**
-   * @throws Error si el método y path ya están registrados, o si una ruta pública declara `auth`.
+   * @throws Error if the method and path are already registered, or if a public route declares `auth`.
    */
   register(entry: RegisteredEndpoint): void {
     const key = `${entry.route.method} ${entry.route.path}`;
@@ -26,7 +26,7 @@ export class HttpRouteRegistry {
     this.byId.set(entry.route.id, entry);
   }
 
-  /** @throws Error que lista las rutas del contrato sin handler y los handlers que el contrato no tiene. */
+  /** @throws Error listing the contract routes without a handler and the handlers the contract does not have. */
   assertComplete(contract: ServiceContract): void {
     const contractIds = new Set(
       Object.values(contract.routes).map((route) => route.id),

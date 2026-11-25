@@ -21,7 +21,7 @@ const TENANT_B = ShardedTestDatabase.TENANT_B;
 const NEIGHBOUR_OF_A = '0193f1c2-0000-7000-8000-0000000000c3';
 const WAIT_LIMIT_MS = 10_000;
 
-/** Una promesa que el test resuelve cuando quiere. */
+/** A promise that the test resolves whenever it wants. */
 class Gate {
   open: () => void = () => undefined;
   readonly opened = new Promise<void>((resolve) => {
@@ -29,14 +29,14 @@ class Gate {
   });
 }
 
-/** Una barrera cuyo `leave` falla, como una conexión que se corta al soltar el candado. */
+/** A barrier whose `leave` fails, like a connection that drops when releasing the lock. */
 class UnreleasableFence extends TenantWriteFence {
   override leave(): Promise<void> {
     return Promise.reject(new Error('connection lost'));
   }
 }
 
-/** Espera hasta que alguien espere un candado consultivo del shard. */
+/** Waits until someone is waiting on a shard advisory lock. */
 async function untilSomeoneWaitsForALock(shard: DataSource): Promise<void> {
   const deadline = Date.now() + WAIT_LIMIT_MS;
   while (Date.now() < deadline) {
@@ -71,7 +71,7 @@ runtime.describeIfAvailable('TenantWriteFence over PostgreSQL', () => {
       instance: ShardedTestDatabase.INSTANCE,
     });
 
-  /** Abre una transacción de escritura del tenant que queda dentro hasta abrir `held`; resuelve `entered` al entrar. */
+  /** Opens a tenant write transaction that stays inside until `held` opens; resolves `entered` on entry. */
   const holdWrite = (
     held: Gate,
     entered: Gate,

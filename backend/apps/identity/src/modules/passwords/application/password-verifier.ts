@@ -6,8 +6,8 @@ import { PasswordCredentialRepository } from '../domain/password-credential.repo
 import { PasswordHasher } from '../domain/password-hasher.js';
 
 /**
- * Verifica contraseñas. Sin usuario compara contra un hash fijo, así que un email inexistente cuesta lo
- * mismo que uno real. Un hash con parámetros viejos se rehace después de una verificación correcta.
+ * Verifies passwords. Without a user it compares against a fixed hash, so a nonexistent email costs the
+ * same as a real one. A hash with old parameters is redone after a successful verification.
  */
 @Injectable()
 export class PasswordVerifier {
@@ -44,7 +44,7 @@ export class PasswordVerifier {
     });
   }
 
-  /** Guarda la contraseña nueva en la transacción y el shard que ya abrió quien llama. */
+  /** Saves the new password in the transaction and shard the caller already opened. */
   async store(ref: UserRef, password: string): Promise<void> {
     const existing = await this.credentials.find(ref.userId);
     await this.credentials.save({

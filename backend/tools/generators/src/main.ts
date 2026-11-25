@@ -14,7 +14,7 @@ import { SkeletonVerifier } from './skeleton-verifier.js';
 import { TemplateRenderer } from './template-renderer.js';
 import { TemplateSource } from './template-source.js';
 
-/** Punto de entrada de la línea de comandos: arma las piezas sobre el disco y corre el subcomando. */
+/** Command line entry point: assembles the pieces over the disk and runs the subcommand. */
 async function main(args: readonly string[]): Promise<GeneratorExitCode> {
   const files = new NodeFileSystem();
   const templates = new TemplateSource(

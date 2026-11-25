@@ -4,7 +4,7 @@ import {
   UuidV7IdGenerator,
 } from '@platform/kernel';
 
-/** Ids UUIDv7 nuevos para las entradas de las pruebas, como los que genera la plataforma. */
+/** New UUIDv7 ids for test inputs, like the ones the platform generates. */
 export class TestIds {
   private static readonly generator = new UuidV7IdGenerator(
     new SystemClock(),

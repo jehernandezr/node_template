@@ -1,10 +1,10 @@
-/** Opciones de `ShardRouter.invalidate`. */
+/** Options of `ShardRouter.invalidate`. */
 export interface InvalidateOptions {
   /**
-   * Versión del placement recién confirmada en el directorio. Con ella la
-   * lápida rechaza toda versión anterior y aún deja cachear esta. Sin ella la
-   * lápida se pone por encima de la versión más alta que este router ve, o
-   * rechaza toda escritura hasta expirar cuando no conoce ninguna.
+   * Placement version just committed in the directory. With it, the
+   * tombstone rejects every earlier version and still lets this one be cached. Without it, the
+   * tombstone goes above the highest version this router sees, or
+   * rejects every write until it expires when it knows none.
    */
   readonly version?: number;
 }

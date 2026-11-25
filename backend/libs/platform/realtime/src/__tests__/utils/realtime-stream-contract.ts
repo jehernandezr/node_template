@@ -1,13 +1,13 @@
 import { Eventually } from '@platform/messaging/test-utils';
 import type { RealtimeStream } from '../../stream/realtime-stream.js';
 
-/** Lo que cambia entre adaptadores en el contrato de `RealtimeStream`. */
+/** What changes between adapters in the `RealtimeStream` contract. */
 export interface RealtimeStreamContractOptions {
-  /** Un id con la forma de los del adaptador pero posterior a cualquiera que pueda dar en la prueba. */
+  /** An id with the shape of the adapter's ids but later than any it can produce in the test. */
   readonly futureId: string;
 }
 
-/** Lo que todo `RealtimeStream` cumple. Cada prueba usa un canal propio, así la fábrica puede compartir estado. */
+/** What every `RealtimeStream` fulfills. Each test uses its own channel, so the factory can share state. */
 export function runRealtimeStreamContract(
   name: string,
   factory: () => RealtimeStream,

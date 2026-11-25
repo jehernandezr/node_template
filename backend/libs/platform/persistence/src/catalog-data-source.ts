@@ -4,7 +4,7 @@ import { DatabaseKind } from './model/database-kind.enum.js';
 import type { DataSourceFactory } from './ports/data-source-factory.js';
 import type { InstanceEndpointResolver } from './ports/instance-endpoint-resolver.js';
 
-/** El `DataSource` del catálogo global (directorio y tablas de referencia). Se crea al primer uso. */
+/** The `DataSource` of the global catalog (directory and reference tables). Created on first use. */
 export class CatalogDataSource {
   private pending: Promise<DataSource> | undefined;
   private created: DataSource | undefined;
@@ -18,7 +18,7 @@ export class CatalogDataSource {
     >,
   ) {}
 
-  /** `DataSource` inicializado del catálogo. */
+  /** Returns the initialized catalog `DataSource`. */
   get(): Promise<DataSource> {
     if (this.pending !== undefined) {
       return this.pending;
@@ -32,7 +32,7 @@ export class CatalogDataSource {
       this.endpoints.resolve(this.settings.DB_CATALOG_INSTANCE),
     );
     this.created = dataSource;
-    // Un fallo deja el campo libre para que la siguiente llamada reintente.
+    // A failure leaves the field empty so the next call retries.
     this.pending = dataSource.initialize().catch((error: unknown) => {
       this.pending = undefined;
       this.created = undefined;

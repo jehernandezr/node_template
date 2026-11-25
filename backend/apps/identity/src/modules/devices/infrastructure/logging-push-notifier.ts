@@ -3,8 +3,8 @@ import { LoggerPort } from '@platform/observability';
 import { PushNotifier } from '../domain/push-notifier.js';
 
 /**
- * Push de prueba: deja constancia en el log sin enviar nada. La app consulta sus aprobaciones al abrirse;
- * el push real llega con `notifications`.
+ * Test push: records it in the log without sending anything. The app checks its approvals when it opens;
+ * the real push comes with `notifications`.
  */
 @Injectable()
 export class LoggingPushNotifier extends PushNotifier {

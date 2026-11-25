@@ -1,29 +1,29 @@
 output "provider_arn" {
-  description = "ARN del proveedor OIDC de GitHub que usan los roles."
+  description = "ARN of the GitHub OIDC provider used by the roles."
   value       = local.provider_arn
 }
 
 output "deploy_role_arn" {
-  description = "Rol de terraform plan y apply, para role-to-assume en deploy.yml."
+  description = "Role for terraform plan and apply, for role-to-assume in deploy.yml."
   value       = aws_iam_role.deploy.arn
 }
 
 output "publish_role_arn" {
-  description = "Rol que sube imágenes a ECR y artefactos al bucket de artefactos."
+  description = "Role that pushes images to ECR and artifacts to the artifacts bucket."
   value       = aws_iam_role.publish.arn
 }
 
 output "web_role_arn" {
-  description = "Rol que publica la web en su bucket e invalida CloudFront."
+  description = "Role that publishes the web app to its bucket and invalidates CloudFront."
   value       = aws_iam_role.web.arn
 }
 
 output "artifacts_bucket" {
-  description = "Bucket de los bundles de Lambda y los compilados móviles."
+  description = "Bucket for Lambda bundles and mobile builds."
   value       = aws_s3_bucket.artifacts.bucket
 }
 
 output "ecr_repository_prefix" {
-  description = "Prefijo de los repositorios ECR de los servicios: <prefijo>/<servicio>."
+  description = "Prefix of the services' ECR repositories: <prefix>/<service>."
   value       = var.name_prefix
 }

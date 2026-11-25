@@ -55,7 +55,7 @@ describe('identity internal operations', () => {
       (op) => op.id === IdentityOperation.DiscardTenant,
     );
     expect(discard?.compensatedBy).toBe(Compensation.None);
-    expect(discard?.compensationReason).toMatch(/aprovisionamiento/);
+    expect(discard?.compensationReason).toMatch(/being provisioned/);
   });
 
   it('keeps the read operations free of compensation', () => {

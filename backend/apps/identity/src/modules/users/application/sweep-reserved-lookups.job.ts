@@ -9,7 +9,7 @@ import { IdentityDefaults } from '../../../shared/constants/identity-defaults.co
 import { IdentityJob } from '../../../shared/enums/identity-job.enum.js';
 import { UserDirectory } from '../domain/user-directory.js';
 
-/** Borra las reservas de `identity_lookup` que quedaron sin usuario: el registro falló entre el catálogo y el shard. */
+/** Deletes the `identity_lookup` reservations left without a user: registration failed between the catalog and the shard. */
 @Injectable()
 export class SweepReservedLookupsJob extends ScheduledJob {
   private static readonly EVERY_MS = 15 * 60_000;

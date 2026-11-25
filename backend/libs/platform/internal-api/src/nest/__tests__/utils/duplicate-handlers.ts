@@ -4,7 +4,7 @@ import { InternalHandler } from '../../internal-handler.decorator.js';
 import type { HandlerResult } from '../../../server/handler-result.js';
 import { ExplorerOperations } from './explorer-operations.js';
 
-/** Provider con dos métodos que atienden la misma operación. */
+/** Provider with two methods that handle the same operation. */
 @Injectable()
 export class DuplicateHandlers {
   @InternalHandler(ExplorerOperations.Count)

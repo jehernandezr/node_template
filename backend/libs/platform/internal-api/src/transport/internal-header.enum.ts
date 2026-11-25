@@ -1,16 +1,16 @@
-/** Cabeceras HTTP del protocolo entre servicios. Siempre en minúscula, como las entrega Node. */
+/** HTTP headers of the service-to-service protocol. Always lowercase, as Node delivers them. */
 export enum InternalHeader {
   Traceparent = 'traceparent',
   TenantId = 'x-tenant-id',
   ActorId = 'x-actor-id',
   IdempotencyKey = 'x-idempotency-key',
-  /** `CallMeta.deadline`, en milisegundos epoch. */
+  /** `CallMeta.deadline`, in epoch milliseconds. */
   Deadline = 'x-call-deadline',
   /** `CallMeta.timeoutMs`. */
   TimeoutMs = 'x-call-timeout-ms',
-  /** Instante en que se firmó la llamada, en milisegundos epoch. */
+  /** Instant the call was signed, in epoch milliseconds. */
   Timestamp = 'x-internal-timestamp',
-  /** Firma HMAC-SHA256 en hexadecimal. */
+  /** HMAC-SHA256 signature in hexadecimal. */
   Signature = 'x-internal-signature',
   ContentType = 'content-type',
   RetryAfter = 'retry-after',

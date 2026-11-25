@@ -11,7 +11,7 @@ import { FakeResilience } from './fake-resilience.js';
 import { FakeTransactionManager } from './fake-transaction-manager.js';
 import { RecordingCacheErrorReporter } from './recording-cache-error-reporter.js';
 
-/** Dobles de `CacheAside` con reloj fijo, tokens secuenciales y jitter sin azar. */
+/** `CacheAside` test doubles with a fixed clock, sequential tokens and non-random jitter. */
 export class AsideHarness {
   readonly clock = new FixedClock();
   readonly cache = new FakeCachePort(this.clock);
@@ -32,7 +32,7 @@ export class AsideHarness {
     { jitter: new TtlJitter(new FixedRandomSource([0.5])) },
   );
 
-  /** Deja correr las escrituras en segundo plano: solo microtareas, sin temporizadores. */
+  /** Lets background writes run: microtasks only, no timers. */
   async settle(): Promise<void> {
     for (let turn = 0; turn < 20; turn += 1) {
       await Promise.resolve();

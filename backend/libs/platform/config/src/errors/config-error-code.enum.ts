@@ -1,4 +1,4 @@
-/** Códigos de error de `@platform/config`. */
+/** Error codes of `@platform/config`. */
 export enum ConfigErrorCode {
   Invalid = 'PLATFORM.CONFIG.INVALID',
 }

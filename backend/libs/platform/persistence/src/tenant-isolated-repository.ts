@@ -7,11 +7,11 @@ import { ManagerIntent } from './model/manager-intent.enum.js';
 import type { RepositoryKit } from './repository-kit.js';
 
 /**
- * Base de los repositorios de tablas de tenant con RLS (`TenantIsolationSql`). El shard y el tenant salen del
- * `ShardScope` que abre el caso de uso, y toda consulta filtra además por ese tenant: un shard aloja varios.
- * Cada consulta corre en una transacción con `app.tenant_id` fijado, porque el RLS falla cerrado sin él.
- * Las lecturas fuera de una transacción abierta van a la réplica en una transacción de solo lectura; las que
- * deben ver lo recién confirmado usan `readPrimary`.
+ * Base of the repositories of tenant tables with RLS (`TenantIsolationSql`). The shard and the tenant come from the
+ * `ShardScope` opened by the use case, and every query also filters by that tenant: a shard hosts several.
+ * Each query runs in a transaction with `app.tenant_id` set, because RLS fails closed without it.
+ * Reads outside an open transaction go to the replica in a read-only transaction; those that
+ * must see what was just committed use `readPrimary`.
  */
 export abstract class TenantIsolatedRepository {
   protected constructor(protected readonly kit: RepositoryKit) {}
@@ -30,7 +30,7 @@ export abstract class TenantIsolatedRepository {
     return this.inTenantSession(ManagerIntent.Write, fn);
   }
 
-  /** @throws PersistenceError `PersistenceTenantRequired` sin `ShardScope` de tenant. */
+  /** @throws PersistenceError `PersistenceTenantRequired` without a tenant `ShardScope`. */
   protected tenantId(): string {
     const tenantId = this.kit.scope.current()?.tenantId;
     if (tenantId === undefined) {
@@ -42,7 +42,7 @@ export abstract class TenantIsolatedRepository {
     return tenantId;
   }
 
-  /** Inserta con el tenant del scope y el actor del contexto como autor. */
+  /** Inserts with the scope tenant and the context actor as author. */
   protected async insertOwned<T extends AuditedEntity>(
     target: EntityTarget<T>,
     entity: T,
@@ -53,7 +53,7 @@ export abstract class TenantIsolatedRepository {
     await this.write((manager) => manager.insert(target, entity as never));
   }
 
-  /** @throws OptimisticLockError si la fila cambió desde que se leyó. */
+  /** @throws OptimisticLockError if the row changed since it was read. */
   protected async updateOwned<T extends AuditedEntity>(
     target: EntityTarget<T>,
     entity: T,

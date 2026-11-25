@@ -2,16 +2,16 @@ import { AuthStateReader } from '@platform/auth';
 import type { StreamPrincipal } from './stream-principal.js';
 import { StreamRevocations } from './stream-revocations.js';
 
-/** `StreamRevocations` sobre la época del tenant en el estado de autenticación compartido de identity. */
+/** `StreamRevocations` over the tenant epoch in identity's shared authentication state. */
 export class AuthStateStreamRevocations extends StreamRevocations {
   constructor(private readonly state: AuthStateReader) {
     super();
   }
 
   /**
-   * La época tiene resolución de segundos y el `iat` del token no supera el segundo de apertura: una conexión
-   * abierta en el mismo segundo de la revocación no se distingue de una anterior, así que también se cierra.
-   * Quien se reconecte un segundo después vuelve a entrar con su token si este sigue vigente.
+   * The epoch has second resolution and the token's `iat` does not exceed the opening second: a connection
+   * opened in the same second as the revocation cannot be told apart from an earlier one, so it is also closed.
+   * Whoever reconnects a second later gets back in with their token if it is still valid.
    */
   async revokedSince(
     principal: StreamPrincipal,

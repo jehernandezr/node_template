@@ -15,7 +15,7 @@ import { CloseInvoicePeriodsJob } from '../src/modules/invoices/application/clos
 
 const OWNER = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b01';
 const OUTSIDER = '0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9b07';
-/** Un miembro por ruta: el servicio guarda el acceso por versión de permisos y no lo vuelve a pedir. */
+/** One member per route: the service caches access by permission version and does not request it again. */
 const exactAccessMember = (index: number) =>
   `0192f1b4-7c3a-7d2e-9a41-5b6c7d8e9c${String(index).padStart(2, '0')}`;
 const ROUTES: readonly RouteDefinition[] = Object.values(

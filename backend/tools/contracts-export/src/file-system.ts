@@ -1,9 +1,9 @@
-/** Acceso al disco que necesita la exportación, para poder probarla sin tocarlo. */
+/** Disk access the export needs, so it can be tested without touching it. */
 export abstract class FileSystem {
   abstract exists(path: string): Promise<boolean>;
   abstract read(path: string): Promise<string>;
-  /** Escribe el archivo y crea las carpetas que falten. */
+  /** Writes the file and creates any missing folders. */
   abstract write(path: string, content: string): Promise<void>;
-  /** Nombres de los subdirectorios directos, en orden alfabético. */
+  /** Names of the direct subdirectories, in alphabetical order. */
   abstract listDirectories(path: string): Promise<string[]>;
 }

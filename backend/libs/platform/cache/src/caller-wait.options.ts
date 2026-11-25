@@ -1,9 +1,9 @@
 import type { Deadline } from '@platform/primitives';
 
-/** Hasta cuándo puede esperar un llamador. Nunca afecta a otros llamadores. */
+/** How long a caller may wait. Never affects other callers. */
 export interface CallerWaitOptions {
-  /** El llamador deja de esperar y rechaza con el motivo de la señal cuando aborta. */
+  /** The caller stops waiting and rejects with the signal's reason when it aborts. */
   readonly signal?: AbortSignal;
-  /** El llamador deja de esperar y rechaza con `DeadlineExceededError` al vencer el plazo. */
+  /** The caller stops waiting and rejects with `DeadlineExceededError` when the deadline expires. */
   readonly deadline?: Deadline;
 }

@@ -1,8 +1,8 @@
-/** Opciones de una petición de `HttpTestClient`. */
+/** Options of an `HttpTestClient` request. */
 export interface HttpTestRequest {
   readonly headers?: Readonly<Record<string, string>>;
-  /** Objeto que se envía como JSON. */
+  /** Object sent as JSON. */
   readonly body?: unknown;
-  /** Texto que se envía tal cual, para probar JSON roto o un tipo de contenido distinto. */
+  /** Text sent as is, to test broken JSON or a different content type. */
   readonly rawBody?: string;
 }

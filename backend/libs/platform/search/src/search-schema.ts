@@ -1,15 +1,15 @@
 import { SearchLanguage } from './search-language.enum.js';
 
 /**
- * Tabla `search_documents` que comparten los dos modos del índice. El vector se guarda aunque el modo sea
- * de texto: cambiar `SEARCH_MODE` no exige otra migración, solo volver a indexar. La tabla tiene RLS por
- * tenant como cualquier tabla de tenant; las migraciones del servicio la activan con `TenantIsolationSql`.
- * Necesita la extensión `vector` en la base: la crea quien provisiona la base, porque el rol del servicio no
- * puede crear extensiones.
+ * `search_documents` table shared by both index modes. The vector is stored even when the mode is
+ * text: changing `SEARCH_MODE` does not require another migration, only reindexing. The table has RLS per
+ * tenant like any tenant table; the service migrations enable it with `TenantIsolationSql`.
+ * It needs the `vector` extension in the database: whoever provisions the database creates it, because the service role
+ * cannot create extensions.
  */
 export class SearchSchema {
   static readonly TABLE = 'search_documents';
-  /** Dimensiones de los vectores que guarda la tabla; el `EmbeddingProvider` debe producir las mismas. */
+  /** Dimensions of the vectors the table stores; the `EmbeddingProvider` must produce the same. */
   static readonly EMBEDDING_DIMENSIONS = 256;
 
   static create(language: SearchLanguage = SearchLanguage.Spanish): string[] {
@@ -25,7 +25,7 @@ export class SearchSchema {
     return [`DROP TABLE "${SearchSchema.TABLE}"`];
   }
 
-  /** El nombre va dentro del SQL de la columna generada, así que solo se acepta un valor del enum. */
+  /** The name goes inside the SQL of the generated column, so only an enum value is accepted. */
   private static config(language: SearchLanguage): SearchLanguage {
     if (!Object.values(SearchLanguage).includes(language)) {
       throw new Error(`Unsupported search language: ${String(language)}`);

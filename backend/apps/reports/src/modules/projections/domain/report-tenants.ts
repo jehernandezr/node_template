@@ -1,4 +1,4 @@
-/** Los tenants que el servicio atiende en su región, según su directorio de shards. */
+/** The tenants the service serves in its region, according to its shard directory. */
 export abstract class ReportTenants {
   abstract active(): Promise<readonly string[]>;
 }

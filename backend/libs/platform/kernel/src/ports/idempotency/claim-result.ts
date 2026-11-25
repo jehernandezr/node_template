@@ -2,13 +2,13 @@ import { ClaimState } from './claim-state.js';
 
 export interface AcquiredClaim {
   readonly state: ClaimState.Acquired;
-  /** Token de fencing. `complete` y `release` solo lo aceptan mientras sea el vigente. */
+  /** Fencing token. `complete` and `release` only accept it while it is the current one. */
   readonly claimToken: string;
-  /** Milisegundos epoch hasta los que nadie más puede tomar la llave. */
+  /** Epoch milliseconds until which nobody else can take the key. */
   readonly leaseUntil: number;
-  /** Huella guardada con el primer claim; se compara con la de este intento. */
+  /** Hash stored with the first claim; it is compared with the one of this attempt. */
   readonly fingerprint: string;
-  /** `true` si se tomó la llave porque el lease anterior venció. */
+  /** `true` if the key was taken because the previous lease expired. */
   readonly takeover: boolean;
 }
 
@@ -24,6 +24,6 @@ export interface CompletedClaim<R> {
   readonly fingerprint: string;
 }
 
-/** Resultado de `IdempotencyStore.claim`. */
+/** Result of `IdempotencyStore.claim`. */
 export type ClaimResult<R> =
   AcquiredClaim | InProgressClaim | CompletedClaim<R>;

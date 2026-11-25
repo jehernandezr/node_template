@@ -17,7 +17,7 @@ locals {
   otel_sidecar    = local.otel_enabled && var.otel_collector_sidecar
   has_otlp_secret = var.otlp_authorization_secret != null
 
-  # Los valueFrom pueden llevar clave JSON; IAM necesita solo el ARN del secreto.
+  # valueFrom entries may carry a JSON key; IAM needs only the secret ARN.
   secret_value_from = merge(
     var.secrets,
     local.otel_sidecar && local.has_otlp_secret ? { OTLP_AUTHORIZATION = var.otlp_authorization_secret } : {}
@@ -33,7 +33,7 @@ locals {
     var.environment_variables,
   )
 
-  # Variables OTEL_* de la aplicación. Con sidecar exporta a localhost; sin él, directo a OpenObserve.
+  # Application OTEL_* variables. With the sidecar it exports to localhost; without it, straight to OpenObserve.
   otel_app_env = !local.otel_enabled ? {} : {
     OTEL_SERVICE_NAME           = var.service_name
     OTEL_RESOURCE_ATTRIBUTES    = "service.namespace=${var.name_prefix},deployment.environment=${var.environment}"
@@ -130,22 +130,22 @@ resource "terraform_data" "input_check" {
   lifecycle {
     precondition {
       condition     = !var.enable_load_balancer || (var.container_port != null && var.alb_listener_arn != null && var.alb_security_group_id != null)
-      error_message = "enable_load_balancer requiere container_port, alb_listener_arn y alb_security_group_id."
+      error_message = "enable_load_balancer requires container_port, alb_listener_arn and alb_security_group_id."
     }
 
     precondition {
       condition     = !var.enable_load_balancer || length(var.path_patterns) + length(var.host_headers) > 0
-      error_message = "enable_load_balancer requiere path_patterns o host_headers para la regla del listener."
+      error_message = "enable_load_balancer requires path_patterns or host_headers for the listener rule."
     }
 
     precondition {
       condition     = var.min_capacity <= var.max_capacity
-      error_message = "min_capacity no puede superar max_capacity."
+      error_message = "min_capacity cannot exceed max_capacity."
     }
 
     precondition {
       condition     = var.desired_count >= var.min_capacity && var.desired_count <= var.max_capacity
-      error_message = "desired_count debe estar entre min_capacity y max_capacity."
+      error_message = "desired_count must be between min_capacity and max_capacity."
     }
   }
 }
@@ -270,7 +270,7 @@ resource "aws_iam_role_policy" "exec" {
   policy = data.aws_iam_policy_document.exec.json
 }
 
-# --- Red --------------------------------------------------------------------
+# --- Network ----------------------------------------------------------------
 
 resource "aws_security_group" "this" {
   name        = local.full_name
@@ -302,7 +302,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_service" {
   description                  = "ALB hacia ${local.full_name}"
 }
 
-# HTTPS saliente por NAT o endpoints de VPC (ADR 0016).
+# Outbound HTTPS through NAT or VPC endpoints (ADR 0016).
 # trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "https" {
   security_group_id = aws_security_group.this.id
@@ -323,7 +323,7 @@ resource "aws_lb_target_group" "this" {
   vpc_id               = var.vpc_id
   deregistration_delay = var.deregistration_delay_seconds
 
-  # Sin sesiones pegajosas: el estado compartido vive en Valkey.
+  # No sticky sessions: shared state lives in Valkey.
   stickiness {
     type    = "lb_cookie"
     enabled = false
@@ -375,7 +375,7 @@ resource "aws_lb_listener_rule" "this" {
   tags = var.tags
 }
 
-# --- Tarea y servicio -------------------------------------------------------
+# --- Task and service -------------------------------------------------------
 
 resource "aws_ecs_task_definition" "this" {
   family                   = local.full_name
@@ -453,7 +453,7 @@ resource "aws_ecs_service" "this" {
   depends_on = [aws_lb_listener_rule.this]
 }
 
-# --- Autoescalado -----------------------------------------------------------
+# --- Autoscaling ------------------------------------------------------------
 
 resource "aws_appautoscaling_target" "this" {
   service_namespace  = "ecs"
@@ -505,7 +505,7 @@ resource "aws_appautoscaling_policy" "memory" {
   }
 }
 
-# Escalado por cola con pasos: el target tracking no arranca desde cero tareas.
+# Queue-based step scaling: target tracking does not start from zero tasks.
 resource "aws_appautoscaling_policy" "sqs_out" {
   count = var.sqs_scaling == null ? 0 : 1
 

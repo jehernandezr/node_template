@@ -1,27 +1,27 @@
 import { IdempotencyStore } from '@platform/kernel';
 
-/** Resultado que se guarda cuando un consumidor termina un mensaje. */
+/** Result stored when a consumer finishes a message. */
 export interface ProcessedMessage {
-  /** Milisegundos epoch en que terminó el manejador. */
+  /** Epoch milliseconds at which the handler finished. */
   readonly processedAt: number;
 }
 
 /**
- * Puerto de idempotencia de los consumidores: el `IdempotencyStore` de tres
- * estados del kernel, con la llave de {@link ProcessedMessageKey}, más la
- * retención de lo terminado.
+ * Consumer idempotency port: the kernel's three-state `IdempotencyStore`,
+ * with the key of {@link ProcessedMessageKey}, plus the
+ * retention of finished ones.
  *
- * - `claim` responde `acquired` (con token y lease), `in-progress` (otro reparto
- *   corre el manejador) o `completed`.
- * - El dispatcher pide un lease de al menos el visibility timeout de la cola
- *   (`minLeaseMs`), así un reparto repetido mientras el primero sigue corriendo
- *   encuentra el claim `in-progress` y se deja para reentrega en vez de confirmarse.
- * - `complete` y `release` solo aceptan el token vigente.
+ * - `claim` answers `acquired` (with token and lease), `in-progress` (another delivery
+ *   is running the handler) or `completed`.
+ * - The dispatcher asks for a lease of at least the queue visibility timeout
+ *   (`minLeaseMs`), so a repeated delivery while the first one is still running
+ *   finds the claim `in-progress` and is left for redelivery instead of being acknowledged.
+ * - `complete` and `release` only accept the current token.
  *
- * Un adaptador real debe hacer `complete` en la misma transacción que los
- * efectos del manejador, con el `runInContext` del dispatcher.
+ * A real adapter must run `complete` in the same transaction as the
+ * handler effects, with the dispatcher `runInContext`.
  */
 export abstract class ProcessedMessageStore extends IdempotencyStore<ProcessedMessage> {
-  /** Borra los mensajes terminados antes de `before`. Devuelve cuántos eliminó. */
+  /** Deletes messages finished before `before`. Returns how many it removed. */
   abstract purgeCompleted(before: Date): Promise<number>;
 }

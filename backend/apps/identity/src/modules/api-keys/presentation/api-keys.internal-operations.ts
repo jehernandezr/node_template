@@ -9,7 +9,7 @@ import {
 } from '@contracts/identity';
 import { AuthenticateApiKey } from '../application/authenticate-api-key.use-case.js';
 
-/** Operaciones internas de api-keys: la usan los demás servicios para validar una key. */
+/** api-keys internal operations: the other services use them to validate a key. */
 @Injectable()
 export class ApiKeysInternalOperations {
   constructor(private readonly authenticate: AuthenticateApiKey) {}

@@ -1,28 +1,28 @@
 import type { TenantMove } from './tenant-move.js';
 
-/** Bitácora de traslados de tenant en el catálogo. */
+/** Tenant move log in the catalog. */
 export abstract class TenantMoveLog {
-  /** Anota un traslado en curso. Devuelve `false` si el tenant ya tiene otro en curso. */
+  /** Records a move in progress. Returns `false` if the tenant already has another one in progress. */
   abstract start(move: TenantMove): Promise<boolean>;
 
-  /** El traslado en curso del tenant, si lo hay. */
+  /** The tenant's move in progress, if any. */
   abstract runningFor(tenantId: string): Promise<TenantMove | undefined>;
 
-  /** Pasa a `Switched` un traslado en curso; repetirlo conserva el primer instante. */
+  /** Moves an ongoing move to `Switched`; repeating it keeps the first instant. */
   abstract markSwitched(moveId: string, at: Date): Promise<void>;
 
-  /** Pasa a `Aborted` un traslado en curso. */
+  /** Moves an ongoing move to `Aborted`. */
   abstract markAborted(moveId: string): Promise<void>;
 
-  /** Pasa a `CleanedUp` un traslado ya cambiado de directorio. */
+  /** Moves a move whose directory was already switched to `CleanedUp`. */
   abstract markCleanedUp(moveId: string): Promise<void>;
 
-  /** Anota cuándo se intentó limpiar el origen de un traslado, así la corrida siguiente le da turno a otros. */
+  /** Records when cleaning a move's source was attempted, so the next run gives others a turn. */
   abstract markCleanupAttempted(moveId: string, at: Date): Promise<void>;
 
   /**
-   * Traslados cambiados antes de `before` y todavía sin limpiar: primero los que nunca se intentaron y después los
-   * que llevan más tiempo sin intentarse.
+   * Moves switched before `before` and not yet cleaned: first those never attempted and then those
+   * that have gone longest without an attempt.
    */
   abstract switchedBefore(
     before: Date,

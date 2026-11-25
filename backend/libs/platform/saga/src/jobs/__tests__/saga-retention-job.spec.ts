@@ -22,7 +22,7 @@ function settings(): SagaSettings {
   );
 }
 
-/** Saga con el estado y la antigüedad dados, respecto de `NOW`. */
+/** Saga with the given status and age, relative to `NOW`. */
 function saga(id: string, status: SagaStatus, ageMs: number) {
   return SagaInstanceBuilder.aSaga()
     .with({

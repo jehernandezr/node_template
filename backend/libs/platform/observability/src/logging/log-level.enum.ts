@@ -1,6 +1,6 @@
 /**
- * Niveles de log de la plataforma. Es el único enum de niveles: la sección
- * `LoggingConfig` valida `LOG_LEVEL` contra él.
+ * Platform log levels. It is the only levels enum: the
+ * `LoggingConfig` section validates `LOG_LEVEL` against it.
  */
 export enum LogLevel {
   Debug = 'debug',

@@ -5,8 +5,8 @@ import type { PersistenceFeature } from './persistence-feature.js';
 import type { ShardScope } from './shard-scope.js';
 
 /**
- * Lo que un repositorio de un módulo necesita además de su mapper. `PersistenceModule.forFeature`
- * lo arma con la declaración de sharding del módulo; el repositorio solo inyecta esta clase.
+ * What a module repository needs besides its mapper. `PersistenceModule.forFeature`
+ * builds it with the module's sharding declaration; the repository only injects this class.
  */
 export class RepositoryKit {
   constructor(
@@ -14,7 +14,7 @@ export class RepositoryKit {
     readonly provider: EntityManagerProvider,
     readonly writer: OptimisticWriter,
     readonly context: PersistenceContextProvider,
-    /** Un `ShardScope` activo manda sobre el tenant del contexto: es el tenant dueño de los datos que se consultan. */
+    /** An active `ShardScope` takes precedence over the context tenant: it is the tenant that owns the queried data. */
     readonly scope: ShardScope,
   ) {}
 }

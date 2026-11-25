@@ -7,7 +7,7 @@ import { NotificationPreferences } from '../domain/notification-preferences.js';
 import { PreferencesRepository } from '../domain/preferences.repository.js';
 import { PreferencesFacade } from './preferences.facade.js';
 
-/** Lee y guarda las preferencias del usuario en su shard. */
+/** Reads and saves the user's preferences in their shard. */
 @Injectable()
 export class ManagePreferences extends PreferencesFacade {
   private static readonly DEFAULTS: PreferencesView = {
@@ -31,7 +31,7 @@ export class ManagePreferences extends PreferencesFacade {
     return saved ?? NotificationPreferences.of(ManagePreferences.DEFAULTS);
   }
 
-  /** @throws InvalidQuietHoursError si el horario no es válido; no guarda nada. */
+  /** @throws InvalidQuietHoursError if the schedule is not valid; saves nothing. */
   async save(user: UserRef, view: PreferencesView): Promise<void> {
     const preferences = NotificationPreferences.of(view);
     await this.shard.run(user, () => this.preferences.save(user, preferences));

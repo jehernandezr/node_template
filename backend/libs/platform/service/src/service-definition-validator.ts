@@ -2,7 +2,7 @@ import { InvalidServiceDefinitionError } from './errors/invalid-service-definiti
 import type { ServiceDefinition } from './service-definition.js';
 import { ServiceInternalTransport } from './service-internal-api.js';
 
-/** Comprueba que una `ServiceDefinition` es coherente antes de armar nada con ella. */
+/** Checks that a `ServiceDefinition` is consistent before building anything with it. */
 export class ServiceDefinitionValidator {
   private static readonly EMPTY_NAME = 'el nombre del servicio está vacío';
   private static readonly NAME_MISMATCH =
@@ -13,8 +13,8 @@ export class ServiceDefinitionValidator {
     'la API interna por HTTP necesita la opción http';
 
   /**
-   * @throws InvalidServiceDefinitionError cuando el nombre está vacío o no coincide con `contract.service`,
-   * cuando `rootModule` no es una clase o cuando la API interna por HTTP no declara su configuración.
+   * @throws InvalidServiceDefinitionError when the name is empty or does not match `contract.service`,
+   * when `rootModule` is not a class or when the HTTP internal API does not declare its configuration.
    */
   validate(definition: ServiceDefinition): void {
     if (typeof definition.name !== 'string' || definition.name.trim() === '') {

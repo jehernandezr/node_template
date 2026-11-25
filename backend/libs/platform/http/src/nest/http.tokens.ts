@@ -1,2 +1,2 @@
-/** Opciones con las que se compuso `HttpModule`. */
+/** Options `HttpModule` was composed with. */
 export const HTTP_OPTIONS = Symbol('HTTP_OPTIONS');

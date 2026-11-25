@@ -81,7 +81,7 @@ interface Order {
   price?: number;
 }
 
-/** Código del error lanzado, o `undefined` si no lanzó. */
+/** Code of the thrown error, or `undefined` if it did not throw. */
 function codeOf(fn: () => unknown): unknown {
   try {
     fn();

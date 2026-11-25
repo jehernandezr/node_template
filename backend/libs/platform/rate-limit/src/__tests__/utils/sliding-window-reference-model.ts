@@ -4,7 +4,7 @@ import type { RateLimitRule } from '../../rate-limit-rule.js';
 import { SlidingWindow } from '../../sliding-window.js';
 import type { WindowCounts } from '../../window-counts.js';
 
-/** Estado de la llave en su ventana fija actual. */
+/** State of the key in its current fixed window. */
 interface ModelState {
   readonly index: number;
   readonly previous: number;
@@ -12,8 +12,8 @@ interface ModelState {
 }
 
 /**
- * Modelo de referencia de una llave con la misma semántica que el limitador
- * en memoria, escrito solo con las funciones de `SlidingWindow`.
+ * Reference model of a key with the same semantics as the in-memory
+ * limiter, written only with the `SlidingWindow` functions.
  */
 export class SlidingWindowReferenceModel {
   private state: ModelState | undefined;

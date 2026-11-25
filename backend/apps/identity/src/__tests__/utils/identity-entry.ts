@@ -1,11 +1,11 @@
 import type { HttpTestClient } from '@platform/http/test-utils';
 import type { MemoryIdentityMailer } from '../../modules/alerts/index.js';
 
-/** Lo que un usuario de prueba necesita de un identity en marcha: clientes HTTP por IP y el correo enviado. */
+/** What a test user needs from a running identity: HTTP clients per IP and the sent email. */
 export interface IdentityEntry {
-  /** Cliente sin headers de canal: la petición cuenta como web. `ip` es la que el proxy declara. */
+  /** Client without channel headers: the request counts as web. `ip` is the one the proxy declares. */
   client(ip?: string): HttpTestClient;
-  /** Cliente de la app nativa: el session token viaja en el cuerpo. */
+  /** Native app client: the session token travels in the body. */
   nativeClient(ip?: string): HttpTestClient;
   mailer(): MemoryIdentityMailer;
 }

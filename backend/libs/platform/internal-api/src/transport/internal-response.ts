@@ -1,6 +1,6 @@
 import type { CallOutcome } from '@platform/primitives';
 
-/** Cuerpo JSON de la respuesta, con estado HTTP 200 sea cual sea el resultado de la llamada. */
+/** JSON body of the response, with HTTP status 200 whatever the result of the call. */
 export interface InternalResponse {
   readonly outcome: CallOutcome<unknown>;
 }

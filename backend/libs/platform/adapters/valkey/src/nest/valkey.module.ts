@@ -9,12 +9,12 @@ import {
 } from './valkey.module-definition.js';
 
 /**
- * Cableado del adaptador de Valkey: cliente, ejecutor de comandos, espacio de
- * llaves y los adaptadores de cache, rate-limit, routing cache, canal de
- * cambios del directorio, filtros de Bloom y lock de jobs, más su indicador de
- * salud. Es global y cierra el cliente con `quit` en su `onModuleDestroy`:
- * Nest destruye los módulos globales al final y en orden inverso al de
- * importación, así los jobs y consumidores que usan Valkey ya se detuvieron.
+ * Wiring of the Valkey adapter: client, command executor, key
+ * namespace and the cache, rate-limit, routing cache, directory change
+ * channel, Bloom filter and job lock adapters, plus its health
+ * indicator. It is global and closes the client with `quit` in its `onModuleDestroy`:
+ * Nest destroys global modules last and in reverse import
+ * order, so the jobs and consumers that use Valkey have already stopped.
  */
 @Module({})
 export class ValkeyModule extends ValkeyModuleClass {

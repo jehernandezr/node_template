@@ -1,4 +1,4 @@
-/** Conteo y suma de verificación de las filas del tenant en una tabla. */
+/** Count and checksum of the tenant rows in a table. */
 export interface TableChecksum {
   readonly rows: number;
   readonly checksum: string;

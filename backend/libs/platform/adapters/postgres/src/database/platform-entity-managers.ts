@@ -11,9 +11,9 @@ import type { DataSource, EntityManager } from 'typeorm';
 import type { ShardBinding } from './shard-binding.js';
 
 /**
- * Da a los stores de la plataforma el `EntityManager` de su shard. Con un shard fijo (`ShardBinding`) y sin
- * transacción abierta trabaja contra ese shard; en cualquier otro caso delega en `EntityManagerProvider`, que
- * resuelve el shard por el tenant del contexto o del `ShardScope` y se une a la transacción abierta.
+ * Gives the platform stores the `EntityManager` of their shard. With a fixed shard (`ShardBinding`) and no
+ * open transaction it works against that shard; in any other case it delegates to `EntityManagerProvider`, which
+ * resolves the shard by the tenant of the context or of the `ShardScope` and joins the open transaction.
  */
 export class PlatformEntityManagers {
   constructor(
@@ -25,9 +25,9 @@ export class PlatformEntityManagers {
   ) {}
 
   /**
-   * Corre `fn` con el manager del shard. `Write` se une a la transacción abierta o abre una en el primario;
-   * `Read` va a la réplica y `ReadPrimary` al primario, salvo dentro de una transacción, que manda siempre.
-   * @throws ShardingError `KeyMissing` si no hay shard fijo, tenant ni `ShardScope`.
+   * Runs `fn` with the shard's manager. `Write` joins the open transaction or opens one on the primary;
+   * `Read` goes to the replica and `ReadPrimary` to the primary, except inside a transaction, which always wins.
+   * @throws ShardingError `KeyMissing` if there is no fixed shard, tenant or `ShardScope`.
    */
   run<T>(
     intent: ManagerIntent,
@@ -41,9 +41,9 @@ export class PlatformEntityManagers {
   }
 
   /**
-   * Mantenimiento que no pertenece a un tenant (retenciones): con un shard fijo corre en él y, sin shard fijo,
-   * recorre todos los shards del servicio y suma lo que devuelve `fn` en cada uno.
-   * @throws PersistenceError `PersistenceQueryFailed` si `fn` falló en algún shard.
+   * Maintenance that does not belong to a tenant (retention): with a fixed shard it runs on it and, without a fixed shard,
+   * goes through all the service's shards and sums what `fn` returns on each one.
+   * @throws PersistenceError `PersistenceQueryFailed` if `fn` failed on any shard.
    */
   async sweep(
     fn: (manager: EntityManager) => Promise<number>,

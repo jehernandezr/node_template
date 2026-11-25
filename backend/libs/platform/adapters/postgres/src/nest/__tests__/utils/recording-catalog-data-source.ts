@@ -1,8 +1,8 @@
 import type { ReplicationMode } from 'typeorm';
 
 /**
- * Ocupa el lugar de `CatalogDataSource`: su `DataSource` no tiene filas y guarda el modo de réplica de cada
- * `QueryRunner` que se le pide, para ver si una lectura fue al primario o a la réplica.
+ * Stands in for `CatalogDataSource`: its `DataSource` has no rows and records the replication mode of each
+ * `QueryRunner` requested from it, to see whether a read went to the primary or to the replica.
  */
 export class RecordingCatalogDataSource {
   readonly modes: ReplicationMode[] = [];

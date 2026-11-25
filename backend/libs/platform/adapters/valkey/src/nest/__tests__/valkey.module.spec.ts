@@ -49,7 +49,7 @@ describe('ValkeyModule', () => {
     }
   });
 
-  /** Aplicación con un cliente falso en lugar de la conexión real. */
+  /** Application with a fake client instead of the real connection. */
   async function appWith(
     valkey: DynamicModule,
     env?: Record<string, string>,

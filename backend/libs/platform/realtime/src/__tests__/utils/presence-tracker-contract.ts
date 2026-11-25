@@ -1,6 +1,6 @@
 import type { PresenceTracker } from '../../presence/presence-tracker.js';
 
-/** Lo que todo `PresenceTracker` cumple. `advance` mueve el reloj que usa el adaptador. */
+/** What every `PresenceTracker` fulfills. `advance` moves the clock that the adapter uses. */
 export function runPresenceTrackerContract(
   name: string,
   factory: () => { tracker: PresenceTracker; advance: (ms: number) => void },

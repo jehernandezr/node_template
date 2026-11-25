@@ -1,19 +1,19 @@
-/** Límites y valores fijos de la entrada HTTP. */
+/** Limits and fixed values of the HTTP entry. */
 export class HttpLimits {
-  /** Cuerpo JSON máximo: 256 KiB. */
+  /** Maximum JSON body: 256 KiB. */
   static readonly MAX_BODY_BYTES = 256 * 1024;
-  /** Largo máximo del `User-Agent` que se guarda en `ClientInfo`. */
+  /** Maximum length of the `User-Agent` stored in `ClientInfo`. */
   static readonly MAX_USER_AGENT_LENGTH = 512;
-  /** Nombre de la cookie de sesión; el prefijo `__Host-` exige `Secure`, `Path=/` y ningún `Domain`. */
+  /** Session cookie name; the `__Host-` prefix requires `Secure`, `Path=/` and no `Domain`. */
   static readonly SESSION_COOKIE_NAME = '__Host-session';
-  /** Prefijo del session token opaco: con él un `Bearer` se reconoce como canal nativo y no como access token. */
+  /** Prefix of the opaque session token: with it a `Bearer` is recognized as the native channel and not as an access token. */
   static readonly SESSION_TOKEN_PREFIX = 'st1_';
-  /** Prefijo de una API key: con él un `Bearer` se autentica como API key. */
+  /** Prefix of an API key: with it a `Bearer` is authenticated as an API key. */
   static readonly API_KEY_PREFIX = 'sk_';
-  /** Valor del header `X-Session-Transport` con el que la app nativa declara su canal. */
+  /** Value of the `X-Session-Transport` header with which the native app declares its channel. */
   static readonly SESSION_TRANSPORT_BEARER = 'bearer';
-  /** Versión de la API vigente. */
+  /** Current API version. */
   static readonly CURRENT_API_VERSION = '2026-11-01';
-  /** Ruta que lleva la cabecera `Cache-Control: no-store`. */
+  /** Route that carries the `Cache-Control: no-store` header. */
   static readonly NO_STORE_PATH_PREFIX = '/v1/auth';
 }

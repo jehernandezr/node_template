@@ -1,4 +1,4 @@
-/// Generador del Dart de `packages/contracts` desde los `contract.json` del backend.
+/// Generator of the `packages/contracts` Dart code from the backend `contract.json` files.
 library;
 
 export 'src/cli.dart' show findFrontRoot, readContracts, run;

@@ -1,7 +1,7 @@
 import type { InvitationSummary } from '@contracts/identity';
 import type { Invitation } from '../domain/invitation.js';
 
-/** La invitación que responde el contrato. */
+/** The invitation that the contract returns. */
 export class InvitationView {
   static of(invitation: Invitation, now: Date): InvitationSummary {
     const state = invitation.snapshot();

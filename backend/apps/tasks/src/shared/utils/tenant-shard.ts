@@ -4,8 +4,8 @@ import { ShardScope } from '@platform/persistence';
 import { ShardKey } from '@platform/sharding';
 
 /**
- * Corre un bloque en el shard del tenant y con ese tenant en el contexto, que la persistencia fija en
- * `app.tenant_id`: el RLS de las tablas de tenant no deja ver ninguna fila sin él.
+ * Runs a block in the tenant's shard with that tenant in the context, which persistence sets in
+ * `app.tenant_id`: the RLS of tenant tables shows no row without it.
  */
 @Injectable()
 export class TenantShard {

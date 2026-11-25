@@ -35,7 +35,7 @@ import type {
 import { InternalApiOptionalDependency } from './internal-api-optional-dependency.js';
 import { INTERNAL_API_OPTIONS } from './internal-api.module-definition.js';
 
-/** Proveedores del lado servidor: router, idempotencia, unidad de trabajo, autenticación y retención. */
+/** Server-side providers: router, idempotency, unit of work, authentication and retention. */
 export class InternalApiServerProviders {
   static build(extras: ResolvedInternalApiExtras): Provider[] {
     return [
@@ -147,7 +147,7 @@ export class InternalApiServerProviders {
     ];
   }
 
-  /** Lo que usa el controller: sin opciones `http` no hay secreto, así que rechaza toda llamada. */
+  /** What the controller uses: without `http` options there is no secret, so it rejects every call. */
   private static edge(): Provider[] {
     return [
       { provide: CallMetaReader, useFactory: () => new CallMetaReader() },

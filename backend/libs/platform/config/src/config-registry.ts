@@ -1,14 +1,14 @@
 import type { ConfigSection } from './config-section.js';
 
 /**
- * Valores ya validados de cada sección y del esquema propio del servicio.
- * Solo el arranque escribe en él; `AppConfig` lo lee.
+ * Already validated values of each section and of the service's own schema.
+ * Only startup writes to it; `AppConfig` reads it.
  */
 export class ConfigRegistry {
   private readonly sections = new Map<string, unknown>();
   private rootValue: unknown;
 
-  /** Guarda los valores de `section`. Registrar dos veces la misma sección conserva el primer valor. */
+  /** Stores the values of `section`. Registering the same section twice keeps the first value. */
   register<T>(section: ConfigSection<T>, value: T): void {
     if (this.sections.has(section.name)) {
       return;
@@ -16,7 +16,7 @@ export class ConfigRegistry {
     this.sections.set(section.name, ConfigRegistry.freeze(value));
   }
 
-  /** Valores de `section`, o `undefined` si aún no se cargó. */
+  /** Returns the values of `section`, or `undefined` if not loaded yet. */
   find<T>(section: ConfigSection<T>): T | undefined {
     return this.sections.get(section.name) as T | undefined;
   }
@@ -29,7 +29,7 @@ export class ConfigRegistry {
     return this.rootValue;
   }
 
-  /** Congela los objetos para que nadie altere la configuración después de validarla. */
+  /** Freezes the objects so nobody alters the configuration after validating it. */
   private static freeze<T>(value: T): T {
     return typeof value === 'object' && value !== null
       ? Object.freeze(value)

@@ -5,10 +5,10 @@ import type { RenderedEmail } from '../rendered-email.js';
 import type { EmailCopy } from './email-copy.js';
 
 /**
- * Plantilla de correo: textos por idioma con datos entre llaves, y un único armado de HTML y texto plano para
- * todas. Los datos se escapan al armar el HTML; nunca llevan marcado propio. Un dato obligatorio que no llegó
- * detiene el armado: un correo de MFA sin código no sale. Solo una línea con un dato que la plantilla declara
- * opcional se omite, así un saludo sin nombre no deja la llave a la vista.
+ * Email template: texts per language with values in braces, and a single HTML and plain text build for
+ * all of them. Values are escaped when building the HTML; they never carry their own markup. A required value that did not arrive
+ * stops the build: an MFA email without a code does not go out. Only a line with a value the template declares
+ * optional is omitted, so a greeting without a name does not leave the brace placeholder visible.
  */
 export abstract class EmailTemplate {
   static readonly FALLBACK_LOCALE = 'es';
@@ -16,16 +16,16 @@ export abstract class EmailTemplate {
   private static readonly NONE: ReadonlySet<string> = new Set();
 
   abstract readonly key: string;
-  /** Sube cuando cambian los textos: `email_messages` guarda con qué versión salió cada correo. */
+  /** Bumped when the texts change: `email_messages` stores which version each email went out with. */
   abstract readonly version: number;
   protected abstract readonly copies: Readonly<Record<string, EmailCopy>>;
-  /** Datos sin los que el correo igual tiene sentido: su línea se omite. */
+  /** Values without which the email still makes sense: their line is omitted. */
   protected readonly optionalParameters: ReadonlySet<string> =
     EmailTemplate.NONE;
 
   /**
-   * `parameters` va por nombre: los de `TemplateParameter` y, en las plantillas propias, los suyos.
-   * @throws TemplateParameterMissingError si falta un dato que la plantilla no declara opcional.
+   * `parameters` goes by name: those of `TemplateParameter` and, in custom templates, their own.
+   * @throws TemplateParameterMissingError if a value the template does not declare optional is missing.
    */
   render(
     parameters: ReadonlyMap<string, string>,
@@ -81,7 +81,7 @@ export abstract class EmailTemplate {
     }
   }
 
-  /** El idioma pedido, su idioma base (`es` de `es-CO`) o el de respaldo. */
+  /** The requested language, its base language (`es` from `es-CO`) or the fallback one. */
   private copyFor(locale: string): EmailCopy {
     const base = locale.split('-')[0] ?? locale;
     const copy =

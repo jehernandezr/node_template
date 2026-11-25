@@ -1,7 +1,7 @@
-# Ejemplo de un servicio. Para desplegar uno, copia este archivo a
-# environments/<ambiente>/services/<servicio>/terraform.tfvars y crea a su lado un
-# backend.tfvars con key = "<región>/services/<servicio>/terraform.tfstate".
-# El pipeline pasa los artefactos con TF_VAR_image y TF_VAR_lambda_package.
+# Example of a service. To deploy one, copy this file to
+# environments/<environment>/services/<service>/terraform.tfvars and create next to it a
+# backend.tfvars with key = "<region>/services/<service>/terraform.tfstate".
+# The pipeline passes the artifacts with TF_VAR_image and TF_VAR_lambda_package.
 
 region       = "us-east-1"
 environment  = "dev"
@@ -10,33 +10,33 @@ state_bucket = "node-template-dev-tfstate"
 
 service_name = "identity"
 
-# API en Lambda detrás de API Gateway HTTP, CloudFront y WAF. Para pasarla a Fargate:
-# runtime = "fargate", listener_rule_priority único y fargate_api_enabled en platform.
+# Lambda API behind API Gateway HTTP, CloudFront and WAF. To move it to Fargate:
+# runtime = "fargate", a unique listener_rule_priority and fargate_api_enabled in platform.
 api = {
   runtime        = "lambda"
   route_prefixes = ["/identity"]
   memory_size    = 1024
-  # files_access = true  # lectura y escritura en el bucket de archivos
-  # ses_send     = true  # envío de correo por SES
+  # files_access = true  # read and write on the files bucket
+  # ses_send     = true  # send email through SES
 }
 
-# Tiempo real siempre en Fargate tras el ALB público (realtime_alb_certificate_arn en platform).
+# Realtime always runs on Fargate behind the public ALB (realtime_alb_certificate_arn in platform).
 # realtime = {
 #   listener_rule_priority = 100
 #   path_patterns          = ["/identity/socket.io/*", "/identity/events/*"]
 # }
 
-# Workers Fargate que escalan desde cero por la profundidad de su cola.
+# Fargate workers that scale from zero on the depth of their queue.
 # workers = {
 #   reports = { queue = "identity-reports-commands", max_capacity = 4 }
 # }
 
-# Consumidores Lambda de una cola.
+# Lambda consumers of a queue.
 # consumers = {
 #   events = { queue = "identity-tasks-events", handler = "lambda.sqsHandler" }
 # }
 
-# Tópicos y colas salen de producers y consumer de topology.json: no se repiten aquí. Cada
-# worker o consumidor consume solo su cola; archivos y SES se piden por componente.
+# Topics and queues come from the producers and consumer of topology.json: they are not repeated here. Each
+# worker or consumer only consumes its own queue; files and SES are requested per component.
 database_access = true
 valkey_access   = true

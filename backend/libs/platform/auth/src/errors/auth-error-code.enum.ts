@@ -1,4 +1,4 @@
-/** Códigos de error propios de `@platform/auth`. Los demás que usa vienen de `PlatformErrorCode` y `IdentityErrorCode`. */
+/** Error codes owned by `@platform/auth`. The others it uses come from `PlatformErrorCode` and `IdentityErrorCode`. */
 export enum AuthErrorCode {
   TokenExpired = 'PLATFORM.AUTH.TOKEN_EXPIRED',
   InvalidKey = 'PLATFORM.AUTH.INVALID_KEY',

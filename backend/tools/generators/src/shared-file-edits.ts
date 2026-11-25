@@ -2,14 +2,14 @@ import { GeneratorError, GeneratorErrorReason } from './generator-error.js';
 import type { NameForms } from './name-forms.js';
 
 /**
- * Las líneas de archivos compartidos que el generador de servicios pide agregar a mano y sin las cuales el servicio
- * no compila ni pasa el lint: el alias de su contrato y la regla de límites de su `scope`.
+ * The shared file lines the service generator asks to add by hand and without which the service
+ * does not compile or pass lint: its contract alias and the boundaries rule of its `scope`.
  */
 export class SharedFileEdits {
-  /** La lista de servicios que comparten la misma regla de límites en `eslint.config.mjs`. */
+  /** The list of services that share the same boundaries rule in `eslint.config.mjs`. */
   private static readonly SERVICE_SCOPES = /\.\.\.\[([^\]]*)\]\.map\(/;
 
-  /** `tsconfig.base.json` con el alias `@contracts/<servicio>`. */
+  /** `tsconfig.base.json` with the `@contracts/<service>` alias. */
   static withContractAlias(tsconfig: string, service: NameForms): string {
     const config = JSON.parse(tsconfig) as {
       compilerOptions?: { paths?: Record<string, string[]> };
@@ -25,8 +25,8 @@ export class SharedFileEdits {
   }
 
   /**
-   * `eslint.config.mjs` con el servicio en la lista de los que siguen la regla de límites de los servicios.
-   * @throws GeneratorError `MissingMarker` si la lista no está.
+   * `eslint.config.mjs` with the service in the list of those that follow the service boundaries rule.
+   * @throws GeneratorError `MissingMarker` if the list is missing.
    */
   static withServiceScope(eslintConfig: string, service: NameForms): string {
     const match = SharedFileEdits.SERVICE_SCOPES.exec(eslintConfig);

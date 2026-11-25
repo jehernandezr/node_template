@@ -1,38 +1,38 @@
-/** Dialecto JSON Schema de todos los esquemas exportados. */
+/** JSON Schema dialect of all exported schemas. */
 export const JSON_SCHEMA_DIALECT =
   'https://json-schema.org/draft/2020-12/schema';
 
-/** Versión del formato de `contract.json`; el generador Dart la verifica. */
+/** Format version of `contract.json`; the Dart generator checks it. */
 export const EXPORT_FORMAT_VERSION = 2;
 
-/** Versión de AsyncAPI del documento generado. */
+/** AsyncAPI version of the generated document. */
 export const ASYNCAPI_VERSION = '3.0.0';
 
-/** Versión del formato de `topology.json`. Terraform y LocalStack la leen. */
+/** Format version of `topology.json`. Terraform and LocalStack read it. */
 export const TOPOLOGY_FORMAT_VERSION = 1;
 
-/** Ruta de `asyncapi.json`, relativa a `backend/`. Sus `$ref` apuntan a cada `contract.json`. */
+/** Path of `asyncapi.json`, relative to `backend/`. Its `$ref` entries point to each `contract.json`. */
 export const ASYNCAPI_PATH = 'libs/contracts/asyncapi.json';
 
-/** Ruta de `topology.json`, relativa a `backend/`. */
+/** Path of `topology.json`, relative to `backend/`. */
 export const TOPOLOGY_PATH = 'infra/terraform/topology.json';
 
-/** Carpeta con un subdirectorio por servicio, relativa a `backend/`. */
+/** Folder with one subdirectory per service, relative to `backend/`. */
 export const CONTRACTS_DIR = 'libs/contracts';
 
-/** Subcarpeta de cada contrato donde se escribe `contract.json`. */
+/** Subfolder of each contract where `contract.json` is written. */
 export const EXPORT_DIR = 'export';
 
-/** Archivo que lee el generador Dart, dentro de `EXPORT_DIR`. */
+/** File the Dart generator reads, inside `EXPORT_DIR`. */
 export const CONTRACT_EXPORT_FILE = 'contract.json';
 
-/** OpenAPI de las rutas de cada servicio, dentro de `EXPORT_DIR`. */
+/** OpenAPI of each service's routes, inside `EXPORT_DIR`. */
 export const OPENAPI_EXPORT_FILE = 'openapi.json';
 
-/** Versión de OpenAPI de los documentos generados. */
+/** OpenAPI version of the generated documents. */
 export const OPENAPI_VERSION = '3.1.0';
 
-/** Subcomandos de la línea de comandos. */
+/** Command line subcommands. */
 export enum ExportCommandName {
   Export = 'export',
   Check = 'check',
@@ -41,18 +41,18 @@ export enum ExportCommandName {
   OpenApi = 'openapi',
 }
 
-/** Qué artefactos genera un subcomando. */
+/** Which artifacts a subcommand generates. */
 export enum ExportScope {
   All = 'all',
   TopologyOnly = 'topology-only',
   OpenApiOnly = 'openapi-only',
 }
 
-/** Códigos de salida del proceso. */
+/** Process exit codes. */
 export enum ExitCode {
   Success = 0,
-  /** Los archivos generados no coinciden con los contratos o la exportación falló. */
+  /** The generated files do not match the contracts or the export failed. */
   Failure = 1,
-  /** El subcomando no existe. */
+  /** The subcommand does not exist. */
   Usage = 2,
 }

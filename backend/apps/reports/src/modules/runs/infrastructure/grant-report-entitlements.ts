@@ -3,7 +3,7 @@ import { PlanFeature } from '@contracts/identity';
 import { AccessResolver } from '@platform/auth';
 import { ReportEntitlements } from '../domain/report-entitlements.js';
 
-/** Las funcionalidades del plan que identity deja en el acceso del usuario en el tenant. */
+/** The plan features identity leaves in the user's access in the tenant. */
 @Injectable()
 export class GrantReportEntitlements extends ReportEntitlements {
   constructor(private readonly access: AccessResolver) {

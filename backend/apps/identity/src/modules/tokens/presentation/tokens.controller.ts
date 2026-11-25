@@ -6,7 +6,7 @@ import { GetJwks } from '../application/get-jwks.use-case.js';
 
 @Resource(IdentityResource.Tokens)
 export class TokensController {
-  /** Los demás servicios guardan el JWKS cinco minutos; una clave nueva entra como de verificación antes de firmar. */
+  /** The other services cache the JWKS for five minutes; a new key enters as a verification key before signing. */
   private static readonly CACHE_CONTROL = 'public, max-age=300';
 
   constructor(private readonly jwks: GetJwks) {}

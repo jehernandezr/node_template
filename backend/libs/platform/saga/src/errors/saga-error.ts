@@ -1,7 +1,7 @@
 import { PlatformError, type PlatformErrorOptions } from '@platform/kernel';
 import { SagaErrorCode } from './saga-error-code.enum.js';
 
-/** Códigos que indican que otra corrida se interpuso: reintentar más tarde puede funcionar. */
+/** Codes that indicate another run got in the way: retrying later may work. */
 const CONTENTION: ReadonlySet<SagaErrorCode> = new Set([
   SagaErrorCode.ConcurrentModification,
   SagaErrorCode.LeaseNotAcquired,
@@ -9,9 +9,9 @@ const CONTENTION: ReadonlySet<SagaErrorCode> = new Set([
 ]);
 
 /**
- * Error base de `@platform/saga`, con un `code` estable. La contención es
- * transitoria; todo lo demás es permanente, porque repetir la misma llamada
- * contra la misma instancia da la misma respuesta.
+ * Base error of `@platform/saga`, with a stable `code`. Contention is
+ * transient; everything else is permanent, because repeating the same call
+ * against the same instance gives the same response.
  */
 export class SagaError extends PlatformError {
   override readonly code: SagaErrorCode;

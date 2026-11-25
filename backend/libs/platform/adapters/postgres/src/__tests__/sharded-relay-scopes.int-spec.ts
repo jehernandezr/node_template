@@ -48,7 +48,7 @@ runtime.describeIfAvailable('ShardedRelayScopes over PostgreSQL', () => {
     });
   }
 
-  /** Cuerpo de la pasada: reclama con el relay y anota en qué shard corrió y qué reclamó. */
+  /** Body of the pass: claims with the relay and records which shard it ran on and what it claimed. */
   function visitOf(visits: Visit[]): () => Promise<void> {
     return async () => {
       const clock = new FixedClock(T0);

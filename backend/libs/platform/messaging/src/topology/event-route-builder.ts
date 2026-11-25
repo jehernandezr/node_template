@@ -6,7 +6,7 @@ import { RouteDef } from './route-def.js';
 import { TargetKind } from './target-kind.enum.js';
 import type { TopicDef } from './topic-def.js';
 
-/** Segundo paso de `Route.event(...)`. */
+/** Second step of `Route.event(...)`. */
 export class EventRouteBuilder {
   private readonly type: string;
   private readonly contract: EventDefinition | null;
@@ -16,7 +16,7 @@ export class EventRouteBuilder {
     this.contract = typeof source === 'string' ? null : source;
   }
 
-  /** Publica este tipo de evento en un tópico. */
+  /** Publishes this event type to a topic. */
   to(topic: TopicDef): RouteDef {
     return new RouteDef(
       MessageKind.Event,

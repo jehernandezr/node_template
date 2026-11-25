@@ -14,7 +14,7 @@ import type { EndpointOptions } from '../endpoint-options.js';
 import type { EndpointMetadata } from './endpoint-metadata.js';
 import { HttpMetadataKey } from './http-metadata-key.enum.js';
 
-/** Escribe los metadatos de `@Endpoint`. */
+/** Writes the `@Endpoint` metadata. */
 export class EndpointDecorator {
   private static readonly METHODS: Readonly<Record<HttpMethod, RequestMethod>> =
     {
@@ -25,14 +25,14 @@ export class EndpointDecorator {
       [HttpMethod.Delete]: RequestMethod.DELETE,
     };
 
-  /** `{param}` del contrato a `:param` de Express. */
+  /** Converts the contract's `{param}` to Express `:param`. */
   static expressPath(path: string): string {
     return path.replace(/\{([A-Za-z][A-Za-z0-9]*)\}/g, ':$1');
   }
 
   /**
-   * Registra el método y el path del contrato, el código de éxito y los metadatos de la ruta.
-   * @throws Error si una ruta pública declara `auth`: se detecta al cargar la clase.
+   * Registers the contract method and path, the success code and the route metadata.
+   * @throws Error if a public route declares `auth`: detected when the class loads.
    */
   static apply(
     route: RouteDefinition,
@@ -55,5 +55,5 @@ export class EndpointDecorator {
   }
 }
 
-/** Decorador `@Endpoint(route, opts?)` de los métodos de un controller. */
+/** `@Endpoint(route, opts?)` decorator for controller methods. */
 export const Endpoint = EndpointDecorator.apply;

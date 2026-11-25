@@ -7,27 +7,27 @@ import {
   type ServiceTestServers,
 } from '@platform/service/test-utils';
 
-/** La fila de un tenant en el directorio de shards del catálogo. */
+/** A tenant row in the catalog shard directory. */
 export interface DirectoryRow {
   readonly region: string;
   readonly shard_group: readonly string[];
   readonly status: string;
 }
 
-/** Lo que deja un ensayo: dos altas iguales, la fila que quedó y dos retiros iguales. */
+/** What a rehearsal leaves: two identical sign-ups, the resulting row and two identical removals. */
 export interface TenantDirectoryReport {
   readonly tenantId: string;
   readonly placements: readonly CallOutcome<unknown>[];
   readonly placedRows: readonly DirectoryRow[];
   readonly removals: readonly CallOutcome<unknown>[];
   readonly rowsAfterRemoval: readonly DirectoryRow[];
-  /** Lo que responde el alta de un grupo que el servicio no tiene. */
+  /** What the sign-up of a group the service does not have returns. */
   readonly unknownGroup: CallOutcome<unknown>;
 }
 
 /**
- * Llama las operaciones del directorio de tenants de un servicio en marcha, como lo hace la saga de alta: ubica dos
- * veces un tenant nuevo en el segundo grupo y lo retira dos veces, como la compensación que se repite.
+ * Calls the tenant directory operations of a running service, as the sign-up saga does: places a new
+ * tenant twice in the second group and removes it twice, like a repeated compensation.
  */
 export class TenantDirectoryRehearsal {
   private readonly ids = new UuidV7IdGenerator();
@@ -38,7 +38,7 @@ export class TenantDirectoryRehearsal {
     private readonly servers: ServiceTestServers,
   ) {}
 
-  /** El shard lógico del servicio en el grupo del ensayo. */
+  /** The service logical shard in the rehearsal group. */
   expectedShard(): string {
     return this.servers.shards()[1].database;
   }

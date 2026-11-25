@@ -77,16 +77,16 @@ describe('AsyncApiBuilder', () => {
 
     it('marks FIFO topics and queues in the channel description', () => {
       expect(channels['orders-events']?.['description']).toBe(
-        'Tópico FIFO de orders. Eventos de pedidos.',
+        'FIFO topic of orders. Eventos de pedidos.',
       );
       expect(channels['audit-events']?.['description']).toBe(
-        'Tópico de audit. Eventos de auditoría.',
+        'Topic of audit. Eventos de auditoría.',
       );
       expect(channels['reporting-events']?.['description']).toBe(
-        'Cola FIFO de reporting. Todo lo que se reporta.',
+        'FIFO queue of reporting. Todo lo que se reporta.',
       );
       expect(channels['payments-commands']?.['description']).toBe(
-        'Cola de payments. Comandos de pagos.',
+        'Queue of payments. Comandos de pagos.',
       );
     });
 
@@ -171,7 +171,7 @@ describe('AsyncApiBuilder', () => {
       });
 
       expect(() => builder.build([platformContract, ghost])).toThrow(
-        /asyncapi \(ghost\): ghost\.thing\.happened\.v1 usa un esquema sin nombre/,
+        /asyncapi \(ghost\): ghost\.thing\.happened\.v1 uses an unnamed schema/,
       );
     });
 
@@ -195,14 +195,14 @@ describe('AsyncApiBuilder', () => {
       });
 
       expect(() => builder.build([platformContract, ghost])).toThrow(
-        /usa un esquema sin nombre/,
+        /uses an unnamed schema/,
       );
     });
 
     it('propagates topology validation errors', () => {
       expect(() =>
         builder.build([platformContract, ContractFixtures.orders()]),
-      ).toThrow(/topology-export: orders envía payments\.payment\.charge\.v1/);
+      ).toThrow(/topology-export: orders sends payments\.payment\.charge\.v1/);
     });
 
     it('propagates global uniqueness errors', () => {
@@ -214,7 +214,7 @@ describe('AsyncApiBuilder', () => {
           orders,
           { ...orders, service: 'copy' },
         ]),
-      ).toThrow(/ya está declarado en orders/);
+      ).toThrow(/is already declared in orders/);
     });
   });
 });

@@ -2,9 +2,9 @@ import { ShardDirectoryChangeKind } from './model/shard-directory-change-kind.en
 import type { ShardDirectoryChanged } from './model/shard-directory-changed.js';
 import { ShardingEvent } from './model/sharding-event.enum.js';
 
-/** Serializa y valida los cambios del directorio que viajan por un canal de texto (Valkey pub/sub, una cola). */
+/** Serializes and validates directory changes that travel over a text channel (Valkey pub/sub, a queue). */
 export class ShardDirectoryChangeCodec {
-  /** Longitud máxima de un id en un mensaje de cambio. Los ids son UUIDv7 o nombres de shard. */
+  /** Maximum length of an id in a change message. Ids are UUIDv7 or shard names. */
   private static readonly MAX_ID_LENGTH = 256;
 
   static encode(event: ShardDirectoryChanged): string {
@@ -12,8 +12,8 @@ export class ShardDirectoryChangeCodec {
   }
 
   /**
-   * Interpreta y valida un cambio recibido de un canal. Todo lo malformado
-   * devuelve `undefined`, así un mensaje malo se ignora en vez de invalidar al tenant equivocado.
+   * Parses and validates a change received from a channel. Anything malformed
+   * returns `undefined`, so a bad message is ignored instead of invalidating the wrong tenant.
    */
   static decode(raw: string): ShardDirectoryChanged | undefined {
     let data: unknown;

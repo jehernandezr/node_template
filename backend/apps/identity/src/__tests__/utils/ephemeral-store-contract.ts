@@ -1,15 +1,15 @@
 import type { FixedClock } from '@platform/kernel/test-utils';
 import type { EphemeralStore } from '../../ephemeral/ephemeral-store.js';
 
-/** Un `EphemeralStore` recién creado y, si el adaptador lo permite, cómo hacer pasar el tiempo. */
+/** A freshly created `EphemeralStore` and, if the adapter allows it, how to advance time. */
 export interface EphemeralStoreFixture {
   readonly store: EphemeralStore;
-  /** Llaves únicas por prueba: el adaptador real comparte el servidor. */
+  /** Unique keys per test: the real adapter shares the server. */
   readonly key: (name: string) => string;
   readonly clock?: FixedClock;
 }
 
-/** Prueba de contrato de `EphemeralStore`: la cumplen el doble en memoria y el adaptador de Valkey. */
+/** Contract test for `EphemeralStore`: both the in-memory double and the Valkey adapter satisfy it. */
 export function runEphemeralStoreContract(
   name: string,
   create: () => Promise<EphemeralStoreFixture>,

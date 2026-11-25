@@ -1,6 +1,6 @@
 import type { ResilienceEventKind } from './resilience-event-kind.enum.js';
 
-/** Datos primitivos que acompañan a un evento. Nunca incluye el error crudo. */
+/** Primitive data that accompanies an event. Never includes the raw error. */
 export interface ResilienceEventDetail {
   readonly attempt?: number;
   readonly delayMs?: number;
@@ -9,18 +9,18 @@ export interface ResilienceEventDetail {
   readonly errorCode?: string;
 }
 
-/** Evento de una política, pensado para métricas y trazas. */
+/** Event of a policy, meant for metrics and traces. */
 export interface ResilienceEvent {
   readonly policy: string;
-  /** Dependencia cuyo breaker o bulkhead emitió el evento. Por defecto, el nombre de la política. */
+  /** Dependency whose breaker or bulkhead emitted the event. Defaults to the policy name. */
   readonly dependencyKey: string;
   readonly kind: ResilienceEventKind;
-  /** Milisegundos epoch en que ocurrió el evento. */
+  /** Epoch milliseconds when the event occurred. */
   readonly at: number;
   readonly detail?: ResilienceEventDetail;
 }
 
-/** Recibe cada evento de resiliencia. */
+/** Receives each resilience event. */
 export type ResilienceEventListener = (
   event: ResilienceEvent,
 ) => void | Promise<void>;

@@ -5,7 +5,7 @@ export type StreamRequestHandler = (
   response: ServerResponse,
 ) => void;
 
-/** El servidor HTTP donde se montan los transportes y cómo registrar una ruta `GET` en él. */
+/** The HTTP server where the transports are mounted and how to register a `GET` route on it. */
 export interface RealtimeHost {
   readonly server: Server;
   get(path: string, handler: StreamRequestHandler): void;

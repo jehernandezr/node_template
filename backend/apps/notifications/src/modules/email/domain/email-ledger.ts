@@ -1,12 +1,12 @@
-/** Estado de un correo en el registro. */
+/** Status of an email in the log. */
 export enum EmailStatus {
-  /** Reservado antes de entregarlo al proveedor: un reintento con el mismo `messageId` no lo vuelve a enviar. */
+  /** Reserved before handing it to the provider: a retry with the same `messageId` does not send it again. */
   Sending = 'sending',
   Sent = 'sent',
   Failed = 'failed',
 }
 
-/** Lo que queda de un correo: qué plantilla y versión, a quién (su huella) y cómo terminó. Nunca el cuerpo. */
+/** What remains of an email: which template and version, to whom (their hash) and how it ended. Never the body. */
 export interface EmailRecord {
   readonly messageId: string;
   readonly template: string;
@@ -17,11 +17,11 @@ export interface EmailRecord {
   readonly traceId?: string;
 }
 
-/** Lo que dice el registro de un correo antes de enviarlo. */
+/** What an email's log entry says before sending it. */
 export enum EmailReservationKind {
-  /** Este envío es el dueño del `messageId`: puede entregarlo al proveedor. */
+  /** This send owns the `messageId`: it can hand it to the provider. */
   Reserved = 'reserved',
-  /** Ya se envió o hay otro envío en curso: este no debe enviar. */
+  /** It was already sent or another send is in progress: this one must not send. */
   Taken = 'taken',
 }
 
@@ -32,22 +32,22 @@ export type EmailReservation =
       readonly current: EmailRecord;
     };
 
-/** Registro de correos enviados y lista de supresión, en el catálogo. */
+/** Log of sent emails and suppression list, in the catalog. */
 export abstract class EmailLedger {
   /**
-   * Lee el registro de un correo.
-   * @param messageId Id del mensaje.
-   * @returns El registro, o `undefined` si nunca se reservó.
+   * Reads an email's log entry.
+   * @param messageId Message id.
+   * @returns The log entry, or `undefined` if it was never reserved.
    */
   abstract find(messageId: string): Promise<EmailRecord | undefined>;
 
   /**
-   * Reserva el `messageId` en `Sending` de forma atómica, antes de enviar. Lo toma si no existe, si el envío anterior
-   * falló o si quedó en `Sending` más de `abandonedAfterMs` (el proceso que lo reservó cayó), medido con el reloj del
-   * registro.
-   * @param entry Correo a reservar.
-   * @param abandonedAfterMs Milisegundos tras los que una reserva en `Sending` se da por abandonada.
-   * @returns `Reserved` si este envío es el dueño, o `Taken` con el registro vigente.
+   * Reserves the `messageId` in `Sending` atomically, before sending. Takes it if it does not exist, if the previous send
+   * failed or if it stayed in `Sending` longer than `abandonedAfterMs` (the process that reserved it crashed), measured with the
+   * log's clock.
+   * @param entry Email to reserve.
+   * @param abandonedAfterMs Milliseconds after which a reservation in `Sending` is considered abandoned.
+   * @returns `Reserved` if this send is the owner, or `Taken` with the current log entry.
    */
   abstract reserve(
     entry: Omit<EmailRecord, 'status' | 'providerId'>,
@@ -55,22 +55,22 @@ export abstract class EmailLedger {
   ): Promise<EmailReservation>;
 
   /**
-   * Guarda o reemplaza el registro del correo.
-   * @param entry Registro completo, con su estado y el id del proveedor si se envió.
+   * Saves or replaces the email's log entry.
+   * @param entry Full log entry, with its state and the provider's id if it was sent.
    */
   abstract record(entry: EmailRecord): Promise<void>;
 
   /**
-   * Indica si el destinatario está en la lista de supresión.
-   * @param recipientHash Huella del destinatario.
-   * @returns `true` si no se le debe escribir.
+   * Returns whether the recipient is in the suppression list.
+   * @param recipientHash Hash of the recipient.
+   * @returns `true` if they must not be written to.
    */
   abstract isSuppressed(recipientHash: string): Promise<boolean>;
 
   /**
-   * Agrega el destinatario a la lista de supresión; repetirlo no cambia nada.
-   * @param recipientHash Huella del destinatario.
-   * @param reason Motivo, como un rebote o una queja.
+   * Adds the recipient to the suppression list; repeating it changes nothing.
+   * @param recipientHash Hash of the recipient.
+   * @param reason Reason, such as a bounce or a complaint.
    */
   abstract suppress(recipientHash: string, reason: string): Promise<void>;
 }

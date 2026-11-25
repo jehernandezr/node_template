@@ -3,18 +3,18 @@ import type { TransactionOptions } from './transaction-options.js';
 import type { UnitOfWork } from './unit-of-work.js';
 
 /**
- * Puerto de transacciones (Unit of Work). Lo usan los casos de uso, el router
- * interno (guardar el resultado con los efectos) y el bus de mensajes (el
- * outbox en la misma transacción).
+ * Transaction port (Unit of Work). Used by the use cases, the internal
+ * router (saving the result with the effects) and the message bus (the
+ * outbox in the same transaction).
  *
- * - `runInTransaction(fn)` abre una transacción, o se une a la que ya está
- *   abierta en la misma base (las opciones de la externa mandan).
- * - Si `fn` lanza, la transacción se deshace y el error sale tal cual.
- * - `afterCommit` fuera de una transacción corre el efecto de inmediato, porque
- *   no hay nada que esperar.
+ * - `runInTransaction(fn)` opens a transaction, or joins the one already
+ *   open on the same database (the options of the outer one win).
+ * - If `fn` throws, the transaction is rolled back and the error propagates as is.
+ * - `afterCommit` outside a transaction runs the effect immediately, because
+ *   there is nothing to wait for.
  *
- * Todos sus miembros son públicos y abstractos, así que un objeto literal con
- * esos métodos sigue sirviendo de doble.
+ * All its members are public and abstract, so an object literal with
+ * those methods still works as a test double.
  */
 export abstract class TransactionManager<U extends UnitOfWork = UnitOfWork> {
   abstract runInTransaction<T>(
@@ -22,7 +22,7 @@ export abstract class TransactionManager<U extends UnitOfWork = UnitOfWork> {
     options?: TransactionOptions,
   ): Promise<T>;
 
-  /** La unidad de trabajo abierta en este contexto asíncrono, si hay una. */
+  /** The unit of work open in this async context, if there is one. */
   abstract current(): U | undefined;
 
   abstract isInTransaction(): boolean;

@@ -1,11 +1,11 @@
 import { Ids, DeviceProof, Now } from './fixtures.js';
 
-/** Credencial WebAuthn de prueba: `{"id":"abc"}` en base64url. */
+/** Test WebAuthn credential: `{"id":"abc"}` in base64url. */
 const CREDENTIAL_JSON = Buffer.from('{"id":"abc"}').toString('base64url');
 
 /**
- * Un ejemplo válido por esquema de petición. Cada prueba parte de aquí y
- * cambia un campo para comprobar que el esquema lo rechaza.
+ * One valid example per request schema. Each test starts from here and
+ * changes a field to check that the schema rejects it.
  */
 export const ValidRequests = {
   SignUpRequest: {
@@ -109,7 +109,7 @@ export const ValidRequests = {
   SuspendTenantInput: { tenantId: Ids.tenant, reason: 'Pago vencido' },
 } as const;
 
-/** Un ejemplo válido por payload de evento, con los mismos ids que las peticiones. */
+/** One valid example per event payload, with the same ids as the requests. */
 export const ValidPayloads = {
   UserRegisteredPayload: {
     userId: Ids.user,

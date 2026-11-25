@@ -2,8 +2,8 @@ import { TransactionManager, type TransactionHook } from '@platform/kernel';
 import { FakeUnitOfWork } from './fake-unit-of-work.js';
 
 /**
- * Gestor de transacciones de prueba. Una transacción abierta es una pila de
- * unidades: una llamada anidada se une a la que ya está abierta.
+ * Test transaction manager. An open transaction is a stack of
+ * units: a nested call joins the one already open.
  */
 export class FakeTransactionManager extends TransactionManager<FakeUnitOfWork> {
   private readonly open: FakeUnitOfWork[] = [];

@@ -4,8 +4,8 @@ import {
 } from '../../../shared/utils/opaque-token.js';
 
 /**
- * Token de recuperación `pr1_<usuario>_<tenant de origen>_<recuperación>_<secreto>`. La ruta lleva a la
- * fila en el shard del usuario sin consultar el catálogo; la base guarda solo la huella del secreto.
+ * Recovery token `pr1_<user>_<home tenant>_<recovery>_<secret>`. The route leads to the
+ * row in the user's shard without querying the catalog; the database stores only the secret's hash.
  */
 export class PasswordResetToken {
   static readonly PREFIX = 'pr1';
@@ -18,7 +18,7 @@ export class PasswordResetToken {
     readonly secret: Buffer,
   ) {}
 
-  /** `undefined` si el texto no es un token de recuperación bien formado. */
+  /** `undefined` if the text is not a well-formed recovery token. */
   static parse(text: string): PasswordResetToken | undefined {
     const parsed = parseOpaqueToken(
       text,

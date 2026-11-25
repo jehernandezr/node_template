@@ -1,4 +1,4 @@
-/** Códigos de error estables de `@platform/sharding`. */
+/** Stable error codes of `@platform/sharding`. */
 export enum ShardingErrorCode {
   KeyMissing = 'PLATFORM.SHARDING.KEY_MISSING',
   CrossShardTransaction = 'PLATFORM.SHARDING.CROSS_SHARD_TX',
@@ -7,10 +7,10 @@ export enum ShardingErrorCode {
   UnknownTenant = 'PLATFORM.SHARDING.UNKNOWN_TENANT',
   UnknownShard = 'PLATFORM.SHARDING.UNKNOWN_SHARD',
   WrongRegion = 'PLATFORM.SHARDING.WRONG_REGION',
-  /** El id del tenant no es un UUIDv7 (o no cumple el formato configurado). */
+  /** The tenant id is not a UUIDv7 (or does not match the configured format). */
   InvalidTenantId = 'PLATFORM.SHARDING.INVALID_TENANT_ID',
-  /** La clave de enrutamiento supera el máximo configurado. */
+  /** The routing key exceeds the configured maximum. */
   InvalidKey = 'PLATFORM.SHARDING.INVALID_KEY',
-  /** Un constructor o método recibió una opción inválida. Es un error de programación. */
+  /** A constructor or method received an invalid option. This is a programming error. */
   InvalidConfiguration = 'PLATFORM.SHARDING.INVALID_CONFIG',
 }

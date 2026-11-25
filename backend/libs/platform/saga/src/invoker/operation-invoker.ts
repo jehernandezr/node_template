@@ -3,20 +3,20 @@ import type { CallOutcome } from '@platform/primitives';
 import type { InvokeOptions } from './invoke-options.js';
 
 /**
- * Puerto que llama a una operación de otro servicio. Los reintentos dentro
- * del presupuesto del paso son de la implementación; la saga reacciona al
- * resultado final. Un error lanzado se clasifica con `FailureClassifier`.
+ * Port that calls an operation of another service. Retries within
+ * the step budget belong to the implementation; the saga reacts to the
+ * final result. A thrown error is classified with `FailureClassifier`.
  */
 export abstract class OperationInvoker {
   /**
-   * Operaciones que este invocador puede llamar. Cuando existe, el registro de
-   * sagas valida las suyas contra ellas al arrancar.
+   * Operations this invoker can call. When present, the saga registry
+   * validates the sagas' operations against them at startup.
    */
   get contracts(): ContractRegistry | undefined {
     return undefined;
   }
 
-  /** Llama a `operationId` con `idempotencyKey`, que el participante debe respetar. */
+  /** Calls `operationId` with `idempotencyKey`, which the participant must honor. */
   abstract invoke(
     operationId: string,
     input: unknown,

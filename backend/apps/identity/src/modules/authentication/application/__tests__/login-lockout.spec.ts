@@ -15,7 +15,7 @@ class LockoutHarness {
   readonly lockout = this.fixture.lockout;
   readonly account = this.fixture.keys.account('ana@example.com');
 
-  /** Falla `times` veces la cuenta desde la IP dada y devuelve el último resultado. */
+  /** Fails the account `times` times from the given IP and returns the last result. */
   async failFrom(ip: string, times: number) {
     const outcomes = [];
     for (let attempt = 0; attempt < times; attempt += 1) {

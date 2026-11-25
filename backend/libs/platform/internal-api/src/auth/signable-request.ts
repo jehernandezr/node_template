@@ -1,16 +1,16 @@
-/** Lo que se firma de una llamada: método, ruta, cuerpo y las cabeceras del protocolo. */
+/** What gets signed from a call: method, path, body and the protocol headers. */
 export interface SignableRequest {
-  /** Método HTTP en mayúscula. */
+  /** Uppercase HTTP method. */
   readonly method: string;
-  /** Ruta sin consulta, como `InternalApiRoute.pathOf`. */
+  /** Path without query, like `InternalApiRoute.pathOf`. */
   readonly path: string;
-  /** Cuerpo ya interpretado: la firma cubre su JSON canónico, no los bytes enviados. */
+  /** Already parsed body: the signature covers its canonical JSON, not the bytes sent. */
   readonly body: unknown;
   /**
-   * URL base del servicio destino (`ServiceBaseUrls`), sin la ruta. Los firmadores que atan la firma
-   * al destino, como SigV4, la necesitan; el HMAC la ignora.
+   * Base URL of the target service (`ServiceBaseUrls`), without the path. Signers that bind the signature
+   * to the target, such as SigV4, need it; HMAC ignores it.
    */
   readonly baseUrl?: string;
-  /** Cabeceras con el nombre en minúscula. */
+  /** Headers with lowercase names. */
   readonly headers: Readonly<Record<string, string | undefined>>;
 }

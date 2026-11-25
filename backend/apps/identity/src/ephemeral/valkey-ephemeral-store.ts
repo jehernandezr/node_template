@@ -6,7 +6,7 @@ import {
 } from '@platform/adapters-valkey';
 import { EphemeralStore } from './ephemeral-store.js';
 
-/** `EphemeralStore` sobre Valkey, dentro del prefijo del servicio. Los pasos compuestos son scripts de Lua. */
+/** `EphemeralStore` on Valkey, within the service prefix. The compound steps are Lua scripts. */
 export class ValkeyEphemeralStore extends EphemeralStore {
   private static readonly TAKE = new LuaScript(
     "local v = redis.call('GET', KEYS[1]); if v then redis.call('DEL', KEYS[1]) end; return v",

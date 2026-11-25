@@ -2,12 +2,12 @@ import { IdentityErrorCode, TenantKind } from '@contracts/identity';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import type { TenantSnapshot } from '../../tenants/index.js';
 
-/** Qué tenant se puede trasladar. */
+/** Which tenant can be moved. */
 export class TenantMovePolicy {
   /**
-   * El tenant compartido de clientes y el de plataforma tienen datos en todos los shards de su región, así que no
-   * caben en un solo grupo de destino.
-   * @throws IdentityError `IDENTITY.TENANT_MOVE.NOT_MOVABLE` si el tenant no es una organización.
+   * The shared customer tenant and the platform tenant have data in every shard of their region, so they do not
+   * fit in a single target group.
+   * @throws IdentityError `IDENTITY.TENANT_MOVE.NOT_MOVABLE` if the tenant is not an organization.
    */
   static assertMovable(tenant: TenantSnapshot): void {
     if (tenant.kind !== TenantKind.Organization) {

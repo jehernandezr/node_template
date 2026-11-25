@@ -3,16 +3,16 @@ import { FailureClassifier, RetryAfterParser } from '@platform/primitives';
 import { RetryAfterHeader } from './retry-after-header.enum.js';
 
 /**
- * Lee la espera que sugiere el servidor en un error: un `retryAfterMs`
- * numérico o el encabezado `Retry-After`, en el error, en su `response` o en
- * su cadena `cause`.
+ * Reads the wait that the server suggests in an error: a numeric `retryAfterMs`
+ * or the `Retry-After` header, in the error, in its `response` or in
+ * its `cause` chain.
  */
 export class RetryAfterHint {
   constructor(private readonly clock: Clock) {}
 
   /**
-   * @returns la espera en milisegundos, acotada a `[0, maxMs]`, o `undefined`
-   *   si el error no trae una pista válida.
+   * @returns the wait in milliseconds, bounded to `[0, maxMs]`, or `undefined`
+   *   if the error does not carry a valid hint.
    */
   hintMs(
     error: unknown,

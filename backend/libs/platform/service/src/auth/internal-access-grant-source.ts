@@ -8,7 +8,7 @@ import type { InternalClient } from '@platform/internal-api';
 import type { IdGenerator } from '@platform/kernel';
 import { CallOutcomeKind } from '@platform/primitives';
 
-/** El acceso de un usuario pedido a identity por la API interna, para los servicios que no son identity. */
+/** A user's access requested from identity through the internal API, for the services that are not identity. */
 export class InternalAccessGrantSource extends AccessGrantSource {
   constructor(
     private readonly client: InternalClient,
@@ -17,7 +17,7 @@ export class InternalAccessGrantSource extends AccessGrantSource {
     super();
   }
 
-  /** @throws AuthenticationError `stateUnavailable` si identity no responde con el acceso. */
+  /** @throws AuthenticationError `stateUnavailable` if identity does not respond with the access. */
   async fetch(tenantId: string, userId: string): Promise<AccessGrant> {
     const outcome = await this.client.call(
       GetUserAccessOperation,

@@ -14,7 +14,7 @@ import {
 } from './demo-contract.js';
 import { DemoResource } from './demo-resource.enum.js';
 
-/** Rutas de elementos, con y sin deprecación. */
+/** Item routes, with and without deprecation. */
 @Resource(DemoResource.Items)
 export class ItemsController {
   @Endpoint(CreateItemRoute, { rateLimit: RateLimitTier.Standard })

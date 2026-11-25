@@ -2,7 +2,7 @@ import type { ExportReport } from './artifact.type.js';
 import { ExportMode } from './export-mode.js';
 import type { FileSystem } from './file-system.js';
 
-/** Escribe cada archivo generado, sobrescribiendo el que haya. */
+/** Writes each generated file, overwriting any existing one. */
 export class WriteMode extends ExportMode {
   private readonly lines: string[] = [];
 
@@ -12,7 +12,7 @@ export class WriteMode extends ExportMode {
 
   async apply(path: string, content: string): Promise<void> {
     await this.fileSystem.write(path, content);
-    this.lines.push(`Escrito ${path}`);
+    this.lines.push(`Wrote ${path}`);
   }
 
   report(): ExportReport {

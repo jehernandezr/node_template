@@ -2,7 +2,7 @@ import { FailureKind } from '@platform/kernel';
 import { CacheError } from './cache-error.js';
 import { CacheErrorCode } from './cache-error-code.enum.js';
 
-/** La llave supera el largo permitido. */
+/** The key exceeds the allowed length. */
 export class CacheKeyTooLongError extends CacheError {
   override readonly code = CacheErrorCode.KeyTooLong;
 

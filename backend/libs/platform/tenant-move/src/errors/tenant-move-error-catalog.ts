@@ -1,7 +1,7 @@
 import { defineErrorCatalog, ErrorSpecs } from '@contracts/platform';
 import { TenantMoveErrorCode } from './tenant-move-error-code.enum.js';
 
-/** Catálogo de `@platform/tenant-move`. Ningún código sale al cliente: los responde una operación interna. */
+/** Catalog of `@platform/tenant-move`. No code reaches the client: an internal operation returns them. */
 export const tenantMoveErrorCatalog = defineErrorCatalog(TenantMoveErrorCode, {
   [TenantMoveErrorCode.UnknownTarget]: ErrorSpecs.internal(
     400,

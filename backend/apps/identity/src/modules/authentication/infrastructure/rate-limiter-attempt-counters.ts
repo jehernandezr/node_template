@@ -8,9 +8,9 @@ import {
 } from '../domain/attempt-counters.js';
 
 /**
- * `AttemptCounters` sobre el `RateLimiter` de la plataforma: una regla por dimensión con su ventana. El
- * límite de cada regla es el umbral de su bloqueo: al alcanzarlo la cuenta deja de subir, y la política
- * solo pregunta si se alcanzó.
+ * `AttemptCounters` over the platform `RateLimiter`: one rule per dimension with its window. The
+ * limit of each rule is its lockout threshold: once reached the count stops rising, and the policy
+ * only asks whether it was reached.
  */
 @Injectable()
 export class RateLimiterAttemptCounters extends AttemptCounters {

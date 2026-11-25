@@ -10,15 +10,15 @@ import type { ValkeyCommandExecutor } from './valkey-command-executor.js';
 import type { ValkeyKeyspace } from './valkey-keyspace.js';
 
 /**
- * `JobLock` entre procesos sobre Valkey. Toma el lock con `SET NX PX` y un
- * token aleatorio; solo quien tiene el token lo libera (compare-and-delete en
- * un script), así un lease vencido no quita el lock de quien lo tomó después.
- * Las llaves son `<prefijo>:joblock:<nombre>`.
+ * Cross-process `JobLock` on Valkey. It takes the lock with `SET NX PX` and a
+ * random token; only the token holder releases it (compare-and-delete in
+ * a script), so an expired lease does not remove the lock from whoever took it later.
+ * The keys are `<prefix>:joblock:<name>`.
  */
 export class ValkeyJobLock extends JobLock {
   private static readonly TOKEN_BYTES = 16;
 
-  /** KEYS[1] llave del lock; ARGV[1] token. Borra solo si el token coincide. */
+  /** KEYS[1] lock key; ARGV[1] token. Deletes only if the token matches. */
   private static readonly RELEASE = new LuaScript(`
 if redis.call('GET', KEYS[1]) == ARGV[1] then
   return redis.call('DEL', KEYS[1])
@@ -34,7 +34,7 @@ return 0
     super();
   }
 
-  /** @throws GuardViolationError con un nombre vacío o un `ttlMs` que no sea un entero positivo. */
+  /** @throws GuardViolationError with an empty name or a `ttlMs` that is not a positive integer. */
   async tryAcquire(name: string, ttlMs: number): Promise<JobLease | undefined> {
     Guard.default.nonEmpty('name', name);
     Guard.default.positiveInteger('ttlMs', ttlMs);

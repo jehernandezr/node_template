@@ -1,12 +1,12 @@
 import type { ClientPlatform } from '@contracts/identity';
 
-/** Estado completo de un dispositivo, tal como se guarda. */
+/** Full state of a device, as it is stored. */
 export interface DeviceState {
   readonly id: string;
   readonly userId: string;
   readonly name: string;
   readonly platform: ClientPlatform;
-  /** Clave pública P-256 en SPKI DER, base64url. */
+  /** P-256 public key in SPKI DER, base64url. */
   readonly publicKey: string;
   readonly firstSeenAt: Date;
   readonly lastSeenAt: Date;
@@ -18,7 +18,7 @@ export interface DeviceState {
   readonly version?: number;
 }
 
-/** Un dispositivo del usuario con su clave. El verificador aprueba los inicios de sesión de los demás. */
+/** A user's device with its key. The verifier approves the sign-ins of the others. */
 export class Device {
   private constructor(private state: DeviceState) {}
 
@@ -42,7 +42,7 @@ export class Device {
     return this.state.removedAt === undefined;
   }
 
-  /** Vigente y con confianza: puede reconocer un inicio de sesión. */
+  /** Current and trusted: it can recognize a sign-in. */
   isTrusted(now: Date): boolean {
     return (
       this.isActive() &&
@@ -63,7 +63,7 @@ export class Device {
     return true;
   }
 
-  /** Quita la confianza sin borrar el registro: deja de reconocerse y de aprobar. */
+  /** Removes trust without deleting the record: it is no longer recognized and no longer approves. */
   untrust(now: Date): void {
     this.state = { ...this.state, trustedUntil: now, verifier: false };
   }

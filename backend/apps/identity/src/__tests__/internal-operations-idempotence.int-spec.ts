@@ -25,13 +25,13 @@ import {
 
 const runtime = new ContainerRuntime(process.env);
 
-/** Lo que deja una operación: cuántos eventos de su tipo hay en el outbox y el estado de su fila. */
+/** What an operation leaves behind: how many events of its type are in the outbox and the state of its row. */
 interface Effects {
   readonly events: number;
   readonly state: unknown;
 }
 
-/** Una operación interna que modifica datos, con lo que necesita antes y cómo mirar sus efectos. */
+/** An internal operation that modifies data, with what it needs beforehand and how to inspect its effects. */
 interface OperationCase {
   readonly operation: OperationDefinition;
   readonly arrange: (fixture: OperationFixture) => Promise<unknown>;
@@ -43,10 +43,10 @@ interface OperationCase {
 }
 
 /**
- * Prepara tenants y usuarios para las operaciones internas y mira sus efectos desde fuera. Con
- * `requireScope` la llave de idempotencia vive en el catálogo y el resultado no se confirma con los efectos,
- * así que cada operación tiene que ser idempotente por su entrada: dos llaves distintas con la misma entrada
- * (o una caída entre el efecto y el registro de la llave) no pueden duplicar nada.
+ * Prepares tenants and users for the internal operations and inspects their effects from outside. With
+ * `requireScope` the idempotency key lives in the catalog and the result is not committed with the effects,
+ * so each operation must be idempotent by its input: two different keys with the same input
+ * (or a crash between the effect and the key record) cannot duplicate anything.
  */
 class OperationFixture {
   private sequence = 0;
@@ -75,7 +75,7 @@ class OperationFixture {
     return input;
   }
 
-  /** La entrada de `CreateTenant` de un tenant nuevo con un dueño nuevo. */
+  /** The `CreateTenant` input for a new tenant with a new owner. */
   async tenantInput(tenantId: string) {
     const owner = await this.user();
     const slug = `idempotente-${this.sequence}`;

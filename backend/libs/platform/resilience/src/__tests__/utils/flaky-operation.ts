@@ -1,6 +1,6 @@
 /**
- * Operación de prueba que falla las primeras `failures` veces y después
- * responde `value`. Cuenta sus llamadas en `calls`.
+ * Test operation that fails the first `failures` times and then
+ * returns `value`. Counts its calls in `calls`.
  */
 export class FlakyOperation<T> {
   calls = 0;

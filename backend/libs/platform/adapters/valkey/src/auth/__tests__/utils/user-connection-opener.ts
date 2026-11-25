@@ -4,7 +4,7 @@ import type {
   ValkeySubscriberClient,
 } from '../../../valkey-subscriber-connection.js';
 
-/** Abre las conexiones suscriptoras con un usuario concreto de Valkey. */
+/** Opens the subscriber connections with a specific Valkey user. */
 export class UserConnectionOpener implements ValkeyConnectionOpener {
   constructor(private readonly open: () => Valkey) {}
 

@@ -1,7 +1,7 @@
-/** Qué borra `SagaStore.purge`. */
+/** What `SagaStore.purge` deletes. */
 export interface SagaPurge {
-  /** Se borran las sagas `Completed` o `Compensated` cuya última actualización es anterior a este instante. */
+  /** Deletes the `Completed` or `Compensated` sagas whose last update is earlier than this instant. */
   readonly before: Date;
-  /** Máximo de sagas por llamada. Por defecto, `SagaStore.DEFAULT_PURGE_LIMIT`. */
+  /** Maximum sagas per call. By default, `SagaStore.DEFAULT_PURGE_LIMIT`. */
   readonly limit?: number;
 }

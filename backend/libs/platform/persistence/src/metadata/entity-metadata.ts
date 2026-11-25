@@ -1,18 +1,18 @@
-/** Clase de un registro persistido. */
+/** Class of a persisted record. */
 export type EntityClass = abstract new (...args: never[]) => object;
 
-/** Opciones de {@link Audited}. */
+/** Options of {@link Audited}. */
 export interface AuditedOptions {
-  /** Columnas que nunca se copian a `audit_log`, por ejemplo `password_hash`. */
+  /** Columns that are never copied to `audit_log`, for example `password_hash`. */
   readonly exclude?: readonly string[];
 }
 
 const audited = new WeakMap<object, AuditedOptions>();
 
 /**
- * La tabla del registro lleva el trigger de auditoría. La migración lo crea
- * con `auditTriggerSqlFor(Registro, tabla)`, así las columnas excluidas se
- * declaran una vez, junto al registro.
+ * The record table carries the audit trigger. The migration creates it
+ * with `auditTriggerSqlFor(Record, table)`, so the excluded columns are
+ * declared once, next to the record.
  */
 export function Audited(options: AuditedOptions = {}): ClassDecorator {
   return (target) => {
@@ -20,7 +20,7 @@ export function Audited(options: AuditedOptions = {}): ClassDecorator {
   };
 }
 
-/** Opciones de `@Audited` del registro, si lo lleva. */
+/** `@Audited` options of the record, if it has them. */
 export function auditedOptionsOf(
   entity: EntityClass,
 ): AuditedOptions | undefined {

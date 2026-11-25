@@ -1,11 +1,11 @@
-/** Ajustes de `LogicalReplicationTransfer`, de la configuración `TENANT_MOVE_*`. */
+/** Settings of `LogicalReplicationTransfer`, from the `TENANT_MOVE_*` configuration. */
 export interface LogicalReplicationOptions {
   readonly callBudgetMs: number;
-  /** WAL pendiente, en bytes, por debajo del cual la suscripción se da por alcanzada. */
+  /** Pending WAL, in bytes, below which the subscription is considered caught up. */
   readonly caughtUpBytes: number;
-  /** Espera máxima por el candado de `ALTER TABLE ... REPLICA IDENTITY`. */
+  /** Maximum wait for the `ALTER TABLE ... REPLICA IDENTITY` lock. */
   readonly lockTimeoutMs: number;
-  /** Cómo llega el servidor de destino al de origen; por defecto, la dirección que usa el servicio. */
+  /** How the target server reaches the source; by default, the address the service uses. */
   readonly sourceHost?: string;
   readonly sourcePort?: number;
 }

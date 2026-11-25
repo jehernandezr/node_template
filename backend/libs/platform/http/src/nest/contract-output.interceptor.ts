@@ -14,8 +14,8 @@ import type { PipelineRequest } from './pipeline-request.js';
 import { HTTP_OPTIONS } from './http.tokens.js';
 
 /**
- * Valida la respuesta contra el esquema de la ruta. Un desvío es un error del servidor: sale como
- * `PLATFORM.INTERNAL.UNEXPECTED`. Por defecto corre fuera de producción.
+ * Validates the response against the route's schema. A deviation is a server error: it comes out as
+ * `PLATFORM.INTERNAL.UNEXPECTED`. By default it runs outside production.
  */
 @Injectable()
 export class ContractOutputInterceptor implements NestInterceptor {

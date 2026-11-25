@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 
 /**
- * Id del aviso que un evento genera para un destinatario: un UUIDv7 con la marca de tiempo del mensaje y el
- * resto sacado de un hash de mensaje y destinatario. La reentrega del mismo evento da el mismo id y el aviso
- * no se repite. Utilidad pura.
+ * Id of the notice an event generates for a recipient: a UUIDv7 with the message timestamp and the
+ * rest taken from a hash of message and recipient. Redelivery of the same event yields the same id and the notice
+ * is not repeated. Pure utility.
  */
 export class NotificationIds {
   private static readonly TIMESTAMP_HEX = 12;

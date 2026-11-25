@@ -4,7 +4,7 @@ import { FlagStoreKind } from './flag-store-kind.enum.js';
 import type { FlagsSettings } from './flags.config.js';
 import { InMemoryFlagStore } from './in-memory-flag-store.js';
 
-/** Arma el `FlagStore` que pide `FLAGS_STORE`, sembrado con las reglas de `FEATURE_FLAGS`. */
+/** Builds the `FlagStore` requested by `FLAGS_STORE`, seeded with the rules from `FEATURE_FLAGS`. */
 export class FlagStoreSelector {
   select(settings: FlagsSettings): FlagStore {
     switch (settings.FLAGS_STORE) {

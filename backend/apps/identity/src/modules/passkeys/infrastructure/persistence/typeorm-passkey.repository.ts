@@ -5,7 +5,7 @@ import type { Passkey } from '../../domain/passkey.js';
 import { PasskeyRepository } from '../../domain/passkey-store.js';
 import { PasskeyEntity } from './entities/passkey.entity.js';
 
-/** `PasskeyRepository` sobre `passkeys` del shard del usuario. */
+/** `PasskeyRepository` over `passkeys` in the user's shard. */
 @Injectable()
 export class TypeOrmPasskeyRepository
   extends UserShardRepository

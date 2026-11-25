@@ -3,13 +3,13 @@ import type { SqsConsumerModuleOptions } from './sqs-consumer-module-options.js'
 import { SqsConsumerProviders } from './sqs-consumer.providers.js';
 
 /**
- * Consumo de una cola SQS con el `MessageDispatcher` de `MessagingModule`:
- * `SqsDeliveryProcessor`, `SqsLambdaHandler` y, salvo `poll: false`,
- * `SqsPoller`. No es global a propósito: Nest arranca los módulos globales
- * antes que los demás y los destruye después, así el poller empieza cuando
- * `MessagingExplorer` ya registró los consumidores y se detiene antes de que
- * `AwsModule` cierre los clientes y `PersistenceModule` cierre la base.
- * Necesita `AwsModule`, `MessagingModule` y `ObservabilityModule` en la aplicación.
+ * Consumption of an SQS queue with the `MessageDispatcher` of `MessagingModule`:
+ * `SqsDeliveryProcessor`, `SqsLambdaHandler` and, unless `poll: false`,
+ * `SqsPoller`. It is intentionally not global: Nest starts global modules
+ * before the others and destroys them after, so the poller starts when
+ * `MessagingExplorer` has already registered the consumers and stops before
+ * `AwsModule` closes the clients and `PersistenceModule` closes the database.
+ * Requires `AwsModule`, `MessagingModule` and `ObservabilityModule` in the application.
  */
 @Module({})
 export class SqsConsumerModule {

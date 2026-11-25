@@ -26,7 +26,7 @@ function read(file) {
   return readFileSync(join(WORKFLOWS_DIR, file), 'utf8');
 }
 
-// Devuelve el contenido de cada bloque run, de una línea o de bloque literal.
+// Returns the content of each run block, whether single-line or literal block.
 function runBlocks(text) {
   const blocks = [];
   const lines = text.split('\n');

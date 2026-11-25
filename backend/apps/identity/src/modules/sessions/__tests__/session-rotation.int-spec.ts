@@ -19,7 +19,7 @@ import { SessionToken } from '../domain/session-token.js';
 
 const runtime = new ContainerRuntime(process.env);
 
-/** La sesión de un usuario de prueba con la ruta que se lee de su access token. */
+/** A test user's session with the route read from its access token. */
 interface OpenSession {
   readonly journey: IdentityJourney;
   readonly tokens: SessionTokensBody;
@@ -60,7 +60,7 @@ runtime.describeIfAvailable(
       };
     };
 
-    /** Usuarios nuevos en cada caso: con un dispositivo ya registrado, el código por email no se ofrece. */
+    /** New users in each case: with an already registered device, the email code is not offered. */
     const openSessionInEachShard = async (
       prefix: string,
     ): Promise<ReadonlyArray<[string, OpenSession]>> =>
@@ -76,7 +76,7 @@ runtime.describeIfAvailable(
         body: { sessionToken },
       });
 
-    /** Rota dos veces: el session token original queda dos generaciones atrás, fuera de la gracia. */
+    /** Rotates twice: the original session token ends up two generations back, outside the grace period. */
     const rotateTwice = async (session: OpenSession): Promise<string> => {
       const second = await refresh(session, session.tokens.sessionToken);
       const third = await refresh(

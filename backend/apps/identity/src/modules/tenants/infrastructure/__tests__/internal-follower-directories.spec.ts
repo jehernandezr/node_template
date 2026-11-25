@@ -19,7 +19,7 @@ const ENTRY: TenantDirectoryEntry = {
   dedicated: false,
 };
 
-/** El directorio de un servicio: anota lo que recibe, o lo rechaza si la prueba lo pide. */
+/** A service's directory: records what it receives, or rejects it if the test asks for it. */
 class RecordingDirectory extends OperationHandler<
   TenantDirectoryOperations['tenantDirectoryPlace']
 > {

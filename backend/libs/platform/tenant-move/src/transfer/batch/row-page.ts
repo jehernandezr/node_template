@@ -1,8 +1,8 @@
-/** Un lote de filas leído del origen: cada fila como JSON y el cursor para pedir el siguiente. */
+/** A batch of rows read from the source: each row as JSON and the cursor to request the next one. */
 export interface RowPage {
   readonly rows: readonly string[];
-  /** Valores de la llave de la última fila, como texto. */
+  /** Key values of the last row, as text. */
   readonly lastKey: readonly string[];
-  /** `updated_at` de la última fila, como texto, en las lecturas por cambio. */
+  /** `updated_at` of the last row, as text, in reads by change. */
   readonly lastUpdatedAt?: string;
 }

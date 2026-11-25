@@ -17,8 +17,8 @@ import { InvoicesFacade } from './invoices.facade.js';
 import { InvoiceViews } from './invoice-views.js';
 
 /**
- * Lecturas de las facturas de un tenant: la lista paginada, el detalle, la historia que otro servicio usa
- * para rellenar su copia y si tiene alguna.
+ * Reads of a tenant's invoices: the paginated list, the detail, the history another service uses
+ * to backfill its copy, and whether it has any.
  */
 @Injectable()
 export class InvoiceQueries extends InvoicesFacade {
@@ -50,7 +50,7 @@ export class InvoiceQueries extends InvoicesFacade {
     };
   }
 
-  /** @throws BillingError `BILLING.INVOICE.NOT_FOUND` si la factura no es del tenant. */
+  /** @throws BillingError `BILLING.INVOICE.NOT_FOUND` if the invoice does not belong to the tenant. */
   get(tenantId: string, invoiceId: string): Promise<Invoice> {
     return this.shard.run(tenantId, async () => {
       const invoice = await this.invoices.find(invoiceId);

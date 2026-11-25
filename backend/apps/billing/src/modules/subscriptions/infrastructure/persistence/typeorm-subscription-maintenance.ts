@@ -10,8 +10,8 @@ import { SubscriptionMaintenance } from '../../domain/subscription-maintenance.j
 import { SubscriptionEntity } from './entities/subscription.entity.js';
 
 /**
- * Consultas de `subscriptions` en todos los shards, en transacciones de mantenimiento entre tenants, sin los tenants
- * que ya se trasladaron a otro shard.
+ * `subscriptions` queries across all shards, in cross-tenant maintenance transactions, excluding tenants
+ * that have already moved to another shard.
  */
 @Injectable()
 export class TypeOrmSubscriptionMaintenance extends SubscriptionMaintenance {

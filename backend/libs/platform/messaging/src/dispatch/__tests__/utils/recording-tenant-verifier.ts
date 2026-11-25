@@ -1,13 +1,13 @@
 import { TenantVerifier } from '../../tenant-verifier.js';
 import type { MessageEnvelope } from '../../../envelope/message-envelope.js';
 
-/** Una consulta recibida por el verificador. */
+/** A query received by the verifier. */
 export interface TenantVerification {
   readonly tenantId: string | undefined;
   readonly envelope: MessageEnvelope;
 }
 
-/** Verificador que anota sus consultas y responde lo configurado: sí, no o un error. */
+/** Verifier that records its queries and answers as configured: yes, no or an error. */
 export class RecordingTenantVerifier extends TenantVerifier {
   readonly calls: TenantVerification[] = [];
 

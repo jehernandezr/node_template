@@ -12,7 +12,7 @@ import type {
 import { ValkeyProviders } from './valkey.providers.js';
 import { VALKEY_MODULE_OPTIONS } from './valkey.tokens.js';
 
-/** Opciones de `ValkeyModule.forRootAsync`, sin los adaptadores. */
+/** Options of `ValkeyModule.forRootAsync`, without the adapters. */
 export type ValkeyModuleAsyncOptions =
   ConfigurableModuleAsyncOptions<ValkeyModuleOptions>;
 

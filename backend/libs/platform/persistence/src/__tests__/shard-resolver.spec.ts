@@ -12,7 +12,7 @@ const TENANT_A = StubShardedLayer.TENANT_A;
 const TENANT_B = StubShardedLayer.TENANT_B;
 const USER_ID = 'user-1';
 
-/** Lee `accountId` de la fuente cuando la trae como texto. */
+/** Reads `accountId` from the source when it comes as text. */
 class AccountKeyResolver implements ShardKeyResolver {
   resolve(source: unknown): string | undefined {
     if (

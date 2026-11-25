@@ -12,7 +12,7 @@ import { TypeOrmInboxMaintenance } from '../infrastructure/persistence/typeorm-i
 import { TypeOrmInboxRepository } from '../infrastructure/persistence/typeorm-inbox.repository.js';
 import { InboxController } from './inbox.controller.js';
 
-/** Bandeja de notificaciones por usuario. Global solo para su fachada. */
+/** Per-user notification inbox. Global only for its facade. */
 @Global()
 @Module({
   imports: [

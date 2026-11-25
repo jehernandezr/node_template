@@ -1,7 +1,7 @@
 import { defineEvent } from '@contracts/platform';
 import { z } from 'zod';
 
-/** Evento que publica el pedido al confirmarse; el outbox lo entrega después del commit. */
+/** Event the order publishes when confirmed; the outbox delivers it after the commit. */
 export const SmokeOrderCreated = defineEvent({
   type: 'smoke.order.created.v1',
   payload: z.object({

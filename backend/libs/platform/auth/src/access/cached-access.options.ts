@@ -1,7 +1,7 @@
-/** Opciones de `CachedAccessResolver`. */
+/** Options of `CachedAccessResolver`. */
 export interface CachedAccessOptions {
-  /** Cuánto vive en memoria un grant leído. */
+  /** How long a read grant lives in memory. */
   readonly ttlMs: number;
-  /** Entradas máximas; al pasarse sale la menos usada. */
+  /** Maximum entries; when exceeded, the least used one is evicted. */
   readonly maxEntries: number;
 }

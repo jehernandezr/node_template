@@ -7,23 +7,23 @@ import 'package:utils/utils.dart';
 import 'auth_errors.dart';
 import 'ports.dart';
 
-/// Estado observable de la sesión.
+/// Observable session state.
 enum AuthState { signedOut, signedIn, refreshing }
 
-/// Mantiene la sesión: guarda el session token, refresca el access token antes
-/// de que venza y cierra la sesión cuando el servidor la invalida.
+/// Maintains the session: stores the session token, refreshes the access token before
+/// it expires and closes the session when the server invalidates it.
 ///
-/// El access token vive solo en memoria. El [TokenStore] guarda únicamente el
-/// session token, y [restore] obtiene un access token nuevo con un refresh.
+/// The access token lives only in memory. The [TokenStore] stores only the
+/// session token, and [restore] obtains a new access token with a refresh.
 ///
-/// Habla con identity a través de [AuthRepository] con los tipos del
-/// contrato: [signIn], [requestMfaChallenge] y [verifyMfa] son los tres pasos
-/// del login desde un dispositivo nuevo (ADR 0006).
+/// Talks to identity through [AuthRepository] with the contract
+/// types: [signIn], [requestMfaChallenge] and [verifyMfa] are the three steps
+/// of login from a new device (ADR 0006).
 ///
-/// Un [logout] anula todo lo que esté en curso: un login, una verificación MFA
-/// o un refresh que termine después no reabre la sesión. Las escrituras y
-/// borrados del almacén se aplican en el orden en que se piden, así que el
-/// borrado de un logout siempre gana a una escritura que empezó antes.
+/// A [logout] cancels everything in progress: a login, an MFA verification
+/// or a refresh that finishes afterwards does not reopen the session. Store writes and
+/// deletes are applied in the order they are requested, so the
+/// delete of a logout always wins over a write that started earlier.
 class SessionManager {
   SessionManager({
     required this._repository,
@@ -39,13 +39,13 @@ class SessionManager {
   final DeviceKeyPort? _deviceKeys;
   final Clock _clock;
 
-  /// Antelación con la que se refresca el access token antes de
+  /// Lead time with which the access token is refreshed before
   /// [SessionTokens.accessExpiresAt].
   final Duration refreshLead;
 
-  /// Códigos de identity que cierran la sesión cuando los devuelve el refresh
-  /// o, con [handleRejectedToken], cualquier ruta autenticada.
-  /// `PLATFORM.AUTH.UNAUTHENTICATED` la cierra siempre que lo devuelve el
+  /// Identity codes that close the session when returned by the refresh
+  /// or, with [handleRejectedToken], by any authenticated route.
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` always closes it when returned by the
   /// refresh.
   final Set<IdentityErrorCode> invalidationCodes;
 
@@ -55,29 +55,29 @@ class SessionManager {
   String? _sessionToken;
   Future<SessionTokens>? _inFlightRefresh;
 
-  /// Incrementa en cada cierre local para descartar operaciones que terminen
-  /// después de un logout.
+  /// Incremented on each local sign-out to discard operations that finish
+  /// after a logout.
   int _generation = 0;
 
-  /// Cola de operaciones sobre [_tokenStore], para aplicarlas en orden.
+  /// Queue of operations on [_tokenStore], to apply them in order.
   Future<void> _storeQueue = Future<void>.value();
 
   AuthState get state => _state;
 
-  /// Si [verifyMfa] puede registrar este dispositivo, porque hay un
+  /// Whether [verifyMfa] can register this device, because there is a
   /// [DeviceKeyPort].
   bool get canRegisterDevice => _deviceKeys != null;
 
-  /// Cambios de estado. Solo emite cuando el estado cambia.
+  /// State changes. Only emits when the state changes.
   Stream<AuthState> get states => _states.stream;
 
-  /// Recupera la sesión al arrancar la app con un refresh.
+  /// Restores the session on app startup with a refresh.
   ///
-  /// Lee el session token guardado (en web, la cookie viaja sola) y pide un
-  /// access token nuevo. Devuelve true si la sesión quedó abierta y false si no
-  /// había sesión o el servidor la rechazó (un código de [invalidationCodes] o
-  /// `PLATFORM.AUTH.UNAUTHENTICATED`). Lanza los demás errores, como un fallo
-  /// de red; el session token se conserva para intentarlo de nuevo.
+  /// Reads the stored session token (on web, the cookie travels on its own) and requests a
+  /// new access token. Returns true if the session ended up open and false if there
+  /// was no session or the server rejected it (a code from [invalidationCodes] or
+  /// `PLATFORM.AUTH.UNAUTHENTICATED`). Throws the other errors, such as a network
+  /// failure; the session token is kept to try again.
   Future<bool> restore() async {
     final generation = _generation;
     final stored = await _serialized(_tokenStore.readSessionToken);
@@ -95,11 +95,11 @@ class SessionManager {
     }
   }
 
-  /// Primer paso del login: email y contraseña.
+  /// First login step: email and password.
   ///
-  /// Si la respuesta trae tokens, guarda la sesión. Si trae `PendingMfa`, el
-  /// siguiente paso es [requestMfaChallenge]. Lanza [SignedOutException] si
-  /// hubo un [logout] mientras tanto.
+  /// If the response has tokens, stores the session. If it has `PendingMfa`, the
+  /// next step is [requestMfaChallenge]. Throws [SignedOutException] if
+  /// there was a [logout] in the meantime.
   Future<SignInResponse> signIn(SignInRequest request) async {
     final generation = _generation;
     final response = await _repository.signIn(request);
@@ -107,8 +107,8 @@ class SessionManager {
     return response;
   }
 
-  /// Segundo paso: crea el desafío MFA de [mfaToken] con [method] y envía el
-  /// código. No cambia la sesión.
+  /// Second step: creates the MFA challenge of [mfaToken] with [method] and sends the
+  /// code. Does not change the session.
   Future<MfaChallenge> requestMfaChallenge({
     required String mfaToken,
     required MfaFactor method,
@@ -116,11 +116,11 @@ class SessionManager {
     MfaChallengeRequest(mfaToken: mfaToken, method: method),
   );
 
-  /// Tercer paso: verifica [code] para el desafío [challengeId] y guarda la
-  /// sesión. Con [registerDevice] envía la clave pública del dispositivo en
-  /// base64url, como pide el contrato.
+  /// Third step: verifies [code] for the challenge [challengeId] and stores the
+  /// session. With [registerDevice] sends the device public key in
+  /// base64url, as the contract requires.
   ///
-  /// Lanza [SignedOutException] si hubo un [logout] mientras tanto.
+  /// Throws [SignedOutException] if there was a [logout] in the meantime.
   Future<SignInResponse> verifyMfa({
     required String mfaToken,
     required String challengeId,
@@ -148,14 +148,14 @@ class SessionManager {
     return response;
   }
 
-  /// Devuelve un access token vigente, o null si no hay sesión. Refresca si
-  /// vence dentro de [refreshLead].
+  /// Returns a valid access token, or null if there is no session. Refreshes if
+  /// it expires within [refreshLead].
   ///
-  /// Es el `accessToken` de `ApiClient`: sin sesión, el cliente responde
-  /// `PLATFORM.AUTH.UNAUTHENTICATED` sin llamar a la red. Lanza
-  /// [ApiErrorException] si el refresh falla en el servidor (y cierra la
-  /// sesión si el código la invalida) y [SignedOutException] si un [logout]
-  /// llegó durante el refresh.
+  /// It is the `accessToken` of `ApiClient`: without a session, the client responds
+  /// `PLATFORM.AUTH.UNAUTHENTICATED` without calling the network. Throws
+  /// [ApiErrorException] if the refresh fails on the server (and closes the
+  /// session if the code invalidates it) and [SignedOutException] if a [logout]
+  /// arrived during the refresh.
   Future<String?> accessToken() async {
     final current = _tokens;
     if (current == null) return null;
@@ -165,27 +165,27 @@ class SessionManager {
     return (await _refresh()).accessToken;
   }
 
-  /// Fuerza un refresh aunque el access token siga vigente, por ejemplo cuando
-  /// la API responde `IDENTITY.TOKEN.STALE_PERMISSIONS` o
-  /// `PLATFORM.AUTH.TOKEN_EXPIRED` (es el `sessionRefresh` de `ApiClient`, que
-  /// reintenta la ruta una vez). Comparte el refresh en vuelo.
+  /// Forces a refresh even if the access token is still valid, for example when
+  /// the API responds `IDENTITY.TOKEN.STALE_PERMISSIONS` or
+  /// `PLATFORM.AUTH.TOKEN_EXPIRED` (it is the `sessionRefresh` of `ApiClient`, which
+  /// retries the route once). Shares the in-flight refresh.
   ///
-  /// Lanza [SignedOutException] si no hay sesión y [ApiErrorException] si el
-  /// refresh falla en el servidor.
+  /// Throws [SignedOutException] if there is no session and [ApiErrorException] if the
+  /// refresh fails on the server.
   Future<void> refresh() async {
     if (_tokens == null) throw const SignedOutException();
     await _refresh();
   }
 
-  /// Revoca la sesión en el servidor y borra los tokens locales, aunque el
-  /// servidor falle.
+  /// Revokes the session on the server and deletes the local tokens, even if the
+  /// server fails.
   ///
-  /// Envía el session token guardado (en web viaja la cookie). Sin session
-  /// token ni cookie no hay nada que revocar y solo se cierra la sesión local.
+  /// Sends the stored session token (on web the cookie travels). Without a session
+  /// token or cookie there is nothing to revoke and only the local session is closed.
   Future<void> logout() async {
     try {
-      // Se lee fuera de la cola del almacén: esperar detrás de una escritura
-      // pendiente dejaría que esa escritura abriera la sesión antes del cierre.
+      // Read outside the store queue: waiting behind a pending write
+      // would let that write open the session before the sign-out.
       final sessionToken =
           _sessionToken ?? await _tokenStore.readSessionToken();
       if (sessionToken != null || _tokenStore.sessionInCookie) {
@@ -196,17 +196,17 @@ class SessionManager {
     }
   }
 
-  /// Primer paso del paso adicional (step-up) de la sesión abierta: devuelve
-  /// el `mfaToken` y los métodos que ofrece el servidor.
+  /// First step of the step-up of the open session: returns
+  /// the `mfaToken` and the methods the server offers.
   ///
-  /// Lanza [SignedOutException] sin sesión.
+  /// Throws [SignedOutException] without a session.
   Future<PendingMfa> startStepUp() {
     if (_tokens == null) throw const SignedOutException();
     return _repository.startStepUp();
   }
 
-  /// Segundo paso: crea el desafío del paso adicional con [method] y envía
-  /// el código. No cambia la sesión.
+  /// Second step: creates the step-up challenge with [method] and sends
+  /// the code. Does not change the session.
   Future<MfaChallenge> requestStepUpChallenge({
     required String mfaToken,
     required MfaFactor method,
@@ -217,13 +217,13 @@ class SessionManager {
     );
   }
 
-  /// Tercer paso: verifica [code] y adopta el access token nuevo, que lleva
-  /// el segundo factor recién verificado. Devuelve el resultado con el nuevo
-  /// `mfaVerifiedAt` de la sesión; el session token no cambia.
+  /// Third step: verifies [code] and adopts the new access token, which carries
+  /// the freshly verified second factor. Returns the result with the session's new
+  /// `mfaVerifiedAt`; the session token does not change.
   ///
-  /// Espera antes un refresh en vuelo, para que su token no reemplace después
-  /// al del paso adicional. Lanza [SignedOutException] sin sesión o si hubo un
-  /// [logout] mientras tanto.
+  /// First waits for an in-flight refresh, so its token does not later replace
+  /// the step-up one. Throws [SignedOutException] without a session or if there was a
+  /// [logout] in the meantime.
   Future<StepUpResult> verifyStepUp({
     required String mfaToken,
     required String challengeId,
@@ -247,12 +247,12 @@ class SessionManager {
     return result;
   }
 
-  /// Cierra la sesión local cuando la API rechazó [accessToken] con un código
-  /// de [invalidationCodes] (sesión revocada, token revocado, usuario o tenant
-  /// suspendido) en cualquier ruta autenticada. Devuelve si la cerró.
+  /// Closes the local session when the API rejected [accessToken] with a code
+  /// from [invalidationCodes] (revoked session, revoked token, suspended user or tenant)
+  /// on any authenticated route. Returns whether it closed it.
   ///
-  /// Solo actúa si [accessToken] sigue siendo el de la sesión: una respuesta
-  /// tardía a un token viejo no cierra una sesión nueva ni una ya refrescada.
+  /// Only acts if [accessToken] is still the session's: a late response
+  /// to an old token does not close a new session or an already refreshed one.
   Future<bool> handleRejectedToken({
     required String accessToken,
     required String code,
@@ -268,7 +268,7 @@ class SessionManager {
 
   Future<void> dispose() => _states.close();
 
-  /// Un solo refresh en vuelo: los llamados concurrentes reciben el mismo resultado.
+  /// A single in-flight refresh: concurrent calls receive the same result.
   Future<SessionTokens> _refresh() {
     final inFlight = _inFlightRefresh;
     if (inFlight != null) return inFlight;
@@ -289,21 +289,21 @@ class SessionManager {
       await _adopt(fresh, generation: generation);
       return fresh;
     } on ApiErrorException catch (error) {
-      // Tras un logout el estado ya es signedOut y no se toca.
+      // After a logout the state is already signedOut and is not touched.
       if (generation == _generation && _endsSession(error)) {
         await _clearLocal();
       }
       rethrow;
     } finally {
-      // Cualquier otra falla, incluido un error de programación que sigue de
-      // largo, devuelve el estado que el refresh encontró.
+      // Any other failure, including a programming error that passes
+      // through, returns the state the refresh found.
       if (generation == _generation && _state == AuthState.refreshing) {
         _setState(_tokens == null ? AuthState.signedOut : AuthState.signedIn);
       }
     }
   }
 
-  /// Si el servidor dice que la sesión ya no existe.
+  /// Whether the server says the session no longer exists.
   bool _endsSession(ApiErrorException error) {
     final code = error.problem.code;
     final identity = IdentityErrorCode.fromCode(code);
@@ -312,7 +312,7 @@ class SessionManager {
             PlatformErrorCode.authUnauthenticated;
   }
 
-  /// Adopta los tokens de [response] cuando el login quedó completo.
+  /// Adopts the tokens from [response] when the login is complete.
   Future<void> _adoptResponse(
     SignInResponse response, {
     required int generation,
@@ -323,13 +323,13 @@ class SessionManager {
     }
   }
 
-  /// Guarda el session token de [tokens] y abre la sesión, salvo que un
-  /// logout haya cambiado [_generation] desde [generation].
+  /// Stores the session token from [tokens] and opens the session, unless a
+  /// logout changed [_generation] since [generation].
   ///
-  /// La comprobación se repite después de escribir: si el logout llegó
-  /// mientras la escritura estaba pendiente, su borrado está detrás en la cola
-  /// del almacén y deja el almacén vacío, y aquí no se toca ni la memoria ni el
-  /// estado.
+  /// The check is repeated after writing: if the logout arrived
+  /// while the write was pending, its delete is behind in the store
+  /// queue and leaves the store empty, and here neither memory nor
+  /// state is touched.
   Future<void> _adopt(SessionTokens tokens, {required int generation}) async {
     if (generation != _generation) {
       throw const SignedOutException();
@@ -354,10 +354,10 @@ class SessionManager {
     await _serialized(_tokenStore.clear);
   }
 
-  /// Ejecuta [operation] sobre el almacén después de las ya pedidas.
+  /// Runs [operation] on the store after the ones already requested.
   Future<T> _serialized<T>(Future<T> Function() operation) {
     final result = _storeQueue.then((_) => operation());
-    // La cola sigue aunque una operación falle; el error le llega a quien la pidió.
+    // The queue continues even if an operation fails; the error reaches whoever requested it.
     _storeQueue = result.then<void>((_) {}, onError: (Object _) {});
     return result;
   }

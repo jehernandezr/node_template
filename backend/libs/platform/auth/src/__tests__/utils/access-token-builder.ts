@@ -6,9 +6,9 @@ import { JwtCodec } from '../../jwt/jwt-codec.js';
 import type { TestKeyPair } from './test-key-pair.js';
 
 /**
- * Arma access tokens firmados para las pruebas. Los valores por defecto forman un
- * token válido de 10 minutos de vida emitido en `issuedAt`; cada método `with...`
- * cambia solo lo que importa en la prueba.
+ * Builds signed access tokens for the tests. The defaults form a
+ * valid token with a 10 minute lifetime issued at `issuedAt`; each `with...` method
+ * changes only what matters in the test.
  */
 export class AccessTokenBuilder {
   private constructor(
@@ -17,9 +17,9 @@ export class AccessTokenBuilder {
   ) {}
 
   /**
-   * Token válido: `iss` `https://identity.test`, `aud` `api`, `amr` `['pwd']`,
-   * `pv` `'1.1'`, `rgn` `'us'`, ids UUIDv7 fijos y `iat`, `auth_time` igual a
-   * `issuedAt` (epoch en segundos); `exp` a 600 s y `sxp` a 8 horas.
+   * Valid token: `iss` `https://identity.test`, `aud` `api`, `amr` `['pwd']`,
+   * `pv` `'1.1'`, `rgn` `'us'`, fixed UUIDv7 ids and `iat`, `auth_time` equal to
+   * `issuedAt` (epoch in seconds); `exp` at 600 s and `sxp` at 8 hours.
    */
   static aToken(issuedAt: number): AccessTokenBuilder {
     return new AccessTokenBuilder(
@@ -52,14 +52,14 @@ export class AccessTokenBuilder {
     });
   }
 
-  /** Quita un claim del payload, para probar tokens incompletos. */
+  /** Removes a claim from the payload, to test incomplete tokens. */
   withoutClaim(name: keyof AccessTokenClaims): AccessTokenBuilder {
     const copy: Record<string, unknown> = { ...this.claims };
     delete copy[name];
     return new AccessTokenBuilder(this.header, copy);
   }
 
-  /** Reemplaza campos del header, por ejemplo `alg` o `typ` inválidos. */
+  /** Replaces header fields, for example an invalid `alg` or `typ`. */
   withHeader(overrides: Readonly<Record<string, unknown>>): AccessTokenBuilder {
     return new AccessTokenBuilder(
       { ...this.header, ...overrides },
@@ -67,7 +67,7 @@ export class AccessTokenBuilder {
     );
   }
 
-  /** Token compacto firmado con la clave y el `kid` de `keyPair`. */
+  /** Returns the compact token signed with the key and the `kid` of `keyPair`. */
   sign(keyPair: TestKeyPair): string {
     return JwtCodec.sign(
       { kid: keyPair.kid, ...this.header },

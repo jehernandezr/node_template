@@ -42,7 +42,7 @@ class TestJobLock extends JobLock {
 })
 class TestLockModule {}
 
-/** Recurso que un job usa y que su módulo cierra al destruirse, como un cliente de red. */
+/** Resource that a job uses and that its module closes on destroy, such as a network client. */
 class ClosingResource implements OnModuleDestroy {
   abortedRunsSeenAtClose: number | undefined;
 

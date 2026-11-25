@@ -24,7 +24,7 @@ import {
 
 const guard = [...SessionGuardErrors, PlatformErrorCode.AccessFlagDisabled];
 
-/** `GET /v1/reports`: catálogo de reportes disponibles para el tenant. */
+/** `GET /v1/reports`: catalog of reports available to the tenant. */
 export const ListCatalogRoute = defineRoute({
   id: ReportsRoute.ListCatalog,
   method: HttpMethod.Get,
@@ -35,13 +35,13 @@ export const ListCatalogRoute = defineRoute({
     permissions: [Permission.ReportsRead],
     flags: [FeatureFlag.NewReports],
   }),
-  description: 'Lista los tipos de reporte, con sus formatos y granularidades.',
+  description: 'Lists the report types, with their formats and granularities.',
 });
 
 /**
- * `POST /v1/reports/runs`: pide una ejecución. El CSV exige la funcionalidad
- * advanced_reports y la comprueba el caso de uso, porque depende del cuerpo y no
- * de la ruta.
+ * `POST /v1/reports/runs`: requests a run. CSV requires the advanced_reports
+ * feature and the use case checks it, because it depends on the body and not
+ * on the route.
  */
 export const CreateRunRoute = defineRoute({
   id: ReportsRoute.CreateRun,
@@ -61,10 +61,10 @@ export const CreateRunRoute = defineRoute({
     permissions: [Permission.ReportsWrite],
     flags: [FeatureFlag.NewReports],
   }),
-  description: 'Crea una ejecución de reporte. Responde 202 con su id.',
+  description: 'Creates a report run. Responds 202 with its id.',
 });
 
-/** `GET /v1/reports/runs`: ejecuciones del tenant, más nuevas primero. */
+/** `GET /v1/reports/runs`: runs of the tenant, newest first. */
 export const ListRunsRoute = defineRoute({
   id: ReportsRoute.ListRuns,
   method: HttpMethod.Get,
@@ -76,10 +76,10 @@ export const ListRunsRoute = defineRoute({
     permissions: [Permission.ReportsRead],
     flags: [FeatureFlag.NewReports],
   }),
-  description: 'Lista las ejecuciones de reporte, con filtros y paginación.',
+  description: 'Lists the report runs, with filters and pagination.',
 });
 
-/** `GET /v1/reports/runs/{runId}`: detalle de una ejecución con su resultado. */
+/** `GET /v1/reports/runs/{runId}`: detail of a run with its result. */
 export const GetRunRoute = defineRoute({
   id: ReportsRoute.GetRun,
   method: HttpMethod.Get,
@@ -91,10 +91,10 @@ export const GetRunRoute = defineRoute({
     permissions: [Permission.ReportsRead],
     flags: [FeatureFlag.NewReports],
   }),
-  description: 'Consulta una ejecución de reporte y su resultado.',
+  description: 'Gets a report run and its result.',
 });
 
-/** `GET /v1/reports/runs/{runId}/download`: descarga el resultado listo. */
+/** `GET /v1/reports/runs/{runId}/download`: downloads the ready result. */
 export const DownloadRunRoute = defineRoute({
   id: ReportsRoute.DownloadRun,
   method: HttpMethod.Get,
@@ -111,5 +111,5 @@ export const DownloadRunRoute = defineRoute({
     permissions: [Permission.ReportsRead],
     flags: [FeatureFlag.NewReports],
   }),
-  description: 'Descarga el resultado de una ejecución lista en su formato.',
+  description: 'Downloads the result of a ready run in its format.',
 });

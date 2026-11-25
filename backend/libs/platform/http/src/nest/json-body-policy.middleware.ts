@@ -6,14 +6,14 @@ import { JsonBodyReader } from '../json-body-reader.js';
 import type { HttpResponseView } from '../http-response-view.js';
 import type { PipelineRequest } from './pipeline-request.js';
 
-/** Petición con su cuerpo como flujo, antes de leerlo. */
+/** Request with its body as a stream, before reading it. */
 interface StreamingRequest extends PipelineRequest, AsyncIterable<Uint8Array> {
   body?: unknown;
 }
 
 /**
- * Lee el cuerpo JSON de las peticiones que lo llevan. Rechaza tamaños y tipos de contenido que
- * el contrato no admite. Corre dentro del pipeline para que sus errores salgan con `x-trace-id`.
+ * Reads the JSON body of requests that carry one. Rejects sizes and content types the
+ * contract does not allow. Runs inside the pipeline so its errors come out with `x-trace-id`.
  */
 @Injectable()
 export class JsonBodyPolicyMiddleware implements NestMiddleware {

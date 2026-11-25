@@ -100,7 +100,7 @@ describe('BloomFilter', () => {
 
   it.each([
     ['not base64!'],
-    // 'AB==' decodifica a un byte con bits finales encendidos: al recodificar sale 'AA=='.
+    // 'AB==' decodes to a byte with trailing bits set: re-encoding yields 'AA=='.
     ['AB=='],
   ])('rejects non-canonical or malformed base64 %p', (data) => {
     expect(() =>
@@ -111,7 +111,7 @@ describe('BloomFilter', () => {
   });
 
   it('rejects set unused tail bits on construction and deserialization', () => {
-    // Con bits = 10 solo los bits 0 y 1 de la última byte son válidos.
+    // With bits = 10 only bits 0 and 1 of the last byte are valid.
     expect(() =>
       BloomFilter.deserialize(
         BloomFixtures.validSerialized({ bits: 10, hashes: 1, data: 'AAQ=' }),

@@ -1,12 +1,12 @@
 import { ClaimRequest } from '@platform/kernel';
 import { InMemoryProcessedMessageStore } from '../../../__tests__/utils/in-memory-processed-message-store.js';
 
-/** Lo que el almacén consulta para saber si una operación corre dentro del contexto de la entrega. */
+/** What the store checks to know whether an operation runs inside the delivery context. */
 export interface DeliveryContextProbe {
   readonly active: boolean;
 }
 
-/** Almacén en memoria que anota cada reclamo y cada liberación, y si la liberación corrió en contexto. */
+/** In-memory store that records each claim and each release, and whether the release ran in context. */
 export class RecordingProcessedMessageStore extends InMemoryProcessedMessageStore {
   readonly claims: ClaimRequest[] = [];
   readonly releasesInContext: boolean[] = [];

@@ -17,7 +17,7 @@ import { TypeOrmSubscriptionMaintenance } from '../infrastructure/persistence/ty
 import { TypeOrmSubscriptionRepository } from '../infrastructure/persistence/typeorm-subscription.repository.js';
 import { SubscriptionsController } from './subscriptions.controller.js';
 
-/** Suscripción de cada tenant: plan, periodos, prorrateo y morosidad. Global solo para su fachada. */
+/** Each tenant's subscription: plan, periods, proration and delinquency. Global only for its facade. */
 @Global()
 @Module({
   imports: [

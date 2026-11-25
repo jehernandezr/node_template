@@ -3,7 +3,7 @@ import { TenantMoveErrorCode } from '../errors/tenant-move-error-code.enum.js';
 import { TenantMoveError } from '../errors/tenant-move.error.js';
 import type { TenantMoveTarget } from './tenant-move-target.js';
 
-/** Los grupos de destino que este servicio conoce, de `TENANT_MOVE_TARGETS`. */
+/** The target groups this service knows, from `TENANT_MOVE_TARGETS`. */
 export class TenantMoveTargets {
   private readonly byGroup: ReadonlyMap<string, TenantMoveTarget>;
 
@@ -18,12 +18,12 @@ export class TenantMoveTargets {
     );
   }
 
-  /** El destino de un grupo, o `undefined` si no está configurado. */
+  /** The target of a group, or `undefined` if it is not configured. */
   find(group: string): TenantMoveTarget | undefined {
     return this.byGroup.get(group);
   }
 
-  /** El grupo de la región que lleva al shard lógico de este servicio, o `undefined` si ninguno lo nombra. */
+  /** The region group that leads to this service's logical shard, or `undefined` if none names it. */
   groupOf(region: string, shard: string): string | undefined {
     for (const target of this.byGroup.values()) {
       if (target.region === region && target.shard === shard) {
@@ -34,7 +34,7 @@ export class TenantMoveTargets {
   }
 
   /**
-   * @throws TenantMoveError `UnknownTarget` si el grupo no existe o su región no es la pedida.
+   * @throws TenantMoveError `UnknownTarget` if the group does not exist or its region is not the requested one.
    */
   of(move: TenantMoveRef): TenantMoveTarget {
     const target = this.find(move.targetGroup);

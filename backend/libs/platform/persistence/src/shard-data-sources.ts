@@ -8,18 +8,18 @@ import type { ShardLocation } from './model/shard-location.js';
 import type { DataSourceFactory } from './ports/data-source-factory.js';
 import type { InstanceEndpointResolver } from './ports/instance-endpoint-resolver.js';
 
-/** Un shard lógico con su `DataSource`, su instancia y el instante de su último uso. */
+/** A logical shard with its `DataSource`, its instance and the instant of its last use. */
 interface Entry {
   readonly instance: string;
   readonly dataSource: DataSource;
-  /** Se comparte entre las llamadas concurrentes: todas esperan la misma inicialización. */
+  /** Shared between concurrent calls: they all wait for the same initialization. */
   readonly ready: Promise<DataSource>;
   lastUsedMs: number;
 }
 
 /**
- * Un `DataSource` de TypeORM por shard lógico. Los crea al primer uso, cierra los que no se usan
- * y cierra el viejo cuando un shard cambia de instancia.
+ * One TypeORM `DataSource` per logical shard. Creates them on first use, closes the unused ones
+ * and closes the old one when a shard changes instance.
  */
 export class ShardDataSources {
   private readonly entries = new Map<string, Entry>();
@@ -33,9 +33,9 @@ export class ShardDataSources {
   ) {}
 
   /**
-   * `DataSource` inicializado del shard.
-   * @throws PersistenceError `ShuttingDown` si ya se cerraron: un job que sigue corriendo durante el apagado
-   * abriría un pool que nadie cierra.
+   * Returns the initialized `DataSource` of the shard.
+   * @throws PersistenceError `ShuttingDown` if they were already closed: a job still running during shutdown
+   * would open a pool that nobody closes.
    */
   async get(location: ShardLocation): Promise<DataSource> {
     this.assertOpen();
@@ -70,7 +70,7 @@ export class ShardDataSources {
     try {
       await ready;
     } catch (error) {
-      // Sin esto, el siguiente pedido recibiría la inicialización fallida en lugar de reintentarla.
+      // Without this, the next request would receive the failed initialization instead of retrying it.
       if (this.entries.get(location.logicalShard)?.ready === ready) {
         this.entries.delete(location.logicalShard);
       }
@@ -80,7 +80,7 @@ export class ShardDataSources {
     return dataSource;
   }
 
-  /** Cierra los `DataSource` sin uso desde hace más de `idleTtlMs`. Devuelve cuántos cerró. */
+  /** Closes the `DataSource`s unused for longer than `idleTtlMs`. Returns how many it closed. */
   async closeIdle(): Promise<number> {
     const now = this.clock.now().getTime();
     const idle = [...this.entries].filter(
@@ -93,12 +93,12 @@ export class ShardDataSources {
     return idle.length;
   }
 
-  /** Ids de los shards con un `DataSource` abierto. */
+  /** Ids of the shards with an open `DataSource`. */
   activeShards(): readonly string[] {
     return [...this.entries.keys()];
   }
 
-  /** Cierra todos. Se llama al apagar el proceso. */
+  /** Closes all of them. Called when the process shuts down. */
   async close(): Promise<void> {
     this.shutDown = true;
     const all = [...this.entries.values()];
@@ -122,7 +122,7 @@ export class ShardDataSources {
         await dataSource.destroy();
       }
     } catch {
-      // Si la inicialización nunca terminó no hay nada que cerrar.
+      // If the initialization never finished there is nothing to close.
     }
   }
 }

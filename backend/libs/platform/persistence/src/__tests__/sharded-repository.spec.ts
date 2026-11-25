@@ -23,7 +23,7 @@ const ID = '0193f1c2-0000-7000-8000-0000000000c3';
 const OTHER_ID = '0193f1c2-0000-7000-8000-0000000000c4';
 const ACTOR = 'user-1';
 
-/** Fila que devuelve un SELECT sobre `probes`, con las claves `<alias>_<columna>` de TypeORM. */
+/** Row returned by a SELECT on `probes`, with TypeORM `<alias>_<column>` keys. */
 function probeRow(
   name: string,
   version: number,
@@ -45,12 +45,12 @@ function probeRow(
   };
 }
 
-/** Resultado estructurado de un SELECT de TypeORM con las filas dadas. */
+/** Structured result of a TypeORM SELECT with the given rows. */
 function rowsResult(...rows: object[]) {
   return { records: rows, raw: rows, affected: rows.length };
 }
 
-/** Mapper que deja la entidad en otro tenant, para probar la guarda de `save`. */
+/** Mapper that puts the entity in another tenant, to test the `save` guard. */
 class ForeignTenantProbeMapper extends ProbeMapper {
   override toPersistence(aggregate: Probe): ProbeEntity {
     const entity = super.toPersistence(aggregate);
@@ -59,7 +59,7 @@ class ForeignTenantProbeMapper extends ProbeMapper {
   }
 }
 
-/** Repositorio que expone la lectura contra el primario. */
+/** Repository that exposes the read against the primary. */
 class PrimaryProbeRepository extends ProbeRepository {
   findOnPrimary(id: string): Promise<ProbeEntity | null> {
     return this.readPrimary((manager: EntityManager) =>

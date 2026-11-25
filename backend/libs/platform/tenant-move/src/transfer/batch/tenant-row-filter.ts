@@ -6,14 +6,14 @@ import type { TenantMoveTable } from '../../manifest/tenant-move-table.js';
 import { SqlIdentifier } from './sql-identifier.js';
 
 /**
- * Condición SQL que elige las filas del tenant en cada tabla del manifiesto. El tenant va siempre en `$1`; una
- * tabla `via-parent` sube por sus padres hasta una con columna del tenant.
+ * SQL condition that selects the tenant rows in each manifest table. The tenant is always in `$1`; a
+ * `via-parent` table walks up its parents to one with a tenant column.
  */
 export class TenantRowFilter {
   private readonly tables: ReadonlyMap<string, TenantMoveTable>;
 
   /**
-   * @throws TenantMoveError `InvalidManifest` si una tabla se repite o su padre no la precede en el manifiesto.
+   * @throws TenantMoveError `InvalidManifest` if a table is repeated or its parent does not precede it in the manifest.
    */
   constructor(manifest: TenantMoveManifest) {
     const tables = new Map<string, TenantMoveTable>();
@@ -34,7 +34,7 @@ export class TenantRowFilter {
     this.tables = tables;
   }
 
-  /** Condición sobre la tabla con alias `alias`. */
+  /** Condition on the table with alias `alias`. */
   where(table: string, alias: string): string {
     return this.condition(this.entry(table), alias, 0);
   }

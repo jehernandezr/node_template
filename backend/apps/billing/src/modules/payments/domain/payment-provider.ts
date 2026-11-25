@@ -1,48 +1,48 @@
 import type { Currency } from '@contracts/billing';
 import type { PaymentStatus } from './payment-status.enum.js';
 
-/** Lo que se le pide cobrar: el intento `attempt` de una factura emitida. */
+/** What it is asked to charge: attempt `attempt` of an issued invoice. */
 export interface ChargeRequest {
   readonly tenantId: string;
   readonly invoiceId: string;
   readonly invoiceNumber: string;
-  /** Número del intento de cobro de la factura: el primero es 1 y cada rechazo abre el siguiente. */
+  /** Number of the invoice charge attempt: the first is 1 and each rejection opens the next one. */
   readonly attempt: number;
   readonly amountMinor: number;
   readonly currency: Currency;
 }
 
-/** El cobro tal como llega al proveedor, con el id del intento anotado como llave de idempotencia. */
+/** The charge as it reaches the provider, with the recorded attempt id as the idempotency key. */
 export interface ProviderCharge extends ChargeRequest {
   readonly attemptId: string;
 }
 
-/** Respuesta del proveedor a un intento de cobro. */
+/** Provider response to a charge attempt. */
 export interface PaymentResult {
   readonly status: PaymentStatus;
-  /** Referencia del proveedor, con un cobro aprobado. */
+  /** Provider reference, for an approved charge. */
   readonly reference?: string;
-  /** Motivo del rechazo, con un cobro rechazado. */
+  /** Rejection reason, for a rejected charge. */
   readonly reason?: string;
 }
 
 /**
- * Proveedor de cobro. La plantilla trae uno falso configurable; un adaptador real pasa `attemptId` como llave de
- * idempotencia del proveedor, así repetir el pedido con la misma llave no cobra dos veces, y devuelve ese id en su
- * webhook para que `mark-paid` y `mark-failed` lo apliquen al intento correcto.
+ * Charge provider. The template ships a configurable fake one; a real adapter passes `attemptId` as the provider's
+ * idempotency key, so repeating the request with the same key does not charge twice, and returns that id in its
+ * webhook so that `mark-paid` and `mark-failed` apply it to the right attempt.
  */
 export abstract class PaymentProvider {
   /**
-   * Pide el cobro del intento.
-   * @param request Cobro con el id del intento como llave de idempotencia.
-   * @returns La respuesta del proveedor: aprobado con su referencia, rechazado con su motivo o pendiente.
+   * Requests the charge of the attempt.
+   * @param request Charge with the attempt id as the idempotency key.
+   * @returns The provider response: approved with its reference, rejected with its reason, or pending.
    */
   abstract charge(request: ProviderCharge): Promise<PaymentResult>;
 
   /**
-   * Consulta lo que respondió el proveedor a un intento ya pedido.
-   * @param attemptId Llave de idempotencia con que se pidió.
-   * @returns La respuesta, o `undefined` si el pedido nunca le llegó.
+   * Queries what the provider answered to an already requested attempt.
+   * @param attemptId Idempotency key it was requested with.
+   * @returns The response, or `undefined` if the request never reached it.
    */
   abstract find(attemptId: string): Promise<PaymentResult | undefined>;
 }

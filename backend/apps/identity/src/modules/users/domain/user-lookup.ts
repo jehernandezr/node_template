@@ -1,6 +1,6 @@
 import type { LookupStatus } from './lookup-status.enum.js';
 
-/** Entrada del índice global de emails: dónde vive el usuario. */
+/** Entry of the global email index: where the user lives. */
 export interface UserLookup {
   readonly emailFingerprint: Buffer;
   readonly userId: string;

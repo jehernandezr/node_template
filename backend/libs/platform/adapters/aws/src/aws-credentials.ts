@@ -1,7 +1,7 @@
-/** Credenciales de AWS con las que se firma. */
+/** AWS credentials used for signing. */
 export interface AwsCredentials {
   readonly accessKeyId: string;
   readonly secretAccessKey: string;
-  /** Presente con credenciales temporales (rol de Lambda o de la tarea). */
+  /** Present with temporary credentials (Lambda or task role). */
   readonly sessionToken?: string;
 }

@@ -13,7 +13,7 @@ export interface FakeLogEntry {
   readonly fields?: Record<string, unknown>;
 }
 
-/** Logger que guarda cada línea para verificar qué se registró. */
+/** Logger that keeps each line to verify what was logged. */
 export class FakeLogger implements LoggerPort {
   readonly entries: FakeLogEntry[] = [];
 
@@ -33,7 +33,7 @@ export class FakeLogger implements LoggerPort {
     this.record(FakeLogLevel.Error, message, fields);
   }
 
-  /** Los bindings se descartan: el mismo logger sirve para verificar el hijo. */
+  /** The bindings are discarded: the same logger serves to verify the child. */
   child(): LoggerPort {
     return this;
   }

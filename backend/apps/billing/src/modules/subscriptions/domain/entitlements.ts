@@ -1,7 +1,7 @@
 import type { PlanFeature } from '@contracts/identity';
 import type { QuotaLimit, SubscriptionStatus } from '@contracts/billing';
 
-/** Funcionalidades y cuotas vigentes de un tenant: las del plan, sin funcionalidades si está bloqueado. */
+/** A tenant's current features and quotas: those of the plan, with no features if it is blocked. */
 export interface Entitlements {
   readonly status: SubscriptionStatus;
   readonly features: readonly PlanFeature[];

@@ -1,7 +1,7 @@
-// Entrada liviana: depende de `@opentelemetry/api`, `@opentelemetry/core` y
-// `@platform/config` (solo para las secciones de configuración). El SDK
-// (exportadores e instrumentaciones) vive en `@platform/observability/setup` y
-// el cableado de NestJS en `@platform/observability/nest`.
+// Lightweight entry: depends on `@opentelemetry/api`, `@opentelemetry/core` and
+// `@platform/config` (only for the configuration sections). The SDK
+// (exporters and instrumentations) lives in `@platform/observability/setup` and
+// the NestJS wiring in `@platform/observability/nest`.
 export * from './config/logging.config.js';
 export * from './config/telemetry.config.js';
 export * from './context/active-span-ids.js';

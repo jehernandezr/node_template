@@ -3,8 +3,8 @@ import { AccessTokenStreamAuthenticator } from './access-token-stream-authentica
 import type { StreamCredentials } from './stream-credentials.js';
 
 /**
- * Access token en una cookie: el `EventSource` del navegador no puede mandar `Authorization`, pero sí las
- * cookies del origen. El token se verifica igual que en `Authorization`, así la revocación aplica también aquí.
+ * Access token in a cookie: the browser's `EventSource` cannot send `Authorization`, but it can send the
+ * origin's cookies. The token is verified the same way as in `Authorization`, so revocation also applies here.
  */
 export class CookieStreamAuthenticator extends AccessTokenStreamAuthenticator {
   constructor(

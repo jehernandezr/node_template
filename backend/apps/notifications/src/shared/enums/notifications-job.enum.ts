@@ -1,7 +1,7 @@
-/** Jobs periódicos de notifications. */
+/** notifications periodic jobs. */
 export enum NotificationsJob {
-  /** Borra las notificaciones leídas hace más de `NOTIFICATIONS_INBOX_RETENTION_DAYS`. */
+  /** Deletes notifications read more than `NOTIFICATIONS_INBOX_RETENTION_DAYS` ago. */
   PurgeRead = 'notifications.purge-read',
-  /** Reintenta las entregas por correo y push que fallaron. */
+  /** Retries the email and push deliveries that failed. */
   RetryDeliveries = 'notifications.retry-deliveries',
 }

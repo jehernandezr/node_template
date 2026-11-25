@@ -2,7 +2,7 @@ import { TenantMoveLog } from '../../domain/tenant-move-log.js';
 import type { TenantMove } from '../../domain/tenant-move.js';
 import { TenantMoveStatus } from '../../domain/tenant-move-status.enum.js';
 
-/** Bitácora de traslados en memoria, con la misma regla que el índice único: un traslado en curso por tenant. */
+/** In-memory move log, with the same rule as the unique index: one move in progress per tenant. */
 export class InMemoryTenantMoveLog extends TenantMoveLog {
   private readonly moves = new Map<string, TenantMove>();
 
@@ -70,7 +70,7 @@ export class InMemoryTenantMoveLog extends TenantMoveLog {
     return this.moves.get(moveId);
   }
 
-  /** Sin intento va primero, como `NULLS FIRST`. */
+  /** No attempt goes first, like `NULLS FIRST`. */
   private static attemptOrder(move: TenantMove): number {
     return move.cleanupAttemptedAt?.getTime() ?? Number.NEGATIVE_INFINITY;
   }

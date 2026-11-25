@@ -8,7 +8,7 @@ import { InternalClient } from '@platform/internal-api';
 import { IdGenerator } from '@platform/kernel';
 import { InternalAccessGrantSource } from '../../auth/internal-access-grant-source.js';
 
-/** Fuente del acceso por la API interna de identity, global para que `AuthModule` la encuentre. */
+/** Access source through the identity internal API, global so that `AuthModule` finds it. */
 @Global()
 @Module({
   providers: [
@@ -24,9 +24,9 @@ import { InternalAccessGrantSource } from '../../auth/internal-access-grant-sour
 class InternalAccessGrantModule {}
 
 /**
- * Verificación de tokens para un servicio que no es identity: los tokens se verifican en local con el JWKS
- * de identity y el estado compartido en Valkey, y el acceso de un usuario se pide a identity por la API
- * interna cuando no está en la copia compartida. El servicio declara `identityContract` en `peerContracts`.
+ * Token verification for a service that is not identity: tokens are verified locally with the identity JWKS
+ * and the shared state in Valkey, and a user's access is requested from identity through the internal
+ * API when it is not in the shared copy. The service declares `identityContract` in `peerContracts`.
  */
 @Module({
   imports: [

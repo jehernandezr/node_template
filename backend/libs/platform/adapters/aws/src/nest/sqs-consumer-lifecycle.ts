@@ -7,9 +7,9 @@ import {
 import { SqsPoller } from '../sqs-poller.js';
 
 /**
- * Arranca el poller cuando la aplicación termina de arrancar y lo detiene al
- * apagar, antes de que `AwsModule` cierre los clientes. Sin poller (`poll:
- * false`) no hace nada.
+ * Starts the poller when the application finishes starting and stops it on
+ * shutdown, before `AwsModule` closes the clients. Without a poller (`poll:
+ * false`) it does nothing.
  */
 @Injectable()
 export class SqsConsumerLifecycle
