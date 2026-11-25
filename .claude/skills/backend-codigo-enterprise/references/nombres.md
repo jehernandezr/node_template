@@ -1,50 +1,50 @@
-# Nombres en el backend
+# Backend names
 
-## Contenido
+## Contents
 
-- Clases y archivos por rol
-- Métodos
-- Eventos, errores y colas
-- Qué evitar
+- Classes and files by role
+- Methods
+- Events, errors and queues
+- What to avoid
 
-## Clases y archivos por rol
+## Classes and files by role
 
-El nombre dice qué es. El archivo es kebab-case con el rol como sufijo y contiene una clase pública.
+The name says what it is. The file is kebab-case with the role as suffix and contains one public class.
 
-- Caso de uso: clase: `SignInUseCase`; archivo: `sign-in.use-case.ts`
-- Comando: clase: `SignInCommand`; archivo: `sign-in.command.ts`
-- Consulta: clase: `GetUserProfileQuery`; archivo: `get-user-profile.query.ts`
-- Agregado: clase: `User`; archivo: `user.aggregate.ts`
-- Objeto de valor: clase: `Email`; archivo: `email.value-object.ts`
-- Evento de dominio: clase: `UserRegisteredEvent`; archivo: `user-registered.event.ts`
-- Error de dominio: clase: `EmailAlreadyRegisteredError`; archivo: `email-already-registered.error.ts`
-- Puerto: clase: `UserRepository` (abstracta); archivo: `user.repository.ts`
-- Adaptador: clase: `TypeOrmUserRepository`; archivo: `typeorm-user.repository.ts`
-- Entidad ORM: clase: `UserEntity`; archivo: `user.entity.ts`
-- Mapper: clase: `UserMapper`; archivo: `user.mapper.ts`
-- Controller: clase: `UsersController`; archivo: `users.controller.ts`
-- Consumidor: clase: `UserRegisteredConsumer`; archivo: `user-registered.consumer.ts`
-- Esquema zod: clase: `signInRequestSchema`; archivo: `sign-in.request.schema.ts`
-- Token de inyección: clase: `USER_REPOSITORY`; archivo: junto al puerto
+- Use case: class: `SignInUseCase`; file: `sign-in.use-case.ts`
+- Command: class: `SignInCommand`; file: `sign-in.command.ts`
+- Query: class: `GetUserProfileQuery`; file: `get-user-profile.query.ts`
+- Aggregate: class: `User`; file: `user.aggregate.ts`
+- Value object: class: `Email`; file: `email.value-object.ts`
+- Domain event: class: `UserRegisteredEvent`; file: `user-registered.event.ts`
+- Domain error: class: `EmailAlreadyRegisteredError`; file: `email-already-registered.error.ts`
+- Port: class: `UserRepository` (abstract); file: `user.repository.ts`
+- Adapter: class: `TypeOrmUserRepository`; file: `typeorm-user.repository.ts`
+- ORM entity: class: `UserEntity`; file: `user.entity.ts`
+- Mapper: class: `UserMapper`; file: `user.mapper.ts`
+- Controller: class: `UsersController`; file: `users.controller.ts`
+- Consumer: class: `UserRegisteredConsumer`; file: `user-registered.consumer.ts`
+- Zod schema: class: `signInRequestSchema`; file: `sign-in.request.schema.ts`
+- Injection token: class: `USER_REPOSITORY`; file: next to the port
 
-## Métodos
+## Methods
 
-- Verbos de negocio en el dominio: `user.changeEmail(...)`, `order.cancel(...)`. No `setEmail`.
-- Fábricas estáticas con nombre: `User.register(...)` crea un agregado nuevo y emite evento. `User.rehydrate(...)` lo reconstruye desde la base sin emitir.
-- Repositorios: `findById` devuelve `T | null`. `getById` lanza el error de dominio si no existe. Se elige uno y se mantiene.
-- Booleanos con prefijo: `isActive`, `hasExpired`, `canRetry`.
-- Una consulta no se llama `getX` si cambia estado.
+- Business verbs in the domain: `user.changeEmail(...)`, `order.cancel(...)`. Not `setEmail`.
+- Named static factories: `User.register(...)` creates a new aggregate and emits an event. `User.rehydrate(...)` rebuilds it from the database without emitting.
+- Repositories: `findById` returns `T | null`. `getById` throws the domain error if it does not exist. Pick one and stick with it.
+- Booleans with a prefix: `isActive`, `hasExpired`, `canRetry`.
+- A query is not called `getX` if it changes state.
 
-## Eventos, errores y colas
+## Events, errors and queues
 
-- Evento de dominio en pasado: `UserRegistered`. Valor del enum: `identity.user.registered`.
-- Evento de integración versionado: `identity.user.registered.v1`.
-- Comando de cola en imperativo: `SendWelcomeEmail`.
-- Errores: el nombre dice la regla rota (`PasswordTooShortError`), el código es `SERVICIO.SUBMÓDULO.ERROR`.
+- Domain event in past tense: `UserRegistered`. Enum value: `identity.user.registered`.
+- Versioned integration event: `identity.user.registered.v1`.
+- Queue command in imperative: `SendWelcomeEmail`.
+- Errors: the name says the broken rule (`PasswordTooShortError`), the code is `SERVICE.SUBMODULE.ERROR`.
 
-## Qué evitar
+## What to avoid
 
-- `Manager`, `Helper`, `Util`, `Service` sin sustantivo de negocio, `Data`, `Info`.
-- Prefijo `I` en interfaces (`IUserRepository`).
-- Abreviaturas (`usr`, `cfg`, `ctx`) salvo convenciones del framework.
-- Nombres que repiten el contexto: `User.userEmail` es `User.email`.
+- `Manager`, `Helper`, `Util`, `Service` without a business noun, `Data`, `Info`.
+- `I` prefix on interfaces (`IUserRepository`).
+- Abbreviations (`usr`, `cfg`, `ctx`) except framework conventions.
+- Names that repeat the context: `User.userEmail` is `User.email`.

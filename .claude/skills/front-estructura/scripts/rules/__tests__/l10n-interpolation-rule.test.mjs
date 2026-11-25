@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const LIB = 'front/microfrontends/tasks/lib/src/screens/a.dart';
 
 describe('L10nInterpolationRule', () => {
-  it('se aplica al lib de un microfrontend y al lib de ui', () => {
+  it('applies to a microfrontend lib and to the ui lib', () => {
     const rule = new L10nInterpolationRule();
     assert.equal(rule.appliesTo(LIB), true);
     assert.equal(
@@ -16,7 +16,7 @@ describe('L10nInterpolationRule', () => {
     assert.equal(rule.appliesTo('front/packages/ui/lib/src/a.dart'), true);
   });
 
-  it('no se aplica a tokens ni a pruebas de microfrontend', () => {
+  it('does not apply to tokens or to microfrontend tests', () => {
     const rule = new L10nInterpolationRule();
     assert.equal(rule.appliesTo('front/packages/tokens/lib/src/a.dart'), false);
     assert.equal(
@@ -25,7 +25,7 @@ describe('L10nInterpolationRule', () => {
     );
   });
 
-  it('deja pasar un texto con claves ARB con parámetros', () => {
+  it('lets a text with parameterized ARB keys through', () => {
     const rule = new L10nInterpolationRule();
     const text = [
       'final a = 1;',
@@ -35,7 +35,7 @@ describe('L10nInterpolationRule', () => {
     assert.deepEqual(rule.check(LIB, text), []);
   });
 
-  it('marca la interpolación con : en su línea', () => {
+  it('flags the interpolation with : on its line', () => {
     const rule = new L10nInterpolationRule();
     const text = [
       'final a = 1;',
@@ -49,22 +49,22 @@ describe('L10nInterpolationRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('marca la interpolación con · entre dos claves', () => {
+  it('flags the interpolation with · between two keys', () => {
     const rule = new L10nInterpolationRule();
     assert.equal(rule.check(LIB, "Text('${l10n.a} · ${l10n.b}');").length, 1);
   });
 
-  it('no marca una interpolación de l10n sin separador', () => {
+  it('does not flag an l10n interpolation without a separator', () => {
     const rule = new L10nInterpolationRule();
     assert.deepEqual(rule.check(LIB, "Text('${l10n.a}');"), []);
   });
 
-  it('no marca una llamada a l10n sin interpolación', () => {
+  it('does not flag an l10n call without interpolation', () => {
     const rule = new L10nInterpolationRule();
     assert.deepEqual(rule.check(LIB, 'l10n.a(code)'), []);
   });
 
-  it('ignora una línea de comentario con el patrón', () => {
+  it('ignores a comment line with the pattern', () => {
     const rule = new L10nInterpolationRule();
     assert.deepEqual(rule.check(LIB, "// '${l10n.a}: x'"), []);
   });

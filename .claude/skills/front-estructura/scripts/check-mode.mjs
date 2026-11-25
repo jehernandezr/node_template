@@ -1,4 +1,4 @@
-// Modos de la CLI. El valor es la bandera tal como se escribe en la línea de comandos.
+// CLI modes. The value is the flag as written on the command line.
 export class CheckMode {
   static CHANGED = '--changed';
   static ALL = '--all';

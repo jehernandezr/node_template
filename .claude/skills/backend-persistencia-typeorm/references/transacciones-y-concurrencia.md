@@ -1,18 +1,18 @@
-# Transacciones y concurrencia
+# Transactions and concurrency
 
-## Contenido
+## Contents
 
-- Unidad de trabajo
-- EntityManager y QueryRunner
-- Aislamiento
-- Locking optimista
-- Locking pesimista
-- Reintentos
-- Efectos después del commit
+- Unit of work
+- EntityManager and QueryRunner
+- Isolation
+- Optimistic locking
+- Pessimistic locking
+- Retries
+- Effects after the commit
 
-## Unidad de trabajo
+## Unit of work
 
-El caso de uso abre la transacción por el puerto `TransactionManager`. El repositorio la recoge del contexto asíncrono, así que el mismo código sirve dentro y fuera de una transacción.
+The use case opens the transaction through the `TransactionManager` port. The repository picks it up from the async context, so the same code works inside and outside a transaction.
 
 ```ts
 await this.transactions.runInTransaction(async () => {
@@ -28,14 +28,14 @@ await this.transactions.runInTransaction(async () => {
 });
 ```
 
-`MessageBus.publish` escribe en el outbox dentro de la misma transacción y falla si no hay una abierta. Si la función lanza, se deshace todo y el error sale tal cual. Si ya hay una transacción abierta en la misma base, se une a ella.
+`MessageBus.publish` writes to the outbox inside the same transaction and fails if none is open. If the function throws, everything is rolled back and the error propagates as is. If a transaction is already open on the same database, it joins it.
 
-## EntityManager y QueryRunner
+## EntityManager and QueryRunner
 
-Dentro de `@platform/persistence`, y solo allí:
+Inside `@platform/persistence`, and only there:
 
-- `dataSource.transaction(async (manager) => ...)` cubre casi todo.
-- `QueryRunner` manual solo si hace falta control fino de `commit` y `rollback` (por ejemplo, la bitácora de sagas, que confirma pasos en transacciones separadas). Siempre `try/catch/finally` con `release()` en el `finally`, o `await using`.
+- `dataSource.transaction(async (manager) => ...)` covers almost everything.
+- A manual `QueryRunner` only if fine control of `commit` and `rollback` is needed (for example, the saga log, which commits steps in separate transactions). Always `try/catch/finally` with `release()` in the `finally`, or `await using`.
 
 ```ts
 const queryRunner = this.dataSource.createQueryRunner();
@@ -52,18 +52,18 @@ try {
 }
 ```
 
-Dentro de una transacción todo usa `queryRunner.manager` o el `manager` recibido. Un `repository` o `dataSource.manager` tomado de fuera corre en otra conexión y queda fuera de la transacción.
+Inside a transaction everything uses `queryRunner.manager` or the received `manager`. A `repository` or `dataSource.manager` taken from outside runs on another connection and stays outside the transaction.
 
-## Aislamiento
+## Isolation
 
-- `READ COMMITTED` (por defecto) para la mayoría.
-- `REPEATABLE READ` o `SERIALIZABLE` solo para invariantes que cruzan filas (por ejemplo, sumas que no deben pasar un tope), y con reintento ante `40001`.
-- Transacciones de solo lectura con `readOnly: true` en las opciones del `TransactionManager`.
-- Transacciones cortas, con `statementTimeoutMs`.
+- `READ COMMITTED` (the default) for most cases.
+- `REPEATABLE READ` or `SERIALIZABLE` only for invariants that span rows (for example, sums that must not exceed a cap), and with a retry on `40001`.
+- Read-only transactions with `readOnly: true` in the `TransactionManager` options.
+- Short transactions, with `statementTimeoutMs`.
 
-## Locking optimista
+## Optimistic locking
 
-`@VersionColumn` incrementa en cada `UPDATE`. El repositorio actualiza con `WHERE id = $1 AND version = $2` y, si no afecta filas, lanza `ConcurrencyConflictError` (reintentable). El mapper conserva la versión leída en el agregado y la devuelve al guardar.
+`@VersionColumn` increments on every `UPDATE`. The repository updates with `WHERE id = $1 AND version = $2` and, if no rows are affected, throws `ConcurrencyConflictError` (retryable). The mapper keeps the version it read in the aggregate and passes it back on save.
 
 ```ts
 @Entity('accounts')
@@ -72,9 +72,9 @@ export class AccountEntity extends BaseEntity {
 }
 ```
 
-El cliente HTTP puede mandar `If-Match` con la versión para detectar ediciones concurrentes de un recurso; un desajuste responde 409 o 412.
+The HTTP client can send `If-Match` with the version to detect concurrent edits of a resource; a mismatch responds 409 or 412.
 
-## Locking pesimista
+## Pessimistic locking
 
 ```ts
 await manager.findOne(AccountEntity, {
@@ -83,14 +83,14 @@ await manager.findOne(AccountEntity, {
 });
 ```
 
-- `pessimistic_write` para saldos o contadores con conflicto frecuente. Siempre dentro de transacción y siempre en el mismo orden de filas, para evitar interbloqueos.
-- `FOR UPDATE SKIP LOCKED` para barridos (outbox, recuperación de sagas, backfills): cada worker toma filas distintas.
-- Lock de aplicación entre procesos: `pg_advisory_xact_lock`, con la llave derivada del recurso.
+- `pessimistic_write` for balances or counters with frequent conflict. Always inside a transaction and always in the same row order, to avoid deadlocks.
+- `FOR UPDATE SKIP LOCKED` for sweeps (outbox, saga recovery, backfills): each worker takes different rows.
+- Application lock across processes: `pg_advisory_xact_lock`, with the key derived from the resource.
 
-## Reintentos
+## Retries
 
-Solo un caso de uso idempotente se reintenta. Reintentar `ConcurrencyConflictError`, `40001` y `40P01` hasta 3 veces con backoff y jitter (`@platform/primitives`), volviendo a leer el agregado en cada intento. No se reintenta dentro de la transacción: se reintenta la transacción entera.
+Only an idempotent use case is retried. Retry `ConcurrencyConflictError`, `40001` and `40P01` up to 3 times with backoff and jitter (`@platform/primitives`), reloading the aggregate on each attempt. Do not retry inside the transaction: retry the whole transaction.
 
-## Efectos después del commit
+## Effects after the commit
 
-Publicar a SNS, enviar correo o invalidar caché va en `transactions.afterCommit(...)` o por outbox. Nunca antes del commit: si la transacción se deshace, el efecto ya ocurrió.
+Publishing to SNS, sending email or invalidating the cache goes in `transactions.afterCommit(...)` or through the outbox. Never before the commit: if the transaction rolls back, the effect has already happened.

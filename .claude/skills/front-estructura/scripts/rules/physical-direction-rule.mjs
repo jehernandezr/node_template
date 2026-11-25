@@ -6,7 +6,7 @@ export class PhysicalDirectionRule extends PatternRule {
   constructor() {
     super(
       RuleId.PHYSICAL_DIRECTION,
-      'usa direccionalidad (AlignmentDirectional, EdgeInsetsDirectional, BorderRadiusDirectional) y tokens de radio',
+      'use directionality (AlignmentDirectional, EdgeInsetsDirectional, BorderRadiusDirectional) and radius tokens',
       /\bAlignment\.(centerLeft|centerRight)\b|\bEdgeInsets\.fromLTRB\b|\bBorderRadius\.circular\(\s*\d/,
     );
   }

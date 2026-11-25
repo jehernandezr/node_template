@@ -1,8 +1,8 @@
-# Ejemplos de front-analisis
+# front-analisis examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies.
 
-## Estado actual y meta
+## Current state and goal
 
 ```yaml
 include: package:flutter_lints/flutter.yaml

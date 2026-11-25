@@ -1,6 +1,6 @@
 ---
 name: backend-observabilidad-configuracion
-description: 'Configuración con zod, logging, trazas, métricas, salud y timeouts del backend. Úsala al agregar una variable de entorno, un log, una métrica o un health check.'
+description: 'Backend configuration with zod, logging, traces, metrics, health and timeouts. Use it when adding an environment variable, a log, a metric or a health check.'
 paths:
   - 'backend/**/config/**'
   - 'backend/libs/platform/config/**'
@@ -8,18 +8,18 @@ paths:
   - 'backend/.env.example'
 ---
 
-# Configuración y observabilidad
+# Configuration and observability
 
-Referencias: ADR 0004 (OpenTelemetry y OpenObserve), ADR 0003 (el `traceId` es un UUIDv7).
+References: ADR 0004 (OpenTelemetry and OpenObserve), ADR 0003 (the `traceId` is a UUIDv7).
 
-## Configuración validada
+## Validated configuration
 
-- Toda variable de entorno se declara en un esquema zod de `@platform/config`, con tipo, valor por defecto razonable y descripción. Se valida una sola vez al arrancar: si falta o es inválida, el proceso no arranca y el mensaje dice qué variable y por qué, sin imprimir el valor de un secreto.
-- El resultado es un objeto tipado e inmutable que se inyecta (`AppConfig`). Nadie lee `process.env` fuera de `@platform/config`.
-- Configuración agrupada por tema (`database`, `messaging`, `auth`), no una lista plana. Los números llevan unidad en el nombre (`timeoutMs`, `ttlSeconds`).
-- Los valores que dependen del ambiente (URLs, tamaños de pool) vienen del entorno. Las reglas de negocio no son configuración: son código.
-- Cambiar una opción de comportamiento en caliente (nivel de log) pasa por un feature flag, no por reiniciar.
-- Variable nueva: se agrega al esquema, a `.env.example` y a Terraform en el mismo cambio.
+- Every environment variable is declared in a zod schema in `@platform/config`, with a type, a sensible default and a description. It is validated once at startup: if it is missing or invalid, the process does not start and the message says which variable failed and why, without printing a secret's value.
+- The result is a typed, immutable object that gets injected (`AppConfig`). Nobody reads `process.env` outside `@platform/config`.
+- Configuration is grouped by topic (`database`, `messaging`, `auth`), not a flat list. Numbers carry their unit in the name (`timeoutMs`, `ttlSeconds`).
+- Values that depend on the environment (URLs, pool sizes) come from the environment. Business rules are not configuration: they are code.
+- Changing a behavior option at runtime (log level) goes through a feature flag, not a restart.
+- New variable: add it to the schema, to `.env.example` and to Terraform in the same change.
 
 ```ts
 export const databaseConfigSchema = z.strictObject({
@@ -29,46 +29,46 @@ export const databaseConfigSchema = z.strictObject({
 });
 ```
 
-## Logging estructurado
+## Structured logging
 
-- Siempre por `LoggerPort` inyectado, nunca `console.log`. JSON a stdout (o OTLP), con `trace_id` y `span_id`.
-- Un mensaje fijo y los datos como campos, no interpolados: `logger.info('user registered', { userId })`. Así se filtran y se agregan.
-- Niveles: `error` para lo que pide acción, `warn` para degradación recuperable, `info` para eventos de negocio relevantes y cambios de estado, `debug` para diagnóstico (apagado por defecto, muestreo con `LOG_SAMPLE_RATE` y `LOG_DEBUG_CONTEXTS`).
-- Un error se registra una sola vez, donde se maneja (el filtro, el manejador del consumidor), con su causa. No se registra y se vuelve a lanzar en cada capa.
-- Nunca secretos, tokens, contraseñas, documentos ni correos completos. Se registran ids.
-- El contexto (`tenantId`, `actorId`, `traceId`) viene del contexto asíncrono, no se pasa a mano por cada método.
-- Cada petición, mensaje y job crea o continúa un `traceId` (UUIDv7) y lo devuelve o propaga (`traceparent`).
+- Always through an injected `LoggerPort`, never `console.log`. JSON to stdout (or OTLP), with `trace_id` and `span_id`.
+- A fixed message with the data as fields, not interpolated: `logger.info('user registered', { userId })`. That way they can be filtered and aggregated.
+- Levels: `error` for what needs action, `warn` for recoverable degradation, `info` for relevant business events and state changes, `debug` for diagnostics (off by default, sampled with `LOG_SAMPLE_RATE` and `LOG_DEBUG_CONTEXTS`).
+- An error is logged once, where it is handled (the filter, the consumer handler), with its cause. It is not logged and rethrown at every layer.
+- Never secrets, tokens, passwords, ID documents or full email addresses. Log ids.
+- The context (`tenantId`, `actorId`, `traceId`) comes from the async context, it is not passed by hand through every method.
+- Every request, message and job creates or continues a `traceId` (UUIDv7) and returns or propagates it (`traceparent`).
 
-## Trazas y métricas
+## Traces and metrics
 
-- La instrumentación automática cubre HTTP, NestJS, base, Valkey, AWS y `fetch`. Se agregan spans propios en casos de uso, pasos de saga, consumidores y jobs, con nombre estable (`users.sign_in`) y atributos de baja cardinalidad.
-- Métricas con etiquetas acotadas: nunca ids de usuario o de tenant como etiqueta.
-- Cada caso de uso crítico mide latencia y tasa de error. Cada cola mide profundidad, antigüedad del mensaje más viejo y DLQ.
-- Un manejador de errores central por tipo de disparador cuenta y registra los errores, ver `backend-errores`.
+- Auto-instrumentation covers HTTP, NestJS, database, Valkey, AWS and `fetch`. Add your own spans in use cases, saga steps, consumers and jobs, with a stable name (`users.sign_in`) and low-cardinality attributes.
+- Metrics with bounded labels: never user or tenant ids as a label.
+- Every critical use case measures latency and error rate. Every queue measures depth, age of the oldest message and DLQ.
+- A central error handler per trigger type counts and logs errors, see `backend-errores`.
 
-## Health y apagado
+## Health and shutdown
 
-- `GET /health/live`: el proceso responde. No toca dependencias.
-- `GET /health/ready`: la base, la caché y la config esenciales responden, con tiempo límite corto. Si falla, el balanceador deja de enviar tráfico, pero el proceso no se reinicia.
-- Apagado ordenado con `enableShutdownHooks()`: deja de aceptar tráfico, termina lo que está en curso, cierra consumidores, luego pools. El plazo es menor que el del orquestador.
-- Sin PM2 ni reinicio propio: la plataforma reinicia.
+- `GET /health/live`: the process responds. It does not touch dependencies.
+- `GET /health/ready`: the essential database, cache and config respond, with a short time limit. If it fails, the load balancer stops sending traffic, but the process is not restarted.
+- Graceful shutdown with `enableShutdownHooks()`: stop accepting traffic, finish in-flight work, close consumers, then pools. The deadline is shorter than the orchestrator's.
+- No PM2 or self-restart: the platform restarts.
 
-## Timeouts y resiliencia
+## Timeouts and resilience
 
-- Toda llamada de red lleva timeout, y toda llamada que se reintenta es idempotente. Se usa `@platform/resilience` (timeout, backoff con jitter, circuit breaker), no bucles propios.
-- El presupuesto total de una operación (intentos más esperas) cabe en su plazo.
-- Una dependencia caída degrada con elegancia cuando existe alternativa (caché obsoleta), y si no, responde 503 con `Retry-After`.
+- Every network call has a timeout, and every retried call is idempotent. Use `@platform/resilience` (timeout, backoff with jitter, circuit breaker), not hand-written loops.
+- The total budget of an operation (attempts plus waits) fits within its deadline.
+- A dependency that is down degrades gracefully when an alternative exists (stale cache), and otherwise responds 503 with `Retry-After`.
 
-## Revisión
+## Review
 
 ```
-- [ ] Variable nueva en esquema zod, .env.example y Terraform
-- [ ] Nadie lee process.env fuera de @platform/config
-- [ ] Logs con mensaje fijo, campos y sin datos sensibles
-- [ ] Span propio en el caso de uso o consumidor nuevo
-- [ ] Timeout en cada llamada de red nueva
+- [ ] New variable in the zod schema, .env.example and Terraform
+- [ ] Nobody reads process.env outside @platform/config
+- [ ] Logs with a fixed message, fields and no sensitive data
+- [ ] Own span in the new use case or consumer
+- [ ] Timeout on every new network call
 ```
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-explain-the-number`, `benchmark-checklist`, `principle-boundary-discipline`, `runtime-forensics`, `poteto-mode`.
+Method in `pstack-en-node-template`. From pstack these apply here: `principle-explain-the-number`, `benchmark-checklist`, `principle-boundary-discipline`, `runtime-forensics`, `poteto-mode`.

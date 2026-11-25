@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const SCREEN = 'front/microfrontends/tasks/lib/src/screens/a.dart';
 
 describe('HardcodedColorRule', () => {
-  it('se aplica al lib de un microfrontend', () => {
+  it('applies to a microfrontend lib', () => {
     const rule = new HardcodedColorRule();
     assert.equal(rule.appliesTo(SCREEN), true);
     assert.equal(
@@ -15,7 +15,7 @@ describe('HardcodedColorRule', () => {
     );
   });
 
-  it('no se aplica a tokens ni a pruebas de microfrontend', () => {
+  it('does not apply to tokens or to microfrontend tests', () => {
     const rule = new HardcodedColorRule();
     assert.equal(rule.appliesTo('front/packages/tokens/lib/src/a.dart'), false);
     assert.equal(
@@ -24,7 +24,7 @@ describe('HardcodedColorRule', () => {
     );
   });
 
-  it('deja pasar un texto sin colores hardcodeados', () => {
+  it('lets a text without hardcoded colors through', () => {
     const rule = new HardcodedColorRule();
     const text = ['import "tokens.dart";', 'final a = 1;', 'return a;'].join(
       '\n',
@@ -32,7 +32,7 @@ describe('HardcodedColorRule', () => {
     assert.deepEqual(rule.check(SCREEN, text), []);
   });
 
-  it('marca Color(0x) solo en la línea donde aparece', () => {
+  it('flags Color(0x) only on the line where it appears', () => {
     const rule = new HardcodedColorRule();
     const text = [
       'final a = 1;',
@@ -46,7 +46,7 @@ describe('HardcodedColorRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('marca Colors. con su línea', () => {
+  it('flags Colors. with its line', () => {
     const rule = new HardcodedColorRule();
     const text = ['final a = 1;', 'final b = 2;', 'color: Colors.red,'].join(
       '\n',
@@ -58,13 +58,13 @@ describe('HardcodedColorRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('ignora una línea de comentario con el patrón', () => {
+  it('ignores a comment line with the pattern', () => {
     const rule = new HardcodedColorRule();
     assert.deepEqual(rule.check(SCREEN, '// Colors.red'), []);
     assert.deepEqual(rule.check(SCREEN, '/// Color(0xFF000000)'), []);
   });
 
-  it('no marca los tokens propios ni Color.fromARGB', () => {
+  it('does not flag the in-house tokens or Color.fromARGB', () => {
     const rule = new HardcodedColorRule();
     assert.deepEqual(rule.check(SCREEN, 'color: AppColors.primary,'), []);
     assert.deepEqual(

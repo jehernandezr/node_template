@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const SCREEN = 'front/microfrontends/tasks/lib/src/screens/a.dart';
 
 describe('TextLiteralRule', () => {
-  it('se aplica a las pantallas de un microfrontend, no a sus datos', () => {
+  it("applies to a microfrontend's screens, not to its data", () => {
     const rule = new TextLiteralRule();
     assert.equal(rule.appliesTo(SCREEN), true);
     assert.equal(
@@ -15,13 +15,13 @@ describe('TextLiteralRule', () => {
     );
   });
 
-  it('deja pasar un texto que sale de l10n', () => {
+  it('lets a text that comes from l10n through', () => {
     const rule = new TextLiteralRule();
     const text = ['final a = 1;', 'Text(l10n.x);', 'return a;'].join('\n');
     assert.deepEqual(rule.check(SCREEN, text), []);
   });
 
-  it('marca un Text con literal solo en su línea', () => {
+  it('flags a Text with a literal only on its line', () => {
     const rule = new TextLiteralRule();
     const text = ['final a = 1;', 'final b = 2;', "Text('x'),"].join('\n');
     const [violation, ...rest] = rule.check(SCREEN, text);
@@ -31,7 +31,7 @@ describe('TextLiteralRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('marca un literal que dart format dejó en la línea siguiente', () => {
+  it('flags a literal that dart format left on the next line', () => {
     const rule = new TextLiteralRule();
     const text = [
       'Column(',
@@ -44,13 +44,13 @@ describe('TextLiteralRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('no marca un Text partido en líneas cuyo argumento sale de l10n', () => {
+  it('does not flag a multi-line Text whose argument comes from l10n', () => {
     const rule = new TextLiteralRule();
     const text = ['Text(', '  l10n.title,', '  style: style,', ')'].join('\n');
     assert.deepEqual(rule.check(SCREEN, text), []);
   });
 
-  it('marca const Text con comillas dobles', () => {
+  it('flags const Text with double quotes', () => {
     const rule = new TextLiteralRule();
     const [violation, ...rest] = rule.check(SCREEN, 'const Text("x")');
     assert.equal(rest.length, 0);
@@ -58,25 +58,25 @@ describe('TextLiteralRule', () => {
     assert.equal(violation.line, 1);
   });
 
-  it('marca un literal con interpolación de texto de usuario', () => {
+  it('flags a literal with user text interpolation', () => {
     const rule = new TextLiteralRule();
     assert.equal(rule.check(SCREEN, "Text('Hola $name')").length, 1);
     assert.equal(rule.check(SCREEN, "Text('${l10n.a}: x')").length, 1);
   });
 
-  it('no marca un literal que solo interpola datos', () => {
+  it('does not flag a literal that only interpolates data', () => {
     const rule = new TextLiteralRule();
     assert.deepEqual(rule.check(SCREEN, "Text('$count')"), []);
     assert.deepEqual(rule.check(SCREEN, "Text('${saga.type}')"), []);
   });
 
-  it('no marca SelectableText ni Text sin literal', () => {
+  it('does not flag SelectableText or Text without a literal', () => {
     const rule = new TextLiteralRule();
     assert.deepEqual(rule.check(SCREEN, "SelectableText('x')"), []);
     assert.deepEqual(rule.check(SCREEN, 'Text(l10n.x)'), []);
   });
 
-  it('ignora una línea de comentario con el patrón', () => {
+  it('ignores a comment line with the pattern', () => {
     const rule = new TextLiteralRule();
     assert.deepEqual(rule.check(SCREEN, "// Text('x')"), []);
   });

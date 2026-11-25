@@ -1,17 +1,17 @@
-## Qué cambia
+## What changes
 
-<!-- Describe los cambios principales de este PR. -->
+<!-- Describe the main changes in this PR. -->
 
-## Por qué
+## Why
 
-<!-- Explica el problema o la necesidad que motiva el cambio. -->
+<!-- Explain the problem or need behind the change. -->
 
-## Cómo se probó
+## How it was tested
 
-<!-- Indica los comandos ejecutados y los escenarios verificados. -->
+<!-- List the commands run and the scenarios checked. -->
 
 ## Checklist
 
-- [ ] Las pruebas cubren el cambio y pasan localmente.
-- [ ] `docs/ARCHITECTURE.md` o un ADR están actualizados, si aplica.
-- [ ] Los contratos están regenerados, si aplica.
+- [ ] Tests cover the change and pass locally.
+- [ ] `docs/ARCHITECTURE.md` or an ADR is updated, if applicable.
+- [ ] Contracts are regenerated, if applicable.

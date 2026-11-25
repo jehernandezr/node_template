@@ -1,7 +1,7 @@
-# Clases e inyección: ejemplo
+# Classes and injection: example
 
 ```ts
-// Bien
+// Good
 export class SignInUseCase implements UseCase<SignInCommand, SessionAccess> {
   constructor(
     private readonly users: UserRepository,
@@ -15,7 +15,7 @@ export class SignInUseCase implements UseCase<SignInCommand, SessionAccess> {
   }
 }
 
-// Mal: funciones sueltas que leen dependencias de módulo
+// Bad: loose functions that read module dependencies
 export async function signIn(email: string, password: string) {
   const user = await db.findUser(email);
 }

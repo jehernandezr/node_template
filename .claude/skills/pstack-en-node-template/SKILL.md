@@ -1,51 +1,51 @@
 ---
 name: pstack-en-node-template
-description: 'Cómo se trabaja aquí con el plugin pstack: cargar sus skills en Claude Code, orden de trabajo, verificación, interrogate y precedencia. Úsala antes de seguir una skill de pstack.'
+description: 'How to work here with the pstack plugin: loading its skills in Claude Code, work order, verification, interrogate and precedence. Use it before following a pstack skill.'
 ---
 
-# pstack en node_template
+# pstack in node_template
 
-El método es de pstack y las reglas son de las skills `backend-*` y `front-*`. Si el plugin no está instalado, sigue solo con las skills del repositorio y no lo instales por tu cuenta.
+The method comes from pstack and the rules from the `backend-*` and `front-*` skills. If the plugin is not installed, continue with the repository skills only and do not install it yourself.
 
-## Cargar una skill de pstack
+## Loading a pstack skill
 
-1. Ubica el plugin: `ls -d ~/.claude/plugins/cache/cursor-plugins/pstack/*/ | sort -V | tail -1` (es `<pstack>`).
-2. Una vez por sesión lee `<pstack>/docs/harness/claude-code.md`, que traduce los nombres de Cursor (`Task` es `Agent`, `readonly` es `Explore`, modelos y rutas).
-3. Lee `<pstack>/skills/<nombre>/SKILL.md` con `Read` y síguela. La herramienta `Skill` las rechaza. A una persona dile `/pstack:<nombre>`.
-4. Lo exclusivo de Cursor (Bugbot, automations, `/deslop`) se salta con `Skipped in Claude Code: <paso>. <motivo>.`
-5. Los modelos por rol salen de `~/.claude/rules/pstack-models.md`; se cambian con `/pstack:setup-pstack`.
+1. Find the plugin: `ls -d ~/.claude/plugins/cache/cursor-plugins/pstack/*/ | sort -V | tail -1` (that is `<pstack>`).
+2. Once per session, read `<pstack>/docs/harness/claude-code.md`, which maps Cursor names to Claude Code (`Task` is `Agent`, `readonly` is `Explore`, models and paths).
+3. Read `<pstack>/skills/<name>/SKILL.md` with `Read` and follow it. The `Skill` tool rejects them. To a person, say `/pstack:<name>`.
+4. Cursor-only steps (Bugbot, automations, `/deslop`) are skipped with `Skipped in Claude Code: <step>. <reason>.`
+5. Models per role come from `~/.claude/rules/pstack-models.md`; change them with `/pstack:setup-pstack`.
 
-## Cómo se trabaja
+## How work is done
 
-1. Elige el playbook de `poteto-mode`: `feature`, `bug-fix`, `refactoring` o `perf-issue`.
-2. Código no trivial: `architect` fija puertos, tipos, enums y módulos, y los deja compilando.
-3. Unidades verificables (`principle-sequence-verifiable-units`): cada una compila, tiene sus pruebas en verde y su commit. Un bug empieza con `tdd`.
-4. `principle-prove-it-works` con los comandos de "Verificación".
-5. Revisión: `interrogate` sobre `main...HEAD`, luego `no-comments`, y `blast-radius` si toca plataforma, contratos, autenticación o datos. Las reglas son las "Reglas de revisión" de `backend-codigo-enterprise` o `front-codigo` y las de la skill del tema.
-6. Docs, ADR, commits y PR pasan por `unslop`.
+1. Pick the `poteto-mode` playbook: `feature`, `bug-fix`, `refactoring` or `perf-issue`.
+2. Non-trivial code: `architect` fixes ports, types, enums and modules, and leaves them compiling.
+3. Verifiable units (`principle-sequence-verifiable-units`): each one compiles, has green tests and its own commit. A bug starts with `tdd`.
+4. `principle-prove-it-works` with the commands under "Verification".
+5. Review: `interrogate` over `main...HEAD`, then `no-comments`, and `blast-radius` if it touches platform, contracts, authentication or data. The rules are the "Review rules" of `backend-codigo-enterprise` or `front-codigo` plus those of the topic skill.
+6. Docs, ADRs, commits and PRs go through `unslop`.
 
-## Verificación
+## Verification
 
-- Backend: `node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed .`, `pnpm nx run-many -t lint test typecheck --projects=<tocados y dependientes>` y `pnpm nx format:check`. Integración con `INTEGRATION_TESTS=require` y `--runInBand`, de a un proyecto.
-- Contratos: `pnpm nx run contracts-export:check` y `(cd front/packages/contracts && dart run contracts_gen --check)`.
-- Front: `node .claude/skills/front-estructura/scripts/check-structure.mjs --changed .` y, por paquete, `format-check`, `analyze` y `test`; en un microfrontend, `dart run tools/check_microfrontend_boundaries.dart`.
-- Entre servicios: `pnpm nx run platform-flow:e2e`.
+- Backend: `node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed .`, `pnpm nx run-many -t lint test typecheck --projects=<touched and dependents>` and `pnpm nx format:check`. Integration with `INTEGRATION_TESTS=require` and `--runInBand`, one project at a time.
+- Contracts: `pnpm nx run contracts-export:check` and `(cd front/packages/contracts && dart run contracts_gen --check)`.
+- Front: `node .claude/skills/front-estructura/scripts/check-structure.mjs --changed .` and, per package, `format-check`, `analyze` and `test`; in a microfrontend, `dart run tools/check_microfrontend_boundaries.dart`.
+- Across services: `pnpm nx run platform-flow:e2e`.
 
-## `interrogate` aquí
+## `interrogate` here
 
-- Adversarios de la línea `interrogate reviewers`, cada uno en su worktree, con las reglas de revisión del área.
-- Un hallazgo cuenta solo si una corrida lo demuestra. Sin corrida, es hipótesis y no bloquea.
-- Corridas puntuales (un archivo de prueba o un script). La suite completa la corre quien coordina, que vuelve a correr cada hallazgo antes de aceptarlo.
-- En la Raspberry Pi de 4 núcleos solo un comando pesado a la vez. Limpia contenedores solo con `--filter label=org.testcontainers=true`.
+- Adversaries from the `interrogate reviewers` line, each in its own worktree, with the area's review rules.
+- A finding counts only if a run proves it. Without a run it is a hypothesis and does not block.
+- Targeted runs (one test file or one script). The coordinator runs the full suite and reruns each finding before accepting it.
+- On the 4-core Raspberry Pi, only one heavy command at a time. Clean containers only with `--filter label=org.testcontainers=true`.
 
-## Precedencia
+## Precedence
 
-Cuando no coinciden, manda el repositorio:
+When they disagree, the repository wins:
 
-- Lógica de negocio en clases del dominio sin framework, no en funciones sueltas.
-- Sin comentarios en línea; JSDoc completo y conciso en cada método público (`///` en Dart). Se rechaza que Comment Sicko borre ese JSDoc.
-- Español sin guiones largos en docs, ADR, PR y commits; de `technical-writing` solo la estructura.
-- Conventional Commits en español, sin atribución de IA, nunca `--no-verify`; el PR sigue `.github/pull_request_template.md`.
-- Fakes de los puertos como clases, sin `jest.fn`.
-- Enums en lugar de literales y puertos como clases abstractas, aunque `typescript-best-practices` diga otra cosa.
-- Dentro de un ciclo de `.claude/workflows/ciclo-fase.js` mandan sus reglas sobre `autonomous-run`, `autopilot-*` y `shipping`.
+- Business logic in framework-free domain classes, not in loose functions.
+- No inline comments; a complete, concise JSDoc on every public method (`///` in Dart). Reject Comment Sicko removing that JSDoc.
+- English only in docs, ADRs, PRs, commits and JSDoc, without em dashes; from `technical-writing`, only the structure.
+- Conventional Commits in English, no AI attribution, never `--no-verify`; PRs follow `.github/pull_request_template.md`.
+- Port fakes as classes, without `jest.fn`.
+- Enums instead of literals and ports as abstract classes, even if `typescript-best-practices` says otherwise.
+- Inside a `.claude/workflows/ciclo-fase.js` cycle, its rules win over `autonomous-run`, `autopilot-*` and `shipping`.

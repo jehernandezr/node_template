@@ -1,6 +1,6 @@
-# Filtro de Problem Details: esquema ilustrativo
+# Problem Details filter: illustrative sketch
 
-La forma exacta la fija la plataforma.
+The platform defines the exact shape.
 
 ```ts
 @Catch()

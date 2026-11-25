@@ -6,7 +6,7 @@ const FILE = 'front/packages/ui/lib/src/a.dart';
 
 class FooRule extends PatternRule {
   constructor() {
-    super('foo', 'sin foo', /\bfoo\(\s*'/);
+    super('foo', 'no foo', /\bfoo\(\s*'/);
   }
 
   appliesTo(_file) {
@@ -15,11 +15,11 @@ class FooRule extends PatternRule {
 }
 
 describe('PatternRule', () => {
-  it('no marca un archivo sin coincidencias', () => {
+  it('does not flag a file without matches', () => {
     assert.deepEqual(new FooRule().check(FILE, 'bar();\nbaz();'), []);
   });
 
-  it('marca la línea donde empieza cada coincidencia', () => {
+  it('flags the line where each match starts', () => {
     const text = ['bar();', "foo('a');", 'baz();', "foo('b');"].join('\n');
     const violations = new FooRule().check(FILE, text);
     assert.deepEqual(
@@ -30,7 +30,7 @@ describe('PatternRule', () => {
     assert.equal(violations[0].file, FILE);
   });
 
-  it('atrapa una coincidencia que dart format partió en varias líneas', () => {
+  it('catches a match that dart format split across lines', () => {
     const text = ['bar();', 'foo(', "  'a',", ');'].join('\n');
     assert.deepEqual(
       new FooRule().check(FILE, text).map((v) => v.line),
@@ -38,11 +38,11 @@ describe('PatternRule', () => {
     );
   });
 
-  it('cuenta una sola vez una línea con dos coincidencias', () => {
+  it('counts a line with two matches only once', () => {
     assert.equal(new FooRule().check(FILE, "foo('a'); foo('b');").length, 1);
   });
 
-  it('ignora las líneas que son solo comentario', () => {
+  it('ignores lines that are only a comment', () => {
     const text = ["// foo('a');", "/// foo('b');", "foo('c');"].join('\n');
     assert.deepEqual(
       new FooRule().check(FILE, text).map((v) => v.line),
@@ -50,7 +50,7 @@ describe('PatternRule', () => {
     );
   });
 
-  it('da el mismo resultado al revisar dos archivos seguidos', () => {
+  it('gives the same result when checking two files in a row', () => {
     const rule = new FooRule();
     assert.equal(rule.check(FILE, "foo('a');").length, 1);
     assert.equal(rule.check(FILE, "foo('a');").length, 1);

@@ -3,13 +3,13 @@ import { PatternRule } from './pattern-rule.mjs';
 import { RuleId } from './rule-id.mjs';
 
 export class DatetimeNowRule extends PatternRule {
-  // El único lugar que lee el reloj del sistema.
+  // The only place that reads the system clock.
   static CLOCK_FILE = 'front/packages/utils/lib/src/clock.dart';
 
   constructor() {
     super(
       RuleId.DATETIME_NOW,
-      'el tiempo se inyecta con un Clock; nada de DateTime.now() en la lógica',
+      'time is injected with a Clock; no DateTime.now() in the logic',
       /\bDateTime\.now\(\)/,
     );
   }

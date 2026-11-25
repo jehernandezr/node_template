@@ -1,60 +1,60 @@
 ---
 name: front-pruebas
-description: 'Pruebas del front: test/ que replica lib/src, controladores sin widgets, dobles como clases, TestApp y accesibilidad. Úsala al escribir o revisar pruebas del front.'
+description: 'Front tests: test/ mirroring lib/src, controllers without widgets, test doubles as classes, TestApp and accessibility. Use it when writing or reviewing front tests.'
 paths:
   - 'front/**/test/**'
   - 'front/packages/test_utils/**'
 ---
 
-# Pruebas del front
+# Front tests
 
-## Ubicación
+## Location
 
-- Las pruebas van en el `test/` de cada paquete, con las mismas subcarpetas que `lib/src`. Ejemplo: `lib/src/screens/tasks_list_controller.dart` se prueba en `test/screens/tasks_list_controller_test.dart`.
-- No van dentro de `lib/`: Dart publicaría el código de prueba con el paquete, y `flutter_test` es una dependencia de desarrollo que `lib/` no puede importar.
-- Los dobles y utilitarios que usan varios paquetes viven en `front/packages/test_utils` (`package:test_utils/test_utils.dart`), declarado solo en `dev_dependencies`. Lo que usa un solo microfrontend va en su `test/utils/`, como `TasksTestApp` en `test/utils/tasks_app.dart`. Nunca carpetas `testing/` ni `support.dart`.
-- Siguen las mismas reglas que el código: clases, un archivo por clase y sin duplicación.
+- Tests go in each package's `test/`, with the same subfolders as `lib/src`. Example: `lib/src/screens/tasks_list_controller.dart` is tested in `test/screens/tasks_list_controller_test.dart`.
+- They do not go inside `lib/`: Dart would publish the test code with the package, and `flutter_test` is a dev dependency that `lib/` cannot import.
+- Doubles and utilities used by several packages live in `front/packages/test_utils` (`package:test_utils/test_utils.dart`), declared only in `dev_dependencies`. What a single microfrontend uses goes in its `test/utils/`, like `TasksTestApp` in `test/utils/tasks_app.dart`. Never `testing/` folders or `support.dart`.
+- They follow the same rules as the code: classes, one file per class and no duplication.
 
-## Qué probar y dónde
+## What to test and where
 
-- Controlador, flujo, repositorio: `test()` sin widgets, con dobles. Aquí vive la lógica.
-- Widget o pantalla: `testWidgets`: lo que se ve y los eventos que salen.
-- Estados de la pantalla: Cargando, datos, vacío y error. Los cuatro.
-- Layout: Un ancho compacto y uno expandido con `pumpAtWidths`.
-- Accesibilidad: `expectAccessible` y escala 2x con `pumpAtTextScale` (ver `front-accesibilidad`).
-- Componentes de `ui`: Opcional: golden tag `golden`.
+- Controller, flow, repository: `test()` without widgets, with doubles. The logic lives here.
+- Widget or screen: `testWidgets`: what is shown and the events that go out.
+- Screen states: Loading, data, empty and error. All four.
+- Layout: One compact and one expanded width with `pumpAtWidths`.
+- Accessibility: `expectAccessible` and 2x scale with `pumpAtTextScale` (see `front-accesibilidad`).
+- `ui` components: Optional: golden tag `golden`.
 
-Cada regla de negocio nueva trae su prueba de controlador. Cada bug corregido trae la prueba que lo habría atrapado.
+Every new business rule comes with its controller test. Every fixed bug comes with the test that would have caught it.
 
-## Cómo se escriben
+## How they are written
 
-- Nombres que describen el comportamiento: `'an older answer never replaces a newer one'`, no `'works'`. `group` con el tipo bajo prueba (`group(TasksListController, ...)`) para que un renombre se propague.
-- La lógica se prueba en los controladores y flujos, sin montar widgets.
-- Las pruebas de widgets verifican lo que se ve y los eventos que salen, no la lógica. Se busca por texto localizado, por tipo o por `Semantics`; una `Key` solo cuando no hay otra forma estable.
-- Los dobles son clases que implementan el puerto (`FakeAuthRepository`, `FakeTokenStore`, `FakeTasksRepository`), no mocks genéricos y sin `mockito` ni `mocktail`. Un doble puede tener una compuerta (un `Completer` por llamada, como `ScriptedTasksRepository`) para controlar el orden de las respuestas.
-- Una falla de prueba es `FakeFailure` de `test_utils` (`const FakeFailure()`), que es una `Exception`. Nunca un `StateError` ni un `Error`: `AsyncValue.guard` y `ActionRunner` dejan pasar un `Error` y la prueba no vería el estado de error.
-- Un doble de demostración se crea con `DemoBehavior()` sin retardo. Los fallos se programan con `failNext`.
-- Estado mutable en `setUp` con `late`, sin variables de nivel superior que se compartan entre pruebas. Lo que hay que liberar se registra con `addTearDown`.
-- Los tiempos salen de un `FakeClock` de `test_utils` (`clock: fake.now`) o de constantes del código bajo prueba (`TasksListController.searchDebounce`), no de números mágicos.
-- Las suites que montan rutas con bibliotecas diferidas llaman a `const DeferredLibrariesPreloader().load(manifests)` en `setUpAll`. Su `///` explica por qué va ahí y no dentro de `testWidgets`.
-- No se filtran errores de layout (como el overflow) para que una prueba pase: se corrige el widget.
+- Names that describe the behavior: `'an older answer never replaces a newer one'`, not `'works'`. `group` with the type under test (`group(TasksListController, ...)`) so a rename propagates.
+- Logic is tested in controllers and flows, without mounting widgets.
+- Widget tests check what is shown and the events that go out, not the logic. Find by localized text, by type or by `Semantics`; a `Key` only when there is no other stable way.
+- Doubles are classes that implement the port (`FakeAuthRepository`, `FakeTokenStore`, `FakeTasksRepository`), not generic mocks, and no `mockito` or `mocktail`. A double can have a gate (one `Completer` per call, like `ScriptedTasksRepository`) to control the order of the responses.
+- A test failure is `FakeFailure` from `test_utils` (`const FakeFailure()`), which is an `Exception`. Never a `StateError` or an `Error`: `AsyncValue.guard` and `ActionRunner` let an `Error` through and the test would not see the error state.
+- A demo double is created with `DemoBehavior()` without delay. Failures are scheduled with `failNext`.
+- Mutable state in `setUp` with `late`, without top-level variables shared between tests. Anything that must be released is registered with `addTearDown`.
+- Times come from a `FakeClock` from `test_utils` (`clock: fake.now`) or from constants of the code under test (`TasksListController.searchDebounce`), not from magic numbers.
+- Suites that mount routes with deferred libraries call `const DeferredLibrariesPreloader().load(manifests)` in `setUpAll`. Its `///` explains why it goes there and not inside `testWidgets`.
+- Layout errors (such as overflow) are not filtered out to make a test pass: fix the widget.
 
-## Esperar sin esperas fijas
+## Waiting without fixed delays
 
-- Lógica async sin widgets: `await pumpEventQueue()` o `await` del futuro del controlador.
-- Widgets: `pumpAndSettle()` cuando todo termina solo. Con animación infinita (un `CircularProgressIndicator` en pantalla) `pumpAndSettle` no termina: se usa `pump()` y se espera la condición.
-- Un `Timer` con retardo conocido se avanza con `tester.pump(duracionDelCodigo)`, usando la constante del código bajo prueba. Nunca `Future.delayed` ni `sleep` en una prueba.
+- Async logic without widgets: `await pumpEventQueue()` or `await` the controller's future.
+- Widgets: `pumpAndSettle()` when everything finishes on its own. With an infinite animation (a `CircularProgressIndicator` on screen) `pumpAndSettle` never finishes: use `pump()` and wait for the condition.
+- A `Timer` with a known delay is advanced with `tester.pump(durationFromCode)`, using the constant of the code under test. Never `Future.delayed` or `sleep` in a test.
 
-## Pruebas de widgets, accesibilidad, layout y golden
+## Widget, accessibility, layout and golden tests
 
-Plantillas completas en [references/pruebas-de-widgets.md](references/pruebas-de-widgets.md): `TestApp` por paquete, los cuatro estados, ancho compacto y expandido, guías de accesibilidad, escala de texto y golden tests.
+Full templates in [references/pruebas-de-widgets.md](references/pruebas-de-widgets.md): `TestApp` per package, the four states, compact and expanded width, accessibility guidelines, text scale and golden tests.
 
-## Comprobaciones de CI
+## CI checks
 
-- `analyze`, `test` y `format-check` de cada proyecto del front.
-- `check_microfrontend_boundaries` para las fronteras de import y `check_deferred_chunks` sobre el build web para la carga diferida.
-- `contracts_gen --check` cuando cambian los contratos.
+- `analyze`, `test` and `format-check` for each front project.
+- `check_microfrontend_boundaries` for import boundaries and `check_deferred_chunks` on the web build for deferred loading.
+- `contracts_gen --check` when the contracts change.
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-test-behavior-not-implementation`, `tdd`. Los transportes falsos de `test_utils` aplican las reglas del backend (cabeceras, cookies, errores), para que una prueba verde signifique algo.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `principle-test-behavior-not-implementation`, `tdd`. The fake transports in `test_utils` apply the backend rules (headers, cookies, errors), so a green test means something.

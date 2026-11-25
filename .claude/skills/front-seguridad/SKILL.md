@@ -1,32 +1,32 @@
 ---
 name: front-seguridad
-description: 'Seguridad del front: secretos, tokens, HTTPS, validación, logs y enlaces profundos. Úsala al tocar sesión, ApiClient o almacenamiento.'
+description: 'Front security: secrets, tokens, HTTPS, validation, logs and deep links. Use it when touching the session, ApiClient or storage.'
 paths:
   - 'front/packages/auth/**'
   - 'front/packages/api/**'
   - 'front/apps/**'
 ---
 
-# Seguridad del front
+# Front security
 
-Todo lo que llega a un cliente es recuperable por quien lo tenga. La interfaz oculta lo que el usuario no puede usar, pero la autoridad es la API (ADR 0012 y 0018). Esta skill cubre lo que se ve leyendo el código.
+Everything that reaches a client can be recovered by whoever holds it. The UI hides what the user cannot use, but the API is the authority (ADR 0012 and 0018). This skill covers what can be seen by reading the code.
 
-## Reglas
+## Rules
 
-- **Secretos:** ninguna clave de API privada, token de servicio ni contraseña en el código, en un asset, en un `.env` ni en `--dart-define`. Todo eso queda en el binario o en el bundle y se extrae. Lo único que se pasa por `--dart-define` es configuración pública (`API_BASE_URL`). Si el cliente necesita un secreto, el servidor lo sirve con una operación autenticada.
-- **Tokens:** el session token de web es una cookie `httpOnly` (`CookieTokenStore`), que el cliente no lee. En móvil el adaptador real usa Keychain y Keystore detrás del puerto `TokenStore`; hoy vive en memoria, y se documenta así. Nunca `SharedPreferences`, archivos ni `localStorage` para tokens, sesión o datos personales.
-- **Red:** solo HTTPS. Nunca `badCertificateCallback` que devuelva `true` ni un cliente HTTP con la validación apagada. Todo pasa por `ApiClient`; en modo vivo, `IdentityConnection` es dueña del transporte (corta cada petición a los 30 s) y refresca con `SessionRefreshPolicy`. Quien necesite otro cliente lo justifica en el PR.
-- **Autorización:** `AccessRule`, `AccessGate` y `context.can` son comodidad de interfaz. El servidor responde 401 o 403 y el cliente lo trata (cierra sesión con los códigos de `IdentityConnection.refreshCodes`).
-- **Entrada:** lo que viene de un deep link, de `params` o del portapapeles se valida antes de usarlo, con los validadores generados en `contracts`. No se arma una URL ni una consulta concatenando texto sin codificar: `Uri(...)` con `pathSegments` y `queryParameters`.
-- **Datos entre identidades:** nada de un usuario sobrevive a un cambio de identidad (repositorios `ScopedResource`, `identityEpoch`). Una caché en una variable de nivel superior es un fallo de seguridad.
-- **Logs:** sin `print` ni `debugPrint` de tokens, correos, cuerpos de petición o respuesta. Los errores se muestran por código (`showActionError`), no con el texto crudo de la excepción.
-- **Aleatoriedad:** `Random.secure()` para cualquier identificador, nonce o desafío. `Random()` solo para efectos visuales.
-- **Criptografía:** nunca propia. Hashing con `package:crypto` solo cuando de verdad se necesita en el cliente; las contraseñas no se hashean en el cliente.
-- **Dependencias:** cada paquete nuevo con versión exacta, mantenido y con licencia compatible. Antes de un release se revisa `pubspec.lock` con `osv-scanner` y no se silencia un aviso sin justificación escrita.
-- **Biometría o segundo factor:** solo con el plugin oficial (`local_auth`) detrás de un puerto, no con un `MethodChannel` propio.
-- **Plataforma:** `android:allowBackup="false"` en el manifiesto de la app móvil, y sin permisos que la función no use.
+- **Secrets:** no private API key, service token or password in the code, in an asset, in a `.env` or in `--dart-define`. All of that ends up in the binary or the bundle and gets extracted. The only thing passed through `--dart-define` is public configuration (`API_BASE_URL`). If the client needs a secret, the server serves it through an authenticated operation.
+- **Tokens:** the web session token is an `httpOnly` cookie (`CookieTokenStore`) that the client does not read. On mobile the real adapter uses Keychain and Keystore behind the `TokenStore` port; today it lives in memory, and it is documented that way. Never `SharedPreferences`, files or `localStorage` for tokens, session or personal data.
+- **Network:** HTTPS only. Never a `badCertificateCallback` that returns `true` or an HTTP client with validation turned off. Everything goes through `ApiClient`; in live mode, `IdentityConnection` owns the transport (it cuts each request at 30 s) and refreshes with `SessionRefreshPolicy`. Anyone who needs another client justifies it in the PR.
+- **Authorization:** `AccessRule`, `AccessGate` and `context.can` are UI conveniences. The server answers 401 or 403 and the client handles it (it logs out on the codes in `IdentityConnection.refreshCodes`).
+- **Input:** anything coming from a deep link, from `params` or from the clipboard is validated before use, with the validators generated in `contracts`. Never build a URL or a query by concatenating unencoded text: `Uri(...)` with `pathSegments` and `queryParameters`.
+- **Data across identities:** nothing from one user survives an identity change (`ScopedResource` repositories, `identityEpoch`). A cache in a top-level variable is a security bug.
+- **Logs:** no `print` or `debugPrint` of tokens, emails, or request or response bodies. Errors are shown by code (`showActionError`), not with the raw exception text.
+- **Randomness:** `Random.secure()` for any identifier, nonce or challenge. `Random()` only for visual effects.
+- **Cryptography:** never homemade. Hashing with `package:crypto` only when it is really needed on the client; passwords are not hashed on the client.
+- **Dependencies:** every new package with an exact version, maintained and with a compatible license. Before a release, `pubspec.lock` is checked with `osv-scanner`, and no warning is silenced without a written justification.
+- **Biometrics or second factor:** only with the official plugin (`local_auth`) behind a port, not with a custom `MethodChannel`.
+- **Platform:** `android:allowBackup="false"` in the mobile app manifest, and no permissions the feature does not use.
 
-## Ejemplo
+## Example
 
 ```dart
 Uri taskUri(String id, {TaskStatus? status}) => Uri(
@@ -35,10 +35,10 @@ Uri taskUri(String id, {TaskStatus? status}) => Uri(
 );
 ```
 
-## Informe de una revisión
+## Review report
 
-Cada hallazgo es Critical (secreto en el binario, validación TLS apagada, token en almacenamiento en claro, datos sensibles en logs), Warning (sin validación de entrada, `Random()` en un identificador, backup habilitado) o Note (dependencia desactualizada, ofuscación ausente). Cada uno trae archivo, regla y el código corregido.
+Each finding is Critical (secret in the binary, TLS validation off, token in plaintext storage, sensitive data in logs), Warning (no input validation, `Random()` for an identifier, backup enabled) or Note (outdated dependency, missing obfuscation). Each one comes with the file, the rule and the corrected code.
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `interrogate`, `blast-radius`, `principle-boundary-discipline`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `interrogate`, `blast-radius`, `principle-boundary-discipline`.

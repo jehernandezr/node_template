@@ -1,7 +1,7 @@
 name: Mobile release
 
-# Las compilaciones release de Android necesitan gen_snapshot, que Flutter solo publica para
-# hosts x86_64 (flutter/flutter#168980). Por eso se compilan aquí y no en máquinas Linux ARM64.
+# Android release builds need gen_snapshot, which Flutter only publishes for
+# x86_64 hosts (flutter/flutter#168980). That is why they are built here and not on Linux ARM64 machines.
 on:
   workflow_dispatch:
   push:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   android:
-    name: Android (APK y AAB)
+    name: Android (APK and AAB)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -30,7 +30,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -40,9 +40,9 @@ jobs:
           flutter-version: ${{ steps.flutter-version.outputs.version }}
           cache: true
 
-      # Sin estos secretos el release queda firmado con la clave de debug: sirve para probar,
-      # no para publicar en Play Store.
-      - name: Preparar la firma
+      # Without these secrets the release is signed with the debug key: good for testing,
+      # not for publishing to the Play Store.
+      - name: Prepare signing
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -51,7 +51,7 @@ jobs:
         working-directory: front/apps/mobile/android
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::warning::Sin ANDROID_KEYSTORE_BASE64: se firma con la clave de debug."
+            echo "::warning::No ANDROID_KEYSTORE_BASE64: signing with the debug key."
             exit 0
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > app/release.jks
@@ -80,7 +80,7 @@ jobs:
           if-no-files-found: error
 
   ios:
-    name: iOS (sin firmar)
+    name: iOS (unsigned)
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -88,7 +88,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -101,12 +101,12 @@ jobs:
       - run: flutter pub get
         working-directory: front
 
-      # Firmar para App Store necesita certificado y perfil de Apple; mientras no existan,
-      # se compila sin firma para comprobar que el proyecto de iOS sigue construyendo.
+      # Signing for the App Store needs an Apple certificate and profile; until they exist,
+      # it builds without signing to check that the iOS project still builds.
       - run: flutter build ios --release --no-codesign
         working-directory: front/apps/mobile
 
-      - name: Empaquetar Runner.app
+      - name: Package Runner.app
         working-directory: front/apps/mobile/build/ios/iphoneos
         run: zip -qr Runner.app.zip Runner.app
 

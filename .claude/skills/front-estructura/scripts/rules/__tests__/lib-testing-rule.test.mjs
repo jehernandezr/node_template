@@ -4,7 +4,7 @@ import { LibTestingRule } from '../lib-testing-rule.mjs';
 import { RuleId } from '../rule-id.mjs';
 
 describe('LibTestingRule', () => {
-  it('se aplica a lib/testing.dart y a carpetas testing dentro de lib', () => {
+  it('applies to lib/testing.dart and to testing folders inside lib', () => {
     const rule = new LibTestingRule();
     assert.equal(rule.appliesTo('front/packages/ui/lib/testing.dart'), true);
     assert.equal(
@@ -14,7 +14,7 @@ describe('LibTestingRule', () => {
     assert.equal(rule.appliesTo('front/packages/ui/lib/src/a.dart'), false);
   });
 
-  it('marca el archivo de dobles en lib/testing', () => {
+  it('flags the test doubles file in lib/testing', () => {
     const rule = new LibTestingRule();
     const [violation, ...rest] = rule.check(
       'front/packages/ui/lib/testing.dart',
