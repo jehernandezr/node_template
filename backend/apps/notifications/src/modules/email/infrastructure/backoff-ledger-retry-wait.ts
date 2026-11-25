@@ -12,10 +12,12 @@ import { LedgerRetryWait } from '../domain/ledger-retry-wait.js';
 /** Exponential wait with equal jitter between ledger tries: half a second to the first retry, one to the second. */
 @Injectable()
 export class BackoffLedgerRetryWait extends LedgerRetryWait {
+  static readonly BASE_DELAY_MS = 500;
+  static readonly MAX_DELAY_MS = 2_000;
   static readonly POLICY = new RetryPolicy(
     SendEmail.RECORD_ATTEMPTS,
-    500,
-    2_000,
+    BackoffLedgerRetryWait.BASE_DELAY_MS,
+    BackoffLedgerRetryWait.MAX_DELAY_MS,
     BackoffStrategy.EqualJitter,
   );
 

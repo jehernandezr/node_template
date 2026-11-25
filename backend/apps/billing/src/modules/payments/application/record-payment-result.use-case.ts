@@ -15,8 +15,8 @@ import type { PaymentNotice } from './payments.facade.js';
  * that is due when the notice arrives: a repeated notice, or the webhook of a decline the job already recorded, does
  * not count as a new decline nor use up a retry. The attempt is the one named by `attemptId`; without it, the latest
  * one if it is still open or already has that same result, and if there is none the charge did not come from billing
- * and a new, already resolved attempt is recorded. A notice never resolves an attempt it does not name with a result
- * other than the recorded one: such a notice is refused and every attempt stays as it was.
+ * and a new, already resolved attempt is recorded. A notice that contradicts a resolved attempt is refused and every
+ * attempt stays as it was.
  */
 @Injectable()
 export class RecordPaymentResult {
