@@ -14,15 +14,18 @@ import {
   deviceNameFrom,
   platformFromUserAgent,
 } from '../../../shared/utils/client-platform.js';
+import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import { SignInResponses } from '../../../shared/utils/sign-in-responses.js';
 import { DevicesFacade } from '../../devices/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
+import { MfaFactorRepository } from '../domain/mfa-factor-repository.js';
 import { PendingAuthenticationStore } from '../domain/pending-authentication-store.js';
 import { ChallengeVerifier } from './challenge-verifier.js';
 
 /**
- * Verifica el segundo factor de un inicio de sesión y abre la sesión. Con `devicePublicKey` registra el
- * dispositivo (verificador si es el primero) y la sesión queda atada a él.
+ * Verifies the second factor of a sign-in and opens the session. With `devicePublicKey` it registers the
+ * device (the verifier if it is the first) and binds the session to it. Proving a second factor cancels any
+ * pending recovery without a device: the user still holds a factor.
  */
 @Injectable()
 export class VerifyMfa {
@@ -31,10 +34,19 @@ export class VerifyMfa {
     private readonly verifier: ChallengeVerifier,
     private readonly devices: DevicesFacade,
     private readonly sessions: SessionsFacade,
+    private readonly factors: MfaFactorRepository,
+    private readonly scopes: IdentityShardScopes,
     private readonly deployment: DeploymentRegion,
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Verifies the code of a challenge of a pending sign-in and opens the session.
+   * @param request Pending token, challenge, code and an optional new device key.
+   * @returns The open session.
+   * @throws IdentityError `IDENTITY.MFA.TOKEN_INVALID`, `IDENTITY.MFA.CODE_INVALID`, `IDENTITY.MFA.CODE_EXPIRED`
+   *   or `IDENTITY.MFA.TOO_MANY_ATTEMPTS`.
+   */
   async execute(request: MfaVerifyRequest): Promise<SignInResponse> {
     const pending = await this.pendings.find(request.mfaToken);
     if (pending === undefined || pending.purpose !== PendingPurpose.SignIn) {
@@ -48,7 +60,14 @@ export class VerifyMfa {
     return this.complete(request.mfaToken, [method], request.devicePublicKey);
   }
 
-  /** Consume el inicio de sesión pendiente y abre su sesión con los métodos ya verificados. */
+  /**
+   * Consumes the pending sign-in and opens its session with the methods already verified.
+   * @param mfaToken Token of the pending sign-in.
+   * @param methods Second-factor methods just verified.
+   * @param devicePublicKey Key of a new device to register, if any.
+   * @returns The open session.
+   * @throws IdentityError `IDENTITY.MFA.TOKEN_INVALID` if the token was already used.
+   */
   async complete(
     mfaToken: string,
     methods: readonly AuthMethodReference[],
@@ -58,10 +77,19 @@ export class VerifyMfa {
     if (pending === undefined || pending.purpose !== PendingPurpose.SignIn) {
       throw new IdentityError(IdentityErrorCode.MfaTokenInvalid);
     }
+    await this.scopes.inUserShard(pending.user, () =>
+      this.factors.cancelPendingRecoveries(pending.user.userId),
+    );
     return this.open(pending, methods, devicePublicKey);
   }
 
-  /** Abre la sesión de una autenticación pendiente ya completada. La usan también passkeys y la recuperación. */
+  /**
+   * Opens the session of a completed pending authentication. Passkeys and the recovery use it too.
+   * @param pending Completed pending authentication.
+   * @param methods Second-factor methods just verified.
+   * @param devicePublicKey Key of a new device to register, if any.
+   * @returns The open session.
+   */
   async open(
     pending: PendingAuthentication,
     methods: readonly AuthMethodReference[],

@@ -26,9 +26,10 @@ import { PendingAuthenticationStore } from '../domain/pending-authentication-sto
 import { VerifyMfa } from './verify-mfa.use-case.js';
 
 /**
- * Recuperación del segundo factor sin dispositivo. Empieza con un inicio de sesión que pidió MFA, envía un
- * enlace por email y alerta; solo se confirma pasada una espera que se duplica con cada recuperación de los
- * últimos 90 días. Al confirmar, los verificadores se retiran y el dispositivo actual queda registrado.
+ * Recovery of the second factor without a device. It starts from a sign-in that asked for MFA, emails a
+ * link and raises an alert; it can only be confirmed after a wait that doubles, up to a cap, with each
+ * recovery of the last 90 days, and only within a window after that. A second factor proved meanwhile
+ * cancels it. On confirmation the verifiers are retired and the current device is registered.
  */
 @Injectable()
 export class MfaRecoveryUseCase {
@@ -53,6 +54,12 @@ export class MfaRecoveryUseCase {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Starts a recovery for a pending sign-in.
+   * @param mfaToken Token of the pending sign-in.
+   * @returns When the recovery can be confirmed.
+   * @throws IdentityError `IDENTITY.MFA.TOKEN_INVALID` if the pending sign-in does not exist.
+   */
   async start(mfaToken: string): Promise<MfaRecoveryStarted> {
     const pending = await this.signInPending(mfaToken);
     const now = this.clock.now();
@@ -72,7 +79,7 @@ export class MfaRecoveryUseCase {
         const wait =
           this.settings.values.MFA_RECOVERY_BASE_HOURS *
           MfaRecoveryUseCase.HOUR_MS *
-          2 ** recent;
+          2 ** Math.min(recent, IdentityDefaults.mfaRecoveryMaxDoublings);
         const available = new Date(now.getTime() + wait);
         await this.factors.insertRecovery({
           id: this.ids.next().toString(),
@@ -99,10 +106,17 @@ export class MfaRecoveryUseCase {
     return { availableAt: availableAt.toISOString() };
   }
 
+  /**
+   * Confirms a recovery whose wait is over and opens the session.
+   * @param request Pending sign-in token, emailed token and an optional new device key.
+   * @returns The open session.
+   * @throws IdentityError `IDENTITY.MFA.TOKEN_INVALID` if the recovery is unknown, cancelled, expired or done.
+   * @throws IdentityError `IDENTITY.MFA.RECOVERY_NOT_READY`, with `Retry-After`, while the wait is not over.
+   */
   async confirm(request: MfaRecoveryConfirmRequest): Promise<SignInResponse> {
     const pending = await this.signInPending(request.mfaToken);
     const now = this.clock.now();
-    await this.scopes.inUserShard(pending.user, () =>
+    const status = await this.scopes.inUserShard(pending.user, () =>
       this.transactions.runInTransaction(async () => {
         const recovery = await this.factors.findRecoveryByToken(
           pending.user.userId,
@@ -120,13 +134,22 @@ export class MfaRecoveryUseCase {
             recovery.availableAt.getTime() - now.getTime(),
           );
         }
-        await this.factors.updateRecovery({
-          ...recovery,
-          status: MfaRecoveryStatus.Completed,
-        });
+        const next =
+          now.getTime() >
+          recovery.availableAt.getTime() +
+            IdentityDefaults.mfaRecoveryConfirmWindowMs
+            ? MfaRecoveryStatus.Expired
+            : MfaRecoveryStatus.Completed;
+        await this.factors.updateRecovery({ ...recovery, status: next });
+        return next;
       }),
     );
-    await this.pendings.consume(request.mfaToken);
+    if (
+      status !== MfaRecoveryStatus.Completed ||
+      (await this.pendings.consume(request.mfaToken)) === undefined
+    ) {
+      throw new IdentityError(IdentityErrorCode.MfaTokenInvalid);
+    }
     await this.devices.retireVerifiers(pending.user);
     await this.alerts.raise({
       type: SecurityAlertType.MfaRecoveryCompleted,

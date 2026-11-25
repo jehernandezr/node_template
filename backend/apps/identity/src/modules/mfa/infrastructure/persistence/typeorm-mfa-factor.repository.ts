@@ -13,7 +13,7 @@ import { MfaRecoveryEntity } from './entities/mfa-recovery.entity.js';
 import { RecoveryCodeEntity } from './entities/recovery-code.entity.js';
 import { TotpFactorEntity } from './entities/totp-factor.entity.js';
 
-/** `MfaFactorRepository` sobre las tablas de factores del shard del usuario. */
+/** `MfaFactorRepository` over the factor tables of the user shard. */
 @Injectable()
 export class TypeOrmMfaFactorRepository
   extends UserShardRepository
@@ -137,6 +137,18 @@ export class TypeOrmMfaFactorRepository
 
   async updateRecovery(recovery: MfaRecovery): Promise<void> {
     await this.updateVersioned(MfaRecoveryEntity, this.recoveryRow(recovery));
+  }
+
+  /** {@inheritDoc MfaFactorRepository.cancelPendingRecoveries} */
+  async cancelPendingRecoveries(userId: string): Promise<number> {
+    const result = await this.write((manager) =>
+      manager.update(
+        MfaRecoveryEntity,
+        { userId, status: MfaRecoveryStatus.Pending },
+        { status: MfaRecoveryStatus.Cancelled },
+      ),
+    );
+    return result.affected ?? 0;
   }
 
   private recoveryRow(recovery: MfaRecovery): MfaRecoveryEntity {
