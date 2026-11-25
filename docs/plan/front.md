@@ -2,7 +2,7 @@
 
 Date: 2026-11-14. Status: approved by the user, with the decisions in section 8. The order of the waves alongside the backend and F4, the status of each package and how the troops work are in the [plan](README.md).
 
-It resolves the findings of [the front review](../audits/2026-11-14-revision-front.md). Microfrontend contract: [ADR 0012](../adr/0012-front-flutter-shells-microfrontends.md) and [ADR 0018](../adr/0018-contrato-de-microfrontend.md). Rules: the `front-*` skills and `CLAUDE.md`.
+It resolves the findings of [the front review](../audits/2026-11-14-front-review.md). Microfrontend contract: [ADR 0012](../adr/0012-front-flutter-shells-microfrontends.md) and [ADR 0018](../adr/0018-microfrontend-contract.md). Rules: the `front-*` skills and `CLAUDE.md`.
 
 Paths are relative to `front/` unless stated otherwise. Effort: S (less than half a day), M (1 to 2 days), L (more than 2 days).
 
@@ -47,7 +47,7 @@ U1, U2, U3, U5, U7, T1, I1, I2, I3, I4, SC1, SC2, SC3, SH1, SH2, A1, TU1, TU2, T
 - **A3** (`is Map<String, dynamic>` in `identity_connection.dart`): it is the allowed use of pattern matching. Left as is, unless touched.
 - **TL2 and TL3** (`FrontRoot`, `CliExit`, `DeferredChunkChecker`): the report marks them as low priority and the CLI scripts are acceptable as they are. Out of scope.
 - **AP4** (`front/build/`): it exists and contains only `.last_build_id`; it is covered by `front/**/build/` in `.gitignore`. It is local junk, not a versioned violation. It is deleted inside P0.2 for cleanliness, nothing more.
-- **Hardening `analysis_options.yaml`** (TL1's proposal: `unawaited_futures`, `public_member_api_docs`, etc.): the `front-analisis` skill asks for it as its own change with everything green. Out of this plan (section 6).
+- **Hardening `analysis_options.yaml`** (TL1's proposal: `unawaited_futures`, `public_member_api_docs`, etc.): the `front-analysis` skill asks for it as its own change with everything green. Out of this plan (section 6).
 
 ## 2. How it is executed
 
@@ -58,7 +58,7 @@ A troop's way of working is the one in the [plan](README.md#how-a-wave-runs). In
 - Barrel files (`lib/<package>.dart`) and `pubspec.yaml` files are edited only by the lead. The Haikus ask the lead in writing for the export line they need.
 - Skeletons carry this plan's signatures with `throw UnimplementedError()` bodies. The lead reviews the full diff and runs the acceptance commands before handing over.
 - Every instruction to a Haiku names file, class, signature and test, never a "refactor whatever is needed".
-- User texts, `///` comments and new comments follow `front-i18n` and `front-analisis`: ARB in Spanish and English, `///` in English.
+- User texts, `///` comments and new comments follow `front-i18n` and `front-analysis`: ARB in Spanish and English, `///` in English.
 
 ### 2.2 Additive first, removal at the end
 
@@ -72,7 +72,7 @@ Each work package runs, with its Nx projects (`front-<pubspec name>`; microfront
 
 ```bash
 pnpm nx run-many -t format-check analyze test --projects=<projects>
-node .claude/skills/front-estructura/scripts/check-structure.mjs --changed .
+node .claude/skills/front-structure/scripts/check-structure.mjs --changed .
 ```
 
 Also:
@@ -91,7 +91,7 @@ Also:
 
 ## 3. Design decisions
 
-All signatures are Dart 3. They are written with classic constructors; primary constructors are optional (`front-codigo`).
+All signatures are Dart 3. They are written with classic constructors; primary constructors are optional (`front-code`).
 
 ### 3.1 `Clock`
 
@@ -1108,7 +1108,7 @@ final class DeferredLibrariesPreloader {
 
 The tests in `tasks`, `account` and the rest use `TestApp` and delete their `testApp`, `pumpApp`, `loadNow`, `billingSession` and `unavailableProblem`. `setSurface` moves from `ui/test/utils/pump.dart` to `test_utils` only if `ui` does not need it; if it does, it is copied (the cost is a 6-line function, and `ui` cannot depend on `test_utils`).
 
-The test helpers live in `test/utils/` (not `test/support.dart`) as `front-pruebas` asks.
+The test helpers live in `test/utils/` (not `test/support.dart`) as `front-testing` asks.
 
 ### 3.16 Shared suite of shell scenarios
 
@@ -1196,17 +1196,17 @@ It is short: three S packages that prepare the ground and are not touched again.
 
 **P0.2 Script and baseline.** Effort M.
 
-- Folders: `.claude/skills/front-estructura/scripts/**`, `front/tools/structure-baseline.json` (new), `front/tools/nx-plugin/**` (if the script's `analyze` target needs it) and `front/build/`.
+- Folders: `.claude/skills/front-structure/scripts/**`, `front/tools/structure-baseline.json` (new), `front/tools/nx-plugin/**` (if the script's `analyze` target needs it) and `front/build/`.
 - Closes: TL1 (cheap rules) and AP4 (local deletion).
 - Produces: the rules in 3.17, the baseline and `--update-baseline`; script tests with `node --test` in `check-structure.test.mjs`. Consumes: nothing.
-- Acceptance: `node --test .claude/skills/front-estructura/scripts/` with one green and one red case per rule; `check-structure.mjs --all .` passes with the freshly generated baseline; if a new violation is added, it fails; `--changed` rejects a new violation in a touched file even if it is in the baseline.
+- Acceptance: `node --test .claude/skills/front-structure/scripts/` with one green and one red case per rule; `check-structure.mjs --all .` passes with the freshly generated baseline; if a new violation is added, it fails; `--changed` rejects a new violation in a touched file even if it is in the baseline.
 - Haiku 1: the microfrontend rules (colors, `widget.repository.`, directionality, text). Haiku 2: the rules for `catch`, `DateTime.now()`, `pubspec` versions, the baseline and the tests.
 
 **P0.3 Front ADR.** Effort S.
 
 - Folders: `docs/adr/<number>-*.md` and `docs/adr/README.md`. The number is the next free one; 0024 is already the persistence one (see the open decisions in the [plan](README.md#decision-log)).
 - Closes: nothing directly. It records decisions 3.1 to 3.17 as an ADR in "Proposed" status, as `CLAUDE.md` requires for an architecture decision. It moves to "Accepted" in P4.3.
-- Acceptance: it follows `docs/adr/0000-plantilla.md`; it links ADR 0012, 0015 and 0018; the index lists the new ADR.
+- Acceptance: it follows `docs/adr/0000-template.md`; it links ADR 0012, 0015 and 0018; the index lists the new ADR.
 - Haiku 1: context, decision and consequences. Haiku 2: alternatives considered (those in section 1.2) and the index.
 
 ### 4.3 Wave 1: foundations
@@ -1331,7 +1331,7 @@ The three packages are additive (except `AccessRule`, see 2.2) and have disjoint
 
 **P4.2 removal of legacy code and script.** Effort M.
 
-- Folders: `packages/shell_core/**`, `packages/shell_host/**`, `packages/ui/**`, `packages/auth/**`, `front/tools/**` except `new_microfrontend*`, `.claude/skills/front-estructura/scripts/**`.
+- Folders: `packages/shell_core/**`, `packages/shell_host/**`, `packages/ui/**`, `packages/auth/**`, `front/tools/**` except `new_microfrontend*`, `.claude/skills/front-structure/scripts/**`.
 - Closes: the closing of SC2, SH1, SH2, M1, TL1 and the removal of the whole legacy list.
 - Removes: `deferredPage`, `resetDeferredPageCache`, `buildShellRouter`, `homeLocation`, `signOutAndGoToLogin`, `redirectFor` and `shellScreenLoader`; the old `MfaFlow` getters and the `Clock` re-export in `auth`; the two old uses of `ErrorView`/`AsyncValueView` that remain. The starting guide is the compiler: delete and fix until `analyze` of the whole workspace is clean.
 - Acceptance: `check-structure.mjs --all .` green with the baseline regenerated and empty, and then `structure-baseline.json` is deleted (or stays as `[]` if the user prefers to keep the mechanism); `pnpm nx run-many -t format-check analyze test --projects=` with every front project green; `check_deferred_chunks`; `grep` for each legacy symbol empty.
@@ -1339,8 +1339,8 @@ The three packages are additive (except `AccessRule`, see 2.2) and have disjoint
 
 **P4.3 skills, ADR and generator.** Effort M.
 
-- Folders: `.claude/skills/front-*/**` (except `front-estructura/scripts/`), `.claude/skills/front-nuevo-microfrontend/**` (new), `front/tools/new_microfrontend.dart`, `docs/adr/0018-*.md`, the front ADR, `docs/ARCHITECTURE.md`.
-- Produces: the `front-codigo`, `front-pruebas`, `front-accesibilidad`, `front-layout-adaptable` and `front-i18n` skills updated with `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors`, `TestApp`, `expectAccessible`, `DeferredLocalizations` and `ScreenRoute.deferred`; ADR 0018 with the new way to declare screens; the front ADR in "Accepted"; the generator:
+- Folders: `.claude/skills/front-*/**` (except `front-structure/scripts/`), `.claude/skills/front-new-microfrontend/**` (new), `front/tools/new_microfrontend.dart`, `docs/adr/0018-*.md`, the front ADR, `docs/ARCHITECTURE.md`.
+- Produces: the `front-code`, `front-testing`, `front-accessibility`, `front-adaptive-layout` and `front-i18n` skills updated with `AsyncLoader`, `ActionRunner`, `ControllerBuilder`, `StatusColors`, `TestApp`, `expectAccessible`, `DeferredLocalizations` and `ScreenRoute.deferred`; ADR 0018 with the new way to declare screens; the front ADR in "Accepted"; the generator:
 
   ```dart
   /// `dart run front/tools/new_microfrontend.dart reports --menu "Reportes"`
@@ -1389,7 +1389,7 @@ When integrating a wave, the general runs `flutter pub get`, `pnpm nx run-many -
 
 ### 6.2 Out of scope
 
-- **Hardening `analysis_options.yaml`** (`strict-casts`, `unawaited_futures`, `public_member_api_docs`...): the `front-analisis` skill asks for its own change with every package green, and it is not known how many warnings will appear. It comes after this plan.
+- **Hardening `analysis_options.yaml`** (`strict-casts`, `unawaited_futures`, `public_member_api_docs`...): the `front-analysis` skill asks for its own change with every package green, and it is not known how many warnings will appear. It comes after this plan.
 - **Golden tests:** the skill marks them optional. They are covered with `expectAccessible`, `pumpAtWidths` and `pumpAtTextScale`.
 - **Manual review with a screen reader** (TalkBack, VoiceOver, Tab on web): it cannot be automated. It is noted per screen in each package as a review owned by the user.
 - **TL2, TL3, A3:** see 1.3.
@@ -1472,7 +1472,7 @@ Checklist for the new microfrontend, which the reviewer verifies:
 
 ## 8. Decisions approved by the user
 
-1. **Exact versions per file (M3).** Pub has no single catalog. Proposal: pin the exact number in each `pubspec.yaml` and watch it with the script. Alternative: change the `front-estructura` skill to accept `^`.
+1. **Exact versions per file (M3).** Pub has no single catalog. Proposal: pin the exact number in each `pubspec.yaml` and watch it with the script. Alternative: change the `front-structure` skill to accept `^`.
 2. **Minimum of 48 on all buttons and fields (U4/U5).** The skill accepts 24 as the floor on web with a pointer. Proposal: 48 across the whole theme, for uniformity and for mobile. Cost: 48-high buttons on desktop too.
 3. **`i18n` depends on `contracts` (U6).** Proposal: the mapping from errors to text lives in `i18n`, which already has `errorMessage`, and `ui` stops importing `contracts`. Alternative: a new `errors` package, cleaner but one more workspace member.
 4. **`ControllerBuilder` in `ui`.** Proposal: a widget that creates and closes the controller, so the 27 screens are `StatelessWidget`. Alternative: keep a minimal `State` per screen that only does `initState` and `dispose`.

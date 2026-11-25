@@ -2,8 +2,8 @@
 
 - Status: Approved by the user
 - Date: 2026-11-14
-- Source: [backend review](../audits/2026-11-14-revision-backend.md)
-- Designs integrated without redesign: [TypeORM persistence and sagas](../design/persistencia-typeorm-y-sagas.md) and, as a consumer, [F4 identity](../design/f4-identity.md)
+- Source: [backend review](../audits/2026-11-14-backend-review.md)
+- Designs integrated without redesign: [TypeORM persistence and sagas](../design/typeorm-persistence-and-sagas.md) and, as a consumer, [F4 identity](../design/f4-identity.md)
 - Order of the waves alongside the front and F4, status of each package and how the squads work: [plan](README.md)
 - Paths are relative to the repository root unless stated otherwise. Effort: S (less than half a day), M (one to three days), L (more than three days).
 
@@ -730,7 +730,7 @@ The approved design is not touched. It is integrated like this:
 - WP-09 is the design's P1: the full `@platform/persistence`, the `ShardScope` with `requireScope` and the `CROSS_SHARD_TX` error that F4 3.6 asks for, the `TypeOrmCriteriaTranslator` (consumes the `criteria` AST, which does not change), an `IdTransformer` and a test harness with two shards on real Postgres in `@platform/persistence/test-utils`. The old code on top of `pg` moves unchanged to `persistence/src/legacy/` and is re-exported until WP-10, so `adapters-postgres` keeps compiling between waves.
 - WP-10 is P2: TypeORM entities, migrations and stores for outbox, processed messages, idempotency and directory; it deletes `legacy/` and `pg-mem`. `CriteriaTranslator` stays in persistence and `criteria` only loses `sql.ts` and `postgres.ts` and gains `CursorCodec`.
 - WP-12 is P3: the saga engine, `SagaModule`, `TypeOrmSagaStore` and its entities. It lives in `adapters/postgres/src/saga/`, a folder exclusive to WP-12, and exports `platformSagaShardEntities` and `platformSagaShardMigrations`, which the app adds to the WP-10 arrays. That way they do not share a composition file. Each package uses its own range of migration timestamps.
-- At the close, WP-13 updates ADRs 0008 and 0009, `ARCHITECTURE.md` and the `backend-persistencia-typeorm` skill, as the design asks.
+- At the close, WP-13 updates ADRs 0008 and 0009, `ARCHITECTURE.md` and the `backend-persistence-typeorm` skill, as the design asks.
 
 ### D12. Remaining library decisions
 
@@ -768,7 +768,7 @@ New WP-01 dependencies, with an exact version like the rest of `package.json` (t
 1. `pnpm nx run-many -t lint test typecheck --projects=<projects>` green.
 2. `pnpm nx run-many -t test --projects=<projects> --coverage` meets 80 for lines, 80 for statements, 80 for functions and 75 for branches.
 3. `INTEGRATION_TESTS=require pnpm nx run-many -t test --projects=<projects>` green where the package has `.int-spec.ts` tests.
-4. `node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed .` with no violations.
+4. `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .` with no violations.
 5. Public `index.ts` files do not export test doubles or `InMemory*` classes that D9 sends to `test-utils`.
 6. JSDoc and docs in English, one public class per file, names with a role suffix.
 7. The guide leaves a half-page integration note in the PR: new interfaces, breaking changes and what the consumer must change.
@@ -813,7 +813,7 @@ Nx project names: `platform-<lib>` (`platform-kernel`, `platform-primitives`, `p
   - ADR 0024 on persistence with TypeORM, which supersedes 0009 (0009 is marked as superseded and 0008 is updated). It was already recorded in `b182447`, after the squad set off; see the open decisions in the [plan](README.md#decision-log).
   - ADR 0025 on the NestJS layer through the `@platform/<lib>/nest` sub-entry and ports as abstract classes.
   - ADR 0026 on `ScheduledJob`, `JobLock` and `@platform/scheduling`.
-  - The `backend-mensajeria-idempotencia` skill moves from `OutboxWriter.add` and `processed.tryRegister` to `append` and `claim`, `complete` and `release`; the composition skill documents modules, `Type<Port>` and shutdown; the testing skill documents `test-utils` and `ContainerRuntime`.
+  - The `backend-messaging-idempotency` skill moves from `OutboxWriter.add` and `processed.tryRegister` to `append` and `claim`, `complete` and `release`; the composition skill documents modules, `Type<Port>` and shutdown; the testing skill documents `test-utils` and `ContainerRuntime`.
   - ESLint rule: outside `src/nest/`, neither `@nestjs/*` nor `/nest` sub-entries are imported.
   - `check-structure.mjs` with a declared exception list (contracts `define*` factories, `env.ts` schemas, `tools` `main()`) and that rejects `*.integration.spec.ts`.
   - `CLAUDE.md` without the text that contradicts the decisions (the `ADR 0009` and "loose functions").
@@ -821,7 +821,7 @@ Nx project names: `platform-<lib>` (`platform-kernel`, `platform-primitives`, `p
   - The script fails on a `*.integration.spec.ts` test file and on a `@nestjs/*` in the core (script tests included).
   - The skills' code examples compile against the signatures in section 2 (the guide extracts them to a temporary file and runs `tsc`).
   - `pnpm nx format-check` green.
-- **Split:** Haiku 1: ADRs 0024 to 0026 with the `0000-plantilla.md` template and `CLAUDE.md`. Haiku 2: the skills and the ESLint rule with its test. The guide writes the `check-structure.mjs` change.
+- **Split:** Haiku 1: ADRs 0024 to 0026 with the `0000-template.md` template and `CLAUDE.md`. Haiku 2: the skills and the ESLint rule with its test. The guide writes the `check-structure.mjs` change.
 
 **Wave 0 close:** the general runs `pnpm nx run-many -t lint test typecheck` over the whole backend and `check-structure.mjs --all .`. The count of 97 must go down only for what WP-01 and WP-02 resolve.
 
@@ -990,7 +990,7 @@ The three squads start from the integrated wave 0 and do not share folders. Each
 - **Specific acceptance:**
   - `platform-error-code.enum.ts` and `platform-error-catalog.ts` only have public and cross-cutting codes; no observable code was lost (the test compares the set of codes of each library before and after).
   - The smoke test, with real two-shard Postgres and Valkey (and SNS and SQS fakes): a use case saves an entity and an event in the same transaction, the `OutboxRelayJob` publishes it after commit, a `@Subscribe` consumes it only once even if it arrives duplicated, a two-step saga finishes, a `CacheAside` is invalidated after commit, and on closing the app all resources are released with no open handles (`--detectOpenHandles`).
-  - `node .claude/skills/backend-estructura/scripts/check-structure.mjs --all .` only reports the declared exceptions (about 12, from the contracts DSL and the `tools` `main()` functions).
+  - `node .claude/skills/backend-structure/scripts/check-structure.mjs --all .` only reports the declared exceptions (about 12, from the contracts DSL and the `tools` `main()` functions).
   - `pnpm nx run-many -t lint test typecheck build` over the whole backend, with 80/80/80/75 coverage per project.
   - `contracts-export:check` and `contracts_gen --check` green.
 - **Split:** Haiku 1: catalog cleanup, re-exports and the code consistency test. Haiku 2: `platform-smoke`. The guide reviews documentation and ADRs.
@@ -1217,4 +1217,4 @@ export class UsersModule {}
 4. Consumers with `@Subscribe` and handlers with `@InternalHandler` in `presentation/`; the use case is injected, no logic is written in the class.
 5. One `forFeature` per business module and no platform class instantiated with `new`.
 6. A module test with `@nestjs/testing` and the doubles from `@platform/<lib>/test-utils`; integration tests are named `.int-spec.ts`.
-7. `pnpm nx run-many -t lint test typecheck --projects=<service>` and `node .claude/skills/backend-estructura/scripts/check-structure.mjs --changed .` green, with 80/80/80/75 coverage.
+7. `pnpm nx run-many -t lint test typecheck --projects=<service>` and `node .claude/skills/backend-structure/scripts/check-structure.mjs --changed .` green, with 80/80/80/75 coverage.

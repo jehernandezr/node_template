@@ -30,7 +30,7 @@ docs/           plan (plan/), architecture, ADRs, per-phase designs (design/), a
 .claude/        skills, hooks and agents for the AI tooling
 ```
 
-The root only holds Nx as the orchestrator (`nx.json`, `package.json`, `pnpm-workspace.yaml`) and the repository tooling (`.github/`, `.husky/`, commitlint, lint-staged, Prettier and Renovate). See [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+The root only holds Nx as the orchestrator (`nx.json`, `package.json`, `pnpm-workspace.yaml`) and the repository tooling (`.github/`, `.husky/`, commitlint, lint-staged, Prettier and Renovate). See [ADR 0015](docs/adr/0015-repository-structure-and-shared-code.md).
 
 `pnpm install` creates a single `node_modules`, at the root. Backend libraries are Nx projects without a `package.json`: they are imported through TypeScript aliases (`@platform/kernel`), their code lives directly in `src/` and their tests in the `__tests__/` folder of each code folder, with shared test utilities in `__tests__/utils/`. Only apps are compiled, with esbuild, into `backend/dist/<app>`.
 

@@ -16,7 +16,7 @@ const domainPatterns = [
 ];
 
 /**
- * File location rules (backend-estructura skill). They live in their own plugin and not in
+ * File location rules (backend-structure skill). They live in their own plugin and not in
  * `no-restricted-syntax` because the libraries redefine that rule in their eslint.config.mjs.
  */
 const fileRule = (message, matches) => ({

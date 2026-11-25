@@ -7,7 +7,7 @@ import { AccessMatrix } from './utils/index.js';
 /** The document lives with the repository docs, outside the project. */
 const DOCUMENT = join(
   __dirname,
-  '../../../../../docs/identity/matriz-de-acceso.md',
+  '../../../../../docs/identity/access-matrix.md',
 );
 
 describe('identity access matrix document', () => {

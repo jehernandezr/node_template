@@ -1,6 +1,6 @@
 # Terraform infrastructure
 
-AWS infrastructure for the platform, organized in modules, stacks with their own state and per-environment values. The decision is in [ADR 0020](../../../docs/adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
+AWS infrastructure for the platform, organized in modules, stacks with their own state and per-environment values. The decision is in [ADR 0020](../../../docs/adr/0020-terraform-stacks-and-runtime-per-service.md).
 
 ## Structure
 
@@ -178,7 +178,7 @@ node --test backend/infra/scripts/__tests__/*.test.mjs
 
 ## Decisions
 
-- Internet egress: `egress` (`none`, `single_nat` in dev, `per_az_nat` in staging and prod) adds NAT only for the private application subnets. The data subnets have no route to the Internet. See [ADR 0016](../../../docs/adr/0016-egress-de-red.md).
+- Internet egress: `egress` (`none`, `single_nat` in dev, `per_az_nat` in staging and prod) adds NAT only for the private application subnets. The data subnets have no route to the Internet. See [ADR 0016](../../../docs/adr/0016-network-egress.md).
 - Terraform removes the default egress rule from security groups: every egress is explicit.
 - Trivy exceptions (`trivy:ignore`) sit next to the resource with their reason: HTTPS egress of the services through NAT, the public realtime ALB, HTTP on the internal ALB behind the VPC link and SSE-S3 encryption of the ALB access logs.
 - `db_deletion_protection` is on and the final snapshot is created unless `db_skip_final_snapshot = true`. Turn them off only in disposable environments.

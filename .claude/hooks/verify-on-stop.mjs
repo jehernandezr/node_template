@@ -9,8 +9,8 @@ import { join } from 'node:path';
 
 class StopVerifier {
   static CHECKS = [
-    '.claude/skills/backend-estructura/scripts/check-structure.mjs',
-    '.claude/skills/front-estructura/scripts/check-structure.mjs',
+    '.claude/skills/backend-structure/scripts/check-structure.mjs',
+    '.claude/skills/front-structure/scripts/check-structure.mjs',
   ];
 
   constructor(input) {

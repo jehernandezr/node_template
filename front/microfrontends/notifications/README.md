@@ -1,6 +1,6 @@
 # mf_notifications
 
-Notifications microfrontend: inbox, preferences per type and channel, and quiet hours. It meets the contract of [ADR 0018](../../../docs/adr/0018-contrato-de-microfrontend.md).
+Notifications microfrontend: inbox, preferences per type and channel, and quiet hours. It meets the contract of [ADR 0018](../../../docs/adr/0018-microfrontend-contract.md).
 
 ## Routes
 

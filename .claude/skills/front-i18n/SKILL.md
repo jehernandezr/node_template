@@ -62,4 +62,4 @@ Tests look for text through localization or by the Spanish literal, with `TestAp
 
 ## With pstack
 
-Method in `pstack-en-node-template`. The pstack skills that apply here: `unslop`, `technical-writing`.
+Method in `pstack-in-node-template`. The pstack skills that apply here: `unslop`, `technical-writing`.
