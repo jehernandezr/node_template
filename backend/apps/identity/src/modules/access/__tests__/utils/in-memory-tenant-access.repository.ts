@@ -26,9 +26,23 @@ export class InMemoryTenantAccessRepository extends TenantAccessRepository {
     limit: number,
   ): Promise<readonly Membership[]> {
     return [...this.memberships.values()]
-      .filter((membership) => after === undefined || membership.userId > after)
-      .sort((a, b) => a.userId.localeCompare(b.userId))
+      .filter(
+        (membership) =>
+          after === undefined ||
+          InMemoryTenantAccessRepository.compareIds(membership.userId, after) >
+            0,
+      )
+      .sort((a, b) =>
+        InMemoryTenantAccessRepository.compareIds(a.userId, b.userId),
+      )
       .slice(0, limit);
+  }
+
+  /** Orders two ids as PostgreSQL orders uuids: by their bytes, so the case of the hex digits does not count. */
+  private static compareIds(left: string, right: string): number {
+    const a = left.toLowerCase();
+    const b = right.toLowerCase();
+    return a < b ? -1 : a > b ? 1 : 0;
   }
 
   async insertMembership(membership: Membership): Promise<void> {
