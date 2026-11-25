@@ -1,45 +1,45 @@
 ---
 name: front-layout-adaptable
-description: 'Layout adaptable y tema del front: breakpoints, ContentColumn, AppPage, tokens y modo oscuro. Úsala al construir la presentación de una pantalla.'
+description: 'Adaptive layout and theme of the front: breakpoints, ContentColumn, AppPage, tokens and dark mode. Use it when building the presentation of a screen.'
 paths:
   - 'front/packages/ui/**'
   - 'front/packages/tokens/**'
   - 'front/**/screens/**'
 ---
 
-# Layout adaptable y tema
+# Adaptive layout and theme
 
-La web y el móvil comparten pantallas, así que el layout responde al espacio que hay, no al dispositivo.
+Web and mobile share screens, so the layout responds to the available space, not to the device.
 
 ## Layout
 
-- La decisión se toma con el ancho disponible: `Breakpoint.of(context)` (compact menos de 600, medium hasta 1024, expanded desde 1024) o `LayoutBuilder` para el ancho de un contenedor. No se pregunta por "teléfono" o "tablet", ni por plataforma, ni con `OrientationBuilder` en lo alto del árbol.
-- Una pantalla con versiones distintas por ancho usa `PlatformScreen(compact:, medium:, expanded:)`. Falta una versión, cae a la más chica.
-- Un contenido de lectura o un formulario no se estira en pantallas anchas: `ContentColumn` de `ui` (un `Center` con `ConstrainedBox`, `maxWidth` por defecto `AppLayout.readingWidth`).
-- Cada pantalla es dueña de una sola barra superior con `AppPage` (ADR 0018). El shell dibuja el marco con `AdaptiveScaffold` y `ShellChrome`.
-- Una lista que crece con el ancho pasa a `GridView` con `SliverGridDelegateWithMaxCrossAxisExtent`.
-- `Expanded` y `Flexible` reparten el espacio de un `Row` o `Column`. Un `Text` dentro de un `Row` va en `Expanded` o `Flexible` para que no desborde.
-- Una lista de largo desconocido es `ListView.builder` o `ListView.separated`. Un `Column` dentro de `SingleChildScrollView` es solo para contenido corto y fijo.
-- No se bloquea la orientación. El contenido respeta `SafeArea` y los insets del teclado (`Scaffold` con `resizeToAvoidBottomInset`).
-- Entrada de varios tipos: lo accionable funciona con toque, ratón y teclado (ver `front-accesibilidad`); en ancho `expanded` se agregan atajos solo cuando aportan.
-- Un overflow no se tapa con `SingleChildScrollView` ni se oculta en las pruebas: se arregla la restricción. Una prueba por ancho lo vigila (ver `front-pruebas`).
+- The decision is made from the available width: `Breakpoint.of(context)` (compact below 600, medium up to 1024, expanded from 1024) or `LayoutBuilder` for a container's width. Do not ask for "phone" or "tablet", nor for the platform, nor use `OrientationBuilder` high up in the tree.
+- A screen with different versions per width uses `PlatformScreen(compact:, medium:, expanded:)`. If a version is missing, it falls back to the smaller one.
+- Reading content or a form does not stretch on wide screens: `ContentColumn` from `ui` (a `Center` with a `ConstrainedBox`, `maxWidth` defaulting to `AppLayout.readingWidth`).
+- Each screen owns a single top bar through `AppPage` (ADR 0018). The shell draws the frame with `AdaptiveScaffold` and `ShellChrome`.
+- A list that grows with the width becomes a `GridView` with `SliverGridDelegateWithMaxCrossAxisExtent`.
+- `Expanded` and `Flexible` split the space of a `Row` or `Column`. A `Text` inside a `Row` goes in `Expanded` or `Flexible` so it does not overflow.
+- A list of unknown length is `ListView.builder` or `ListView.separated`. A `Column` inside a `SingleChildScrollView` is only for short, fixed content.
+- Orientation is not locked. Content respects `SafeArea` and the keyboard insets (`Scaffold` with `resizeToAvoidBottomInset`).
+- Multiple input types: everything actionable works with touch, mouse and keyboard (see `front-accesibilidad`); at `expanded` width, shortcuts are added only when they help.
+- An overflow is not covered with `SingleChildScrollView` nor hidden in tests: fix the constraint. A per-width test guards it (see `front-pruebas`).
 
-## Tema y tokens
+## Theme and tokens
 
-- La única fuente de color, tipografía, espaciado y radios es `front/packages/tokens` (`AppSpacing`, `AppRadius`, `AppIconSize`, `AppLayout`, `AppTypeScale`, `AppColors`) a través de `AppTheme` de `ui`.
-- En un widget: `Theme.of(context).colorScheme` y `Theme.of(context).textTheme`. Nunca `Colors.red`, `Color(0xFF...)`, `TextStyle(fontSize: ...)` ni números sueltos de padding. Un espacio es `AppSpacing.md`, un radio `AppRadius.md`.
-- Los estados de éxito, advertencia e información salen de `context.statusColors`, la extensión que lee `StatusColors` (un `ThemeExtension` de `ui` que `AppTheme` registra). Sus roles son `success`, `warning` e `info`, cada uno con `onX` para el contenido y `xContainer` y `onXContainer` para el fondo suave.
-- `copyWith` sobre un estilo del tema solo cambia un rol de color, no tamaño ni peso.
-- Estilos repetidos van al tema (`FilledButtonThemeData`, `OutlinedButtonThemeData` e `InputDecorationThemeData` en `AppTheme`), no a un wrapper ni a una constante de decoración que cada llamada tiene que recordar usar.
-- Claro y oscuro salen de `AppTheme.light()` y `AppTheme.dark()`. Ningún widget pregunta por `Brightness` ni hace `isDark ? a : b`: si falta un color, se agrega un rol al `ColorScheme` o a `StatusColors`.
-- Para márgenes y alineación se usan `EdgeInsetsDirectional` y `AlignmentDirectional` (ver `front-i18n`), y `EdgeInsets.only` o `.symmetric` en lugar de `fromLTRB`.
-- Un valor de diseño nuevo se agrega primero a `design-tokens.json` y a `tokens`, no al widget que lo necesita.
+- The only source of color, typography, spacing and radii is `front/packages/tokens` (`AppSpacing`, `AppRadius`, `AppIconSize`, `AppLayout`, `AppTypeScale`, `AppColors`) through `AppTheme` from `ui`.
+- In a widget: `Theme.of(context).colorScheme` and `Theme.of(context).textTheme`. Never `Colors.red`, `Color(0xFF...)`, `TextStyle(fontSize: ...)` or loose padding numbers. A space is `AppSpacing.md`, a radius `AppRadius.md`.
+- Success, warning and info states come from `context.statusColors`, the extension that reads `StatusColors` (a `ThemeExtension` from `ui` that `AppTheme` registers). Its roles are `success`, `warning` and `info`, each with `onX` for content and `xContainer` and `onXContainer` for the soft background.
+- `copyWith` on a theme style only changes a color role, not size or weight.
+- Repeated styles go into the theme (`FilledButtonThemeData`, `OutlinedButtonThemeData` and `InputDecorationThemeData` in `AppTheme`), not into a wrapper or a decoration constant that every call has to remember to use.
+- Light and dark come from `AppTheme.light()` and `AppTheme.dark()`. No widget asks for `Brightness` or does `isDark ? a : b`: if a color is missing, add a role to the `ColorScheme` or to `StatusColors`.
+- For margins and alignment use `EdgeInsetsDirectional` and `AlignmentDirectional` (see `front-i18n`), and `EdgeInsets.only` or `.symmetric` instead of `fromLTRB`.
+- A new design value is added first to `design-tokens.json` and to `tokens`, not to the widget that needs it.
 
-## Ejemplo
+## Example
 
-Ejemplo en `references/ejemplos.md`, sección "Ejemplo".
+Example in `references/ejemplos.md`, section "Example".
 
-Una prueba de un widget en varios anchos (ejemplo ilustrativo, el widget `TaskSummaryCard` no existe en el código) usa `pumpAtWidths` de `test_utils`, que pinta la pantalla a 320, 800 y 1280 por defecto y llama a `check` en cada uno:
+A test of a widget at several widths (illustrative example, the `TaskSummaryCard` widget does not exist in the code) uses `pumpAtWidths` from `test_utils`, which renders the screen at 320, 800 and 1280 by default and calls `check` at each one:
 
 ```dart
 await pumpAtWidths(
@@ -49,6 +49,6 @@ await pumpAtWidths(
 );
 ```
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `principle-experience-first`, `principle-prove-it-works`, `visual-parity`, `poteto-mode`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `principle-experience-first`, `principle-prove-it-works`, `visual-parity`, `poteto-mode`.

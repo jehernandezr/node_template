@@ -1,18 +1,18 @@
-# Ejemplos de front-estructura
+# front-estructura examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies.
 
-## Capas dentro de un microfrontend
+## Layers inside a microfrontend
 
 ```
 lib/src/
-├── screens/     pantallas (widgets), controladores y flujos de esas pantallas
-├── data/        puerto del repositorio, adaptador de API y adaptador de demostración
-├── lifecycle/   ciclo de vida del microfrontend
-├── l10n/        ARB y localizaciones generadas
+├── screens/     screens (widgets), controllers and flows of those screens
+├── data/        repository port, API adapter and demo adapter
+├── lifecycle/   microfrontend lifecycle
+├── l10n/        ARB and generated localizations
 └── shared/
-    ├── enums/       sin imports internos
-    ├── constants/   importa enums
-    ├── types/       importa enums y constants
-    └── utils/       importa las tres
+    ├── enums/       no internal imports
+    ├── constants/   imports enums
+    ├── types/       imports enums and constants
+    └── utils/       imports all three
 ```

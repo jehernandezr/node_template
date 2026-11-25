@@ -6,7 +6,7 @@ export class L10nInterpolationRule extends PatternRule {
   constructor() {
     super(
       RuleId.L10N_INTERPOLATION,
-      'las frases con datos son claves ARB con parámetros, no interpolaciones de l10n con : o ·',
+      'sentences with data are ARB keys with parameters, not l10n interpolations with : or ·',
       /\$\{l10n\.[^}]*\}\s?[:·]/,
     );
   }

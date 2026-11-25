@@ -1,8 +1,8 @@
-# Ejemplos de backend-pruebas
+# backend-pruebas examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Cómo se escriben
+## How to write them
 
 ```ts
 describe('SignInUseCase', () => {
@@ -23,7 +23,7 @@ describe('SignInUseCase', () => {
 });
 ```
 
-## Integración
+## Integration
 
 ```ts
 export enum IntegrationMode {

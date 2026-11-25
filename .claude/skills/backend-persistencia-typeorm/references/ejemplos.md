@@ -1,8 +1,8 @@
-# Ejemplos de backend-persistencia-typeorm
+# backend-persistencia-typeorm examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Repositorios y mappers
+## Repositories and mappers
 
 ```ts
 @Injectable()

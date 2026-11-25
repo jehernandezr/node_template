@@ -1,6 +1,6 @@
-# Ejemplos del dominio
+# Domain examples
 
-## Agregado `User`
+## `User` aggregate
 
 ```ts
 export class User extends AggregateRoot<Id, UserEvent> {
@@ -49,7 +49,7 @@ export class User extends AggregateRoot<Id, UserEvent> {
 }
 ```
 
-## Objeto de valor `Email`
+## `Email` value object
 
 ```ts
 export class Email extends ValueObject<{ value: string }> {

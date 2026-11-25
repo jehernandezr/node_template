@@ -6,7 +6,7 @@ import { RuleId } from '../rule-id.mjs';
 const LIB = 'front/microfrontends/tasks/lib/src/screens/a.dart';
 
 describe('PhysicalDirectionRule', () => {
-  it('se aplica al lib de un microfrontend, no a sus pruebas ni a tokens', () => {
+  it('applies to a microfrontend lib, not to its tests or to tokens', () => {
     const rule = new PhysicalDirectionRule();
     assert.equal(rule.appliesTo(LIB), true);
     assert.equal(
@@ -20,7 +20,7 @@ describe('PhysicalDirectionRule', () => {
     assert.equal(rule.appliesTo('front/packages/tokens/lib/src/a.dart'), false);
   });
 
-  it('deja pasar un texto con direccionalidad y tokens', () => {
+  it('lets a text with directionality and tokens through', () => {
     const rule = new PhysicalDirectionRule();
     const text = [
       'final a = 1;',
@@ -30,7 +30,7 @@ describe('PhysicalDirectionRule', () => {
     assert.deepEqual(rule.check(LIB, text), []);
   });
 
-  it('marca el patrón físico solo en su línea', () => {
+  it('flags the physical pattern only on its line', () => {
     const rule = new PhysicalDirectionRule();
     const text = [
       'final a = 1;',
@@ -44,27 +44,27 @@ describe('PhysicalDirectionRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('marca Alignment.centerLeft', () => {
+  it('flags Alignment.centerLeft', () => {
     const rule = new PhysicalDirectionRule();
     assert.equal(rule.check(LIB, 'Alignment.centerLeft').length, 1);
   });
 
-  it('marca Alignment.centerRight', () => {
+  it('flags Alignment.centerRight', () => {
     const rule = new PhysicalDirectionRule();
     assert.equal(rule.check(LIB, 'Alignment.centerRight').length, 1);
   });
 
-  it('marca EdgeInsets.fromLTRB', () => {
+  it('flags EdgeInsets.fromLTRB', () => {
     const rule = new PhysicalDirectionRule();
     assert.equal(rule.check(LIB, 'EdgeInsets.fromLTRB(1, 2, 3, 4)').length, 1);
   });
 
-  it('marca BorderRadius.circular con un número literal', () => {
+  it('flags BorderRadius.circular with a literal number', () => {
     const rule = new PhysicalDirectionRule();
     assert.equal(rule.check(LIB, 'BorderRadius.circular(8)').length, 1);
   });
 
-  it('no marca AlignmentDirectional, tokens de radio, EdgeInsets.all ni Alignment.center', () => {
+  it('does not flag AlignmentDirectional, radius tokens, EdgeInsets.all or Alignment.center', () => {
     const rule = new PhysicalDirectionRule();
     assert.deepEqual(rule.check(LIB, 'AlignmentDirectional.centerStart'), []);
     assert.deepEqual(
@@ -75,7 +75,7 @@ describe('PhysicalDirectionRule', () => {
     assert.deepEqual(rule.check(LIB, 'Alignment.center'), []);
   });
 
-  it('ignora una línea de comentario con el patrón', () => {
+  it('ignores a comment line with the pattern', () => {
     const rule = new PhysicalDirectionRule();
     assert.deepEqual(rule.check(LIB, '// Alignment.centerLeft'), []);
   });

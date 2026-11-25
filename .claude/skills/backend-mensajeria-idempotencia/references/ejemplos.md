@@ -1,8 +1,8 @@
-# Ejemplos de mensajería
+# Messaging examples
 
-## Publicar en la transacción
+## Publishing in the transaction
 
-`MessageBus.publish` escribe en el outbox con `OutboxWriter.append` dentro de la misma transacción.
+`MessageBus.publish` writes to the outbox with `OutboxWriter.append` inside the same transaction.
 
 ```ts
 await this.transactions.runInTransaction(async () => {
@@ -16,7 +16,7 @@ await this.transactions.runInTransaction(async () => {
 });
 ```
 
-## Consumidor con `@Subscribe`
+## Consumer with `@Subscribe`
 
 ```ts
 @Injectable()
@@ -36,7 +36,7 @@ export class WelcomeEmailConsumer {
 }
 ```
 
-## Handler de operación interna
+## Internal operation handler
 
 ```ts
 @Injectable()
@@ -51,11 +51,11 @@ export class CreateTenantHandler {
 }
 ```
 
-## Jobs de la plataforma
+## Platform jobs
 
-- `OutboxRelayJob`: dueño: messaging; calendario: cada 1 s con jitter
-- `OutboxRetentionJob`: dueño: messaging; calendario: cada hora
-- `ProcessedMessageRetentionJob`: dueño: messaging; calendario: cada hora
-- `ProcessedOperationRetentionJob`: dueño: internal-api; calendario: cada hora
-- `SagaRecoveryJob`: dueño: saga; calendario: cada 5 s
-- `SagaRetentionJob`: dueño: saga; calendario: cada hora
+- `OutboxRelayJob`: owner: messaging; schedule: every 1 s with jitter
+- `OutboxRetentionJob`: owner: messaging; schedule: every hour
+- `ProcessedMessageRetentionJob`: owner: messaging; schedule: every hour
+- `ProcessedOperationRetentionJob`: owner: internal-api; schedule: every hour
+- `SagaRecoveryJob`: owner: saga; schedule: every 5 s
+- `SagaRetentionJob`: owner: saga; schedule: every hour

@@ -1,53 +1,59 @@
-# Guía para agentes de IA
+# Guide for AI agents
 
-Reglas para trabajar en este repositorio. Lee [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) antes de tocar la arquitectura.
+Rules for working in this repository. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before touching the architecture.
 
-## Método de trabajo: pstack
+## Language
 
-- Todo trabajo de código usa el plugin pstack: el método sale de pstack y las reglas, de `.claude/skills`. Cuando no coinciden, manda el repositorio.
-- Antes de empezar, lee la skill `pstack-en-node-template`. Explica cómo cargar las skills de pstack en Claude Code: con `Read` de su `SKILL.md`, porque la herramienta `Skill` las rechaza.
-- El orden es el playbook de `poteto-mode`, `architect`, unidades con `tdd` y su commit, verificación con `principle-prove-it-works`, revisión con `interrogate`, `no-comments` y `blast-radius`, y `unslop` en docs, commits y PR.
-- Para trabajo en paralelo usa `swarm`, y para comparar enfoques, `arena`. En la Raspberry Pi corre solo un comando pesado a la vez.
+- Everything developer-facing is written in English only: docs, ADRs, the plan, skills, agents, JSDoc and `///`, commits and PRs. One text, one language: no mixing.
+- User-facing product text keeps its locale (ARB files and their translations).
+- Text still in Spanish is translated whole when a change touches it.
 
-## Estructura
+## Way of working: pstack
 
-- La raíz solo tiene `backend/`, `front/` (pub workspace de Flutter), Nx como orquestador y herramientas del repositorio (CI/CD, hooks, docs). Ver [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
-- Cada aplicación es dueña de sus librerías: lo compartido del backend vive en `backend/libs`, lo del front en `front/packages`, y lo compartido dentro de un servicio o microfrontend en su carpeta `shared/{enums,constants,types,utils}`.
+- All code work uses the pstack plugin: the method comes from pstack and the rules from `.claude/skills`. When they disagree, the repository wins.
+- Before starting, read the `pstack-en-node-template` skill. It explains how to load pstack skills in Claude Code: with `Read` on their `SKILL.md`, because the `Skill` tool rejects them.
+- The order is the `poteto-mode` playbook, `architect`, units with `tdd` and their own commit, verification with `principle-prove-it-works`, review with `interrogate`, `no-comments` and `blast-radius`, and `unslop` on docs, commits and PRs.
+- Use `swarm` for parallel work and `arena` to compare approaches. On the Raspberry Pi, run only one heavy command at a time.
 
-## Comandos
+## Structure
 
-- Nx corre desde la raíz y cubre backend y front. Prepara con `pnpm install` en la raíz y `flutter pub get` en `front/`. Ejemplos: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
-- Un servicio nuevo sale de `pnpm nx run generators:service -- --name=<n>` y un módulo de `pnpm nx run generators:module -- --service=<n> --name=<m>` ([ADR 0033](docs/adr/0033-generadores-y-openapi.md)); un microfrontend, de `front/tools/new_microfrontend.dart` (skill `front-nuevo-microfrontend`). Las librerías del backend siguen la skill `backend-estructura` (proyecto de Nx sin `package.json`).
-- Las configuraciones de Jest son `jest.config.cjs`.
+- The root only holds `backend/`, `front/` (Flutter pub workspace), Nx as orchestrator and repository tooling (CI/CD, hooks, docs). See [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+- Each application owns its libraries: shared backend code lives in `backend/libs`, shared front code in `front/packages`, and code shared inside a service or microfrontend in its `shared/{enums,constants,types,utils}` folder.
 
-## Código
+## Commands
 
-- El código se explica solo: sin comentarios en línea. Cada método público lleva su JSDoc (o `///` en Dart) completo y conciso. Ver `backend-codigo-enterprise` y `front-analisis`.
-- Antes de escribir, revisar o integrar código, carga las skills de `.claude/skills`. Se cargan solas según la carpeta que toques (`paths`); la puerta de entrada es `backend-codigo-enterprise` en el backend y `front-codigo` en el front, y cada una enlaza a las demás.
-- Clases, composición e inyección de dependencias por constructor. Las únicas funciones exportadas son utilidades puras sin estado y las de la lista declarada en `check-structure.mjs` (fábricas `define*` de contracts, esquemas de `env.ts` y `secret()`, `main()` de las herramientas). Nada de módulos de funciones sueltas tipo script.
-- Persistencia con TypeORM ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): entidades y migraciones generadas y aplicadas con su CLI. `synchronize` siempre apagado.
-- Backend: las pruebas van en una carpeta `__tests__/` dentro de la carpeta del código que prueban, nunca un `.spec.ts` junto al archivo fuente. Las de integración terminan en `.int-spec.ts`; lo que otra librería necesita de ellas sale por `@platform/<lib>/test-utils`. Front: en el `test/` de cada paquete, con las carpetas de `lib/src`.
-- Backend: código directo en `src/`, sin `src/lib/`. Un solo `node_modules`: las librerías se importan por alias de TypeScript y no tienen `package.json`.
-- Las importaciones relativas en las librerías terminan en `.js`, porque el proyecto usa ESM con `nodenext`.
-- Todo puerto es una clase abstracta sin decoradores y es su propio token de inyección. El cableado de NestJS de una librería vive en `src/nest/` y sale por `@platform/<lib>/nest`; fuera de esa carpeta no se importa `@nestjs/*` ([ADR 0025](docs/adr/0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md)).
-- Las tareas periódicas son clases que extienden `ScheduledJob` y las corre `@platform/scheduling` ([ADR 0026](docs/adr/0026-jobs-programados-scheduledjob-y-joblock.md)). Nada de `setInterval` propio en una librería.
-- El dominio (`domain/`) no importa NestJS, TypeORM, AWS ni otras librerías de infraestructura. Solo depende de `kernel`.
-- `application/` depende de `domain/`. `infrastructure/` y `presentation/` dependen de `domain/` y `application/`.
-- `@aws-sdk/*` solo aparece en `backend/libs/platform/adapters/aws`.
-- Usa enums para eventos, errores, permisos, colas y jobs. No escribas esos identificadores como literales de texto.
-- Todo identificador nuevo es UUIDv7, generado con el puerto `IdGenerator`.
-- Cada operación interna que modifica datos declara su compensación.
-- Los contratos se escriben en TypeScript con zod en `backend/libs/contracts/<servicio>`, con carpetas `enums`, `constants`, `types`, `schemas`, `http`, `internal` y `events`.
-- Un cambio en `backend/libs/contracts` obliga a regenerar el Dart de `front/packages/contracts` en el mismo cambio.
-- Todo cliente (backend o front) valida la petición contra el contrato antes de llamar por HTTP.
-- Una decisión nueva de arquitectura se registra como ADR en `docs/adr/`.
-- Los errores de dominio extienden `DomainError` y usan un código del formato `SERVICIO.SUBMÓDULO.ERROR`.
-- Front: cada pantalla con estado tiene un controlador y las pruebas comparten `test_utils` ([ADR 0027](docs/adr/0027-patrones-de-pantalla-y-pruebas-del-front.md)).
+- Nx runs from the root and covers backend and front. Set up with `pnpm install` at the root and `flutter pub get` in `front/`. Examples: `pnpm nx affected -t lint test typecheck build analyze format-check`, `pnpm nx test platform-saga`, `pnpm nx test front-shell_core`.
+- A new service comes from `pnpm nx run generators:service -- --name=<n>` and a module from `pnpm nx run generators:module -- --service=<n> --name=<m>` ([ADR 0033](docs/adr/0033-generadores-y-openapi.md)); a microfrontend from `front/tools/new_microfrontend.dart` (skill `front-nuevo-microfrontend`). Backend libraries follow the `backend-estructura` skill (an Nx project without `package.json`).
+- Jest configs are `jest.config.cjs`.
+
+## Code
+
+- Code explains itself: no inline comments. Every public method has a complete, concise JSDoc (`///` in Dart). See `backend-codigo-enterprise` and `front-analisis`.
+- Before writing, reviewing or merging code, load the skills in `.claude/skills`. They load by the folder you touch (`paths`); the entry point is `backend-codigo-enterprise` for the backend and `front-codigo` for the front, and each links to the rest.
+- Classes, composition and constructor dependency injection. The only exported functions are stateless pure utilities and those listed in `check-structure.mjs` (contract `define*` factories, `env.ts` schemas and `secret()`, tool `main()`). No script-style modules of loose functions.
+- Persistence with TypeORM ([ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)): entities and migrations generated and applied with its CLI. `synchronize` is always off.
+- Backend: tests live in a `__tests__/` folder inside the folder of the code they test, never as a `.spec.ts` next to the source file. Integration tests end in `.int-spec.ts`; what another library needs from them is exported through `@platform/<lib>/test-utils`. Front: in each package's `test/`, mirroring the `lib/src` folders.
+- Backend: code goes directly in `src/`, without `src/lib/`. A single `node_modules`: libraries are imported through TypeScript aliases and have no `package.json`.
+- Relative imports in libraries end in `.js`, because the project uses ESM with `nodenext`.
+- Every port is an abstract class without decorators and is its own injection token. A library's NestJS wiring lives in `src/nest/` and is exported through `@platform/<lib>/nest`; outside that folder nothing imports `@nestjs/*` ([ADR 0025](docs/adr/0025-capa-nestjs-por-sub-entrada-y-puertos-abstractos.md)).
+- Periodic tasks are classes that extend `ScheduledJob`, run by `@platform/scheduling` ([ADR 0026](docs/adr/0026-jobs-programados-scheduledjob-y-joblock.md)). No hand-rolled `setInterval` in a library.
+- The domain (`domain/`) does not import NestJS, TypeORM, AWS or other infrastructure libraries. It only depends on `kernel`.
+- `application/` depends on `domain/`. `infrastructure/` and `presentation/` depend on `domain/` and `application/`.
+- `@aws-sdk/*` only appears in `backend/libs/platform/adapters/aws`.
+- Use enums for events, errors, permissions, queues and jobs. Never write those identifiers as string literals.
+- Every new identifier is a UUIDv7 generated with the `IdGenerator` port.
+- Every internal operation that changes data declares its compensation.
+- Contracts are written in TypeScript with zod in `backend/libs/contracts/<service>`, with `enums`, `constants`, `types`, `schemas`, `http`, `internal` and `events` folders.
+- A change in `backend/libs/contracts` requires regenerating the Dart in `front/packages/contracts` in the same change.
+- Every client (backend or front) validates the request against the contract before calling over HTTP.
+- A new architecture decision is recorded as an ADR in `docs/adr/`.
+- Domain errors extend `DomainError` and use a code in the `SERVICE.SUBMODULE.ERROR` format.
+- Front: every stateful screen has a controller and tests share `test_utils` ([ADR 0027](docs/adr/0027-patrones-de-pantalla-y-pruebas-del-front.md)).
 
 ## Git
 
-- Ramas con prefijo `feat/`, `fix/` o `chore/`.
-- Commits con Conventional Commits. El hook `commit-msg` lo valida.
-- Los mensajes de commit no incluyen líneas de atribución de IA ni líneas `Co-Authored-By`.
-- Nunca confirmes un archivo `.env`. Usa `.env.example` para documentar variables.
-- Nunca escribas secretos, tokens o contraseñas en el código, en los tests ni en la documentación.
+- Branches prefixed with `feat/`, `fix/` or `chore/`.
+- Conventional Commits in English, lowercase subject. The `commit-msg` hook validates them.
+- Commit messages carry no AI attribution lines and no `Co-Authored-By` lines.
+- Never commit a `.env` file. Document variables in `.env.example`.
+- Never write secrets, tokens or passwords in code, tests or docs.

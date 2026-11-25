@@ -4,7 +4,7 @@ import { CatchWithoutOnRule } from '../catch-without-on-rule.mjs';
 import { RuleId } from '../rule-id.mjs';
 
 describe('CatchWithoutOnRule', () => {
-  it('se aplica a las librerías de Dart salvo los contratos generados', () => {
+  it('applies to Dart libraries except the generated contracts', () => {
     const rule = new CatchWithoutOnRule();
     assert.equal(
       rule.appliesTo('front/packages/shell_core/lib/src/a.dart'),
@@ -20,7 +20,7 @@ describe('CatchWithoutOnRule', () => {
     );
   });
 
-  it('marca un catch sin on', () => {
+  it('flags a catch without on', () => {
     const rule = new CatchWithoutOnRule();
     const file = 'front/packages/shell_core/lib/src/a.dart';
     const text = ['try {', '  run();', '} catch (e) {', '}'].join('\n');
@@ -31,7 +31,7 @@ describe('CatchWithoutOnRule', () => {
     assert.equal(violation.line, 3);
   });
 
-  it('marca un catch con stack trace sin on', () => {
+  it('flags a catch with a stack trace without on', () => {
     const rule = new CatchWithoutOnRule();
     const text = '} catch (error, stack) {';
     const [violation, ...rest] = rule.check(
@@ -42,7 +42,7 @@ describe('CatchWithoutOnRule', () => {
     assert.equal(violation.line, 1);
   });
 
-  it('acepta un catch con on de tipo simple', () => {
+  it('accepts a catch with on of a simple type', () => {
     const rule = new CatchWithoutOnRule();
     const text = '} on Exception catch (e) {';
     assert.deepEqual(
@@ -51,7 +51,7 @@ describe('CatchWithoutOnRule', () => {
     );
   });
 
-  it('acepta un catch con on de tipo genérico', () => {
+  it('accepts a catch with on of a generic type', () => {
     const rule = new CatchWithoutOnRule();
     const text = '} on Map<String, int> catch (e) {';
     assert.deepEqual(
@@ -60,7 +60,7 @@ describe('CatchWithoutOnRule', () => {
     );
   });
 
-  it('no confunde catchError con catch', () => {
+  it('does not confuse catchError with catch', () => {
     const rule = new CatchWithoutOnRule();
     const text = 'future.catchError((e) {});';
     assert.deepEqual(
@@ -69,7 +69,7 @@ describe('CatchWithoutOnRule', () => {
     );
   });
 
-  it('ignora un catch dentro de un comentario de documentación', () => {
+  it('ignores a catch inside a documentation comment', () => {
     const rule = new CatchWithoutOnRule();
     const text = '/// } catch (error) {';
     assert.deepEqual(
@@ -78,16 +78,18 @@ describe('CatchWithoutOnRule', () => {
     );
   });
 
-  it('acepta un catch-all marcado en la línea anterior', () => {
+  it('accepts a catch-all marked on the line before', () => {
     const rule = new CatchWithoutOnRule();
-    const text = ['// catch-all: reporta y sigue', '} catch (e) {'].join('\n');
+    const text = ['// catch-all: reports and continues', '} catch (e) {'].join(
+      '\n',
+    );
     assert.deepEqual(
       rule.check('front/packages/shell_core/lib/src/a.dart', text),
       [],
     );
   });
 
-  it('marca un catch-all con la marca sin motivo', () => {
+  it('flags a catch-all whose mark has no reason', () => {
     const rule = new CatchWithoutOnRule();
     const text = ['// catch-all:', '} catch (e) {'].join('\n');
     const [violation, ...rest] = rule.check(
@@ -98,11 +100,13 @@ describe('CatchWithoutOnRule', () => {
     assert.equal(violation.line, 2);
   });
 
-  it('marca un catch-all cuya marca no está en la línea anterior', () => {
+  it('flags a catch-all whose mark is not on the line before', () => {
     const rule = new CatchWithoutOnRule();
-    const text = ['// catch-all: reporta y sigue', '', '} catch (e) {'].join(
-      '\n',
-    );
+    const text = [
+      '// catch-all: reports and continues',
+      '',
+      '} catch (e) {',
+    ].join('\n');
     const [violation, ...rest] = rule.check(
       'front/packages/shell_core/lib/src/a.dart',
       text,

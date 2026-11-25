@@ -1,8 +1,8 @@
 import { Rule } from './rule.mjs';
 
-// Regla que marca cada línea donde empieza una coincidencia de su expresión regular.
-// Busca sobre el archivo completo y no línea a línea porque dart format parte las llamadas
-// largas: `Text(` y su literal suelen quedar en líneas distintas.
+// Rule that flags each line where a match of its regular expression starts.
+// It searches the whole file rather than line by line because dart format splits long
+// calls: `Text(` and its literal often end up on different lines.
 export class PatternRule extends Rule {
   static COMMENT_LINE = /^\s*\/\//;
 
@@ -18,8 +18,8 @@ export class PatternRule extends Rule {
     return this.matchingLines(text).map((line) => this.violation(file, line));
   }
 
-  // Números de línea (desde 1, sin repetir) donde empieza una coincidencia. Las líneas que
-  // son solo comentario se vacían antes de buscar para que no cuenten.
+  // Line numbers (from 1, without repeats) where a match starts. Lines that are only a
+  // comment are blanked before searching so they do not count.
   matchingLines(text) {
     const code = text
       .split('\n')

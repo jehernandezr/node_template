@@ -18,12 +18,12 @@ describe('check-structure', () => {
     repo.current.dispose();
   });
 
-  it('pasa en --all cuando no hay violaciones', () => {
+  it('passes in --all when there are no violations', () => {
     repo.current.write(SCREEN, CLEAN);
     assert.equal(repo.current.runCheck('--all').status, 0);
   });
 
-  it('falla en --all con una violación', () => {
+  it('fails in --all with one violation', () => {
     repo.current.write(SCREEN, ONE);
     const result = repo.current.runCheck('--all');
     assert.equal(result.status, 1);
@@ -31,7 +31,7 @@ describe('check-structure', () => {
     assert.match(result.stderr, new RegExp(SCREEN.replace(/\./g, '\\.')));
   });
 
-  it('--changed solo revisa lo tocado y --all revisa todo', () => {
+  it('--changed checks only what changed and --all checks everything', () => {
     repo.current.write(SCREEN, ONE);
     repo.current.write(OTHER, ONE);
     repo.current.commitAll();
@@ -49,7 +49,7 @@ describe('check-structure', () => {
     assert.match(all.stderr, /screens\/b\.dart/);
   });
 
-  it('--all falla con un pubspec que usa ^ en una dependencia', () => {
+  it('--all fails with a pubspec that uses ^ in a dependency', () => {
     repo.current.write(
       'front/packages/ui/pubspec.yaml',
       'name: ui\ndependencies:\n  go_router: ^18.1.4\n',
@@ -59,17 +59,17 @@ describe('check-structure', () => {
     assert.match(result.stderr, /pubspec-caret-version/);
   });
 
-  it('rechaza un modo desconocido con código 2', () => {
+  it('rejects an unknown mode with code 2', () => {
     repo.current.write(SCREEN, CLEAN);
     const result = repo.current.runCheck('--bogus');
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /Modo desconocido/);
+    assert.match(result.stderr, /Unknown mode/);
   });
 
-  it('rechaza --update-baseline como modo desconocido con código 2', () => {
+  it('rejects --update-baseline as an unknown mode with code 2', () => {
     repo.current.write(SCREEN, CLEAN);
     const result = repo.current.runCheck('--update-baseline');
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /Modo desconocido/);
+    assert.match(result.stderr, /Unknown mode/);
   });
 });

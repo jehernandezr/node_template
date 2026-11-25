@@ -1,22 +1,22 @@
-# Ejemplos de backend-estructura
+# backend-estructura examples
 
-Ejemplos largos que la skill cita. Léelos solo cuando el tema te toque.
+Long examples the skill cites. Read them only when the topic applies to you.
 
-## Capas dentro de un servicio
+## Layers inside a service
 
 ```
 backend/libs/services/users/src/
-├── index.ts                      # API pública: fachada, enums, tokens
+├── index.ts                      # public API: facade, enums, tokens
 ├── shared/{enums,constants,types,utils}/
 └── modules/
     └── sign-in/
-        ├── domain/               # agregados, objetos de valor, eventos, errores, puertos
-        ├── application/          # casos de uso, comandos, consultas, fachada
-        ├── infrastructure/       # repositorios TypeORM, entidades, mappers, clientes
-        └── presentation/         # controllers, consumidores, esquemas zod, *.module.ts
+        ├── domain/               # aggregates, value objects, events, errors, ports
+        ├── application/          # use cases, commands, queries, facade
+        ├── infrastructure/       # TypeORM repositories, entities, mappers, clients
+        └── presentation/         # controllers, consumers, zod schemas, *.module.ts
 ```
 
-## Carpetas de código
+## Code folders
 
 ```
 backend/libs/platform/kernel/

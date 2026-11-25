@@ -1,44 +1,44 @@
 ---
 name: front-i18n
-description: 'Internacionalización del front: ARB, gen-l10n, plurales y textos de error. Úsala al agregar o cambiar un texto visible.'
+description: 'Internationalization of the front: ARB, gen-l10n, plurals and error texts. Use it when adding or changing a visible text.'
 paths:
   - 'front/**/*.arb'
   - 'front/**/l10n/**'
   - 'front/packages/i18n/**'
 ---
 
-# Internacionalización
+# Internationalization
 
-## Dónde vive cada texto
+## Where each text lives
 
-- **Textos compartidos** (acciones, errores del catálogo, etiquetas de `ui`): `front/packages/i18n/lib/l10n/app_es.arb` y `app_en.arb`, clase `AppLocalizations`.
-- **Textos de un microfrontend:** `lib/src/l10n/app_es.arb` y `app_en.arb`, con su clase propia (`TasksLocalizations`). Cuelgan de `l10n/` dentro del chunk diferido, así un cliente no descarga los textos de un microfrontend que no usa.
-- **Etiqueta de menú:** `MenuLabel({'es': ..., 'en': ...})` en el manifiesto, porque el shell la dibuja antes de cargar el microfrontend. Es la única excepción.
-- La plantilla es `app_es.arb`; cada clave existe en todos los idiomas soportados.
+- **Shared texts** (actions, catalog errors, `ui` labels): `front/packages/i18n/lib/l10n/app_es.arb` and `app_en.arb`, class `AppLocalizations`.
+- **A microfrontend's texts:** `lib/src/l10n/app_es.arb` and `app_en.arb`, with their own class (`TasksLocalizations`). They hang from `l10n/` inside the deferred chunk, so a client does not download the texts of a microfrontend it does not use.
+- **Menu label:** `MenuLabel({'es': ..., 'en': ...})` in the manifest, because the shell draws it before loading the microfrontend. It is the only exception.
+- The template is `app_es.arb`; every key exists in all supported languages.
 
-## Reglas
+## Rules
 
-- Ningún texto visible en un literal de Dart: ni `Text('Guardar')`, ni `tooltip`, ni `semanticLabel`, ni mensajes de error. Todo sale de la localización: `TasksLocalizations.of(context).save`.
-- Un widget compartido de `ui` no lee `AppLocalizations` si recibe el texto por parámetro; los que sí lo leen (`ErrorView`, `showActionError`) lo declaran en su documentación y exigen el delegado.
-- Un texto del servidor nunca se muestra. Se mapea el código del contrato: `ErrorPresenter(l10n).describe(error)` para el mensaje y el código de un error, `actionMessage(error)` para el texto de una acción. Ambos son de `i18n`, y `errorMessage(l10n, code)` de `i18n` da el texto de un código.
-- El texto de un enum sale de una función con `switch` exhaustivo (`taskStatusLabel(l10n, status)`), para que un caso nuevo rompa la compilación hasta tener su texto.
-- Plurales, género y números van en el ARB con la sintaxis ICU, no con `if (count == 1)` en Dart:
+- No visible text in a Dart literal: not `Text('Guardar')`, not `tooltip`, not `semanticLabel`, not error messages. Everything comes from localization: `TasksLocalizations.of(context).save`.
+- A shared `ui` widget does not read `AppLocalizations` if it receives the text as a parameter; those that do read it (`ErrorView`, `showActionError`) say so in their documentation and require the delegate.
+- A server text is never shown. Map the contract code: `ErrorPresenter(l10n).describe(error)` for an error's message and code, `actionMessage(error)` for an action's text. Both come from `i18n`, and `errorMessage(l10n, code)` from `i18n` gives the text for a code.
+- An enum's text comes from a function with an exhaustive `switch` (`taskStatusLabel(l10n, status)`), so a new case breaks compilation until it has its text.
+- Plurals, gender and numbers go in the ARB with ICU syntax, not with `if (count == 1)` in Dart:
 
 ```json
 "messagesCount": "{count, plural, =0{Sin mensajes} =1{1 mensaje} other{{count} mensajes}}",
 "@messagesCount": { "placeholders": { "count": { "type": "int" } } }
 ```
 
-- Fechas, horas y dinero: `DateFormat` y `NumberFormat` de `intl` con el locale del contexto, o los helpers de `front/packages/utils` (`dates`, `money`, `numbers`). Nunca concatenar partes a mano.
-- Nada de concatenar frases ni de unirlas con separadores (`·`): `'${l10n.hello} $name'` rompe en otros idiomas. Se usa un placeholder: `"hello": "Hola, {name}"`, y el separador va dentro de la frase del ARB.
-- Direccionalidad: `EdgeInsetsDirectional`, `AlignmentDirectional` y `start`/`end` en lugar de `left`/`right`, para que un idioma de derecha a izquierda funcione sin reescribir.
-- Sin librerías de i18n de terceros. Flutter y `intl` bastan.
+- Dates, times and money: `DateFormat` and `NumberFormat` from `intl` with the context locale, or the helpers in `front/packages/utils` (`dates`, `money`, `numbers`). Never concatenate parts by hand.
+- Do not concatenate sentences or join them with separators (`·`): `'${l10n.hello} $name'` breaks in other languages. Use a placeholder: `"hello": "Hola, {name}"`, and the separator goes inside the ARB sentence.
+- Directionality: `EdgeInsetsDirectional`, `AlignmentDirectional` and `start`/`end` instead of `left`/`right`, so a right-to-left language works without rewriting.
+- No third-party i18n libraries. Flutter and `intl` are enough.
 
-## Diálogos y hojas
+## Dialogs and sheets
 
-Un diálogo o una hoja es una ruta del `Navigator`, hermana de la página, así que no hereda las localizaciones que la pantalla carga de forma diferida. La pantalla envuelve su contenido en `DeferredLocalizations` (de `shell_core`) y abre los diálogos con `showLocalizedDialog` o `showLocalizedSheet`, que son extensiones de `BuildContext` y reaplican los mismos delegados:
+A dialog or a sheet is a `Navigator` route, a sibling of the page, so it does not inherit the localizations the screen loads deferred. The screen wraps its content in `DeferredLocalizations` (from `shell_core`) and opens dialogs with `showLocalizedDialog` or `showLocalizedSheet`, which are `BuildContext` extensions and reapply the same delegates:
 
-Ejemplo ilustrativo, la clave `deleteTitle` no existe en el código:
+Illustrative example, the `deleteTitle` key does not exist in the code:
 
 ```dart
 final confirmed = await context.showLocalizedDialog<bool>(
@@ -48,18 +48,18 @@ final confirmed = await context.showLocalizedDialog<bool>(
 );
 ```
 
-Si no hay un `DeferredLocalizations` arriba, el helper lanza un `FlutterError` que dice qué falta.
+If there is no `DeferredLocalizations` above, the helper throws a `FlutterError` that says what is missing.
 
-## Agregar un texto
+## Adding a text
 
-1. Escribe la clave en `app_es.arb` (con `@clave` y placeholders si los tiene) y en `app_en.arb`.
-2. Regenera: `flutter gen-l10n` desde la carpeta del paquete o microfrontend. El resultado de `l10n/generated` se versiona y no se edita a mano.
-3. Usa la clave en el widget y agrega o ajusta la prueba que busca el texto.
+1. Write the key in `app_es.arb` (with `@key` and placeholders if it has any) and in `app_en.arb`.
+2. Regenerate: `flutter gen-l10n` from the package or microfrontend folder. The output in `l10n/generated` is versioned and not edited by hand.
+3. Use the key in the widget and add or adjust the test that looks for the text.
 
-## Probar
+## Testing
 
-Las pruebas buscan texto por la localización o por el literal en español, con `TestApp` de `test_utils` (`TestApp(delegates: const [TasksLocalizations.delegate])`), que instala los delegados compartidos y los del microfrontend. Una prueba de cada idioma soportado comprueba que cada clave se resuelve (`supportedLocales` de `i18n`).
+Tests look for text through localization or by the Spanish literal, with `TestApp` from `test_utils` (`TestApp(delegates: const [TasksLocalizations.delegate])`), which installs the shared delegates and the microfrontend's. A test for each supported language checks that every key resolves (`supportedLocales` from `i18n`).
 
-## Con pstack
+## With pstack
 
-Método en `pstack-en-node-template`. De pstack aplican aquí: `unslop`, `technical-writing`.
+Method in `pstack-en-node-template`. The pstack skills that apply here: `unslop`, `technical-writing`.

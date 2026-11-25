@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Verifica las reglas de backend-estructura, backend-codigo-enterprise y backend-pruebas.
-// Uso: node check-structure.mjs [--all | --changed] [raíz del repositorio]
-//   --changed (por defecto) revisa solo los archivos cambiados frente a HEAD, incluidos los nuevos.
-//   --all revisa todo backend/.
-// Sale con código 1 y la lista de violaciones si encuentra alguna.
+// Checks the rules of backend-estructura, backend-codigo-enterprise and backend-pruebas.
+// Usage: node check-structure.mjs [--all | --changed] [repository root]
+//   --changed (default) checks only the files changed against HEAD, including new ones.
+//   --all checks all of backend/.
+// Exits with code 1 and the list of violations if it finds any.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -20,60 +20,60 @@ class BackendStructureCheck {
   static INFRA_IN_DOMAIN =
     /from\s+['"](@nestjs\/|typeorm|pg['"/]|@aws-sdk\/|iovalkey|express)/;
   static OUTER_LAYER = /from\s+['"](\.\.\/)+(infrastructure|presentation)\//;
-  // Pruebas de integración: el sufijo es `.int-spec.ts`; `*.integration.spec.ts` correría como unitaria.
+  // Integration tests: the suffix is `.int-spec.ts`; `*.integration.spec.ts` would run as a unit test.
   static MISNAMED_INTEGRATION_TEST = /\.integration\.spec\.ts$/;
-  // El núcleo de las librerías no conoce NestJS: solo lo importa `src/nest/`.
+  // The library core does not know NestJS: only `src/nest/` imports it.
   static NEST_GUARDED_AREA =
     /^backend\/libs\/(platform|contracts|shared)\/.+\.ts$/;
   static NEST_FOLDER = /\/src\/nest\//;
   static NEST_IMPORT =
     /(?:from|import)\s*\(?\s*['"](?:@nestjs\/[^'"]*|@platform\/[\w-]+\/nest)['"]/;
-  // Archivos donde una función exportada es la forma declarada de la API, no un script suelto.
+  // Files where an exported function is the declared shape of the API, not a loose script.
   static FUNCTION_EXCEPTIONS = [
     {
       pattern: /^backend\/libs\/contracts\/[^/]+\/src\/kit\/define-[\w-]+\.ts$/,
-      reason: 'fábricas declarativas define* de contracts',
+      reason: 'declarative define* factories of contracts',
     },
     {
       pattern: /^backend\/libs\/contracts\/[^/]+\/src\/kit\/error-catalog\.ts$/,
-      reason: 'defineErrorCatalog de contracts',
+      reason: 'defineErrorCatalog of contracts',
     },
     {
       pattern: /^backend\/libs\/platform\/config\/src\/(env|secret)\.ts$/,
-      reason: 'esquemas zod de env.ts y secret()',
+      reason: 'zod schemas of env.ts and secret()',
     },
     {
       pattern: /^backend\/tools\/[^/]+\/src\/main\.ts$/,
-      reason: 'main() de las herramientas',
+      reason: 'main() of the tools',
     },
     {
       pattern:
         /^backend\/libs\/contracts\/platform\/src\/kit\/field-errors\.ts$/,
-      reason: 'utilidades del DSL de contratos',
+      reason: 'contract DSL utilities',
     },
     {
       pattern:
         /^backend\/libs\/contracts\/platform\/src\/kit\/message-definition\.ts$/,
-      reason: 'utilidades del DSL de contratos',
+      reason: 'contract DSL utilities',
     },
     {
       pattern:
         /^backend\/libs\/contracts\/platform\/src\/schemas\/pagination\.schema\.ts$/,
-      reason: 'esquema zod parametrizado del DSL de contratos',
+      reason: 'parameterized zod schema of the contract DSL',
     },
     {
       pattern: /^backend\/libs\/platform\/primitives\/src\/call-outcome\.ts$/,
-      reason: 'guardas de tipo puras',
+      reason: 'pure type guards',
     },
     {
       pattern:
         /^backend\/libs\/platform\/messaging\/src\/topology\/contract-topology\.ts$/,
-      reason: 'fábrica declarativa de topología sobre contratos',
+      reason: 'declarative topology factory over contracts',
     },
     {
       pattern:
         /^backend\/libs\/platform\/persistence\/src\/metadata\/entity-metadata\.ts$/,
-      reason: 'decorador Audited y su lector',
+      reason: 'Audited decorator and its reader',
     },
   ];
   static LOOSE_EXPORTED_FUNCTION =
@@ -110,7 +110,7 @@ class BackendStructureCheck {
   }
 
   allBackendFiles() {
-    // Solo archivos versionados o nuevos: los artefactos ignorados no cuentan como código.
+    // Only tracked or new files: ignored artifacts do not count as code.
     return execFileSync(
       'git',
       ['ls-files', '-co', '--exclude-standard', 'backend/'],
@@ -123,7 +123,7 @@ class BackendStructureCheck {
   checkFile(file) {
     const inCodeProject = /^backend\/(libs|apps|tools|e2e)\//.test(file);
     if (inCodeProject && /\/src\/lib\//.test(file)) {
-      this.add(file, 'el código va directo en src/, sin src/lib/');
+      this.add(file, 'code goes directly in src/, without src/lib/');
     }
     if (
       BackendStructureCheck.TEST_FILE.test(file) &&
@@ -131,7 +131,7 @@ class BackendStructureCheck {
     ) {
       this.add(
         file,
-        'las pruebas van en una carpeta __tests__/ junto al código que prueban',
+        'tests go in a __tests__/ folder next to the code they test',
       );
     }
     if (
@@ -141,25 +141,25 @@ class BackendStructureCheck {
     ) {
       this.add(
         file,
-        'los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte',
+        'test utilities go in __tests__/utils, not in a separate testing folder',
       );
     }
     if (/^backend\/libs\/.+\/package\.json$/.test(file)) {
       this.add(
         file,
-        'las librerías no tienen package.json: se importan por alias de TypeScript',
+        'libraries have no package.json: they are imported through TypeScript aliases',
       );
     }
     if (inCodeProject && /\/dist\//.test(file)) {
       this.add(
         file,
-        'el compilado de cada app va en backend/dist/<app>, nunca dentro de un proyecto',
+        'each app build goes in backend/dist/<app>, never inside a project',
       );
     }
     if (BackendStructureCheck.MISNAMED_INTEGRATION_TEST.test(file)) {
       this.add(
         file,
-        'las pruebas de integración se llaman *.int-spec.ts: *.integration.spec.ts correría como unitaria',
+        'integration tests are named *.int-spec.ts: *.integration.spec.ts would run as a unit test',
       );
     }
     if (file.endsWith('.ts')) this.checkNestBoundary(file);
@@ -167,8 +167,8 @@ class BackendStructureCheck {
       this.checkSource(file);
   }
 
-  // Con --changed solo cuentan las líneas nuevas: mover un archivo no obliga a refactorizarlo,
-  // pero lo que se escribe hoy sí cumple las reglas.
+  // With --changed only new lines count: moving a file does not force refactoring it,
+  // but what is written today does follow the rules.
   sourceToCheck(file) {
     const full = readFileSync(join(this.root, file), 'utf8');
     if (this.mode === '--all') return full;
@@ -182,11 +182,11 @@ class BackendStructureCheck {
         .split('\n')
         .filter(Boolean),
     );
-    // Un archivo nuevo sin versionar se revisa entero; uno movido sin cambios no aporta líneas.
+    // A new untracked file is checked whole; one moved without changes contributes no lines.
     return this.untracked.has(file) ? full : (this.addedLines.get(file) ?? '');
   }
 
-  // Un solo diff de todo el árbol, para que git detecte los archivos movidos como renombres.
+  // A single diff of the whole tree, so git detects moved files as renames.
   readAddedLines() {
     const diff = execFileSync(
       'git',
@@ -210,7 +210,7 @@ class BackendStructureCheck {
     return added;
   }
 
-  // Incluye las pruebas: las de código Nest viven en src/nest/__tests__.
+  // Includes tests: those for Nest code live in src/nest/__tests__.
   checkNestBoundary(file) {
     if (
       !BackendStructureCheck.NEST_GUARDED_AREA.test(file) ||
@@ -220,7 +220,7 @@ class BackendStructureCheck {
     if (BackendStructureCheck.NEST_IMPORT.test(this.sourceToCheck(file))) {
       this.add(
         file,
-        'fuera de src/nest/ no se importa @nestjs/* ni una sub-entrada @platform/<lib>/nest',
+        'outside src/nest/, do not import @nestjs/* or a @platform/<lib>/nest sub-entry',
       );
     }
   }
@@ -231,7 +231,7 @@ class BackendStructureCheck {
       if (BackendStructureCheck.INFRA_IN_DOMAIN.test(text)) {
         this.add(
           file,
-          'domain/ no importa NestJS, TypeORM, pg, AWS ni otra infraestructura',
+          'domain/ does not import NestJS, TypeORM, pg, AWS or other infrastructure',
         );
       }
       if (
@@ -240,7 +240,7 @@ class BackendStructureCheck {
       ) {
         this.add(
           file,
-          'domain/ no depende de application/, infrastructure/ ni presentation/',
+          'domain/ does not depend on application/, infrastructure/ or presentation/',
         );
       }
     }
@@ -250,7 +250,7 @@ class BackendStructureCheck {
     ) {
       this.add(
         file,
-        'application/ no depende de infrastructure/ ni presentation/',
+        'application/ does not depend on infrastructure/ or presentation/',
       );
     }
     const allowsFunctions =
@@ -265,7 +265,7 @@ class BackendStructureCheck {
     ) {
       this.add(
         file,
-        'exporta funciones sueltas: el comportamiento va en clases con dependencias inyectadas',
+        'exports loose functions: behavior goes in classes with injected dependencies',
       );
     }
   }
@@ -293,7 +293,7 @@ class BackendStructureCheck {
     if (nodeModules.length > 1) {
       this.add(
         nodeModules.join(', '),
-        'debe existir un solo node_modules, en la raíz',
+        'there must be a single node_modules, at the root',
       );
     }
   }
@@ -306,7 +306,7 @@ class BackendStructureCheck {
       if (name === 'dist')
         this.add(
           relative(this.root, full),
-          'el compilado de cada app va en backend/dist/<app>',
+          'each app build goes in backend/dist/<app>',
         );
       else this.findDist(full);
     }
@@ -323,7 +323,7 @@ const root = args.find((a) => !a.startsWith('--')) ?? process.cwd();
 const violations = new BackendStructureCheck(root, mode).run();
 if (violations.length > 0) {
   console.error(
-    `Reglas del backend incumplidas (${violations.length}):\n- ${violations.join('\n- ')}`,
+    `Backend rules violated (${violations.length}):\n- ${violations.join('\n- ')}`,
   );
   process.exit(1);
 }

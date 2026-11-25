@@ -1,13 +1,13 @@
-# Compila el .aab de la app móvil y lo sube al bucket de artefactos.
-# La subida a las tiendas y la firma de release exigen credenciales del titular de la cuenta y
-# no se automatizan aquí.
+# Builds the mobile app .aab and uploads it to the artifacts bucket.
+# Store uploads and release signing require the account holder's credentials and
+# are not automated here.
 name: Publish mobile
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Ambiente de la publicación
+        description: Publish environment
         type: choice
         options:
           - dev
@@ -30,7 +30,7 @@ env:
 
 jobs:
   build-and-upload:
-    name: Compilar el .aab y subirlo
+    name: Build and upload the .aab
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
@@ -42,7 +42,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Leer la versión de Flutter
+      - name: Read the Flutter version
         id: flutter-version
         run: echo "version=$(tr -d '[:space:]' < front/.flutter-version)" >> "$GITHUB_OUTPUT"
 
@@ -52,26 +52,26 @@ jobs:
           flutter-version: ${{ steps.flutter-version.outputs.version }}
           cache: true
 
-      - name: Compilar el .aab
+      - name: Build the .aab
         working-directory: front/apps/mobile
         run: |
           flutter pub get
           flutter build appbundle --release
 
-      - name: Guardar el .aab como artefacto del workflow
+      - name: Save the .aab as a workflow artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-release-aab
           path: front/apps/mobile/build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
 
-      - name: Credenciales del rol de publicación
+      - name: Publish role credentials
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ vars.AWS_PUBLISH_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Subir el .aab al bucket de artefactos
+      - name: Upload the .aab to the artifacts bucket
         env:
           ARTIFACTS_BUCKET: ${{ vars.ARTIFACTS_BUCKET }}
           GIT_SHA: ${{ github.sha }}

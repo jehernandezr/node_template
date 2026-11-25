@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Stop y SubagentStop: antes de que un agente termine, revisa los archivos que cambió con los
-// scripts de las skills de estructura. Si hay violaciones, sale con 2 y el agente sigue
-// trabajando con la lista en stderr. Una segunda parada seguida se deja pasar para no entrar
-// en un ciclo; la violación queda reportada y CI la vuelve a atrapar.
+// Stop and SubagentStop: before an agent finishes, checks the files it changed with the
+// structure skill scripts. On violations it exits with 2 and the agent keeps working with the
+// list on stderr. A second stop in a row is let through to avoid a loop; the violation stays
+// reported and CI catches it again.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,7 +32,7 @@ class StopVerifier {
       .map((result) => result.stderr.trim());
     if (failures.length === 0) return 0;
     console.error(
-      `${failures.join('\n\n')}\n\nCorrige estas violaciones antes de terminar.`,
+      `${failures.join('\n\n')}\n\nFix these violations before finishing.`,
     );
     return 2;
   }

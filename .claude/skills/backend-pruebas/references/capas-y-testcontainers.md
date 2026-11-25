@@ -1,16 +1,16 @@
-# Recetas por capa
+# Recipes by layer
 
-## Contenido
+## Contents
 
-- Dominio
-- Caso de uso con fakes
-- Módulo NestJS con TestingModule
-- Componente con supertest
+- Domain
+- Use case with fakes
+- NestJS module with TestingModule
+- Component with supertest
 - Testcontainers
-- Contrato
+- Contract
 - E2E
 
-## Dominio
+## Domain
 
 ```ts
 it('emits user.registered when a user registers', () => {
@@ -30,9 +30,9 @@ it('rejects changing the email of a suspended user', () => {
 });
 ```
 
-## Caso de uso con fakes
+## Use case with fakes
 
-Se construye con `new` en la prueba. Sin NestJS: el caso de uso no lo necesita.
+Build it with `new` in the test. No NestJS: the use case does not need it.
 
 ```ts
 const users = new InMemoryUserRepository();
@@ -46,9 +46,9 @@ const useCase = new RegisterUserUseCase(
 );
 ```
 
-## Módulo NestJS con TestingModule
+## NestJS module with TestingModule
 
-Para verificar el cableado (tokens, exports) y reemplazar un adaptador por un fake. `compile()` es asíncrono.
+To verify the wiring (tokens, exports) and replace an adapter with a fake. `compile()` is async.
 
 ```ts
 const moduleRef = await Test.createTestingModule({ imports: [UsersModule] })
@@ -61,12 +61,12 @@ const moduleRef = await Test.createTestingModule({ imports: [UsersModule] })
 const useCase = moduleRef.get(SignInUseCase);
 ```
 
-- Guards globales con `APP_GUARD` se registran con `useExisting` para poder reemplazarlos con `overrideProvider`.
-- Un `useMocker` automático oculta dependencias faltantes: se evita en pruebas de cableado.
-- Un `app.close()` en `afterAll`, para liberar pools y conexiones.
-- Los dobles de las librerías de plataforma se toman de `@platform/<lib>/test-utils`.
+- Global guards with `APP_GUARD` are registered with `useExisting` so they can be replaced with `overrideProvider`.
+- An automatic `useMocker` hides missing dependencies: avoid it in wiring tests.
+- One `app.close()` in `afterAll`, to release pools and connections.
+- Platform library doubles come from `@platform/<lib>/test-utils`.
 
-## Componente con supertest
+## Component with supertest
 
 ```ts
 const app = moduleRef.createNestApplication();
@@ -80,11 +80,11 @@ const response = await request(app.getHttpServer())
 expect(response.body).toEqual({ userId: expect.any(String) });
 ```
 
-Se verifican también: 400 con `application/problem+json` y `code` ante entrada inválida, 401 sin token, 403 sin permiso y 404 ante recurso de otro tenant.
+Also verify: 400 with `application/problem+json` and `code` on invalid input, 401 without a token, 403 without permission and 404 for a resource of another tenant.
 
 ## Testcontainers
 
-Una clase de soporte por tecnología en `src/__tests__/utils/`:
+One support class per technology in `src/__tests__/utils/`:
 
 ```ts
 export class PostgresTestDatabase {
@@ -112,18 +112,18 @@ export class PostgresTestDatabase {
 }
 ```
 
-- Versión de la imagen igual a la de producción.
-- `synchronize` nunca: el esquema sale de las migraciones.
-- LocalStack para SNS y SQS, `valkey/valkey` para Valkey. Se declaran por la misma topología que usa la app.
-- Se reutiliza un contenedor por proyecto de Jest (`globalSetup`) cuando el arranque pesa, con esquema o tenant por suite.
+- Image version equal to production.
+- Never `synchronize`: the schema comes from the migrations.
+- LocalStack for SNS and SQS, `valkey/valkey` for Valkey. They are declared from the same topology the app uses.
+- Reuse one container per Jest project (`globalSetup`) when startup is heavy, with a schema or tenant per suite.
 
-## Contrato
+## Contract
 
-- Productor: el evento que construye el mapper cumple el esquema zod publicado.
-- Consumidor: el consumidor procesa los ejemplos válidos del contrato y rechaza los inválidos.
-- Compatibilidad: ejemplos de la versión anterior siguen pasando el esquema (cambios solo aditivos).
-- Front: una prueba verifica que el Dart generado coincide con los esquemas (ver CLAUDE.md).
+- Producer: the event the mapper builds conforms to the published zod schema.
+- Consumer: the consumer processes the contract's valid examples and rejects the invalid ones.
+- Compatibility: examples from the previous version still pass the schema (additive changes only).
+- Front: a test verifies that the generated Dart matches the schemas (see CLAUDE.md).
 
 ## E2E
 
-Pocos flujos críticos (alta, login, un flujo de saga) contra la app empaquetada de `backend/dist/<app>` y docker-compose. Cada flujo crea su tenant. No duplican lo que ya cubren las pruebas de componente.
+A few critical flows (sign-up, login, a saga flow) against the packaged app in `backend/dist/<app>` and docker-compose. Each flow creates its own tenant. They do not duplicate what component tests already cover.

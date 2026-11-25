@@ -5,15 +5,15 @@ import { CheckMode } from './check-mode.mjs';
 import { FrontPaths } from './front-paths.mjs';
 
 export class FrontStructureCheck {
-  // mode: uno de los valores de CheckMode.
+  // mode: one of the CheckMode values.
   constructor(root, mode, rules) {
     this.root = root;
     this.mode = mode;
     this.rules = rules;
   }
 
-  // Devuelve { violations: Violation[] } con todas las violaciones de los archivos del modo:
-  // los cambiados frente a HEAD en CHANGED y todo front/ en ALL.
+  // Returns { violations: Violation[] } with every violation in the mode's files:
+  // those changed against HEAD in CHANGED and all of front/ in ALL.
   run() {
     const files =
       this.mode === CheckMode.ALL
@@ -49,7 +49,7 @@ export class FrontStructureCheck {
     );
   }
 
-  // Solo archivos versionados o nuevos: los artefactos ignorados no cuentan como código.
+  // Only tracked or new files: ignored artifacts do not count as code.
   allFrontFiles() {
     return this.git(['ls-files', '-co', '--exclude-standard', 'front/']).filter(
       (f) => existsSync(join(this.root, f)),

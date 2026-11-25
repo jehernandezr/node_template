@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// PreToolUse de Write y Edit: rechaza escrituras que violan la estructura del repositorio
-// antes de que ocurran. Sale con 2 y el motivo en stderr para que el agente corrija.
+// PreToolUse for Write and Edit: rejects writes that break the repository structure before
+// they happen. Exits with 2 and the reason on stderr so the agent can fix it.
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -10,19 +10,19 @@ class PathGuard {
     {
       test: (p) => /^backend\/(libs|apps|tools)\/.+\/src\/lib\//.test(p),
       reason:
-        'El código del backend va directo en src/, sin src/lib/ (skill backend-estructura).',
+        'Backend code goes directly in src/, without src/lib/ (skill backend-estructura).',
     },
     {
       test: (p) =>
         /^backend\/.+\.(int-)?spec\.ts$/.test(p) &&
         !/\/(__tests__|e2e)\//.test(p),
       reason:
-        'Las pruebas del backend van en la carpeta __tests__/ de la carpeta que prueban (skill backend-pruebas).',
+        'Backend tests go in the __tests__/ folder of the folder they test (skill backend-pruebas).',
     },
     {
       test: (p, isNew) => isNew && /^backend\/libs\/.+\/package\.json$/.test(p),
       reason:
-        'Las librerías del backend no tienen package.json: se importan por alias de TypeScript (skill backend-estructura).',
+        'Backend libraries have no package.json: they are imported through TypeScript aliases (skill backend-estructura).',
     },
     {
       test: (p) =>
@@ -30,36 +30,35 @@ class PathGuard {
           p,
         ) && !/\/__tests__\//.test(p),
       reason:
-        'Los utilitarios de prueba van en __tests__/utils, no en una carpeta testing aparte (skill backend-pruebas).',
+        'Test utilities go in __tests__/utils, not in a separate testing folder (skill backend-pruebas).',
     },
     {
       test: (p) => /^backend\/(libs|apps|tools)\/.+\/dist\//.test(p),
       reason:
-        'El compilado de cada app va en backend/dist/<app>, nunca dentro de un proyecto (skill backend-estructura).',
+        'Each app builds into backend/dist/<app>, never inside a project (skill backend-estructura).',
     },
     {
       test: (p) =>
         /^front\/.+\/test\/(.+\/)?(support|testing|helpers)\//.test(p),
       reason:
-        'Lo compartido por las pruebas de un paquete del front va en test/utils/ (skill front-pruebas).',
+        'Code shared by the tests of a front package goes in test/utils/ (skill front-pruebas).',
     },
     {
       test: (p) => /^front\/.+\/lib\/.+_test\.dart$/.test(p),
       reason:
-        'Las pruebas del front van en el test/ del paquete, con las carpetas de lib/src (skill front-pruebas).',
+        'Front tests go in the package test/, mirroring the lib/src folders (skill front-pruebas).',
     },
     {
       test: (p) =>
         /^front\/packages\/contracts\/lib\/src\/(?!core\/)/.test(p) ||
         /\/l10n\/generated\//.test(p),
       reason:
-        'Es código generado: cambia la fuente y regenera con contracts_gen o flutter gen-l10n.',
+        'This is generated code: change the source and regenerate with contracts_gen or flutter gen-l10n.',
     },
     {
       test: (p) =>
         /(^|\/)\.env(\.[\w-]+)?$/.test(p) && !p.endsWith('.env.example'),
-      reason:
-        'Nunca se escribe un .env: documenta las variables en .env.example.',
+      reason: 'Never write a .env: document the variables in .env.example.',
     },
   ];
 
