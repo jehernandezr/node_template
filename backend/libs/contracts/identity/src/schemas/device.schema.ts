@@ -6,6 +6,7 @@ import type {
   DeviceApproval,
   DeviceApprovals,
   DenyDeviceApprovalRequest,
+  DeviceSignatureFields,
   PullDeviceApprovalsRequest,
   PushTokenRequest,
   RemoveDeviceRequest,
@@ -14,7 +15,7 @@ import type {
 
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
-/** Clave pública del dispositivo en base64url. */
+/** Device public key in base64url. */
 export const DevicePublicKeyFieldSchema = z
   .string()
   .min(1)
@@ -22,8 +23,8 @@ export const DevicePublicKeyFieldSchema = z
   .regex(BASE64URL);
 
 /**
- * Campos de firma que cada petición sin sesión del dispositivo copia en su
- * cuerpo. El nonce acota el largo para impedir firmas reutilizables.
+ * Signature fields that each request without a session from the device copies
+ * into its body. The nonce bounds its length to prevent reusable signatures.
  */
 const DeviceSignatureShape = {
   deviceId: z.string().min(1).max(IdentityLimits.deviceIdMaxLength),
@@ -40,6 +41,12 @@ const DeviceSignatureShape = {
     .regex(BASE64URL),
 };
 
+export const DeviceSignatureSchema = z
+  .strictObject({ ...DeviceSignatureShape })
+  .describe(
+    'Proof that a request comes from a registered device, signed with its key.',
+  ) satisfies z.ZodType<DeviceSignatureFields>;
+
 const ApprovalCodeFieldSchema = z
   .string()
   .min(IdentityLimits.approvalCodeMinLength)
@@ -53,13 +60,13 @@ const ApprovalContextFieldSchema = z
 export const RemoveDeviceRequestSchema = z
   .strictObject({ deviceId: IdSchema })
   .describe(
-    'Dispositivo a quitar de la cuenta.',
+    'Device to remove from the account.',
   ) satisfies z.ZodType<RemoveDeviceRequest>;
 
 export const UntrustDeviceRequestSchema = z
   .strictObject({ deviceId: IdSchema })
   .describe(
-    'Dispositivo al que se le quita la confianza.',
+    'Device whose trust is removed.',
   ) satisfies z.ZodType<UntrustDeviceRequest>;
 
 export const PushTokenRequestSchema = z
@@ -67,19 +74,19 @@ export const PushTokenRequestSchema = z
     pushToken: z.string().min(1).max(IdentityLimits.devicePushTokenMaxLength),
   })
   .describe(
-    'Token de notificaciones push del dispositivo actual.',
+    'Push notification token of the current device.',
   ) satisfies z.ZodType<PushTokenRequest>;
 
 export const PullDeviceApprovalsRequestSchema = z
   .strictObject({ ...DeviceSignatureShape })
   .describe(
-    'Pedido de aprobaciones pendientes firmado por el dispositivo.',
+    'Request for pending approvals signed by the device.',
   ) satisfies z.ZodType<PullDeviceApprovalsRequest>;
 
 export const DenyDeviceApprovalRequestSchema = z
   .strictObject({ challengeId: IdSchema, ...DeviceSignatureShape })
   .describe(
-    'Rechazo de una aprobación pendiente firmado por el dispositivo.',
+    'Denial of a pending approval signed by the device.',
   ) satisfies z.ZodType<DenyDeviceApprovalRequest>;
 
 export const ApprovalContextSchema = z
@@ -90,7 +97,7 @@ export const ApprovalContextSchema = z
     city: ApprovalContextFieldSchema.optional(),
   })
   .describe(
-    'Contexto de la solicitud de aprobación que el usuario revisa.',
+    'Context of the approval request that the user reviews.',
   ) satisfies z.ZodType<ApprovalContext>;
 
 export const DeviceApprovalSchema = z
@@ -102,7 +109,7 @@ export const DeviceApprovalSchema = z
     context: ApprovalContextSchema,
   })
   .describe(
-    'Aprobación pendiente de un dispositivo.',
+    'Pending approval of a device.',
   ) satisfies z.ZodType<DeviceApproval>;
 
 export const DeviceApprovalsSchema = z
@@ -112,5 +119,5 @@ export const DeviceApprovalsSchema = z
       .max(IdentityLimits.maxDeviceApprovals),
   })
   .describe(
-    'Aprobaciones pendientes de un dispositivo.',
+    'Pending approvals of a device.',
   ) satisfies z.ZodType<DeviceApprovals>;

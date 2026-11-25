@@ -4,11 +4,13 @@ import {
   sign,
   type KeyObject,
 } from 'node:crypto';
+import type { DeviceSignatureFields } from '@contracts/identity';
+import { DeviceSignedMessage } from '../../modules/devices/domain/device-signed-message.js';
 
-/** Clave P-256 de un dispositivo de prueba, como la que guarda el enclave seguro de la app. */
+/** P-256 key of a test device, like the one the app keeps in its secure enclave. */
 export class DeviceKey {
   private readonly privateKey: KeyObject;
-  /** SPKI DER en base64url: el `devicePublicKey` del contrato. */
+  /** SPKI DER in base64url: the `devicePublicKey` of the contract. */
   readonly publicKey: string;
 
   constructor() {
@@ -19,19 +21,28 @@ export class DeviceKey {
       .toString('base64url');
   }
 
-  /** Los campos firmados de una petición sin sesión: `<acción>\n<deviceId>\n<timestamp>\n<nonce>[\n<extra>]`. */
+  /**
+   * Signs a request without a session as the app does.
+   * @param action Route the device calls.
+   * @param deviceId Public device id.
+   * @param bound Request values the signature covers after the nonce.
+   * @returns The signature fields to copy into the request body.
+   */
   signed(
     action: string,
     deviceId: string,
-    extra: readonly string[] = [],
-  ): { deviceId: string; timestamp: string; nonce: string; signature: string } {
-    const timestamp = new Date().toISOString();
-    const nonce = randomBytes(16).toString('base64url');
-    const message = [action, deviceId, timestamp, nonce, ...extra].join('\n');
-    const signature = sign('sha256', Buffer.from(message), {
-      key: this.privateKey,
-      dsaEncoding: 'ieee-p1363',
-    }).toString('base64url');
-    return { deviceId, timestamp, nonce, signature };
+    bound: readonly string[] = [],
+  ): DeviceSignatureFields {
+    const fields = {
+      deviceId,
+      timestamp: new Date().toISOString(),
+      nonce: randomBytes(16).toString('base64url'),
+    };
+    const signature = sign(
+      'sha256',
+      Buffer.from(DeviceSignedMessage.of(action, fields, bound)),
+      { key: this.privateKey, dsaEncoding: 'ieee-p1363' },
+    ).toString('base64url');
+    return { ...fields, signature };
   }
 }

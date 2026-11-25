@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-11
 - Revised: 2026-11-14 (F4 design, section 11: the cookie is named `__Host-session`; the mobile app declares its channel with `Authorization: Bearer <session token>` or `X-Session-Transport: bearer` and only then receives the token in the body; the password has a minimum of 12 characters)
+- Revised: 2026-11-25 (the refresh checks and signs before it rotates, and a retry within the grace receives the current session token; see ADR 0036)
 
 ## Context
 
@@ -13,9 +14,9 @@ The original template stores secrets in the repository, accepts the role from th
 The `identity` service issues and controls all identity. The other services only verify.
 
 - Access token: ES256 JWT lasting 10 to 15 minutes, verifiable statelessly with the public key from the JWKS.
-- Session token: opaque, stored as a hash in the `sessions` table. Each refresh rotates it, and reusing an earlier one revokes the whole session.
+- Session token: opaque, stored as a hash in the `sessions` table. Each refresh rotates it, and reusing an earlier one revokes the whole session. The refresh checks the user and the tenant and signs the new access token before the rotation commits, so a failure never leaves the client without the new generation. The previous generation, presented within the 5 s grace, receives the current session token instead of a second rotation.
 - Expiry: the session expires after 1 day without activity. Each refresh extends the window by one day, with an absolute cap of 30 days.
-- Passwords with argon2id. Changing the password revokes the other sessions.
+- Passwords with argon2id. Changing the password revokes the other sessions; confirming a reset revokes all of them in the same transaction that stores the new password.
 - On web, the session token goes in an `httpOnly`, `Secure` and `SameSite=Strict` cookie. On mobile, it goes in Keychain or Keystore.
 - The guard checks, in order, the signature, the expiry, the session, the user and tenant epochs, and the permissions version.
 

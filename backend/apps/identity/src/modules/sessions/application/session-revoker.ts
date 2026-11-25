@@ -13,14 +13,14 @@ import { IdentitySettings } from '../../../config/identity-settings.js';
 import { Session } from '../domain/session.js';
 
 /**
- * Revoca una sesión dentro de la transacción abierta: marca la fila, publica `SessionRevoked` y
- * `TokensRevoked` por el outbox y, después del commit, escribe `auth:revoked:{sid}` para que los demás
- * servicios rechacen su access token.
+ * Revokes a session inside the open transaction: it marks the row, publishes `SessionRevoked` and
+ * `TokensRevoked` through the outbox and, after the commit, writes `auth:revoked:{sid}` so the other services
+ * reject its access token. `RevocationReplay` writes the mark again from the event if that write is lost.
  */
 @Injectable()
 export class SessionRevoker {
-  /** La marca dura lo que le queda al access token más la tolerancia de relojes del verificador. */
-  private static readonly CLOCK_SKEW_MS = 30_000;
+  /** The mark lasts what is left of the access token plus the clock tolerance of the verifier. */
+  static readonly CLOCK_SKEW_MS = 30_000;
 
   constructor(
     private readonly sessions: SessionRepository,
@@ -31,7 +31,12 @@ export class SessionRevoker {
     private readonly settings: IdentitySettings,
   ) {}
 
-  /** Devuelve `false` si ya estaba revocada. */
+  /**
+   * Revokes a session.
+   * @param session Session to revoke.
+   * @param reason Why it is revoked.
+   * @returns `false` if it was already revoked.
+   */
   async revoke(session: Session, reason: RevocationReason): Promise<boolean> {
     const now = this.clock.now();
     if (!session.revoke(reason, now)) {

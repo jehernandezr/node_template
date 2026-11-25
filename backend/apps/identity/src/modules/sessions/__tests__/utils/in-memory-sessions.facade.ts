@@ -1,7 +1,9 @@
 import type {
   AuthMethodReference,
   RevocationReason,
+  SessionRevokedPayload,
   SessionTokens,
+  TokensRevokedPayload,
 } from '@contracts/identity';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { FixedClock, SequentialIdGenerator } from '@platform/kernel/test-utils';
@@ -14,7 +16,7 @@ import type { SessionRef } from '../../domain/session-ref.js';
 const ACCESS_TTL_MS = 600_000;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Sesiones en memoria con los arreglos de llamadas que las pruebas revisan. */
+/** Sessions in memory with the call records the tests check. */
 export class InMemorySessionsFacade extends SessionsFacade {
   readonly created: CreateSessionInput[] = [];
   readonly revokedForUser: Array<{
@@ -32,7 +34,7 @@ export class InMemorySessionsFacade extends SessionsFacade {
     at: Date;
     amr: readonly AuthMethodReference[];
   }> = [];
-  /** Lo que devuelven `revokeUserSessions` y `revokeDeviceSessions`. */
+  /** What `revokeUserSessions` and `revokeDeviceSessions` return. */
   revokeCount = 0;
 
   constructor(
@@ -77,7 +79,7 @@ export class InMemorySessionsFacade extends SessionsFacade {
     return this.revokeCount;
   }
 
-  /** Último MFA de cada sesión que devuelve `mfaVerifiedAt`. */
+  /** Last MFA of each session that `mfaVerifiedAt` returns. */
   readonly mfaTimes = new Map<string, Date>();
 
   async mfaVerifiedAt(session: SessionRef): Promise<Date | undefined> {
@@ -94,5 +96,21 @@ export class InMemorySessionsFacade extends SessionsFacade {
       accessToken: `access-${session.sessionId}-mfa`,
       accessExpiresAt: new Date(at.getTime() + ACCESS_TTL_MS).toISOString(),
     };
+  }
+
+  readonly forgotten: UserRef[] = [];
+
+  async forget(ref: UserRef): Promise<void> {
+    this.forgotten.push(ref);
+  }
+
+  readonly replayed: Array<SessionRevokedPayload | TokensRevokedPayload> = [];
+
+  async replaySessionRevocation(event: SessionRevokedPayload): Promise<void> {
+    this.replayed.push(event);
+  }
+
+  async replayUserRevocation(event: TokensRevokedPayload): Promise<void> {
+    this.replayed.push(event);
   }
 }

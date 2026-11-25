@@ -1,7 +1,7 @@
 import { AuditedEntity, TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, Index } from 'typeorm';
 
-/** `tenant_members`: membresías del tenant, con sus grupos. */
+/** `tenant_members`: memberships of the tenant, with their groups and the departure a deletion reserved. */
 @Entity({ name: 'tenant_members' })
 @Index('tenant_members_user_key', ['tenantId', 'userId'], { unique: true })
 export class TenantMemberEntity extends AuditedEntity {
@@ -24,4 +24,12 @@ export class TenantMemberEntity extends AuditedEntity {
     transformer: new TimestampTransformer(),
   })
   joinedAt!: Date;
+
+  @Column({
+    type: 'timestamptz',
+    name: 'leaving_since',
+    nullable: true,
+    transformer: new TimestampTransformer(),
+  })
+  leavingSince!: Date | null;
 }

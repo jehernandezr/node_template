@@ -165,13 +165,70 @@ final class AccessTokenClaims {
   ]);
 }
 
-/// Inicio de sesión con email y contraseña.
+/// Proof that a request comes from a registered device, signed with its key.
+@immutable
+final class DeviceSignatureFields {
+  const DeviceSignatureFields({
+    required this.deviceId,
+    required this.timestamp,
+    required this.nonce,
+    required this.signature,
+  });
+
+  /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
+  factory DeviceSignatureFields.fromJson(Map<String, dynamic> json) {
+    try {
+      return DeviceSignatureFields(
+        deviceId: json['deviceId'] as String,
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        nonce: json['nonce'] as String,
+        signature: json['signature'] as String,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Invalid DeviceSignatureFields: $error', json);
+    }
+  }
+
+  final String deviceId;
+
+  final DateTime timestamp;
+
+  final String nonce;
+
+  final String signature;
+
+  /// JSON del objeto; omite los campos opcionales nulos.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'deviceId': deviceId,
+    'timestamp': timestamp.toUtc().toIso8601String(),
+    'nonce': nonce,
+    'signature': signature,
+  };
+
+  /// Igual a [toJson], para usar como tear-off constante.
+  static Map<String, dynamic> encode(DeviceSignatureFields value) =>
+      value.toJson();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DeviceSignatureFields &&
+          contractEquals(deviceId, other.deviceId) &&
+          contractEquals(timestamp, other.timestamp) &&
+          contractEquals(nonce, other.nonce) &&
+          contractEquals(signature, other.signature);
+
+  @override
+  int get hashCode => contractHash([deviceId, timestamp, nonce, signature]);
+}
+
+/// Sign-in with email and password.
 @immutable
 final class SignInRequest {
   const SignInRequest({
     required this.email,
     required this.password,
-    this.deviceId,
+    this.device,
   });
 
   /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
@@ -180,7 +237,11 @@ final class SignInRequest {
       return SignInRequest(
         email: json['email'] as String,
         password: json['password'] as String,
-        deviceId: json['deviceId'] as String?,
+        device: json['device'] == null
+            ? null
+            : DeviceSignatureFields.fromJson(
+                json['device'] as Map<String, dynamic>,
+              ),
       );
     } on TypeError catch (error) {
       throw FormatException('Invalid SignInRequest: $error', json);
@@ -191,13 +252,13 @@ final class SignInRequest {
 
   final String password;
 
-  final String? deviceId;
+  final DeviceSignatureFields? device;
 
   /// JSON del objeto; omite los campos opcionales nulos.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'email': email,
     'password': password,
-    'deviceId': ?deviceId,
+    if (device case final value?) 'device': value.toJson(),
   };
 
   /// Igual a [toJson], para usar como tear-off constante.
@@ -209,13 +270,13 @@ final class SignInRequest {
       other is SignInRequest &&
           contractEquals(email, other.email) &&
           contractEquals(password, other.password) &&
-          contractEquals(deviceId, other.deviceId);
+          contractEquals(device, other.device);
 
   @override
-  int get hashCode => contractHash([email, password, deviceId]);
+  int get hashCode => contractHash([email, password, device]);
 }
 
-/// Tokens de una sesión.
+/// Tokens of a session.
 @immutable
 final class SessionTokens {
   const SessionTokens({
@@ -266,7 +327,7 @@ final class SessionTokens {
       contractHash([accessToken, accessExpiresAt, sessionToken]);
 }
 
-/// Desafío MFA pendiente.
+/// Pending MFA challenge.
 @immutable
 final class PendingMfa {
   const PendingMfa({required this.mfaToken, required this.methods});
@@ -310,7 +371,7 @@ final class PendingMfa {
   int get hashCode => contractHash([mfaToken, methods]);
 }
 
-/// Resultado de un login o de una verificación MFA.
+/// Result of a sign-in or of an MFA verification.
 @immutable
 final class SignInResponse {
   const SignInResponse({
@@ -380,7 +441,7 @@ final class SignInResponse {
   int get hashCode => contractHash([status, tokens, mfa, region, apiBaseUrl]);
 }
 
-/// Pedido de un desafío MFA.
+/// Request for an MFA challenge.
 @immutable
 final class MfaChallengeRequest {
   const MfaChallengeRequest({required this.mfaToken, required this.method});
@@ -422,7 +483,7 @@ final class MfaChallengeRequest {
   int get hashCode => contractHash([mfaToken, method]);
 }
 
-/// Desafío MFA creado.
+/// MFA challenge created.
 @immutable
 final class MfaChallenge {
   const MfaChallenge({
@@ -481,7 +542,7 @@ final class MfaChallenge {
       contractHash([challengeId, method, expiresAt, codeLength]);
 }
 
-/// Verificación de un desafío MFA.
+/// Verification of an MFA challenge.
 @immutable
 final class MfaVerifyRequest {
   const MfaVerifyRequest({
@@ -538,7 +599,7 @@ final class MfaVerifyRequest {
       contractHash([mfaToken, challengeId, code, devicePublicKey]);
 }
 
-/// Session token a rotar o cerrar. En web se omite y viaja en la cookie httpOnly.
+/// Session token to rotate or close. On the web it is omitted and travels in the httpOnly cookie.
 @immutable
 final class SessionTokenRequest {
   const SessionTokenRequest({this.sessionToken});
@@ -573,7 +634,7 @@ final class SessionTokenRequest {
   int get hashCode => contractHash([sessionToken]);
 }
 
-/// Verificación del paso adicional de una sesión abierta.
+/// Verification of the step-up of an open session.
 @immutable
 final class StepUpVerifyRequest {
   const StepUpVerifyRequest({
@@ -624,7 +685,7 @@ final class StepUpVerifyRequest {
   int get hashCode => contractHash([mfaToken, challengeId, code]);
 }
 
-/// Paso adicional verificado: access token nuevo y último MFA de la sesión.
+/// Verified step-up: new access token and last MFA of the session.
 @immutable
 final class StepUpResult {
   const StepUpResult({required this.tokens, required this.mfaVerifiedAt});
@@ -1981,7 +2042,7 @@ final class PasswordResetConfirmRequest {
   int get hashCode => contractHash([token, newPassword]);
 }
 
-/// Dispositivo a quitar de la cuenta.
+/// Device to remove from the account.
 @immutable
 final class RemoveDeviceRequest {
   const RemoveDeviceRequest({required this.deviceId});
@@ -2013,7 +2074,7 @@ final class RemoveDeviceRequest {
   int get hashCode => contractHash([deviceId]);
 }
 
-/// Dispositivo al que se le quita la confianza.
+/// Device whose trust is removed.
 @immutable
 final class UntrustDeviceRequest {
   const UntrustDeviceRequest({required this.deviceId});
@@ -2045,7 +2106,7 @@ final class UntrustDeviceRequest {
   int get hashCode => contractHash([deviceId]);
 }
 
-/// Token de notificaciones push del dispositivo actual.
+/// Push notification token of the current device.
 @immutable
 final class PushTokenRequest {
   const PushTokenRequest({required this.pushToken});
@@ -2076,7 +2137,7 @@ final class PushTokenRequest {
   int get hashCode => contractHash([pushToken]);
 }
 
-/// Pedido de aprobaciones pendientes firmado por el dispositivo.
+/// Request for pending approvals signed by the device.
 @immutable
 final class PullDeviceApprovalsRequest {
   const PullDeviceApprovalsRequest({
@@ -2133,7 +2194,7 @@ final class PullDeviceApprovalsRequest {
   int get hashCode => contractHash([deviceId, timestamp, nonce, signature]);
 }
 
-/// Rechazo de una aprobación pendiente firmado por el dispositivo.
+/// Denial of a pending approval signed by the device.
 @immutable
 final class DenyDeviceApprovalRequest {
   const DenyDeviceApprovalRequest({
@@ -2197,7 +2258,7 @@ final class DenyDeviceApprovalRequest {
       contractHash([challengeId, deviceId, timestamp, nonce, signature]);
 }
 
-/// Contexto de la solicitud de aprobación que el usuario revisa.
+/// Context of the approval request that the user reviews.
 @immutable
 final class ApprovalContext {
   const ApprovalContext({this.browser, this.os, this.ip, this.city});
@@ -2248,7 +2309,7 @@ final class ApprovalContext {
   int get hashCode => contractHash([browser, os, ip, city]);
 }
 
-/// Aprobación pendiente de un dispositivo.
+/// Pending approval of a device.
 @immutable
 final class DeviceApproval {
   const DeviceApproval({
@@ -2313,7 +2374,7 @@ final class DeviceApproval {
       contractHash([challengeId, code, requestedAt, expiresAt, context]);
 }
 
-/// Aprobaciones pendientes de un dispositivo.
+/// Pending approvals of a device.
 @immutable
 final class DeviceApprovals {
   const DeviceApprovals({required this.approvals});
@@ -2578,7 +2639,7 @@ final class MfaRecoveryConfirmRequest {
   int get hashCode => contractHash([mfaToken, token, devicePublicKey]);
 }
 
-/// Opciones de WebAuthn y el desafío que las identifica.
+/// WebAuthn options and the challenge that identifies them.
 @immutable
 final class PasskeyOptions {
   const PasskeyOptions({required this.challengeId, required this.optionsJson});
@@ -2619,13 +2680,13 @@ final class PasskeyOptions {
   int get hashCode => contractHash([challengeId, optionsJson]);
 }
 
-/// Verificación de un inicio de sesión con passkey.
+/// Verification of a passkey sign-in.
 @immutable
 final class PasskeySignInVerifyRequest {
   const PasskeySignInVerifyRequest({
     required this.challengeId,
     required this.credentialJson,
-    this.deviceId,
+    this.device,
   });
 
   /// Lee el objeto desde JSON. Lanza [FormatException] si no cumple el tipo.
@@ -2634,7 +2695,11 @@ final class PasskeySignInVerifyRequest {
       return PasskeySignInVerifyRequest(
         challengeId: json['challengeId'] as String,
         credentialJson: json['credentialJson'] as String,
-        deviceId: json['deviceId'] as String?,
+        device: json['device'] == null
+            ? null
+            : DeviceSignatureFields.fromJson(
+                json['device'] as Map<String, dynamic>,
+              ),
       );
     } on TypeError catch (error) {
       throw FormatException('Invalid PasskeySignInVerifyRequest: $error', json);
@@ -2645,13 +2710,13 @@ final class PasskeySignInVerifyRequest {
 
   final String credentialJson;
 
-  final String? deviceId;
+  final DeviceSignatureFields? device;
 
   /// JSON del objeto; omite los campos opcionales nulos.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'challengeId': challengeId,
     'credentialJson': credentialJson,
-    'deviceId': ?deviceId,
+    if (device case final value?) 'device': value.toJson(),
   };
 
   /// Igual a [toJson], para usar como tear-off constante.
@@ -2664,13 +2729,13 @@ final class PasskeySignInVerifyRequest {
       other is PasskeySignInVerifyRequest &&
           contractEquals(challengeId, other.challengeId) &&
           contractEquals(credentialJson, other.credentialJson) &&
-          contractEquals(deviceId, other.deviceId);
+          contractEquals(device, other.device);
 
   @override
-  int get hashCode => contractHash([challengeId, credentialJson, deviceId]);
+  int get hashCode => contractHash([challengeId, credentialJson, device]);
 }
 
-/// Opciones de passkey como segundo factor de un login pendiente.
+/// Passkey options as the second factor of a pending sign-in.
 @immutable
 final class PasskeyMfaOptionsRequest {
   const PasskeyMfaOptionsRequest({required this.mfaToken});
@@ -2703,7 +2768,7 @@ final class PasskeyMfaOptionsRequest {
   int get hashCode => contractHash([mfaToken]);
 }
 
-/// Verificación de passkey como segundo factor de un login pendiente.
+/// Passkey verification as the second factor of a pending sign-in.
 @immutable
 final class PasskeyMfaVerifyRequest {
   const PasskeyMfaVerifyRequest({
@@ -2761,7 +2826,7 @@ final class PasskeyMfaVerifyRequest {
       contractHash([mfaToken, challengeId, credentialJson, devicePublicKey]);
 }
 
-/// Opciones de passkey para el paso adicional de una sesión abierta.
+/// Passkey options for the step-up of an open session.
 @immutable
 final class PasskeyStepUpOptionsRequest {
   const PasskeyStepUpOptionsRequest({required this.mfaToken});
@@ -2797,7 +2862,7 @@ final class PasskeyStepUpOptionsRequest {
   int get hashCode => contractHash([mfaToken]);
 }
 
-/// Verificación de passkey para el paso adicional de una sesión abierta.
+/// Passkey verification for the step-up of an open session.
 @immutable
 final class PasskeyStepUpVerifyRequest {
   const PasskeyStepUpVerifyRequest({
@@ -2848,7 +2913,7 @@ final class PasskeyStepUpVerifyRequest {
   int get hashCode => contractHash([mfaToken, challengeId, credentialJson]);
 }
 
-/// Passkey registrada del usuario.
+/// Registered passkey of the user.
 @immutable
 final class PasskeySummary {
   const PasskeySummary({
@@ -2915,7 +2980,7 @@ final class PasskeySummary {
   int get hashCode => contractHash([id, name, createdAt, lastUsedAt, backedUp]);
 }
 
-/// Página de passkeys.
+/// Page of passkeys.
 @immutable
 final class PasskeyPage {
   const PasskeyPage({required this.items, required this.nextCursor});
@@ -2959,7 +3024,7 @@ final class PasskeyPage {
   int get hashCode => contractHash([items, nextCursor]);
 }
 
-/// Registro de una passkey con la respuesta del autenticador.
+/// Registration of a passkey with the authenticator response.
 @immutable
 final class RegisterPasskeyRequest {
   const RegisterPasskeyRequest({
@@ -3010,7 +3075,7 @@ final class RegisterPasskeyRequest {
   int get hashCode => contractHash([challengeId, credentialJson, name]);
 }
 
-/// Passkey a quitar.
+/// Passkey to remove.
 @immutable
 final class RemovePasskeyRequest {
   const RemovePasskeyRequest({required this.passkeyId});

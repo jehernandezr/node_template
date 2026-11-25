@@ -19,8 +19,10 @@ import { UserDirectory } from '../domain/user-directory.js';
 import { UserRepository } from '../domain/user.repository.js';
 
 /**
- * Confirma el cambio de email de la sesión actual con el token enviado a la dirección nueva. Mueve primero
- * el índice del catálogo, que decide si el email sigue libre, y después el usuario en su shard.
+ * Confirms the email change of the current session with the token sent to the new address. It first moves
+ * the catalog index, which decides whether the email is still free, and then the user in their shard; if
+ * the user shard fails, the index moves back, so the catalog never points the new email to a user who
+ * still has the old one.
  */
 @Injectable()
 export class ConfirmEmailChange {
@@ -36,6 +38,14 @@ export class ConfirmEmailChange {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Confirms an email change.
+   * @param ref User of the session.
+   * @param token Token emailed to the new address.
+   * @throws IdentityError `IDENTITY.USER.EMAIL_VERIFICATION_INVALID` if the token is not this user's or the
+   *   new email was taken meanwhile.
+   * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the user no longer exists.
+   */
   async execute(ref: UserRef, token: string): Promise<void> {
     const proof = await this.proofs.consume(EmailProofPurpose.Change, token);
     if (proof === undefined || proof.userId !== ref.userId) {
@@ -47,15 +57,28 @@ export class ConfirmEmailChange {
     if (user === undefined) {
       throw new IdentityError(IdentityErrorCode.UserNotFound);
     }
+    const previous = user.snapshot().emailFingerprint;
     const next = this.fingerprints.fingerprint(proof.email);
-    const moved = await this.directory.moveEmail(
-      ref.userId,
-      user.snapshot().emailFingerprint,
-      next,
-    );
-    if (!moved) {
+    if (!(await this.directory.moveEmail(ref.userId, previous, next))) {
       throw new IdentityError(IdentityErrorCode.UserEmailVerificationInvalid);
     }
+    try {
+      await this.changeInShard(ref, proof.email, next);
+    } catch (error) {
+      await this.directory.moveEmail(ref.userId, next, previous);
+      throw error;
+    }
+    await this.alerts.raise({
+      type: SecurityAlertType.EmailChanged,
+      user: ref,
+    });
+  }
+
+  private async changeInShard(
+    ref: UserRef,
+    email: string,
+    next: Buffer,
+  ): Promise<void> {
     const now = this.clock.now();
     await this.scopes.inUserShard(ref, () =>
       this.transactions.runInTransaction(async () => {
@@ -63,7 +86,7 @@ export class ConfirmEmailChange {
         if (fresh === undefined) {
           throw new IdentityError(IdentityErrorCode.UserNotFound);
         }
-        fresh.changeEmail(proof.email, next, now);
+        fresh.changeEmail(email, next, now);
         await this.users.update(fresh);
         await this.bus.publish(
           UserEmailChangedEvent,
@@ -72,9 +95,5 @@ export class ConfirmEmailChange {
         );
       }),
     );
-    await this.alerts.raise({
-      type: SecurityAlertType.EmailChanged,
-      user: ref,
-    });
   }
 }

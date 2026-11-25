@@ -108,21 +108,52 @@ describe('ValkeyAuthStateWriter', () => {
     });
   });
 
+  describe('user revocation cut-off', () => {
+    it('raises the cut-off under the user epoch key with a script', async () => {
+      const { runner, writer } = writerOver();
+
+      await writer.raiseUserRevocation('u1', 1_700_000_000);
+
+      expect(runner.calls).toEqual([
+        [
+          'EVALSHA',
+          [expect.any(String), 1, 'auth:epoch:user:u1', '1700000000'],
+        ],
+      ]);
+    });
+
+    it.each([[-1], [1.5], [Number.NaN]])(
+      'rejects the cut-off %p before sending anything',
+      async (revokedBefore) => {
+        const { runner, writer } = writerOver();
+
+        await expect(
+          writer.raiseUserRevocation('u1', revokedBefore),
+        ).rejects.toMatchObject({ code: PrimitivesErrorCode.InvalidArgument });
+        expect(runner.calls).toEqual([]);
+      },
+    );
+  });
+
   describe('permission versions', () => {
-    it('stores the tenant version under its own key', async () => {
+    it('raises the tenant version under its own key with a script', async () => {
       const { runner, writer } = writerOver();
 
       await writer.setPermissionVersion('t1', undefined, 3);
 
-      expect(runner.calls).toEqual([['SET', ['auth:pv:tenant:t1', '3']]]);
+      expect(runner.calls).toEqual([
+        ['EVALSHA', [expect.any(String), 1, 'auth:pv:tenant:t1', '3']],
+      ]);
     });
 
-    it('stores the user version under the tenant and user key', async () => {
+    it('raises the user version under the tenant and user key with a script', async () => {
       const { runner, writer } = writerOver();
 
       await writer.setPermissionVersion('t1', 'u1', 7);
 
-      expect(runner.calls).toEqual([['SET', ['auth:pv:user:t1:u1', '7']]]);
+      expect(runner.calls).toEqual([
+        ['EVALSHA', [expect.any(String), 1, 'auth:pv:user:t1:u1', '7']],
+      ]);
     });
 
     it.each([[-1], [1.5], [Number.NaN]])(

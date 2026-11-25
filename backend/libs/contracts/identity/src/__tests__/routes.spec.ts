@@ -15,7 +15,7 @@ const knownErrorCodes = new Set<string>([
   BillingReference.QuotaExceeded,
 ]);
 
-/** Rutas con paso adicional: operaciones sensibles que exigen MFA reciente. */
+/** Step-up routes: sensitive operations that require a recent MFA. */
 const StepUpRouteIds = [
   IdentityRoute.ChangePassword,
   IdentityRoute.RequestEmailChange,
@@ -27,6 +27,14 @@ const StepUpRouteIds = [
   IdentityRoute.CreateApiKey,
   IdentityRoute.RotateApiKey,
   IdentityRoute.StartAccountDeletion,
+  IdentityRoute.InviteUser,
+  IdentityRoute.RemoveMember,
+  IdentityRoute.SetMemberGroups,
+  IdentityRoute.SetGroupRoles,
+  IdentityRoute.CreateRole,
+  IdentityRoute.UpdateRole,
+  IdentityRoute.CreateServiceAccount,
+  IdentityRoute.UpdateServiceAccount,
 ];
 
 describe('identity routes contract', () => {

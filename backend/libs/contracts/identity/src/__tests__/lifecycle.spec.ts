@@ -19,7 +19,11 @@ import {
   BillingEventsReference,
   RecordUsageReference,
 } from '../events/billing.references.js';
-import { BillingEventsQueue } from '../events/identity.queues.js';
+import { SendPasswordResetCommand } from '../events/identity.commands.js';
+import {
+  BillingEventsQueue,
+  PasswordResetsQueue,
+} from '../events/identity.queues.js';
 import { IdentityEventsTopic } from '../events/identity.topics.js';
 import { UserErasedEvent } from '../events/user.events.js';
 import {
@@ -30,7 +34,7 @@ import { CreateTenantRoute } from '../http/tenant.routes.js';
 import { SignInRoute } from '../http/auth.routes.js';
 import { Ids, Now } from './utils/fixtures.js';
 
-/** Valor de prueba con la forma de un dispositivo, sin parecerse a una credencial. */
+/** Test value shaped like a device handle that does not look like a credential. */
 const PUSH_HANDLE = 'push-handle-0001';
 
 describe('identity lifecycle contract', () => {
@@ -170,6 +174,12 @@ describe('identity lifecycle contract', () => {
     ).toBe(true);
   });
 
+  it('takes the password reset command in its own queue', () => {
+    expect(PasswordResetsQueue.name).toBe(IdentityQueue.PasswordResets);
+    expect(identityContract.queues['passwordResets']).toBe(PasswordResetsQueue);
+    expect(PasswordResetsQueue.commands).toEqual([SendPasswordResetCommand]);
+  });
+
   it('consumes the billing access events through a reference by name', () => {
     expect(BillingEventsQueue.name).toBe(IdentityQueue.Billing);
     expect(identityContract.queues['billing']).toBe(BillingEventsQueue);
@@ -181,8 +191,11 @@ describe('identity lifecycle contract', () => {
     ]);
   });
 
-  it('declares the usage command it sends to billing', () => {
-    expect(identityContract.sends).toEqual([RecordUsageReference]);
+  it('declares the password reset command it sends to itself and the usage command it sends to billing', () => {
+    expect(identityContract.sends).toEqual([
+      SendPasswordResetCommand,
+      RecordUsageReference,
+    ]);
     expect(RecordUsageReference.type).toBe(BillingReference.RecordUsage);
   });
 

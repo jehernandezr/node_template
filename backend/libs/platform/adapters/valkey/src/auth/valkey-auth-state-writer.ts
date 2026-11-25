@@ -8,19 +8,47 @@ import {
   type Epoch,
   type RevocationReason,
 } from '@platform/auth';
+import { LuaScript } from '../lua-script.js';
 import { ValkeyCommand } from '../valkey-command.enum.js';
 import type { ValkeyCommandExecutor } from '../valkey-command-executor.js';
 import { ValkeyAuthJson } from './valkey-auth-json.js';
 
 /**
- * `AuthStateWriter` sobre las llaves `auth:*` de Valkey. Solo identity la usa: su
- * usuario de Valkey es el único con escritura sobre `auth:*`.
+ * `AuthStateWriter` over the `auth:*` keys of Valkey. Only identity uses it: its
+ * Valkey user is the only one with write access to `auth:*`.
  */
 export class ValkeyAuthStateWriter extends AuthStateWriter {
-  /** Vida de un `AccessGrant` guardado. */
+  /** Raises a counter only when the new value is higher, atomically. */
+  private static readonly RAISE = new LuaScript(`
+local current = tonumber(redis.call('GET', KEYS[1]))
+if current ~= nil and current >= tonumber(ARGV[1]) then
+  return 0
+end
+redis.call('SET', KEYS[1], ARGV[1])
+return 1
+`);
+
+  /** Raises the cut-off of a user epoch only when the new one is later, keeping its stored suspension. */
+  private static readonly RAISE_EPOCH = new LuaScript(`
+local stored = redis.call('GET', KEYS[1])
+local suspended = 'false'
+if stored then
+  local epoch = cjson.decode(stored)
+  if tonumber(epoch.revokedBefore) >= tonumber(ARGV[1]) then
+    return 0
+  end
+  if epoch.suspended == true then
+    suspended = 'true'
+  end
+end
+redis.call('SET', KEYS[1], '{"revokedBefore":' .. ARGV[1] .. ',"suspended":' .. suspended .. '}')
+return 1
+`);
+
+  /** Life of a stored `AccessGrant`. */
   static readonly ACCESS_GRANT_TTL_MS = 15 * 60_000;
 
-  /** Vida de un principal de API key guardado. */
+  /** Life of a stored API key principal. */
   static readonly API_KEY_TTL_MS = 60_000;
 
   constructor(
@@ -31,11 +59,12 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
   }
 
   /**
-   * Sin atomicidad entre llaves (están en slots distintos), así que el orden
-   * protege al Bloom: primero el índice y después la llave. Una llave sin entrada
-   * en el índice sería un "no" definitivo para una sesión revocada; una entrada sin
-   * llave solo cuesta una consulta. El aviso va al final, cuando quien lo recibe
-   * ya puede confirmar la revocación.
+   * There is no atomicity across keys (they live in different slots), so the order
+   * protects the Bloom filter: first the index and then the key. A key without an
+   * entry in the index would be a definitive "no" for a revoked session; an entry
+   * without a key only costs a lookup. The announcement goes last, when whoever
+   * receives it can already confirm the revocation.
+   * {@inheritDoc AuthStateWriter.revokeSession}
    */
   async revokeSession(
     sessionId: string,
@@ -69,6 +98,7 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.setUserEpoch} */
   async setUserEpoch(userId: string, epoch: Epoch): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       AuthStateKey.userEpoch(userId),
@@ -76,6 +106,29 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
     ]);
   }
 
+  /**
+   * Runs one script that compares and writes the epoch of the user, so a concurrent suspension is kept.
+   * {@inheritDoc AuthStateWriter.raiseUserRevocation}
+   * @throws InvalidArgumentError if `revokedBefore` is not a non-negative safe integer.
+   */
+  async raiseUserRevocation(
+    userId: string,
+    revokedBefore: number,
+  ): Promise<void> {
+    if (!Number.isSafeInteger(revokedBefore) || revokedBefore < 0) {
+      throw new InvalidArgumentError(
+        'revokedBefore',
+        'a non-negative safe integer',
+      );
+    }
+    await this.executor.script(
+      ValkeyAuthStateWriter.RAISE_EPOCH,
+      [AuthStateKey.userEpoch(userId)],
+      [String(revokedBefore)],
+    );
+  }
+
+  /** {@inheritDoc AuthStateWriter.setTenantEpoch} */
   async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       AuthStateKey.tenantEpoch(tenantId),
@@ -83,6 +136,7 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.setPermissionVersion} */
   async setPermissionVersion(
     tenantId: string,
     userId: string | undefined,
@@ -95,9 +149,14 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
       userId === undefined
         ? AuthStateKey.tenantPermissionVersion(tenantId)
         : AuthStateKey.userPermissionVersion(tenantId, userId);
-    await this.executor.run(ValkeyCommand.Set, [key, String(version)]);
+    await this.executor.script(
+      ValkeyAuthStateWriter.RAISE,
+      [key],
+      [String(version)],
+    );
   }
 
+  /** {@inheritDoc AuthStateWriter.putAccessGrant} */
   async putAccessGrant(
     tenantId: string,
     userId: string,
@@ -111,6 +170,7 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.putApiKey} */
   async putApiKey(
     prefix: string,
     secretHash: string,
@@ -128,6 +188,7 @@ export class ValkeyAuthStateWriter extends AuthStateWriter {
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.dropApiKey} */
   async dropApiKey(prefix: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [AuthStateKey.apiKey(prefix)]);
   }

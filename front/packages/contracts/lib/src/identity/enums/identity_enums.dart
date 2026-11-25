@@ -106,7 +106,7 @@ enum FeatureFlag {
   }
 }
 
-/// Método de segundo factor.
+/// Second factor method.
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
@@ -131,7 +131,7 @@ enum MfaFactor {
   }
 }
 
-/// Resultado de un inicio de sesión.
+/// Result of a sign-in.
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
@@ -227,7 +227,7 @@ enum RevocationScope {
   }
 }
 
-/// Método con el que se autenticó la sesión (amr).
+/// Method with which the session was authenticated (amr).
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
@@ -1063,13 +1063,36 @@ enum IdentityTopic {
   }
 }
 
+/// Enum `IdentityCommand` del contrato `identity`.
+///
+/// [tryParse] devuelve null para valores que este cliente no conoce,
+/// así un valor nuevo del backend se ignora sin romper.
+enum IdentityCommand {
+  sendPasswordReset('identity.password-reset.send.v1');
+
+  const IdentityCommand(this.wireCode);
+
+  /// Valor que usa el backend.
+  final String wireCode;
+
+  /// Valor con [code] como `wireCode`, o null si es desconocido.
+  static IdentityCommand? tryParse(String code) {
+    for (final value in values) {
+      if (value.wireCode == code) return value;
+    }
+    return null;
+  }
+}
+
 /// Enum `IdentityQueue` del contrato `identity`.
 ///
 /// [tryParse] devuelve null para valores que este cliente no conoce,
 /// así un valor nuevo del backend se ignora sin romper.
 enum IdentityQueue {
   accessProjection('identity-access-projection'),
-  billing('identity-billing');
+  authState('identity-auth-state'),
+  billing('identity-billing'),
+  passwordResets('identity-password-resets');
 
   const IdentityQueue(this.wireCode);
 

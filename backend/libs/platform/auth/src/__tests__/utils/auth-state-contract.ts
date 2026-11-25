@@ -12,14 +12,14 @@ import type { AuthRevocationFeed } from '../../state/auth-revocation-feed.js';
 import type { AuthStateReader } from '../../state/auth-state-reader.js';
 import type { AuthStateWriter } from '../../state/auth-state-writer.js';
 
-/** Lector, escritor y aviso de revocaciones que comparten el mismo estado. */
+/** Reader, writer and revocation feed that share the same state. */
 export interface AuthStateHarness {
   readonly reader: AuthStateReader;
   readonly writer: AuthStateWriter;
   readonly feed: AuthRevocationFeed;
 }
 
-/** Entrega de una revocación: la promesa del `sid` recibido y la baja de la suscripción. */
+/** Delivery of a revocation: the promise of the received `sid` and the unsubscription. */
 interface RevocationProbe {
   readonly received: Promise<string>;
   readonly unsubscribe: () => Promise<void>;
@@ -43,7 +43,7 @@ const PRINCIPAL: ApiKeyPrincipal = {
   permissions: [Permission.TasksRead],
 };
 
-/** Ayudas de las pruebas de contrato: juntar lotes y esperar una revocación. */
+/** Helpers of the contract tests: collect batches and wait for a revocation. */
 class AuthStateProbe {
   static async collect(
     iterable: AsyncIterable<readonly string[]>,
@@ -55,7 +55,7 @@ class AuthStateProbe {
     return sessions;
   }
 
-  /** Se suscribe y espera la primera revocación; rechaza si no llega a tiempo. */
+  /** Subscribes and waits for the first revocation; rejects if it does not arrive in time. */
   static async nextRevocation(
     feed: AuthRevocationFeed,
     timeoutMs = 2000,
@@ -77,9 +77,9 @@ class AuthStateProbe {
 }
 
 /**
- * Prueba de contrato de `AuthStateReader`, `AuthStateWriter` y `AuthRevocationFeed`.
- * La corren el doble en memoria y el adaptador de Valkey, para que no diverjan.
- * Registra sus `describe` e `it` y debe llamarse en el cuerpo de un archivo de prueba.
+ * Contract test of `AuthStateReader`, `AuthStateWriter` and `AuthRevocationFeed`.
+ * The in-memory double and the Valkey adapter both run it, so they do not diverge.
+ * It registers its `describe` and `it` and must be called in the body of a test file.
  */
 export function runAuthStateContract(
   name: string,
@@ -175,6 +175,47 @@ export function runAuthStateContract(
 
         expect(await reader.tenantEpoch('t1')).toEqual(EPOCH);
       });
+
+      it('starts an unsuspended user epoch when a cut-off is raised for a user without one', async () => {
+        const { reader, writer } = await create();
+
+        await writer.raiseUserRevocation('u1', 1_700_000_000);
+
+        expect(await reader.userEpoch('u1')).toEqual({
+          revokedBefore: 1_700_000_000,
+          suspended: false,
+        });
+      });
+
+      it('keeps the stored suspension when it raises the cut-off of a user', async () => {
+        const { reader, writer } = await create();
+        await writer.setUserEpoch('u1', {
+          revokedBefore: 1_700_000_000,
+          suspended: true,
+        });
+
+        await writer.raiseUserRevocation('u1', 1_700_000_100);
+
+        expect(await reader.userEpoch('u1')).toEqual({
+          revokedBefore: 1_700_000_100,
+          suspended: true,
+        });
+      });
+
+      it('never moves the cut-off of a user back', async () => {
+        const { reader, writer } = await create();
+        await writer.setUserEpoch('u1', {
+          revokedBefore: 1_700_000_100,
+          suspended: false,
+        });
+
+        await writer.raiseUserRevocation('u1', 1_700_000_000);
+
+        expect(await reader.userEpoch('u1')).toEqual({
+          revokedBefore: 1_700_000_100,
+          suspended: false,
+        });
+      });
     });
 
     describe('permission versions', () => {
@@ -192,6 +233,20 @@ export function runAuthStateContract(
         await writer.setPermissionVersion('t1', 'u1', 7);
 
         expect(await reader.permissionVersion('t1', 'u1')).toBeUndefined();
+      });
+
+      it('never moves a version back when an older write arrives late', async () => {
+        const { reader, writer } = await create();
+
+        await writer.setPermissionVersion('t1', undefined, 5);
+        await writer.setPermissionVersion('t1', 'u1', 9);
+        await writer.setPermissionVersion('t1', undefined, 4);
+        await writer.setPermissionVersion('t1', 'u1', 8);
+
+        expect(await reader.permissionVersion('t1', 'u1')).toEqual({
+          tenant: 5,
+          user: 9,
+        });
       });
 
       it('reads both versions once both are set', async () => {

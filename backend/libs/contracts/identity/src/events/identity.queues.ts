@@ -1,12 +1,17 @@
 import { defineQueue } from '@contracts/platform';
 import { IdentityQueue } from '../enums/identifiers.enum.js';
-import { MembershipChangedEvent } from './access.events.js';
+import {
+  MembershipChangedEvent,
+  PermissionsChangedEvent,
+} from './access.events.js';
 import { BillingEventsReference } from './billing.references.js';
+import { SendPasswordResetCommand } from './identity.commands.js';
 import { IdentityEventsTopic } from './identity.topics.js';
+import { SessionRevokedEvent, TokensRevokedEvent } from './identity.events.js';
 
 /**
- * Proyección de acceso: mantiene los permisos por usuario y tenant que leen
- * los demás servicios. Solo le interesan los cambios de membresía.
+ * Access projection: keeps the permissions per user and tenant that the other
+ * services read. It only cares about membership changes.
  */
 export const AccessProjectionQueue = defineQueue({
   name: IdentityQueue.AccessProjection,
@@ -17,12 +22,34 @@ export const AccessProjectionQueue = defineQueue({
     },
   ],
   description:
-    'Proyección de acceso por usuario y tenant, alimentada por los cambios de membresía.',
+    'Access projection per user and tenant, fed by the membership changes.',
 });
 
 /**
- * Cambios de billing que afectan al acceso: suspensión, reactivación y
- * funcionalidades vigentes de un tenant.
+ * Shared authentication state: identity writes revocations and permission
+ * versions to `auth:*` right after the commit and replays them from its own
+ * events, so a Valkey outage or a crash after the commit never leaves a revoked
+ * token alive or a stale version current.
+ */
+export const AuthStateQueue = defineQueue({
+  name: IdentityQueue.AuthState,
+  subscriptions: [
+    {
+      topic: IdentityEventsTopic,
+      events: [
+        SessionRevokedEvent,
+        TokensRevokedEvent,
+        PermissionsChangedEvent,
+      ],
+    },
+  ],
+  description:
+    'Replays the session revocations, user revocations and permission versions of identity into the shared auth state.',
+});
+
+/**
+ * Billing changes that affect access: suspension, reactivation and current
+ * features of a tenant.
  */
 export const BillingEventsQueue = defineQueue({
   name: IdentityQueue.Billing,
@@ -33,5 +60,15 @@ export const BillingEventsQueue = defineQueue({
     },
   ],
   description:
-    'Eventos de billing que identity aplica: suspende o reactiva el tenant y refresca sus funcionalidades.',
+    'Billing events that identity applies: it suspends or reactivates the tenant and refreshes its features.',
+});
+
+/**
+ * Password reset requests identity sends to itself, so the request answers before anyone looks up the email.
+ */
+export const PasswordResetsQueue = defineQueue({
+  name: IdentityQueue.PasswordResets,
+  commands: [SendPasswordResetCommand],
+  description:
+    'Password reset requests that identity sends to itself and answers by email from the worker.',
 });

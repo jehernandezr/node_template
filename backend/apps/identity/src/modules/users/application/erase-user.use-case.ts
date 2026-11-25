@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
   IdentityErrorCode,
-  RevocationReason,
   UserErasedEvent,
   type EraseUserResult,
 } from '@contracts/identity';
@@ -11,7 +10,9 @@ import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../access/index.js';
+import { LoginAttemptHistory } from '../../authentication/index.js';
 import { DevicesFacade } from '../../devices/index.js';
+import { MfaFacade } from '../../mfa/index.js';
 import { PasskeysFacade } from '../../passkeys/index.js';
 import { PasswordsFacade } from '../../passwords/index.js';
 import { SessionsFacade } from '../../sessions/index.js';
@@ -20,11 +21,13 @@ import { UserRepository } from '../domain/user.repository.js';
 import { UserReader } from './user-reader.js';
 
 /**
- * Último paso de `DeleteAccount`: borra los datos personales del usuario, revoca sus sesiones, borra su
- * contraseña, sus passkeys y sus dispositivos, lo quita de sus tenants (cada tenant publica la baja, y billing
- * deja de contarlo), publica `identity.user.erased.v1` y al final quita su fila de `identity_lookup`, que es
- * lo que lo encuentra. Si ya no está en el directorio, el borrado terminó antes: repetirlo responde lo mismo
- * sin tocar nada.
+ * Last step of `DeleteAccount`: it first removes the user from their tenants (each tenant publishes the
+ * removal, and billing stops counting them), so a tenant that would be left without an owner stops the erasure
+ * before anything else of identity is gone. Then it erases the personal data of the user, revokes and deletes
+ * their sessions (with their IPs and user agents), deletes their sign-in history, their password, their second
+ * factors, their passkeys and their devices, publishes `identity.user.erased.v1` and finally removes their row
+ * from `identity_lookup`, which is what finds them. If they are no longer in the directory, the erasure finished
+ * earlier: repeating it answers the same without touching anything.
  */
 @Injectable()
 export class EraseUser {
@@ -33,6 +36,8 @@ export class EraseUser {
     private readonly users: UserRepository,
     private readonly directory: UserDirectory,
     private readonly sessions: SessionsFacade,
+    private readonly attempts: LoginAttemptHistory,
+    private readonly mfa: MfaFacade,
     private readonly passwords: PasswordsFacade,
     private readonly passkeys: PasskeysFacade,
     private readonly devices: DevicesFacade,
@@ -43,16 +48,26 @@ export class EraseUser {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Erases a user.
+   * @param userId User.
+   * @returns The user and the instant of the erasure.
+   * @throws IdentityError `IDENTITY.USER.NOT_FOUND` if the directory points to a user that does not exist.
+   * @throws IdentityError `IDENTITY.ACCESS.LAST_OWNER` if the user is still the last owner of a tenant with other
+   *   members.
+   */
   async execute(userId: string): Promise<EraseUserResult> {
     const now = this.clock.now();
     const ref = await this.reader.refOf(userId);
     if (ref !== undefined) {
+      await this.access.removeFromAllTenants(ref);
       await this.erase(ref, now);
-      await this.sessions.revokeUserSessions(ref, RevocationReason.AdminAction);
+      await this.sessions.forget(ref);
+      await this.attempts.forget(ref);
+      await this.mfa.forget(ref);
       await this.passwords.forget(ref);
       await this.passkeys.forget(ref);
       await this.devices.forget(ref);
-      await this.access.removeFromAllTenants(ref);
       await this.directory.forget(userId);
     }
     return { userId, erasedAt: now.toISOString() };

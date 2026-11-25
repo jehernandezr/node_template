@@ -18,6 +18,7 @@ import type {
   StepUpResult,
   StepUpVerifyRequest,
 } from '../types/auth.type.js';
+import { DeviceSignatureSchema } from './device.schema.js';
 
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
@@ -39,32 +40,26 @@ export const MfaCodeFieldSchema = z
 
 export const MfaFactorSchema = z
   .enum(MfaFactor)
-  .describe('Método de segundo factor.') satisfies z.ZodType<MfaFactor>;
+  .describe('Second factor method.') satisfies z.ZodType<MfaFactor>;
 
 export const AuthMethodReferenceSchema = z
   .enum(AuthMethodReference)
   .describe(
-    'Método con el que se autenticó la sesión (amr).',
+    'Method with which the session was authenticated (amr).',
   ) satisfies z.ZodType<AuthMethodReference>;
 
 export const SignInStatusSchema = z
   .enum(SignInStatus)
-  .describe(
-    'Resultado de un inicio de sesión.',
-  ) satisfies z.ZodType<SignInStatus>;
+  .describe('Result of a sign-in.') satisfies z.ZodType<SignInStatus>;
 
 export const SignInRequestSchema = z
   .strictObject({
     email: z.email().max(IdentityLimits.emailMaxLength),
     password: z.string().min(1).max(IdentityLimits.passwordMaxLength),
-    deviceId: z
-      .string()
-      .min(1)
-      .max(IdentityLimits.deviceIdMaxLength)
-      .optional(),
+    device: DeviceSignatureSchema.optional(),
   })
   .describe(
-    'Inicio de sesión con email y contraseña.',
+    'Sign-in with email and password.',
   ) satisfies z.ZodType<SignInRequest>;
 
 export const SessionTokensSchema = z
@@ -73,14 +68,14 @@ export const SessionTokensSchema = z
     accessExpiresAt: TimestampSchema,
     sessionToken: SessionTokenFieldSchema.optional(),
   })
-  .describe('Tokens de una sesión.') satisfies z.ZodType<SessionTokens>;
+  .describe('Tokens of a session.') satisfies z.ZodType<SessionTokens>;
 
 export const PendingMfaSchema = z
   .object({
     mfaToken: MfaTokenFieldSchema,
     methods: z.array(MfaFactorSchema).min(1),
   })
-  .describe('Desafío MFA pendiente.') satisfies z.ZodType<PendingMfa>;
+  .describe('Pending MFA challenge.') satisfies z.ZodType<PendingMfa>;
 
 export const SignInResponseSchema = z
   .object({
@@ -96,7 +91,7 @@ export const SignInResponseSchema = z
       .optional(),
   })
   .describe(
-    'Resultado de un login o de una verificación MFA.',
+    'Result of a sign-in or of an MFA verification.',
   ) satisfies z.ZodType<SignInResponse>;
 
 export const MfaChallengeRequestSchema = z
@@ -105,7 +100,7 @@ export const MfaChallengeRequestSchema = z
     method: MfaFactorSchema,
   })
   .describe(
-    'Pedido de un desafío MFA.',
+    'Request for an MFA challenge.',
   ) satisfies z.ZodType<MfaChallengeRequest>;
 
 export const MfaChallengeSchema = z
@@ -119,7 +114,7 @@ export const MfaChallengeSchema = z
       .max(IdentityLimits.mfaCodeMaxLength)
       .optional(),
   })
-  .describe('Desafío MFA creado.') satisfies z.ZodType<MfaChallenge>;
+  .describe('MFA challenge created.') satisfies z.ZodType<MfaChallenge>;
 
 export const MfaVerifyRequestSchema = z
   .strictObject({
@@ -134,13 +129,13 @@ export const MfaVerifyRequestSchema = z
       .optional(),
   })
   .describe(
-    'Verificación de un desafío MFA.',
+    'Verification of an MFA challenge.',
   ) satisfies z.ZodType<MfaVerifyRequest>;
 
 export const SessionTokenRequestSchema = z
   .strictObject({ sessionToken: SessionTokenFieldSchema.optional() })
   .describe(
-    'Session token a rotar o cerrar. En web se omite y viaja en la cookie httpOnly.',
+    'Session token to rotate or close. On the web it is omitted and travels in the httpOnly cookie.',
   ) satisfies z.ZodType<SessionTokenRequest>;
 
 export const StepUpVerifyRequestSchema = z
@@ -150,7 +145,7 @@ export const StepUpVerifyRequestSchema = z
     code: MfaCodeFieldSchema,
   })
   .describe(
-    'Verificación del paso adicional de una sesión abierta.',
+    'Verification of the step-up of an open session.',
   ) satisfies z.ZodType<StepUpVerifyRequest>;
 
 export const StepUpResultSchema = z
@@ -159,5 +154,5 @@ export const StepUpResultSchema = z
     mfaVerifiedAt: TimestampSchema,
   })
   .describe(
-    'Paso adicional verificado: access token nuevo y último MFA de la sesión.',
+    'Verified step-up: new access token and last MFA of the session.',
   ) satisfies z.ZodType<StepUpResult>;

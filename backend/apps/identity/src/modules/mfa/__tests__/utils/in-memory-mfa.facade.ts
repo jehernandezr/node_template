@@ -1,3 +1,4 @@
+import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import {
   MfaFactor,
   SignInStatus,
@@ -11,9 +12,9 @@ import type { PendingAuthentication } from '../../../../shared/types/pending-aut
 import { MfaFacade } from '../../application/mfa.facade.js';
 import type { StartPendingInput } from '../../domain/start-pending-input.js';
 
-/** Autenticaciones pendientes en memoria. Los `mfaToken` son `mfa-1`, `mfa-2`, ... */
+/** Pending authentications in memory. The `mfaToken`s are `mfa-1`, `mfa-2`, ... */
 export class InMemoryMfaFacade extends MfaFacade {
-  /** Métodos que se ofrecen en cada desafío. */
+  /** Methods offered in each challenge. */
   methods: MfaFactor[] = [MfaFactor.EmailOtp];
   readonly started: StartPendingInput[] = [];
   readonly denied: string[] = [];
@@ -29,7 +30,7 @@ export class InMemoryMfaFacade extends MfaFacade {
     this.denied.push(challengeId);
   }
 
-  /** Autenticaciones pendientes por `mfaToken` que devuelve `pending`. */
+  /** Pending authentications by `mfaToken` that `pending` returns. */
   readonly pendings = new Map<string, PendingAuthentication>();
   readonly completed: Array<{
     mfaToken: string;
@@ -64,5 +65,11 @@ export class InMemoryMfaFacade extends MfaFacade {
       },
       mfaVerifiedAt: new Date(0).toISOString(),
     };
+  }
+
+  readonly forgotten: UserRef[] = [];
+
+  async forget(ref: UserRef): Promise<void> {
+    this.forgotten.push(ref);
   }
 }

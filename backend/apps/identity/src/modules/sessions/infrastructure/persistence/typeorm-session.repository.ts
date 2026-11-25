@@ -7,7 +7,7 @@ import { SessionRepository } from '../../domain/session.repository.js';
 import { SessionEntity } from './entities/session.entity.js';
 import { SessionMapper } from './session.mapper.js';
 
-/** `SessionRepository` sobre `sessions` del shard del usuario. */
+/** `SessionRepository` over `sessions` of the user shard. */
 @Injectable()
 export class TypeOrmSessionRepository
   extends UserShardRepository
@@ -52,6 +52,11 @@ export class TypeOrmSessionRepository
       }),
     );
     return rows.map((row) => this.mapper.toDomain(row));
+  }
+
+  /** {@inheritDoc SessionRepository.forget} */
+  async forget(userId: string): Promise<void> {
+    await this.write((manager) => manager.delete(SessionEntity, { userId }));
   }
 
   async update(session: Session): Promise<void> {

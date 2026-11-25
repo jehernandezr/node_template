@@ -1,4 +1,5 @@
 import {
+  IdentityCommand,
   ListPushTargetsOperation,
   IdentityErrorCode,
 } from '@contracts/identity';
@@ -9,16 +10,29 @@ import { IdentityEmailTemplate } from '../src/shared/enums/identity-email-templa
 import {
   AccessTokenClaimsReader,
   IdentityJourney,
+  QueuedCommands,
+  RuntimeTestValue,
   TotpCodes,
   type SessionTokensBody,
 } from '../src/__tests__/utils/index.js';
 
 const runtime = new ContainerRuntime(process.env);
-// Valores de prueba armados en tiempo de ejecución: un literal junto a `token` o `password` parece una credencial.
-const UNKNOWN_PROOF = ['token', 'que', 'no', 'existe'].join('-');
-const PUSH_DESTINATION = ['push', 'de', 'prueba'].join('-');
-const SHORT_PHRASE = ['password', '1234'].join('');
-const NEW_PHRASE = ['Una', 'frase', 'nueva', 'y', 'larga', '2026'].join('-');
+const UNKNOWN_PROOF = RuntimeTestValue.hyphenated(
+  'token',
+  'que',
+  'no',
+  'existe',
+);
+const PUSH_DESTINATION = RuntimeTestValue.hyphenated('push', 'de', 'prueba');
+const SHORT_PHRASE = RuntimeTestValue.concatenated('password', '1234');
+const NEW_PHRASE = RuntimeTestValue.hyphenated(
+  'Una',
+  'frase',
+  'nueva',
+  'y',
+  'larga',
+  '2026',
+);
 
 runtime.describeIfAvailable('account security end to end', () => {
   jest.setTimeout(180_000);
@@ -289,6 +303,10 @@ runtime.describeIfAvailable('account security end to end', () => {
     const requested = await rita.native().post('/v1/auth/password-resets', {
       body: { email: rita.email },
     });
+    await new QueuedCommands(app).deliver(
+      IdentityCommand.SendPasswordReset,
+      rita.email,
+    );
     const token = rita.mailTo(IdentityEmailTemplate.PasswordReset)['token'];
     const breached = await rita
       .native()
@@ -300,6 +318,12 @@ runtime.describeIfAvailable('account security end to end', () => {
       .post('/v1/auth/password-resets', {
         body: { email: rita.email },
       })
+      .then(() =>
+        new QueuedCommands(app).deliver(
+          IdentityCommand.SendPasswordReset,
+          rita.email,
+        ),
+      )
       .then(() => rita.mailTo(IdentityEmailTemplate.PasswordReset)['token']);
     const confirmed = await rita
       .native()

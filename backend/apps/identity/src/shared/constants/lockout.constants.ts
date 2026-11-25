@@ -2,33 +2,41 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 
 /**
- * Reglas de bloqueo por intentos fallidos: bloqueo exponencial por origen (cuenta e IP o dispositivo),
- * modo protegido por cuenta y bloqueo de IP.
+ * Lockout rules for failed attempts: exponential lockout per origin (account and IP or device), protected
+ * mode per account, IP lockout and the second-factor lockout per user.
  */
 export const LockoutRules = {
   origin: {
-    /** Fallos de una cuenta desde un origen que activan el bloqueo. */
+    /** Failures of an account from one origin that trigger the lockout. */
     maxFailures: 5,
     windowMs: 15 * MINUTE_MS,
-    /** Primera espera; cada bloqueo nuevo la duplica (15, 30, 60 min). */
+    /** First wait; each new lockout doubles it (15, 30, 60 min). */
     baseLockMs: 15 * MINUTE_MS,
-    /** Tope de la espera: 24 h. */
+    /** Cap of the wait: 24 h. */
     maxLockMs: 24 * HOUR_MS,
   },
   /**
-   * Vida de la época de desbloqueo desde el último bloqueo escrito con ella. Si venciera antes que un
-   * bloqueo, la cuenta volvería a la época 0 y ese bloqueo dejaría de verse; por eso dobla el tope.
+   * Life of the unlock epoch since the last lockout written with it. If it expired before a lockout, the
+   * account would go back to epoch 0 and that lockout would no longer be seen; that is why it doubles the cap.
    */
   unlockEpochTtlMs: 48 * HOUR_MS,
   protectedMode: {
-    /** Fallos de una cuenta desde varios orígenes que activan el modo protegido. */
+    /** Failures of an account from several origins that trigger protected mode. */
     maxFailures: 20,
     windowMs: HOUR_MS,
   },
   ip: {
-    /** Fallos de una IP sobre cualquier cuenta que bloquean la IP. */
+    /** Failures of an IP over any account that lock the IP. */
     maxFailures: 50,
     windowMs: 15 * MINUTE_MS,
     lockMs: 15 * MINUTE_MS,
+  },
+  mfa: {
+    /**
+     * Wrong second-factor codes of a user, across every challenge and session, before verification stops
+     * until the window slides: a six-digit code then needs years of guessing, not hours.
+     */
+    maxFailures: 10,
+    windowMs: 15 * MINUTE_MS,
   },
 } as const;

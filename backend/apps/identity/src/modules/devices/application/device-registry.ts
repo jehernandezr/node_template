@@ -10,22 +10,24 @@ import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes
 import type { UserRef } from '../../../shared/types/user-ref.type.js';
 import { SecurityAlerts } from '../../alerts/index.js';
 import { DeviceApprovalStore } from '../domain/device-approval-store.js';
+import type { DeviceProof } from '../domain/device-proof.js';
 import type { DeviceRecognition } from '../domain/device-recognition.js';
 import { DeviceRepository } from '../domain/device.repository.js';
-import { DeviceRoute } from '../domain/device-route.js';
 import { DeviceSignatureVerifier } from '../domain/device-signature-verifier.js';
 import type { DeviceSnapshot } from '../domain/device-snapshot.js';
 import { Device, type DeviceState } from '../domain/device.js';
 import type { RegisterDeviceInput } from '../domain/register-device-input.js';
 import { PushNotifier } from '../domain/push-notifier.js';
+import { SignedDeviceRequest } from './signed-device-request.js';
 
-/** Reconoce, registra y consulta los dispositivos de un usuario, y les encola aprobaciones. */
+/** Recognizes, registers and reads the devices of a user, and queues approvals for them. */
 @Injectable()
 export class DeviceRegistry {
   constructor(
     private readonly devices: DeviceRepository,
     private readonly approvals: DeviceApprovalStore,
     private readonly signatures: DeviceSignatureVerifier,
+    private readonly signedRequests: SignedDeviceRequest,
     private readonly push: PushNotifier,
     private readonly alerts: SecurityAlerts,
     private readonly scopes: IdentityShardScopes,
@@ -35,32 +37,45 @@ export class DeviceRegistry {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Recognizes the device of a sign-in only from a valid signature of one of the user's trusted devices:
+   * the public device id alone proves nothing.
+   * @param ref User who is signing in.
+   * @param proof Device signature that the request carries, if any.
+   * @returns Whether the device is recognized and, if so, its snapshot.
+   */
   async recognize(
     ref: UserRef,
-    deviceIdToken?: string,
+    proof?: DeviceProof,
   ): Promise<DeviceRecognition> {
-    const route =
-      deviceIdToken === undefined
-        ? undefined
-        : DeviceRoute.parse(deviceIdToken);
-    if (route === undefined || route.user.userId !== ref.userId) {
+    if (proof === undefined) {
       return { recognized: false };
     }
-    const device = await this.scopes.inUserShard(ref, () =>
-      this.devices.find(ref.userId, route.deviceId),
+    const signed = await this.signedRequests.check(
+      proof.action,
+      proof.signature,
+      proof.bound,
     );
-    return device === undefined || !device.isTrusted(this.clock.now())
-      ? { recognized: false }
-      : {
-          recognized: true,
-          device: DeviceRegistry.snapshotOf(device.snapshot()),
-        };
+    if (
+      signed === undefined ||
+      signed.route.user.userId !== ref.userId ||
+      signed.route.user.homeTenantId !== ref.homeTenantId
+    ) {
+      return { recognized: false };
+    }
+    return {
+      recognized: true,
+      device: DeviceRegistry.snapshotOf(signed.device.snapshot()),
+    };
   }
 
   /**
-   * Guarda un dispositivo nuevo. El primero de la cuenta queda como verificador: desde ahí aprueba los
-   * inicios de sesión de los demás.
-   * @throws IdentityError `IDENTITY.DEVICE.KEY_INVALID` si la clave no es P-256.
+   * Stores a new device. The first one of the account becomes the verifier: from it the user approves the
+   * sign-ins of the others.
+   * @param ref Owner of the device.
+   * @param input Public key, platform, name and IP of the device.
+   * @returns The stored device.
+   * @throws IdentityError `IDENTITY.DEVICE.KEY_INVALID` if the key is not P-256.
    */
   async register(
     ref: UserRef,
@@ -109,6 +124,11 @@ export class DeviceRegistry {
     return DeviceRegistry.snapshotOf(device.snapshot());
   }
 
+  /**
+   * Lists the trusted verifier devices of a user.
+   * @param ref User whose verifiers are listed.
+   * @returns The verifiers that are still trusted.
+   */
   async verifiers(ref: UserRef): Promise<readonly DeviceSnapshot[]> {
     const devices = await this.scopes.inUserShard(ref, () =>
       this.devices.listActive(ref.userId),
@@ -119,6 +139,10 @@ export class DeviceRegistry {
       .map((device) => DeviceRegistry.snapshotOf(device.snapshot()));
   }
 
+  /**
+   * Removes the verifier role from every device of the user.
+   * @param ref User whose verifiers are retired.
+   */
   async retireVerifiers(ref: UserRef): Promise<void> {
     await this.scopes.inUserShard(ref, () =>
       this.transactions.runInTransaction(async () => {
@@ -132,6 +156,10 @@ export class DeviceRegistry {
     );
   }
 
+  /**
+   * Removes every active device of the user.
+   * @param ref User whose devices are removed.
+   */
   async forget(ref: UserRef): Promise<void> {
     const now = this.clock.now();
     await this.scopes.inUserShard(ref, () =>
@@ -144,6 +172,11 @@ export class DeviceRegistry {
     );
   }
 
+  /**
+   * Queues an approval for a device until the approval expires.
+   * @param deviceId Device that must approve.
+   * @param approval Approval to show on the device.
+   */
   async enqueueApproval(
     deviceId: string,
     approval: DeviceApproval,
@@ -155,7 +188,10 @@ export class DeviceRegistry {
     );
   }
 
-  /** Avisa por push a cada verificador que tiene una aprobación pendiente. */
+  /**
+   * Wakes every verifier of the user by push so it pulls its pending approval.
+   * @param ref User whose verifiers are woken.
+   */
   async wakeVerifiers(ref: UserRef): Promise<void> {
     const devices = await this.scopes.inUserShard(ref, () =>
       this.devices.listActive(ref.userId),
@@ -168,6 +204,11 @@ export class DeviceRegistry {
     }
   }
 
+  /**
+   * Maps the state of a device to the snapshot other modules read.
+   * @param state Device state.
+   * @returns The device snapshot.
+   */
   static snapshotOf(state: DeviceState): DeviceSnapshot {
     return {
       id: state.id,

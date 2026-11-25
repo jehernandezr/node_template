@@ -10,6 +10,7 @@ import { PasswordVerifier } from '../application/password-verifier.js';
 import { PasswordsFacade } from '../application/passwords.facade.js';
 import { PurgePasswordResetsJob } from '../application/purge-password-resets.job.js';
 import { RequestPasswordReset } from '../application/request-password-reset.use-case.js';
+import { SendPasswordReset } from '../application/send-password-reset.use-case.js';
 import { BreachedPasswordList } from '../domain/breached-password-list.js';
 import { PasswordCredentialRepository } from '../domain/password-credential.repository.js';
 import { PasswordHasher } from '../domain/password-hasher.js';
@@ -25,9 +26,10 @@ import { TypeOrmPasswordCredentialRepository } from '../infrastructure/persisten
 import { BloomBreachedPasswordList } from '../infrastructure/bloom-breached-password-list.js';
 import { KnownBreachedPasswordsSource } from '../infrastructure/known-breached-passwords-source.js';
 import { BloomFilterName } from '../../../shared/enums/bloom-filter-name.enum.js';
+import { PasswordResetsConsumer } from './password-resets.consumer.js';
 import { PasswordsController } from './passwords.controller.js';
 
-/** Contraseñas: hash, política, cambio y recuperación. Global solo para su fachada. */
+/** Passwords: hash, policy, change and reset. Global only for its facade. */
 @Global()
 @Module({
   imports: [
@@ -39,7 +41,6 @@ import { PasswordsController } from './passwords.controller.js';
       definition: {
         name: BloomFilterName.BreachedPasswords,
         expectedItems: PasswordsModule.BREACHED_PASSWORDS_CAPACITY,
-        // Un falso positivo rechaza una contraseña buena: con 1 en 1000 casi nadie lo nota.
         falsePositiveRate: 0.001,
         rebuildCron: '0 4 * * 0',
       },
@@ -69,12 +70,14 @@ import { PasswordsController } from './passwords.controller.js';
     PasswordVerifier,
     ChangePassword,
     RequestPasswordReset,
+    SendPasswordReset,
+    PasswordResetsConsumer,
     ConfirmPasswordReset,
     { provide: PasswordsFacade, useClass: LocalPasswordsFacade },
   ],
   exports: [PasswordsFacade],
 })
 export class PasswordsModule {
-  /** Holgura sobre la lista de arranque: la de Have I Been Pwned llega por el mismo filtro. */
+  /** Room above the starting list: the Have I Been Pwned list arrives through the same filter. */
   static readonly BREACHED_PASSWORDS_CAPACITY = 10_000;
 }

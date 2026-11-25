@@ -1,4 +1,8 @@
-import type { Permission, UserAccess } from '@contracts/identity';
+import type {
+  Permission,
+  PermissionsChangedPayload,
+  UserAccess,
+} from '@contracts/identity';
 import { ActorGuards, type Actor } from '@platform/auth';
 import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import { AccessFacade } from '../../application/access.facade.js';
@@ -8,7 +12,7 @@ import { IdentityError } from '../../../../shared/errors/identity.error.js';
 const keyOf = (userId: string, tenantId: string): string =>
   `${userId}@${tenantId}`;
 
-/** Accesos, membresías y tenants predeterminados en memoria. */
+/** Accesses, memberships and default tenants in memory. */
 export class InMemoryAccessFacade extends AccessFacade {
   readonly added: Array<{
     tenantId: string;
@@ -31,7 +35,7 @@ export class InMemoryAccessFacade extends AccessFacade {
     return this;
   }
 
-  /** Permisos que otorga un grupo: los usa `assertCanGrantGroups`. */
+  /** Permissions a group grants: `assertCanGrantGroups` uses them. */
   setGroupPermissions(
     groupId: string,
     permissions: readonly Permission[],
@@ -121,12 +125,90 @@ export class InMemoryAccessFacade extends AccessFacade {
     this.projected.push({ tenantId, ref });
   }
 
+  private readonly departures = new Set<string>();
+
+  /**
+   * Tells whether the user is leaving the tenant because a deletion of their account reserved it.
+   * @param userId User.
+   * @param tenantId Tenant.
+   * @returns Whether the departure is reserved.
+   */
+  isLeaving(userId: string, tenantId: string): boolean {
+    return this.departures.has(keyOf(userId, tenantId));
+  }
+
+  /** {@inheritDoc AccessFacade.reserveDepartures} */
+  async reserveDepartures(ref: UserRef): Promise<readonly string[]> {
+    const reserved: string[] = [];
+    for (const { tenantId } of await this.tenantsOf(ref)) {
+      const key = keyOf(ref.userId, tenantId);
+      if (!this.departures.has(key)) {
+        this.departures.add(key);
+        reserved.push(tenantId);
+      }
+    }
+    return reserved;
+  }
+
+  /** {@inheritDoc AccessFacade.releaseDepartures} */
+  async releaseDepartures(
+    ref: UserRef,
+    tenantIds: readonly string[],
+  ): Promise<void> {
+    for (const tenantId of tenantIds) {
+      this.departures.delete(keyOf(ref.userId, tenantId));
+    }
+  }
+
+  /** {@inheritDoc AccessFacade.cancelDepartures} */
+  async cancelDepartures(ref: UserRef): Promise<void> {
+    for (const { tenantId } of await this.tenantsOf(ref)) {
+      this.departures.delete(keyOf(ref.userId, tenantId));
+    }
+  }
+
   async removeFromAllTenants(ref: UserRef): Promise<void> {
     for (const key of [...this.memberships]) {
       if (key.startsWith(`${ref.userId}@`)) {
         this.memberships.delete(key);
       }
     }
+  }
+
+  async discardTenant(tenantId: string): Promise<void> {
+    for (const key of [...this.memberships]) {
+      if (key.endsWith(`@${tenantId}`)) {
+        this.memberships.delete(key);
+      }
+    }
+  }
+
+  async memberPermissions(
+    tenantId: string,
+    userId: string,
+  ): Promise<readonly Permission[]> {
+    return this.accesses.get(keyOf(userId, tenantId))?.permissions ?? [];
+  }
+
+  async assertGroupsWithin(
+    _tenantId: string,
+    groupIds: readonly string[],
+    granted: readonly Permission[],
+  ): Promise<void> {
+    const missing = groupIds
+      .flatMap((id) => this.groupPermissions.get(id) ?? [])
+      .filter((permission) => !granted.includes(permission));
+    if (missing.length > 0) {
+      throw IdentityError.forbidden(missing);
+    }
+  }
+
+  readonly replayed: PermissionsChangedPayload[] = [];
+
+  async replayPermissionVersion(
+    event: PermissionsChangedPayload,
+  ): Promise<void> {
+    this.replayed.push(event);
   }
 
   readonly refreshed: string[] = [];

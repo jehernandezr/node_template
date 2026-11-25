@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ApiKeyCreatedEvent,
   ApiKeyRevokedEvent,
+  ApiKeyStatus,
   ServiceAccountStatus,
   IdentityErrorCode,
   type ApiKeyEnvironment,
@@ -9,7 +10,12 @@ import {
   type CreateApiKeyRequest,
   type CreatedApiKey,
 } from '@contracts/identity';
-import { ApiKeyFormat, AuthStateWriter } from '@platform/auth';
+import {
+  ActorGuards,
+  ApiKeyFormat,
+  AuthStateWriter,
+  type Actor,
+} from '@platform/auth';
 import { Clock, IdGenerator, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentitySettings } from '../../../config/identity-settings.js';
@@ -24,8 +30,9 @@ import {
 } from '../domain/api-key-store.js';
 import { ApiKey } from '../domain/api-key.js';
 import { ApiKeyViews } from './api-key-views.js';
+import { GrantablePermissions } from './grantable-permissions.js';
 
-/** Datos de una key nueva: la cuenta, el ambiente y sus restricciones. */
+/** Data of a new key: the account, the environment and its restrictions. */
 interface NewKey {
   readonly serviceAccountId: string;
   readonly environment: ApiKeyEnvironment;
@@ -34,8 +41,10 @@ interface NewKey {
 }
 
 /**
- * API keys de una cuenta de servicio. El secreto se muestra una sola vez; se guarda su HMAC. Rotar crea una
- * key nueva y deja la anterior válida `API_KEY_ROTATION_GRACE_HOURS`; revocar borra `auth:apikey:{prefix}`.
+ * API keys of a service account. The secret is shown only once; its HMAC is stored. Issuing or rotating a
+ * key hands out the permissions of its account, so the caller must hold every one of them. Rotating creates
+ * a new key and leaves the previous one valid for `API_KEY_ROTATION_GRACE_HOURS`; revoking deletes
+ * `auth:apikey:{prefix}`.
  */
 @Injectable()
 export class ManageApiKeys {
@@ -46,6 +55,7 @@ export class ManageApiKeys {
     private readonly repository: ApiKeyRepository,
     private readonly directory: ApiKeyDirectory,
     private readonly hasher: ApiKeySecretHasher,
+    private readonly grantable: GrantablePermissions,
     private readonly generator: SecretGenerator,
     private readonly state: AuthStateWriter,
     private readonly bus: MessageBus,
@@ -56,6 +66,12 @@ export class ManageApiKeys {
     private readonly settings: IdentitySettings,
   ) {}
 
+  /**
+   * Lists the keys of a service account.
+   * @param tenantId Tenant of the account.
+   * @param serviceAccountId Account whose keys are listed.
+   * @returns The keys, without their secrets.
+   */
   async list(tenantId: string, serviceAccountId: string): Promise<ApiKeyPage> {
     const keys = await this.scopes.inTenantShard(tenantId, () =>
       this.repository.listKeys(serviceAccountId),
@@ -63,12 +79,22 @@ export class ManageApiKeys {
     return { items: keys.map((key) => ApiKeyViews.key(key)), nextCursor: null };
   }
 
+  /**
+   * Issues a new key for a service account.
+   * @param tenantId Tenant of the account.
+   * @param actor Caller, who must hold every permission of the account.
+   * @param request Account, environment, expiry and allowed CIDRs.
+   * @returns The key and its secret, shown only this time.
+   * @throws IdentityError `IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE` if the account has a permission the caller lacks.
+   * @throws IdentityError `IDENTITY.SERVICE_ACCOUNT.DISABLED` if the account is disabled.
+   */
   async create(
     tenantId: string,
-    createdBy: string,
+    actor: Actor | undefined,
     request: CreateApiKeyRequest,
   ): Promise<CreatedApiKey> {
-    return this.issue(tenantId, createdBy, {
+    await this.assertGrantable(tenantId, actor, request.serviceAccountId);
+    return this.issue(tenantId, ManageApiKeys.actorIdOf(actor), {
       serviceAccountId: request.serviceAccountId,
       environment: request.environment,
       ...(request.expiresAt === undefined
@@ -78,15 +104,35 @@ export class ManageApiKeys {
     });
   }
 
+  /**
+   * Rotates an active key: issues a new one and leaves the old one valid for the grace period.
+   * @param tenantId Tenant of the key.
+   * @param actor Caller, who must hold every permission of the key's account.
+   * @param apiKeyId Key to rotate.
+   * @returns The new key and its secret, shown only this time.
+   * @throws IdentityError `IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE` if the account has a permission the caller lacks.
+   * @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the key does not exist or is not active.
+   */
   async rotate(
     tenantId: string,
-    createdBy: string,
+    actor: Actor | undefined,
     apiKeyId: string,
   ): Promise<CreatedApiKey> {
+    const current = await this.scopes.inTenantShard(tenantId, () =>
+      this.repository.findKey(apiKeyId),
+    );
+    if (current === undefined || !this.isRotatable(current)) {
+      throw IdentityError.notFound();
+    }
+    await this.assertGrantable(
+      tenantId,
+      actor,
+      current.snapshot().serviceAccountId,
+    );
     const previous = await this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
         const key = await this.repository.findKey(apiKeyId);
-        if (key === undefined || !key.isUsable(this.clock.now())) {
+        if (key === undefined || !this.isRotatable(key)) {
           throw IdentityError.notFound();
         }
         key.rotate(
@@ -101,7 +147,7 @@ export class ManageApiKeys {
       }),
     );
     await this.state.dropApiKey(previous.prefix);
-    return this.issue(tenantId, createdBy, {
+    return this.issue(tenantId, ManageApiKeys.actorIdOf(actor), {
       serviceAccountId: previous.serviceAccountId,
       environment: previous.environment,
       ...(previous.expiresAt === undefined
@@ -111,6 +157,12 @@ export class ManageApiKeys {
     });
   }
 
+  /**
+   * Revokes a key and drops its cached principal.
+   * @param tenantId Tenant of the key.
+   * @param apiKeyId Key to revoke.
+   * @throws IdentityError `PLATFORM.RESOURCE.NOT_FOUND` if the key does not exist.
+   */
   async revoke(tenantId: string, apiKeyId: string): Promise<void> {
     const prefix = await this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(async () => {
@@ -135,6 +187,27 @@ export class ManageApiKeys {
       }),
     );
     await this.state.dropApiKey(prefix);
+  }
+
+  private isRotatable(key: ApiKey): boolean {
+    return (
+      key.snapshot().status === ApiKeyStatus.Active &&
+      key.isUsable(this.clock.now())
+    );
+  }
+
+  private async assertGrantable(
+    tenantId: string,
+    actor: Actor | undefined,
+    serviceAccountId: string,
+  ): Promise<void> {
+    const account = await this.scopes.inTenantShard(tenantId, () =>
+      this.repository.findServiceAccount(serviceAccountId),
+    );
+    if (account === undefined) {
+      throw IdentityError.notFound();
+    }
+    await this.grantable.assert(actor, account.permissions);
   }
 
   private async issue(
@@ -192,5 +265,14 @@ export class ManageApiKeys {
       apiKey: ApiKeyViews.key(key),
       secret: `sk_${input.environment}_${prefix}_${secret}`,
     };
+  }
+
+  private static actorIdOf(actor: Actor | undefined): string {
+    if (actor !== undefined && ActorGuards.isUser(actor)) {
+      return actor.userId;
+    }
+    return actor !== undefined && ActorGuards.isServiceAccount(actor)
+      ? actor.serviceAccountId
+      : '';
   }
 }

@@ -1,10 +1,12 @@
 import { Module, type Type } from '@nestjs/common';
 import { AccessProjectionConsumer } from './access-projection.consumer.js';
+import { AuthStateConsumer } from './auth-state.consumer.js';
 import { BillingStandingConsumer } from './billing-standing.consumer.js';
 
-/** Consumidores de mensajes de identity. Usan las fachadas de los módulos, como cualquier otro cliente. */
+/** Message consumers of identity. They use the facades of the modules, as any other client. */
 export const IDENTITY_CONSUMERS: readonly Type<unknown>[] = [
   AccessProjectionConsumer,
+  AuthStateConsumer,
   BillingStandingConsumer,
 ];
 

@@ -2,11 +2,15 @@ import { Injectable } from '@nestjs/common';
 import type { PendingMfa } from '@contracts/identity';
 import { Clock, IdGenerator } from '@platform/kernel';
 import { IdentityDefaults } from '../../../shared/constants/identity-defaults.constants.js';
+import { PendingPurpose } from '../../../shared/enums/pending-purpose.enum.js';
 import { PendingAuthenticationStore } from '../domain/pending-authentication-store.js';
 import type { StartPendingInput } from '../domain/start-pending-input.js';
 import { MfaMethodCatalog } from './mfa-method-catalog.js';
 
-/** Guarda la autenticación pendiente con los factores que puede usar el usuario y devuelve su `mfaToken`. */
+/**
+ * Stores the pending authentication with the factors the user can use and returns its `mfaToken`. In a
+ * sign-in the factor of the first step is not offered again: one factor never counts twice.
+ */
 @Injectable()
 export class StartPendingMfa {
   constructor(
@@ -16,8 +20,16 @@ export class StartPendingMfa {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Opens a pending authentication.
+   * @param input User, purpose, client and methods already satisfied.
+   * @returns The `mfaToken` and the offered methods.
+   */
   async execute(input: StartPendingInput): Promise<PendingMfa> {
-    const offered = await this.methods.offered(input.user);
+    const offered = await this.methods.offered(
+      input.user,
+      input.purpose === PendingPurpose.SignIn ? input.authMethods : [],
+    );
     const mfaToken = await this.pending.save({
       id: this.ids.next().toString(),
       user: input.user,

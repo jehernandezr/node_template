@@ -7,7 +7,7 @@ import type { Membership } from '../../domain/membership.js';
 import type { Role } from '../../domain/role.js';
 import { ListMembersByPermission } from '../list-members-by-permission.use-case.js';
 
-/** Solo las lecturas que usa el caso de uso; el resto no se llama. */
+/** Only the reads the use case makes; the rest is never called. */
 class ReadOnlyTenantAccess extends TenantAccessRepository {
   constructor(
     private readonly memberships: readonly Membership[],
@@ -26,45 +26,57 @@ class ReadOnlyTenantAccess extends TenantAccessRepository {
   listRoles(): Promise<readonly Role[]> {
     return Promise.resolve(this.roles);
   }
+  listMembershipsAfter(): never {
+    throw new Error('not used');
+  }
   findMembership(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   insertMembership(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   updateMembership(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
-  deleteMembership(): never {
-    throw new Error('no se usa');
+  removeMembership(): never {
+    throw new Error('not used');
+  }
+  removedVersion(): never {
+    throw new Error('not used');
+  }
+  purgeMembership(): never {
+    throw new Error('not used');
+  }
+  purgeTenant(): never {
+    throw new Error('not used');
   }
   insertGroup(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   updateGroup(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   deleteGroup(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   insertRole(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   updateRole(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   deleteRole(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   tenantVersion(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
   bumpTenantVersion(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
 
   lockForChanges(): never {
-    throw new Error('no se usa');
+    throw new Error('not used');
   }
 }
 
@@ -107,6 +119,7 @@ describe('ListMembersByPermission', () => {
     groupIds,
     permissionVersion: 1,
     joinedAt: new Date('2026-01-01T00:00:00.000Z'),
+    leavingSince: null,
   });
   const first = member([admins.id]);
   const reader = member([reading.id]);
@@ -115,7 +128,6 @@ describe('ListMembersByPermission', () => {
 
   const useCase = new ListMembersByPermission(
     new ReadOnlyTenantAccess(
-      // Desordenadas a propósito: la página sale ordenada por id de usuario.
       [third, reader, first, second],
       [admins, reading],
       [managers, readers],

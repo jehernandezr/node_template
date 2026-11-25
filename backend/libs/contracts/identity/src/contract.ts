@@ -28,6 +28,7 @@ import {
   ServiceAccountStatus,
 } from './enums/api-key.enum.js';
 import {
+  IdentityCommand,
   IdentityErrorCode,
   IdentityEvent,
   IdentityOperation,
@@ -48,6 +49,7 @@ import { SecurityAlertType, UserStatus } from './enums/user.enum.js';
 import { identityErrorCatalog } from './errors/identity-error-catalog.js';
 import {
   AccessProjectionQueue,
+  AuthStateQueue,
   ApiKeyCreatedEvent,
   ApiKeyRevokedEvent,
   BillingEventsQueue,
@@ -55,9 +57,11 @@ import {
   DeviceRemovedEvent,
   IdentityEventsTopic,
   MembershipChangedEvent,
+  PasswordResetsQueue,
   PermissionsChangedEvent,
   RecordUsageReference,
   SecurityAlertRaisedEvent,
+  SendPasswordResetCommand,
   SessionRevokedEvent,
   TenantCreatedEvent,
   TenantReactivatedEvent,
@@ -166,11 +170,11 @@ import {
 } from './internal/index.js';
 import * as schemas from './schemas/index.js';
 
-/** Las operaciones de traslado de tenant de identity, con su tipo exacto para registrarlas y llamarlas. */
+/** The tenant move operations of identity, with their exact type to register and call them. */
 export const IdentityTenantMoveOperations =
   defineTenantMoveOperations('identity');
 
-/** Contrato del servicio identity: acceso, sesiones, cuentas, tenants, API keys y eventos. */
+/** Contract of the identity service: access, sessions, accounts, tenants, API keys and events. */
 export const identityContract = defineServiceContract({
   service: 'identity',
   description:
@@ -202,6 +206,7 @@ export const identityContract = defineServiceContract({
     IdentityOperation,
     IdentityEvent,
     IdentityTopic,
+    IdentityCommand,
     IdentityQueue,
     IdentitySaga,
     IdentitySagaStatus,
@@ -230,6 +235,7 @@ export const identityContract = defineServiceContract({
     ApiKeyEnvironment: schemas.ApiKeyEnvironmentSchema,
     ApiKeyStatus: schemas.ApiKeyStatusSchema,
     ServiceAccountStatus: schemas.ServiceAccountStatusSchema,
+    DeviceSignatureFields: schemas.DeviceSignatureSchema,
     SignInRequest: schemas.SignInRequestSchema,
     SessionTokens: schemas.SessionTokensSchema,
     PendingMfa: schemas.PendingMfaSchema,
@@ -486,11 +492,14 @@ export const identityContract = defineServiceContract({
     securityAlertRaised: SecurityAlertRaisedEvent,
     userErased: UserErasedEvent,
   },
+  commands: { sendPasswordReset: SendPasswordResetCommand },
   topics: { events: IdentityEventsTopic },
   queues: {
     accessProjection: AccessProjectionQueue,
+    authState: AuthStateQueue,
     billing: BillingEventsQueue,
+    passwordResets: PasswordResetsQueue,
   },
-  sends: [RecordUsageReference],
+  sends: [SendPasswordResetCommand, RecordUsageReference],
   errors: { IdentityErrorCode: identityErrorCatalog },
 });

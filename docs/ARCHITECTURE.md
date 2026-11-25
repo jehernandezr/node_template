@@ -805,9 +805,9 @@ Un access token es válido hasta su `exp`, así que la plataforma lo invalida an
 
 **Dispositivos**
 
-- En el primer login el servidor emite un `deviceId` firmado que el cliente guarda y envía en cada login.
+- Cada dispositivo registrado guarda una clave ES256. El login lo reconoce solo con una firma de esa clave sobre la ruta, el id público del dispositivo, la hora, un nonce de un solo uso y el email o el reto WebAuthn (`device: DeviceSignatureFields`). Una prueba que no verifica deja el dispositivo como desconocido y pide un segundo factor ([ADR 0036](adr/0036-seguridad-de-identity-factores-acceso-y-ciclo-de-vida.md)).
 - Tabla `devices`: nombre legible ("iPhone · Safari"), plataforma, primera y última vez visto, última IP, `trustedUntil`, push token.
-- Tabla `login_attempts`: cada intento de una cuenta existente con resultado, motivo, IP, dispositivo y `traceId`. Alimenta la auditoría y el bloqueo por fuerza bruta. Los intentos con emails inexistentes quedan solo en Valkey y en los logs, porque sin usuario no hay shard.
+- Tabla `login_attempts`: cada intento con resultado, motivo, IP, dispositivo y `traceId`. Alimenta la auditoría y el bloqueo por fuerza bruta. Un intento con un email inexistente se anota sin usuario en el shard del tenant por defecto, así un fallo cuesta lo mismo exista o no la cuenta.
 - El usuario ve sus dispositivos y sesiones, cierra sesiones remotas, cierra todas menos la actual y retira la confianza de un dispositivo.
 - Datos personales bajo Ley 1581: retención configurable y sin fingerprinting invasivo.
 

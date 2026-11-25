@@ -5,7 +5,11 @@ import {
   Input,
   Resource,
 } from '@platform/http/nest';
-import { SessionCookieMode, type HttpExchange } from '@platform/http';
+import {
+  SessionCookieMode,
+  type HttpExchange,
+  RateLimitTier,
+} from '@platform/http';
 import type { Actor } from '@platform/auth';
 import {
   RequestMfaChallengeRoute,
@@ -46,6 +50,7 @@ import { RequestMfaChallenge } from '../application/request-mfa-challenge.use-ca
 import { StepUp } from '../application/step-up.use-case.js';
 import { VerifyMfa } from '../application/verify-mfa.use-case.js';
 
+/** HTTP edge of the second factor: challenges, step-up, TOTP, recovery codes and recovery without a device. */
 @Resource(IdentityResource.Mfa)
 export class MfaController {
   constructor(
@@ -57,6 +62,11 @@ export class MfaController {
     private readonly delivery: SessionDelivery,
   ) {}
 
+  /**
+   * Opens a challenge for a pending sign-in.
+   * @param input Pending token and chosen method.
+   * @returns The challenge.
+   */
   @Endpoint(RequestMfaChallengeRoute)
   requestMfaChallenge(
     @Input() input: MfaChallengeRequest,
@@ -64,6 +74,12 @@ export class MfaController {
     return this.challenge.execute(input, PendingPurpose.SignIn);
   }
 
+  /**
+   * Verifies the second factor of a pending sign-in and delivers the session token.
+   * @param input Pending token, challenge and code.
+   * @param http Exchange of the request.
+   * @returns The sign-in result.
+   */
   @Endpoint(VerifyMfaRoute, { sessionCookie: SessionCookieMode.Issue })
   async verifyMfa(
     @Input() input: MfaVerifyRequest,
@@ -72,7 +88,13 @@ export class MfaController {
     return this.delivery.deliver(await this.verify.execute(input), http);
   }
 
-  @Endpoint(StartStepUpRoute)
+  /**
+   * Starts a step-up of the caller's session.
+   * @param actor Caller.
+   * @param http Exchange of the request.
+   * @returns The pending step-up and its methods.
+   */
+  @Endpoint(StartStepUpRoute, { rateLimit: RateLimitTier.Sensitive })
   startStepUp(
     @CurrentActor() actor: Actor | undefined,
     @Exchange() http: HttpExchange,
@@ -80,7 +102,13 @@ export class MfaController {
     return this.stepUp.begin(requireUserActor(actor), http.client);
   }
 
-  @Endpoint(RequestStepUpChallengeRoute)
+  /**
+   * Opens a challenge for a step-up.
+   * @param input Pending token and chosen method.
+   * @param actor Caller.
+   * @returns The challenge.
+   */
+  @Endpoint(RequestStepUpChallengeRoute, { rateLimit: RateLimitTier.Sensitive })
   requestStepUpChallenge(
     @Input() input: MfaChallengeRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -89,7 +117,13 @@ export class MfaController {
     return this.challenge.execute(input, PendingPurpose.StepUp);
   }
 
-  @Endpoint(VerifyStepUpRoute)
+  /**
+   * Verifies the code of a step-up.
+   * @param input Pending token, challenge and code.
+   * @param actor Caller.
+   * @returns The new access token and the last MFA.
+   */
+  @Endpoint(VerifyStepUpRoute, { rateLimit: RateLimitTier.Sensitive })
   verifyStepUp(
     @Input() input: StepUpVerifyRequest,
     @CurrentActor() actor: Actor | undefined,
@@ -97,6 +131,11 @@ export class MfaController {
     return this.stepUp.verify(requireUserActor(actor), input);
   }
 
+  /**
+   * Starts the TOTP enrollment of the caller.
+   * @param actor Caller.
+   * @returns The secret and its URI.
+   */
   @Endpoint(StartTotpEnrollmentRoute)
   startTotpEnrollment(
     @CurrentActor() actor: Actor | undefined,
@@ -104,6 +143,12 @@ export class MfaController {
     return this.factors.startTotp(userRefOf(requireUserActor(actor)));
   }
 
+  /**
+   * Confirms the TOTP enrollment with a first code.
+   * @param input Code of the authenticator app.
+   * @param actor Caller.
+   * @returns The new recovery codes.
+   */
   @Endpoint(ConfirmTotpEnrollmentRoute)
   confirmTotpEnrollment(
     @Input() input: TotpConfirmRequest,
@@ -115,11 +160,20 @@ export class MfaController {
     );
   }
 
+  /**
+   * Removes the TOTP factor of the caller.
+   * @param actor Caller.
+   */
   @Endpoint(RemoveTotpRoute)
   async removeTotp(@CurrentActor() actor: Actor | undefined): Promise<void> {
     await this.factors.removeTotp(userRefOf(requireUserActor(actor)));
   }
 
+  /**
+   * Replaces the recovery codes of the caller.
+   * @param actor Caller.
+   * @returns The new recovery codes.
+   */
   @Endpoint(RegenerateRecoveryCodesRoute)
   regenerateRecoveryCodes(
     @CurrentActor() actor: Actor | undefined,
@@ -129,6 +183,11 @@ export class MfaController {
     );
   }
 
+  /**
+   * Starts a recovery without a device for a pending sign-in.
+   * @param input Pending token.
+   * @returns When the recovery can be confirmed.
+   */
   @Endpoint(StartMfaRecoveryRoute)
   startMfaRecovery(
     @Input() input: MfaRecoveryStartRequest,
@@ -136,6 +195,12 @@ export class MfaController {
     return this.recovery.start(input.mfaToken);
   }
 
+  /**
+   * Confirms a recovery without a device and delivers the session token.
+   * @param input Pending token, emailed token and an optional device key.
+   * @param http Exchange of the request.
+   * @returns The sign-in result.
+   */
   @Endpoint(ConfirmMfaRecoveryRoute, { sessionCookie: SessionCookieMode.Issue })
   async confirmMfaRecovery(
     @Input() input: MfaRecoveryConfirmRequest,

@@ -7,6 +7,7 @@ import { ListMySessions } from '../application/list-my-sessions.use-case.js';
 import { LocalSessionsFacade } from '../application/local-sessions.facade.js';
 import { MarkMfaVerified } from '../application/mark-mfa-verified.use-case.js';
 import { RefreshSession } from '../application/refresh-session.use-case.js';
+import { RevocationReplay } from '../application/revocation-replay.js';
 import { RevokeSessions } from '../application/revoke-sessions.use-case.js';
 import { SessionRevoker } from '../application/session-revoker.js';
 import { SessionTokenIssuer } from '../application/session-token-issuer.js';
@@ -20,9 +21,9 @@ import { SessionsController } from './sessions.controller.js';
 import { SessionsInternalOperations } from './sessions.internal-operations.js';
 
 /**
- * Sesiones, rotación, refresh, cierre, revocación y cambio de tenant. Es global solo para exportar su
- * fachada: las fachadas de identity se usan en ciclo (sessions y users se necesitan entre sí) y Nest no
- * resuelve un ciclo entre módulos sin `forwardRef`.
+ * Sessions, rotation, refresh, sign-out, revocation and tenant switch. It is global only to export its
+ * facade: the identity facades are used in a cycle (sessions and users need each other) and Nest does not
+ * resolve a cycle between modules without `forwardRef`.
  */
 @Global()
 @Module({
@@ -45,6 +46,7 @@ import { SessionsInternalOperations } from './sessions.internal-operations.js';
     RevokeSessions,
     SwitchTenant,
     MarkMfaVerified,
+    RevocationReplay,
     { provide: SessionsFacade, useClass: LocalSessionsFacade },
     SessionsInternalOperations,
   ],

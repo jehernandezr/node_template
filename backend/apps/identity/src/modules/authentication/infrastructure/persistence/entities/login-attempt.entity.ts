@@ -1,15 +1,18 @@
 import { TimestampTransformer } from '@platform/persistence';
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
-/** `login_attempts`, en el shard del usuario. Solo se inserta. */
+/**
+ * `login_attempts`, in the shard of the user, or in the shard of the default tenant for an email without an
+ * account. It is only inserted.
+ */
 @Entity({ name: 'login_attempts' })
 @Index('login_attempts_user_idx', ['userId', 'attemptedAt'])
 export class LoginAttemptEntity {
   @PrimaryColumn({ type: 'uuid', name: 'id' })
   id!: string;
 
-  @Column({ type: 'uuid', name: 'user_id', nullable: false })
-  userId!: string;
+  @Column({ type: 'uuid', name: 'user_id', nullable: true })
+  userId!: string | null;
 
   @Column({ type: 'varchar', length: 16, name: 'result', nullable: false })
   result!: string;

@@ -1,4 +1,4 @@
-/** Códigos de error del servicio identity. */
+/** Error codes of the identity service. */
 export enum IdentityErrorCode {
   AuthInvalidCredentials = 'IDENTITY.AUTH.INVALID_CREDENTIALS',
   MfaTokenInvalid = 'IDENTITY.MFA.TOKEN_INVALID',
@@ -46,7 +46,7 @@ export enum IdentityErrorCode {
   ServiceAccountDisabled = 'IDENTITY.SERVICE_ACCOUNT.DISABLED',
 }
 
-/** Identificadores de las rutas públicas de identity. */
+/** Ids of the public routes of identity. */
 export enum IdentityRoute {
   SignIn = 'identity.auth.sign-in',
   RequestMfaChallenge = 'identity.auth.mfa-challenge',
@@ -126,7 +126,7 @@ export enum IdentityRoute {
   GetSaga = 'identity.sagas.get',
 }
 
-/** Identificadores de las operaciones internas de identity. */
+/** Ids of the internal operations of identity. */
 export enum IdentityOperation {
   RevokeUserSessions = 'identity.sessions.revoke-for-user.v1',
   GetUserAccess = 'identity.users.get-access.v1',
@@ -150,7 +150,7 @@ export enum IdentityOperation {
   FinishTenantMove = 'identity.tenant-moves.finish.v1',
 }
 
-/** Tipos CloudEvents de los eventos que publica identity. */
+/** CloudEvents types of the events identity publishes. */
 export enum IdentityEvent {
   SessionRevoked = 'identity.session.revoked.v1',
   TokensRevoked = 'identity.tokens.revoked.v1',
@@ -171,25 +171,32 @@ export enum IdentityEvent {
   UserErased = 'identity.user.erased.v1',
 }
 
-/** Tópicos donde identity publica sus eventos. */
+/** CloudEvents types of the commands identity sends to itself. */
+export enum IdentityCommand {
+  SendPasswordReset = 'identity.password-reset.send.v1',
+}
+
+/** Topics where identity publishes its events. */
 export enum IdentityTopic {
   Events = 'identity-events',
 }
 
-/** Colas que consume identity. */
+/** Queues identity consumes. */
 export enum IdentityQueue {
   AccessProjection = 'identity-access-projection',
+  AuthState = 'identity-auth-state',
   Billing = 'identity-billing',
+  PasswordResets = 'identity-password-resets',
 }
 
-/** Sagas que orquesta identity. */
+/** Sagas identity orchestrates. */
 export enum IdentitySaga {
   TenantOnboarding = 'identity.tenant-onboarding',
   DeleteAccount = 'identity.delete-account',
   MoveTenant = 'identity.move-tenant',
 }
 
-/** Estado de una saga de identity tal como lo ve quien la inició. Repite los valores del motor de sagas. */
+/** Status of an identity saga as whoever started it sees it. It repeats the values of the saga engine. */
 export enum IdentitySagaStatus {
   Running = 'running',
   Suspended = 'suspended',
@@ -201,10 +208,10 @@ export enum IdentitySagaStatus {
 }
 
 /**
- * Nombres de los mensajes de billing que identity consume o envía, y el código
- * de la cuota que identity responde al agregar un miembro. Se repiten aquí
- * porque billing ya importa a identity y un contrato no puede importar a quien
- * lo importa; `contracts-export` comprueba que existan los mensajes.
+ * Names of the billing messages identity consumes or sends, and the code of the
+ * quota identity answers when adding a member. They are repeated here because
+ * billing already imports identity and a contract cannot import whoever imports
+ * it; `contracts-export` checks that the messages exist.
  */
 export enum BillingReference {
   Topic = 'billing-events',

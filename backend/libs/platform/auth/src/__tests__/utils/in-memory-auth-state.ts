@@ -9,20 +9,20 @@ import type { PermissionVersion } from '../../state/permission-version.js';
 import type { RevocationHandler } from '../../state/revocation-handler.js';
 
 /**
- * Estado de autenticación en memoria: lector, escritor y aviso de revocaciones
- * en una sola clase, como si lector y escritor compartieran un Valkey. Para
- * pruebas; no entra al índice público.
+ * Authentication state in memory: reader, writer and revocation feed in a
+ * single class, as if reader and writer shared a Valkey. For tests; it is not
+ * in the public index.
  */
 export class InMemoryAuthState
   implements AuthStateReader, AuthStateWriter, AuthRevocationFeed
 {
-  /** Cuántas veces se consultó cada operación de lectura, para verificar cachés. */
+  /** How many times each read operation was asked, to check caches. */
   readonly calls = new Map<string, number>();
 
-  /** Con valor, toda lectura y escritura falla con este error: simula Valkey caído. */
+  /** With a value, every read and write fails with this error: it simulates Valkey being down. */
   failure: Error | undefined;
 
-  /** Motivo con el que se revocó cada sesión. */
+  /** Reason with which each session was revoked. */
   readonly revocationReasons = new Map<string, RevocationReason>();
 
   private readonly revoked = new Map<string, number>();
@@ -108,6 +108,21 @@ export class InMemoryAuthState
     this.userEpochs.set(userId, epoch);
   }
 
+  async raiseUserRevocation(
+    userId: string,
+    revokedBefore: number,
+  ): Promise<void> {
+    this.touch('raiseUserRevocation');
+    const current = this.userEpochs.get(userId);
+    if (current !== undefined && current.revokedBefore >= revokedBefore) {
+      return;
+    }
+    this.userEpochs.set(userId, {
+      revokedBefore,
+      suspended: current?.suspended ?? false,
+    });
+  }
+
   async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {
     this.touch('setTenantEpoch');
     this.tenantEpochs.set(tenantId, epoch);
@@ -119,11 +134,10 @@ export class InMemoryAuthState
     version: number,
   ): Promise<void> {
     this.touch('setPermissionVersion');
-    if (userId === undefined) {
-      this.tenantVersions.set(tenantId, version);
-    } else {
-      this.userVersions.set(`${tenantId}:${userId}`, version);
-    }
+    const versions =
+      userId === undefined ? this.tenantVersions : this.userVersions;
+    const key = userId === undefined ? tenantId : `${tenantId}:${userId}`;
+    versions.set(key, Math.max(versions.get(key) ?? version, version));
   }
 
   async putAccessGrant(
@@ -153,7 +167,7 @@ export class InMemoryAuthState
     }
   }
 
-  /** Veces que se llamó a una operación. */
+  /** Times an operation was called. */
   count(operation: string): number {
     return this.calls.get(operation) ?? 0;
   }

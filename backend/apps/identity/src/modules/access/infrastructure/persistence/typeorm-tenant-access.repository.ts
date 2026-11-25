@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Permission, TenantRole } from '@contracts/identity';
 import { RepositoryKit, TenantIsolatedRepository } from '@platform/persistence';
+import { IsNull, MoreThan, Not } from 'typeorm';
 import { TenantAccessRepository } from '../../domain/access-store.js';
 import type { Group } from '../../domain/group.js';
 import type { Membership } from '../../domain/membership.js';
@@ -10,16 +11,27 @@ import { RoleEntity } from './entities/role.entity.js';
 import { TenantAccessVersionEntity } from './entities/tenant-access-version.entity.js';
 import { TenantMemberEntity } from './entities/tenant-member.entity.js';
 
-/** `TenantAccessRepository` sobre las tablas de acceso del shard del tenant. */
+/**
+ * `TenantAccessRepository` over the access tables of the tenant shard. A removed member stays as a
+ * soft-deleted row that keeps its last permission version: TypeORM reads hide it.
+ */
 @Injectable()
 export class TypeOrmTenantAccessRepository
   extends TenantIsolatedRepository
   implements TenantAccessRepository
 {
+  private static readonly TENANT_TABLES = [
+    'tenant_members',
+    'groups',
+    'roles',
+    'tenant_access_versions',
+  ];
+
   constructor(kit: RepositoryKit) {
     super(kit);
   }
 
+  /** {@inheritDoc TenantAccessRepository.findMembership} */
   async findMembership(userId: string): Promise<Membership | undefined> {
     const tenantId = this.tenantId();
     const row = await this.readPrimary((manager) =>
@@ -28,6 +40,7 @@ export class TypeOrmTenantAccessRepository
     return row === null ? undefined : this.membershipOf(row);
   }
 
+  /** {@inheritDoc TenantAccessRepository.listMemberships} */
   async listMemberships(): Promise<readonly Membership[]> {
     const tenantId = this.tenantId();
     const rows = await this.read((manager) =>
@@ -39,21 +52,90 @@ export class TypeOrmTenantAccessRepository
     return rows.map((row) => this.membershipOf(row));
   }
 
+  /** {@inheritDoc TenantAccessRepository.listMembershipsAfter} */
+  async listMembershipsAfter(
+    after: string | undefined,
+    limit: number,
+  ): Promise<readonly Membership[]> {
+    const tenantId = this.tenantId();
+    const rows = await this.read((manager) =>
+      manager.find(TenantMemberEntity, {
+        where:
+          after === undefined
+            ? { tenantId }
+            : { tenantId, userId: MoreThan(after) },
+        order: { userId: 'ASC' },
+        take: limit,
+      }),
+    );
+    return rows.map((row) => this.membershipOf(row));
+  }
+
+  /** {@inheritDoc TenantAccessRepository.insertMembership} */
   async insertMembership(membership: Membership): Promise<void> {
+    const tenantId = this.tenantId();
+    await this.write((manager) =>
+      manager.query(
+        'DELETE FROM "tenant_members" WHERE "tenant_id" = $1 AND "user_id" = $2 AND "deleted_at" IS NOT NULL',
+        [tenantId, membership.userId],
+      ),
+    );
     await this.insertOwned(TenantMemberEntity, this.memberRow(membership));
   }
 
+  /** {@inheritDoc TenantAccessRepository.updateMembership} */
   async updateMembership(membership: Membership): Promise<void> {
     await this.updateOwned(TenantMemberEntity, this.memberRow(membership));
   }
 
-  async deleteMembership(userId: string): Promise<void> {
+  /** {@inheritDoc TenantAccessRepository.removeMembership} */
+  async removeMembership(userId: string, finalVersion: number): Promise<void> {
     const tenantId = this.tenantId();
     await this.write((manager) =>
-      manager.delete(TenantMemberEntity, { tenantId, userId }),
+      manager.query(
+        'UPDATE "tenant_members" SET "permission_version" = $3, "deleted_at" = now(), "updated_at" = now(), ' +
+          '"version" = "version" + 1 WHERE "tenant_id" = $1 AND "user_id" = $2 AND "deleted_at" IS NULL',
+        [tenantId, userId, finalVersion],
+      ),
     );
   }
 
+  /** {@inheritDoc TenantAccessRepository.removedVersion} */
+  async removedVersion(userId: string): Promise<number | undefined> {
+    const tenantId = this.tenantId();
+    const row = await this.readPrimary((manager) =>
+      manager.findOne(TenantMemberEntity, {
+        where: { tenantId, userId, deletedAt: Not(IsNull()) },
+        withDeleted: true,
+      }),
+    );
+    return row?.permissionVersion;
+  }
+
+  /** {@inheritDoc TenantAccessRepository.purgeMembership} */
+  async purgeMembership(userId: string): Promise<void> {
+    const tenantId = this.tenantId();
+    await this.write((manager) =>
+      manager.query(
+        'DELETE FROM "tenant_members" WHERE "tenant_id" = $1 AND "user_id" = $2',
+        [tenantId, userId],
+      ),
+    );
+  }
+
+  /** {@inheritDoc TenantAccessRepository.purgeTenant} */
+  async purgeTenant(): Promise<void> {
+    const tenantId = this.tenantId();
+    await this.write(async (manager) => {
+      for (const table of TypeOrmTenantAccessRepository.TENANT_TABLES) {
+        await manager.query(`DELETE FROM "${table}" WHERE "tenant_id" = $1`, [
+          tenantId,
+        ]);
+      }
+    });
+  }
+
+  /** {@inheritDoc TenantAccessRepository.listGroups} */
   async listGroups(): Promise<readonly Group[]> {
     const tenantId = this.tenantId();
     const rows = await this.readPrimary((manager) =>
@@ -72,14 +154,17 @@ export class TypeOrmTenantAccessRepository
     }));
   }
 
+  /** {@inheritDoc TenantAccessRepository.insertGroup} */
   async insertGroup(group: Group): Promise<void> {
     await this.insertOwned(GroupEntity, this.groupRow(group));
   }
 
+  /** {@inheritDoc TenantAccessRepository.updateGroup} */
   async updateGroup(group: Group): Promise<void> {
     await this.updateOwned(GroupEntity, this.groupRow(group));
   }
 
+  /** {@inheritDoc TenantAccessRepository.deleteGroup} */
   async deleteGroup(groupId: string): Promise<void> {
     const tenantId = this.tenantId();
     await this.write((manager) =>
@@ -87,6 +172,7 @@ export class TypeOrmTenantAccessRepository
     );
   }
 
+  /** {@inheritDoc TenantAccessRepository.listRoles} */
   async listRoles(): Promise<readonly Role[]> {
     const tenantId = this.tenantId();
     const rows = await this.readPrimary((manager) =>
@@ -102,14 +188,17 @@ export class TypeOrmTenantAccessRepository
     }));
   }
 
+  /** {@inheritDoc TenantAccessRepository.insertRole} */
   async insertRole(role: Role): Promise<void> {
     await this.insertOwned(RoleEntity, this.roleRow(role));
   }
 
+  /** {@inheritDoc TenantAccessRepository.updateRole} */
   async updateRole(role: Role): Promise<void> {
     await this.updateOwned(RoleEntity, this.roleRow(role));
   }
 
+  /** {@inheritDoc TenantAccessRepository.deleteRole} */
   async deleteRole(roleId: string): Promise<void> {
     const tenantId = this.tenantId();
     await this.write((manager) =>
@@ -118,8 +207,8 @@ export class TypeOrmTenantAccessRepository
   }
 
   /**
-   * El candado es la fila del tenant en `tenant_access_versions`: se crea en cero si falta (la versión
-   * empieza a contar en el primer cambio) y se bloquea hasta el fin de la transacción.
+   * The lock is the tenant row in `tenant_access_versions`: it is created at zero if missing (the version
+   * starts counting at the first change) and locked until the transaction ends.
    */
   async lockForChanges(): Promise<void> {
     const tenantId = this.tenantId();
@@ -136,6 +225,7 @@ export class TypeOrmTenantAccessRepository
     });
   }
 
+  /** {@inheritDoc TenantAccessRepository.tenantVersion} */
   async tenantVersion(): Promise<number> {
     const tenantId = this.tenantId();
     const row = await this.readPrimary((manager) =>
@@ -144,9 +234,9 @@ export class TypeOrmTenantAccessRepository
     return row?.permissionVersion ?? 0;
   }
 
+  /** A single atomic upsert: two concurrent changes never end on the same version. */
   async bumpTenantVersion(): Promise<number> {
     const tenantId = this.tenantId();
-    // Un solo UPSERT atómico: dos cambios a la vez nunca dejan la misma versión.
     const rows: Array<{ permission_version: number }> = await this.write(
       (manager) =>
         manager.query(
@@ -168,6 +258,7 @@ export class TypeOrmTenantAccessRepository
       groupIds: row.groupIds,
       permissionVersion: row.permissionVersion,
       joinedAt: row.joinedAt,
+      leavingSince: row.leavingSince,
       ...(row.version === undefined ? {} : { version: row.version }),
     };
   }
@@ -180,6 +271,7 @@ export class TypeOrmTenantAccessRepository
     row.groupIds = [...membership.groupIds];
     row.permissionVersion = membership.permissionVersion;
     row.joinedAt = membership.joinedAt;
+    row.leavingSince = membership.leavingSince;
     if (membership.version !== undefined) {
       row.version = membership.version;
     }

@@ -5,7 +5,7 @@ import type { LoginAttempt } from '../../domain/login-attempt.js';
 import { LoginAttemptRepository } from '../../domain/login-attempt.repository.js';
 import { LoginAttemptEntity } from './entities/login-attempt.entity.js';
 
-/** `LoginAttemptRepository` sobre `login_attempts`. */
+/** `LoginAttemptRepository` over `login_attempts`. */
 @Injectable()
 export class TypeOrmLoginAttemptRepository
   extends UserShardRepository
@@ -15,6 +15,7 @@ export class TypeOrmLoginAttemptRepository
     super(kit);
   }
 
+  /** {@inheritDoc LoginAttemptRepository.record} */
   async record(attempt: LoginAttempt): Promise<void> {
     await this.write((manager) =>
       manager.insert(LoginAttemptEntity, {
@@ -27,6 +28,13 @@ export class TypeOrmLoginAttemptRepository
         traceId: attempt.traceId ?? null,
         attemptedAt: attempt.attemptedAt,
       }),
+    );
+  }
+
+  /** {@inheritDoc LoginAttemptRepository.forget} */
+  async forget(userId: string): Promise<void> {
+    await this.write((manager) =>
+      manager.delete(LoginAttemptEntity, { userId }),
     );
   }
 }

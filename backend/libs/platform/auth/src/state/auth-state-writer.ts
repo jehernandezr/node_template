@@ -3,11 +3,15 @@ import type { AccessGrant } from '../access/access-grant.js';
 import type { ApiKeyPrincipal } from '../api-keys/api-key-principal.js';
 import type { Epoch } from './epoch.js';
 
-/** Escritura del estado compartido `auth:*`. Solo la usa identity. */
+/** Writes of the shared `auth:*` state. Only identity uses it. */
 export abstract class AuthStateWriter {
   /**
-   * Marca la sesión como revocada durante `ttlMs` (la vida restante del access
-   * token más 30 s), la agrega al índice y avisa por el canal de revocaciones.
+   * Marks the session as revoked for `ttlMs` (the remaining life of the access
+   * token plus 30 s), adds it to the index and announces it on the revocations
+   * channel. Writing it again is harmless.
+   * @param sessionId Revoked session.
+   * @param ttlMs How long the mark lives; nothing is written if it is not positive.
+   * @param reason Why it was revoked.
    */
   abstract revokeSession(
     sessionId: string,
@@ -15,31 +19,72 @@ export abstract class AuthStateWriter {
     reason: RevocationReason,
   ): Promise<void>;
 
+  /**
+   * Stores the revocation epoch of a user.
+   * @param userId User.
+   * @param epoch Cut-off instant and suspension.
+   */
   abstract setUserEpoch(userId: string, epoch: Epoch): Promise<void>;
 
+  /**
+   * Raises the revocation cut-off of a user in one atomic step and keeps the suspension already stored, so
+   * a concurrent suspension is never lost. A cut-off lower than or equal to the stored one changes nothing.
+   * @param userId User.
+   * @param revokedBefore New cut-off in epoch seconds, a non-negative safe integer.
+   */
+  abstract raiseUserRevocation(
+    userId: string,
+    revokedBefore: number,
+  ): Promise<void>;
+
+  /**
+   * Stores the revocation epoch of a tenant.
+   * @param tenantId Tenant.
+   * @param epoch Cut-off instant and suspension.
+   */
   abstract setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void>;
 
-  /** Con `userId` fija la versión del usuario en el tenant; sin él, la versión del tenant. */
+  /**
+   * Raises a permission version: the one of the user in the tenant with `userId`, the one of the tenant
+   * without it. A version lower than or equal to the stored one is ignored, so writes that arrive late or
+   * twice never move a version back.
+   * @param tenantId Tenant.
+   * @param userId User, or `undefined` for the tenant version.
+   * @param version New version, a non-negative safe integer.
+   */
   abstract setPermissionVersion(
     tenantId: string,
     userId: string | undefined,
     version: number,
   ): Promise<void>;
 
-  /** Guarda el grant con un TTL de 15 minutos. */
+  /**
+   * Stores the grant with a 15 minute TTL.
+   * @param tenantId Tenant.
+   * @param userId User.
+   * @param grant Effective access.
+   */
   abstract putAccessGrant(
     tenantId: string,
     userId: string,
     grant: AccessGrant,
   ): Promise<void>;
 
-  /** Guarda el principal bajo el hash del secreto, con un TTL de 60 segundos. */
+  /**
+   * Stores the principal under the hash of the secret, with a 60 second TTL.
+   * @param prefix Prefix of the key.
+   * @param secretHash Hash of the secret.
+   * @param principal Principal of the key.
+   */
   abstract putApiKey(
     prefix: string,
     secretHash: string,
     principal: ApiKeyPrincipal,
   ): Promise<void>;
 
-  /** Borra la llave `auth:apikey:{prefix}`: así se revoca una API key. */
+  /**
+   * Deletes `auth:apikey:{prefix}`: that is how an API key is revoked.
+   * @param prefix Prefix of the key.
+   */
   abstract dropApiKey(prefix: string): Promise<void>;
 }

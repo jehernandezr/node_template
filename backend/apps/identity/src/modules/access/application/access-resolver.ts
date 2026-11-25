@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   FeatureFlag,
   IdentityErrorCode,
+  type Permission,
   type UserAccess,
 } from '@contracts/identity';
 import { FlagEvaluator, type FlagContext } from '@platform/flags';
@@ -17,7 +18,7 @@ import {
 import { EffectiveAccessCalculator } from '../domain/effective-access-calculator.js';
 import type { UserTenant } from '../domain/user-tenant.js';
 
-/** Calcula el acceso efectivo y responde las preguntas de membresía de los otros módulos. */
+/** Computes the effective access and answers the membership questions of the other modules. */
 @Injectable()
 export class AccessResolver {
   private readonly calculator = new EffectiveAccessCalculator();
@@ -31,7 +32,13 @@ export class AccessResolver {
     private readonly flags: FlagEvaluator,
   ) {}
 
-  /** @throws IdentityError `IDENTITY.TENANT.NOT_MEMBER` si el usuario no es miembro del tenant. */
+  /**
+   * Resolves the effective access of a member.
+   * @param userId User.
+   * @param tenantId Tenant.
+   * @returns The access with its permission version, platform roles, features and flags.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_MEMBER` if the user is not a member of the tenant.
+   */
   async resolve(userId: string, tenantId: string): Promise<UserAccess> {
     const access = await this.scopes.inTenantShard(tenantId, async () => {
       const membership = await this.tenantAccess.findMembership(userId);
@@ -69,12 +76,18 @@ export class AccessResolver {
     };
   }
 
-  /** Solo los flags que el contrato conoce: una regla de otro servicio no viaja en el token. */
+  /** Only the flags the contract knows: a rule of another service does not travel in the token. */
   private async flagsFor(context: FlagContext): Promise<FeatureFlag[]> {
     const enabled = await this.flags.enabledFlags(context);
     return Object.values(FeatureFlag).filter((flag) => enabled.includes(flag));
   }
 
+  /**
+   * Tells whether a user is a member of a tenant.
+   * @param userId User.
+   * @param tenantId Tenant.
+   * @returns Whether the membership exists.
+   */
   async isMember(userId: string, tenantId: string): Promise<boolean> {
     const membership = await this.scopes.inTenantShard(tenantId, () =>
       this.tenantAccess.findMembership(userId),
@@ -82,7 +95,12 @@ export class AccessResolver {
     return membership !== undefined;
   }
 
-  /** El tenant de origen si sigue siendo miembro; si no, el primero al que se unió. */
+  /**
+   * Picks the home tenant if the user is still a member of it, otherwise the first one they joined.
+   * @param ref User.
+   * @returns The tenant id.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_MEMBER` if the user belongs to no tenant.
+   */
   async defaultTenant(ref: UserRef): Promise<string> {
     const tenants = await this.tenantsOf(ref);
     const home = tenants.find((tenant) => tenant.tenantId === ref.homeTenantId);
@@ -94,8 +112,11 @@ export class AccessResolver {
   }
 
   /**
-   * Quien administra el tenant (con cualquier permiso de administración, de un grupo de sistema o propio) y
-   * quien tiene roles de plataforma piden segundo factor siempre.
+   * Tells whether the user always needs a second factor: whoever administers the tenant (with any
+   * administrative permission, from a system or custom group) and whoever has platform roles.
+   * @param ref User.
+   * @param tenantId Tenant of the sign-in.
+   * @returns Whether MFA is required on every sign-in.
    */
   async requiresMfaOnEveryLogin(
     ref: UserRef,
@@ -123,6 +144,33 @@ export class AccessResolver {
     });
   }
 
+  /**
+   * Reads the permissions of a membership without the rest of the access.
+   * @param tenantId Tenant.
+   * @param userId User.
+   * @returns Its permissions, or none if the user is not a member.
+   */
+  memberPermissions(
+    tenantId: string,
+    userId: string,
+  ): Promise<readonly Permission[]> {
+    return this.scopes.inTenantShard(tenantId, async () => {
+      const membership = await this.tenantAccess.findMembership(userId);
+      return membership === undefined
+        ? []
+        : this.calculator.calculate(
+            membership,
+            await this.tenantAccess.listGroups(),
+            await this.tenantAccess.listRoles(),
+          ).permissions;
+    });
+  }
+
+  /**
+   * Lists the tenants of a user from their projection.
+   * @param ref User.
+   * @returns The projected memberships.
+   */
   tenantsOf(ref: UserRef): Promise<readonly UserTenant[]> {
     return this.scopes.inUserShard(ref, () =>
       this.userAccess.listTenants(ref.userId),

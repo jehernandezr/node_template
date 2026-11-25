@@ -1,8 +1,9 @@
-import { IdentityErrorCode } from '@contracts/identity';
+import { IdentityCommand, IdentityErrorCode } from '@contracts/identity';
 import { ContainerRuntime } from '@platform/kernel/test-utils';
 import {
   IdentityJourney,
   IdentityTestApp,
+  QueuedCommands,
   ShardedUsers,
 } from '../../../__tests__/utils/index.js';
 import { IdentityEmailTemplate } from '../../../shared/enums/identity-email-template.enum.js';
@@ -29,13 +30,44 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
     await app.stop();
   });
 
-  /** Pide la recuperación por HTTP y devuelve el token del correo. */
+  /** Requests the reset over HTTP, lets the worker answer it and returns the token of the email. */
   const requestReset = async (journey: IdentityJourney): Promise<string> => {
     const requested = await journey
       .native()
       .post('/v1/auth/password-resets', { body: { email: journey.email } });
     IdentityJourney.expectStatus(requested, 202);
+    await new QueuedCommands(app).deliver(
+      IdentityCommand.SendPasswordReset,
+      journey.email,
+    );
     return String(journey.mailTo(IdentityEmailTemplate.PasswordReset)['token']);
+  };
+
+  /** What a reset request leaves that its caller could tell apart: the answer and the rows it writes. */
+  const traceOfRequest = async (email: string) => {
+    const probe = app.shards();
+    const count = `SELECT (SELECT count(*) FROM outbox) + (SELECT count(*) FROM password_resets) AS rows`;
+    const before = await Promise.all(
+      probe
+        .names()
+        .map((shard) => probe.rowsIn<{ rows: string }>(shard, count)),
+    );
+    const response = await app
+      .nativeClient()
+      .post('/v1/auth/password-resets', { body: { email } });
+    const after = await Promise.all(
+      probe
+        .names()
+        .map((shard) => probe.rowsIn<{ rows: string }>(shard, count)),
+    );
+    return {
+      status: response.status,
+      body: response.body,
+      written: after.map(
+        (rows, index) =>
+          Number(rows[0]?.rows) - Number(before[index]?.[0]?.rows),
+      ),
+    };
   };
 
   const confirm = (
@@ -46,6 +78,46 @@ runtime.describeIfAvailable('password resets in the shard of the user', () => {
     journey.native().post('/v1/auth/password-resets/confirm', {
       body: { token, newPassword },
     });
+
+  it('answers and writes the same for an email with an account and for one without', async () => {
+    const [user] = [
+      ...(await new ShardedUsers(app).oneInEachShard('igual')).values(),
+    ];
+
+    const known = await traceOfRequest(String(user?.email));
+    const unknown = await traceOfRequest('nadie.igual@example.com');
+
+    expect(unknown).toEqual(known);
+    expect(known.written).toEqual(expect.arrayContaining([1]));
+  });
+
+  it('emails only the account of a known email once the worker answers the requests', async () => {
+    const [user] = [
+      ...(await new ShardedUsers(app).oneInEachShard('solo-cuenta')).values(),
+    ];
+    const known = new IdentityJourney(app, String(user?.email));
+    const unknown = new IdentityJourney(app, 'nadie.solo@example.com');
+    await known
+      .native()
+      .post('/v1/auth/password-resets', { body: { email: known.email } });
+    await unknown
+      .native()
+      .post('/v1/auth/password-resets', { body: { email: unknown.email } });
+
+    await new QueuedCommands(app).deliver(
+      IdentityCommand.SendPasswordReset,
+      known.email,
+    );
+    await new QueuedCommands(app).deliver(
+      IdentityCommand.SendPasswordReset,
+      unknown.email,
+    );
+
+    expect(known.mailTo(IdentityEmailTemplate.PasswordReset)).toEqual({
+      token: expect.any(String),
+    });
+    expect(() => unknown.mailTo(IdentityEmailTemplate.PasswordReset)).toThrow();
+  });
 
   it('keeps each reset in the shard of its user and lets its token work once', async () => {
     const placed = await new ShardedUsers(app).oneInEachShard('recupera');

@@ -3,14 +3,21 @@ import { IdGenerator } from '@platform/kernel';
 import { SequentialIdGenerator } from '@platform/kernel/test-utils';
 import type { UserRef } from '../../../../shared/types/user-ref.type.js';
 import { DevicesFacade } from '../../application/devices.facade.js';
+import type { DeviceProof } from '../../domain/device-proof.js';
 import type { DeviceRecognition } from '../../domain/device-recognition.js';
+import { DeviceSignedMessage } from '../../domain/device-signed-message.js';
 import type { DeviceSnapshot } from '../../domain/device-snapshot.js';
 import type { RegisterDeviceInput } from '../../domain/register-device-input.js';
+import { NodeDeviceSignatureVerifier } from '../../infrastructure/node-device-signature-verifier.js';
 
-/** Dispositivos en memoria. El id público es `dv1_<usuario>_<tenant de origen>_<dispositivo>`, como el real. */
+/**
+ * Devices in memory. The public id is `dv1_<user>_<home tenant>_<device>`, as in the real one, and a sign-in
+ * is recognized only when the stored key verifies the proof signature.
+ */
 export class InMemoryDevicesFacade extends DevicesFacade {
   private readonly devices = new Map<string, DeviceSnapshot>();
   private readonly approvals = new Map<string, DeviceApproval[]>();
+  private readonly signatures = new NodeDeviceSignatureVerifier();
 
   constructor(private readonly ids: IdGenerator = new SequentialIdGenerator()) {
     super();
@@ -27,12 +34,18 @@ export class InMemoryDevicesFacade extends DevicesFacade {
 
   async recognize(
     ref: UserRef,
-    deviceIdToken?: string,
+    proof?: DeviceProof,
   ): Promise<DeviceRecognition> {
     const device = this.userDevices(ref.userId).find(
       (candidate) =>
-        deviceIdToken ===
-        `dv1_${ref.userId}_${ref.homeTenantId}_${candidate.id}`,
+        proof !== undefined &&
+        proof.signature.deviceId ===
+          `dv1_${ref.userId}_${ref.homeTenantId}_${candidate.id}` &&
+        this.signatures.verify(
+          candidate.publicKey,
+          DeviceSignedMessage.of(proof.action, proof.signature, proof.bound),
+          proof.signature.signature,
+        ),
     );
     return device === undefined
       ? { recognized: false }
@@ -77,7 +90,7 @@ export class InMemoryDevicesFacade extends DevicesFacade {
     ]);
   }
 
-  /** Aprobaciones encoladas para un dispositivo, en el orden en que llegaron. */
+  /** Approvals queued for a device, in arrival order. */
   approvalsFor(deviceId: string): readonly DeviceApproval[] {
     return this.approvals.get(deviceId) ?? [];
   }

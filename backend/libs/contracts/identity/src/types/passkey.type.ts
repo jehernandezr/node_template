@@ -1,27 +1,32 @@
 import type { Page } from '@contracts/platform';
+import type { DeviceSignatureFields } from './device.type.js';
 
 /**
- * Opciones de WebAuthn en base64url. El cliente las pasa tal cual a la API
- * del sistema, por eso viajan como texto y no como objeto.
+ * WebAuthn options in base64url. The client hands them as they are to the
+ * system API, which is why they travel as text and not as an object.
  */
 export interface PasskeyOptions {
   challengeId: string;
   optionsJson: string;
 }
 
-/** Verificación de un inicio de sesión con passkey. */
+/**
+ * Verification of a passkey sign-in. `device` is the proof that the request comes from a registered
+ * device: its ES256 signature over `identity.auth.passkey-verify`, its public id, the timestamp, the
+ * nonce and the challenge id.
+ */
 export interface PasskeySignInVerifyRequest {
   challengeId: string;
   credentialJson: string;
-  deviceId?: string;
+  device?: DeviceSignatureFields;
 }
 
-/** Opciones de passkey para el segundo factor de un login pendiente. */
+/** Passkey options for the second factor of a pending sign-in. */
 export interface PasskeyMfaOptionsRequest {
   mfaToken: string;
 }
 
-/** Verificación de passkey como segundo factor de un login pendiente. */
+/** Passkey verification as the second factor of a pending sign-in. */
 export interface PasskeyMfaVerifyRequest {
   mfaToken: string;
   challengeId: string;
@@ -29,38 +34,38 @@ export interface PasskeyMfaVerifyRequest {
   devicePublicKey?: string;
 }
 
-/** Opciones de passkey para el paso adicional de una sesión abierta. */
+/** Passkey options for the step-up of an open session. */
 export interface PasskeyStepUpOptionsRequest {
   mfaToken: string;
 }
 
-/** Verificación de passkey para el paso adicional de una sesión abierta. */
+/** Passkey verification for the step-up of an open session. */
 export interface PasskeyStepUpVerifyRequest {
   mfaToken: string;
   challengeId: string;
   credentialJson: string;
 }
 
-/** Passkey registrada. La clave privada nunca sale del dispositivo. */
+/** Registered passkey. The private key never leaves the device. */
 export interface PasskeySummary {
   id: string;
   name: string;
   createdAt: string;
   lastUsedAt: string | null;
-  /** Verdadero si la credencial está respaldada en la nube del proveedor. */
+  /** True if the credential is backed up in the provider's cloud. */
   backedUp: boolean;
 }
 
 export type PasskeyPage = Page<PasskeySummary>;
 
-/** Registro de una passkey nueva con la respuesta firmada por el autenticador. */
+/** Registration of a new passkey with the response signed by the authenticator. */
 export interface RegisterPasskeyRequest {
   challengeId: string;
   credentialJson: string;
   name: string;
 }
 
-/** Passkey a quitar. */
+/** Passkey to remove. */
 export interface RemovePasskeyRequest {
   passkeyId: string;
 }

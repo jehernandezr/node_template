@@ -4,12 +4,17 @@ import { ActorGuards, type Actor } from '@platform/auth';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { AccessFacade } from '../../access/index.js';
 
-/** Una cuenta de servicio no puede tener un permiso que quien la configura no tiene. */
+/** A service account, or a key that hands out its permissions, cannot carry a permission its configurer lacks. */
 @Injectable()
 export class GrantablePermissions {
   constructor(private readonly access: AccessFacade) {}
 
-  /** @throws IdentityError `IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE` si pide un permiso ajeno. */
+  /**
+   * Checks that the actor holds every requested permission. The system actor holds none.
+   * @param actor Who configures the account or the key.
+   * @param permissions Permissions the account would hand out.
+   * @throws IdentityError `IDENTITY.API_KEY.PERMISSION_NOT_GRANTABLE` if any of them is not the actor's.
+   */
   async assert(
     actor: Actor | undefined,
     permissions: readonly Permission[],

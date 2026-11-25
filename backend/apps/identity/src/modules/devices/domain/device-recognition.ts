@@ -1,8 +1,8 @@
 import type { DeviceSnapshot } from './device-snapshot.js';
 
-/** Resultado de reconocer el `deviceId` firmado que trae un inicio de sesión. */
+/** Result of recognizing the device proof that a sign-in carries. */
 export interface DeviceRecognition {
-  /** Verdadero si el `deviceId` es válido y su dispositivo está registrado y confiable. */
+  /** True if the proof is signed by a registered, trusted device of the same user. */
   readonly recognized: boolean;
   readonly device?: DeviceSnapshot;
 }

@@ -7,7 +7,7 @@ import { UserDirectory } from '../../domain/user-directory.js';
 import type { UserLookup } from '../../domain/user-lookup.js';
 import { IdentityLookupEntity } from './entities/identity-lookup.entity.js';
 
-/** `UserDirectory` sobre `identity_lookup` del catálogo. */
+/** `UserDirectory` over `identity_lookup` of the catalog. The email fingerprint is its primary key. */
 @Injectable()
 export class TypeOrmUserDirectory
   extends CatalogTableRepository
@@ -18,7 +18,6 @@ export class TypeOrmUserDirectory
   }
 
   async reserve(lookup: UserLookup): Promise<boolean> {
-    // `ON CONFLICT DO NOTHING` deja que la llave primaria decida quién se queda con el email.
     const inserted: unknown[] = await this.write((manager) =>
       manager.query(
         'INSERT INTO "identity_lookup" ("email_fingerprint", "user_id", "home_tenant_id", "region", "status", "created_at") ' +
@@ -88,12 +87,12 @@ export class TypeOrmUserDirectory
       if (taken !== null) {
         return false;
       }
-      await manager.update(
+      const moved = await manager.update(
         IdentityLookupEntity,
         { emailFingerprint: from, userId },
         { emailFingerprint: to },
       );
-      return true;
+      return moved.affected === 1;
     });
   }
 

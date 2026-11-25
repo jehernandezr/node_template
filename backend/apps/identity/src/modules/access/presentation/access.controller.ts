@@ -1,6 +1,7 @@
 import { CurrentActor, Endpoint, Input, Resource } from '@platform/http/nest';
 import type { Actor } from '@platform/auth';
 import { AuthMethod } from '@platform/http';
+import type { PageQuery } from '@contracts/platform';
 import {
   GetSessionAccessRoute,
   ListMembersRoute,
@@ -38,20 +39,28 @@ import {
 } from '../../../shared/utils/user-actor.js';
 import { ActorPermissions } from '../application/actor-permissions.js';
 import { GetSessionAccess } from '../application/get-session-access.use-case.js';
+import { ListMembers } from '../application/list-members.use-case.js';
 import { ManageGroups } from '../application/manage-groups.use-case.js';
 import { ManageMembers } from '../application/manage-members.use-case.js';
 import { ManageRoles } from '../application/manage-roles.use-case.js';
 
+/** HTTP edge of the access of the active tenant: the session access, members, groups and roles. */
 @Resource(IdentityResource.Access)
 export class AccessController {
   constructor(
     private readonly sessionAccess: GetSessionAccess,
+    private readonly listing: ListMembers,
     private readonly members: ManageMembers,
     private readonly groups: ManageGroups,
     private readonly roles: ManageRoles,
     private readonly actorPermissions: ActorPermissions,
   ) {}
 
+  /**
+   * Reads the access of the caller's session.
+   * @param actor Caller.
+   * @returns The session access.
+   */
   @Endpoint(GetSessionAccessRoute)
   getSessionAccess(
     @CurrentActor() actor: Actor | undefined,
@@ -59,12 +68,25 @@ export class AccessController {
     return this.sessionAccess.execute(requireUserActor(actor));
   }
 
-  /** Una integración del tenant lee sus miembros con una API key de una cuenta de servicio. */
+  /**
+   * Lists a page of members; an integration of the tenant reads it with an API key.
+   * @param input Page size and cursor.
+   * @param actor Caller.
+   * @returns The page of members.
+   */
   @Endpoint(ListMembersRoute, { auth: [AuthMethod.Jwt, AuthMethod.ApiKey] })
-  listMembers(@CurrentActor() actor: Actor | undefined): Promise<MemberPage> {
-    return this.members.list(tenantOfActor(actor));
+  listMembers(
+    @Input() input: PageQuery,
+    @CurrentActor() actor: Actor | undefined,
+  ): Promise<MemberPage> {
+    return this.listing.execute(tenantOfActor(actor), input);
   }
 
+  /**
+   * Removes a member of the tenant.
+   * @param input Member to remove.
+   * @param actor Caller.
+   */
   @Endpoint(RemoveMemberRoute)
   async removeMember(
     @Input() input: RemoveMemberRequest,
@@ -77,6 +99,11 @@ export class AccessController {
     );
   }
 
+  /**
+   * Replaces the groups of a member.
+   * @param input Member and groups.
+   * @param actor Caller.
+   */
   @Endpoint(SetMemberGroupsRoute)
   async setMemberGroups(
     @Input() input: SetMemberGroupsRequest,
@@ -90,11 +117,22 @@ export class AccessController {
     );
   }
 
+  /**
+   * Lists the groups of the tenant.
+   * @param actor Caller.
+   * @returns The groups.
+   */
   @Endpoint(ListGroupsRoute)
   listGroups(@CurrentActor() actor: Actor | undefined): Promise<GroupPage> {
     return this.groups.list(tenantOfActor(actor));
   }
 
+  /**
+   * Creates a group.
+   * @param input Name.
+   * @param actor Caller.
+   * @returns The group.
+   */
   @Endpoint(CreateGroupRoute)
   createGroup(
     @Input() input: CreateGroupRequest,
@@ -103,6 +141,12 @@ export class AccessController {
     return this.groups.create(tenantOfActor(actor), input.name);
   }
 
+  /**
+   * Renames a group.
+   * @param input Group and name.
+   * @param actor Caller.
+   * @returns The group.
+   */
   @Endpoint(UpdateGroupRoute)
   updateGroup(
     @Input() input: UpdateGroupRequest,
@@ -111,6 +155,11 @@ export class AccessController {
     return this.groups.rename(tenantOfActor(actor), input.groupId, input.name);
   }
 
+  /**
+   * Deletes a group.
+   * @param input Group.
+   * @param actor Caller.
+   */
   @Endpoint(DeleteGroupRoute)
   async deleteGroup(
     @Input() input: DeleteGroupRequest,
@@ -123,6 +172,11 @@ export class AccessController {
     );
   }
 
+  /**
+   * Replaces the roles of a group.
+   * @param input Group and roles.
+   * @param actor Caller.
+   */
   @Endpoint(SetGroupRolesRoute)
   async setGroupRoles(
     @Input() input: SetGroupRolesRequest,
@@ -136,11 +190,22 @@ export class AccessController {
     );
   }
 
+  /**
+   * Lists the roles of the tenant.
+   * @param actor Caller.
+   * @returns The roles.
+   */
   @Endpoint(ListRolesRoute)
   listRoles(@CurrentActor() actor: Actor | undefined): Promise<RolePage> {
     return this.roles.list(tenantOfActor(actor));
   }
 
+  /**
+   * Creates a custom role.
+   * @param input Name and permissions.
+   * @param actor Caller.
+   * @returns The role.
+   */
   @Endpoint(CreateRoleRoute)
   async createRole(
     @Input() input: CreateRoleRequest,
@@ -154,6 +219,12 @@ export class AccessController {
     );
   }
 
+  /**
+   * Renames a role or changes its permissions.
+   * @param input Role and fields to change.
+   * @param actor Caller.
+   * @returns The role.
+   */
   @Endpoint(UpdateRoleRoute)
   async updateRole(
     @Input() input: UpdateRoleRequest,
@@ -166,6 +237,11 @@ export class AccessController {
     );
   }
 
+  /**
+   * Deletes a custom role.
+   * @param input Role.
+   * @param actor Caller.
+   */
   @Endpoint(DeleteRoleRoute)
   async deleteRole(
     @Input() input: DeleteRoleRequest,

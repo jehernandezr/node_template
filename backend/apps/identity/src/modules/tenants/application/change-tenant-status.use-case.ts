@@ -11,13 +11,14 @@ import { Clock, TransactionManager } from '@platform/kernel';
 import { MessageBus } from '@platform/messaging';
 import { IdentityError } from '../../../shared/errors/identity.error.js';
 import { IdentityShardScopes } from '../../../shared/utils/identity-shard-scopes.js';
+import { AccessFacade } from '../../access/index.js';
 import { TenantDirectory } from '../domain/tenant-directory.js';
 import { TenantRepository } from '../domain/tenant.repository.js';
 import type { Tenant } from '../domain/tenant.js';
 
 /**
- * Activa, suspende, reactiva y descarta tenants. Suspender escribe `auth:epoch:tenant:{id}` con
- * `suspended`, así cada servicio rechaza los tokens del tenant sin consultar a identity.
+ * Activates, suspends, reactivates and discards tenants. Suspending writes `auth:epoch:tenant:{id}` with
+ * `suspended`, so every service rejects the tokens of the tenant without asking identity.
  */
 @Injectable()
 export class ChangeTenantStatus {
@@ -26,6 +27,7 @@ export class ChangeTenantStatus {
   constructor(
     private readonly tenants: TenantRepository,
     private readonly directory: TenantDirectory,
+    private readonly access: AccessFacade,
     private readonly state: AuthStateWriter,
     private readonly scopes: IdentityShardScopes,
     private readonly transactions: TransactionManager,
@@ -33,6 +35,12 @@ export class ChangeTenantStatus {
     private readonly clock: Clock,
   ) {}
 
+  /**
+   * Activates a provisioned tenant.
+   * @param tenantId Tenant.
+   * @returns Its resulting status.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist.
+   */
   activate(tenantId: string): Promise<TenantOperationResult> {
     return this.change(tenantId, async (tenant) => {
       if (tenant.activate()) {
@@ -41,6 +49,12 @@ export class ChangeTenantStatus {
     });
   }
 
+  /**
+   * Suspends a tenant and rejects its tokens everywhere.
+   * @param tenantId Tenant.
+   * @returns Its resulting status.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist.
+   */
   async suspend(tenantId: string): Promise<TenantOperationResult> {
     const now = this.clock.now();
     const result = await this.change(tenantId, async (tenant) => {
@@ -60,6 +74,12 @@ export class ChangeTenantStatus {
     return result;
   }
 
+  /**
+   * Reactivates a suspended tenant.
+   * @param tenantId Tenant.
+   * @returns Its resulting status.
+   * @throws IdentityError `IDENTITY.TENANT.NOT_FOUND` if it does not exist.
+   */
   async reactivate(tenantId: string): Promise<TenantOperationResult> {
     const now = this.clock.now();
     const result = await this.change(tenantId, async (tenant) => {
@@ -80,21 +100,25 @@ export class ChangeTenantStatus {
   }
 
   /**
-   * Borra un tenant que nunca quedó activo. Uno activo o suspendido no se descarta: se responde su estado.
-   * Si el tenant ya no existe responde `Deleting`: repetir el descarte es inocuo.
+   * Deletes a tenant that never became active, with all its access and the projections of its members.
+   * An active or suspended tenant is not discarded: its status is answered. The access goes before the
+   * tenant row, so a repetition after a partial run still finds the tenant and finishes; once the tenant is
+   * gone it answers `Deleting`.
+   * @param tenantId Tenant to discard.
+   * @returns Its status before the discard, or `Deleting` if it no longer exists.
    */
   async discard(tenantId: string): Promise<TenantOperationResult> {
     const tenant = await this.scopes.inTenantShard(tenantId, () =>
       this.tenants.find(tenantId),
     );
     if (tenant === undefined) {
-      // Una compensación tolera que el paso ya se haya deshecho o nunca se haya aplicado.
       return { tenantId, status: TenantLifecycle.Deleting };
     }
     const state = tenant.snapshot();
     if (!tenant.canBeDiscarded()) {
       return { tenantId, status: state.status };
     }
+    await this.access.discardTenant(tenantId);
     await this.scopes.inTenantShard(tenantId, () =>
       this.transactions.runInTransaction(() => this.tenants.delete(tenantId)),
     );

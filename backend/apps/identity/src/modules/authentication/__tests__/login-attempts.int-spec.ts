@@ -21,7 +21,7 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
     await app.stop();
   });
 
-  /** `login_attempts_AAAAMM` del mes de `at`, el nombre que le dan las funciones de la plataforma. */
+  /** `login_attempts_YYYYMM` of the month of `at`, the name the platform functions give the partition. */
   const partitionOf = (at: Date): string =>
     `login_attempts_${at.getUTCFullYear()}${String(at.getUTCMonth() + 1).padStart(2, '0')}`;
 
@@ -64,6 +64,48 @@ runtime.describeIfAvailable('login attempts in monthly partitions', () => {
         ),
       ).toEqual([shard]);
     }
+  });
+
+  it('records a failed attempt with an email without an account as it records one with an account', async () => {
+    const [user] = [
+      ...(await new ShardedUsers(app).oneInEachShard('sin-cuenta')).values(),
+    ];
+    const totalAttempts = async (): Promise<number> => {
+      const probe = app.shards();
+      const counts = await Promise.all(
+        probe
+          .names()
+          .map((shard) =>
+            probe.rowsIn<{ attempts: string }>(
+              shard,
+              'SELECT count(*) AS attempts FROM login_attempts',
+            ),
+          ),
+      );
+      return counts
+        .flat()
+        .reduce((total, row) => total + Number(row.attempts), 0);
+    };
+    const attemptWith = async (email: string) => {
+      const before = await totalAttempts();
+      const failed = await app.client('192.0.2.78').post('/v1/auth/sign-in', {
+        body: { email, password: 'una-clave-que-no-es-la-suya' },
+      });
+      return {
+        status: failed.status,
+        code: (failed.body as { code?: string }).code,
+        added: (await totalAttempts()) - before,
+      };
+    };
+
+    const known = await attemptWith(String(user?.email));
+    const unknown = await attemptWith('nadie.intento@example.com');
+
+    expect(unknown).toEqual(known);
+    expect(known).toMatchObject({
+      code: IdentityErrorCode.AuthInvalidCredentials,
+      added: 1,
+    });
   });
 
   it('drops the partitions past the retention and keeps months ahead', async () => {
