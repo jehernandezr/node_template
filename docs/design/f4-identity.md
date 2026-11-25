@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-13
 - Working branch: `feat/f4-identity`
-- Related ADRs: [0005](../adr/0005-autenticacion-sesiones-jwt.md), [0006](../adr/0006-mfa-dispositivo-registrado-passkeys.md), [0010](../adr/0010-sharding-logico-residencia-region.md), [0015](../adr/0015-estructura-backend-front-y-codigo-compartido.md), [0021](../adr/0021-adaptador-valkey.md), [0022](../adr/0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md) and [0023](../adr/0023-enrutamiento-de-datos-de-identity.md)
+- Related ADRs: [0005](../adr/0005-authentication-sessions-jwt.md), [0006](../adr/0006-mfa-registered-device-passkeys.md), [0010](../adr/0010-logical-sharding-region-residency.md), [0015](../adr/0015-repository-structure-and-shared-code.md), [0021](../adr/0021-valkey-adapter.md), [0022](../adr/0022-token-verification-shared-revocation-state.md) and [0023](../adr/0023-identity-data-routing.md)
 
 This document splits the construction of `backend/apps/identity`, and of the platform pieces it needs, into work packages (WP) that several agents can build in parallel without touching the same files. It contains no production code: it fixes names, folders, public APIs, tables, routes, events, error codes, tests and the work order.
 
@@ -22,7 +22,7 @@ Where the plan and an ADR disagree, the ADR wins. That is why sign-in is called 
 
 Four platform pieces are missing (HTTP entry, token verification, rate limits and service bootstrap), plus one adjustment to persistence (`ShardScope`) and the complete service.
 
-The persistence in this table is the layer over `pg`. Before F4 starts it is replaced by TypeORM according to the [persistence and sagas design](persistencia-typeorm-y-sagas.md). The adjustments that this and the backend plan bring to sections 3.3 to 3.6 are in [section 4.3 of the backend plan](../plan/backend.md#43-adjustments-this-plan-forces-on-the-f4-design), and the order of the F4 packages alongside the others is in the [plan](../plan/README.md#execution-order-by-waves).
+The persistence in this table is the layer over `pg`. Before F4 starts it is replaced by TypeORM according to the [persistence and sagas design](typeorm-persistence-and-sagas.md). The adjustments that this and the backend plan bring to sections 3.3 to 3.6 are in [section 4.3 of the backend plan](../plan/backend.md#43-adjustments-this-plan-forces-on-the-f4-design), and the order of the F4 packages alongside the others is in the [plan](../plan/README.md#execution-order-by-waves).
 
 ## 2. Key decisions
 
@@ -545,7 +545,7 @@ In F4 the push that wakes the app is a fake; the app polls when it opens. The SS
 | Routes    | `GET /v1/auth/jwks` (public, `Cache-Control: public, max-age=300`)                                                                                  |
 
 - Issuance computes `pv` with `AccessFacade`, writes `auth:access:{tid}:{uid}` and signs with `signEs256Jwt` from `@platform/auth`.
-- Rotating means changing `IDENTITY_SIGNING_KEYS`: the new key enters as `Verifying`, becomes `Active` on the next deployment and the previous one stays `Verifying` for 30 minutes. Emergency rotation retires the compromised `kid`. The runbook goes in `docs/runbooks/rotacion-claves-identity.md` (WP15).
+- Rotating means changing `IDENTITY_SIGNING_KEYS`: the new key enters as `Verifying`, becomes `Active` on the next deployment and the previous one stays `Verifying` for 30 minutes. Emergency rotation retires the compromised `kid`. The runbook goes in `docs/runbooks/identity-key-rotation.md` (WP15).
 - The JWKS is a contract route under `/v1`, because `defineRoute` requires the version. The other services read it with `RemoteJwksKeySource` from `IDENTITY_JWKS_URL`.
 
 ### 5.9 `tenants`
@@ -962,7 +962,7 @@ Before proposing each library, we checked whether Node 24's `node:crypto` covers
 | `rxjs`                     | `7.8.2`       | 2025-02-22 | same                                            | NestJS peer dependency (interceptors).                                                                                                                                                     | None: NestJS requires it.                                                                                                          |
 | `@simplewebauthn/server`   | `14.0.3`      | 2026-09-25 | `modules/passkeys/infrastructure`               | Verifying WebAuthn requires CBOR, COSE keys (EC2, RSA, OKP), authenticator data, counters and attestation formats with X.509 chains. A bug there opens the door to impersonating passkeys. | Only `none` attestation and ES256 with an in-house CBOR decoder: still delicate cryptography and it leaves out RSA authenticators. |
 
-All versions were published at least two weeks before this date and are pinned exactly, without `^` or `~`. The ones already present (`testcontainers` and `@testcontainers/postgresql` 12.2.1, `zod`, `iovalkey` and `pg`) do not change. `uuid` is not used: UUIDv7 is in-house, `UuidV7IdGenerator` on `node:crypto` (ADR 0003). `typeorm` comes in with package WP-01 of the [backend plan](../plan/backend.md) and persistence uses it from WP-09 on ([design](persistencia-typeorm-y-sagas.md)).
+All versions were published at least two weeks before this date and are pinned exactly, without `^` or `~`. The ones already present (`testcontainers` and `@testcontainers/postgresql` 12.2.1, `zod`, `iovalkey` and `pg`) do not change. `uuid` is not used: UUIDv7 is in-house, `UuidV7IdGenerator` on `node:crypto` (ADR 0003). `typeorm` comes in with package WP-01 of the [backend plan](../plan/backend.md) and persistence uses it from WP-09 on ([design](typeorm-persistence-and-sagas.md)).
 
 Fallback, not installed: if, when building WP8, the `crypto.argon2` API of the deployed Node version is not marked stable, `argon2@0.45.1` (2026-07-21) is used behind the same `PasswordHasher` port. It is a one-line decision in the adapter.
 

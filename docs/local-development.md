@@ -53,8 +53,8 @@ Integration tests (`*.int-spec.ts`) run with the same `test` target against real
 The skills' structure scripts check the files changed against `HEAD` (or the whole tree with `--all`):
 
 ```bash
-node .claude/skills/backend-estructura/scripts/check-structure.mjs
-node .claude/skills/front-estructura/scripts/check-structure.mjs
+node .claude/skills/backend-structure/scripts/check-structure.mjs
+node .claude/skills/front-structure/scripts/check-structure.mjs
 ```
 
 The contracts' Dart is generated inside `front/`:
@@ -95,7 +95,7 @@ Ports are published only on `127.0.0.1`: nothing is exposed to the local network
 | OpenObserve             | 5080          | http://localhost:5080. Development user and password in `backend/docker-compose.yml`                                                                                                    |
 | OpenTelemetry Collector | 4317 and 4318 | OTLP gRPC and HTTP. Services send to `http://localhost:4318`. It keeps every trace with an error and `OTEL_SAMPLING_PERCENT` (10 % by default) of the rest, and forwards to OpenObserve |
 
-The two databases `identity_shard_0` and `identity_shard_1` are intentional. They are used to test shard routing locally. With persistence on TypeORM, the next phase, each service's migrations add the `saga` schema of the saga log to each shard database and the `saga_directory` table to the catalog ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)).
+The two databases `identity_shard_0` and `identity_shard_1` are intentional. They are used to test shard routing locally. With persistence on TypeORM, the next phase, each service's migrations add the `saga` schema of the saga log to each shard database and the `saga_directory` table to the catalog ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)).
 
 On startup, LocalStack runs `backend/infra/local/localstack/init-aws.sh`, which creates the `platform-files-local` bucket and the messaging topology from `backend/infra/terraform/topology.json` (topics, queues, DLQs and filtered subscriptions), with the `local` prefix from `MESSAGING_NAME_PREFIX`.
 
@@ -124,7 +124,7 @@ backend/infra/scripts/local.sh tf apply
 backend/infra/scripts/local.sh tf destroy
 ```
 
-`local.sh down` stops the services and `local.sh reset` also deletes their volumes. The structure of stacks and environments is in [ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
+`local.sh down` stops the services and `local.sh reset` also deletes their volumes. The structure of stacks and environments is in [ADR 0020](adr/0020-terraform-stacks-and-runtime-per-service.md).
 
 ## Reset the volumes
 

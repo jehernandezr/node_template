@@ -48,11 +48,11 @@ The hooks use `pnpm exec`, so they need `pnpm` on the `PATH` of the terminal or 
 The code rules live as skills in `.claude/skills` (`backend-*` and `front-*`) and load automatically based on the folder being changed. The hooks in `.claude/hooks` reject forbidden paths before writing, format each written file and, before an agent finishes, run the structure scripts. The same scripts can be run by hand on the changed files:
 
 ```bash
-node .claude/skills/backend-estructura/scripts/check-structure.mjs
-node .claude/skills/front-estructura/scripts/check-structure.mjs
+node .claude/skills/backend-structure/scripts/check-structure.mjs
+node .claude/skills/front-structure/scripts/check-structure.mjs
 ```
 
-For a large piece of work, the `backend-guia` and `front-guia` agents split it into packages with disjoint files, and `backend-implementador` and `front-implementador` write each package. How they are organized into troops and waves is in the [plan](docs/plan/README.md#how-a-wave-runs).
+For a large piece of work, the `backend-lead` and `front-lead` agents split it into packages with disjoint files, and `backend-implementer` and `front-implementer` write each package. How they are organized into troops and waves is in the [plan](docs/plan/README.md#how-a-wave-runs).
 
 ## Before opening a PR
 
@@ -91,11 +91,11 @@ Review checklist:
 
 ## Architecture rules
 
-**Minimal root.** The root only has `backend/`, `front/`, Nx and the repository tooling. Shared backend code lives in `backend/libs`, shared front code in `front/packages`, and code shared within a service or microfrontend in its `shared/{enums,constants,types,utils}` folder. See [ADR 0015](docs/adr/0015-estructura-backend-front-y-codigo-compartido.md).
+**Minimal root.** The root only has `backend/`, `front/`, Nx and the repository tooling. Shared backend code lives in `backend/libs`, shared front code in `front/packages`, and code shared within a service or microfrontend in its `shared/{enums,constants,types,utils}` folder. See [ADR 0015](docs/adr/0015-repository-structure-and-shared-code.md).
 
-**Persistence with TypeORM.** Entities, mappers and repositories live in each module's `infrastructure/persistence`, and migrations are generated and applied with the TypeORM CLI. The shard key is declared in `PersistenceModule.forFeature`. The `@platform/persistence` layer on TypeORM follows the [design](docs/design/persistencia-typeorm-y-sagas.md) and [ADR 0024](docs/adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md), and its construction is in the [plan](docs/plan/README.md); today it runs on the `pg` driver.
+**Persistence with TypeORM.** Entities, mappers and repositories live in each module's `infrastructure/persistence`, and migrations are generated and applied with the TypeORM CLI. The shard key is declared in `PersistenceModule.forFeature`. The `@platform/persistence` layer on TypeORM follows the [design](docs/design/typeorm-persistence-and-sagas.md) and [ADR 0024](docs/adr/0024-typeorm-persistence-sharding-persistent-sagas.md), and its construction is in the [plan](docs/plan/README.md); today it runs on the `pg` driver.
 
-**A single `node_modules`.** External backend dependencies are declared only in `backend/package.json`, with exact versions, and the Nx and hook dependencies in the root `package.json`. Backend libraries, apps and tools have no `package.json`: they are Nx projects (`project.json`) and are imported through the aliases in `backend/tsconfig.base.json`. A new library follows the `backend-estructura` skill: code directly in `src/`, tests in the `__tests__/` of each folder and shared test utilities in `__tests__/utils/`. Libraries are not compiled; only apps are bundled with esbuild into `backend/dist/<app>/`.
+**A single `node_modules`.** External backend dependencies are declared only in `backend/package.json`, with exact versions, and the Nx and hook dependencies in the root `package.json`. Backend libraries, apps and tools have no `package.json`: they are Nx projects (`project.json`) and are imported through the aliases in `backend/tsconfig.base.json`. A new library follows the `backend-structure` skill: code directly in `src/`, tests in the `__tests__/` of each folder and shared test utilities in `__tests__/utils/`. Libraries are not compiled; only apps are bundled with esbuild into `backend/dist/<app>/`.
 
 **Hexagonal layers.** Inside each module, `domain` depends only on `kernel`. The domain does not import NestJS, TypeORM, AWS or any infrastructure library. Use cases depend on the domain, and `infrastructure` and `presentation` depend on both.
 
@@ -107,7 +107,7 @@ Review checklist:
 
 **Declared compensation.** Each internal operation that modifies data declares how it is reverted with `compensatedBy`, or `Compensation.None` with a reason. Sagas use that declaration to undo completed steps.
 
-**Regenerated contracts.** Contracts are written in TypeScript with zod in `backend/libs/contracts/<service>`. A change there requires exporting the JSON and regenerating the Dart in the same PR. The CI `contracts` job fails if the generated output is out of date. See [ADR 0017](docs/adr/0017-export-de-contratos.md).
+**Regenerated contracts.** Contracts are written in TypeScript with zod in `backend/libs/contracts/<service>`. A change there requires exporting the JSON and regenerating the Dart in the same PR. The CI `contracts` job fails if the generated output is out of date. See [ADR 0017](docs/adr/0017-contract-export.md).
 
 **Validate before calling.** Every client, backend or front, validates the request against the contract before calling.
 
@@ -117,7 +117,7 @@ Review checklist:
 
 ## CI
 
-Every PR runs `ci.yml` and `security.yml`. The only required check for `main` is `ci-ok`, which aggregates the result of the `ci.yml` jobs; the repository owner configures the protection of `main`. The `nx` job enforces minimum coverage in the backend and `typecheck` also checks the tests. The `terraform` job validates each stack with `terraform test`, the Python tests, shellcheck and tflint. The details are in [ADR 0019](docs/adr/0019-ci-y-toolchain.md) and [ADR 0020](docs/adr/0020-terraform-por-stacks-y-runtime-por-servicio.md).
+Every PR runs `ci.yml` and `security.yml`. The only required check for `main` is `ci-ok`, which aggregates the result of the `ci.yml` jobs; the repository owner configures the protection of `main`. The `nx` job enforces minimum coverage in the backend and `typecheck` also checks the tests. The `terraform` job validates each stack with `terraform test`, the Python tests, shellcheck and tflint. The details are in [ADR 0019](docs/adr/0019-ci-and-toolchain.md) and [ADR 0020](docs/adr/0020-terraform-stacks-and-runtime-per-service.md).
 
 ## Review
 

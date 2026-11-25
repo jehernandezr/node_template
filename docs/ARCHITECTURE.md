@@ -19,7 +19,7 @@ It comes with what every backend needs and is almost never done well from the st
 
 ## Monorepo with Nx
 
-The repository root is minimal ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md)). It holds two applications, `backend/` and `front/`, Nx as orchestrator and the repository tooling. Each application owns its libraries: nothing shared between backend and front lives at the root, and the front receives the contracts generated from the backend.
+The repository root is minimal ([ADR 0015](adr/0015-repository-structure-and-shared-code.md)). It holds two applications, `backend/` and `front/`, Nx as orchestrator and the repository tooling. Each application owns its libraries: nothing shared between backend and front lives at the root, and the front receives the contracts generated from the backend.
 
 ```text
 backend/                       backend: all its external dependencies in backend/package.json
@@ -105,7 +105,7 @@ backend/apps/<service>/migrations/{shard,catalog}/   TypeORM migrations
 - Inside a module, `domain` depends only on `kernel`; `application` depends on `domain`; `infrastructure` and `presentation` depend on both. These layers are checked in CI with `dependency-cruiser` once the first service, `identity`, arrives (ADR 0020).
 - `@aws-sdk/*` only appears in `backend/libs/platform/adapters/aws` (`@platform/adapters-aws`); a `no-restricted-imports` rule blocks it everywhere else. It provides `SnsSqsEnvelopePublisher` (used by the outbox relay), `SnsSqsMessageBus`, `SqsPoller` (long polling, inside `SqsConsumerModule`, which is not global so it closes before `AwsModule`) and `SqsLambdaHandler` (Lambda with partial batch failures). Both use `SqsDeliveryProcessor`, which applies `ChangeMessageVisibility` and sends permanent failures to the DLQ. The runtime topology comes from the contracts with `topologyFromContracts`.
 - The transaction ports (`TransactionManager`, `UnitOfWork`) and the idempotency port (`IdempotencyStore`) live in `@platform/kernel`, so `messaging` and `internal-api` use the transaction without depending on `@platform/persistence`.
-- The PostgreSQL adapters for other libraries' ports live in `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `TypeOrmOutboxStore` writes the outbox in the same transaction as the business change and claims it with `FOR UPDATE SKIP LOCKED`, a lease with fencing and FIFO order per group; `TypeOrmProcessedMessageStore` stores consumer idempotency in `processed_messages`; `TypeOrmIdempotencyStore` stores the internal API's and `TypeOrmDirectoryStore` the shard directory. Their tables are TypeORM entities and migrations (`platformShardEntities`, `platformCatalogEntities` and their migrations), together with the saga log ([persistence design](design/persistencia-typeorm-y-sagas.md)).
+- The PostgreSQL adapters for other libraries' ports live in `backend/libs/platform/adapters/postgres` (`@platform/adapters-postgres`): `TypeOrmOutboxStore` writes the outbox in the same transaction as the business change and claims it with `FOR UPDATE SKIP LOCKED`, a lease with fencing and FIFO order per group; `TypeOrmProcessedMessageStore` stores consumer idempotency in `processed_messages`; `TypeOrmIdempotencyStore` stores the internal API's and `TypeOrmDirectoryStore` the shard directory. Their tables are TypeORM entities and migrations (`platformShardEntities`, `platformCatalogEntities` and their migrations), together with the saga log ([persistence design](design/typeorm-persistence-and-sagas.md)).
 
 ## Front: shells and microfrontends
 
@@ -132,7 +132,7 @@ Each shell registers only the microfrontends that declare its platform in the ma
 
 **Microfrontend contract**
 
-Each microfrontend exports a `MicrofrontendManifest` from `shell_core` and follows the contract in [ADR 0018](adr/0018-contrato-de-microfrontend.md). This is the one for `tasks`, trimmed:
+Each microfrontend exports a `MicrofrontendManifest` from `shell_core` and follows the contract in [ADR 0018](adr/0018-microfrontend-contract.md). This is the one for `tasks`, trimmed:
 
 ```dart
 final MicrofrontendManifest tasksManifest = MicrofrontendManifest(
@@ -217,9 +217,9 @@ The `notifications` lifecycle ships in the initial bundle with the manifest, so 
 
 **Creating a new microfrontend**
 
-`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"` creates `front/microfrontends/reports` with its manifest, its deferred screens, its demo repository and its tests, and adds the member to `front/pubspec.yaml`. It prints the lines each app needs. The manual steps and the list of what gets written are in the [front-nuevo-microfrontend skill](../.claude/skills/front-nuevo-microfrontend/SKILL.md).
+`dart run front/tools/new_microfrontend.dart reports --menu "Reportes"` creates `front/microfrontends/reports` with its manifest, its deferred screens, its demo repository and its tests, and adds the member to `front/pubspec.yaml`. It prints the lines each app needs. The manual steps and the list of what gets written are in the [front-new-microfrontend skill](../.claude/skills/front-new-microfrontend/SKILL.md).
 
-**Real data.** Each business microfrontend (tasks, notifications, billing and reports) declares `RepositoryBinding(demo:, live:)`: in demo it uses its in-memory fake and in live an `Api<Name>Repository` on top of `ApiClient` and the generated routes, which validates each request against the contract. The contract enums are re-exported from the microfrontend's `shared/enums`. Live notifications and the unread count arrive through `SseNotificationsStream`, which reads `GET /v1/notifications/stream` with the session token and resumes with `Last-Event-ID` without losing or repeating notices. On `PLATFORM.SHARDING.WRONG_REGION`, `ApiClient` repeats the request once at `details.apiBaseUrl` and keeps that base. Tests use `ScriptedTransport` from `test_utils` and need no backend ([ADR 0034](adr/0034-repositorios-live-del-front-sse-y-region.md)).
+**Real data.** Each business microfrontend (tasks, notifications, billing and reports) declares `RepositoryBinding(demo:, live:)`: in demo it uses its in-memory fake and in live an `Api<Name>Repository` on top of `ApiClient` and the generated routes, which validates each request against the contract. The contract enums are re-exported from the microfrontend's `shared/enums`. Live notifications and the unread count arrive through `SseNotificationsStream`, which reads `GET /v1/notifications/stream` with the session token and resumes with `Last-Event-ID` without losing or repeating notices. On `PLATFORM.SHARDING.WRONG_REGION`, `ApiClient` repeats the request once at `details.apiBaseUrl` and keeps that base. Tests use `ScriptedTransport` from `test_utils` and need no backend ([ADR 0034](adr/0034-live-front-repositories-sse-region.md)).
 
 **Deployment.** The `cloudfront-waf` module creates the S3 bucket and the CloudFront distribution for the web app.
 
@@ -426,14 +426,14 @@ The database connection is defined in the module and stays outside the endpoint:
 
 **Generated documentation**
 
-- OpenAPI generated from `contract.json`, without `@nestjs/swagger` (decision 4 of the F4 design), with a Scalar UI ([ADR 0033](adr/0033-generadores-y-openapi.md)).
+- OpenAPI generated from `contract.json`, without `@nestjs/swagger` (decision 4 of the F4 design), with a Scalar UI ([ADR 0033](adr/0033-generators-and-openapi.md)).
 - AsyncAPI for events and queues, generated from the topology and the contracts.
 - A portal that brings together every service, the error catalog and the access matrix. In prod it sits behind authentication.
 - The front receives the contracts generated in Dart (`front/packages/contracts`) and calls the API with `ApiClient`.
 
 ## Persistence
 
-TypeORM is the ORM, and `backend/libs/platform/persistence` wraps it and adds what is specific to the platform: picking the logical shard, reaching the physical instance, keeping a transaction on a single shard, reading from the replica and migrating every database ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)). The domain sees only repository ports. The service writes entities, mappers, repositories and migrations, and routing is transparent. The details are in the [persistence design](design/persistencia-typeorm-y-sagas.md).
+TypeORM is the ORM, and `backend/libs/platform/persistence` wraps it and adds what is specific to the platform: picking the logical shard, reaching the physical instance, keeping a transaction on a single shard, reading from the replica and migrating every database ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)). The domain sees only repository ports. The service writes entities, mappers, repositories and migrations, and routing is transparent. The details are in the [persistence design](design/typeorm-persistence-and-sagas.md).
 
 ```ts
 @Module({
@@ -484,7 +484,7 @@ export class TypeOrmUserRepository
 | `ShardLister`                               | Port that lists the service's logical shards with their instance. The directory implements it and `forRoot` requires it                                                                     |
 | `TypeOrmCriteriaTranslator`                 | Translates the `Criteria` AST into a `QueryBuilder`: parameterized filters, ordering, cursor pagination and a field allowlist                                                               |
 | `MigrationGenerator`                        | Generates a migration by comparing the entities with a temporary database to which the existing migrations are applied                                                                      |
-| `ShardScope`                                | Runs a block on the shard of an explicit key, such as a user from another tenant ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md))                                                |
+| `ShardScope`                                | Runs a block on the shard of an explicit key, such as a user from another tenant ([ADR 0023](adr/0023-identity-data-routing.md))                                                            |
 | `AcrossShards`                              | Walks several shards for reports and maintenance, with a deadline and bounded concurrency                                                                                                   |
 | `ShardedMigrationRunner`                    | Runs the migrations of each logical shard and of the catalog, each one under `pg_advisory_lock`                                                                                             |
 | `PersistenceModule`                         | `forRoot(config)` sets everything up with defaults, and `forFeature({ entities, sharding })` registers a module's repositories with its key                                                 |
@@ -616,7 +616,7 @@ New tenants get a shard through a `ShardPlacementPolicy` during the onboarding s
 **Data residency by region**
 
 - Each tenant chooses a country or region when it is created; the directory stores it and the onboarding saga places it in a shard group of that region.
-- Each service has its own directory in its catalog. Identity picks the tenant's region and shard group, and the onboarding saga records it in tasks, notifications, reports and billing with `<service>.tenant-directory.place.v1` before opening its billing account, with `<service>.tenant-directory.remove.v1` as the reverse; the identity seed does the same with the region's fixed tenants. A group is the one declared in `TENANT_MOVE_TARGETS` or, without it, the shard name without the service prefix ([ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)).
+- Each service has its own directory in its catalog. Identity picks the tenant's region and shard group, and the onboarding saga records it in tasks, notifications, reports and billing with `<service>.tenant-directory.place.v1` before opening its billing account, with `<service>.tenant-directory.remove.v1` as the reverse; the identity seed does the same with the region's fixed tenants. A group is the one declared in `TENANT_MOVE_TARGETS` or, without it, the shard name without the service prefix ([ADR 0032](adr/0032-tenant-moves-and-regions.md)).
 - Each region deploys its own stack: services, shards, Valkey, queues and file storage. The tenant's data stays in its region.
 - The global catalog stores only routing data (ids, region, shard and email HMAC). It lives in the main region with read replicas in the others.
 - Login queries the catalog and returns the regional URL (for example `co.api.<domain>`). The JWT carries the region (`rgn`) and the client SDK uses that URL. A request that arrives at another region receives a redirect.
@@ -769,7 +769,7 @@ Each filter declares its false positive rate (1 % by default) and its periodic r
 
 The `identity` service issues and controls all identity: users, sessions, devices, MFA, API keys, tenants and groups. The other services only verify, with `@platform/auth`. The technical details are in its [design](design/f4-identity.md).
 
-`backend/apps/identity` is organized in modules (`users`, `passwords`, `authentication`, `devices`, `mfa`, `passkeys`, `sessions`, `tokens`, `tenants`, `access`, `invitations`, `api-keys` and `alerts`), each with `domain`, `application`, `infrastructure` and `presentation`. A module only uses another through the facade in its `index.ts`. User data is routed by user within the group of their home tenant and tenant data by tenant, always inside a `ShardScope` ([ADR 0023](adr/0023-enrutamiento-de-datos-de-identity.md)). Ephemeral tokens (MFA challenges, device approvals, email proofs, password reset, WebAuthn challenges and lockout counters) live in Valkey under the service prefix. Tenant tables have RLS by `tenant_id`, and `user_tenants` is a projection that the use case writes after the commit and that the `identity.membership.changed.v1` consumer repairs. `login_attempts` is partitioned by month and a job deletes anything older than 12 months. Breached passwords are looked up in a Bloom filter (`identity.breached-passwords`) rebuilt by its job. Nobody grants or removes a permission they do not have: the rule applies to roles, groups, members and invitations. End-to-end tests are in `backend/apps/identity/e2e`, the [access matrix](identity/matriz-de-acceso.md) is generated from the contract and key rotation follows its [runbook](runbooks/rotacion-claves-identity.md). Tenant onboarding through `POST /v1/tenants` runs the `TenantOnboarding` saga, account deletion runs `DeleteAccount` and moving a tenant runs `MoveTenant` ([ADR 0031](adr/0031-reportes-facturacion-y-sagas-de-identity.md) and [ADR 0032](adr/0032-traslado-de-tenants-y-regiones.md)); the move is operated with its [runbook](runbooks/traslado-de-tenant.md).
+`backend/apps/identity` is organized in modules (`users`, `passwords`, `authentication`, `devices`, `mfa`, `passkeys`, `sessions`, `tokens`, `tenants`, `access`, `invitations`, `api-keys` and `alerts`), each with `domain`, `application`, `infrastructure` and `presentation`. A module only uses another through the facade in its `index.ts`. User data is routed by user within the group of their home tenant and tenant data by tenant, always inside a `ShardScope` ([ADR 0023](adr/0023-identity-data-routing.md)). Ephemeral tokens (MFA challenges, device approvals, email proofs, password reset, WebAuthn challenges and lockout counters) live in Valkey under the service prefix. Tenant tables have RLS by `tenant_id`, and `user_tenants` is a projection that the use case writes after the commit and that the `identity.membership.changed.v1` consumer repairs. `login_attempts` is partitioned by month and a job deletes anything older than 12 months. Breached passwords are looked up in a Bloom filter (`identity.breached-passwords`) rebuilt by its job. Nobody grants or removes a permission they do not have: the rule applies to roles, groups, members and invitations. End-to-end tests are in `backend/apps/identity/e2e`, the [access matrix](identity/access-matrix.md) is generated from the contract and key rotation follows its [runbook](runbooks/identity-key-rotation.md). Tenant onboarding through `POST /v1/tenants` runs the `TenantOnboarding` saga, account deletion runs `DeleteAccount` and moving a tenant runs `MoveTenant` ([ADR 0031](adr/0031-reports-billing-identity-sagas.md) and [ADR 0032](adr/0032-tenant-moves-and-regions.md)); the move is operated with its [runbook](runbooks/tenant-move.md).
 
 **Sessions and JWT**
 
@@ -778,7 +778,7 @@ The `identity` service issues and controls all identity: users, sessions, device
 | Access token (JWT ES256) | Stateless; each service verifies it with the JWKS public key | 10 to 15 min                                                                                                                                  | Memory                                                                                              |
 | Session token (opaque)   | Points to a row in `sessions`; the database stores its hash  | Expires after 1 day without activity; each refresh while the app is in use extends the window by another day, with an absolute cap of 30 days | Web: `__Host-session` cookie, `HttpOnly`, `Secure`, `SameSite=Strict`. Mobile: Keychain or Keystore |
 
-- Header `{ alg: 'ES256', typ: 'at+jwt', kid }`. Claims: `iss`, `aud`, `sub`, `tid` (active tenant), `htid` (home tenant), `sid` (session), `did` (device), `amr` (methods used), `auth_time`, `roles`, `proles` (platform roles), `pv` (permission version of the tenant and the user), `rgn` (region), `sxp` (absolute session cap), `iat`, `exp` and `jti` ([ADR 0022](adr/0022-verificacion-de-tokens-y-estado-de-revocacion-compartido.md)).
+- Header `{ alg: 'ES256', typ: 'at+jwt', kid }`. Claims: `iss`, `aud`, `sub`, `tid` (active tenant), `htid` (home tenant), `sid` (session), `did` (device), `amr` (methods used), `auth_time`, `roles`, `proles` (platform roles), `pv` (permission version of the tenant and the user), `rgn` (region), `sxp` (absolute session cap), `iat`, `exp` and `jti` ([ADR 0022](adr/0022-token-verification-shared-revocation-state.md)).
 - Web or native channel by header: the mobile app sends `Authorization: Bearer <session token>` on refresh and logout, and `X-Session-Transport: bearer` on login and MFA verification. With that it receives the token in the body. Without those headers the channel is web and the token travels only in the cookie. An `Origin` outside the allowlist responds `PLATFORM.AUTH.ORIGIN_REJECTED`.
 - Each refresh rotates the session token. Reusing a previous one revokes the whole session.
 - Revoking a session publishes `IdentityEvent.SessionRevoked` and adds the `sid` to a list in Valkey with a TTL equal to the remaining lifetime of the access token. The revocation state lives in the `auth:*` space in Valkey: identity writes it and the other services read it (ADR 0022).
@@ -805,7 +805,7 @@ An access token is valid until its `exp`, so the platform invalidates it earlier
 
 **Devices**
 
-- Each registered device stores an ES256 key. Login recognizes it only with a signature by that key over the route, the device's public id, the time, a single-use nonce and the email or the WebAuthn challenge (`device: DeviceSignatureFields`). A proof that does not verify leaves the device as unknown and asks for a second factor ([ADR 0036](adr/0036-seguridad-de-identity-factores-acceso-y-ciclo-de-vida.md)).
+- Each registered device stores an ES256 key. Login recognizes it only with a signature by that key over the route, the device's public id, the time, a single-use nonce and the email or the WebAuthn challenge (`device: DeviceSignatureFields`). A proof that does not verify leaves the device as unknown and asks for a second factor ([ADR 0036](adr/0036-identity-security-factors-access-lifecycle.md)).
 - `devices` table: readable name ("iPhone · Safari"), platform, first and last seen, last IP, `trustedUntil`, push token.
 - `login_attempts` table: each attempt with result, reason, IP, device and `traceId`. It feeds the audit and brute force lockout. An attempt with a nonexistent email is recorded without a user on the default tenant's shard, so a failure costs the same whether or not the account exists.
 - The user sees their devices and sessions, closes remote sessions, closes all but the current one and removes trust from a device.
@@ -929,7 +929,7 @@ If an acceptance is missing, the response is `LEGAL.AGREEMENT.ACCEPTANCE_REQUIRE
 
 ## Contracts and internal API
 
-Contracts are the only way one service knows another and the front knows the backend. They are written once, in TypeScript with zod, and from them come the intermediate JSON and the front's Dart ([ADR 0015](adr/0015-estructura-backend-front-y-codigo-compartido.md) and [ADR 0017](adr/0017-export-de-contratos.md)).
+Contracts are the only way one service knows another and the front knows the backend. They are written once, in TypeScript with zod, and from them come the intermediate JSON and the front's Dart ([ADR 0015](adr/0015-repository-structure-and-shared-code.md) and [ADR 0017](adr/0017-contract-export.md)).
 
 **Where they live**
 
@@ -1155,7 +1155,7 @@ Each step receives the `defineOperation` descriptor that the owning service publ
 
 **Log in the database**
 
-Each service that orchestrates stores its log in a `saga` schema inside its shard database, with its own migrations and permissions ([ADR 0024](adr/0024-persistencia-typeorm-sharding-y-sagas-persistentes.md)). That way the saga starts in the same transaction as the local change that triggers it, and its data stays in the tenant's region. A database shared by every service would couple them and would be a single point of failure.
+Each service that orchestrates stores its log in a `saga` schema inside its shard database, with its own migrations and permissions ([ADR 0024](adr/0024-typeorm-persistence-sharding-persistent-sagas.md)). That way the saga starts in the same transaction as the local change that triggers it, and its data stays in the tenant's region. A database shared by every service would couple them and would be a single point of failure.
 
 | Table                      | Content                                                                                                                                                                                            |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1190,7 +1190,7 @@ If the process dies between step 1 and step 3, the record stays in `Dispatched`.
 
 Compensations are idempotent and tolerate the case where the original operation was never applied (they respond success without doing anything). That is why a step with an uncertain outcome is compensated safely.
 
-A step has an uncertain outcome when the call exceeds `maxStepDurationMs` or ends by timeout or cancellation. If the suspension runs out (by default, more than 20 attempts or 24 hours), the saga moves to `RequiresIntervention`. The details are in [ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md#uncertain-outcome).
+A step has an uncertain outcome when the call exceeds `maxStepDurationMs` or ends by timeout or cancellation. If the suspension runs out (by default, more than 20 attempts or 24 hours), the saga moves to `RequiresIntervention`. The details are in [ADR 0008](adr/0008-orchestrated-sagas-persistent-log.md#uncertain-outcome).
 
 **Isolation.** While the saga runs, the resources involved stay in an intermediate domain state (for example, tenant `Provisioning`) so nobody uses them half-done.
 
@@ -1204,7 +1204,7 @@ A step has an uncertain outcome when the call exceeds `maxStepDurationMs` or end
 
 Simple flows, with no need to undo, remain as event choreography.
 
-**Current code.** Today `@platform/saga` provides the complete protocol (write-ahead, lease, pivot, uncertain outcome, recovery) on the `SagaStore` port, with `InMemorySagaStore` and the `CrashingSagaStore` test double from its tests. The redesigned engine is in [section 5 of the persistence design](design/persistencia-typeorm-y-sagas.md#5-sagas), and when it gets built, in the [plan](plan/README.md#execution-order-by-waves).
+**Current code.** Today `@platform/saga` provides the complete protocol (write-ahead, lease, pivot, uncertain outcome, recovery) on the `SagaStore` port, with `InMemorySagaStore` and the `CrashingSagaStore` test double from its tests. The redesigned engine is in [section 5 of the persistence design](design/typeorm-persistence-and-sagas.md#5-sagas), and when it gets built, in the [plan](plan/README.md#execution-order-by-waves).
 
 ## Shared capabilities
 
@@ -1325,7 +1325,7 @@ The `billing` service computes what each tenant must pay and tracks the status o
 
 ## AWS infrastructure and CI/CD
 
-The infrastructure lives in `backend/infra/terraform` and is organized in reusable modules, stacks with their own state and per-environment values ([ADR 0020](adr/0020-terraform-por-stacks-y-runtime-por-servicio.md)). The details of variables, outputs and commands are in the [Terraform README](../backend/infra/terraform/README.md).
+The infrastructure lives in `backend/infra/terraform` and is organized in reusable modules, stacks with their own state and per-environment values ([ADR 0020](adr/0020-terraform-stacks-and-runtime-per-service.md)). The details of variables, outputs and commands are in the [Terraform README](../backend/infra/terraform/README.md).
 
 | Stack                       | Resources                                                                                                                                                                         |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1352,11 +1352,11 @@ The infrastructure lives in `backend/infra/terraform` and is organized in reusab
 
 **Network and Internet egress**
 
-The `egress` variable of the `network` stack decides the egress of the private subnets ([ADR 0016](adr/0016-egress-de-red.md)): `none`, `single_nat` (dev) or `per_az_nat` (staging and prod). The data subnets (RDS, RDS Proxy, Valkey) have no route to the Internet and reach AWS only through VPC endpoints. Services go out only over HTTPS; the client security group of the `data` stack opens the exact egress to RDS Proxy, the replicas, Valkey and OpenObserve.
+The `egress` variable of the `network` stack decides the egress of the private subnets ([ADR 0016](adr/0016-network-egress.md)): `none`, `single_nat` (dev) or `per_az_nat` (staging and prod). The data subnets (RDS, RDS Proxy, Valkey) have no route to the Internet and reach AWS only through VPC endpoints. Services go out only over HTTPS; the client security group of the `data` stack opens the exact egress to RDS Proxy, the replicas, Valkey and OpenObserve.
 
 **Data**
 
-- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and the `catalog` database ([ADR 0010](adr/0010-sharding-logico-residencia-region.md)), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner and the `vector` extension; it never deletes.
+- One RDS instance per region with one database per logical shard of each service (`<service>_shard_<n>`) and the `catalog` database ([ADR 0010](adr/0010-logical-sharding-region-residency.md)), the same as `backend/infra/local/postgres/init.sql`. A bootstrap Lambda inside the VPC creates roles, databases with their owner and the `vector` extension; it never deletes.
 - Apps never use the master user. Each service has its role, owner of its shards, and a secret with rotation. The catalog belongs to `catalog_owner`; services with `catalog = "owner"` migrate it and those with `"read"` query it through `catalog_reader`.
 - Each service receives `DB_DATABASES` with the map of its databases, writes through `DB_PROXY_HOST` (RDS Proxy) and reads from `DB_READER_HOSTS`, directly to the replicas: outside Aurora, RDS Proxy only supports the writer instance.
 - The parameter group turns on `rds.logical_replication`, which enables zero-downtime shard moves.
@@ -1395,7 +1395,7 @@ The `local` Terraform environment applies `platform` (files, email and alarms, w
 
 ## Quality and security
 
-The CI, security and tool version decisions are in [ADR 0019](adr/0019-ci-y-toolchain.md). The workflows are `.github/workflows/ci.yml` and `.github/workflows/security.yml`.
+The CI, security and tool version decisions are in [ADR 0019](adr/0019-ci-and-toolchain.md). The workflows are `.github/workflows/ci.yml` and `.github/workflows/security.yml`.
 
 **CI (`ci.yml`)**
 
@@ -1450,16 +1450,16 @@ It runs on every PR, every push to `main` and on Mondays at 06:00 UTC:
 - Integration tests (`*.int-spec.ts`) run against real Postgres and Valkey with Testcontainers.
 
 - Each service brings its e2e tests in `backend/apps/<service>/e2e`, against the complete app with real PostgreSQL and Valkey and a per-route access matrix.
-- `backend/e2e/platform-flow` (`pnpm nx run platform-flow:e2e`) starts the five services in one process, joined by an in-memory bus, and walks through tenant onboarding, tasks, notices, reports, invoice and tenant move, without simulating any platform step ([ADR 0035](adr/0035-flujo-de-punta-a-punta-de-la-plataforma.md)).
+- `backend/e2e/platform-flow` (`pnpm nx run platform-flow:e2e`) starts the five services in one process, joined by an in-memory bus, and walks through tenant onboarding, tasks, notices, reports, invoice and tenant move, without simulating any platform step ([ADR 0035](adr/0035-end-to-end-platform-flow.md)).
 
 Load tests with k6 against staging are left for after F12.
 
 **AI tools in the repository** (`.claude/`)
 
-- Backend (`backend-*`) and front (`front-*`) skills with the current rules for code, structure, tests, persistence with TypeORM, security and accessibility. Each one declares `paths` and loads on its own when its folder is touched; the entry points are `backend-codigo-enterprise` and `front-codigo`.
-- `backend-estructura` and `front-estructura` come with a `check-structure.mjs` script that checks their rules over the changed files (`--changed`) or over the whole tree (`--all`).
+- Backend (`backend-*`) and front (`front-*`) skills with the current rules for code, structure, tests, persistence with TypeORM, security and accessibility. Each one declares `paths` and loads on its own when its folder is touched; the entry points are `backend-code` and `front-code`.
+- `backend-structure` and `front-structure` come with a `check-structure.mjs` script that checks their rules over the changed files (`--changed`) or over the whole tree (`--all`).
 - Hooks: `guard-paths.mjs` rejects a forbidden path before writing (`src/lib/`, a test outside `__tests__/`, a library `package.json`, a `.env`); `format-file.mjs` formats after writing; `verify-on-stop.mjs` runs the structure scripts before an agent finishes.
-- Squad agents: `backend-guia` and `front-guia` plan and review, and `backend-implementador` and `front-implementador` write an already planned work package.
+- Squad agents: `backend-lead` and `front-lead` plan and review, and `backend-implementer` and `front-implementer` write an already planned work package.
 
 **Repository documentation**: README, the [plan](plan/README.md), ADRs for each architecture decision, per-phase designs in [`docs/design/`](design/), quality audits in [`docs/audits/`](audits/), [contribution guide](../CONTRIBUTING.md) and [local development](local-development.md).
 
@@ -1584,7 +1584,7 @@ flowchart LR
   end
 ```
 
-Before the pivot each step has a compensation; after it, each step is idempotent and is repeated until it completes ([ADR 0008](adr/0008-sagas-orquestadas-bitacora-persistente.md)).
+Before the pivot each step has a compensation; after it, each step is idempotent and is repeated until it completes ([ADR 0008](adr/0008-orchestrated-sagas-persistent-log.md)).
 
 **Operation**
 

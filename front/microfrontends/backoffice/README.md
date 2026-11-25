@@ -1,6 +1,6 @@
 # mf_backoffice
 
-Platform backoffice microfrontend. Web only and only for platform roles (`PlatformRole`) with a recent second factor. It follows the microfrontend contract of [ADR 0018](../../../docs/adr/0018-contrato-de-microfrontend.md).
+Platform backoffice microfrontend. Web only and only for platform roles (`PlatformRole`) with a recent second factor. It follows the microfrontend contract of [ADR 0018](../../../docs/adr/0018-microfrontend-contract.md).
 
 ## Routes
 

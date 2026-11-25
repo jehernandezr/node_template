@@ -10,19 +10,19 @@ class PathGuard {
     {
       test: (p) => /^backend\/(libs|apps|tools)\/.+\/src\/lib\//.test(p),
       reason:
-        'Backend code goes directly in src/, without src/lib/ (skill backend-estructura).',
+        'Backend code goes directly in src/, without src/lib/ (skill backend-structure).',
     },
     {
       test: (p) =>
         /^backend\/.+\.(int-)?spec\.ts$/.test(p) &&
         !/\/(__tests__|e2e)\//.test(p),
       reason:
-        'Backend tests go in the __tests__/ folder of the folder they test (skill backend-pruebas).',
+        'Backend tests go in the __tests__/ folder of the folder they test (skill backend-testing).',
     },
     {
       test: (p, isNew) => isNew && /^backend\/libs\/.+\/package\.json$/.test(p),
       reason:
-        'Backend libraries have no package.json: they are imported through TypeScript aliases (skill backend-estructura).',
+        'Backend libraries have no package.json: they are imported through TypeScript aliases (skill backend-structure).',
     },
     {
       test: (p) =>
@@ -30,23 +30,23 @@ class PathGuard {
           p,
         ) && !/\/__tests__\//.test(p),
       reason:
-        'Test utilities go in __tests__/utils, not in a separate testing folder (skill backend-pruebas).',
+        'Test utilities go in __tests__/utils, not in a separate testing folder (skill backend-testing).',
     },
     {
       test: (p) => /^backend\/(libs|apps|tools)\/.+\/dist\//.test(p),
       reason:
-        'Each app builds into backend/dist/<app>, never inside a project (skill backend-estructura).',
+        'Each app builds into backend/dist/<app>, never inside a project (skill backend-structure).',
     },
     {
       test: (p) =>
         /^front\/.+\/test\/(.+\/)?(support|testing|helpers)\//.test(p),
       reason:
-        'Code shared by the tests of a front package goes in test/utils/ (skill front-pruebas).',
+        'Code shared by the tests of a front package goes in test/utils/ (skill front-testing).',
     },
     {
       test: (p) => /^front\/.+\/lib\/.+_test\.dart$/.test(p),
       reason:
-        'Front tests go in the package test/, mirroring the lib/src folders (skill front-pruebas).',
+        'Front tests go in the package test/, mirroring the lib/src folders (skill front-testing).',
     },
     {
       test: (p) =>
