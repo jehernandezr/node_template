@@ -51,7 +51,7 @@ Numbers are not reused. File names use kebab-case and are in Spanish.
 | 0028   | [Real time over one stream per user](0028-tiempo-real-sobre-un-stream-por-usuario.md)                                      | Accepted               |
 | 0029   | [Cross-tenant maintenance with RLS and per-shard search](0029-mantenimiento-entre-tenants-y-busqueda-por-shard.md)         | Accepted               |
 | 0030   | [Identity email through notifications](0030-correo-de-identity-por-notifications.md)                                       | Accepted               |
-| 0031   | [Reports, billing and identity sagas](0031-reportes-facturacion-y-sagas-de-identity.md)                                    | Accepted               |
+| 0031   | [Reports, billing and identity sagas](0031-reportes-facturacion-y-sagas-de-identity.md)                                    | Amended by ADR 0036    |
 | 0032   | [Moving tenants and regions](0032-traslado-de-tenants-y-regiones.md)                                                       | Accepted               |
 | 0033   | [Service and module generators, and OpenAPI from the contracts](0033-generadores-y-openapi.md)                             | Accepted               |
 | 0034   | [Live front repositories, SSE and region in the client](0034-repositorios-live-del-front-sse-y-region.md)                  | Accepted               |
