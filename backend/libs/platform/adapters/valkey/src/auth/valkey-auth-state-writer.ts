@@ -98,6 +98,7 @@ return 1
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.setUserEpoch} */
   async setUserEpoch(userId: string, epoch: Epoch): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       AuthStateKey.userEpoch(userId),
@@ -105,6 +106,11 @@ return 1
     ]);
   }
 
+  /**
+   * Runs one script that compares and writes the epoch of the user, so a concurrent suspension is kept.
+   * {@inheritDoc AuthStateWriter.raiseUserRevocation}
+   * @throws InvalidArgumentError if `revokedBefore` is not a non-negative safe integer.
+   */
   async raiseUserRevocation(
     userId: string,
     revokedBefore: number,
@@ -122,6 +128,7 @@ return 1
     );
   }
 
+  /** {@inheritDoc AuthStateWriter.setTenantEpoch} */
   async setTenantEpoch(tenantId: string, epoch: Epoch): Promise<void> {
     await this.executor.run(ValkeyCommand.Set, [
       AuthStateKey.tenantEpoch(tenantId),
@@ -129,6 +136,7 @@ return 1
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.setPermissionVersion} */
   async setPermissionVersion(
     tenantId: string,
     userId: string | undefined,
@@ -148,6 +156,7 @@ return 1
     );
   }
 
+  /** {@inheritDoc AuthStateWriter.putAccessGrant} */
   async putAccessGrant(
     tenantId: string,
     userId: string,
@@ -161,6 +170,7 @@ return 1
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.putApiKey} */
   async putApiKey(
     prefix: string,
     secretHash: string,
@@ -178,6 +188,7 @@ return 1
     ]);
   }
 
+  /** {@inheritDoc AuthStateWriter.dropApiKey} */
   async dropApiKey(prefix: string): Promise<void> {
     await this.executor.run(ValkeyCommand.Del, [AuthStateKey.apiKey(prefix)]);
   }
